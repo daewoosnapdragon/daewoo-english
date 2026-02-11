@@ -1,0 +1,553 @@
+'use client'
+
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useApp } from '@/lib/context'
+import { useStudents } from '@/hooks/useData'
+import { supabase } from '@/lib/supabase'
+import { ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
+import { classToColor, classToTextColor } from '@/lib/utils'
+import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar } from 'lucide-react'
+
+const ASSESSMENT_CATEGORIES = [
+  { value: 'quiz', label: 'Quiz', labelKo: '퀴즈' },
+  { value: 'project', label: 'Project', labelKo: '프로젝트' },
+  { value: 'assignment', label: 'Assignment', labelKo: '과제' },
+  { value: 'homework', label: 'Homework', labelKo: '숙제' },
+  { value: 'participation', label: 'Participation', labelKo: '참여' },
+  { value: 'performance_task', label: 'Performance Task', labelKo: '수행과제' },
+  { value: 'formative', label: 'Formative', labelKo: '형성평가' },
+  { value: 'summative', label: 'Summative', labelKo: '총괄평가' },
+  { value: 'other', label: 'Other', labelKo: '기타' },
+] as const
+
+interface Assessment {
+  id: string
+  name: string
+  domain: Domain
+  max_score: number
+  grade: number
+  english_class: string
+  type: string
+  date: string | null
+  description: string
+  created_by: string | null
+  created_at: string
+}
+
+interface StudentRow { id: string; english_name: string; korean_name: string }
+type SubView = 'entry' | 'overview' | 'student'
+type LangKey = 'en' | 'ko'
+
+export default function GradesView() {
+  const { t, language, currentTeacher, showToast } = useApp()
+  const lang = language as LangKey
+  const [subView, setSubView] = useState<SubView>('entry')
+  const [selectedGrade, setSelectedGrade] = useState<Grade>(3)
+  const [selectedClass, setSelectedClass] = useState<EnglishClass>(
+    (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
+  )
+  const [selectedDomain, setSelectedDomain] = useState<Domain>('reading')
+  const [assessments, setAssessments] = useState<Assessment[]>([])
+  const [allAssessments, setAllAssessments] = useState<Assessment[]>([])
+  const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null)
+  const [scores, setScores] = useState<Record<string, number | null>>({})
+  const [saving, setSaving] = useState(false)
+  const [loadingAssessments, setLoadingAssessments] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+
+  const isTeacher = currentTeacher?.role === 'teacher'
+  const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
+    ? [currentTeacher.english_class as EnglishClass] : ENGLISH_CLASSES
+
+  const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
+
+  const loadAssessments = useCallback(async () => {
+    setLoadingAssessments(true)
+    const { data, error } = await supabase.from('assessments').select('*')
+      .eq('grade', selectedGrade).eq('english_class', selectedClass).eq('domain', selectedDomain)
+      .order('date', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true })
+    if (!error && data) {
+      setAssessments(data)
+      if (data.length > 0 && !selectedAssessment) { setSelectedAssessment(data[data.length - 1]) }
+      else if (data.length > 0 && selectedAssessment) {
+        if (!data.find(a => a.id === selectedAssessment.id)) setSelectedAssessment(data[data.length - 1])
+      } else { setSelectedAssessment(null) }
+    }
+    setLoadingAssessments(false)
+  }, [selectedGrade, selectedClass, selectedDomain])
+
+  const loadAllAssessments = useCallback(async () => {
+    const { data } = await supabase.from('assessments').select('*')
+      .eq('grade', selectedGrade).eq('english_class', selectedClass)
+      .order('domain').order('created_at', { ascending: true })
+    if (data) setAllAssessments(data)
+  }, [selectedGrade, selectedClass])
+
+  useEffect(() => { loadAssessments() }, [loadAssessments])
+  useEffect(() => { loadAllAssessments() }, [loadAllAssessments])
+
+  useEffect(() => {
+    if (!selectedAssessment) { setScores({}); return }
+    const aid = selectedAssessment.id
+    async function loadScores() {
+      const { data } = await supabase.from('grades').select('student_id, score').eq('assessment_id', aid)
+      const map: Record<string, number | null> = {}
+      if (data) data.forEach((g: { student_id: string; score: number | null }) => { map[g.student_id] = g.score })
+      setScores(map); setHasChanges(false)
+    }
+    loadScores()
+  }, [selectedAssessment])
+
+  useEffect(() => {
+    if (currentTeacher?.role === 'teacher' && currentTeacher.english_class !== 'Admin')
+      setSelectedClass(currentTeacher.english_class as EnglishClass)
+  }, [currentTeacher])
+
+  const handleScoreChange = (studentId: string, value: string) => {
+    if (!selectedAssessment) return
+    let score: number | null = null
+    if (value === '') { score = null }
+    else if (value.startsWith('=') && value.includes('/')) {
+      const parts = value.substring(1).split('/')
+      const n = parseFloat(parts[0]), d = parseFloat(parts[1])
+      if (!isNaN(n) && !isNaN(d) && d > 0) score = Math.round((n / d) * selectedAssessment.max_score * 10) / 10
+    } else if (value.includes('/')) {
+      const parts = value.split('/')
+      const n = parseFloat(parts[0]), d = parseFloat(parts[1])
+      if (!isNaN(n) && !isNaN(d) && d > 0) score = Math.round((n / d) * selectedAssessment.max_score * 10) / 10
+    } else { const n = parseFloat(value); if (!isNaN(n)) score = Math.round(n * 10) / 10 }
+    setScores(prev => ({ ...prev, [studentId]: score })); setHasChanges(true)
+  }
+
+  const handleSaveAll = async () => {
+    if (!selectedAssessment) return; setSaving(true)
+    const entries = Object.entries(scores).filter(([, s]) => s !== null && s !== undefined)
+      .map(([sid, score]) => ({ assessment_id: selectedAssessment.id, student_id: sid, score }))
+    for (const e of entries) {
+      const { error } = await supabase.from('grades').upsert(
+        { assessment_id: selectedAssessment.id, student_id: e.student_id, score: e.score, entered_by: currentTeacher?.id || null },
+        { onConflict: 'student_id,assessment_id' })
+      if (error) { showToast(`Error saving: ${error.message}`); setSaving(false); return }
+    }
+    setHasChanges(false); setSaving(false)
+    showToast(lang === 'ko' ? '저장 완료!' : `Saved ${entries.length} scores`)
+  }
+
+  const handleDeleteAssessment = async (a: Assessment) => {
+    const msg = lang === 'ko' ? `"${a.name}" 평가와 모든 점수를 삭제하시겠습니까?` : `Delete "${a.name}" and all its scores? This cannot be undone.`
+    if (!confirm(msg)) return
+    await supabase.from('grades').delete().eq('assessment_id', a.id)
+    const { error } = await supabase.from('assessments').delete().eq('id', a.id)
+    if (error) { showToast(`Error: ${error.message}`) }
+    else { showToast(lang === 'ko' ? '삭제되었습니다' : `Deleted "${a.name}"`); if (selectedAssessment?.id === a.id) setSelectedAssessment(null); loadAssessments(); loadAllAssessments() }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, i: number) => {
+    if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown') {
+      e.preventDefault(); const inputs = document.querySelectorAll('.score-input') as NodeListOf<HTMLInputElement>; inputs[i + 1]?.focus()
+    }
+    if (e.key === 'ArrowUp') { e.preventDefault(); const inputs = document.querySelectorAll('.score-input') as NodeListOf<HTMLInputElement>; inputs[i - 1]?.focus() }
+  }
+
+  const enteredCount = Object.values(scores).filter(s => s !== null && s !== undefined).length
+  const catLabel = (type: string) => { const c = ASSESSMENT_CATEGORIES.find(x => x.value === type); return c ? (lang === 'ko' ? c.labelKo : c.label) : type }
+
+  return (
+    <div className="animate-fade-in">
+      <div className="px-10 pt-8 pb-5 bg-surface border-b border-border">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-[26px] font-semibold tracking-tight text-navy">{t.grades.title}</h2>
+            <p className="text-text-secondary text-sm mt-1">
+              Grade {selectedGrade} · {selectedClass} · {students.length} students
+              {selectedAssessment && subView === 'entry' && ` · ${selectedAssessment.name} (/${selectedAssessment.max_score})`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {hasChanges && subView === 'entry' && (
+              <button onClick={handleSaveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[13px] font-medium bg-gold text-navy-dark hover:bg-gold-light transition-all shadow-sm">
+                {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+                {lang === 'ko' ? '저장' : 'Save All'}
+              </button>
+            )}
+            {subView === 'entry' && (
+              <button onClick={() => setShowCreateModal(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark transition-all">
+                <Plus size={15} /> {t.grades.createAssessment}
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-1 mt-4">
+          {([
+            { id: 'entry' as SubView, icon: FileText, label: lang === 'ko' ? '점수 입력' : 'Score Entry' },
+            { id: 'overview' as SubView, icon: BarChart3, label: lang === 'ko' ? '도메인 개요' : 'Domain Overview' },
+            { id: 'student' as SubView, icon: User, label: lang === 'ko' ? '학생별 보기' : 'Student View' },
+          ]).map(tab => (
+            <button key={tab.id} onClick={() => setSubView(tab.id)}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${subView === tab.id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
+              <tab.icon size={14} /> {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-10 py-6">
+        <div className="flex items-center gap-3 mb-5">
+          <select value={selectedGrade} onChange={e => { setSelectedGrade(Number(e.target.value) as Grade); setSelectedAssessment(null) }}
+            className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
+            {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
+          </select>
+          {availableClasses.length > 1 ? (
+            <div className="flex gap-1">
+              {availableClasses.map(cls => (
+                <button key={cls} onClick={() => { setSelectedClass(cls); setSelectedAssessment(null) }}
+                  className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
+                  style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>
+                  {cls}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white" style={{ backgroundColor: classToTextColor(selectedClass) }}>{selectedClass}</div>
+          )}
+        </div>
+
+        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateModal(true)} createLabel={t.grades.createAssessment} />}
+        {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
+        {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
+      </div>
+
+      {(showCreateModal || editingAssessment) && <AssessmentModal grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} editing={editingAssessment} onClose={() => { setShowCreateModal(false); setEditingAssessment(null) }} onSaved={(a: Assessment) => { setShowCreateModal(false); setEditingAssessment(null); loadAssessments().then(() => setSelectedAssessment(a)); loadAllAssessments() }} />}
+    </div>
+  )
+}
+
+// ─── Score Entry ─────────────────────────────────────────────────────
+
+function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, selectedAssessment, setSelectedAssessment, scores, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, handleScoreChange, handleKeyDown, handleSaveAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel }: {
+  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number) => void; handleSaveAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string
+}) {
+  const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  return (
+    <>
+      <div className="flex gap-1 mb-5 border-b border-border">
+        {DOMAINS.map(d => (
+          <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[13px] font-medium transition-all border-b-2 -mb-px ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
+            {DOMAIN_LABELS[d][lang]}
+            {assessments.filter(a => a.domain === d).length > 0 && <span className="ml-1.5 text-[10px] bg-accent-light text-navy px-1.5 py-0.5 rounded-full font-bold">{assessments.filter(a => a.domain === d).length}</span>}
+          </button>
+        ))}
+      </div>
+
+      {assessments.length > 0 && (
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <span className="text-[11px] text-text-tertiary uppercase tracking-wider font-semibold">{lang === 'ko' ? '평가:' : 'Assessment:'}</span>
+          {assessments.map(a => (
+            <div key={a.id} className="relative">
+              <button onClick={() => setSelectedAssessment(a)} className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all border ${selectedAssessment?.id === a.id ? 'border-navy bg-navy text-white' : 'border-border bg-surface text-text-secondary hover:border-navy/30'}`}>
+                <span>{a.name}</span><span className="opacity-60 ml-1">/{a.max_score}</span>
+                {a.type !== 'formative' && <span className={`ml-1.5 text-[9px] px-1 py-0.5 rounded ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-surface-alt'}`}>{catLabel(a.type)}</span>}
+                {a.date && <span className={`ml-1 text-[10px] ${selectedAssessment?.id === a.id ? 'opacity-60' : 'text-text-tertiary'}`}>{new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+              </button>
+              {selectedAssessment?.id === a.id && (
+                <div className="absolute -top-1 -right-1 z-10">
+                  <button onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === a.id ? null : a.id) }} className="w-5 h-5 rounded-full bg-navy-dark text-white flex items-center justify-center hover:bg-navy transition-colors"><ChevronDown size={10} /></button>
+                  {menuOpen === a.id && (
+                    <div className="absolute right-0 top-6 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-[140px] z-20" onClick={() => setMenuOpen(null)}>
+                      <button onClick={() => onEditAssessment(a)} className="w-full text-left px-3 py-2 text-[12px] hover:bg-surface-alt flex items-center gap-2"><Pencil size={12} /> {lang === 'ko' ? '수정' : 'Edit'}</button>
+                      <button onClick={() => handleDeleteAssessment(a)} className="w-full text-left px-3 py-2 text-[12px] hover:bg-danger-light text-danger flex items-center gap-2"><Trash2 size={12} /> {lang === 'ko' ? '삭제' : 'Delete'}</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+        {loadingStudents || loadingAssessments ? (
+          <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-sm">Loading...</p></div>
+        ) : !selectedAssessment ? (
+          <div className="p-12 text-center">
+            <div className="text-4xl mb-3">📝</div>
+            <h3 className="font-display text-lg font-semibold text-navy mb-1">{assessments.length === 0 ? (lang === 'ko' ? '평가를 먼저 생성하세요' : 'Create your first assessment') : (lang === 'ko' ? '평가를 선택하세요' : 'Select an assessment above')}</h3>
+            <p className="text-text-tertiary text-sm max-w-md mx-auto">{assessments.length === 0 ? (lang === 'ko' ? '"평가 생성" 버튼을 클릭하여 시작하세요.' : 'Click "Create Assessment" to get started. Name it, pick the domain and category, set the total points, then enter scores.') : ''}</p>
+            {assessments.length === 0 && <button onClick={onCreateAssessment} className="mt-4 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark transition-all"><Plus size={15} /> {createLabel}</button>}
+          </div>
+        ) : (
+          <>
+            <div className="px-5 py-3 bg-accent-light border-b border-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-[13px] font-semibold text-navy">{selectedAssessment.name}</span>
+                  <span className="text-[12px] text-text-secondary">out of {selectedAssessment.max_score}</span>
+                  <span className="text-[10px] bg-navy/10 text-navy px-2 py-0.5 rounded-full font-medium">{catLabel(selectedAssessment.type)}</span>
+                  {selectedAssessment.date && <span className="text-[11px] text-text-tertiary flex items-center gap-1"><Calendar size={11} />{new Date(selectedAssessment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                  {selectedAssessment.description && <span className="text-[11px] text-text-tertiary" title={selectedAssessment.description}>📝 {selectedAssessment.description.length > 40 ? selectedAssessment.description.slice(0, 40) + '...' : selectedAssessment.description}</span>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[12px] text-text-secondary">{enteredCount}/{students.length} entered</span>
+                  <div className="w-24 h-1.5 bg-navy/10 rounded-full overflow-hidden"><div className="h-full bg-navy rounded-full transition-all" style={{ width: `${students.length > 0 ? (enteredCount / students.length) * 100 : 0}%` }} /></div>
+                </div>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead><tr className="bg-surface-alt">
+                  <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Student</th>
+                  <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Score /{selectedAssessment.max_score}</th>
+                  <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">%</th>
+                </tr></thead>
+                <tbody>
+                  {students.map((s, i) => {
+                    const score = scores[s.id]
+                    const pct = score != null && selectedAssessment.max_score > 0 ? ((score / selectedAssessment.max_score) * 100).toFixed(1) : null
+                    const isLow = pct !== null && parseFloat(pct) < 60
+                    return (
+                      <tr key={s.id} className="border-t border-border table-row-hover">
+                        <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
+                        <td className="px-4 py-2.5"><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></td>
+                        <td className="px-4 py-2.5 text-center"><input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={score != null ? score : ''} onChange={e => handleScoreChange(s.id, e.target.value)} onKeyDown={e => handleKeyDown(e, i)} placeholder="—" /></td>
+                        <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{pct ? `${pct}%` : '—'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <StatsBar scores={scores} maxScore={selectedAssessment.max_score} lang={lang} />
+            {hasChanges && (
+              <div className="px-5 py-3 bg-warm-light border-t border-gold/20 flex items-center justify-between">
+                <p className="text-[12px] text-amber-700">{lang === 'ko' ? '저장되지 않은 변경사항이 있습니다' : 'You have unsaved changes'}</p>
+                <button onClick={handleSaveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light transition-all">
+                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} {lang === 'ko' ? '저장' : 'Save'}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </>
+  )
+}
+
+function StatsBar({ scores, maxScore, lang }: { scores: Record<string, number | null>; maxScore: number; lang: LangKey }) {
+  const valid = Object.values(scores).filter((s): s is number => s != null)
+  if (valid.length === 0) return null
+  const avg = valid.reduce((a, b) => a + b, 0) / valid.length
+  const hi = Math.max(...valid), lo = Math.min(...valid)
+  const pA = maxScore > 0 ? (avg / maxScore) * 100 : 0
+  const pH = maxScore > 0 ? (hi / maxScore) * 100 : 0
+  const pL = maxScore > 0 ? (lo / maxScore) * 100 : 0
+  return (
+    <div className="px-5 py-2.5 bg-surface-alt border-t border-border flex items-center gap-6 text-[12px]">
+      <span className="text-text-tertiary font-medium">{lang === 'ko' ? '통계' : 'Stats'}:</span>
+      <span><span className="text-text-tertiary">Avg:</span> <span className="font-semibold text-navy">{avg.toFixed(1)} ({pA.toFixed(1)}%)</span></span>
+      <span><span className="text-text-tertiary">High:</span> <span className="font-semibold text-success">{hi} ({pH.toFixed(1)}%)</span></span>
+      <span><span className="text-text-tertiary">Low:</span> <span className={`font-semibold ${pL < 60 ? 'text-danger' : 'text-navy'}`}>{lo} ({pL.toFixed(1)}%)</span></span>
+      <span><span className="text-text-tertiary">n:</span> <span className="font-medium">{valid.length}</span></span>
+    </div>
+  )
+}
+
+// ─── Domain Overview ────────────────────────────────────────────────
+
+function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: { allAssessments: Assessment[]; selectedGrade: Grade; selectedClass: EnglishClass; lang: LangKey }) {
+  const [stats, setStats] = useState<Record<Domain, { avg: number | null; count: number; assessmentCount: number }>>({ reading: { avg: null, count: 0, assessmentCount: 0 }, phonics: { avg: null, count: 0, assessmentCount: 0 }, writing: { avg: null, count: 0, assessmentCount: 0 }, speaking: { avg: null, count: 0, assessmentCount: 0 }, language: { avg: null, count: 0, assessmentCount: 0 } })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      const result: Record<Domain, { avg: number | null; count: number; assessmentCount: number }> = { reading: { avg: null, count: 0, assessmentCount: 0 }, phonics: { avg: null, count: 0, assessmentCount: 0 }, writing: { avg: null, count: 0, assessmentCount: 0 }, speaking: { avg: null, count: 0, assessmentCount: 0 }, language: { avg: null, count: 0, assessmentCount: 0 } }
+      for (const domain of DOMAINS) {
+        const da = allAssessments.filter(a => a.domain === domain)
+        result[domain].assessmentCount = da.length
+        if (da.length === 0) continue
+        const ids = da.map(a => a.id)
+        const { data: grades } = await supabase.from('grades').select('score, assessment_id').in('assessment_id', ids).not('score', 'is', null)
+        if (grades && grades.length > 0) {
+          const pcts = grades.map(g => { const a = da.find(x => x.id === g.assessment_id); return a && a.max_score > 0 ? (g.score / a.max_score) * 100 : null }).filter((p): p is number => p != null)
+          result[domain].count = pcts.length
+          result[domain].avg = pcts.length > 0 ? pcts.reduce((a, b) => a + b, 0) / pcts.length : null
+        }
+      }
+      setStats(result); setLoading(false)
+    }
+    load()
+  }, [allAssessments])
+
+  if (loading) return <div className="bg-surface border border-border rounded-xl p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-sm">Loading...</p></div>
+
+  const validAvgs = DOMAINS.map(d => stats[d].avg).filter((v): v is number => v != null)
+  const overallAvg = validAvgs.length > 0 ? validAvgs.reduce((a, b) => a + b, 0) / validAvgs.length : null
+
+  return (
+    <div className="bg-surface border border-border rounded-xl p-6">
+      <h3 className="font-display text-lg font-semibold text-navy mb-1">{lang === 'ko' ? '도메인 개요' : 'Domain Overview'}</h3>
+      <p className="text-[12px] text-text-tertiary mb-4">Grade {selectedGrade} · {selectedClass} · {allAssessments.length} {lang === 'ko' ? '개 평가' : 'assessments total'}</p>
+      {overallAvg != null && <div className="mb-5 p-4 bg-accent-light rounded-lg"><span className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold">{lang === 'ko' ? '전체 평균' : 'Overall Average'}</span><div className="text-3xl font-display font-bold text-navy mt-1">{overallAvg.toFixed(1)}%</div></div>}
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+        {DOMAINS.map(domain => {
+          const s = stats[domain]; const pct = s.avg
+          const color = pct == null ? '#E0DDD6' : pct >= 80 ? '#059669' : pct >= 60 ? '#d97706' : '#DC2626'
+          return (
+            <div key={domain} className="bg-surface-alt rounded-lg p-4">
+              <p className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold mb-2">{DOMAIN_LABELS[domain][lang]}</p>
+              {pct != null ? (<><div className="text-2xl font-display font-bold" style={{ color }}>{pct.toFixed(1)}%</div><div className="w-full h-2 bg-border rounded-full mt-2 overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} /></div><p className="text-[10px] text-text-tertiary mt-1.5">{s.assessmentCount} {lang === 'ko' ? '개 평가' : 'assessments'} · {s.count} scores</p></>) : (<p className="text-text-tertiary text-[13px]">—</p>)}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Student Drill-Down ─────────────────────────────────────────────
+
+function StudentDrillDown({ allAssessments, students, selectedStudentId, setSelectedStudentId, lang }: { allAssessments: Assessment[]; students: StudentRow[]; selectedStudentId: string | null; setSelectedStudentId: (id: string | null) => void; lang: LangKey }) {
+  const [studentGrades, setStudentGrades] = useState<Record<string, number | null>>({})
+  const [classAvgs, setClassAvgs] = useState<Record<string, number | null>>({})
+  const [loading, setLoading] = useState(false)
+  const selected = students.find(s => s.id === selectedStudentId)
+
+  useEffect(() => {
+    if (!selectedStudentId || allAssessments.length === 0) return
+    async function load() {
+      setLoading(true)
+      const ids = allAssessments.map(a => a.id)
+      const { data: sg } = await supabase.from('grades').select('assessment_id, score').eq('student_id', selectedStudentId!).in('assessment_id', ids)
+      const gm: Record<string, number | null> = {}; if (sg) sg.forEach(g => { gm[g.assessment_id] = g.score }); setStudentGrades(gm)
+      const { data: ag } = await supabase.from('grades').select('assessment_id, score').in('assessment_id', ids).not('score', 'is', null)
+      const am: Record<string, number | null> = {}
+      if (ag) { const grouped: Record<string, number[]> = {}; ag.forEach(g => { if (!grouped[g.assessment_id]) grouped[g.assessment_id] = []; grouped[g.assessment_id].push(g.score) }); for (const [id, sc] of Object.entries(grouped)) { am[id] = sc.reduce((a, b) => a + b, 0) / sc.length } }
+      setClassAvgs(am); setLoading(false)
+    }
+    load()
+  }, [selectedStudentId, allAssessments])
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-surface border border-border rounded-xl p-5">
+        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-2">{lang === 'ko' ? '학생 선택' : 'Select Student'}</label>
+        <select value={selectedStudentId || ''} onChange={e => setSelectedStudentId(e.target.value || null)} className="w-full max-w-sm px-3 py-2.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
+          <option value="">{lang === 'ko' ? '학생을 선택하세요...' : 'Choose a student...'}</option>
+          {students.map(s => <option key={s.id} value={s.id}>{s.english_name} ({s.korean_name})</option>)}
+        </select>
+      </div>
+      {selected && !loading && (
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-4 bg-accent-light border-b border-border">
+            <h3 className="font-display text-lg font-semibold text-navy">{selected.english_name}<span className="text-text-tertiary ml-2 text-[14px] font-normal">{selected.korean_name}</span></h3>
+          </div>
+          {DOMAINS.map(domain => {
+            const da = allAssessments.filter(a => a.domain === domain)
+            if (da.length === 0) return null
+            const sp = da.map(a => { const s = studentGrades[a.id]; return s != null && a.max_score > 0 ? (s / a.max_score) * 100 : null }).filter((p): p is number => p != null)
+            const dAvg = sp.length > 0 ? sp.reduce((a, b) => a + b, 0) / sp.length : null
+            return (
+              <div key={domain} className="border-b border-border last:border-b-0">
+                <div className="px-5 py-3 bg-surface-alt flex items-center justify-between">
+                  <span className="text-[12px] font-semibold text-navy uppercase tracking-wider">{DOMAIN_LABELS[domain][lang]}</span>
+                  {dAvg != null && <span className={`text-[13px] font-bold ${dAvg >= 80 ? 'text-success' : dAvg >= 60 ? 'text-amber-600' : 'text-danger'}`}>{dAvg.toFixed(1)}%</span>}
+                </div>
+                <table className="w-full text-[12px]">
+                  <thead><tr className="text-[10px] uppercase tracking-wider text-text-tertiary">
+                    <th className="text-left px-5 py-2">Assessment</th><th className="text-center px-3 py-2">Score</th><th className="text-center px-3 py-2">%</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균' : 'Class Avg'}</th><th className="text-center px-3 py-2">{lang === 'ko' ? '차이' : 'Diff'}</th>
+                  </tr></thead>
+                  <tbody>{da.map(a => {
+                    const sc = studentGrades[a.id]; const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
+                    const ca = classAvgs[a.id]; const caP = ca != null && a.max_score > 0 ? (ca / a.max_score) * 100 : null
+                    const diff = pct != null && caP != null ? pct - caP : null
+                    return (
+                      <tr key={a.id} className="border-t border-border/50 table-row-hover">
+                        <td className="px-5 py-2"><span className="font-medium">{a.name}</span>{a.date && <span className="text-text-tertiary ml-1.5 text-[10px]">{new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}</td>
+                        <td className="text-center px-3 py-2 font-medium">{sc != null ? `${sc}/${a.max_score}` : '—'}</td>
+                        <td className={`text-center px-3 py-2 font-semibold ${pct == null ? 'text-text-tertiary' : pct >= 80 ? 'text-success' : pct >= 60 ? 'text-amber-600' : 'text-danger'}`}>{pct != null ? `${pct.toFixed(1)}%` : '—'}</td>
+                        <td className="text-center px-3 py-2 text-text-secondary">{caP != null ? `${caP.toFixed(1)}%` : '—'}</td>
+                        <td className={`text-center px-3 py-2 font-semibold ${diff == null ? 'text-text-tertiary' : diff >= 0 ? 'text-success' : 'text-danger'}`}>{diff != null ? `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}` : '—'}</td>
+                      </tr>
+                    )
+                  })}</tbody>
+                </table>
+              </div>
+            )
+          })}
+          {allAssessments.length === 0 && <div className="p-8 text-center text-text-tertiary text-sm">{lang === 'ko' ? '이 반에 아직 평가가 없습니다.' : 'No assessments yet for this class.'}</div>}
+        </div>
+      )}
+      {loading && <div className="bg-surface border border-border rounded-xl p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" /></div>}
+    </div>
+  )
+}
+
+// ─── Assessment Modal ───────────────────────────────────────────────
+
+function AssessmentModal({ grade, englishClass, domain, editing, onClose, onSaved }: { grade: Grade; englishClass: EnglishClass; domain: Domain; editing: Assessment | null; onClose: () => void; onSaved: (a: Assessment) => void }) {
+  const { language, currentTeacher, showToast } = useApp()
+  const lang = language as LangKey
+  const [name, setName] = useState(editing?.name || '')
+  const [maxScore, setMaxScore] = useState(editing?.max_score || 10)
+  const [selDomain, setSelDomain] = useState<Domain>(editing?.domain || domain)
+  const [category, setCategory] = useState(editing?.type || 'formative')
+  const [date, setDate] = useState(editing?.date || '')
+  const [notes, setNotes] = useState(editing?.description || '')
+  const [saving, setSaving] = useState(false)
+  const nameRef = useRef<HTMLInputElement>(null)
+  useEffect(() => { nameRef.current?.focus() }, [])
+
+  const handleSave = async () => {
+    if (!name.trim()) return; setSaving(true)
+    const payload = { name: name.trim(), domain: selDomain, max_score: maxScore, grade, english_class: englishClass, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null }
+    if (editing) {
+      const { data, error } = await supabase.from('assessments').update(payload).eq('id', editing.id).select().single()
+      setSaving(false)
+      if (error) showToast(`Error: ${error.message}`); else { showToast(lang === 'ko' ? `"${name}" 수정 완료` : `Updated "${name}"`); onSaved(data) }
+    } else {
+      const { data, error } = await supabase.from('assessments').insert(payload).select().single()
+      setSaving(false)
+      if (error) showToast(`Error: ${error.message}`); else { showToast(lang === 'ko' ? `"${name}" 평가가 생성되었습니다` : `Created "${name}"`); onSaved(data) }
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={onClose}>
+      <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <h3 className="font-display text-lg font-semibold text-navy">{editing ? (lang === 'ko' ? '평가 수정' : 'Edit Assessment') : (lang === 'ko' ? '평가 생성' : 'Create Assessment')}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '평가 이름' : 'Assessment Name'}</label>
+            <input ref={nameRef} value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSave() }} placeholder={lang === 'ko' ? '예: Reading Quiz 1' : 'e.g. Reading Quiz 1'} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Domain</label>
+              <select value={selDomain} onChange={e => setSelDomain(e.target.value as Domain)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">{DOMAINS.map(d => <option key={d} value={d}>{DOMAIN_LABELS[d][lang]}</option>)}</select></div>
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '유형' : 'Category'}</label>
+              <select value={category} onChange={e => setCategory(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">{ASSESSMENT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{lang === 'ko' ? c.labelKo : c.label}</option>)}</select></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '만점' : 'Total Points'}</label>
+              <input type="number" min={1} max={1000} value={maxScore} onChange={e => setMaxScore(parseFloat(e.target.value) || 10)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '날짜' : 'Date'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+          </div>
+          <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '메모' : 'Notes'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={lang === 'ko' ? '평가에 대한 메모...' : 'Notes about this assessment...'} rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
+          <div className="bg-accent-light rounded-lg px-4 py-3"><p className="text-[12px] text-navy"><strong>Grade {grade} · {englishClass}</strong> — {lang === 'ko' ? '이 반에만 적용됩니다' : 'This assessment is for this class only'}</p></div>
+        </div>
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">{lang === 'ko' ? '취소' : 'Cancel'}</button>
+          <button onClick={handleSave} disabled={saving || !name.trim()} className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
+            {saving && <Loader2 size={14} className="animate-spin" />} {editing ? (lang === 'ko' ? '수정' : 'Update') : (lang === 'ko' ? '생성' : 'Create')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
