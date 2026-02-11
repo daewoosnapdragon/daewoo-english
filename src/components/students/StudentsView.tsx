@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber } from '@/lib/utils'
-import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2 } from 'lucide-react'
 
 export default function StudentsView() {
   const { t, language, currentTeacher, showToast } = useApp()
@@ -47,7 +48,7 @@ export default function StudentsView() {
       if (!seen.has(key)) seen.set(key, [])
       seen.get(key)!.push(s)
     })
-    return Array.from(seen.entries()).filter(([_, ss]) => ss.length > 1)
+    return Array.from(seen.entries()).filter(([, ss]) => ss.length > 1)
   }, [students])
 
   return (
@@ -129,6 +130,7 @@ export default function StudentsView() {
               <thead>
                 <tr className="bg-surface-alt">
                   <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-10"></th>
                   <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">{t.students.englishName}</th>
                   <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">{t.students.koreanName}</th>
                   <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">{t.common.grade}</th>
@@ -142,6 +144,13 @@ export default function StudentsView() {
                 {sorted.map((s, i) => (
                   <tr key={s.id} className="border-t border-border table-row-hover cursor-pointer" onClick={() => setSelectedStudent(s)}>
                     <td className="px-4 py-3 text-text-tertiary">{i + 1}</td>
+                    <td className="px-4 py-2">
+                      {s.photo_url ? (
+                        <img src={s.photo_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-surface-alt flex items-center justify-center"><User size={13} className="text-text-tertiary" /></div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-medium">{s.english_name}</td>
                     <td className="px-4 py-3 text-text-secondary">{s.korean_name}</td>
                     <td className="px-4 py-3 text-center">{s.grade}</td>
@@ -153,9 +162,7 @@ export default function StudentsView() {
                         {s.english_class}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <ChevronRight size={14} className="text-text-tertiary inline" />
-                    </td>
+                    <td className="px-4 py-3 text-center"><ChevronRight size={14} className="text-text-tertiary inline" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -166,10 +173,12 @@ export default function StudentsView() {
 
       {showUploadModal && <UploadModal onClose={() => setShowUploadModal(false)} />}
       {showAddModal && <AddStudentModal onClose={() => setShowAddModal(false)} onComplete={() => { setShowAddModal(false); refetch() }} />}
-      {selectedStudent && <StudentPanel student={selectedStudent} onClose={() => setSelectedStudent(null)} />}
+      {selectedStudent && <StudentModal student={selectedStudent} onClose={() => setSelectedStudent(null)} onUpdated={(s) => { setSelectedStudent(s); refetch() }} />}
     </div>
   )
 }
+
+// ─── Upload Modal ───────────────────────────────────────────────────
 
 function UploadModal({ onClose }: { onClose: () => void }) {
   const { language, showToast } = useApp()
@@ -198,6 +207,8 @@ function UploadModal({ onClose }: { onClose: () => void }) {
     </div>
   )
 }
+
+// ─── Add Student Modal ──────────────────────────────────────────────
 
 function AddStudentModal({ onClose, onComplete }: { onClose: () => void; onComplete: () => void }) {
   const { language, showToast } = useApp()
@@ -264,36 +275,223 @@ function AddStudentModal({ onClose, onComplete }: { onClose: () => void; onCompl
   )
 }
 
-function StudentPanel({ student, onClose }: { student: Student; onClose: () => void }) {
-  const { language } = useApp()
+// ─── Student Detail Modal (Full) ────────────────────────────────────
+
+function StudentModal({ student, onClose, onUpdated }: { student: Student; onClose: () => void; onUpdated: (s: Student) => void }) {
+  const { language, showToast } = useApp()
+  const { updateStudent } = useStudentActions()
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({
+    english_name: student.english_name,
+    korean_name: student.korean_name,
+    grade: student.grade,
+    korean_class: student.korean_class as KoreanClass,
+    class_number: student.class_number,
+    english_class: student.english_class as EnglishClass,
+    notes: student.notes || '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [photoUrl, setPhotoUrl] = useState(student.photo_url || '')
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const teacherMap: Record<string, string> = {
+    Lily: '00000000-0000-0000-0000-000000000001', Camellia: '00000000-0000-0000-0000-000000000002',
+    Daisy: '00000000-0000-0000-0000-000000000003', Sunflower: '00000000-0000-0000-0000-000000000004',
+    Marigold: '00000000-0000-0000-0000-000000000005', Snapdragon: '00000000-0000-0000-0000-000000000006',
+  }
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { showToast('Please select an image file'); return }
+    if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5MB'); return }
+
+    setUploadingPhoto(true)
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `student-photos/${student.id}.${ext}`
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage.from('photos').upload(path, file, { upsert: true })
+    if (uploadError) {
+      // If bucket doesn't exist, use base64 data URL as fallback
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const dataUrl = reader.result as string
+        const { error: updateError } = await supabase.from('students').update({ photo_url: dataUrl }).eq('id', student.id)
+        setUploadingPhoto(false)
+        if (updateError) { showToast(`Error: ${updateError.message}`) }
+        else { setPhotoUrl(dataUrl); showToast(language === 'ko' ? '사진이 업로드되었습니다' : 'Photo uploaded'); onUpdated({ ...student, photo_url: dataUrl }) }
+      }
+      reader.readAsDataURL(file)
+      return
+    }
+
+    const { data: urlData } = supabase.storage.from('photos').getPublicUrl(path)
+    const publicUrl = urlData.publicUrl + '?t=' + Date.now()
+    const { error: updateError } = await supabase.from('students').update({ photo_url: publicUrl }).eq('id', student.id)
+    setUploadingPhoto(false)
+    if (updateError) { showToast(`Error: ${updateError.message}`) }
+    else { setPhotoUrl(publicUrl); showToast(language === 'ko' ? '사진이 업로드되었습니다' : 'Photo uploaded'); onUpdated({ ...student, photo_url: publicUrl }) }
+  }
+
+  const handleRemovePhoto = async () => {
+    const { error } = await supabase.from('students').update({ photo_url: '' }).eq('id', student.id)
+    if (error) { showToast(`Error: ${error.message}`) }
+    else { setPhotoUrl(''); showToast(language === 'ko' ? '사진이 삭제되었습니다' : 'Photo removed'); onUpdated({ ...student, photo_url: '' }) }
+  }
+
+  const handleSaveEdit = async () => {
+    setSaving(true)
+    const { data, error } = await updateStudent(student.id, {
+      ...form,
+      teacher_id: teacherMap[form.english_class] || null,
+    })
+    setSaving(false)
+    if (error) { showToast(`Error: ${error.message}`) }
+    else { showToast(language === 'ko' ? '저장되었습니다' : 'Student updated'); setEditing(false); if (data) onUpdated(data) }
+  }
+
   return (
-    <div className="fixed inset-0 z-[100]" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/20" />
-      <div className="absolute right-0 top-0 bottom-0 w-[420px] bg-surface shadow-lg overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="px-6 py-5 border-b border-border flex items-center justify-between sticky top-0 bg-surface z-10">
-          <h3 className="font-display text-lg font-medium">{student.english_name}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
-        </div>
-        <div className="p-6">
-          <div className="bg-surface-alt rounded-xl p-5 mb-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-border flex items-center justify-center"><User size={20} className="text-text-tertiary" /></div>
-              <div><p className="font-medium text-[15px]">{student.english_name}</p><p className="text-text-secondary text-[13px]">{student.korean_name}</p></div>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={onClose}>
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="px-8 py-6 border-b border-border flex items-start justify-between">
+          <div className="flex items-center gap-5">
+            {/* Photo */}
+            <div className="relative group">
+              {photoUrl ? (
+                <img src={photoUrl} alt="" className="w-20 h-20 rounded-full object-cover border-2 border-border" />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-surface-alt border-2 border-border flex items-center justify-center">
+                  <User size={28} className="text-text-tertiary" />
+                </div>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+              >
+                {uploadingPhoto ? <Loader2 size={18} className="text-white animate-spin" /> : <Camera size={18} className="text-white" />}
+              </button>
+              {photoUrl && (
+                <button onClick={handleRemovePhoto} className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-700">
+                  <X size={10} />
+                </button>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-3 text-[13px]">
-              <div><span className="text-text-tertiary">Grade</span><p className="font-medium">{student.grade}</p></div>
-              <div><span className="text-text-tertiary">English Class</span><p><span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                style={{ backgroundColor: classToColor(student.english_class), color: classToTextColor(student.english_class) }}>{student.english_class}</span></p></div>
-              <div><span className="text-text-tertiary">Korean Class</span><p className="font-medium">{student.korean_class}반 {student.class_number}번</p></div>
-              <div><span className="text-text-tertiary">Teacher</span><p className="font-medium">{student.teacher_name || '—'}</p></div>
+            <div>
+              <h3 className="font-display text-xl font-semibold text-navy">{student.english_name}</h3>
+              <p className="text-text-secondary text-[14px]">{student.korean_name}</p>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="text-[12px] text-text-tertiary">Grade {student.grade}</span>
+                <span className="text-text-tertiary">·</span>
+                <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                  style={{ backgroundColor: classToColor(student.english_class as EnglishClass), color: classToTextColor(student.english_class as EnglishClass) }}>
+                  {student.english_class}
+                </span>
+                <span className="text-text-tertiary">·</span>
+                <span className="text-[12px] text-text-tertiary">{student.korean_class}반 {student.class_number}번</span>
+              </div>
             </div>
           </div>
-          {['Academic History', 'Behavior Log', 'Level Test History', 'Reading Levels', 'Attendance', 'Warnings'].map((label, i) => (
-            <button key={i} className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-surface-alt transition-all text-left mb-1">
-              <p className="text-[13px] font-medium">{label}</p>
-              <ChevronRight size={16} className="text-text-tertiary" />
-            </button>
-          ))}
+          <div className="flex items-center gap-2">
+            {!editing && (
+              <button onClick={() => setEditing(true)} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary hover:text-navy transition-all" title="Edit">
+                <Pencil size={16} />
+              </button>
+            )}
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+          </div>
+        </div>
+
+        {/* Edit Mode */}
+        {editing && (
+          <div className="px-8 py-5 bg-accent-light border-b border-border">
+            <h4 className="text-[12px] uppercase tracking-wider text-navy font-semibold mb-3">{language === 'ko' ? '학생 정보 수정' : 'Edit Student Info'}</h4>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Korean Name</label>
+                  <input value={form.korean_name} onChange={e => setForm({ ...form, korean_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface" /></div>
+                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">English Name</label>
+                  <input value={form.english_name} onChange={e => setForm({ ...form, english_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface" /></div>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Grade</label>
+                  <select value={form.grade} onChange={e => setForm({ ...form, grade: Number(e.target.value) as Grade })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none bg-surface">{GRADES.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
+                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Korean Class</label>
+                  <select value={form.korean_class} onChange={e => setForm({ ...form, korean_class: e.target.value as KoreanClass })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none bg-surface">{KOREAN_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Number</label>
+                  <input type="number" min={1} max={35} value={form.class_number} onChange={e => setForm({ ...form, class_number: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface" /></div>
+                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">English Class</label>
+                  <select value={form.english_class} onChange={e => setForm({ ...form, english_class: e.target.value as EnglishClass })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none bg-surface">{ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+              </div>
+              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{language === 'ko' ? '메모' : 'Notes'}</label>
+                <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder={language === 'ko' ? '학생 메모...' : 'Student notes...'}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none bg-surface" /></div>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setEditing(false)} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface">{language === 'ko' ? '취소' : 'Cancel'}</button>
+                <button onClick={handleSaveEdit} disabled={saving} className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
+                  {saving && <Loader2 size={14} className="animate-spin" />} {language === 'ko' ? '저장' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Info Sections */}
+        <div className="px-8 py-6">
+          {/* Quick Info Cards */}
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-surface-alt rounded-lg p-4">
+              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Teacher</p>
+              <p className="text-[14px] font-medium text-navy">{student.teacher_name || '—'}</p>
+            </div>
+            <div className="bg-surface-alt rounded-lg p-4">
+              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">{language === 'ko' ? '한국반' : 'Homeroom'}</p>
+              <p className="text-[14px] font-medium text-navy">{student.korean_class}반 {student.class_number}번</p>
+            </div>
+            <div className="bg-surface-alt rounded-lg p-4">
+              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">{language === 'ko' ? '상태' : 'Status'}</p>
+              <p className="text-[14px] font-medium text-success">{student.is_active ? (language === 'ko' ? '재학' : 'Active') : (language === 'ko' ? '비활성' : 'Inactive')}</p>
+            </div>
+          </div>
+
+          {/* Notes */}
+          {student.notes && (
+            <div className="mb-6 p-4 bg-warm-light rounded-lg border border-gold/20">
+              <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-1">{language === 'ko' ? '메모' : 'Notes'}</p>
+              <p className="text-[13px] text-amber-900">{student.notes}</p>
+            </div>
+          )}
+
+          {/* Module Links */}
+          <h4 className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">{language === 'ko' ? '학생 데이터' : 'Student Data'}</h4>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: language === 'ko' ? '학업 이력' : 'Academic History', icon: '📊' },
+              { label: language === 'ko' ? '행동 기록' : 'Behavior Log', icon: '📋' },
+              { label: language === 'ko' ? '레벨 테스트' : 'Level Test History', icon: '📈' },
+              { label: language === 'ko' ? '읽기 수준' : 'Reading Levels', icon: '📖' },
+              { label: language === 'ko' ? '출석' : 'Attendance', icon: '📅' },
+              { label: language === 'ko' ? '경고' : 'Warnings', icon: '⚠️' },
+            ].map((item, i) => (
+              <button key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-alt transition-all text-left border border-border">
+                <span className="text-lg">{item.icon}</span>
+                <div>
+                  <p className="text-[13px] font-medium">{item.label}</p>
+                  <p className="text-[11px] text-text-tertiary">{language === 'ko' ? '준비 중' : 'Coming soon'}</p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

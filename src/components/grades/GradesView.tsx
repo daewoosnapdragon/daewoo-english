@@ -113,12 +113,12 @@ export default function GradesView() {
     else if (value.startsWith('=') && value.includes('/')) {
       const parts = value.substring(1).split('/')
       const n = parseFloat(parts[0]), d = parseFloat(parts[1])
-      if (!isNaN(n) && !isNaN(d) && d > 0) score = Math.round((n / d) * selectedAssessment.max_score * 10) / 10
+      if (!isNaN(n) && !isNaN(d) && d > 0) score = Math.round((n / d) * selectedAssessment.max_score * 100) / 100
     } else if (value.includes('/')) {
       const parts = value.split('/')
       const n = parseFloat(parts[0]), d = parseFloat(parts[1])
-      if (!isNaN(n) && !isNaN(d) && d > 0) score = Math.round((n / d) * selectedAssessment.max_score * 10) / 10
-    } else { const n = parseFloat(value); if (!isNaN(n)) score = Math.round(n * 10) / 10 }
+      if (!isNaN(n) && !isNaN(d) && d > 0) score = Math.round((n / d) * selectedAssessment.max_score * 100) / 100
+    } else { const n = parseFloat(value); if (!isNaN(n)) score = Math.round(n * 100) / 100 }
     setScores(prev => ({ ...prev, [studentId]: score })); setHasChanges(true)
   }
 
