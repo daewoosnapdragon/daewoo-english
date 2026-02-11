@@ -6,7 +6,7 @@ import { ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import {
   Users, TrendingUp, CalendarClock, AlertTriangle,
-  ArrowRight, Clock, Flag, BookOpen
+  ArrowRight, Clock, Flag, BookOpen, Settings
 } from 'lucide-react'
 
 export default function DashboardView() {
