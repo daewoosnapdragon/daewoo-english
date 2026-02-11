@@ -171,11 +171,21 @@ export interface BehaviorLog {
   id: string;
   student_id: string;
   date: string;
-  type: 'positive' | 'concern' | 'parent_contact' | 'intervention' | 'note';
+  type: 'positive' | 'concern' | 'parent_contact' | 'intervention' | 'note' | 'abc';
   note: string;
   is_flagged: boolean;
   teacher_id: string | null;
   teacher_name?: string;
+  // ABC tracking fields
+  time: string;
+  duration: string;
+  activity: string;
+  antecedents: string[];
+  behaviors: string[];
+  consequences: string[];
+  frequency: number;
+  intensity: number;
+  created_at?: string;
 }
 
 export interface LevelTest {

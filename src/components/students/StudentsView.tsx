@@ -7,6 +7,7 @@ import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, 
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2 } from 'lucide-react'
+import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 
 export default function StudentsView() {
   const { t, language, currentTeacher, showToast } = useApp()
@@ -275,7 +276,37 @@ function AddStudentModal({ onClose, onComplete }: { onClose: () => void; onCompl
   )
 }
 
-// ─── Student Detail Modal (Full) ────────────────────────────────────
+// ─── Student Module Tabs ────────────────────────────────────────────
+
+function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string; studentName: string; lang: 'en' | 'ko' }) {
+  const [activeTab, setActiveTab] = useState('behavior')
+  const tabs = [
+    { id: 'behavior', label: lang === 'ko' ? '행동 기록' : 'Behavior Log', icon: '📋' },
+    { id: 'academic', label: lang === 'ko' ? '학업 이력' : 'Academic History', icon: '📊' },
+    { id: 'leveltest', label: lang === 'ko' ? '레벨 테스트' : 'Level Tests', icon: '📈' },
+    { id: 'reading', label: lang === 'ko' ? '읽기 수준' : 'Reading Levels', icon: '📖' },
+    { id: 'attendance', label: lang === 'ko' ? '출석' : 'Attendance', icon: '📅' },
+  ]
+
+  return (
+    <div>
+      <div className="flex gap-1 mb-4 border-b border-border">
+        {tabs.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={`px-3 py-2 text-[12px] font-medium transition-all border-b-2 -mb-px ${activeTab === tab.id ? 'border-navy text-navy' : 'border-transparent text-text-tertiary hover:text-text-secondary'}`}>
+            <span className="mr-1">{tab.icon}</span> {tab.label}
+          </button>
+        ))}
+      </div>
+      {activeTab === 'behavior' && <BehaviorTracker studentId={studentId} studentName={studentName} lang={lang} />}
+      {activeTab !== 'behavior' && (
+        <div className="py-8 text-center text-text-tertiary text-[13px]">
+          {lang === 'ko' ? '준비 중입니다.' : 'Coming soon.'}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function StudentModal({ student, onClose, onUpdated }: { student: Student; onClose: () => void; onUpdated: (s: Student) => void }) {
   const { language, showToast } = useApp()
@@ -472,26 +503,8 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
             </div>
           )}
 
-          {/* Module Links */}
-          <h4 className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">{language === 'ko' ? '학생 데이터' : 'Student Data'}</h4>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: language === 'ko' ? '학업 이력' : 'Academic History', icon: '📊' },
-              { label: language === 'ko' ? '행동 기록' : 'Behavior Log', icon: '📋' },
-              { label: language === 'ko' ? '레벨 테스트' : 'Level Test History', icon: '📈' },
-              { label: language === 'ko' ? '읽기 수준' : 'Reading Levels', icon: '📖' },
-              { label: language === 'ko' ? '출석' : 'Attendance', icon: '📅' },
-              { label: language === 'ko' ? '경고' : 'Warnings', icon: '⚠️' },
-            ].map((item, i) => (
-              <button key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-alt transition-all text-left border border-border">
-                <span className="text-lg">{item.icon}</span>
-                <div>
-                  <p className="text-[13px] font-medium">{item.label}</p>
-                  <p className="text-[11px] text-text-tertiary">{language === 'ko' ? '준비 중' : 'Coming soon'}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+          {/* Module Tabs */}
+          <StudentModuleTabs studentId={student.id} studentName={student.english_name} lang={language as 'en' | 'ko'} />
         </div>
       </div>
     </div>
