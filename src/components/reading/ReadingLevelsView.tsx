@@ -62,7 +62,7 @@ export default function ReadingLevelsView() {
 
       <div className="px-10 py-6">
         <div className="flex items-center gap-3 mb-5">
-          <select value={selectedGrade} onChange={e => setSelectedGrade(Number(e.target.value) as Grade)}
+          <select value={selectedGrade} onChange={(e: any) => setSelectedGrade(Number(e.target.value) as Grade)}
             className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
             {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
           </select>
@@ -174,7 +174,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 }) {
   const [records, setRecords] = useState<ReadingRecord[]>([])
   const [loading, setLoading] = useState(false)
-  const selected = students.find(s => s.id === selectedStudentId)
+  const selected = students.find((s: any) => s.id === selectedStudentId)
 
   useEffect(() => {
     if (!selectedStudentId) return
@@ -190,7 +190,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
     <div className="space-y-4">
       <div className="bg-surface border border-border rounded-xl p-5">
         <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-2">{lang === 'ko' ? '학생 선택' : 'Select Student'}</label>
-        <select value={selectedStudentId || ''} onChange={e => setSelectedStudentId(e.target.value || null)}
+        <select value={selectedStudentId || ''} onChange={(e: any) => setSelectedStudentId(e.target.value || null)}
           className="w-full max-w-sm px-3 py-2.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
           <option value="">{lang === 'ko' ? '학생을 선택하세요...' : 'Choose a student...'}</option>
           {students.map(s => <option key={s.id} value={s.id}>{s.english_name} ({s.korean_name})</option>)}
@@ -215,8 +215,8 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
               <div className="px-5 py-4 border-b border-border">
                 <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-3 flex items-center gap-1"><TrendingUp size={12} /> CWPM Progression</p>
                 <div className="flex items-end gap-1 h-24">
-                  {records.map((r, i) => {
-                    const maxCwpm = Math.max(...records.map(x => x.cwpm || 0), 1)
+                  {records.map((r: any, i: number) => {
+                    const maxCwpm = Math.max(...records.map((x: any) => x.cwpm || 0), 1)
                     const height = ((r.cwpm || 0) / maxCwpm) * 100
                     return (
                       <div key={r.id} className="flex-1 flex flex-col items-center gap-1" title={`${r.date}: ${Math.round(r.cwpm || 0)} CWPM`}>
@@ -243,7 +243,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                   <th className="text-left px-3 py-2">Notes</th>
                 </tr></thead>
                 <tbody>
-                  {[...records].reverse().map(r => (
+                  {[...records].reverse().map((r: any) => (
                     <tr key={r.id} className="border-t border-border/50 table-row-hover">
                       <td className="px-5 py-2 text-text-secondary">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                       <td className="px-3 py-2 font-medium">{r.passage_title || '—'}</td>
@@ -312,7 +312,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={onClose}>
-      <div className="bg-surface rounded-xl shadow-lg w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="bg-surface rounded-xl shadow-lg w-full max-w-lg" onClick={(e: any) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold text-navy">{lang === 'ko' ? 'ORF 기록 추가' : 'Add ORF Record'}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
@@ -320,28 +320,28 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student *</label>
-              <select value={selStudent} onChange={e => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
+              <select value={selStudent} onChange={(e: any) => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
                 <option value="">Select...</option>
                 {students.map(s => <option key={s.id} value={s.id}>{s.english_name}</option>)}
               </select></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <input type="date" value={date} onChange={(e: any) => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
-              <input value={passageTitle} onChange={e => setPassageTitle(e.target.value)} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <input value={passageTitle} onChange={(e: any) => setPassageTitle(e.target.value)} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Level</label>
-              <input value={passageLevel} onChange={e => setPassageLevel(e.target.value)} placeholder="e.g. F, DRA 10" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <input value={passageLevel} onChange={(e: any) => setPassageLevel(e.target.value)} placeholder="e.g. F, DRA 10" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           </div>
           <div className="grid grid-cols-4 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words *</label>
-              <input type="number" min={0} value={wordCount} onChange={e => setWordCount(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <input type="number" min={0} value={wordCount} onChange={(e: any) => setWordCount(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Time (sec) *</label>
-              <input type="number" min={1} value={timeSeconds} onChange={e => setTimeSeconds(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <input type="number" min={1} value={timeSeconds} onChange={(e: any) => setTimeSeconds(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
-              <input type="number" min={0} value={errors} onChange={e => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <input type="number" min={0} value={errors} onChange={(e: any) => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
-              <input type="number" min={0} value={selfCorrections} onChange={e => setSelfCorrections(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <input type="number" min={0} value={selfCorrections} onChange={(e: any) => setSelfCorrections(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           </div>
 
           {/* Auto-calculated stats */}
@@ -361,15 +361,15 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
 
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">RAZ Level</label>
-              <select value={readingLevel} onChange={e => setReadingLevel(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
+              <select value={readingLevel} onChange={(e: any) => setReadingLevel(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
                 <option value="">Select RAZ level...</option>
                 {READING_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
               </select></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile</label>
-              <input value={passageLevel} onChange={e => setPassageLevel(e.target.value)} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <input value={passageLevel} onChange={(e: any) => setPassageLevel(e.target.value)} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           </div>
           <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Observations..." className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
+            <textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} rows={2} placeholder="Observations..." className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
         </div>
         <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">Cancel</button>

@@ -82,17 +82,17 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
     if (!error) loadLogs()
   }
 
-  const flaggedCount = logs.filter(l => l.is_flagged).length
+  const flaggedCount = logs.filter((l: any) => l.is_flagged).length
 
   // Filter logs by type tab
   const filteredLogs = filterType === 'all' ? logs
-    : filterType === 'flagged' ? logs.filter(l => l.is_flagged)
-    : logs.filter(l => l.type === filterType || (filterType === 'negative' && (l.type === 'abc' || l.type === 'negative')))
+    : filterType === 'flagged' ? logs.filter((l: any) => l.is_flagged)
+    : logs.filter((l: any) => l.type === filterType || (filterType === 'negative' && (l.type === 'abc' || l.type === 'negative')))
 
   const handlePrint = () => {
     const printWin = window.open('', '_blank')
     if (!printWin) return
-    const rows = filteredLogs.map(log => {
+    const rows = filteredLogs.map((log: any) => {
       const typeInfo = [...LOG_TYPES, { value: 'abc', label: 'Negative Behavior', labelKo: '부정 행동', icon: '🔴', color: '' }].find(t => t.value === log.type)
       return `<tr>
         <td style="padding:6px;border:1px solid #ddd">${new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}${log.time ? ' ' + log.time : ''}</td>
@@ -127,7 +127,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
 
       {/* Filter tabs */}
       <div className="flex gap-1 border-b border-border overflow-x-auto">
-        {[{ id: 'all', label: 'All', count: logs.length }, ...LOG_TYPES.map(t => ({ id: t.value, label: lang === 'ko' ? t.labelKo : t.label, count: logs.filter(l => l.type === t.value || (t.value === 'negative' && l.type === 'abc')).length })), { id: 'flagged', label: '🔔 Flagged', count: flaggedCount }].map(tab => (
+        {[{ id: 'all', label: 'All', count: logs.length }, ...LOG_TYPES.map(t => ({ id: t.value, label: lang === 'ko' ? t.labelKo : t.label, count: logs.filter((l: any) => l.type === t.value || (t.value === 'negative' && l.type === 'abc')).length })), { id: 'flagged', label: '🔔 Flagged', count: flaggedCount }].map((tab: any) => (
           <button key={tab.id} onClick={() => setFilterType(tab.id)}
             className={`px-3 py-2 text-[11px] font-medium whitespace-nowrap transition-all border-b-2 -mb-px ${filterType === tab.id ? 'border-navy text-navy' : 'border-transparent text-text-tertiary hover:text-text-secondary'}`}>
             {tab.label} {tab.count > 0 && <span className="ml-1 text-[9px] bg-surface-alt px-1.5 py-0.5 rounded-full">{tab.count}</span>}
@@ -143,7 +143,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
         <div className="py-8 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '아직 기록이 없습니다.' : 'No behavior logs yet.'}</div>
       ) : (
         <div className="space-y-1.5">
-          {filteredLogs.map(log => {
+          {filteredLogs.map((log: any) => {
             const typeInfo = [...LOG_TYPES, { value: 'abc', label: 'Negative Behavior', labelKo: '부정 행동', icon: '🔴', color: 'bg-red-50 border-red-200 text-red-800' }].find(t => t.value === log.type)
             const isExpanded = expandedLog === log.id
             const hasAbc = (log.antecedents?.length || 0) > 0 || (log.behaviors?.length || 0) > 0 || (log.consequences?.length || 0) > 0
@@ -169,7 +169,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button onClick={e => { e.stopPropagation(); handleToggleFlag(log) }}
+                    <button onClick={(e: any) => { e.stopPropagation(); handleToggleFlag(log) }}
                       className={`p-1.5 rounded-md transition-all ${log.is_flagged ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-text-tertiary hover:text-red-400 hover:bg-red-50'}`}>
                       <Bell size={13} fill={log.is_flagged ? 'currentColor' : 'none'} />
                     </button>
@@ -280,7 +280,7 @@ function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: str
 
         {/* Notes — always visible, always first */}
         <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '메모' : 'Notes'}</label>
-          <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder={lang === 'ko' ? '무슨 일이 있었는지 적어주세요...' : "What happened? You can submit with just a note, or expand ABC data below for more detail..."}
+          <textarea value={note} onChange={(e: any) => setNote(e.target.value)} rows={3} placeholder={lang === 'ko' ? '무슨 일이 있었는지 적어주세요...' : "What happened? You can submit with just a note, or expand ABC data below for more detail..."}
             className="w-full px-2.5 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy resize-none" /></div>
 
         {/* ABC Section — optional, collapsible */}
@@ -304,9 +304,9 @@ function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: str
             <div className="p-4 space-y-4 border-t border-border">
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Duration <span className="text-text-tertiary normal-case">(opt)</span></label>
-                  <input type="text" value={duration} onChange={e => setDuration(e.target.value)} placeholder="e.g. 5 min" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+                  <input type="text" value={duration} onChange={(e: any) => setDuration(e.target.value)} placeholder="e.g. 5 min" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
                 <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Task / Activity</label>
-                  <input type="text" value={activity} onChange={e => setActivity(e.target.value)} placeholder="e.g. Reading time"
+                  <input type="text" value={activity} onChange={(e: any) => setActivity(e.target.value)} placeholder="e.g. Reading time"
                     className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
               </div>
 
@@ -318,7 +318,7 @@ function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: str
                 <div>
                   <label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Frequency</label>
                   <div className="flex items-center gap-2">
-                    <input type="number" min={1} max={50} value={frequency} onChange={e => setFrequency(parseInt(e.target.value) || 1)}
+                    <input type="number" min={1} max={50} value={frequency} onChange={(e: any) => setFrequency(parseInt(e.target.value) || 1)}
                       className="w-16 px-2.5 py-1.5 border border-border rounded-lg text-[12px] text-center outline-none focus:border-navy" />
                     <span className="text-[11px] text-text-tertiary">times</span>
                   </div>
@@ -342,7 +342,7 @@ function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: str
 
         {/* Flag for Admin */}
         <label className={`flex items-center gap-3 cursor-pointer px-3 py-2.5 rounded-lg border transition-all ${isFlagged ? 'bg-red-50 border-red-200' : 'bg-surface-alt border-transparent hover:border-border'}`}>
-          <input type="checkbox" checked={isFlagged} onChange={e => setIsFlagged(e.target.checked)} className="rounded" />
+          <input type="checkbox" checked={isFlagged} onChange={(e: any) => setIsFlagged(e.target.checked)} className="rounded" />
           <Bell size={14} className={isFlagged ? 'text-red-500' : 'text-text-tertiary'} />
           <div>
             <span className="text-[12px] font-medium">{lang === 'ko' ? '관리자에게 알림' : 'Flag for Admin (Victoria)'}</span>

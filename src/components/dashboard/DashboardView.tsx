@@ -54,9 +54,9 @@ export default function DashboardView() {
             </div>
           </div>
           {semesters.length > 0 && (
-            <select value={activeSem} onChange={e => setActiveSem(e.target.value)}
+            <select value={activeSem} onChange={(e: any) => setActiveSem(e.target.value)}
               className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
-              {semesters.map(sem => (
+              {semesters.map((sem: any) => (
                 <option key={sem.id} value={language === 'ko' ? sem.name_ko : sem.name}>
                   {language === 'ko' ? sem.name_ko : sem.name}{sem.is_active ? ' ●' : ''}
                 </option>
@@ -93,7 +93,7 @@ function AdminAlertPanel() {
 
   const dismiss = async (id: string) => {
     await supabase.from('behavior_logs').update({ is_flagged: false }).eq('id', id)
-    setFlagged(p => p.filter(f => f.id !== id))
+    setFlagged((p: any) => p.filter(f => f.id !== id))
     showToast('Flag dismissed')
   }
 
@@ -118,13 +118,13 @@ function AdminAlertPanel() {
               <p className="text-[12px] text-red-800 truncate">{e.note || (e.behaviors || []).join(', ')}</p>
               <p className="text-[10px] text-red-600 mt-0.5">{new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{e.time && ` at ${e.time}`} — {e.teacher_name || 'Unknown'}</p>
             </div>
-            <button onClick={ev => { ev.stopPropagation(); dismiss(e.id) }} className="p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-100 flex-shrink-0" title="Dismiss"><X size={14} /></button>
+            <button onClick={(ev: any) => { ev.stopPropagation(); dismiss(e.id) }} className="p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-100 flex-shrink-0" title="Dismiss"><X size={14} /></button>
           </div>
         ))}
       </div>
       {detail && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setDetail(null)}>
-          <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={ev => ev.stopPropagation()}>
+          <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={(ev: any) => ev.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <h3 className="font-display text-[16px] font-semibold text-navy">Flagged — {detail.student_name}</h3>
               <button onClick={() => setDetail(null)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
@@ -345,26 +345,26 @@ function AddEventModal({ date, onClose, onSaved }: { date: string; onClose: () =
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={onClose}>
-      <div className="bg-surface rounded-xl shadow-lg w-full max-w-sm" onClick={e => e.stopPropagation()}>
+      <div className="bg-surface rounded-xl shadow-lg w-full max-w-sm" onClick={(e: any) => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-[15px] font-semibold text-navy">Add Calendar Event</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
         </div>
         <div className="p-5 space-y-3">
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Title *</label>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Phonics Unit 3 Lesson Plan" autoFocus
+            <input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="e.g. Phonics Unit 3 Lesson Plan" autoFocus
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
-              <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)}
+              <input type="date" value={eventDate} onChange={(e: any) => setEventDate(e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
-              <select value={type} onChange={e => setType(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none">
+              <select value={type} onChange={(e: any) => setType(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none">
                 {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select></div>
           </div>
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Description <span className="normal-case text-text-tertiary">(opt)</span></label>
-            <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} placeholder="Details..."
+            <textarea value={desc} onChange={(e: any) => setDesc(e.target.value)} rows={2} placeholder="Details..."
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
           {/* Type color preview */}
           <div className="flex flex-wrap gap-1.5">

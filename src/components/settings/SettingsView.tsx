@@ -63,7 +63,7 @@ function TeacherSection() {
     if (error) {
       showToast(`Error: ${error.message}`)
     } else {
-      setTeachers(prev => prev.map(t => t.id === teacher.id ? { ...t, name: newName } : t))
+      setTeachers((prev: any[]) => prev.map((t: any) => t.id === teacher.id ? { ...t, name: newName } : t))
       showToast(language === 'ko' ? `${newName}(으)로 변경됨` : `Updated to ${newName}`)
     }
     setSaving(null)
@@ -101,7 +101,7 @@ function TeacherSection() {
               </tr>
             </thead>
             <tbody>
-              {teachers.map(teacher => {
+              {teachers.map((teacher: any) => {
                 const edited = edits[teacher.id] !== undefined && edits[teacher.id] !== teacher.name
                 return (
                   <tr key={teacher.id} className="border-t border-border">
@@ -121,8 +121,8 @@ function TeacherSection() {
                     <td className="px-5 py-3">
                       <input
                         value={edits[teacher.id] ?? teacher.name}
-                        onChange={e => setEdits(prev => ({ ...prev, [teacher.id]: e.target.value }))}
-                        onKeyDown={e => { if (e.key === 'Enter') handleSave(teacher) }}
+                        onChange={(e: any) => setEdits((prev: any) => ({ ...prev, [teacher.id]: e.target.value }))}
+                        onKeyDown={(e: any) => { if (e.key === 'Enter') handleSave(teacher) }}
                         className={`px-3 py-1.5 border rounded-lg text-[13px] outline-none w-48 transition-colors ${
                           edited ? 'border-gold bg-warm-light' : 'border-border'
                         } focus:border-navy`}
@@ -181,7 +181,7 @@ function SemesterSection() {
     // Deactivate all, then activate this one
     await supabase.from('semesters').update({ is_active: false }).neq('id', 'none')
     await supabase.from('semesters').update({ is_active: true }).eq('id', id)
-    setSemesters(prev => prev.map(s => ({ ...s, is_active: s.id === id })))
+    setSemesters((prev: any) => prev.map((s: any) => ({ ...s, is_active: s.id === id })))
     showToast('Active semester updated')
   }
 
@@ -192,18 +192,18 @@ function SemesterSection() {
       grades_due_date: newSem.grades_due_date || null, is_active: false,
     }).select().single()
     if (error) showToast(`Error: ${error.message}`)
-    else { setSemesters(prev => [data, ...prev]); setAdding(false); setNewSem({ name: '', name_ko: '', academic_year: '2025-2026', type: 'spring_mid', start_date: '', end_date: '', grades_due_date: '' }); showToast('Semester added') }
+    else { setSemesters((prev: any) => [data, ...prev]); setAdding(false); setNewSem({ name: '', name_ko: '', academic_year: '2025-2026', type: 'spring_mid', start_date: '', end_date: '', grades_due_date: '' }); showToast('Semester added') }
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this semester? Assessments linked to it will lose their semester reference.')) return
     await supabase.from('semesters').delete().eq('id', id)
-    setSemesters(prev => prev.filter(s => s.id !== id))
+    setSemesters((prev: any) => prev.filter((s: any) => s.id !== id))
     showToast('Deleted')
   }
 
   const updateField = (id: string, field: string, value: any) => {
-    setSemesters(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s))
+    setSemesters((prev: any) => prev.map((s: any) => s.id === id ? { ...s, [field]: value } : s))
   }
 
   return (
@@ -223,11 +223,11 @@ function SemesterSection() {
         <div className="bg-accent-light border border-border rounded-xl p-4 mb-4 space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name *</label>
-              <input value={newSem.name} onChange={e => setNewSem({ ...newSem, name: e.target.value })} placeholder="e.g. Spring 2026" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+              <input value={newSem.name} onChange={(e: any) => setNewSem({ ...newSem, name: e.target.value })} placeholder="e.g. Spring 2026" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name (Korean)</label>
-              <input value={newSem.name_ko} onChange={e => setNewSem({ ...newSem, name_ko: e.target.value })} placeholder="2026 봄학기" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+              <input value={newSem.name_ko} onChange={(e: any) => setNewSem({ ...newSem, name_ko: e.target.value })} placeholder="2026 봄학기" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Academic Year</label>
-              <input value={newSem.academic_year} onChange={e => setNewSem({ ...newSem, academic_year: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+              <input value={newSem.academic_year} onChange={(e: any) => setNewSem({ ...newSem, academic_year: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
           </div>
           <div className="flex gap-2">
             <button onClick={handleAdd} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Add</button>
@@ -243,7 +243,7 @@ function SemesterSection() {
           <div className="p-8 text-center text-text-tertiary text-sm">No semesters created yet.</div>
         ) : (
           <div className="divide-y divide-border">
-            {semesters.map(sem => (
+            {semesters.map((sem: any) => (
               <div key={sem.id} className={`p-4 ${sem.is_active ? 'bg-green-50/50' : ''}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -262,13 +262,13 @@ function SemesterSection() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div><label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Start Date</label>
-                    <input type="date" value={sem.start_date || ''} onChange={e => updateField(sem.id, 'start_date', e.target.value)}
+                    <input type="date" value={sem.start_date || ''} onChange={(e: any) => updateField(sem.id, 'start_date', e.target.value)}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
                   <div><label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">End Date</label>
-                    <input type="date" value={sem.end_date || ''} onChange={e => updateField(sem.id, 'end_date', e.target.value)}
+                    <input type="date" value={sem.end_date || ''} onChange={(e: any) => updateField(sem.id, 'end_date', e.target.value)}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
                   <div><label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grades Due Date</label>
-                    <input type="date" value={sem.grades_due_date || ''} onChange={e => updateField(sem.id, 'grades_due_date', e.target.value)}
+                    <input type="date" value={sem.grades_due_date || ''} onChange={(e: any) => updateField(sem.id, 'grades_due_date', e.target.value)}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
                 </div>
                 <p className="text-[9px] text-text-tertiary mt-2">Midterm cutoff = assessments before the midpoint. Report card = all assessments in the semester. Set dates when the yearly plan is available.</p>
@@ -333,35 +333,35 @@ function SchoolInfoSection() {
             <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '교장 선생님' : 'Principal'}
             </label>
-            <input value={settings.principal_name || ''} onChange={e => setSettings({ ...settings, principal_name: e.target.value })}
+            <input value={settings.principal_name || ''} onChange={(e: any) => setSettings({ ...settings, principal_name: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '교장 선생님 (한글)' : 'Principal (Korean)'}
             </label>
-            <input value={settings.principal_name_ko || ''} onChange={e => setSettings({ ...settings, principal_name_ko: e.target.value })}
+            <input value={settings.principal_name_ko || ''} onChange={(e: any) => setSettings({ ...settings, principal_name_ko: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '팀 매니저' : 'Team Manager'}
             </label>
-            <input value={settings.team_manager || ''} onChange={e => setSettings({ ...settings, team_manager: e.target.value })}
+            <input value={settings.team_manager || ''} onChange={(e: any) => setSettings({ ...settings, team_manager: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '학년도' : 'Academic Year'}
             </label>
-            <input value={settings.academic_year || ''} onChange={e => setSettings({ ...settings, academic_year: e.target.value })}
+            <input value={settings.academic_year || ''} onChange={(e: any) => setSettings({ ...settings, academic_year: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
           </div>
           <div className="col-span-2">
             <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '프로그램 부제' : 'Program Subtitle'}
             </label>
-            <input value={settings.program_subtitle || ''} onChange={e => setSettings({ ...settings, program_subtitle: e.target.value })}
+            <input value={settings.program_subtitle || ''} onChange={(e: any) => setSettings({ ...settings, program_subtitle: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
           </div>
         </div>

@@ -40,7 +40,7 @@ export default function AttendanceView() {
     setLoading(true)
     const { data } = await supabase.from('attendance').select('*')
       .eq('date', selectedDate)
-      .in('student_id', students.map(s => s.id))
+      .in('student_id', students.map((s: any) => s.id))
     const map: Record<string, { status: Status; note: string; id?: string }> = {}
     if (data) data.forEach((r: any) => { map[r.student_id] = { status: r.status, note: r.note || '', id: r.id } })
     setRecords(map)
@@ -51,25 +51,25 @@ export default function AttendanceView() {
   useEffect(() => { if (students.length > 0) loadRecords() }, [loadRecords, students])
 
   const setStatus = (studentId: string, status: Status) => {
-    setRecords(prev => ({ ...prev, [studentId]: { ...prev[studentId], status, note: prev[studentId]?.note || '' } }))
+    setRecords((prev: any) => ({ ...prev, [studentId]: { ...prev[studentId], status, note: prev[studentId]?.note || '' } }))
     setHasChanges(true)
   }
 
   const setNote = (studentId: string, note: string) => {
-    setRecords(prev => ({ ...prev, [studentId]: { ...prev[studentId], note, status: prev[studentId]?.status || 'present' } }))
+    setRecords((prev: any) => ({ ...prev, [studentId]: { ...prev[studentId], note, status: prev[studentId]?.status || 'present' } }))
     setHasChanges(true)
   }
 
   const markAllPresent = () => {
     const updated: typeof records = { ...records }
-    students.forEach(s => { if (!updated[s.id]) updated[s.id] = { status: 'present', note: '' } })
+    students.forEach((s: any) => { if (!updated[s.id]) updated[s.id] = { status: 'present', note: '' } })
     setRecords(updated)
     setHasChanges(true)
   }
 
   const handleSave = async () => {
     setSaving(true)
-    const entries = Object.entries(records).map(([studentId, r]) => ({
+    const entries = Object.entries(records).map(([studentId, r]: [string, any]) => ({
       student_id: studentId, date: selectedDate, status: r.status, note: r.note,
       recorded_by: currentTeacher?.id || null,
     }))
@@ -89,10 +89,10 @@ export default function AttendanceView() {
   const isWeekend = [0, 6].includes(new Date(selectedDate + 'T00:00').getDay())
 
   // Stats
-  const presentCount = Object.values(records).filter(r => r.status === 'present').length
-  const absentCount = Object.values(records).filter(r => r.status === 'absent').length
-  const tardyCount = Object.values(records).filter(r => r.status === 'tardy').length
-  const ftCount = Object.values(records).filter(r => r.status === 'field_trip').length
+  const presentCount = Object.values(records).filter((r: any) => r.status === 'present').length
+  const absentCount = Object.values(records).filter((r: any) => r.status === 'absent').length
+  const tardyCount = Object.values(records).filter((r: any) => r.status === 'tardy').length
+  const ftCount = Object.values(records).filter((r: any) => r.status === 'field_trip').length
   const unmarkedCount = students.length - Object.keys(records).length
 
   // Print monthly attendance
@@ -105,7 +105,7 @@ export default function AttendanceView() {
     const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
     const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${daysInMonth}`
     const { data: monthData } = await supabase.from('attendance').select('*')
-      .in('student_id', students.map(s => s.id)).gte('date', startDate).lte('date', endDate)
+      .in('student_id', students.map((s: any) => s.id)).gte('date', startDate).lte('date', endDate)
     const lookup: Record<string, Record<string, string>> = {}
     if (monthData) monthData.forEach((r: any) => { if (!lookup[r.student_id]) lookup[r.student_id] = {}; lookup[r.student_id][r.date] = r.status })
     const dates = Array.from({ length: daysInMonth }, (_, i) => {
@@ -116,7 +116,7 @@ export default function AttendanceView() {
     const printWin = window.open('', '_blank')
     if (!printWin) return
     const headerRow = dates.map(d => `<th style="padding:2px 4px;border:1px solid #ccc;font-size:9px;${d.isWknd ? 'background:#f0f0f0;color:#999' : ''}" title="${d.dayName}">${d.day}</th>`).join('')
-    const rows = students.map(s => {
+    const rows = students.map((s: any) => {
       const cells = dates.map(d => {
         const st = lookup[s.id]?.[d.date]
         const sym = st === 'present' ? '✓' : st === 'absent' ? '✗' : st === 'tardy' ? 'T' : st === 'field_trip' ? 'FT' : ''
@@ -158,7 +158,7 @@ export default function AttendanceView() {
       <div className="px-10 py-6">
         {/* Controls */}
         <div className="flex items-center gap-3 mb-5 flex-wrap">
-          <select value={selectedGrade} onChange={e => setSelectedGrade(Number(e.target.value) as Grade)}
+          <select value={selectedGrade} onChange={(e: any) => setSelectedGrade(Number(e.target.value) as Grade)}
             className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
             {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
           </select>
@@ -179,7 +179,7 @@ export default function AttendanceView() {
           {/* Date nav */}
           <div className="flex items-center gap-1">
             <button onClick={prevDay} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronLeft size={16} /></button>
-            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
+            <input type="date" value={selectedDate} onChange={(e: any) => setSelectedDate(e.target.value)}
               className="px-3 py-1.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
             <button onClick={nextDay} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronRight size={16} /></button>
             {!isToday && <button onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])} className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light ml-1">Today</button>}
@@ -229,7 +229,7 @@ export default function AttendanceView() {
                 <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-40">Note</th>
               </tr></thead>
               <tbody>
-                {students.map((s, i) => {
+                {students.map((s: any, i: number) => {
                   const rec = records[s.id]
                   const status = rec?.status
                   return (
@@ -241,8 +241,8 @@ export default function AttendanceView() {
                       </td>
                       <td className="px-2 py-2 text-center">
                         {status ? (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${STATUS_CONFIG[status].bg}`}>
-                            {STATUS_CONFIG[status].label}
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${STATUS_CONFIG[status as Status].bg}`}>
+                            {STATUS_CONFIG[status as Status].label}
                           </span>
                         ) : (
                           <span className="text-[10px] text-text-tertiary">—</span>
@@ -264,7 +264,7 @@ export default function AttendanceView() {
                         </td>
                       ))}
                       <td className="px-4 py-2">
-                        <input type="text" value={rec?.note || ''} onChange={e => setNote(s.id, e.target.value)}
+                        <input type="text" value={rec?.note || ''} onChange={(e: any) => setNote(s.id, e.target.value)}
                           placeholder="..." className="w-full px-2 py-1 border border-border rounded text-[11px] outline-none focus:border-navy bg-transparent" />
                       </td>
                     </tr>
