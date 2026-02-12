@@ -198,19 +198,34 @@ function SemesterSection() {
   }
 
   const handleDelete = async (id: string) => {
-    // Check for linked data first
-    const { count: assessmentCount } = await supabase.from('assessments').select('*', { count: 'exact', head: true }).eq('semester_id', id)
-    const { count: commentCount } = await supabase.from('comments').select('*', { count: 'exact', head: true }).eq('semester_id', id)
-    const linked = (assessmentCount || 0) + (commentCount || 0)
+    // Check for linked data across all tables that reference semesters
+    const [sg, ss, cm, as_] = await Promise.all([
+      supabase.from('semester_grades').select('*', { count: 'exact', head: true }).eq('semester_id', id),
+      supabase.from('summative_scores').select('*', { count: 'exact', head: true }).eq('semester_id', id),
+      supabase.from('comments').select('*', { count: 'exact', head: true }).eq('semester_id', id),
+      supabase.from('assessments').select('*', { count: 'exact', head: true }).eq('semester_id', id),
+    ])
+    const counts = {
+      semester_grades: sg.count || 0,
+      summative_scores: ss.count || 0,
+      comments: cm.count || 0,
+      assessments: as_.count || 0,
+    }
+    const total = Object.values(counts).reduce((a, b) => a + b, 0)
 
-    const msg = linked > 0
-      ? `This semester has ${assessmentCount || 0} assessment(s) and ${commentCount || 0} comment(s) linked to it. Deleting will remove the semester reference from these items. Continue?`
+    const msg = total > 0
+      ? `This semester has linked data:\n- ${counts.semester_grades} grade(s)\n- ${counts.summative_scores} summative score(s)\n- ${counts.comments} comment(s)\n- ${counts.assessments} assessment(s)\n\nAll linked data will be deleted. Continue?`
       : 'Delete this semester?'
     if (!confirm(msg)) return
 
-    // Unlink assessments and comments first
-    if ((assessmentCount || 0) > 0) await supabase.from('assessments').update({ semester_id: null }).eq('semester_id', id)
-    if ((commentCount || 0) > 0) await supabase.from('comments').delete().eq('semester_id', id)
+    // Delete all linked records first (order matters for FKs)
+    if (counts.semester_grades > 0) await supabase.from('semester_grades').delete().eq('semester_id', id)
+    if (counts.summative_scores > 0) await supabase.from('summative_scores').delete().eq('semester_id', id)
+    if (counts.comments > 0) await supabase.from('comments').delete().eq('semester_id', id)
+    if (counts.assessments > 0) await supabase.from('assessments').update({ semester_id: null }).eq('semester_id', id)
+
+    // Also check monthly_behavior_grades
+    await supabase.from('monthly_behavior_grades').delete().eq('semester_id', id).then(() => {})
 
     const { error } = await supabase.from('semesters').delete().eq('id', id)
     if (error) {
@@ -321,15 +336,55 @@ function ProgramBenchmarksSection() {
   const [benchmarks, setBenchmarks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [selectedGrade, setSelectedGrade] = useState(1)
 
-  const defaultBenchmarks = [
-    { english_class: 'Lily', cwpm_mid: 15, cwpm_end: 30, lexile_min: 0, lexile_max: 100, reading_level: 'Pre-A to B', notes: 'Letter-sound relationships, basic decoding' },
-    { english_class: 'Camellia', cwpm_mid: 30, cwpm_end: 50, lexile_min: 100, lexile_max: 250, reading_level: 'C to F', notes: 'CVC words, simple sentences, HFW sets 1-3' },
-    { english_class: 'Daisy', cwpm_mid: 45, cwpm_end: 70, lexile_min: 200, lexile_max: 400, reading_level: 'F to I', notes: 'Decodable readers, basic fluency' },
-    { english_class: 'Sunflower', cwpm_mid: 60, cwpm_end: 85, lexile_min: 350, lexile_max: 550, reading_level: 'I to L', notes: 'Short passages, developing comprehension' },
-    { english_class: 'Marigold', cwpm_mid: 80, cwpm_end: 110, lexile_min: 500, lexile_max: 700, reading_level: 'L to O', notes: 'Chapter books starting, inference skills' },
-    { english_class: 'Snapdragon', cwpm_mid: 100, cwpm_end: 140, lexile_min: 650, lexile_max: 900, reading_level: 'O to R', notes: 'Independent readers, complex comprehension' },
-  ]
+  const GRADES = [1, 2, 3, 4, 5]
+  const CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
+
+  // Default benchmarks: grade x class (realistic ELL targets)
+  const defaultBenchmarks: any[] = []
+  const defaults: Record<number, Record<string, any>> = {
+    1: {
+      Lily:       { cwpm_mid: 5,   cwpm_end: 15,  lexile_min: 0,   lexile_max: 50,  reading_level: 'Pre-A', notes: 'Letter recognition, initial sounds' },
+      Camellia:   { cwpm_mid: 12,  cwpm_end: 25,  lexile_min: 0,   lexile_max: 100, reading_level: 'A to B', notes: 'CVC blending, HFW sets 1-2' },
+      Daisy:      { cwpm_mid: 20,  cwpm_end: 40,  lexile_min: 50,  lexile_max: 200, reading_level: 'B to D', notes: 'Simple decodable readers' },
+      Sunflower:  { cwpm_mid: 30,  cwpm_end: 55,  lexile_min: 100, lexile_max: 300, reading_level: 'D to G', notes: 'Short sentences, basic fluency' },
+      Marigold:   { cwpm_mid: 45,  cwpm_end: 70,  lexile_min: 200, lexile_max: 400, reading_level: 'G to J', notes: 'Paragraph reading, comprehension' },
+      Snapdragon: { cwpm_mid: 60,  cwpm_end: 90,  lexile_min: 300, lexile_max: 550, reading_level: 'J to M', notes: 'Independent reading, inference' },
+    },
+    2: {
+      Lily:       { cwpm_mid: 8,   cwpm_end: 20,  lexile_min: 0,   lexile_max: 75,  reading_level: 'Pre-A to A', notes: 'Letter-sound relationships' },
+      Camellia:   { cwpm_mid: 20,  cwpm_end: 35,  lexile_min: 50,  lexile_max: 150, reading_level: 'B to D', notes: 'CVC mastery, digraphs starting' },
+      Daisy:      { cwpm_mid: 30,  cwpm_end: 50,  lexile_min: 100, lexile_max: 300, reading_level: 'D to G', notes: 'Decodable chapter books' },
+      Sunflower:  { cwpm_mid: 45,  cwpm_end: 70,  lexile_min: 200, lexile_max: 400, reading_level: 'G to J', notes: 'Developing comprehension' },
+      Marigold:   { cwpm_mid: 60,  cwpm_end: 90,  lexile_min: 350, lexile_max: 550, reading_level: 'J to M', notes: 'Chapter books, varied genres' },
+      Snapdragon: { cwpm_mid: 80,  cwpm_end: 110, lexile_min: 500, lexile_max: 700, reading_level: 'M to P', notes: 'Complex texts, analysis' },
+    },
+    3: {
+      Lily:       { cwpm_mid: 10,  cwpm_end: 25,  lexile_min: 0,   lexile_max: 100, reading_level: 'A to B', notes: 'Basic decoding, HFW' },
+      Camellia:   { cwpm_mid: 25,  cwpm_end: 45,  lexile_min: 50,  lexile_max: 200, reading_level: 'C to F', notes: 'Blends, digraphs, short vowels' },
+      Daisy:      { cwpm_mid: 40,  cwpm_end: 65,  lexile_min: 150, lexile_max: 350, reading_level: 'F to I', notes: 'Fluency building, expression' },
+      Sunflower:  { cwpm_mid: 55,  cwpm_end: 80,  lexile_min: 300, lexile_max: 500, reading_level: 'I to L', notes: 'Nonfiction, text features' },
+      Marigold:   { cwpm_mid: 75,  cwpm_end: 105, lexile_min: 450, lexile_max: 650, reading_level: 'L to O', notes: 'Independent chapter books' },
+      Snapdragon: { cwpm_mid: 95,  cwpm_end: 130, lexile_min: 600, lexile_max: 800, reading_level: 'O to R', notes: 'Complex comprehension, writing' },
+    },
+    4: {
+      Lily:       { cwpm_mid: 12,  cwpm_end: 28,  lexile_min: 0,   lexile_max: 100, reading_level: 'A to C', notes: 'Phonics foundations, decoding' },
+      Camellia:   { cwpm_mid: 28,  cwpm_end: 50,  lexile_min: 75,  lexile_max: 250, reading_level: 'C to G', notes: 'Multi-syllable words starting' },
+      Daisy:      { cwpm_mid: 45,  cwpm_end: 70,  lexile_min: 200, lexile_max: 400, reading_level: 'G to J', notes: 'Fluency and expression' },
+      Sunflower:  { cwpm_mid: 65,  cwpm_end: 90,  lexile_min: 350, lexile_max: 550, reading_level: 'J to M', notes: 'Content-area reading' },
+      Marigold:   { cwpm_mid: 85,  cwpm_end: 115, lexile_min: 500, lexile_max: 700, reading_level: 'M to P', notes: 'Novel studies, critical thinking' },
+      Snapdragon: { cwpm_mid: 105, cwpm_end: 140, lexile_min: 650, lexile_max: 900, reading_level: 'P to S', notes: 'Advanced comprehension, debate' },
+    },
+    5: {
+      Lily:       { cwpm_mid: 15,  cwpm_end: 30,  lexile_min: 0,   lexile_max: 100, reading_level: 'A to C', notes: 'Still building letter-sound, basic decoding' },
+      Camellia:   { cwpm_mid: 30,  cwpm_end: 55,  lexile_min: 100, lexile_max: 300, reading_level: 'D to G', notes: 'Blends, vowel teams, HFW mastery' },
+      Daisy:      { cwpm_mid: 50,  cwpm_end: 75,  lexile_min: 250, lexile_max: 450, reading_level: 'G to K', notes: 'Paragraph-level fluency' },
+      Sunflower:  { cwpm_mid: 70,  cwpm_end: 100, lexile_min: 400, lexile_max: 600, reading_level: 'K to N', notes: 'Nonfiction, academic vocab' },
+      Marigold:   { cwpm_mid: 90,  cwpm_end: 120, lexile_min: 550, lexile_max: 750, reading_level: 'N to Q', notes: 'Complex texts, essay writing' },
+      Snapdragon: { cwpm_mid: 115, cwpm_end: 150, lexile_min: 700, lexile_max: 950, reading_level: 'Q to T', notes: 'Near grade-level, advanced analysis' },
+    },
+  }
 
   useEffect(() => {
     (async () => {
@@ -337,22 +392,37 @@ function ProgramBenchmarksSection() {
       if (data && data.length > 0) {
         setBenchmarks(data)
       } else {
-        // Initialize with defaults
-        setBenchmarks(defaultBenchmarks.map((b, i) => ({ ...b, id: `temp_${i}`, display_order: i })))
+        // Generate defaults for all grade x class combos
+        const all: any[] = []
+        let order = 0
+        for (const g of GRADES) {
+          for (const c of CLASSES) {
+            const d = defaults[g]?.[c] || { cwpm_mid: 0, cwpm_end: 0, lexile_min: 0, lexile_max: 0, reading_level: '', notes: '' }
+            all.push({ ...d, grade: g, english_class: c, id: `temp_${order}`, display_order: order })
+            order++
+          }
+        }
+        setBenchmarks(all)
       }
       setLoading(false)
     })()
   }, [])
 
-  const updateBenchmark = (idx: number, field: string, value: any) => {
-    setBenchmarks((prev) => prev.map((b, i) => i === idx ? { ...b, [field]: value } : b))
+  const getBenchmark = (grade: number, cls: string) => {
+    return benchmarks.find((b) => b.grade === grade && b.english_class === cls)
+  }
+
+  const updateBenchmark = (grade: number, cls: string, field: string, value: any) => {
+    setBenchmarks((prev) => prev.map((b) =>
+      b.grade === grade && b.english_class === cls ? { ...b, [field]: value } : b
+    ))
   }
 
   const handleSave = async () => {
     setSaving(true)
-    // Delete existing and re-insert all
     await supabase.from('class_benchmarks').delete().gte('display_order', 0)
     const toInsert = benchmarks.map((b, i) => ({
+      grade: Number(b.grade),
       english_class: b.english_class,
       cwpm_mid: Number(b.cwpm_mid) || 0,
       cwpm_end: Number(b.cwpm_end) || 0,
@@ -366,10 +436,11 @@ function ProgramBenchmarksSection() {
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
     else showToast('Benchmarks saved')
-    // Reload to get real IDs
     const { data } = await supabase.from('class_benchmarks').select('*').order('display_order')
     if (data) setBenchmarks(data)
   }
+
+  const gradeData = CLASSES.map((cls) => getBenchmark(selectedGrade, cls)).filter(Boolean)
 
   if (loading) return <div className="mb-8 p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
@@ -380,7 +451,7 @@ function ProgramBenchmarksSection() {
           <Target size={20} className="text-navy" />
           <div>
             <h3 className="font-display text-lg font-semibold text-navy">Program Benchmarks</h3>
-            <p className="text-[10px] text-text-tertiary">CWPM, Lexile, and reading level targets per class. Visible to all teachers.</p>
+            <p className="text-[10px] text-text-tertiary">CWPM, Lexile, and reading level targets per grade and class. Visible to all teachers.</p>
           </div>
         </div>
         {isAdmin && (
@@ -389,6 +460,18 @@ function ProgramBenchmarksSection() {
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save Benchmarks
           </button>
         )}
+      </div>
+
+      {/* Grade tabs */}
+      <div className="flex gap-1 mb-3">
+        {GRADES.map((g) => (
+          <button key={g} onClick={() => setSelectedGrade(g)}
+            className={`px-4 py-2 rounded-lg text-[13px] font-semibold transition-all ${
+              selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80'
+            }`}>
+            Grade {g}
+          </button>
+        ))}
       </div>
 
       <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
@@ -404,55 +487,59 @@ function ProgramBenchmarksSection() {
             </tr>
           </thead>
           <tbody>
-            {benchmarks.map((b, idx) => (
-              <tr key={b.id || idx} className="border-t border-border">
-                <td className="px-4 py-2.5">
-                  <span className="font-semibold text-[13px] px-2 py-0.5 rounded" style={{ backgroundColor: classToColor(b.english_class as EnglishClass), color: classToTextColor(b.english_class as EnglishClass) }}>
-                    {b.english_class}
-                  </span>
-                </td>
-                <td className="px-3 py-2.5 text-center">
-                  {isAdmin ? (
-                    <input type="number" value={b.cwpm_mid} onChange={(e: any) => updateBenchmark(idx, 'cwpm_mid', e.target.value)}
-                      className="w-16 px-2 py-1 border border-border rounded text-center text-[12px] outline-none focus:border-navy" />
-                  ) : <span className="font-bold text-navy">{b.cwpm_mid}</span>}
-                </td>
-                <td className="px-3 py-2.5 text-center">
-                  {isAdmin ? (
-                    <input type="number" value={b.cwpm_end} onChange={(e: any) => updateBenchmark(idx, 'cwpm_end', e.target.value)}
-                      className="w-16 px-2 py-1 border border-border rounded text-center text-[12px] outline-none focus:border-navy" />
-                  ) : <span className="font-bold text-navy">{b.cwpm_end}</span>}
-                </td>
-                <td className="px-3 py-2.5 text-center">
-                  {isAdmin ? (
-                    <span className="flex items-center justify-center gap-1">
-                      <input type="number" value={b.lexile_min} onChange={(e: any) => updateBenchmark(idx, 'lexile_min', e.target.value)}
-                        className="w-14 px-1.5 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
-                      <span className="text-text-tertiary">-</span>
-                      <input type="number" value={b.lexile_max} onChange={(e: any) => updateBenchmark(idx, 'lexile_max', e.target.value)}
-                        className="w-14 px-1.5 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
-                      <span className="text-[10px] text-text-tertiary">L</span>
+            {CLASSES.map((cls) => {
+              const b = getBenchmark(selectedGrade, cls)
+              if (!b) return null
+              return (
+                <tr key={cls} className="border-t border-border">
+                  <td className="px-4 py-2.5">
+                    <span className="font-semibold text-[13px] px-2 py-0.5 rounded" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>
+                      {cls}
                     </span>
-                  ) : <span className="text-text-secondary">{b.lexile_min}-{b.lexile_max}L</span>}
-                </td>
-                <td className="px-3 py-2.5 text-center">
-                  {isAdmin ? (
-                    <input value={b.reading_level} onChange={(e: any) => updateBenchmark(idx, 'reading_level', e.target.value)}
-                      className="w-20 px-2 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
-                  ) : <span className="text-text-secondary">{b.reading_level}</span>}
-                </td>
-                <td className="px-3 py-2.5">
-                  {isAdmin ? (
-                    <input value={b.notes} onChange={(e: any) => updateBenchmark(idx, 'notes', e.target.value)}
-                      className="w-full px-2 py-1 border border-border rounded text-[11px] outline-none focus:border-navy" />
-                  ) : <span className="text-text-tertiary text-[11px]">{b.notes}</span>}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    {isAdmin ? (
+                      <input type="number" value={b.cwpm_mid} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'cwpm_mid', e.target.value)}
+                        className="w-16 px-2 py-1 border border-border rounded text-center text-[12px] outline-none focus:border-navy" />
+                    ) : <span className="font-bold text-navy">{b.cwpm_mid}</span>}
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    {isAdmin ? (
+                      <input type="number" value={b.cwpm_end} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'cwpm_end', e.target.value)}
+                        className="w-16 px-2 py-1 border border-border rounded text-center text-[12px] outline-none focus:border-navy" />
+                    ) : <span className="font-bold text-navy">{b.cwpm_end}</span>}
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    {isAdmin ? (
+                      <span className="flex items-center justify-center gap-1">
+                        <input type="number" value={b.lexile_min} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'lexile_min', e.target.value)}
+                          className="w-14 px-1.5 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
+                        <span className="text-text-tertiary">-</span>
+                        <input type="number" value={b.lexile_max} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'lexile_max', e.target.value)}
+                          className="w-14 px-1.5 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
+                        <span className="text-[10px] text-text-tertiary">L</span>
+                      </span>
+                    ) : <span className="text-text-secondary">{b.lexile_min}-{b.lexile_max}L</span>}
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    {isAdmin ? (
+                      <input value={b.reading_level} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'reading_level', e.target.value)}
+                        className="w-20 px-2 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
+                    ) : <span className="text-text-secondary">{b.reading_level}</span>}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {isAdmin ? (
+                      <input value={b.notes} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'notes', e.target.value)}
+                        className="w-full px-2 py-1 border border-border rounded text-[11px] outline-none focus:border-navy" />
+                    ) : <span className="text-text-tertiary text-[11px]">{b.notes}</span>}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
-      <p className="text-[9px] text-text-tertiary mt-2">These benchmarks are used for CWPM charts, reading grouping, and progress tracking. They should reflect realistic ELL program targets, not native-speaker norms. Admin can edit.</p>
+      <p className="text-[9px] text-text-tertiary mt-2">These benchmarks are used for CWPM charts, reading grouping, and progress tracking. They reflect realistic ELL program targets per grade level, not native-speaker norms. Admin can edit.</p>
     </div>
   )
 }

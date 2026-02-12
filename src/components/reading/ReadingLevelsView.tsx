@@ -215,10 +215,10 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
   useEffect(() => {
     if (!selected) return
     ;(async () => {
-      const { data } = await supabase.from('class_benchmarks').select('*').eq('english_class', selected.english_class).limit(1).single()
+      const { data } = await supabase.from('class_benchmarks').select('*').eq('english_class', selected.english_class).eq('grade', grade).limit(1).single()
       if (data) setClassBench(data)
     })()
-  }, [selected])
+  }, [selected, grade])
 
   // Growth projection
   const growthSentence = (() => {
