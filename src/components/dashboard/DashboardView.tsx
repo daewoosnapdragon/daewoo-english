@@ -21,7 +21,7 @@ const EVENT_TYPES = [
 ]
 
 interface CalEvent { id: string; title: string; date: string; type: string; description: string; created_by: string | null; created_at: string }
-interface FlaggedEntry { id: string; student_id: string; date: string; type: string; note: string; time: string; behaviors: string[]; intensity: number; teacher_name: string; student_name: string; student_class: string; created_at: string }
+interface FlaggedEntry { id: string; student_id: string; date: string; type: string; note: string; time: string; behaviors: string[]; antecedents: string[]; consequences: string[]; intensity: number; frequency: number; activity: string; duration: string; is_flagged: boolean; teacher_name: string; student_name: string; student_class: string; created_at: string }
 
 export default function DashboardView() {
   const { language, currentTeacher } = useApp()
@@ -86,14 +86,14 @@ function AdminAlertPanel() {
       const { data } = await supabase
         .from('behavior_logs').select('*, teachers(name), students(english_name, english_class)')
         .eq('is_flagged', true).order('created_at', { ascending: false }).limit(20)
-      if (data) setFlagged(data.map((r: any) => ({ ...r, teacher_name: r.teachers?.name || '', student_name: r.students?.english_name || '', student_class: r.students?.english_class || '' })))
+      if (data) setFlagged(data.map((r: any) => ({ ...r, teacher_name: r.teachers?.name || '', student_name: r.students?.english_name || '', student_class: r.students?.english_class || '' })) as FlaggedEntry[])
       setLoading(false)
     })()
   }, [])
 
   const dismiss = async (id: string) => {
     await supabase.from('behavior_logs').update({ is_flagged: false }).eq('id', id)
-    setFlagged((p: any) => p.filter((f: any) => f.id !== id))
+    setFlagged(p => p.filter(f => f.id !== id))
     showToast('Flag dismissed')
   }
 
