@@ -10,6 +10,7 @@ import StudentsView from '@/components/students/StudentsView'
 import GradesView from '@/components/grades/GradesView'
 import AttendanceView from '@/components/attendance/AttendanceView'
 import ReadingLevelsView from '@/components/reading/ReadingLevelsView'
+import ReportsView from '@/components/reports/ReportsView'
 import SettingsView from '@/components/settings/SettingsView'
 import { Loader2 } from 'lucide-react'
 
@@ -65,7 +66,7 @@ export default function Home() {
       case 'grades':
         return <GradesView />
       case 'reports':
-        return <PlaceholderView title={t.reports.title} description="Generate progress reports, report cards, and warning letters" />
+        return <ReportsView />
       case 'leveling':
         return <PlaceholderView title={t.leveling.title} description="Manage level tests, enter scores, and finalize placements" />
       case 'attendance':
