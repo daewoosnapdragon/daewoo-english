@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Save, Loader2, UserCog, School } from 'lucide-react'
+import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2 } from 'lucide-react'
 
 export default function SettingsView() {
   const { language, showToast } = useApp()
@@ -23,6 +23,7 @@ export default function SettingsView() {
 
       <div className="px-10 py-8 max-w-4xl">
         <TeacherSection />
+        <SemesterSection />
         <SchoolInfoSection />
       </div>
     </div>
@@ -142,6 +143,138 @@ function TeacherSection() {
               })}
             </tbody>
           </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SemesterSection() {
+  const { language, showToast } = useApp()
+  const lang = language as 'en' | 'ko'
+  const [semesters, setSemesters] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [newSem, setNewSem] = useState({ name: '', name_ko: '', academic_year: '2025-2026', type: 'spring_mid' as string, start_date: '', end_date: '', grades_due_date: '' })
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('semesters').select('*').order('start_date', { ascending: false })
+      if (data) setSemesters(data)
+      setLoading(false)
+    })()
+  }, [])
+
+  const handleSave = async (sem: any) => {
+    setSaving(sem.id)
+    const { error } = await supabase.from('semesters').update({
+      name: sem.name, name_ko: sem.name_ko, start_date: sem.start_date || null,
+      end_date: sem.end_date || null, grades_due_date: sem.grades_due_date || null, is_active: sem.is_active,
+    }).eq('id', sem.id)
+    setSaving(null)
+    if (error) showToast(`Error: ${error.message}`)
+    else showToast('Saved')
+  }
+
+  const handleSetActive = async (id: string) => {
+    // Deactivate all, then activate this one
+    await supabase.from('semesters').update({ is_active: false }).neq('id', 'none')
+    await supabase.from('semesters').update({ is_active: true }).eq('id', id)
+    setSemesters(prev => prev.map(s => ({ ...s, is_active: s.id === id })))
+    showToast('Active semester updated')
+  }
+
+  const handleAdd = async () => {
+    if (!newSem.name.trim()) return
+    const { data, error } = await supabase.from('semesters').insert({
+      ...newSem, start_date: newSem.start_date || null, end_date: newSem.end_date || null,
+      grades_due_date: newSem.grades_due_date || null, is_active: false,
+    }).select().single()
+    if (error) showToast(`Error: ${error.message}`)
+    else { setSemesters(prev => [data, ...prev]); setAdding(false); setNewSem({ name: '', name_ko: '', academic_year: '2025-2026', type: 'spring_mid', start_date: '', end_date: '', grades_due_date: '' }); showToast('Semester added') }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this semester? Assessments linked to it will lose their semester reference.')) return
+    await supabase.from('semesters').delete().eq('id', id)
+    setSemesters(prev => prev.filter(s => s.id !== id))
+    showToast('Deleted')
+  }
+
+  const updateField = (id: string, field: string, value: any) => {
+    setSemesters(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s))
+  }
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <CalendarDays size={20} className="text-navy" />
+          <h3 className="font-display text-lg font-semibold text-navy">{lang === 'ko' ? '학기 관리' : 'Semesters & Cutoff Dates'}</h3>
+        </div>
+        <button onClick={() => setAdding(!adding)}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
+          <Plus size={13} /> {lang === 'ko' ? '학기 추가' : 'Add Semester'}
+        </button>
+      </div>
+
+      {adding && (
+        <div className="bg-accent-light border border-border rounded-xl p-4 mb-4 space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name *</label>
+              <input value={newSem.name} onChange={e => setNewSem({ ...newSem, name: e.target.value })} placeholder="e.g. Spring 2026" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name (Korean)</label>
+              <input value={newSem.name_ko} onChange={e => setNewSem({ ...newSem, name_ko: e.target.value })} placeholder="2026 봄학기" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Academic Year</label>
+              <input value={newSem.academic_year} onChange={e => setNewSem({ ...newSem, academic_year: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleAdd} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Add</button>
+            <button onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+        ) : semesters.length === 0 ? (
+          <div className="p-8 text-center text-text-tertiary text-sm">No semesters created yet.</div>
+        ) : (
+          <div className="divide-y divide-border">
+            {semesters.map(sem => (
+              <div key={sem.id} className={`p-4 ${sem.is_active ? 'bg-green-50/50' : ''}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[14px] font-semibold text-navy">{sem.name}</span>
+                    {sem.name_ko && <span className="text-[12px] text-text-tertiary">{sem.name_ko}</span>}
+                    {sem.is_active && <span className="text-[9px] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">ACTIVE</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!sem.is_active && <button onClick={() => handleSetActive(sem.id)} className="text-[10px] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium">Set Active</button>}
+                    <button onClick={() => handleSave(sem)} disabled={saving === sem.id}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-navy text-white hover:bg-navy-dark">
+                      {saving === sem.id ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} Save
+                    </button>
+                    <button onClick={() => handleDelete(sem.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500"><Trash2 size={13} /></button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Start Date</label>
+                    <input type="date" value={sem.start_date || ''} onChange={e => updateField(sem.id, 'start_date', e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+                  <div><label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">End Date</label>
+                    <input type="date" value={sem.end_date || ''} onChange={e => updateField(sem.id, 'end_date', e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+                  <div><label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grades Due Date</label>
+                    <input type="date" value={sem.grades_due_date || ''} onChange={e => updateField(sem.id, 'grades_due_date', e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+                </div>
+                <p className="text-[9px] text-text-tertiary mt-2">Midterm cutoff = assessments before the midpoint. Report card = all assessments in the semester. Set dates when the yearly plan is available.</p>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

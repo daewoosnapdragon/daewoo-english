@@ -8,28 +8,28 @@ DO $$
 DECLARE
   snap_teacher_id UUID;
   admin_id UUID;
-  demo_student_id UUID := 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeee01';
-  sem_spring_id UUID := 'ssssssss-ssss-ssss-ssss-spring202601';
-  sem_fall_id UUID := 'ssssssss-ssss-ssss-ssss-fall00202601';
+  demo_student_id UUID := 'aabbccdd-0001-0001-0001-eeeeeeee0001';
+  sem_spring_id UUID := 'aabbccdd-0002-0002-0002-aaaaaaaaa001';
+  sem_fall_id UUID := 'aabbccdd-0002-0002-0002-bbbbbbbbbb01';
   -- Assessment IDs
-  a_read1 UUID := '11111111-1111-1111-1111-111111111001';
-  a_read2 UUID := '11111111-1111-1111-1111-111111111002';
-  a_read3 UUID := '11111111-1111-1111-1111-111111111003';
-  a_phon1 UUID := '11111111-1111-1111-1111-111111111004';
-  a_phon2 UUID := '11111111-1111-1111-1111-111111111005';
-  a_writ1 UUID := '11111111-1111-1111-1111-111111111006';
-  a_writ2 UUID := '11111111-1111-1111-1111-111111111007';
-  a_speak1 UUID := '11111111-1111-1111-1111-111111111008';
-  a_speak2 UUID := '11111111-1111-1111-1111-111111111009';
-  a_lang1 UUID := '11111111-1111-1111-1111-111111111010';
-  a_lang2 UUID := '11111111-1111-1111-1111-111111111011';
+  a_read1 UUID := 'aabbccdd-1111-1111-1111-111111111001';
+  a_read2 UUID := 'aabbccdd-1111-1111-1111-111111111002';
+  a_read3 UUID := 'aabbccdd-1111-1111-1111-111111111003';
+  a_phon1 UUID := 'aabbccdd-1111-1111-1111-111111111004';
+  a_phon2 UUID := 'aabbccdd-1111-1111-1111-111111111005';
+  a_writ1 UUID := 'aabbccdd-1111-1111-1111-111111111006';
+  a_writ2 UUID := 'aabbccdd-1111-1111-1111-111111111007';
+  a_speak1 UUID := 'aabbccdd-1111-1111-1111-111111111008';
+  a_speak2 UUID := 'aabbccdd-1111-1111-1111-111111111009';
+  a_lang1 UUID := 'aabbccdd-1111-1111-1111-111111111010';
+  a_lang2 UUID := 'aabbccdd-1111-1111-1111-111111111011';
   -- Fall semester assessments
-  a_fread1 UUID := '22222222-2222-2222-2222-222222222001';
-  a_fread2 UUID := '22222222-2222-2222-2222-222222222002';
-  a_fphon1 UUID := '22222222-2222-2222-2222-222222222003';
-  a_fwrit1 UUID := '22222222-2222-2222-2222-222222222004';
-  a_fspeak1 UUID := '22222222-2222-2222-2222-222222222005';
-  a_flang1 UUID := '22222222-2222-2222-2222-222222222006';
+  a_fread1 UUID := 'aabbccdd-2222-2222-2222-222222222001';
+  a_fread2 UUID := 'aabbccdd-2222-2222-2222-222222222002';
+  a_fphon1 UUID := 'aabbccdd-2222-2222-2222-222222222003';
+  a_fwrit1 UUID := 'aabbccdd-2222-2222-2222-222222222004';
+  a_fspeak1 UUID := 'aabbccdd-2222-2222-2222-222222222005';
+  a_flang1 UUID := 'aabbccdd-2222-2222-2222-222222222006';
 BEGIN
   SELECT id INTO snap_teacher_id FROM teachers WHERE english_class = 'Snapdragon' LIMIT 1;
   SELECT id INTO admin_id FROM teachers WHERE role = 'admin' LIMIT 1;
@@ -41,6 +41,11 @@ BEGIN
   ON CONFLICT DO NOTHING;
 
   -- ── Demo Student ───────────────────────────────────────────────
+  -- Delete existing demo student if re-running
+  DELETE FROM students WHERE id = demo_student_id;
+  -- Also clear any student at this slot
+  DELETE FROM students WHERE grade = 4 AND korean_class = '대' AND class_number = 7;
+
   INSERT INTO students (id, korean_name, english_name, grade, korean_class, class_number, english_class, teacher_id, is_active, notes)
   VALUES (
     demo_student_id,
@@ -53,10 +58,7 @@ BEGIN
     snap_teacher_id,
     true,
     'Daniel is enthusiastic and loves reading time. He sometimes rushes through writing assignments. Strong phonics skills — moved up from Marigold last semester. Parents are very supportive and attend all conferences. Allergies: peanuts (epi-pen in nurse office). Responds well to positive reinforcement.'
-  ) ON CONFLICT (grade, korean_class, class_number) DO UPDATE SET
-    english_name = EXCLUDED.english_name,
-    korean_name = EXCLUDED.korean_name,
-    notes = EXCLUDED.notes;
+  );
 
   -- ── Spring 2026 Assessments (Snapdragon, Grade 4) ─────────────
 
@@ -158,6 +160,10 @@ BEGIN
   ON CONFLICT DO NOTHING;
 
   -- ── Calendar Events ───────────────────────────────────────────
+  -- Update type constraint to include new types
+  ALTER TABLE calendar_events DROP CONSTRAINT IF EXISTS calendar_events_type_check;
+  ALTER TABLE calendar_events ADD CONSTRAINT calendar_events_type_check
+    CHECK (type IN ('day_off', 'deadline', 'meeting', 'midterm', 'report_cards', 'event', 'field_trip', 'assembly', 'testing', 'other'));
 
   INSERT INTO calendar_events (title, date, type, description, created_by) VALUES
     ('Spring Midterms', '2026-05-11', 'midterm', 'Midterm exams week — all grades', admin_id),

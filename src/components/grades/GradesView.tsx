@@ -215,17 +215,16 @@ export default function GradesView() {
 
       <div className="px-10 py-6">
         <div className="flex items-center gap-3 mb-5">
-          {/* Semester Toggle */}
+          {/* Semester Dropdown */}
           {semesters.length > 0 && (
-            <div className="flex items-center gap-1 bg-surface-alt rounded-lg p-1">
+            <select value={selectedSemester || ''} onChange={e => { setSelectedSemester(e.target.value || null); setSelectedAssessment(null) }}
+              className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
               {semesters.map(sem => (
-                <button key={sem.id} onClick={() => { setSelectedSemester(sem.id); setSelectedAssessment(null) }}
-                  className={`px-3 py-1.5 rounded-md text-[11.5px] font-medium transition-all ${selectedSemester === sem.id ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-surface'}`}>
-                  {lang === 'ko' ? sem.name_ko : sem.name}
-                  {sem.is_active && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />}
-                </button>
+                <option key={sem.id} value={sem.id}>
+                  {lang === 'ko' ? sem.name_ko : sem.name}{sem.is_active ? ' ●' : ''}
+                </option>
               ))}
-            </div>
+            </select>
           )}
           <div className="w-px h-6 bg-border" />
           <select value={selectedGrade} onChange={e => { setSelectedGrade(Number(e.target.value) as Grade); setSelectedAssessment(null) }}

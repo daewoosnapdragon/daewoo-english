@@ -8,6 +8,8 @@ import Toast from '@/components/ui/Toast'
 import DashboardView from '@/components/dashboard/DashboardView'
 import StudentsView from '@/components/students/StudentsView'
 import GradesView from '@/components/grades/GradesView'
+import AttendanceView from '@/components/attendance/AttendanceView'
+import ReadingLevelsView from '@/components/reading/ReadingLevelsView'
 import SettingsView from '@/components/settings/SettingsView'
 import { Loader2 } from 'lucide-react'
 
@@ -67,9 +69,9 @@ export default function Home() {
       case 'leveling':
         return <PlaceholderView title={t.leveling.title} description="Manage level tests, enter scores, and finalize placements" />
       case 'attendance':
-        return <PlaceholderView title={t.nav.attendance} description="Track daily attendance across all classes" />
+        return <AttendanceView />
       case 'readingLevels':
-        return <PlaceholderView title={t.nav.readingLevels} description="Track oral reading fluency and reading levels" />
+        return <ReadingLevelsView />
       case 'checklist':
         return <PlaceholderView title={t.nav.checklist} description="Semester kickoff checklist and task management" />
       case 'tools':

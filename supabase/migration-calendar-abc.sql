@@ -16,10 +16,16 @@ CREATE TABLE IF NOT EXISTS calendar_events (
 
 CREATE INDEX IF NOT EXISTS idx_calendar_date ON calendar_events(date);
 
+-- Update type constraint (handles both fresh install and re-run)
+ALTER TABLE calendar_events DROP CONSTRAINT IF EXISTS calendar_events_type_check;
+ALTER TABLE calendar_events ADD CONSTRAINT calendar_events_type_check
+  CHECK (type IN ('day_off', 'deadline', 'meeting', 'midterm', 'report_cards', 'event', 'field_trip', 'assembly', 'testing', 'other'));
+
 -- Enable RLS
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
 
 -- Allow all authenticated users to read/write calendar events (shared calendar)
+DROP POLICY IF EXISTS "calendar_events_all" ON calendar_events;
 CREATE POLICY "calendar_events_all" ON calendar_events FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================================================
