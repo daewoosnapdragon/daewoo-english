@@ -443,7 +443,49 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [photoUrl, setPhotoUrl] = useState(student.photo_url || '')
   const [isAbsent, setIsAbsent] = useState(!student.is_active)
+  const [deleting, setDeleting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const handleDelete = async () => {
+    const counts: Record<string, number> = {}
+    const tables = ['semester_grades', 'grades', 'summative_scores', 'comments', 'reading_assessments', 'behavior_logs', 'attendance', 'level_test_scores']
+    for (const t of tables) {
+      const { count } = await supabase.from(t).select('*', { count: 'exact', head: true }).eq('student_id', student.id)
+      if ((count || 0) > 0) counts[t] = count || 0
+    }
+    const total = Object.values(counts).reduce((a, b) => a + b, 0)
+    const details = Object.entries(counts).map(([t, c]) => `${c} ${t.replace(/_/g, ' ')}`).join(', ')
+    const msg = total > 0
+      ? `Delete ${student.english_name}?\n\nThis will permanently remove ${total} linked records:\n${details}\n\nThis cannot be undone.`
+      : `Delete ${student.english_name}? This cannot be undone.`
+    
+    if (!confirm(msg)) return
+
+    setDeleting(true)
+    const { error } = await supabase.from('students').delete().eq('id', student.id)
+    setDeleting(false)
+    if (error) showToast(`Error: ${error.message}`)
+    else { showToast(`${student.english_name} deleted`); onClose(); onUpdated(student) }
+  }
+
+  const handleExportPDF = async () => {
+    showToast('Generating student portfolio...')
+    const [grades, semGrades, reading, behavior, attendance, comments] = await Promise.all([
+      supabase.from('grades').select('*, assessments(name, domain, date)').eq('student_id', student.id).order('created_at', { ascending: false }),
+      supabase.from('semester_grades').select('*, semesters(name)').eq('student_id', student.id),
+      supabase.from('reading_assessments').select('*').eq('student_id', student.id).order('date', { ascending: true }),
+      supabase.from('behavior_logs').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(50),
+      supabase.from('attendance').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(100),
+      supabase.from('comments').select('*, semesters(name)').eq('student_id', student.id),
+    ])
+    const html = buildStudentPDFHtml(student, {
+      grades: grades.data || [], semesterGrades: semGrades.data || [],
+      readingRecords: reading.data || [], behaviorLogs: behavior.data || [],
+      attendanceRecords: attendance.data || [], comments: comments.data || [],
+    })
+    const w = window.open('', '_blank')
+    if (w) { w.document.write(html); w.document.close() }
+  }
 
   const teacherMap: Record<string, string> = {
     Lily: '00000000-0000-0000-0000-000000000001', Camellia: '00000000-0000-0000-0000-000000000002',
@@ -535,6 +577,12 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Export PDF */}
+            <button onClick={handleExportPDF}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface border border-border text-text-secondary hover:bg-surface-alt transition-all"
+              title="Export student portfolio as PDF">
+              <FileSpreadsheet size={13} /> Export PDF
+            </button>
             {/* Absent Toggle */}
             <button onClick={handleToggleAbsent}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
@@ -546,6 +594,10 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
             {!editing && (
               <button onClick={() => setEditing(true)} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary hover:text-navy transition-all" title="Edit"><Pencil size={16} /></button>
             )}
+            <button onClick={handleDelete} disabled={deleting}
+              className="p-2 rounded-lg hover:bg-red-50 text-text-tertiary hover:text-red-500 transition-all" title="Delete student">
+              {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+            </button>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
           </div>
         </div>
@@ -603,4 +655,77 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
       </div>
     </div>
   )
+}
+
+// ─── Student PDF Export ─────────────────────────────────────────────
+
+function buildStudentPDFHtml(student: Student, data: {
+  grades: any[]; semesterGrades: any[]; readingRecords: any[];
+  behaviorLogs: any[]; attendanceRecords: any[]; comments: any[];
+}) {
+  const { grades, semesterGrades, readingRecords, behaviorLogs, attendanceRecords, comments } = data
+  const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  // Semester grades grouped
+  const semGradesByDomain: Record<string, any[]> = {}
+  semesterGrades.forEach((sg: any) => {
+    const key = sg.domain || 'Unknown'
+    if (!semGradesByDomain[key]) semGradesByDomain[key] = []
+    semGradesByDomain[key].push(sg)
+  })
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${student.english_name} - Student Portfolio</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; color: #1e293b; padding: 40px; max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 22px; color: #1e3a5f; margin-bottom: 4px; }
+  h2 { font-size: 14px; color: #1e3a5f; border-bottom: 2px solid #1e3a5f; padding-bottom: 4px; margin: 24px 0 10px; }
+  h3 { font-size: 12px; color: #475569; margin: 12px 0 6px; }
+  .header { border-bottom: 3px solid #1e3a5f; padding-bottom: 12px; margin-bottom: 20px; }
+  .meta { color: #64748b; font-size: 12px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; background: #dbeafe; color: #1e3a5f; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 10px; }
+  th { background: #f1f5f9; text-align: left; padding: 6px 8px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+  td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; }
+  tr:nth-child(even) { background: #f8fafc; }
+  .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 8px 12px; margin: 8px 0; font-size: 10px; }
+  .empty { color: #94a3b8; font-style: italic; padding: 12px 0; }
+  @media print { body { padding: 20px; } h2 { break-before: auto; } }
+  @page { size: A4; margin: 20mm; }
+</style></head><body>
+<div class="header">
+  <h1>${student.english_name} <span style="color:#64748b;font-weight:400">(${student.korean_name})</span></h1>
+  <p class="meta">Grade ${student.grade} | <span class="badge">${student.english_class}</span> | ${student.korean_class}ban #${student.class_number} | Exported: ${date}</p>
+</div>
+
+<h2>Semester Grades</h2>
+${semesterGrades.length > 0 ? `<table>
+  <tr><th>Semester</th><th>Domain</th><th>Score</th><th>Letter</th></tr>
+  ${semesterGrades.map((sg: any) => `<tr><td>${sg.semesters?.name || '—'}</td><td>${sg.domain}</td><td>${sg.score != null ? sg.score.toFixed(1) + '%' : '—'}</td><td>${sg.letter_grade || '—'}</td></tr>`).join('')}
+</table>` : '<p class="empty">No semester grades recorded.</p>'}
+
+<h2>Reading Assessments (${readingRecords.length})</h2>
+${readingRecords.length > 0 ? `<table>
+  <tr><th>Date</th><th>CWPM</th><th>Accuracy</th><th>Passage Level</th><th>Errors</th></tr>
+  ${readingRecords.map((r: any) => `<tr><td>${r.date}</td><td>${Math.round(r.cwpm || 0)}</td><td>${r.accuracy_rate != null ? r.accuracy_rate + '%' : '—'}</td><td>${r.passage_level || '—'}</td><td>${r.errors || '—'}</td></tr>`).join('')}
+</table>` : '<p class="empty">No reading assessments recorded.</p>'}
+
+<h2>Behavior Log (last 50)</h2>
+${behaviorLogs.length > 0 ? `<table>
+  <tr><th>Date</th><th>Type</th><th>Category</th><th>Note</th></tr>
+  ${behaviorLogs.map((b: any) => `<tr><td>${b.date}</td><td style="color:${b.type === 'positive' ? '#16a34a' : '#dc2626'}">${b.type}</td><td>${b.category || '—'}</td><td>${b.note || '—'}</td></tr>`).join('')}
+</table>` : '<p class="empty">No behavior logs recorded.</p>'}
+
+<h2>Attendance Summary</h2>
+${attendanceRecords.length > 0 ? (() => {
+    const counts: Record<string, number> = { present: 0, absent: 0, tardy: 0, excused: 0 }
+    attendanceRecords.forEach((a: any) => { counts[a.status] = (counts[a.status] || 0) + 1 })
+    return `<p>Present: ${counts.present} | Absent: ${counts.absent} | Tardy: ${counts.tardy} | Excused: ${counts.excused} | Total: ${attendanceRecords.length}</p>`
+  })() : '<p class="empty">No attendance records.</p>'}
+
+<h2>Teacher Comments</h2>
+${comments.length > 0 ? comments.map((c: any) => `<div class="note"><strong>${c.semesters?.name || '—'}:</strong> ${c.comment || '—'}</div>`).join('') : '<p class="empty">No comments recorded.</p>'}
+
+<script>window.print()</script>
+</body></html>`
 }

@@ -238,6 +238,21 @@ export interface LevelTestPlacement {
   // Joined
   student?: Student;
   score?: LevelTestScore;
+  anecdotal?: TeacherAnecdotalRating;
+}
+
+export interface TeacherAnecdotalRating {
+  id: string;
+  level_test_id: string;
+  student_id: string;
+  teacher_id: string | null;
+  receptive_language: number | null;
+  productive_language: number | null;
+  engagement_pace: number | null;
+  placement_recommendation: number | null;
+  notes: string;
+  is_watchlist: boolean;
+  teacher_recommends: 'keep' | 'move_up' | 'move_down' | null;
 }
 
 export interface AttendanceRecord {

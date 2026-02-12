@@ -12,6 +12,7 @@ import AttendanceView from '@/components/attendance/AttendanceView'
 import ReadingLevelsView from '@/components/reading/ReadingLevelsView'
 import ReportsView from '@/components/reports/ReportsView'
 import SettingsView from '@/components/settings/SettingsView'
+import LevelingView from '@/components/leveling/LevelingView'
 import { Loader2 } from 'lucide-react'
 
 // Placeholder views for features not yet built
@@ -68,7 +69,7 @@ export default function Home() {
       case 'reports':
         return <ReportsView />
       case 'leveling':
-        return <PlaceholderView title={t.leveling.title} description="Manage level tests, enter scores, and finalize placements" />
+        return <LevelingView />
       case 'attendance':
         return <AttendanceView />
       case 'readingLevels':
