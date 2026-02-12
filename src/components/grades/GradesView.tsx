@@ -606,20 +606,31 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
   const [date, setDate] = useState(editing?.date || '')
   const [notes, setNotes] = useState(editing?.description || '')
   const [saving, setSaving] = useState(false)
+  const [shareClasses, setShareClasses] = useState<string[]>([])
   const nameRef = useRef<HTMLInputElement>(null)
   useEffect(() => { nameRef.current?.focus() }, [])
 
+  const otherClasses = ENGLISH_CLASSES.filter((c: any) => c !== englishClass)
+
   const handleSave = async () => {
     if (!name.trim()) return; setSaving(true)
-    const payload = { name: name.trim(), domain: selDomain, max_score: maxScore, grade, english_class: englishClass, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null }
+    const basePayload = { name: name.trim(), domain: selDomain, max_score: maxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null }
     if (editing) {
-      const { data, error } = await supabase.from('assessments').update(payload).eq('id', editing.id).select().single()
+      const { data, error } = await supabase.from('assessments').update({ ...basePayload, english_class: englishClass }).eq('id', editing.id).select().single()
       setSaving(false)
       if (error) showToast(`Error: ${error.message}`); else { showToast(lang === 'ko' ? `"${name}" 수정 완료` : `Updated "${name}"`); onSaved(data) }
     } else {
-      const { data, error } = await supabase.from('assessments').insert(payload).select().single()
+      // Create for current class
+      const { data, error } = await supabase.from('assessments').insert({ ...basePayload, english_class: englishClass }).select().single()
+      if (error) { setSaving(false); showToast(`Error: ${error.message}`); return }
+      // Create copies for shared classes
+      if (shareClasses.length > 0) {
+        const copies = shareClasses.map((cls: string) => ({ ...basePayload, english_class: cls }))
+        await supabase.from('assessments').insert(copies)
+      }
       setSaving(false)
-      if (error) showToast(`Error: ${error.message}`); else { showToast(lang === 'ko' ? `"${name}" 평가가 생성되었습니다` : `Created "${name}"`); onSaved(data) }
+      showToast(lang === 'ko' ? `"${name}" 평가가 생성되었습니다` : `Created "${name}"${shareClasses.length > 0 ? ` (+ ${shareClasses.length} shared)` : ''}`)
+      onSaved(data)
     }
   }
 
@@ -646,8 +657,25 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
               <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           </div>
           <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '메모' : 'Notes'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={lang === 'ko' ? '평가에 대한 메모...' : 'Notes about this assessment...'} rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
-          <div className="bg-accent-light rounded-lg px-4 py-3"><p className="text-[12px] text-navy"><strong>Grade {grade} · {englishClass}</strong> — {lang === 'ko' ? '이 반에만 적용됩니다' : 'This assessment is for this class only'}</p></div>
+            <textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder={lang === 'ko' ? '평가에 대한 메모...' : 'Notes about this assessment...'} rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
+          {!editing && (
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-2">Share with Other Classes</label>
+              <div className="flex flex-wrap gap-2">
+                {otherClasses.map((cls: any) => (
+                  <label key={cls} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium cursor-pointer border transition-all ${shareClasses.includes(cls) ? 'border-navy bg-navy/10 text-navy' : 'border-border text-text-tertiary hover:bg-surface-alt'}`}>
+                    <input type="checkbox" checked={shareClasses.includes(cls)} onChange={() => setShareClasses((prev: string[]) => prev.includes(cls) ? prev.filter((c: string) => c !== cls) : [...prev, cls])} className="sr-only" />
+                    <span className="w-3 h-3 rounded-sm border flex items-center justify-center" style={{ borderColor: shareClasses.includes(cls) ? classToTextColor(cls as EnglishClass) : '#d1d5db', backgroundColor: shareClasses.includes(cls) ? classToTextColor(cls as EnglishClass) : 'transparent' }}>
+                      {shareClasses.includes(cls) && <span className="text-white text-[8px]">✓</span>}
+                    </span>
+                    {cls}
+                  </label>
+                ))}
+              </div>
+              <p className="text-[10px] text-text-tertiary mt-1">Same assessment will be created in checked classes (each enters scores separately).</p>
+            </div>
+          )}
+          <div className="bg-accent-light rounded-lg px-4 py-3"><p className="text-[12px] text-navy"><strong>Grade {grade} · {englishClass}{shareClasses.length > 0 ? ` + ${shareClasses.join(', ')}` : ''}</strong></p></div>
         </div>
         <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">{lang === 'ko' ? '취소' : 'Cancel'}</button>

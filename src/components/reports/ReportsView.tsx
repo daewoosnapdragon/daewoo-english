@@ -1,33 +1,66 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useSemesters } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { FileText, Loader2, Printer, ChevronDown, ChevronRight, Save, Users, User } from 'lucide-react'
+import { Loader2, Printer, User, Users } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
 
 const DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language'] as const
-const DOMAIN_LABELS: Record<string, { en: string; ko: string }> = {
-  reading: { en: 'Reading', ko: '읽기' },
-  phonics: { en: 'Phonics', ko: '파닉스' },
-  writing: { en: 'Writing', ko: '쓰기' },
-  speaking: { en: 'Speaking', ko: '말하기' },
-  language: { en: 'Language', ko: '언어' },
+type Domain = typeof DOMAINS[number]
+const DOMAIN_HEADERS: Record<string, string> = {
+  reading: 'Reading', phonics: 'Phonics &\nFoundational\nSkills', writing: 'Writing',
+  speaking: 'Speaking &\nListening', language: 'Language\nStandards',
+}
+const DOMAIN_PRINT: Record<string, string> = {
+  reading: 'Reading', phonics: 'Phonics &<br>Foundational<br>Skills', writing: 'Writing',
+  speaking: 'Speaking &<br>Listening', language: 'Language<br>Standards',
 }
 
-interface DomainGrade {
-  domain: string; average: number; letterGrade: string; assessmentCount: number
+const GRADING_SCALE = [
+  { letter: 'A+', min: 97 }, { letter: 'A', min: 93 }, { letter: 'A-', min: 90 },
+  { letter: 'B+', min: 87 }, { letter: 'B', min: 83 }, { letter: 'B', min: 83 },
+  { letter: 'B-', min: 80 }, { letter: 'C+', min: 77 }, { letter: 'C', min: 73 },
+  { letter: 'C-', min: 70 }, { letter: 'D+', min: 67 }, { letter: 'D', min: 63 },
+  { letter: 'D-', min: 60 }, { letter: 'E', min: 0 },
+]
+const SCALE_DISPLAY = [
+  { letter: 'A+', range: '97-100%' }, { letter: 'A', range: '93-96%' }, { letter: 'A-', range: '90-92%' },
+  { letter: 'B+', range: '87-89%' }, { letter: 'B', range: '83-86%' }, { letter: 'B-', range: '80-82%' },
+  { letter: 'C+', range: '77-79%' }, { letter: 'C', range: '73-76%' }, { letter: 'C-', range: '70-72%' },
+  { letter: 'D+', range: '67-69%' }, { letter: 'D', range: '63-66%' }, { letter: 'D-', range: '60-62%' },
+  { letter: 'E', range: '0-59%' },
+]
+
+function getLetterGrade(score: number): string {
+  const r = Math.round(score)
+  for (const tier of GRADING_SCALE) { if (r >= tier.min) return tier.letter }
+  return 'E'
 }
-interface ReportData {
-  student: any; domainGrades: DomainGrade[]; overallAvg: number; overallLetter: string
-  attendance: { present: number; absent: number; tardy: number; total: number }
-  behaviorSummary: { positive: number; concern: number; negative: number; total: number }
-  readingFluency: { cwpm: number; accuracy: number; passageLevel: string; date: string } | null
+
+// Months for spring semester (Mar-Jul) and fall semester (Sep-Dec, Jan-Feb)
+function getSemesterMonths(semesterName: string): { month: number; label: string }[] {
+  const lower = semesterName.toLowerCase()
+  if (lower.includes('spring')) return [{ month: 3, label: 'March' }, { month: 4, label: 'April' }, { month: 5, label: 'May' }, { month: 6, label: 'June' }, { month: 7, label: 'July' }]
+  return [{ month: 9, label: 'September' }, { month: 10, label: 'October' }, { month: 11, label: 'November' }, { month: 12, label: 'December' }, { month: 1, label: 'January' }, { month: 2, label: 'February' }]
+}
+
+interface ReportCardData {
+  student: any
+  monthlyGrades: Record<number, Record<string, number | null>> // month -> domain -> avg%
+  behaviorGrades: Record<number, string> // month -> letter
+  summativeScores: { label: string; score: number | null; max: number }[]
+  finalGrades: Record<string, number | null> // domain -> avg%
+  overallGrade: number | null
+  classAverages: Record<string, number | null> // domain -> class avg%
+  classOverall: number | null
   comment: string
+  teacherName: string
+  semesterName: string
 }
 
 export default function ReportsView() {
@@ -41,14 +74,13 @@ export default function ReportsView() {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const { semesters } = useSemesters()
   const [selectedSemesterId, setSelectedSemesterId] = useState<string | null>(null)
-  const [gradingScale, setGradingScale] = useState<any[]>([])
 
   const isTeacher = currentTeacher?.role === 'teacher'
   const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
     ? [currentTeacher.english_class as EnglishClass] : ENGLISH_CLASSES
   const { students } = useStudents({ grade: selectedGrade, english_class: selectedClass })
+  const selectedSemester = semesters.find((s: any) => s.id === selectedSemesterId)
 
-  // Set default semester
   useEffect(() => {
     if (semesters.length > 0 && !selectedSemesterId) {
       const active = semesters.find((s: any) => s.is_active)
@@ -56,58 +88,37 @@ export default function ReportsView() {
     }
   }, [semesters, selectedSemesterId])
 
-  // Load grading scale
-  useEffect(() => {
-    ;(async () => {
-      const { data } = await supabase.from('school_settings').select('grading_scale').limit(1).single()
-      if (data?.grading_scale) setGradingScale(data.grading_scale)
-    })()
-  }, [])
-
   return (
     <div className="animate-fade-in">
       <div className="px-10 pt-8 pb-5 bg-surface border-b border-border">
         <h2 className="font-display text-[26px] font-semibold tracking-tight text-navy">{t.reports.title}</h2>
-        <p className="text-text-secondary text-sm mt-1">Generate progress reports and report cards</p>
+        <p className="text-text-secondary text-sm mt-1">Generate report cards matching school format</p>
         <div className="flex gap-1 mt-4">
-          <button onClick={() => setMode('individual')}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'individual' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
-            <User size={14} /> Individual Report
-          </button>
-          <button onClick={() => setMode('class')}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'class' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
-            <Users size={14} /> Class Summary
-          </button>
+          <button onClick={() => setMode('individual')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'individual' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><User size={14} /> Report Card</button>
+          <button onClick={() => setMode('class')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'class' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><Users size={14} /> Class Summary</button>
         </div>
       </div>
 
       <div className="px-10 py-6">
-        {/* Controls */}
         <div className="flex items-center gap-3 mb-6 flex-wrap">
           {semesters.length > 0 && (
-            <select value={selectedSemesterId || ''} onChange={(e: any) => setSelectedSemesterId(e.target.value)}
-              className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
-              {semesters.map((sem: any) => <option key={sem.id} value={sem.id}>{lang === 'ko' ? sem.name_ko || sem.name : sem.name}</option>)}
+            <select value={selectedSemesterId || ''} onChange={(e: any) => setSelectedSemesterId(e.target.value)} className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
+              {semesters.map((sem: any) => <option key={sem.id} value={sem.id}>{sem.name}</option>)}
             </select>
           )}
-          <select value={selectedGrade} onChange={(e: any) => setSelectedGrade(Number(e.target.value) as Grade)}
-            className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
+          <select value={selectedGrade} onChange={(e: any) => setSelectedGrade(Number(e.target.value) as Grade)} className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
             {GRADES.map((g: any) => <option key={g} value={g}>Grade {g}</option>)}
           </select>
           <div className="flex gap-1">
             {availableClasses.map((cls: any) => (
-              <button key={cls} onClick={() => setSelectedClass(cls)}
-                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
-                style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>
-                {cls}
-              </button>
+              <button key={cls} onClick={() => setSelectedClass(cls)} className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
+                style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>{cls}</button>
             ))}
           </div>
-          {mode === 'individual' && students.length > 0 && (
+          {mode === 'individual' && (
             <>
               <div className="w-px h-6 bg-border" />
-              <select value={selectedStudentId || ''} onChange={(e: any) => setSelectedStudentId(e.target.value || null)}
-                className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy min-w-[200px]">
+              <select value={selectedStudentId || ''} onChange={(e: any) => setSelectedStudentId(e.target.value || null)} className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy min-w-[200px]">
                 <option value="">Select student...</option>
                 {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name} ({s.korean_name})</option>)}
               </select>
@@ -115,261 +126,340 @@ export default function ReportsView() {
           )}
         </div>
 
-        {mode === 'individual' && selectedStudentId && selectedSemesterId && (
-          <IndividualReport studentId={selectedStudentId} semesterId={selectedSemesterId} students={students} gradingScale={gradingScale} lang={lang} />
+        {mode === 'individual' && selectedStudentId && selectedSemesterId && selectedSemester && (
+          <IndividualReport studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allStudents={students} lang={lang} selectedClass={selectedClass} />
         )}
         {mode === 'individual' && !selectedStudentId && (
-          <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a student to generate their report.</div>
+          <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a student to generate their report card.</div>
         )}
-        {mode === 'class' && selectedSemesterId && (
-          <ClassSummary students={students} semesterId={selectedSemesterId} gradingScale={gradingScale} lang={lang} selectedClass={selectedClass} selectedGrade={selectedGrade} />
+        {mode === 'class' && selectedSemesterId && selectedSemester && (
+          <ClassSummary students={students} semesterId={selectedSemesterId} semester={selectedSemester} lang={lang} selectedClass={selectedClass} selectedGrade={selectedGrade} />
         )}
       </div>
     </div>
   )
 }
 
-// ─── Helper: Get Letter Grade ───────────────────────────────────────
+// ─── Individual Report Card ─────────────────────────────────────────
 
-function getLetterGrade(score: number, scale: any[]): string {
-  if (!scale || scale.length === 0) return ''
-  for (const tier of scale) {
-    if (score >= tier.min && score <= tier.max) return tier.letter
-  }
-  return scale[scale.length - 1]?.letter || 'E'
-}
-
-function letterColor(letter: string): string {
-  if (letter.startsWith('A')) return 'text-green-700'
-  if (letter.startsWith('B')) return 'text-blue-700'
-  if (letter.startsWith('C')) return 'text-amber-700'
-  if (letter.startsWith('D')) return 'text-orange-700'
-  return 'text-red-700'
-}
-
-// ─── Individual Report ──────────────────────────────────────────────
-
-function IndividualReport({ studentId, semesterId, students, gradingScale, lang }: {
-  studentId: string; semesterId: string; students: any[]; gradingScale: any[]; lang: LangKey
+function IndividualReport({ studentId, semesterId, semester, students, allStudents, lang, selectedClass }: {
+  studentId: string; semesterId: string; semester: any; students: any[]; allStudents: any[]; lang: LangKey; selectedClass: string
 }) {
   const { showToast, currentTeacher } = useApp()
-  const [report, setReport] = useState<ReportData | null>(null)
+  const [data, setData] = useState<ReportCardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [comment, setComment] = useState('')
   const [savingComment, setSavingComment] = useState(false)
-  const printRef = useRef<HTMLDivElement>(null)
 
   const loadReport = useCallback(async () => {
     setLoading(true)
     const student = students.find((s: any) => s.id === studentId)
     if (!student) { setLoading(false); return }
 
-    // 1. Get assessments + grades for this semester
-    const { data: assessments } = await supabase.from('assessments').select('*')
-      .eq('semester_id', semesterId).eq('grade', student.grade)
-    const { data: grades } = await supabase.from('grades').select('*, assessments(domain, max_score)')
-      .eq('student_id', studentId)
+    const months = getSemesterMonths(semester.name)
 
-    // Calculate domain averages
-    const domainGrades: DomainGrade[] = DOMAINS.map((domain) => {
-      const domainAssessments = (assessments || []).filter((a: any) => a.domain === domain)
-      const domainScores = domainAssessments.map((a: any) => {
-        const grade = (grades || []).find((g: any) => g.assessment_id === a.id)
-        if (!grade || grade.score == null || grade.is_exempt) return null
-        return (grade.score / a.max_score) * 100
-      }).filter((s: any) => s !== null) as number[]
-      const average = domainScores.length > 0 ? domainScores.reduce((a: number, b: number) => a + b, 0) / domainScores.length : 0
-      return { domain, average: Math.round(average * 10) / 10, letterGrade: domainScores.length > 0 ? getLetterGrade(average, gradingScale) : '—', assessmentCount: domainScores.length }
+    // 1. Get all assessments for this grade/class/semester
+    const { data: assessments } = await supabase.from('assessments').select('*')
+      .eq('semester_id', semesterId).eq('grade', student.grade).eq('english_class', selectedClass)
+    // Get all grades for this student
+    const { data: grades } = await supabase.from('grades').select('*').eq('student_id', studentId)
+    // Get all grades for class students (for class averages)
+    const { data: allGrades } = await supabase.from('grades').select('*').in('student_id', allStudents.map((s: any) => s.id))
+
+    // 2. Group assessments by month
+    const monthlyGrades: Record<number, Record<string, number | null>> = {}
+    const classMonthlyGrades: Record<number, Record<string, number[]>> = {}
+    months.forEach((m: any) => { monthlyGrades[m.month] = {}; classMonthlyGrades[m.month] = {} })
+    DOMAINS.forEach((d) => months.forEach((m: any) => { classMonthlyGrades[m.month][d] = [] }))
+
+    ;(assessments || []).forEach((a: any) => {
+      if (!a.date) return
+      const assessMonth = new Date(a.date + 'T00:00').getMonth() + 1
+      const matchMonth = months.find((m: any) => m.month === assessMonth)
+      if (!matchMonth) return
+
+      const studentGrade = (grades || []).find((g: any) => g.assessment_id === a.id)
+      if (studentGrade && studentGrade.score != null && !studentGrade.is_exempt) {
+        const pct = (studentGrade.score / a.max_score) * 100
+        if (!monthlyGrades[assessMonth][a.domain]) monthlyGrades[assessMonth][a.domain] = pct
+        else monthlyGrades[assessMonth][a.domain] = ((monthlyGrades[assessMonth][a.domain] as number) + pct) / 2
+      }
+
+      // Class averages
+      allStudents.forEach((s: any) => {
+        const sg = (allGrades || []).find((g: any) => g.assessment_id === a.id && g.student_id === s.id)
+        if (sg && sg.score != null && !sg.is_exempt) {
+          classMonthlyGrades[assessMonth][a.domain].push((sg.score / a.max_score) * 100)
+        }
+      })
     })
 
-    const scoredDomains = domainGrades.filter((d) => d.assessmentCount > 0)
-    const overallAvg = scoredDomains.length > 0 ? scoredDomains.reduce((a: number, d) => a + d.average, 0) / scoredDomains.length : 0
-    const overallLetter = scoredDomains.length > 0 ? getLetterGrade(overallAvg, gradingScale) : '—'
+    // 3. Behavior grades
+    const { data: behaviorData } = await supabase.from('monthly_behavior_grades').select('*')
+      .eq('student_id', studentId).eq('semester_id', semesterId)
+    const behaviorGrades: Record<number, string> = {}
+    ;(behaviorData || []).forEach((b: any) => { behaviorGrades[b.month] = b.grade })
 
-    // 2. Attendance
-    const { data: attendanceData } = await supabase.from('attendance').select('status').eq('student_id', studentId)
-    const attendance = {
-      present: (attendanceData || []).filter((a: any) => a.status === 'present').length,
-      absent: (attendanceData || []).filter((a: any) => a.status === 'absent').length,
-      tardy: (attendanceData || []).filter((a: any) => a.status === 'tardy').length,
-      total: (attendanceData || []).length,
+    // 4. Summative scores (Assessment A, B)
+    const { data: summData } = await supabase.from('summative_scores').select('*')
+      .eq('student_id', studentId).eq('semester_id', semesterId).order('assessment_label')
+    const summativeScores = (summData || []).map((s: any) => ({ label: s.assessment_label, score: s.score, max: s.max_score || 100 }))
+    if (summativeScores.length === 0) {
+      summativeScores.push({ label: 'Assessment A', score: null, max: 100 }, { label: 'Assessment B', score: null, max: 100 })
     }
 
-    // 3. Behavior summary
-    const { data: behaviorData } = await supabase.from('behavior_logs').select('type').eq('student_id', studentId)
-    const behaviorSummary = {
-      positive: (behaviorData || []).filter((b: any) => b.type === 'positive').length,
-      concern: (behaviorData || []).filter((b: any) => b.type === 'concern').length,
-      negative: (behaviorData || []).filter((b: any) => b.type === 'abc' || b.type === 'negative').length,
-      total: (behaviorData || []).length,
-    }
+    // 5. Final grades per domain (average of all monthly grades)
+    const finalGrades: Record<string, number | null> = {}
+    const classAverages: Record<string, number | null> = {}
+    DOMAINS.forEach((d) => {
+      const vals = months.map((m: any) => monthlyGrades[m.month][d]).filter((v: any) => v != null) as number[]
+      finalGrades[d] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : null
 
-    // 4. Reading fluency (latest)
-    const { data: readingData } = await supabase.from('reading_assessments').select('*')
-      .eq('student_id', studentId).order('date', { ascending: false }).limit(1)
-    const readingFluency = readingData && readingData[0] ? {
-      cwpm: Math.round(readingData[0].cwpm || 0),
-      accuracy: readingData[0].accuracy_rate || 0,
-      passageLevel: readingData[0].passage_level || '',
-      date: readingData[0].date,
-    } : null
+      const classVals = months.flatMap((m: any) => classMonthlyGrades[m.month][d])
+      classAverages[d] = classVals.length > 0 ? Math.round(classVals.reduce((a: number, b: number) => a + b, 0) / classVals.length * 10) / 10 : null
+    })
 
-    // 5. Teacher comment
-    const { data: commentData } = await supabase.from('comments').select('text')
-      .eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
-    const commentText = commentData?.text || ''
+    const scoredDomains = DOMAINS.filter((d) => finalGrades[d] != null)
+    const overallGrade = scoredDomains.length > 0 ? Math.round(scoredDomains.reduce((a: number, d) => a + (finalGrades[d] as number), 0) / scoredDomains.length * 10) / 10 : null
+    const classOverall = DOMAINS.filter((d) => classAverages[d] != null).length > 0
+      ? Math.round(DOMAINS.filter((d) => classAverages[d] != null).reduce((a: number, d) => a + (classAverages[d] as number), 0) / DOMAINS.filter((d) => classAverages[d] != null).length * 10) / 10 : null
 
-    setReport({ student, domainGrades, overallAvg: Math.round(overallAvg * 10) / 10, overallLetter, attendance, behaviorSummary, readingFluency, comment: commentText })
-    setComment(commentText)
+    // 6. Comment
+    const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
+
+    // Teacher name
+    const teacher = student.teacher_id ? (await supabase.from('teachers').select('name').eq('id', student.teacher_id).single()).data : null
+
+    setData({
+      student, monthlyGrades, behaviorGrades, summativeScores, finalGrades, overallGrade,
+      classAverages, classOverall, comment: commentData?.text || '',
+      teacherName: teacher?.name || currentTeacher?.name || '', semesterName: semester.name,
+    })
+    setComment(commentData?.text || '')
     setLoading(false)
-  }, [studentId, semesterId, students, gradingScale])
+  }, [studentId, semesterId, semester, students, allStudents, selectedClass, currentTeacher])
 
   useEffect(() => { loadReport() }, [loadReport])
 
   const saveComment = async () => {
     setSavingComment(true)
-    const { error } = await supabase.from('comments').upsert({
-      student_id: studentId, semester_id: semesterId, text: comment.trim(),
-      created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
-    }, { onConflict: 'student_id,semester_id' })
+    await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, text: comment.trim(), created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id' })
     setSavingComment(false)
-    if (error) showToast(`Error: ${error.message}`)
-    else showToast('Comment saved')
+    showToast('Comment saved')
   }
 
   const handlePrint = () => {
-    if (!report) return
-    const r = report
-    const domainRows = r.domainGrades.map((d) =>
-      `<tr><td style="padding:8px 12px;border:1px solid #ddd;font-weight:500">${DOMAIN_LABELS[d.domain]?.en || d.domain}</td>
-       <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:18px">${d.assessmentCount > 0 ? d.average.toFixed(1) + '%' : '—'}</td>
-       <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;font-weight:700;font-size:18px">${d.letterGrade}</td>
-       <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;color:#999">${d.assessmentCount} assessments</td></tr>`
+    if (!data) return
+    const d = data, s = d.student
+    const months = getSemesterMonths(d.semesterName)
+    const activeMonths = months.filter((m: any) => {
+      const hasData = DOMAINS.some((dom) => d.monthlyGrades[m.month]?.[dom] != null) || d.behaviorGrades[m.month]
+      return hasData
+    })
+    // Use active months or default to 3 months
+    const displayMonths = activeMonths.length > 0 ? activeMonths : months.slice(0, 3)
+
+    // Monthly grades rows
+    const monthRows = displayMonths.map((m: any) =>
+      `<tr><td style="padding:6px 8px;border:1px solid #999;font-weight:600;text-align:center">${m.label}</td>
+      ${DOMAINS.map((dom) => `<td style="padding:6px 8px;border:1px solid #999;text-align:center">${d.monthlyGrades[m.month]?.[dom] != null ? (d.monthlyGrades[m.month][dom] as number).toFixed(1) + '%' : ''}</td>`).join('')}
+      <td style="padding:6px 8px;border:1px solid #999;text-align:center;font-weight:600">${d.behaviorGrades[m.month] || ''}</td></tr>`
     ).join('')
+
+    // Summative row
+    const summRow = `<tr><td style="padding:6px 8px;border:1px solid #999;font-weight:600;text-align:center;font-size:11px">Unit / Module<br>Assessment</td>
+      <td colspan="3" style="padding:6px 8px;border:1px solid #999;text-align:center"><strong>${d.summativeScores[0]?.label || 'Assessment A'}</strong> ${d.summativeScores[0]?.score != null ? d.summativeScores[0].score + '%' : ''}</td>
+      <td colspan="3" style="padding:6px 8px;border:1px solid #999;text-align:center"><strong>${d.summativeScores[1]?.label || 'Assessment B'}</strong> ${d.summativeScores[1]?.score != null ? d.summativeScores[1].score + '%' : ''}</td></tr>`
+
+    // Final grades
+    const finalRow = `<tr style="background:#e8eef6"><td style="padding:8px;border:1px solid #999;font-weight:700;font-size:11px;text-align:center">${d.semesterName}<br>Final Grades</td>
+      ${DOMAINS.map((dom) => `<td style="padding:8px;border:1px solid #999;text-align:center;font-weight:700;font-size:14px">${d.finalGrades[dom] != null ? (d.finalGrades[dom] as number).toFixed(1) + '%' : ''}</td>`).join('')}
+      <td style="padding:8px;border:1px solid #999;text-align:center;font-weight:800;font-size:14px">Overall Grade<br>${d.overallGrade != null ? d.overallGrade.toFixed(1) + '%' : ''}</td></tr>`
+
+    // Chart SVG
+    const chartW = 420, chartH = 180, barW = 28, gap = 50
+    const domainLabels = ['Reading', 'Phonics &\nFoundational Skills', 'Writing', 'Speaking &\nListening', 'Language\nStandards', 'Average']
+    const studentVals = [...DOMAINS.map((dom) => d.finalGrades[dom]), d.overallGrade]
+    const classVals = [...DOMAINS.map((dom) => d.classAverages[dom]), d.classOverall]
+    const minY = 70, maxY = 100
+    const scaleY = (v: number | null) => v != null ? chartH - ((Math.min(Math.max(v, minY), maxY) - minY) / (maxY - minY)) * chartH : chartH
+
+    let chartBars = ''
+    for (let i = 0; i < 6; i++) {
+      const x = 40 + i * gap
+      const sv = studentVals[i], cv = classVals[i]
+      if (sv != null) chartBars += `<rect x="${x}" y="${scaleY(sv)}" width="${barW}" height="${chartH - scaleY(sv)}" fill="#4a5899" rx="2"/><text x="${x + barW / 2}" y="${scaleY(sv) - 4}" text-anchor="middle" font-size="8" font-weight="700" fill="#333">${sv.toFixed(1)}%</text>`
+      if (cv != null) chartBars += `<rect x="${x + barW + 2}" y="${scaleY(cv)}" width="${barW}" height="${chartH - scaleY(cv)}" fill="#c77878" rx="2"/><text x="${x + barW + 2 + barW / 2}" y="${scaleY(cv) - 4}" text-anchor="middle" font-size="8" font-weight="700" fill="#333">${cv.toFixed(1)}%</text>`
+    }
+    // Y axis labels
+    let yLabels = ''
+    for (let v = minY; v <= maxY; v += 5) { const y = scaleY(v); yLabels += `<text x="32" y="${y + 3}" text-anchor="end" font-size="8" fill="#666">${v}%</text><line x1="36" y1="${y}" x2="${40 + 5 * gap + barW * 2 + 10}" y2="${y}" stroke="#ddd" stroke-width="0.5"/>` }
+    // X axis labels
+    let xLabels = ''
+    domainLabels.forEach((label, i) => {
+      const x = 40 + i * gap + barW
+      const lines = label.split('\n')
+      lines.forEach((line: string, li: number) => { xLabels += `<text x="${x}" y="${chartH + 12 + li * 9}" text-anchor="middle" font-size="7" fill="#333">${line}</text>` })
+    })
+
+    const chartSvg = `<svg width="${chartW}" height="${chartH + 50}" viewBox="0 0 ${chartW} ${chartH + 50}">
+      <text x="${chartW / 2}" y="-8" text-anchor="middle" font-size="12" font-weight="700">Student Average Vs. Class Average</text>
+      <text x="${chartW / 2}" y="4" text-anchor="middle" font-size="9">·${s.english_name}·${selectedClass} Class</text>
+      <g transform="translate(0,14)">${yLabels}${chartBars}${xLabels}
+      <rect x="${chartW - 100}" y="0" width="10" height="10" fill="#4a5899" rx="1"/><text x="${chartW - 86}" y="9" font-size="8">${s.english_name}</text>
+      <rect x="${chartW - 100}" y="14" width="10" height="10" fill="#c77878" rx="1"/><text x="${chartW - 86}" y="23" font-size="8">${selectedClass} Class</text></g></svg>`
+
+    // Grading scale table
+    const scaleRows = SCALE_DISPLAY.map((r: any) => `<tr><td style="padding:2px 6px;border:1px solid #999;font-weight:600;text-align:center;font-size:11px">${r.letter}</td><td style="padding:2px 6px;border:1px solid #999;font-size:11px;text-align:center">${r.range}</td></tr>`).join('')
 
     const printWin = window.open('', '_blank')
     if (!printWin) return
-    printWin.document.write(`<html><head><title>Report Card — ${r.student.english_name}</title>
-    <style>body{font-family:sans-serif;padding:30px;max-width:800px;margin:auto}table{border-collapse:collapse;width:100%}h1{margin-bottom:0}h2{color:#1e3a5f;border-bottom:2px solid #1e3a5f;padding-bottom:4px;margin-top:24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}.box{border:1px solid #ddd;border-radius:8px;padding:12px}.label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#999;margin-bottom:4px}.value{font-size:20px;font-weight:700;color:#1e3a5f}@media print{body{padding:15px}}</style></head><body>
-    <div style="text-align:center;margin-bottom:20px"><h1 style="color:#1e3a5f">Progress Report</h1><p style="color:#666">Daewoo Elementary School English Program</p></div>
-    <div class="grid"><div class="box"><div class="label">Student</div><div class="value">${r.student.english_name}</div><div style="color:#666">${r.student.korean_name} · Grade ${r.student.grade}</div></div>
-    <div class="box"><div class="label">Overall Grade</div><div class="value" style="font-size:32px">${r.overallLetter}</div><div style="color:#666">${r.overallAvg}%</div></div></div>
-    <h2>Academic Performance</h2>
-    <table><thead><tr style="background:#f5f5f5"><th style="padding:8px 12px;border:1px solid #ddd;text-align:left">Domain</th><th style="padding:8px 12px;border:1px solid #ddd;text-align:center">Score</th><th style="padding:8px 12px;border:1px solid #ddd;text-align:center">Grade</th><th style="padding:8px 12px;border:1px solid #ddd;text-align:center">Based On</th></tr></thead><tbody>${domainRows}
-    <tr style="background:#f0f4f8;font-weight:700"><td style="padding:8px 12px;border:1px solid #ddd">Overall</td><td style="padding:8px 12px;border:1px solid #ddd;text-align:center;font-size:18px">${r.overallAvg}%</td><td style="padding:8px 12px;border:1px solid #ddd;text-align:center;font-size:18px">${r.overallLetter}</td><td style="padding:8px 12px;border:1px solid #ddd"></td></tr></tbody></table>
-    <h2>Attendance</h2><div class="grid"><div class="box"><div class="label">Present</div><div class="value">${r.attendance.present}</div></div><div class="box"><div class="label">Absent</div><div class="value" style="color:#dc2626">${r.attendance.absent}</div></div><div class="box"><div class="label">Tardy</div><div class="value" style="color:#f59e0b">${r.attendance.tardy}</div></div><div class="box"><div class="label">Days Recorded</div><div class="value">${r.attendance.total}</div></div></div>
-    ${r.readingFluency ? `<h2>Reading Fluency</h2><div class="grid"><div class="box"><div class="label">CWPM</div><div class="value">${r.readingFluency.cwpm}</div></div><div class="box"><div class="label">Accuracy</div><div class="value">${r.readingFluency.accuracy.toFixed(1)}%</div></div><div class="box"><div class="label">Passage Level</div><div class="value">${r.readingFluency.passageLevel || '—'}</div></div><div class="box"><div class="label">Assessed</div><div class="value" style="font-size:14px">${new Date(r.readingFluency.date).toLocaleDateString()}</div></div></div>` : ''}
-    ${comment ? `<h2>Teacher Comments</h2><p style="line-height:1.6;white-space:pre-wrap">${comment}</p>` : ''}
-    <div style="margin-top:40px;border-top:1px solid #ddd;padding-top:12px;color:#999;font-size:11px;text-align:center">Generated ${new Date().toLocaleDateString()} · Daewoo Elementary School English Program</div>
+    printWin.document.write(`<html><head><title>Report Card — ${s.english_name}</title>
+    <style>body{font-family:'Segoe UI',Arial,sans-serif;padding:20px;max-width:850px;margin:auto;color:#222;font-size:12px}
+    .banner{background:#1e3a5f;color:white;text-align:center;padding:12px;font-size:22px;font-weight:700;border-radius:6px;font-family:Georgia,serif;margin-bottom:12px}
+    table{border-collapse:collapse;width:100%}
+    .info-table td{padding:3px 8px;font-size:12px;border:none}
+    .info-label{font-weight:700;width:100px}
+    .school-info{text-align:right}
+    .school-name{font-weight:700;font-size:14px}
+    .section{margin-top:16px;border:2px solid #1e3a5f;border-radius:6px;overflow:hidden}
+    .section-title{background:#1e3a5f;color:white;text-align:center;padding:6px;font-size:15px;font-weight:700;font-family:Georgia,serif}
+    .chart-section{display:flex;gap:12px;margin-top:16px;align-items:flex-start}
+    .comment-section{border:2px solid #1e3a5f;border-radius:6px;overflow:hidden;margin-top:16px}
+    .comment-title{background:#1e3a5f;color:white;text-align:center;padding:6px;font-size:15px;font-weight:700;font-family:Georgia,serif}
+    .comment-body{padding:12px;min-height:100px;line-height:1.6;white-space:pre-wrap;font-size:12px}
+    @media print{body{padding:10px;font-size:11px}}</style></head><body>
+    <div class="banner">${d.semesterName} Report Card</div>
+    <div style="text-align:center;font-weight:600;margin-bottom:8px">Student Information</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <table class="info-table" style="width:auto">
+        <tr><td class="info-label">Korean Name</td><td>${s.korean_name}</td></tr>
+        <tr><td class="info-label">English Name</td><td>${s.english_name}</td></tr>
+        <tr><td class="info-label">Grade</td><td>${s.grade}</td><td class="info-label">Team Manager</td><td>Victoria Park</td></tr>
+        <tr><td class="info-label">Korean Class</td><td>${s.korean_class}</td><td class="info-label">Principal</td><td>Kwak Cheol Ok</td></tr>
+        <tr><td class="info-label">Class Number</td><td>${s.class_number}</td></tr>
+        <tr><td class="info-label">English Class</td><td>${s.english_class}</td></tr>
+        <tr><td class="info-label">Teacher</td><td>${d.teacherName}</td></tr>
+      </table>
+      <div class="school-info"><div class="school-name">Daewoo Elementary School</div><div>English Program<br><em>Growing together through English.</em></div></div>
+    </div>
+    <div class="section"><div class="section-title">${d.semesterName} Monthly Grades</div>
+    <table><thead><tr style="background:#f0f0f0">
+      <th style="padding:6px 8px;border:1px solid #999;font-size:11px;font-weight:700">Month</th>
+      ${DOMAINS.map((dom) => `<th style="padding:6px 8px;border:1px solid #999;font-size:10px;font-weight:700;text-align:center">${DOMAIN_PRINT[dom]}</th>`).join('')}
+      <th style="padding:6px 8px;border:1px solid #999;font-size:11px;font-weight:700;text-align:center">Behavior</th>
+    </tr></thead><tbody>${monthRows}${summRow}</tbody></table></div>
+    <div class="section" style="margin-top:8px"><table><thead><tr style="background:#e8eef6">
+      <th style="padding:8px;border:1px solid #999;font-size:11px">${d.semesterName}<br>Final Grades</th>
+      ${DOMAINS.map((dom) => `<th style="padding:8px;border:1px solid #999;font-size:10px;text-align:center">${DOMAIN_PRINT[dom]}</th>`).join('')}
+      <th style="padding:8px;border:1px solid #999;font-size:11px;text-align:center">Overall Grade</th>
+    </tr></thead><tbody><tr>
+      <td style="border:1px solid #999"></td>
+      ${DOMAINS.map((dom) => `<td style="padding:8px;border:1px solid #999;text-align:center;font-weight:700;font-size:14px">${d.finalGrades[dom] != null ? (d.finalGrades[dom] as number).toFixed(1) + '%' : ''}</td>`).join('')}
+      <td style="padding:8px;border:1px solid #999;text-align:center;font-weight:800;font-size:16px">${d.overallGrade != null ? d.overallGrade.toFixed(1) + '%' : ''}</td>
+    </tr></tbody></table></div>
+    <div class="chart-section"><div style="flex:1">${chartSvg}</div><div><table style="width:auto"><thead><tr style="background:#f0f0f0"><th colspan="2" style="padding:4px 8px;border:1px solid #999;font-size:11px;font-weight:700">Grading Scale</th></tr></thead><tbody>${scaleRows}</tbody></table></div></div>
+    <div class="comment-section"><div class="comment-title">Teacher Comment</div><div class="comment-body">${comment || ''}</div></div>
     </body></html>`)
     printWin.document.close()
     printWin.print()
   }
 
   if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
-  if (!report) return <div className="py-12 text-center text-text-tertiary">Could not load report data.</div>
+  if (!data) return <div className="py-12 text-center text-text-tertiary">Could not load report data.</div>
 
-  const r = report
+  const d = data, s = d.student
+  const months = getSemesterMonths(d.semesterName)
+  const displayMonths = months.filter((m: any) => DOMAINS.some((dom) => d.monthlyGrades[m.month]?.[dom] != null) || d.behaviorGrades[m.month]).length > 0
+    ? months.filter((m: any) => DOMAINS.some((dom) => d.monthlyGrades[m.month]?.[dom] != null) || d.behaviorGrades[m.month])
+    : months.slice(0, 3)
 
   return (
-    <div className="space-y-6">
-      {/* Print button */}
-      <div className="flex justify-end">
-        <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt">
-          <Printer size={15} /> Print Report Card
-        </button>
-      </div>
+    <div className="space-y-5">
+      <div className="flex justify-end"><button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt"><Printer size={15} /> Print Report Card</button></div>
 
-      {/* Student header + overall grade */}
-      <div className="bg-surface border border-border rounded-xl overflow-hidden">
-        <div className="px-6 py-5 bg-accent-light border-b border-border flex items-center justify-between">
-          <div>
-            <h3 className="font-display text-xl font-semibold text-navy">{r.student.english_name} <span className="text-text-tertiary font-normal text-[16px]">{r.student.korean_name}</span></h3>
-            <p className="text-[12px] text-text-secondary mt-0.5">Grade {r.student.grade} · {r.student.english_class} · #{r.student.class_number}</p>
+      {/* Report card preview */}
+      <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
+        {/* Banner */}
+        <div className="bg-navy text-white text-center py-3 text-[18px] font-display font-bold">{d.semesterName} Report Card</div>
+
+        {/* Student info */}
+        <div className="px-6 py-4 flex justify-between items-start border-b border-border">
+          <div className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-4 gap-y-1 text-[12px]">
+            <span className="font-bold">Korean Name</span><span>{s.korean_name}</span><span className="font-bold">Team Manager</span><span>Victoria Park</span>
+            <span className="font-bold">English Name</span><span>{s.english_name}</span><span className="font-bold">Principal</span><span>Kwak Cheol Ok</span>
+            <span className="font-bold">Grade</span><span>{s.grade}</span><span></span><span></span>
+            <span className="font-bold">Korean Class</span><span>{s.korean_class}</span><span></span><span></span>
+            <span className="font-bold">Class Number</span><span>{s.class_number}</span><span></span><span></span>
+            <span className="font-bold">English Class</span><span>{s.english_class}</span><span></span><span></span>
+            <span className="font-bold">Teacher</span><span>{d.teacherName}</span><span></span><span></span>
           </div>
-          <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Overall</p>
-            <p className={`font-display text-4xl font-bold ${letterColor(r.overallLetter)}`}>{r.overallLetter}</p>
-            <p className="text-[13px] text-text-secondary font-semibold">{r.overallAvg}%</p>
+          <div className="text-right"><p className="font-bold text-[14px]">Daewoo Elementary School</p><p className="text-[12px] text-text-secondary">English Program<br/><em>Growing together through English.</em></p></div>
+        </div>
+
+        {/* Monthly grades table */}
+        <div className="px-6 py-4">
+          <div className="border border-navy rounded-lg overflow-hidden">
+            <div className="bg-navy text-white text-center py-2 text-[14px] font-bold">{d.semesterName} Monthly Grades</div>
+            <table className="w-full text-[12px]">
+              <thead><tr className="bg-surface-alt">
+                <th className="px-3 py-2 border border-border text-center font-bold w-20">Month</th>
+                {DOMAINS.map((dom) => <th key={dom} className="px-2 py-2 border border-border text-center font-bold text-[10px]" style={{ whiteSpace: 'pre-wrap' }}>{DOMAIN_HEADERS[dom]}</th>)}
+                <th className="px-2 py-2 border border-border text-center font-bold">Behavior</th>
+              </tr></thead>
+              <tbody>
+                {displayMonths.map((m: any) => (
+                  <tr key={m.month}>
+                    <td className="px-3 py-2 border border-border text-center font-semibold">{m.label}</td>
+                    {DOMAINS.map((dom) => <td key={dom} className="px-2 py-2 border border-border text-center">{d.monthlyGrades[m.month]?.[dom] != null ? `${(d.monthlyGrades[m.month][dom] as number).toFixed(1)}%` : ''}</td>)}
+                    <td className="px-2 py-2 border border-border text-center font-semibold">{d.behaviorGrades[m.month] || ''}</td>
+                  </tr>
+                ))}
+                <tr className="bg-surface-alt">
+                  <td className="px-3 py-2 border border-border text-center font-bold text-[10px]">Unit / Module<br/>Assessment</td>
+                  <td colSpan={3} className="px-2 py-2 border border-border text-center"><strong>{d.summativeScores[0]?.label}</strong> {d.summativeScores[0]?.score != null ? `${d.summativeScores[0].score}%` : ''}</td>
+                  <td colSpan={3} className="px-2 py-2 border border-border text-center"><strong>{d.summativeScores[1]?.label}</strong> {d.summativeScores[1]?.score != null ? `${d.summativeScores[1].score}%` : ''}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Domain grades */}
-        <div className="p-6">
-          <h4 className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Academic Performance by Domain</h4>
-          <div className="space-y-2">
-            {r.domainGrades.map((d) => (
-              <div key={d.domain} className="flex items-center gap-4 py-2 border-b border-border/50 last:border-0">
-                <span className="w-24 text-[13px] font-medium capitalize">{DOMAIN_LABELS[d.domain]?.en || d.domain}</span>
-                <div className="flex-1">
-                  <div className="h-5 bg-surface-alt rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{
-                      width: `${Math.min(d.average, 100)}%`,
-                      backgroundColor: d.average >= 90 ? '#22C55E' : d.average >= 80 ? '#3B82F6' : d.average >= 70 ? '#F59E0B' : '#EF4444'
-                    }} />
-                  </div>
-                </div>
-                <span className="w-14 text-right text-[13px] font-semibold">{d.assessmentCount > 0 ? `${d.average}%` : '—'}</span>
-                <span className={`w-8 text-right text-[15px] font-bold ${letterColor(d.letterGrade)}`}>{d.letterGrade}</span>
-                <span className="w-20 text-right text-[10px] text-text-tertiary">{d.assessmentCount} assessed</span>
+        {/* Final grades */}
+        <div className="px-6 pb-4">
+          <div className="border border-navy rounded-lg overflow-hidden">
+            <table className="w-full text-[12px]">
+              <thead><tr className="bg-accent-light">
+                <th className="px-3 py-2 border border-border font-bold text-[11px]">{d.semesterName}<br/>Final Grades</th>
+                {DOMAINS.map((dom) => <th key={dom} className="px-2 py-2 border border-border text-center font-bold text-[10px]" style={{ whiteSpace: 'pre-wrap' }}>{DOMAIN_HEADERS[dom]}</th>)}
+                <th className="px-2 py-2 border border-border text-center font-bold">Overall Grade</th>
+              </tr></thead>
+              <tbody><tr>
+                <td className="border border-border"></td>
+                {DOMAINS.map((dom) => <td key={dom} className="px-2 py-3 border border-border text-center font-bold text-[15px]">{d.finalGrades[dom] != null ? `${(d.finalGrades[dom] as number).toFixed(1)}%` : ''}</td>)}
+                <td className="px-2 py-3 border border-border text-center font-bold text-[18px] text-navy">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}%` : ''}</td>
+              </tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Comment */}
+        <div className="px-6 pb-6">
+          <div className="border border-navy rounded-lg overflow-hidden">
+            <div className="bg-navy text-white text-center py-2 text-[14px] font-bold">Teacher Comment</div>
+            <div className="p-4">
+              <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={5}
+                placeholder="Write comments about this student's progress..."
+                className="w-full px-3 py-2.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none leading-relaxed" />
+              <div className="flex justify-end mt-2">
+                <button onClick={saveComment} disabled={savingComment}
+                  className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                  {savingComment ? 'Saving...' : 'Save Comment'}
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
-        {/* Attendance */}
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <h4 className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Attendance</h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div><span className="text-[10px] text-text-tertiary">Present</span><p className="text-xl font-bold text-green-600">{r.attendance.present}</p></div>
-            <div><span className="text-[10px] text-text-tertiary">Absent</span><p className="text-xl font-bold text-red-600">{r.attendance.absent}</p></div>
-            <div><span className="text-[10px] text-text-tertiary">Tardy</span><p className="text-xl font-bold text-amber-600">{r.attendance.tardy}</p></div>
-            <div><span className="text-[10px] text-text-tertiary">Total Days</span><p className="text-xl font-bold text-navy">{r.attendance.total}</p></div>
-          </div>
-        </div>
-
-        {/* Behavior */}
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <h4 className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Behavior Summary</h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div><span className="text-[10px] text-text-tertiary">Positive</span><p className="text-xl font-bold text-green-600">{r.behaviorSummary.positive}</p></div>
-            <div><span className="text-[10px] text-text-tertiary">Concerns</span><p className="text-xl font-bold text-amber-600">{r.behaviorSummary.concern}</p></div>
-            <div><span className="text-[10px] text-text-tertiary">Negative</span><p className="text-xl font-bold text-red-600">{r.behaviorSummary.negative}</p></div>
-            <div><span className="text-[10px] text-text-tertiary">Total Entries</span><p className="text-xl font-bold text-navy">{r.behaviorSummary.total}</p></div>
-          </div>
-        </div>
-
-        {/* Reading Fluency */}
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <h4 className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Reading Fluency</h4>
-          {r.readingFluency ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div><span className="text-[10px] text-text-tertiary">CWPM</span><p className="text-xl font-bold text-navy">{r.readingFluency.cwpm}</p></div>
-              <div><span className="text-[10px] text-text-tertiary">Accuracy</span><p className={`text-xl font-bold ${r.readingFluency.accuracy >= 95 ? 'text-green-600' : r.readingFluency.accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{r.readingFluency.accuracy.toFixed(1)}%</p></div>
-              <div><span className="text-[10px] text-text-tertiary">Passage Level</span><p className="text-sm font-semibold">{r.readingFluency.passageLevel || '—'}</p></div>
-              <div><span className="text-[10px] text-text-tertiary">Last Assessed</span><p className="text-sm font-semibold">{new Date(r.readingFluency.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p></div>
             </div>
-          ) : (
-            <p className="text-text-tertiary text-sm">No reading data yet.</p>
-          )}
+          </div>
         </div>
-      </div>
-
-      {/* Teacher comment */}
-      <div className="bg-surface border border-border rounded-xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold">Teacher Comments</h4>
-          <button onClick={saveComment} disabled={savingComment}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-            {savingComment ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save Comment
-          </button>
-        </div>
-        <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={4}
-          placeholder="Write overall comments about this student's progress, strengths, and areas for growth..."
-          className="w-full px-3 py-2.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none leading-relaxed" />
       </div>
     </div>
   )
@@ -377,8 +467,8 @@ function IndividualReport({ studentId, semesterId, students, gradingScale, lang 
 
 // ─── Class Summary ──────────────────────────────────────────────────
 
-function ClassSummary({ students, semesterId, gradingScale, lang, selectedClass, selectedGrade }: {
-  students: any[]; semesterId: string; gradingScale: any[]; lang: LangKey; selectedClass: string; selectedGrade: number
+function ClassSummary({ students, semesterId, semester, lang, selectedClass, selectedGrade }: {
+  students: any[]; semesterId: string; semester: any; lang: LangKey; selectedClass: string; selectedGrade: number
 }) {
   const [summaries, setSummaries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -387,15 +477,12 @@ function ClassSummary({ students, semesterId, gradingScale, lang, selectedClass,
     if (students.length === 0) { setLoading(false); return }
     ;(async () => {
       setLoading(true)
-      // Load all assessments for this semester/grade
       const { data: assessments } = await supabase.from('assessments').select('*')
-        .eq('semester_id', semesterId).eq('grade', selectedGrade)
-      // Load all grades for these students
-      const { data: allGrades } = await supabase.from('grades').select('*')
-        .in('student_id', students.map((s: any) => s.id))
+        .eq('semester_id', semesterId).eq('grade', selectedGrade).eq('english_class', selectedClass)
+      const { data: allGrades } = await supabase.from('grades').select('*').in('student_id', students.map((s: any) => s.id))
 
       const results = students.map((s: any) => {
-        const domainAvgs: Record<string, number> = {}
+        const domainAvgs: Record<string, number | null> = {}
         let totalSum = 0, totalCount = 0
         DOMAINS.forEach((domain) => {
           const domainAssessments = (assessments || []).filter((a: any) => a.domain === domain)
@@ -405,102 +492,47 @@ function ClassSummary({ students, semesterId, gradingScale, lang, selectedClass,
             return (g.score / a.max_score) * 100
           }).filter((x: any) => x !== null) as number[]
           if (scores.length > 0) {
-            const avg = scores.reduce((a: number, b: number) => a + b, 0) / scores.length
-            domainAvgs[domain] = Math.round(avg * 10) / 10
-            totalSum += avg; totalCount++
-          }
+            const avg = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10
+            domainAvgs[domain] = avg; totalSum += avg; totalCount++
+          } else { domainAvgs[domain] = null }
         })
-        const overall = totalCount > 0 ? Math.round((totalSum / totalCount) * 10) / 10 : 0
-        return { student: s, domainAvgs, overall, letter: totalCount > 0 ? getLetterGrade(overall, gradingScale) : '—' }
+        const overall = totalCount > 0 ? Math.round((totalSum / totalCount) * 10) / 10 : null
+        return { student: s, domainAvgs, overall, letter: overall != null ? getLetterGrade(overall) : '—' }
       })
-
-      results.sort((a: any, b: any) => b.overall - a.overall)
+      results.sort((a: any, b: any) => (b.overall || 0) - (a.overall || 0))
       setSummaries(results)
       setLoading(false)
     })()
-  }, [students, semesterId, selectedGrade, gradingScale])
-
-  const handlePrint = () => {
-    const printWin = window.open('', '_blank')
-    if (!printWin) return
-    const rows = summaries.map((s: any, i: number) =>
-      `<tr><td style="padding:6px 8px;border:1px solid #ddd">${i + 1}</td>
-       <td style="padding:6px 8px;border:1px solid #ddd">${s.student.english_name} (${s.student.korean_name})</td>
-       ${DOMAINS.map((d) => `<td style="padding:6px 8px;border:1px solid #ddd;text-align:center">${s.domainAvgs[d] != null ? s.domainAvgs[d].toFixed(1) : '—'}</td>`).join('')}
-       <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;font-weight:700">${s.overall || '—'}</td>
-       <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;font-weight:700">${s.letter}</td></tr>`
-    ).join('')
-    printWin.document.write(`<html><head><title>Class Summary — ${selectedClass} Gr ${selectedGrade}</title><style>body{font-family:sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:11px}th{background:#f0f0f0;padding:6px 8px;border:1px solid #ddd}</style></head><body>
-    <h2>${selectedClass} — Grade ${selectedGrade} Class Summary</h2><p style="color:#666">${summaries.length} students · Printed ${new Date().toLocaleDateString()}</p>
-    <table><thead><tr><th>#</th><th>Student</th>${DOMAINS.map((d) => `<th>${d.charAt(0).toUpperCase() + d.slice(1)}</th>`).join('')}<th>Overall</th><th>Grade</th></tr></thead><tbody>${rows}</tbody></table></body></html>`)
-    printWin.document.close()
-    printWin.print()
-  }
+  }, [students, semesterId, selectedGrade, selectedClass])
 
   if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
 
-  // Class averages
-  const classAvgs: Record<string, number> = {}
-  DOMAINS.forEach((d) => {
-    const vals = summaries.filter((s: any) => s.domainAvgs[d] != null).map((s: any) => s.domainAvgs[d])
-    classAvgs[d] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : 0
-  })
-  const classOverall = summaries.filter((s: any) => s.overall > 0)
-  const classOverallAvg = classOverall.length > 0 ? Math.round(classOverall.reduce((a: number, s: any) => a + s.overall, 0) / classOverall.length * 10) / 10 : 0
-
   return (
-    <div className="space-y-4">
-      {/* Class averages */}
-      <div className="bg-accent-light border border-border rounded-xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold">Class Averages — {selectedClass} Grade {selectedGrade}</h4>
-          <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-border hover:bg-surface-alt">
-            <Printer size={13} /> Print
-          </button>
-        </div>
-        <div className="flex gap-4">
-          {DOMAINS.map((d) => (
-            <div key={d} className="text-center flex-1">
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold capitalize">{d}</p>
-              <p className="text-xl font-bold text-navy">{classAvgs[d] > 0 ? `${classAvgs[d]}%` : '—'}</p>
-            </div>
+    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+      <table className="w-full text-[13px]">
+        <thead><tr className="bg-surface-alt">
+          <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
+          <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
+          {DOMAINS.map((d) => <th key={d} className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">{DOMAIN_HEADERS[d].replace('\n', ' ')}</th>)}
+          <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Overall</th>
+          <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Grade</th>
+        </tr></thead>
+        <tbody>
+          {summaries.map((s: any, i: number) => (
+            <tr key={s.student.id} className="border-t border-border table-row-hover">
+              <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
+              <td className="px-4 py-2.5"><span className="font-medium">{s.student.english_name}</span><span className="text-text-tertiary ml-2 text-[11px]">{s.student.korean_name}</span></td>
+              {DOMAINS.map((d) => (
+                <td key={d} className="px-3 py-2.5 text-center">
+                  {s.domainAvgs[d] != null ? <span className={`font-semibold ${s.domainAvgs[d] >= 90 ? 'text-green-600' : s.domainAvgs[d] >= 80 ? 'text-blue-600' : s.domainAvgs[d] >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{s.domainAvgs[d].toFixed(1)}</span> : <span className="text-text-tertiary">—</span>}
+                </td>
+              ))}
+              <td className="px-4 py-2.5 text-center font-bold text-navy">{s.overall != null ? s.overall.toFixed(1) : '—'}</td>
+              <td className={`px-4 py-2.5 text-center font-bold text-[15px] ${s.letter.startsWith('A') ? 'text-green-700' : s.letter.startsWith('B') ? 'text-blue-700' : s.letter.startsWith('C') ? 'text-amber-700' : 'text-red-700'}`}>{s.letter}</td>
+            </tr>
           ))}
-          <div className="text-center flex-1 border-l border-border pl-4">
-            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Overall</p>
-            <p className="text-xl font-bold text-navy">{classOverallAvg > 0 ? `${classOverallAvg}%` : '—'}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Student table */}
-      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full text-[13px]">
-          <thead><tr className="bg-surface-alt">
-            <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
-            <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-            {DOMAINS.map((d) => <th key={d} className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold capitalize">{d}</th>)}
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Overall</th>
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Grade</th>
-          </tr></thead>
-          <tbody>
-            {summaries.map((s: any, i: number) => (
-              <tr key={s.student.id} className="border-t border-border table-row-hover">
-                <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
-                <td className="px-4 py-2.5"><span className="font-medium">{s.student.english_name}</span><span className="text-text-tertiary ml-2 text-[11px]">{s.student.korean_name}</span></td>
-                {DOMAINS.map((d) => (
-                  <td key={d} className="px-3 py-2.5 text-center">
-                    {s.domainAvgs[d] != null ? (
-                      <span className={`font-semibold ${s.domainAvgs[d] >= 90 ? 'text-green-600' : s.domainAvgs[d] >= 80 ? 'text-blue-600' : s.domainAvgs[d] >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{s.domainAvgs[d]}</span>
-                    ) : <span className="text-text-tertiary">—</span>}
-                  </td>
-                ))}
-                <td className="px-4 py-2.5 text-center font-bold text-navy">{s.overall > 0 ? s.overall : '—'}</td>
-                <td className={`px-4 py-2.5 text-center font-bold text-[15px] ${letterColor(s.letter)}`}>{s.letter}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+        </tbody>
+      </table>
     </div>
   )
 }

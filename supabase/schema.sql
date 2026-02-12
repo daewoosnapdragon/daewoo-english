@@ -102,7 +102,7 @@ CREATE TABLE semesters (
   name TEXT NOT NULL, -- e.g. "Fall 2025 Midterm Progress Reports"
   name_ko TEXT DEFAULT '',
   academic_year TEXT NOT NULL, -- e.g. "2025-2026"
-  type TEXT NOT NULL CHECK (type IN ('fall_mid', 'fall_final', 'spring_mid', 'spring_final')),
+  type TEXT NOT NULL CHECK (type IN ('fall_mid', 'fall_final', 'spring_mid', 'spring_final', 'fall', 'spring')),
   start_date DATE,
   end_date DATE,
   grades_due_date DATE,
