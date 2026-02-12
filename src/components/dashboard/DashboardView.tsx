@@ -1,247 +1,386 @@
 'use client'
 
+import { useState, useEffect, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { useClassCounts } from '@/hooks/useData'
+import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import {
-  Users, TrendingUp, CalendarClock, AlertTriangle,
-  ArrowRight, Clock, BookOpen, Settings
-} from 'lucide-react'
+import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
+
+const EVENT_TYPES = [
+  { value: 'lesson_plan', label: 'Lesson Plan', color: '#3B82F6', bg: 'bg-blue-100 text-blue-800' },
+  { value: 'day_off', label: 'Day Off', color: '#22C55E', bg: 'bg-green-100 text-green-800' },
+  { value: 'deadline', label: 'Deadline', color: '#EF4444', bg: 'bg-red-100 text-red-800' },
+  { value: 'meeting', label: 'Meeting', color: '#A855F7', bg: 'bg-purple-100 text-purple-800' },
+  { value: 'event', label: 'School Event', color: '#F59E0B', bg: 'bg-amber-100 text-amber-800' },
+  { value: 'testing', label: 'Testing', color: '#EC4899', bg: 'bg-pink-100 text-pink-800' },
+  { value: 'other', label: 'Other', color: '#6B7280', bg: 'bg-gray-100 text-gray-700' },
+]
+
+interface CalEvent { id: string; title: string; date: string; type: string; description: string; created_by: string | null; created_at: string }
+interface FlaggedEntry { id: string; student_id: string; date: string; type: string; note: string; time: string; behaviors: string[]; intensity: number; teacher_name: string; student_name: string; student_class: string; created_at: string }
 
 export default function DashboardView() {
-  const { t, language, currentTeacher } = useApp()
-  const { counts, loading } = useClassCounts()
-
-  // Calculate real totals from database
-  const totalStudents = counts.reduce((a, c) => a + c.count, 0)
-  const gradeBreakdown = [2, 3, 4, 5].map(g => ({
-    grade: g,
-    count: counts.filter(c => c.grade === g).reduce((a, c) => a + c.count, 0),
-  }))
-  const classBreakdown = ENGLISH_CLASSES.map(cls => ({
-    class: cls,
-    count: counts.filter(c => c.english_class === cls).reduce((a, c) => a + c.count, 0),
-  }))
+  const { language, currentTeacher } = useApp()
+  const isAdmin = currentTeacher?.role === 'admin'
 
   return (
     <div className="animate-fade-in">
-      {/* Header */}
-      <div className="px-10 pt-8 pb-6 bg-surface border-b border-border">
-        <h2 className="font-display text-[26px] font-semibold tracking-tight text-navy">
-          {t.dashboard.title}
-        </h2>
-        <p className="text-text-secondary text-sm mt-1">
-          {language === 'ko' ? '프로그램 전체 현황' : 'Program overview — Spring 2026'}
-        </p>
+      <div className="px-10 pt-6 pb-5 bg-surface border-b border-border">
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="School Logo" className="w-14 h-14 object-contain rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+          <div>
+            <h2 className="font-display text-[22px] font-semibold tracking-tight text-navy">{language === 'ko' ? '대시보드' : 'Dashboard'}</h2>
+            <p className="text-text-secondary text-[13px] mt-0.5">{language === 'ko' ? '프로그램 전체 현황' : 'Program overview — Spring 2026'}</p>
+          </div>
+        </div>
+      </div>
+      <div className="px-10 py-6">
+        {isAdmin && <AdminAlertPanel />}
+        <SharedCalendar />
+        <ClassOverviewTable />
+      </div>
+    </div>
+  )
+}
+
+// ─── Admin Alert Panel ─────────────────────────────────────────────
+function AdminAlertPanel() {
+  const { showToast } = useApp()
+  const [flagged, setFlagged] = useState<FlaggedEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [detail, setDetail] = useState<FlaggedEntry | null>(null)
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('behavior_logs').select('*, teachers(name), students(english_name, english_class)')
+        .eq('is_flagged', true).order('created_at', { ascending: false }).limit(20)
+      if (data) setFlagged(data.map((r: any) => ({ ...r, teacher_name: r.teachers?.name || '', student_name: r.students?.english_name || '', student_class: r.students?.english_class || '' })))
+      setLoading(false)
+    })()
+  }, [])
+
+  const dismiss = async (id: string) => {
+    await supabase.from('behavior_logs').update({ is_flagged: false }).eq('id', id)
+    setFlagged(p => p.filter(f => f.id !== id))
+    showToast('Flag dismissed')
+  }
+
+  if (loading || flagged.length === 0) return null
+
+  return (
+    <div className="mb-6 border border-red-200 rounded-xl bg-red-50/50 overflow-hidden">
+      <div className="px-5 py-3 bg-red-100/60 border-b border-red-200 flex items-center gap-2">
+        <Bell size={16} className="text-red-600" />
+        <h3 className="text-[14px] font-semibold text-red-800">Flagged for Your Review</h3>
+        <span className="text-[11px] bg-red-200 text-red-700 px-2 py-0.5 rounded-full font-bold ml-1">{flagged.length}</span>
+      </div>
+      <div className="divide-y divide-red-100 max-h-[280px] overflow-y-auto">
+        {flagged.map(e => (
+          <div key={e.id} className="px-5 py-3 flex items-start gap-3 hover:bg-red-50/80 transition-colors cursor-pointer" onClick={() => setDetail(e)}>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-[13px] font-semibold text-red-900">{e.student_name}</span>
+                {e.student_class && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: classToColor(e.student_class as EnglishClass), color: classToTextColor(e.student_class as EnglishClass) }}>{e.student_class}</span>}
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">{e.type.toUpperCase()}</span>
+              </div>
+              <p className="text-[12px] text-red-800 truncate">{e.note || (e.behaviors || []).join(', ')}</p>
+              <p className="text-[10px] text-red-600 mt-0.5">{new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{e.time && ` at ${e.time}`} — {e.teacher_name || 'Unknown'}</p>
+            </div>
+            <button onClick={ev => { ev.stopPropagation(); dismiss(e.id) }} className="p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-100 flex-shrink-0" title="Dismiss"><X size={14} /></button>
+          </div>
+        ))}
+      </div>
+      {detail && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setDetail(null)}>
+          <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={ev => ev.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="font-display text-[16px] font-semibold text-navy">Flagged — {detail.student_name}</h3>
+              <button onClick={() => setDetail(null)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-[12px]">
+                <div><span className="text-text-tertiary">Date</span><p className="font-medium">{new Date(detail.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p></div>
+                <div><span className="text-text-tertiary">Time</span><p className="font-medium">{detail.time || '—'}</p></div>
+                <div><span className="text-text-tertiary">Type</span><p className="font-medium capitalize">{detail.type}</p></div>
+                <div><span className="text-text-tertiary">Teacher</span><p className="font-medium">{detail.teacher_name || '—'}</p></div>
+              </div>
+              {(detail.behaviors || []).length > 0 && (
+                <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Behaviors</p>
+                  <div className="flex flex-wrap gap-1">{detail.behaviors.map((b, i) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">{b}</span>)}</div></div>
+              )}
+              {detail.intensity > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-text-tertiary font-semibold uppercase">Intensity:</span>
+                  {[1,2,3,4,5].map(i => <div key={i} className={`w-4 h-4 rounded-full ${i <= detail.intensity ? (detail.intensity >= 4 ? 'bg-red-500' : detail.intensity >= 3 ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-200'}`} />)}
+                </div>
+              )}
+              {detail.note && <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Notes</p><p className="text-[13px]">{detail.note}</p></div>}
+            </div>
+            <div className="px-5 py-3 border-t border-border flex justify-between">
+              <button onClick={() => { dismiss(detail.id); setDetail(null) }} className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-red-600 hover:bg-red-50">Dismiss Flag</button>
+              <button onClick={() => setDetail(null)} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Shared Calendar ───────────────────────────────────────────────
+function SharedCalendar() {
+  const { showToast, currentTeacher } = useApp()
+  const [cur, setCur] = useState(new Date())
+  const [events, setEvents] = useState<CalEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selDay, setSelDay] = useState<string | null>(null)
+  const [showAdd, setShowAdd] = useState(false)
+
+  const y = cur.getFullYear(), m = cur.getMonth()
+  const first = new Date(y, m, 1).getDay()
+  const days = new Date(y, m + 1, 0).getDate()
+  const today = new Date().toISOString().split('T')[0]
+
+  const load = useCallback(async () => {
+    const s = `${y}-${String(m+1).padStart(2,'0')}-01`
+    const e = `${y}-${String(m+1).padStart(2,'0')}-${days}`
+    const { data } = await supabase.from('calendar_events').select('*').gte('date', s).lte('date', e).order('date')
+    if (data) setEvents(data)
+    setLoading(false)
+  }, [y, m, days])
+
+  useEffect(() => { load() }, [load])
+
+  const dayEvts = (d: string) => events.filter(e => e.date === d)
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this event?')) return
+    await supabase.from('calendar_events').delete().eq('id', id)
+    showToast('Deleted'); load()
+  }
+
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  const dayN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
+  return (
+    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden mb-6">
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h3 className="font-display text-[16px] font-semibold text-navy">{months[m]} {y}</h3>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setCur(new Date(y, m-1, 1))} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronLeft size={16} /></button>
+            <button onClick={() => setCur(new Date(y, m+1, 1))} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronRight size={16} /></button>
+            <button onClick={() => setCur(new Date())} className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light ml-1">Today</button>
+          </div>
+        </div>
+        <button onClick={() => { setShowAdd(true); if (!selDay) setSelDay(today) }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Plus size={13} /> Add Event</button>
       </div>
 
-      <div className="px-10 py-8">
-        {/* Stat Cards */}
-        <div className="grid grid-cols-4 gap-4 mb-7">
-          <StatCard
-            label={t.dashboard.totalStudents}
-            value={loading ? '...' : String(totalStudents)}
-            icon={Users}
-            color="text-navy"
-            bgColor="bg-accent-light"
-          />
-          <StatCard
-            label={language === 'ko' ? '학년' : 'Grade Levels'}
-            value={gradeBreakdown.filter(g => g.count > 0).length > 0 ? `${gradeBreakdown.filter(g => g.count > 0).length} active` : '...'}
-            icon={BookOpen}
-            color="text-navy"
-            bgColor="bg-accent-light"
-          />
-          <StatCard
-            label={language === 'ko' ? '다음 마감' : 'Next Deadline'}
-            value="Mar 14"
-            subtitle={language === 'ko' ? '중간 성적표' : 'Midterm Reports'}
-            icon={CalendarClock}
-            color="text-gold"
-            bgColor="bg-warm-light"
-          />
-          <StatCard
-            label={t.dashboard.belowThreshold}
-            value="—"
-            subtitle={language === 'ko' ? '데이터 입력 후' : 'After grades entered'}
-            icon={AlertTriangle}
-            color="text-danger"
-            bgColor="bg-danger-light"
-          />
-        </div>
+      {/* Legend */}
+      <div className="px-5 py-2 bg-surface-alt/50 border-b border-border flex gap-3 flex-wrap">
+        {EVENT_TYPES.map(t => (
+          <span key={t.value} className="flex items-center gap-1.5 text-[10px] text-text-secondary">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: t.color }} />
+            {t.label}
+          </span>
+        ))}
+      </div>
 
-        <div className="grid grid-cols-3 gap-5 mb-7">
-          {/* Student Counts by Class */}
-          <div className="col-span-2 bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border">
-              <h3 className="font-display text-base font-semibold text-navy">
-                {language === 'ko' ? '반별 학생 수' : 'Students by Class'}
-              </h3>
-            </div>
-            <div className="p-5">
-              {/* Grade row headers + class columns */}
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr>
-                    <th className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">
-                      {language === 'ko' ? '학년' : 'Grade'}
-                    </th>
-                    {ENGLISH_CLASSES.map(cls => (
-                      <th key={cls} className="text-center px-2 py-2">
-                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10.5px] font-bold"
-                          style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>
-                          {cls}
-                        </span>
-                      </th>
-                    ))}
-                    <th className="text-center px-2 py-2 text-[11px] uppercase tracking-wider text-text-secondary font-bold">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[2, 3, 4, 5].map(grade => {
-                    const gradeTotal = counts.filter(c => c.grade === grade).reduce((a, c) => a + c.count, 0)
+      {/* Calendar Grid */}
+      <div className="p-4">
+        <div className="grid grid-cols-7 mb-1">
+          {dayN.map(d => <div key={d} className="text-center text-[10px] uppercase tracking-wider text-text-tertiary font-semibold py-1">{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
+          {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} className="bg-surface-alt/50 min-h-[80px]" />)}
+          {Array.from({ length: days }).map((_, i) => {
+            const d = i + 1
+            const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+            const evts = dayEvts(dateStr)
+            const isToday = dateStr === today
+            const isSelected = dateStr === selDay
+            const isWeekend = new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6
+
+            return (
+              <div key={d} onClick={() => setSelDay(dateStr)}
+                className={`bg-surface min-h-[80px] p-1.5 cursor-pointer transition-all hover:bg-accent-light/50 ${isSelected ? 'ring-2 ring-navy ring-inset' : ''} ${isWeekend ? 'bg-surface-alt/30' : ''}`}>
+                <div className={`text-[11px] font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-navy text-white' : 'text-text-primary'}`}>{d}</div>
+                <div className="space-y-0.5">
+                  {evts.slice(0, 3).map(ev => {
+                    const typeInfo = EVENT_TYPES.find(t => t.value === ev.type)
                     return (
-                      <tr key={grade} className="border-t border-border">
-                        <td className="px-2 py-2.5 font-semibold text-navy">Grade {grade}</td>
-                        {ENGLISH_CLASSES.map(cls => {
-                          const c = counts.find(c => c.grade === grade && c.english_class === cls)
-                          return (
-                            <td key={cls} className="text-center px-2 py-2.5 font-medium">
-                              {c?.count || <span className="text-text-tertiary">—</span>}
-                            </td>
-                          )
-                        })}
-                        <td className="text-center px-2 py-2.5 font-bold text-navy">{gradeTotal || '—'}</td>
-                      </tr>
+                      <div key={ev.id} className="text-[9px] px-1 py-0.5 rounded truncate font-medium" style={{ backgroundColor: `${typeInfo?.color || '#6B7280'}20`, color: typeInfo?.color || '#6B7280' }}>
+                        {ev.title}
+                      </div>
                     )
                   })}
-                  <tr className="border-t-2 border-navy/20">
-                    <td className="px-2 py-2.5 font-bold text-navy">Total</td>
-                    {ENGLISH_CLASSES.map(cls => {
-                      const total = counts.filter(c => c.english_class === cls).reduce((a, c) => a + c.count, 0)
-                      return <td key={cls} className="text-center px-2 py-2.5 font-bold">{total || '—'}</td>
-                    })}
-                    <td className="text-center px-2 py-2.5 font-bold text-gold text-lg">{totalStudents || '—'}</td>
-                  </tr>
-                </tbody>
-              </table>
+                  {evts.length > 3 && <div className="text-[9px] text-text-tertiary text-center">+{evts.length - 3} more</div>}
+                </div>
+              </div>
+            )
+          })}
+          {Array.from({ length: (7 - (first + days) % 7) % 7 }).map((_, i) => <div key={`t${i}`} className="bg-surface-alt/50 min-h-[80px]" />)}
+        </div>
+      </div>
+
+      {/* Day Detail Modal */}
+      {selDay && (
+        <div className="px-5 pb-4 border-t border-border pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-[14px] font-semibold text-navy">
+              {new Date(selDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </h4>
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setShowAdd(true) }} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-accent-light text-navy hover:bg-accent-light/80"><Plus size={11} /> Add</button>
+              <button onClick={() => setSelDay(null)} className="p-1 rounded hover:bg-surface-alt"><X size={14} /></button>
             </div>
           </div>
-
-          {/* Quick Links */}
-          <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border">
-              <h3 className="font-display text-base font-semibold text-navy">
-                {language === 'ko' ? '빠른 이동' : 'Quick Links'}
-              </h3>
-            </div>
-            <div className="p-3">
-              {[
-                { label: language === 'ko' ? '성적 입력' : 'Enter Grades', desc: language === 'ko' ? '평가 점수 입력' : 'Input assessment scores', view: 'grades', icon: '📝' },
-                { label: language === 'ko' ? '학생 명단' : 'View Roster', desc: language === 'ko' ? '전체 학생 목록' : 'Full student list', view: 'students', icon: '👥' },
-                { label: language === 'ko' ? '보고서' : 'Reports', desc: language === 'ko' ? '성적표 생성' : 'Generate report cards', view: 'reports', icon: '📊' },
-                { label: language === 'ko' ? '레벨 테스트' : 'Level Testing', desc: language === 'ko' ? '배치 점수 관리' : 'Manage placement scores', view: 'leveling', icon: '📐' },
-                { label: language === 'ko' ? '설정' : 'Settings', desc: language === 'ko' ? '교사, 학교 정보' : 'Teachers, school info', view: 'settings', icon: '⚙️' },
-              ].map((link, i) => (
-                <button key={i} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-accent-light transition-all text-left mb-0.5 group">
-                  <span className="text-lg">{link.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-text-primary group-hover:text-navy">{link.label}</p>
-                    <p className="text-[11px] text-text-tertiary">{link.desc}</p>
+          {dayEvts(selDay).length === 0 ? (
+            <p className="text-[12px] text-text-tertiary italic py-3">No events this day.</p>
+          ) : (
+            <div className="space-y-2">
+              {dayEvts(selDay).map(ev => {
+                const typeInfo = EVENT_TYPES.find(t => t.value === ev.type)
+                return (
+                  <div key={ev.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-surface-alt/30">
+                    <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: typeInfo?.color || '#6B7280' }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-medium">{ev.title}</span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${typeInfo?.bg || 'bg-gray-100 text-gray-700'}`}>{typeInfo?.label || ev.type}</span>
+                      </div>
+                      {ev.description && <p className="text-[11px] text-text-secondary mt-0.5">{ev.description}</p>}
+                    </div>
+                    <button onClick={() => handleDelete(ev.id)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-danger"><Trash2 size={13} /></button>
                   </div>
-                  <ArrowRight size={14} className="text-text-tertiary group-hover:text-navy" />
-                </button>
-              ))}
+                )
+              })}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Add Event Modal */}
+      {showAdd && <AddEventModal date={selDay || today} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
+    </div>
+  )
+}
+
+function AddEventModal({ date, onClose, onSaved }: { date: string; onClose: () => void; onSaved: () => void }) {
+  const { currentTeacher, showToast } = useApp()
+  const [title, setTitle] = useState('')
+  const [eventDate, setEventDate] = useState(date)
+  const [type, setType] = useState('lesson_plan')
+  const [desc, setDesc] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    if (!title.trim()) return
+    setSaving(true)
+    const { error } = await supabase.from('calendar_events').insert({ title: title.trim(), date: eventDate, type, description: desc.trim(), created_by: currentTeacher?.id || null })
+    setSaving(false)
+    if (error) showToast(`Error: ${error.message}`)
+    else { showToast('Event added'); onSaved() }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={onClose}>
+      <div className="bg-surface rounded-xl shadow-lg w-full max-w-sm" onClick={e => e.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <h3 className="font-display text-[15px] font-semibold text-navy">Add Calendar Event</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Title *</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Phonics Unit 3 Lesson Plan" autoFocus
+              className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
+              <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
+              <select value={type} onChange={e => setType(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none">
+                {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select></div>
+          </div>
+          <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Description <span className="normal-case text-text-tertiary">(opt)</span></label>
+            <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} placeholder="Details..."
+              className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
+          {/* Type color preview */}
+          <div className="flex flex-wrap gap-1.5">
+            {EVENT_TYPES.map(t => (
+              <button key={t.value} onClick={() => setType(t.value)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium border transition-all ${type === t.value ? 'border-navy bg-navy text-white' : 'border-border bg-surface hover:border-navy/30'}`}>
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: type === t.value ? '#fff' : t.color }} />
+                {t.label}
+              </button>
+            ))}
           </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-5">
-          {/* Recent Activity */}
-          <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border">
-              <h3 className="font-display text-base font-semibold text-navy">
-                {language === 'ko' ? '최근 활동' : 'Recent Activity'}
-              </h3>
-            </div>
-            <div className="p-4">
-              {[
-                { text: 'Full roster uploaded — 311 students across grades 2-5', time: 'Just now', icon: Users },
-                { text: 'Database initialized with teacher assignments', time: '10 min ago', icon: Settings },
-                { text: 'Spring 2026 Midterm semester set as active', time: '15 min ago', icon: CalendarClock },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-3 py-3 border-b border-border last:border-0">
-                  <div className="w-7 h-7 rounded-full bg-accent-light flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <item.icon size={13} className="text-navy" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] text-text-primary leading-snug">{item.text}</p>
-                    <p className="text-[11px] text-text-tertiary mt-0.5 flex items-center gap-1">
-                      <Clock size={10} /> {item.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              <p className="text-[12px] text-text-tertiary text-center py-3 italic">
-                {language === 'ko' ? '성적 입력이 시작되면 활동이 여기에 표시됩니다' : 'Activity will populate as grades are entered'}
-              </p>
-            </div>
-          </div>
-
-          {/* Upcoming Deadlines */}
-          <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border">
-              <h3 className="font-display text-base font-semibold text-navy">
-                {language === 'ko' ? '다가오는 일정' : 'Upcoming Deadlines'}
-              </h3>
-            </div>
-            <div className="p-4">
-              {[
-                { date: 'Mar 14', label: language === 'ko' ? '중간 성적 입력 마감' : 'Midterm grades due', urgent: true },
-                { date: 'Mar 18', label: language === 'ko' ? '중간 코멘트 마감' : 'Midterm comments due', urgent: true },
-                { date: 'Mar 21', label: language === 'ko' ? '중간 성적표 발송' : 'Midterm reports sent home', urgent: false },
-                { date: 'Jun 20', label: language === 'ko' ? '기말 성적 입력 마감' : 'Final grades due', urgent: false },
-                { date: 'Jun 27', label: language === 'ko' ? '기말 성적표 발송' : 'Final report cards sent home', urgent: false },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 py-3 border-b border-border last:border-0">
-                  <div className={`w-14 text-center flex-shrink-0 py-1.5 rounded-lg text-[12px] font-bold ${
-                    item.urgent ? 'bg-gold/15 text-amber-700' : 'bg-surface-alt text-text-secondary'
-                  }`}>
-                    {item.date}
-                  </div>
-                  <p className="text-[13px] text-text-primary">{item.label}</p>
-                  {item.urgent && (
-                    <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-gold/10 px-2 py-0.5 rounded-full">
-                      {language === 'ko' ? '곧' : 'Soon'}
-                    </span>
-                  )}
-                </div>
-              ))}
-              <p className="text-[11px] text-text-tertiary mt-3 italic">
-                {language === 'ko' ? '설정에서 날짜를 변경할 수 있습니다' : 'Dates are editable in Settings'}
-              </p>
-            </div>
-          </div>
+        <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
+          <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Cancel</button>
+          <button onClick={handleSave} disabled={saving || !title.trim()}
+            className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
+            {saving && <Loader2 size={12} className="animate-spin" />} Add Event
+          </button>
         </div>
       </div>
     </div>
   )
 }
 
-function StatCard({ label, value, subtitle, icon: Icon, color, bgColor }: {
-  label: string; value: string; subtitle?: string; icon: any; color: string; bgColor: string
-}) {
+// ─── Class Overview Table ──────────────────────────────────────────
+function ClassOverviewTable() {
+  const { language } = useApp()
+  const { counts, loading } = useClassCounts()
+  const totalStudents = counts.reduce((a, c) => a + c.count, 0)
+
   return (
-    <div className="bg-surface border border-border rounded-xl p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] text-text-secondary uppercase tracking-wider font-semibold">{label}</span>
-        <div className={`w-8 h-8 rounded-lg ${bgColor} flex items-center justify-center`}>
-          <Icon size={16} className={color} />
-        </div>
+    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-border">
+        <h3 className="font-display text-base font-semibold text-navy">{language === 'ko' ? '반별 학생 수' : 'Students by Class'}</h3>
       </div>
-      <div className={`font-display text-[28px] font-semibold ${color}`}>{value}</div>
-      {subtitle && <p className="text-[11px] text-text-tertiary mt-0.5">{subtitle}</p>}
+      <div className="p-5">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr>
+              <th className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">{language === 'ko' ? '학년' : 'Grade'}</th>
+              {ENGLISH_CLASSES.map(cls => (
+                <th key={cls} className="text-center px-2 py-2">
+                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10.5px] font-bold" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>{cls}</span>
+                </th>
+              ))}
+              <th className="text-center px-2 py-2 text-[11px] uppercase tracking-wider text-text-secondary font-bold">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[2,3,4,5].map(grade => {
+              const gradeTotal = counts.filter(c => c.grade === grade).reduce((a, c) => a + c.count, 0)
+              return (
+                <tr key={grade} className="border-t border-border">
+                  <td className="px-2 py-2.5 font-semibold text-navy">Grade {grade}</td>
+                  {ENGLISH_CLASSES.map(cls => {
+                    const c = counts.find(c => c.grade === grade && c.english_class === cls)
+                    return <td key={cls} className="text-center px-2 py-2.5 font-medium">{c?.count || <span className="text-text-tertiary">—</span>}</td>
+                  })}
+                  <td className="text-center px-2 py-2.5 font-bold text-navy">{gradeTotal || '—'}</td>
+                </tr>
+              )
+            })}
+            <tr className="border-t-2 border-navy/20">
+              <td className="px-2 py-2.5 font-bold text-navy">Total</td>
+              {ENGLISH_CLASSES.map(cls => {
+                const total = counts.filter(c => c.english_class === cls).reduce((a, c) => a + c.count, 0)
+                return <td key={cls} className="text-center px-2 py-2.5 font-bold">{total || '—'}</td>
+              })}
+              <td className="text-center px-2 py-2.5 font-bold text-gold text-lg">{totalStudents || '—'}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

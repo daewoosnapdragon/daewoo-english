@@ -298,7 +298,7 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
           </button>
         ))}
       </div>
-      {activeTab === 'behavior' && <BehaviorTracker studentId={studentId} studentName={studentName} lang={lang} />}
+      {activeTab === 'behavior' && <BehaviorTracker studentId={studentId} studentName={studentName} />}
       {activeTab !== 'behavior' && (
         <div className="py-8 text-center text-text-tertiary text-[13px]">
           {lang === 'ko' ? '준비 중입니다.' : 'Coming soon.'}

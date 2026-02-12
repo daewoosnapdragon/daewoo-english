@@ -312,7 +312,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                       <tr key={s.id} className="border-t border-border table-row-hover">
                         <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
                         <td className="px-4 py-2.5"><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></td>
-                        <td className="px-4 py-2.5 text-center"><input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={score != null ? score : ''} onChange={e => handleScoreChange(s.id, e.target.value)} onKeyDown={e => handleKeyDown(e, i)} placeholder="—" /></td>
+                        <td className="px-4 py-2.5 text-center"><input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={score != null ? score : ''} onChange={e => handleScoreChange(s.id, e.target.value)} onKeyDown={e => handleKeyDown(e, i)} placeholder="" /></td>
                         <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{pct ? `${pct}%` : '—'}</td>
                       </tr>
                     )

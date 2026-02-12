@@ -2,6 +2,8 @@
 
 import { useApp } from '@/lib/context'
 import { Teacher } from '@/types'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import {
   LayoutDashboard, Users, ClipboardEdit, FileText, Layers,
   CalendarCheck, BookOpen, ListChecks, Wrench, Bell, Settings, Globe
@@ -32,13 +34,23 @@ export default function Sidebar({
   teachers: Teacher[]
 }) {
   const { t, language, setLanguage, currentTeacher, setCurrentTeacher } = useApp()
+  const [flaggedCount, setFlaggedCount] = useState(0)
+
+  // Fetch flagged behavior count for admin badge
+  useEffect(() => {
+    if (currentTeacher?.role !== 'admin') { setFlaggedCount(0); return }
+    (async () => {
+      const { count } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('is_flagged', true)
+      setFlaggedCount(count || 0)
+    })()
+  }, [currentTeacher, activeView])
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-[260px] bg-navy-dark flex flex-col z-50">
       {/* Header */}
-      <div className="px-5 pt-6 pb-4">
-        <h1 className="text-gold font-display text-xl font-bold tracking-tight">Daewoo English Program</h1>
-        <p className="text-[11px] text-blue-300/60 uppercase tracking-widest mt-0.5">대우 영어 프로그램</p>
+      <div className="px-5 pt-5 pb-3">
+        <img src="/logo.png" alt="Daewoo English" className="w-12 h-12 object-contain mb-2 rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+        <h1 className="text-gold font-display text-lg font-bold tracking-tight">Daewoo English</h1>
       </div>
 
       {/* Role Selector */}
@@ -90,6 +102,11 @@ export default function Sidebar({
             >
               <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
               {label}
+              {item.id === 'dashboard' && flaggedCount > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-[9px] font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                  {flaggedCount > 9 ? '9+' : flaggedCount}
+                </span>
+              )}
             </button>
           )
         })}
