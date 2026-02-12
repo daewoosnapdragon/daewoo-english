@@ -16,7 +16,6 @@ const EVENT_TYPES = [
   { value: 'report_cards', label: 'Report Cards', color: '#0EA5E9', bg: 'bg-sky-100 text-sky-800' },
   { value: 'event', label: 'School Event', color: '#F59E0B', bg: 'bg-amber-100 text-amber-800' },
   { value: 'field_trip', label: 'Field Trip', color: '#14B8A6', bg: 'bg-teal-100 text-teal-800' },
-  { value: 'assembly', label: 'Assembly', color: '#8B5CF6', bg: 'bg-violet-100 text-violet-800' },
   { value: 'testing', label: 'Testing', color: '#EC4899', bg: 'bg-pink-100 text-pink-800' },
   { value: 'other', label: 'Other', color: '#6B7280', bg: 'bg-gray-100 text-gray-700' },
 ]
@@ -134,12 +133,22 @@ function AdminAlertPanel() {
               <div className="grid grid-cols-2 gap-3 text-[12px]">
                 <div><span className="text-text-tertiary">Date</span><p className="font-medium">{new Date(detail.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p></div>
                 <div><span className="text-text-tertiary">Time</span><p className="font-medium">{detail.time || '—'}</p></div>
-                <div><span className="text-text-tertiary">Type</span><p className="font-medium capitalize">{detail.type}</p></div>
+                <div><span className="text-text-tertiary">Type</span><p className="font-medium capitalize">{detail.type === 'abc' || detail.type === 'negative' ? 'Negative Behavior' : detail.type}</p></div>
                 <div><span className="text-text-tertiary">Teacher</span><p className="font-medium">{detail.teacher_name || '—'}</p></div>
               </div>
+              {detail.activity && <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Activity / Task</p><p className="text-[12px]">{detail.activity}</p></div>}
+              {detail.duration && <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Duration</p><p className="text-[12px]">{detail.duration}</p></div>}
+              {(detail.antecedents || []).length > 0 && (
+                <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Antecedent</p>
+                  <div className="flex flex-wrap gap-1">{detail.antecedents.map((a: string, i: number) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{a}</span>)}</div></div>
+              )}
               {(detail.behaviors || []).length > 0 && (
                 <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Behaviors</p>
-                  <div className="flex flex-wrap gap-1">{detail.behaviors.map((b, i) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">{b}</span>)}</div></div>
+                  <div className="flex flex-wrap gap-1">{detail.behaviors.map((b: string, i: number) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">{b}</span>)}</div></div>
+              )}
+              {(detail.consequences || []).length > 0 && (
+                <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Consequence</p>
+                  <div className="flex flex-wrap gap-1">{detail.consequences.map((c: string, i: number) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700">{c}</span>)}</div></div>
               )}
               {detail.intensity > 1 && (
                 <div className="flex items-center gap-1.5">
@@ -147,7 +156,8 @@ function AdminAlertPanel() {
                   {[1,2,3,4,5].map(i => <div key={i} className={`w-4 h-4 rounded-full ${i <= detail.intensity ? (detail.intensity >= 4 ? 'bg-red-500' : detail.intensity >= 3 ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-200'}`} />)}
                 </div>
               )}
-              {detail.note && <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Notes</p><p className="text-[13px]">{detail.note}</p></div>}
+              {detail.frequency > 1 && <div><span className="text-[10px] text-text-tertiary font-semibold uppercase">Frequency:</span><span className="text-[12px] ml-1">{detail.frequency}x</span></div>}
+              {detail.note && <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Notes</p><p className="text-[13px] whitespace-pre-wrap">{detail.note}</p></div>}
             </div>
             <div className="px-5 py-3 border-t border-border flex justify-between">
               <button onClick={() => { dismiss(detail.id); setDetail(null) }} className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-red-600 hover:bg-red-50">Dismiss Flag</button>

@@ -163,7 +163,7 @@ BEGIN
   -- Update type constraint to include new types
   ALTER TABLE calendar_events DROP CONSTRAINT IF EXISTS calendar_events_type_check;
   ALTER TABLE calendar_events ADD CONSTRAINT calendar_events_type_check
-    CHECK (type IN ('day_off', 'deadline', 'meeting', 'midterm', 'report_cards', 'event', 'field_trip', 'assembly', 'testing', 'other'));
+    CHECK (type IN ('day_off', 'deadline', 'meeting', 'midterm', 'report_cards', 'event', 'field_trip', 'testing', 'other'));
 
   INSERT INTO calendar_events (title, date, type, description, created_by) VALUES
     ('Spring Midterms', '2026-05-11', 'midterm', 'Midterm exams week — all grades', admin_id),
@@ -175,7 +175,7 @@ BEGIN
     ('Staff Meeting', '2026-04-04', 'meeting', 'Monthly all-teachers meeting, Room 201', admin_id),
     ('Children''s Day — No School', '2026-05-05', 'day_off', '어린이날', admin_id),
     ('Memorial Day — No School', '2026-06-06', 'day_off', '현충일', admin_id),
-    ('CSAT Prep Assembly (Gr 4-5)', '2026-04-25', 'assembly', 'Morning assembly about study habits', admin_id),
+    ('CSAT Prep Assembly (Gr 4-5)', '2026-04-25', 'event', 'Morning assembly about study habits', admin_id),
     ('Level Testing Week', '2026-06-16', 'testing', 'Spring level tests begin', admin_id),
     ('Level Testing Week', '2026-06-17', 'testing', 'Spring level tests', admin_id),
     ('Level Testing Week', '2026-06-18', 'testing', 'Spring level tests end', admin_id),

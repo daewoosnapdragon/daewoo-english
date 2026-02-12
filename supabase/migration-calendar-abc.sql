@@ -19,7 +19,7 @@ CREATE INDEX IF NOT EXISTS idx_calendar_date ON calendar_events(date);
 -- Update type constraint (handles both fresh install and re-run)
 ALTER TABLE calendar_events DROP CONSTRAINT IF EXISTS calendar_events_type_check;
 ALTER TABLE calendar_events ADD CONSTRAINT calendar_events_type_check
-  CHECK (type IN ('day_off', 'deadline', 'meeting', 'midterm', 'report_cards', 'event', 'field_trip', 'assembly', 'testing', 'other'));
+  CHECK (type IN ('day_off', 'deadline', 'meeting', 'midterm', 'report_cards', 'event', 'field_trip', 'testing', 'other'));
 
 -- Enable RLS
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
@@ -49,7 +49,12 @@ END $$;
 -- Update the type constraint to include 'abc'
 ALTER TABLE behavior_logs DROP CONSTRAINT IF EXISTS behavior_logs_type_check;
 ALTER TABLE behavior_logs ADD CONSTRAINT behavior_logs_type_check 
-  CHECK (type IN ('positive', 'concern', 'parent_contact', 'intervention', 'note', 'abc'));
+  CHECK (type IN ('positive', 'concern', 'parent_contact', 'intervention', 'note', 'abc', 'negative'));
+
+-- Update attendance status constraint to include field_trip
+ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_status_check;
+ALTER TABLE attendance ADD CONSTRAINT attendance_status_check
+  CHECK (status IN ('present', 'absent', 'tardy', 'field_trip', 'excused'));
 
 -- Update assessment type constraint to include all categories
 ALTER TABLE assessments DROP CONSTRAINT IF EXISTS assessments_type_check;

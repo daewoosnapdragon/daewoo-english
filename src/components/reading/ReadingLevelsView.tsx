@@ -15,7 +15,8 @@ interface ReadingRecord {
   cwpm: number; accuracy_rate: number; reading_level: string; notes: string; assessed_by: string
 }
 
-const READING_LEVELS = ['Pre-A', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+const READING_LEVELS = ['aa', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'Z1', 'Z2']
+const LEXILE_RANGES = ['BR', '0-100L', '100-200L', '200-300L', '300-400L', '400-500L', '500-600L', '600-700L', '700-800L', '800-900L', '900-1000L', '1000L+']
 
 export default function ReadingLevelsView() {
   const { t, language, currentTeacher, showToast } = useApp()
@@ -125,7 +126,8 @@ function ClassOverview({ students, loading, lang, onAddRecord }: { students: any
         <thead><tr className="bg-surface-alt">
           <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
           <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-          <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Level</th>
+          <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">RAZ</th>
+          <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Lexile</th>
           <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">CWPM</th>
           <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Accuracy</th>
           <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-28">Last Assessed</th>
@@ -143,6 +145,7 @@ function ClassOverview({ students, loading, lang, onAddRecord }: { students: any
                     <span className="inline-flex items-center justify-center w-8 h-8 rounded-full text-[12px] font-bold text-white" style={{ backgroundColor: levelColor(rec.reading_level) }}>{rec.reading_level}</span>
                   ) : <span className="text-text-tertiary">—</span>}
                 </td>
+                <td className="px-4 py-2.5 text-center text-[12px] font-medium text-text-secondary">{rec?.passage_level || '—'}</td>
                 <td className="px-4 py-2.5 text-center font-semibold text-navy">{rec?.cwpm != null ? Math.round(rec.cwpm) : '—'}</td>
                 <td className="px-4 py-2.5 text-center">
                   {rec?.accuracy_rate != null ? (
@@ -356,11 +359,15 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
             </div>
           )}
 
-          <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Assign Reading Level</label>
-            <select value={readingLevel} onChange={e => setReadingLevel(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
-              <option value="">Select level...</option>
-              {READING_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
-            </select></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">RAZ Level</label>
+              <select value={readingLevel} onChange={e => setReadingLevel(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
+                <option value="">Select RAZ level...</option>
+                {READING_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+              </select></div>
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile</label>
+              <input value={passageLevel} onChange={e => setPassageLevel(e.target.value)} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+          </div>
           <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Observations..." className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
         </div>

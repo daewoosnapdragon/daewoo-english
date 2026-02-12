@@ -37,8 +37,9 @@ const CONSEQUENCE_CATEGORIES = [
 const LOG_TYPES = [
   { value: 'positive', label: 'Positive', labelKo: '긍정적', icon: '⭐', color: 'bg-green-50 border-green-200 text-green-800' },
   { value: 'concern', label: 'Concern', labelKo: '우려', icon: '⚠️', color: 'bg-yellow-50 border-yellow-200 text-yellow-800' },
+  { value: 'negative', label: 'Negative Behavior', labelKo: '부정 행동', icon: '🔴', color: 'bg-red-50 border-red-200 text-red-800' },
   { value: 'parent_contact', label: 'Parent Contact', labelKo: '학부모 연락', icon: '📞', color: 'bg-purple-50 border-purple-200 text-purple-800' },
-  { value: 'intervention', label: 'Intervention', labelKo: '개입', icon: '🛡️', color: 'bg-red-50 border-red-200 text-red-800' },
+  { value: 'intervention', label: 'Intervention', labelKo: '개입', icon: '🛡️', color: 'bg-orange-50 border-orange-200 text-orange-800' },
   { value: 'note', label: 'Note', labelKo: '메모', icon: '📝', color: 'bg-gray-50 border-gray-200 text-gray-800' },
 ] as const
 
@@ -51,6 +52,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [expandedLog, setExpandedLog] = useState<string | null>(null)
+  const [filterType, setFilterType] = useState<string>('all')
 
   const loadLogs = async () => {
     setLoading(true)
@@ -82,6 +84,31 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
 
   const flaggedCount = logs.filter(l => l.is_flagged).length
 
+  // Filter logs by type tab
+  const filteredLogs = filterType === 'all' ? logs
+    : filterType === 'flagged' ? logs.filter(l => l.is_flagged)
+    : logs.filter(l => l.type === filterType || (filterType === 'negative' && (l.type === 'abc' || l.type === 'negative')))
+
+  const handlePrint = () => {
+    const printWin = window.open('', '_blank')
+    if (!printWin) return
+    const rows = filteredLogs.map(log => {
+      const typeInfo = [...LOG_TYPES, { value: 'abc', label: 'Negative Behavior', labelKo: '부정 행동', icon: '🔴', color: '' }].find(t => t.value === log.type)
+      return `<tr>
+        <td style="padding:6px;border:1px solid #ddd">${new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}${log.time ? ' ' + log.time : ''}</td>
+        <td style="padding:6px;border:1px solid #ddd">${typeInfo?.label || log.type}</td>
+        <td style="padding:6px;border:1px solid #ddd">${log.note || ''}${(log.behaviors?.length || 0) > 0 ? '<br><small>Behaviors: ' + log.behaviors.join(', ') + '</small>' : ''}${(log.antecedents?.length || 0) > 0 ? '<br><small>Antecedent: ' + log.antecedents.join(', ') + '</small>' : ''}${(log.consequences?.length || 0) > 0 ? '<br><small>Consequence: ' + log.consequences.join(', ') + '</small>' : ''}</td>
+        <td style="padding:6px;border:1px solid #ddd">${log.teacher_name || ''}</td>
+        <td style="padding:6px;border:1px solid #ddd">${log.is_flagged ? '⚠️' : ''}</td>
+      </tr>`
+    }).join('')
+    printWin.document.write(`<html><head><title>Behavior Log — ${studentName}</title><style>body{font-family:sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:12px}th{background:#f0f0f0;padding:8px;border:1px solid #ddd;text-align:left}h2{margin-bottom:4px}p{color:#666;margin-top:0}</style></head><body>
+      <h2>Behavior Log — ${studentName}</h2><p>Printed ${new Date().toLocaleDateString()} · ${filteredLogs.length} entries</p>
+      <table><thead><tr><th>Date</th><th>Type</th><th>Details</th><th>Teacher</th><th>Flag</th></tr></thead><tbody>${rows}</tbody></table></body></html>`)
+    printWin.document.close()
+    printWin.print()
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -89,10 +116,23 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
           <span className="text-[13px] font-medium text-navy">{logs.length} {lang === 'ko' ? '건의 기록' : 'entries'}</span>
           {flaggedCount > 0 && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">{flaggedCount} flagged</span>}
         </div>
-        <button onClick={() => setShowAddForm(!showAddForm)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${showAddForm ? 'bg-surface-alt text-text-secondary' : 'bg-navy text-white hover:bg-navy-dark'}`}>
-          {showAddForm ? <><X size={13} /> Close</> : <><Plus size={13} /> {lang === 'ko' ? '기록 추가' : 'Add Entry'}</>}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handlePrint} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-surface-alt border border-border">🖨️ Print</button>
+          <button onClick={() => setShowAddForm(!showAddForm)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${showAddForm ? 'bg-surface-alt text-text-secondary' : 'bg-navy text-white hover:bg-navy-dark'}`}>
+            {showAddForm ? <><X size={13} /> Close</> : <><Plus size={13} /> {lang === 'ko' ? '기록 추가' : 'Add Entry'}</>}
+          </button>
+        </div>
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex gap-1 border-b border-border overflow-x-auto">
+        {[{ id: 'all', label: 'All', count: logs.length }, ...LOG_TYPES.map(t => ({ id: t.value, label: lang === 'ko' ? t.labelKo : t.label, count: logs.filter(l => l.type === t.value || (t.value === 'negative' && l.type === 'abc')).length })), { id: 'flagged', label: '🔔 Flagged', count: flaggedCount }].map(tab => (
+          <button key={tab.id} onClick={() => setFilterType(tab.id)}
+            className={`px-3 py-2 text-[11px] font-medium whitespace-nowrap transition-all border-b-2 -mb-px ${filterType === tab.id ? 'border-navy text-navy' : 'border-transparent text-text-tertiary hover:text-text-secondary'}`}>
+            {tab.label} {tab.count > 0 && <span className="ml-1 text-[9px] bg-surface-alt px-1.5 py-0.5 rounded-full">{tab.count}</span>}
+          </button>
+        ))}
       </div>
 
       {showAddForm && <AddBehaviorForm studentId={studentId} lang={lang} onClose={() => setShowAddForm(false)} onSaved={() => { setShowAddForm(false); loadLogs() }} />}
@@ -103,8 +143,8 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
         <div className="py-8 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '아직 기록이 없습니다.' : 'No behavior logs yet.'}</div>
       ) : (
         <div className="space-y-1.5">
-          {logs.map(log => {
-            const typeInfo = [...LOG_TYPES, { value: 'abc', label: 'ABC Entry', labelKo: 'ABC 기록', icon: '📋', color: 'bg-blue-50 border-blue-200 text-blue-800' }].find(t => t.value === log.type)
+          {filteredLogs.map(log => {
+            const typeInfo = [...LOG_TYPES, { value: 'abc', label: 'Negative Behavior', labelKo: '부정 행동', icon: '🔴', color: 'bg-red-50 border-red-200 text-red-800' }].find(t => t.value === log.type)
             const isExpanded = expandedLog === log.id
             const hasAbc = (log.antecedents?.length || 0) > 0 || (log.behaviors?.length || 0) > 0 || (log.consequences?.length || 0) > 0
             return (
@@ -200,7 +240,7 @@ function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: str
     if (!note.trim() && !hasAbcData) { showToast(lang === 'ko' ? '메모를 입력하거나 ABC 데이터를 선택하세요' : 'Enter a note or add ABC data'); return }
     setSaving(true)
     const { error } = await supabase.from('behavior_logs').insert({
-      student_id: studentId, date, type: hasAbcData ? 'abc' : type,
+      student_id: studentId, date, type: hasAbcData ? 'negative' : type,
       time: time || null, duration: duration || null, activity: activity || null,
       antecedents, behaviors, consequences,
       frequency: hasAbcData ? frequency : 1, intensity: hasAbcData ? intensity : 1,

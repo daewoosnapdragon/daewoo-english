@@ -8,14 +8,14 @@ import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { ChevronLeft, ChevronRight, Loader2, Check, UserCheck, UserX, Clock, FileText } from 'lucide-react'
 
-type Status = 'present' | 'absent' | 'tardy' | 'excused'
+type Status = 'present' | 'absent' | 'tardy' | 'field_trip'
 type LangKey = 'en' | 'ko'
 
-const STATUS_CONFIG: Record<Status, { label: string; labelKo: string; icon: typeof UserCheck; color: string; bg: string }> = {
-  present: { label: 'Present', labelKo: '출석', icon: UserCheck, color: 'text-green-600', bg: 'bg-green-100 border-green-300 text-green-700' },
-  absent: { label: 'Absent', labelKo: '결석', icon: UserX, color: 'text-red-600', bg: 'bg-red-100 border-red-300 text-red-700' },
-  tardy: { label: 'Tardy', labelKo: '지각', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100 border-amber-300 text-amber-700' },
-  excused: { label: 'Excused', labelKo: '공결', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-100 border-blue-300 text-blue-700' },
+const STATUS_CONFIG: Record<Status, { label: string; labelKo: string; icon: typeof UserCheck; color: string; bg: string; short: string }> = {
+  present: { label: 'Present', labelKo: '출석', icon: UserCheck, color: 'text-green-600', bg: 'bg-green-100 border-green-300 text-green-700', short: 'P' },
+  absent: { label: 'Absent', labelKo: '결석', icon: UserX, color: 'text-red-600', bg: 'bg-red-100 border-red-300 text-red-700', short: 'A' },
+  tardy: { label: 'Tardy', labelKo: '지각', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100 border-amber-300 text-amber-700', short: 'T' },
+  field_trip: { label: 'Field Trip', labelKo: '현장학습', icon: FileText, color: 'text-teal-600', bg: 'bg-teal-100 border-teal-300 text-teal-700', short: 'FT' },
 }
 
 export default function AttendanceView() {
@@ -92,8 +92,46 @@ export default function AttendanceView() {
   const presentCount = Object.values(records).filter(r => r.status === 'present').length
   const absentCount = Object.values(records).filter(r => r.status === 'absent').length
   const tardyCount = Object.values(records).filter(r => r.status === 'tardy').length
-  const excusedCount = Object.values(records).filter(r => r.status === 'excused').length
+  const ftCount = Object.values(records).filter(r => r.status === 'field_trip').length
   const unmarkedCount = students.length - Object.keys(records).length
+
+  // Print monthly attendance
+  const handlePrintAttendance = async () => {
+    const curDate = new Date(selectedDate)
+    const year = curDate.getFullYear(), month = curDate.getMonth()
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const monthName = curDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    // Load all attendance for this month
+    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
+    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${daysInMonth}`
+    const { data: monthData } = await supabase.from('attendance').select('*')
+      .in('student_id', students.map(s => s.id)).gte('date', startDate).lte('date', endDate)
+    const lookup: Record<string, Record<string, string>> = {}
+    if (monthData) monthData.forEach((r: any) => { if (!lookup[r.student_id]) lookup[r.student_id] = {}; lookup[r.student_id][r.date] = r.status })
+    const dates = Array.from({ length: daysInMonth }, (_, i) => {
+      const d = new Date(year, month, i + 1)
+      const isWknd = [0, 6].includes(d.getDay())
+      return { date: `${year}-${String(month + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`, day: i + 1, isWknd, dayName: d.toLocaleDateString('en-US', { weekday: 'short' }) }
+    })
+    const printWin = window.open('', '_blank')
+    if (!printWin) return
+    const headerRow = dates.map(d => `<th style="padding:2px 4px;border:1px solid #ccc;font-size:9px;${d.isWknd ? 'background:#f0f0f0;color:#999' : ''}" title="${d.dayName}">${d.day}</th>`).join('')
+    const rows = students.map(s => {
+      const cells = dates.map(d => {
+        const st = lookup[s.id]?.[d.date]
+        const sym = st === 'present' ? '✓' : st === 'absent' ? '✗' : st === 'tardy' ? 'T' : st === 'field_trip' ? 'FT' : ''
+        const bg = st === 'present' ? '#dcfce7' : st === 'absent' ? '#fee2e2' : st === 'tardy' ? '#fef3c7' : st === 'field_trip' ? '#ccfbf1' : d.isWknd ? '#f0f0f0' : ''
+        return `<td style="padding:2px 4px;border:1px solid #ccc;text-align:center;font-size:10px;font-weight:600;background:${bg}">${sym}</td>`
+      }).join('')
+      return `<tr><td style="padding:4px 8px;border:1px solid #ccc;font-size:11px;white-space:nowrap">${s.english_name} (${s.korean_name})</td>${cells}</tr>`
+    }).join('')
+    printWin.document.write(`<html><head><title>Attendance — ${selectedClass} ${monthName}</title><style>body{font-family:sans-serif;padding:15px}table{border-collapse:collapse}@media print{body{padding:0}}</style></head><body>
+      <h3 style="margin-bottom:4px">${selectedClass} — Grade ${selectedGrade} Attendance</h3><p style="color:#666;margin-top:0;font-size:12px">${monthName} · ${students.length} students</p>
+      <table><thead><tr><th style="padding:4px 8px;border:1px solid #ccc;text-align:left;font-size:10px">Student</th>${headerRow}</tr></thead><tbody>${rows}</tbody></table>
+      <p style="font-size:9px;color:#999;margin-top:8px">✓ Present · ✗ Absent · T Tardy · FT Field Trip</p></body></html>`)
+    printWin.document.close()
+    printWin.print()
+  }
 
   return (
     <div className="animate-fade-in">
@@ -110,6 +148,10 @@ export default function AttendanceView() {
               {lang === 'ko' ? '저장' : 'Save Attendance'}
             </button>
           )}
+          <button onClick={handlePrintAttendance}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt">
+            🖨️ {lang === 'ko' ? '월별 출력' : 'Print Monthly'}
+          </button>
         </div>
       </div>
 
@@ -163,7 +205,7 @@ export default function AttendanceView() {
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500" /> {presentCount} Present</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500" /> {absentCount} Absent</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500" /> {tardyCount} Tardy</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500" /> {excusedCount} Excused</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-teal-500" /> {ftCount} Field Trip</span>
             {unmarkedCount > 0 && <span className="text-text-tertiary">{unmarkedCount} unmarked</span>}
           </div>
         )}
@@ -183,7 +225,7 @@ export default function AttendanceView() {
                 <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-green-600 font-bold w-12">P</th>
                 <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-red-600 font-bold w-12">A</th>
                 <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-amber-600 font-bold w-12">T</th>
-                <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-blue-600 font-bold w-12">E</th>
+                <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-teal-600 font-bold w-12">FT</th>
                 <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-40">Note</th>
               </tr></thead>
               <tbody>
@@ -206,7 +248,7 @@ export default function AttendanceView() {
                           <span className="text-[10px] text-text-tertiary">—</span>
                         )}
                       </td>
-                      {(['present', 'absent', 'tardy', 'excused'] as Status[]).map(st => (
+                      {(['present', 'absent', 'tardy', 'field_trip'] as Status[]).map(st => (
                         <td key={st} className="px-2 py-2 text-center">
                           <button onClick={() => setStatus(s.id, st)}
                             className={`w-7 h-7 rounded-full text-[10px] font-bold transition-all border-2 ${
@@ -214,10 +256,10 @@ export default function AttendanceView() {
                                 ? st === 'present' ? 'bg-green-500 border-green-500 text-white'
                                 : st === 'absent' ? 'bg-red-500 border-red-500 text-white'
                                 : st === 'tardy' ? 'bg-amber-500 border-amber-500 text-white'
-                                : 'bg-blue-500 border-blue-500 text-white'
+                                : 'bg-teal-500 border-teal-500 text-white'
                                 : 'bg-surface border-border text-text-tertiary hover:border-navy/30'
                             }`}>
-                            {st[0].toUpperCase()}
+                            {STATUS_CONFIG[st].short}
                           </button>
                         </td>
                       ))}
