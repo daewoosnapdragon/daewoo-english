@@ -60,7 +60,6 @@ export default function Sidebar({
           }}
           className="w-full px-3 py-2 bg-navy rounded-lg text-[13px] text-white border border-blue-400/20 outline-none focus:border-gold/50 transition-colors"
         >
-          <option value="">{language === 'ko' ? '전체 보기' : 'All Classes'}</option>
           {teachers.map(t => (
             <option key={t.id} value={t.id}>
               {t.name} — {t.role === 'admin' ? 'Admin' : t.english_class}
