@@ -197,6 +197,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 }) {
   const [records, setRecords] = useState<ReadingRecord[]>([])
   const [loading, setLoading] = useState(false)
+  const [classBench, setClassBench] = useState<any>(null)
   const selected = students.find((s: any) => s.id === selectedStudentId)
   const bench = CWPM_BENCHMARKS[grade] || CWPM_BENCHMARKS[4]
 
@@ -209,6 +210,40 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
       setLoading(false)
     })()
   }, [selectedStudentId])
+
+  // Load class benchmarks
+  useEffect(() => {
+    if (!selected) return
+    ;(async () => {
+      const { data } = await supabase.from('class_benchmarks').select('*').eq('english_class', selected.english_class).limit(1).single()
+      if (data) setClassBench(data)
+    })()
+  }, [selected])
+
+  // Growth projection
+  const growthSentence = (() => {
+    if (records.length < 2 || !classBench) return null
+    const first = records[0], last = records[records.length - 1]
+    const daysBetween = (new Date(last.date).getTime() - new Date(first.date).getTime()) / (1000 * 60 * 60 * 24)
+    if (daysBetween < 7) return null
+    const monthsBetween = daysBetween / 30
+    const cwpmGain = (last.cwpm || 0) - (first.cwpm || 0)
+    const gainPerMonth = cwpmGain / monthsBetween
+    const target = classBench.cwpm_end
+    const current = last.cwpm || 0
+    const remaining = target - current
+    const monthsToTarget = remaining > 0 && gainPerMonth > 0 ? remaining / gainPerMonth : null
+
+    return {
+      gain: Math.round(cwpmGain),
+      assessments: records.length,
+      perMonth: gainPerMonth.toFixed(1),
+      current: Math.round(current),
+      target,
+      monthsToTarget: monthsToTarget ? monthsToTarget.toFixed(1) : null,
+      onTrack: current >= target || (monthsToTarget !== null && monthsToTarget <= 4),
+    }
+  })()
 
   return (
     <div className="space-y-4">
@@ -226,7 +261,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
           <div className="px-5 py-4 bg-accent-light border-b border-border flex items-center justify-between">
             <div>
               <h3 className="font-display text-lg font-semibold text-navy">{selected.english_name}<span className="text-text-tertiary ml-2 text-[14px] font-normal">{selected.korean_name}</span></h3>
-              <p className="text-[12px] text-text-secondary mt-0.5">{records.length} reading assessments</p>
+              <p className="text-[12px] text-text-secondary mt-0.5">{records.length} reading assessments{classBench && <span> | {selected.english_class} target: {classBench.cwpm_end} CWPM</span>}</p>
             </div>
             <button onClick={() => onAddRecord(selected.id)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark">
               <Plus size={12} /> Add Record
@@ -235,43 +270,28 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 
           {records.length > 0 ? (
             <>
-              {/* CWPM Chart — bigger, with Lexile context and benchmark lines */}
-              <div className="px-5 py-5 border-b border-border">
-                <p className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold mb-3 flex items-center gap-1"><TrendingUp size={13} /> CWPM Progression <span className="normal-case font-normal">— passage Lexile shown on each bar</span></p>
-                <div className="relative" style={{ height: '200px' }}>
-                  {/* Benchmark lines */}
-                  {[
-                    { val: bench.approaching, label: 'Approaching', color: '#F59E0B' },
-                    { val: bench.proficient, label: 'Proficient', color: '#22C55E' },
-                    { val: bench.advanced, label: 'Advanced', color: '#3B82F6' },
-                  ].map((line) => {
-                    const maxCwpm = Math.max(...records.map((r: any) => r.cwpm || 0), line.val + 20)
-                    const top = ((1 - line.val / maxCwpm) * 100)
-                    return top > 0 && top < 100 ? (
-                      <div key={line.label} className="absolute left-0 right-0 flex items-center" style={{ top: `${top}%` }}>
-                        <div className="flex-1 border-t border-dashed" style={{ borderColor: line.color, opacity: 0.4 }} />
-                        <span className="text-[8px] font-bold ml-1 whitespace-nowrap" style={{ color: line.color }}>{line.val} {line.label}</span>
-                      </div>
-                    ) : null
-                  })}
-                  <div className="flex items-end gap-2 h-full relative z-10">
-                    {records.map((r: any, i: number) => {
-                      const maxCwpm = Math.max(...records.map((x: any) => x.cwpm || 0), bench.advanced + 20)
-                      const height = ((r.cwpm || 0) / maxCwpm) * 100
-                      const barColor = r.accuracy_rate >= 95 ? '#22C55E' : r.accuracy_rate >= 90 ? '#F59E0B' : '#EF4444'
-                      return (
-                        <div key={r.id} className="flex-1 flex flex-col items-center gap-1" title={`${r.date}: ${Math.round(r.cwpm || 0)} CWPM${r.passage_level ? ' @ ' + r.passage_level : ''}`}>
-                          <span className="text-[10px] font-bold text-navy">{Math.round(r.cwpm || 0)}</span>
-                          {r.passage_level && <span className="text-[7px] text-text-tertiary font-medium bg-surface-alt px-1 rounded">{r.passage_level}</span>}
-                          <div className="w-full max-w-[40px] rounded-t transition-all" style={{ height: `${Math.max(height, 4)}%`, backgroundColor: barColor }} />
-                          <span className="text-[8px] text-text-tertiary">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
+              {/* Growth Summary Sentence */}
+              {growthSentence && (
+                <div className={`px-5 py-3 border-b text-[12px] leading-relaxed ${growthSentence.onTrack ? 'bg-green-50/50 border-green-200 text-green-800' : 'bg-amber-50/50 border-amber-200 text-amber-800'}`}>
+                  <span className="font-semibold">{selected.english_name}</span> has gained <span className="font-bold">{growthSentence.gain > 0 ? '+' : ''}{growthSentence.gain} CWPM</span> over {growthSentence.assessments} assessments ({growthSentence.perMonth}/month).
+                  {growthSentence.current >= growthSentence.target
+                    ? <span> Already at or above the <span className="font-semibold">{selected.english_class}</span> end-of-semester target of {growthSentence.target} CWPM.</span>
+                    : growthSentence.monthsToTarget
+                      ? <span> At this rate, projected to reach the <span className="font-semibold">{selected.english_class}</span> target of {growthSentence.target} CWPM in ~{growthSentence.monthsToTarget} months.</span>
+                      : <span> Current trajectory needs attention to reach the {growthSentence.target} CWPM target.</span>
+                  }
                 </div>
-                <div className="flex gap-4 mt-3 text-[9px] text-text-tertiary">
-                  <span>Bar color: <span className="text-green-600 font-bold">green</span> = ≥95% accuracy, <span className="text-amber-600 font-bold">amber</span> = 90-95%, <span className="text-red-600 font-bold">red</span> = &lt;90%</span>
+              )}
+
+              {/* CWPM Line Chart with Target Corridor */}
+              <div className="px-5 py-5 border-b border-border">
+                <p className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold mb-3 flex items-center gap-1"><TrendingUp size={13} /> CWPM Progression</p>
+                <CwpmLineChart records={records} classBench={classBench} />
+                <div className="flex gap-4 mt-3 text-[9px] text-text-tertiary flex-wrap">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> 95%+ accuracy</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> 90-94% accuracy</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> &lt;90% accuracy</span>
+                  {classBench && <span className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-green-200 inline-block border border-green-300" /> Target corridor ({classBench.cwpm_mid}-{classBench.cwpm_end} CWPM)</span>}
                 </div>
               </div>
 
@@ -312,6 +332,103 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
       )}
       {loading && <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>}
     </div>
+  )
+}
+
+// ─── CWPM Line Chart (SVG) ───────────────────────────────────────────
+
+function CwpmLineChart({ records, classBench }: { records: any[]; classBench: any | null }) {
+  if (records.length === 0) return null
+
+  const W = 600, H = 220, PAD = { top: 20, right: 30, bottom: 35, left: 45 }
+  const chartW = W - PAD.left - PAD.right
+  const chartH = H - PAD.top - PAD.bottom
+
+  const cwpmValues = records.map((r: any) => r.cwpm || 0)
+  const targetMax = classBench ? classBench.cwpm_end : 0
+  const maxY = Math.max(...cwpmValues, targetMax, 20) * 1.15
+  const minY = 0
+
+  const xScale = (i: number) => PAD.left + (i / Math.max(records.length - 1, 1)) * chartW
+  const yScale = (v: number) => PAD.top + chartH - ((v - minY) / (maxY - minY)) * chartH
+
+  // Target corridor
+  const corridorY1 = classBench ? yScale(classBench.cwpm_end) : 0
+  const corridorY2 = classBench ? yScale(classBench.cwpm_mid) : 0
+
+  // Line path
+  const linePath = records.map((r: any, i: number) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(r.cwpm || 0)}`).join(' ')
+
+  // Y-axis ticks
+  const yTicks: number[] = []
+  const step = maxY <= 50 ? 10 : maxY <= 100 ? 20 : maxY <= 200 ? 25 : 50
+  for (let v = 0; v <= maxY; v += step) yTicks.push(v)
+
+  const dotColor = (acc: number) => acc >= 95 ? '#22C55E' : acc >= 90 ? '#F59E0B' : '#EF4444'
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 240 }}>
+      {/* Grid lines */}
+      {yTicks.map((v) => (
+        <g key={v}>
+          <line x1={PAD.left} y1={yScale(v)} x2={W - PAD.right} y2={yScale(v)} stroke="#e5e7eb" strokeWidth="0.5" />
+          <text x={PAD.left - 6} y={yScale(v) + 3} textAnchor="end" fontSize="9" fill="#94a3b8">{v}</text>
+        </g>
+      ))}
+
+      {/* Target corridor */}
+      {classBench && (
+        <rect x={PAD.left} y={corridorY1} width={chartW} height={Math.max(corridorY2 - corridorY1, 1)}
+          fill="#dcfce7" stroke="#bbf7d0" strokeWidth="0.5" opacity="0.6" rx="2" />
+      )}
+
+      {/* Midterm target line */}
+      {classBench && (
+        <>
+          <line x1={PAD.left} y1={yScale(classBench.cwpm_mid)} x2={W - PAD.right} y2={yScale(classBench.cwpm_mid)}
+            stroke="#86efac" strokeWidth="1" strokeDasharray="4 3" />
+          <text x={W - PAD.right + 3} y={yScale(classBench.cwpm_mid) + 3} fontSize="8" fill="#16a34a" fontWeight="600">Mid {classBench.cwpm_mid}</text>
+        </>
+      )}
+
+      {/* End target line */}
+      {classBench && (
+        <>
+          <line x1={PAD.left} y1={yScale(classBench.cwpm_end)} x2={W - PAD.right} y2={yScale(classBench.cwpm_end)}
+            stroke="#22c55e" strokeWidth="1.5" strokeDasharray="6 3" />
+          <text x={W - PAD.right + 3} y={yScale(classBench.cwpm_end) + 3} fontSize="8" fill="#16a34a" fontWeight="700">End {classBench.cwpm_end}</text>
+        </>
+      )}
+
+      {/* Data line */}
+      <path d={linePath} fill="none" stroke="#1e3a5f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+      {/* Data points with accuracy color */}
+      {records.map((r: any, i: number) => {
+        const x = xScale(i), y = yScale(r.cwpm || 0)
+        return (
+          <g key={r.id || i}>
+            {/* White border */}
+            <circle cx={x} cy={y} r="6" fill="white" stroke="#e5e7eb" strokeWidth="1" />
+            {/* Colored dot */}
+            <circle cx={x} cy={y} r="5" fill={dotColor(r.accuracy_rate || 0)} stroke="white" strokeWidth="1.5" />
+            {/* CWPM label */}
+            <text x={x} y={y - 10} textAnchor="middle" fontSize="9" fontWeight="700" fill="#1e3a5f">{Math.round(r.cwpm || 0)}</text>
+            {/* Passage level */}
+            {r.passage_level && (
+              <text x={x} y={y - 20} textAnchor="middle" fontSize="7" fill="#94a3b8">{r.passage_level}</text>
+            )}
+            {/* Date on x-axis */}
+            <text x={x} y={H - 8} textAnchor="middle" fontSize="8" fill="#94a3b8">
+              {new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </text>
+          </g>
+        )
+      })}
+
+      {/* Y-axis label */}
+      <text x={12} y={PAD.top + chartH / 2} textAnchor="middle" fontSize="9" fill="#94a3b8" fontWeight="600" transform={`rotate(-90, 12, ${PAD.top + chartH / 2})`}>CWPM</text>
+    </svg>
   )
 }
 
