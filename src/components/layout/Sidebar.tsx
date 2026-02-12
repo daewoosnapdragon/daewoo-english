@@ -49,7 +49,9 @@ export default function Sidebar({
     <aside className="fixed left-0 top-0 bottom-0 w-[260px] bg-navy-dark flex flex-col z-50">
       {/* Header */}
       <div className="px-5 pt-6 pb-4 flex justify-center">
-        <img src="/logo.png" alt="School Logo" className="w-20 h-20 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+        <div className="w-20 h-20 rounded-full bg-white/95 flex items-center justify-center shadow-lg">
+          <img src="/logo.png" alt="School Logo" className="w-14 h-14 object-contain" onError={(e: any) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+        </div>
       </div>
 
       {/* Role Selector */}
