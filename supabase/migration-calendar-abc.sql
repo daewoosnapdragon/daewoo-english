@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title TEXT NOT NULL,
   date DATE NOT NULL,
-  type TEXT NOT NULL DEFAULT 'other' CHECK (type IN ('lesson_plan', 'day_off', 'deadline', 'meeting', 'event', 'testing', 'other')),
+  type TEXT NOT NULL DEFAULT 'other' CHECK (type IN ('day_off', 'deadline', 'meeting', 'midterm', 'report_cards', 'event', 'field_trip', 'assembly', 'testing', 'other')),
   description TEXT DEFAULT '',
   created_by UUID REFERENCES teachers(id),
   created_at TIMESTAMPTZ DEFAULT now()
@@ -44,3 +44,8 @@ END $$;
 ALTER TABLE behavior_logs DROP CONSTRAINT IF EXISTS behavior_logs_type_check;
 ALTER TABLE behavior_logs ADD CONSTRAINT behavior_logs_type_check 
   CHECK (type IN ('positive', 'concern', 'parent_contact', 'intervention', 'note', 'abc'));
+
+-- Update assessment type constraint to include all categories
+ALTER TABLE assessments DROP CONSTRAINT IF EXISTS assessments_type_check;
+ALTER TABLE assessments ADD CONSTRAINT assessments_type_check
+  CHECK (type IN ('formative', 'summative', 'performance_task', 'quiz', 'project', 'assignment', 'homework', 'participation', 'other'));

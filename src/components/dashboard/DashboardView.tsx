@@ -9,11 +9,14 @@ import { classToColor, classToTextColor } from '@/lib/utils'
 import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 
 const EVENT_TYPES = [
-  { value: 'lesson_plan', label: 'Lesson Plan', color: '#3B82F6', bg: 'bg-blue-100 text-blue-800' },
   { value: 'day_off', label: 'Day Off', color: '#22C55E', bg: 'bg-green-100 text-green-800' },
   { value: 'deadline', label: 'Deadline', color: '#EF4444', bg: 'bg-red-100 text-red-800' },
   { value: 'meeting', label: 'Meeting', color: '#A855F7', bg: 'bg-purple-100 text-purple-800' },
+  { value: 'midterm', label: 'Midterm', color: '#F97316', bg: 'bg-orange-100 text-orange-800' },
+  { value: 'report_cards', label: 'Report Cards', color: '#0EA5E9', bg: 'bg-sky-100 text-sky-800' },
   { value: 'event', label: 'School Event', color: '#F59E0B', bg: 'bg-amber-100 text-amber-800' },
+  { value: 'field_trip', label: 'Field Trip', color: '#14B8A6', bg: 'bg-teal-100 text-teal-800' },
+  { value: 'assembly', label: 'Assembly', color: '#8B5CF6', bg: 'bg-violet-100 text-violet-800' },
   { value: 'testing', label: 'Testing', color: '#EC4899', bg: 'bg-pink-100 text-pink-800' },
   { value: 'other', label: 'Other', color: '#6B7280', bg: 'bg-gray-100 text-gray-700' },
 ]
@@ -24,16 +27,44 @@ interface FlaggedEntry { id: string; student_id: string; date: string; type: str
 export default function DashboardView() {
   const { language, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
+  const [semesters, setSemesters] = useState<{ id: string; name: string; name_ko: string; is_active: boolean }[]>([])
+  const [activeSem, setActiveSem] = useState<string>('')
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('semesters').select('id, name, name_ko, is_active').order('start_date', { ascending: false })
+      if (data && data.length > 0) {
+        setSemesters(data)
+        const active = data.find((s: any) => s.is_active)
+        setActiveSem(active?.name || data[0].name)
+      } else {
+        setActiveSem('Spring 2026')
+      }
+    })()
+  }, [])
 
   return (
     <div className="animate-fade-in">
       <div className="px-10 pt-6 pb-5 bg-surface border-b border-border">
-        <div className="flex items-center gap-4">
-          <img src="/logo.png" alt="School Logo" className="w-14 h-14 object-contain rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-          <div>
-            <h2 className="font-display text-[22px] font-semibold tracking-tight text-navy">{language === 'ko' ? '대시보드' : 'Dashboard'}</h2>
-            <p className="text-text-secondary text-[13px] mt-0.5">{language === 'ko' ? '프로그램 전체 현황' : 'Program overview — Spring 2026'}</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src="/logo.png" alt="School Logo" className="w-14 h-14 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            <div>
+              <h2 className="font-display text-[22px] font-semibold tracking-tight text-navy">{language === 'ko' ? '대시보드' : 'Dashboard'}</h2>
+              <p className="text-text-secondary text-[13px] mt-0.5">{language === 'ko' ? '프로그램 전체 현황' : `Program overview — ${activeSem}`}</p>
+            </div>
           </div>
+          {semesters.length > 0 && (
+            <div className="flex items-center gap-1 bg-surface-alt rounded-lg p-1">
+              {semesters.map(sem => (
+                <button key={sem.id} onClick={() => setActiveSem(language === 'ko' ? sem.name_ko : sem.name)}
+                  className={`px-3 py-1.5 rounded-md text-[11.5px] font-medium transition-all ${(language === 'ko' ? sem.name_ko : sem.name) === activeSem ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-surface'}`}>
+                  {language === 'ko' ? sem.name_ko : sem.name}
+                  {sem.is_active && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div className="px-10 py-6">
@@ -144,11 +175,19 @@ function SharedCalendar() {
   const days = new Date(y, m + 1, 0).getDate()
   const today = new Date().toISOString().split('T')[0]
 
+  const [tableError, setTableError] = useState(false)
+
   const load = useCallback(async () => {
     const s = `${y}-${String(m+1).padStart(2,'0')}-01`
     const e = `${y}-${String(m+1).padStart(2,'0')}-${days}`
-    const { data } = await supabase.from('calendar_events').select('*').gte('date', s).lte('date', e).order('date')
-    if (data) setEvents(data)
+    const { data, error } = await supabase.from('calendar_events').select('*').gte('date', s).lte('date', e).order('date')
+    if (error) {
+      console.warn('Calendar table error:', error.message)
+      setTableError(true)
+    } else {
+      if (data) setEvents(data)
+      setTableError(false)
+    }
     setLoading(false)
   }, [y, m, days])
 
@@ -176,7 +215,7 @@ function SharedCalendar() {
             <button onClick={() => setCur(new Date())} className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light ml-1">Today</button>
           </div>
         </div>
-        <button onClick={() => { setShowAdd(true); if (!selDay) setSelDay(today) }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Plus size={13} /> Add Event</button>
+        <button onClick={() => { if (tableError) { showToast('Run the SQL migration first to create the calendar_events table'); return }; setShowAdd(true); if (!selDay) setSelDay(today) }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Plus size={13} /> Add Event</button>
       </div>
 
       {/* Legend */}
@@ -188,6 +227,15 @@ function SharedCalendar() {
           </span>
         ))}
       </div>
+
+      {/* Table setup needed */}
+      {tableError && (
+        <div className="mx-5 my-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-[13px] font-medium text-amber-800 mb-1">Calendar table needs setup</p>
+          <p className="text-[11px] text-amber-700">Run the SQL migration in Supabase SQL Editor to create the <code className="bg-amber-100 px-1 rounded">calendar_events</code> table. See the migration file included in the deployment package.</p>
+          <button onClick={() => load()} className="mt-2 px-3 py-1 rounded text-[11px] font-medium bg-amber-200 text-amber-800 hover:bg-amber-300">Retry</button>
+        </div>
+      )}
 
       {/* Calendar Grid */}
       <div className="p-4">

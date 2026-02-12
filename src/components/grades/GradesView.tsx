@@ -34,15 +34,17 @@ interface Assessment {
   created_at: string
 }
 
-interface StudentRow { id: string; english_name: string; korean_name: string }
+interface StudentRow { id: string; english_name: string; korean_name: string; photo_url?: string }
 type SubView = 'entry' | 'overview' | 'student'
 type LangKey = 'en' | 'ko'
+
+interface Semester { id: string; name: string; name_ko: string; type: string; is_active: boolean }
 
 export default function GradesView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
   const [subView, setSubView] = useState<SubView>('entry')
-  const [selectedGrade, setSelectedGrade] = useState<Grade>(3)
+  const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
   )
@@ -57,6 +59,20 @@ export default function GradesView() {
   const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+  const [semesters, setSemesters] = useState<Semester[]>([])
+  const [selectedSemester, setSelectedSemester] = useState<string | null>(null)
+
+  // Load semesters
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('semesters').select('*').order('start_date', { ascending: false })
+      if (data && data.length > 0) {
+        setSemesters(data)
+        const active = data.find((s: Semester) => s.is_active)
+        setSelectedSemester(active?.id || data[0].id)
+      }
+    })()
+  }, [])
 
   const isTeacher = currentTeacher?.role === 'teacher'
   const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
@@ -66,8 +82,10 @@ export default function GradesView() {
 
   const loadAssessments = useCallback(async () => {
     setLoadingAssessments(true)
-    const { data, error } = await supabase.from('assessments').select('*')
+    let query = supabase.from('assessments').select('*')
       .eq('grade', selectedGrade).eq('english_class', selectedClass).eq('domain', selectedDomain)
+    if (selectedSemester) query = query.eq('semester_id', selectedSemester)
+    const { data, error } = await query
       .order('date', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true })
     if (!error && data) {
       setAssessments(data)
@@ -77,14 +95,15 @@ export default function GradesView() {
       } else { setSelectedAssessment(null) }
     }
     setLoadingAssessments(false)
-  }, [selectedGrade, selectedClass, selectedDomain])
+  }, [selectedGrade, selectedClass, selectedDomain, selectedSemester])
 
   const loadAllAssessments = useCallback(async () => {
-    const { data } = await supabase.from('assessments').select('*')
+    let query = supabase.from('assessments').select('*')
       .eq('grade', selectedGrade).eq('english_class', selectedClass)
-      .order('domain').order('created_at', { ascending: true })
+    if (selectedSemester) query = query.eq('semester_id', selectedSemester)
+    const { data } = await query.order('domain').order('created_at', { ascending: true })
     if (data) setAllAssessments(data)
-  }, [selectedGrade, selectedClass])
+  }, [selectedGrade, selectedClass, selectedSemester])
 
   useEffect(() => { loadAssessments() }, [loadAssessments])
   useEffect(() => { loadAllAssessments() }, [loadAllAssessments])
@@ -196,6 +215,19 @@ export default function GradesView() {
 
       <div className="px-10 py-6">
         <div className="flex items-center gap-3 mb-5">
+          {/* Semester Toggle */}
+          {semesters.length > 0 && (
+            <div className="flex items-center gap-1 bg-surface-alt rounded-lg p-1">
+              {semesters.map(sem => (
+                <button key={sem.id} onClick={() => { setSelectedSemester(sem.id); setSelectedAssessment(null) }}
+                  className={`px-3 py-1.5 rounded-md text-[11.5px] font-medium transition-all ${selectedSemester === sem.id ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-surface'}`}>
+                  {lang === 'ko' ? sem.name_ko : sem.name}
+                  {sem.is_active && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="w-px h-6 bg-border" />
           <select value={selectedGrade} onChange={e => { setSelectedGrade(Number(e.target.value) as Grade); setSelectedAssessment(null) }}
             className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
             {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
@@ -220,7 +252,7 @@ export default function GradesView() {
         {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
       </div>
 
-      {(showCreateModal || editingAssessment) && <AssessmentModal grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} editing={editingAssessment} onClose={() => { setShowCreateModal(false); setEditingAssessment(null) }} onSaved={(a: Assessment) => { setShowCreateModal(false); setEditingAssessment(null); loadAssessments().then(() => setSelectedAssessment(a)); loadAllAssessments() }} />}
+      {(showCreateModal || editingAssessment) && <AssessmentModal grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} editing={editingAssessment} semesterId={selectedSemester} onClose={() => { setShowCreateModal(false); setEditingAssessment(null) }} onSaved={(a: Assessment) => { setShowCreateModal(false); setEditingAssessment(null); loadAssessments().then(() => setSelectedAssessment(a)); loadAllAssessments() }} />}
     </div>
   )
 }
@@ -299,6 +331,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
               <table className="w-full text-[13px]">
                 <thead><tr className="bg-surface-alt">
                   <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-10"></th>
                   <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Student</th>
                   <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Score /{selectedAssessment.max_score}</th>
                   <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">%</th>
@@ -311,6 +344,13 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                     return (
                       <tr key={s.id} className="border-t border-border table-row-hover">
                         <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
+                        <td className="px-4 py-2">
+                          {s.photo_url ? (
+                            <img src={s.photo_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-surface-alt flex items-center justify-center"><User size={12} className="text-text-tertiary" /></div>
+                          )}
+                        </td>
                         <td className="px-4 py-2.5"><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></td>
                         <td className="px-4 py-2.5 text-center"><input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={score != null ? score : ''} onChange={e => handleScoreChange(s.id, e.target.value)} onKeyDown={e => handleKeyDown(e, i)} placeholder="" /></td>
                         <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{pct ? `${pct}%` : '—'}</td>
@@ -358,13 +398,13 @@ function StatsBar({ scores, maxScore, lang }: { scores: Record<string, number | 
 // ─── Domain Overview ────────────────────────────────────────────────
 
 function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: { allAssessments: Assessment[]; selectedGrade: Grade; selectedClass: EnglishClass; lang: LangKey }) {
-  const [stats, setStats] = useState<Record<Domain, { avg: number | null; count: number; assessmentCount: number }>>({ reading: { avg: null, count: 0, assessmentCount: 0 }, phonics: { avg: null, count: 0, assessmentCount: 0 }, writing: { avg: null, count: 0, assessmentCount: 0 }, speaking: { avg: null, count: 0, assessmentCount: 0 }, language: { avg: null, count: 0, assessmentCount: 0 } })
+  const [stats, setStats] = useState<Record<Domain, { avg: number | null; count: number; assessmentCount: number; assessments: { name: string; avg: number }[] }>>({ reading: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, phonics: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, writing: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, speaking: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, language: { avg: null, count: 0, assessmentCount: 0, assessments: [] } })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const result: Record<Domain, { avg: number | null; count: number; assessmentCount: number }> = { reading: { avg: null, count: 0, assessmentCount: 0 }, phonics: { avg: null, count: 0, assessmentCount: 0 }, writing: { avg: null, count: 0, assessmentCount: 0 }, speaking: { avg: null, count: 0, assessmentCount: 0 }, language: { avg: null, count: 0, assessmentCount: 0 } }
+      const result: typeof stats = { reading: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, phonics: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, writing: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, speaking: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, language: { avg: null, count: 0, assessmentCount: 0, assessments: [] } }
       for (const domain of DOMAINS) {
         const da = allAssessments.filter(a => a.domain === domain)
         result[domain].assessmentCount = da.length
@@ -375,6 +415,14 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
           const pcts = grades.map(g => { const a = da.find(x => x.id === g.assessment_id); return a && a.max_score > 0 ? (g.score / a.max_score) * 100 : null }).filter((p): p is number => p != null)
           result[domain].count = pcts.length
           result[domain].avg = pcts.length > 0 ? pcts.reduce((a, b) => a + b, 0) / pcts.length : null
+          // Per-assessment averages for bar chart
+          for (const a of da) {
+            const aGrades = grades.filter(g => g.assessment_id === a.id)
+            if (aGrades.length > 0 && a.max_score > 0) {
+              const avg = aGrades.reduce((sum, g) => sum + (g.score / a.max_score) * 100, 0) / aGrades.length
+              result[domain].assessments.push({ name: a.name, avg })
+            }
+          }
         }
       }
       setStats(result); setLoading(false)
@@ -386,24 +434,85 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
 
   const validAvgs = DOMAINS.map(d => stats[d].avg).filter((v): v is number => v != null)
   const overallAvg = validAvgs.length > 0 ? validAvgs.reduce((a, b) => a + b, 0) / validAvgs.length : null
+  const domainColors: Record<Domain, string> = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' }
 
   return (
-    <div className="bg-surface border border-border rounded-xl p-6">
-      <h3 className="font-display text-lg font-semibold text-navy mb-1">{lang === 'ko' ? '도메인 개요' : 'Domain Overview'}</h3>
-      <p className="text-[12px] text-text-tertiary mb-4">Grade {selectedGrade} · {selectedClass} · {allAssessments.length} {lang === 'ko' ? '개 평가' : 'assessments total'}</p>
-      {overallAvg != null && <div className="mb-5 p-4 bg-accent-light rounded-lg"><span className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold">{lang === 'ko' ? '전체 평균' : 'Overall Average'}</span><div className="text-3xl font-display font-bold text-navy mt-1">{overallAvg.toFixed(1)}%</div></div>}
-      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+    <div className="space-y-4">
+      {/* Overall summary bar */}
+      {overallAvg != null && (
+        <div className="bg-surface border border-border rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-display text-lg font-semibold text-navy">{lang === 'ko' ? '도메인 개요' : 'Domain Overview'}</h3>
+              <p className="text-[12px] text-text-tertiary">Grade {selectedGrade} · {selectedClass} · {allAssessments.length} {lang === 'ko' ? '개 평가' : 'assessments total'}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">{lang === 'ko' ? '전체 평균' : 'Overall Average'}</p>
+              <p className="text-3xl font-display font-bold text-navy">{overallAvg.toFixed(1)}%</p>
+            </div>
+          </div>
+          {/* Domain bar chart */}
+          <div className="space-y-3">
+            {DOMAINS.map(domain => {
+              const s = stats[domain]; const pct = s.avg
+              const color = domainColors[domain]
+              return (
+                <div key={domain} className="flex items-center gap-3">
+                  <span className="text-[11px] font-semibold text-text-secondary w-20 text-right">{DOMAIN_LABELS[domain][lang]}</span>
+                  <div className="flex-1 h-7 bg-surface-alt rounded-lg overflow-hidden relative">
+                    {pct != null ? (
+                      <div className="h-full rounded-lg transition-all duration-700 flex items-center" style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: color }}>
+                        <span className="text-[10px] font-bold text-white ml-2 whitespace-nowrap">{pct.toFixed(1)}%</span>
+                      </div>
+                    ) : (
+                      <span className="absolute inset-0 flex items-center justify-center text-[10px] text-text-tertiary">No data</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-text-tertiary w-10">{s.assessmentCount} {lang === 'ko' ? '개' : ''}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Per-domain assessment breakdown with mini bar charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {DOMAINS.map(domain => {
-          const s = stats[domain]; const pct = s.avg
-          const color = pct == null ? '#E0DDD6' : pct >= 80 ? '#059669' : pct >= 60 ? '#d97706' : '#DC2626'
+          const s = stats[domain]
+          if (s.assessmentCount === 0) return null
+          const color = domainColors[domain]
           return (
-            <div key={domain} className="bg-surface-alt rounded-lg p-4">
-              <p className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold mb-2">{DOMAIN_LABELS[domain][lang]}</p>
-              {pct != null ? (<><div className="text-2xl font-display font-bold" style={{ color }}>{pct.toFixed(1)}%</div><div className="w-full h-2 bg-border rounded-full mt-2 overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} /></div><p className="text-[10px] text-text-tertiary mt-1.5">{s.assessmentCount} {lang === 'ko' ? '개 평가' : 'assessments'} · {s.count} scores</p></>) : (<p className="text-text-tertiary text-[13px]">—</p>)}
+            <div key={domain} className="bg-surface border border-border rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-border flex items-center justify-between" style={{ backgroundColor: `${color}08` }}>
+                <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color }}>{DOMAIN_LABELS[domain][lang]}</span>
+                {s.avg != null && <span className="text-[14px] font-bold" style={{ color }}>{s.avg.toFixed(1)}%</span>}
+              </div>
+              <div className="p-4 space-y-2">
+                {s.assessments.length > 0 ? s.assessments.map((a, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-[10px] text-text-secondary w-28 truncate text-right" title={a.name}>{a.name}</span>
+                    <div className="flex-1 h-5 bg-surface-alt rounded overflow-hidden">
+                      <div className="h-full rounded transition-all duration-500 flex items-center" style={{ width: `${Math.max(a.avg, 3)}%`, backgroundColor: `${color}CC` }}>
+                        {a.avg > 15 && <span className="text-[9px] font-bold text-white ml-1.5">{a.avg.toFixed(0)}%</span>}
+                      </div>
+                    </div>
+                    {a.avg <= 15 && <span className="text-[9px] font-medium text-text-tertiary">{a.avg.toFixed(0)}%</span>}
+                  </div>
+                )) : (
+                  <p className="text-[11px] text-text-tertiary text-center py-2">No scores entered yet</p>
+                )}
+              </div>
             </div>
           )
         })}
       </div>
+
+      {allAssessments.length === 0 && (
+        <div className="bg-surface border border-border rounded-xl p-12 text-center">
+          <p className="text-text-tertiary text-sm">{lang === 'ko' ? '아직 평가가 없습니다.' : 'No assessments yet. Create your first assessment in Score Entry.'}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -458,7 +567,7 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
                 </div>
                 <table className="w-full text-[12px]">
                   <thead><tr className="text-[10px] uppercase tracking-wider text-text-tertiary">
-                    <th className="text-left px-5 py-2">Assessment</th><th className="text-center px-3 py-2">Score</th><th className="text-center px-3 py-2">%</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균' : 'Class Avg'}</th><th className="text-center px-3 py-2">{lang === 'ko' ? '차이' : 'Diff'}</th>
+                    <th className="text-left px-5 py-2">Assessment</th><th className="text-center px-3 py-2">Score</th><th className="text-center px-3 py-2">%</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균' : 'Class Avg'}</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균 대비' : 'vs. Class'}</th>
                   </tr></thead>
                   <tbody>{da.map(a => {
                     const sc = studentGrades[a.id]; const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
@@ -488,7 +597,7 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
 
 // ─── Assessment Modal ───────────────────────────────────────────────
 
-function AssessmentModal({ grade, englishClass, domain, editing, onClose, onSaved }: { grade: Grade; englishClass: EnglishClass; domain: Domain; editing: Assessment | null; onClose: () => void; onSaved: (a: Assessment) => void }) {
+function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onClose, onSaved }: { grade: Grade; englishClass: EnglishClass; domain: Domain; editing: Assessment | null; semesterId: string | null; onClose: () => void; onSaved: (a: Assessment) => void }) {
   const { language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
   const [name, setName] = useState(editing?.name || '')
@@ -503,7 +612,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, onClose, onSave
 
   const handleSave = async () => {
     if (!name.trim()) return; setSaving(true)
-    const payload = { name: name.trim(), domain: selDomain, max_score: maxScore, grade, english_class: englishClass, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null }
+    const payload = { name: name.trim(), domain: selDomain, max_score: maxScore, grade, english_class: englishClass, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null }
     if (editing) {
       const { data, error } = await supabase.from('assessments').update(payload).eq('id', editing.id).select().single()
       setSaving(false)
