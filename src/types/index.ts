@@ -171,7 +171,7 @@ export interface BehaviorLog {
   id: string;
   student_id: string;
   date: string;
-  type: 'positive' | 'concern' | 'parent_contact' | 'intervention' | 'note' | 'abc';
+  type: 'positive' | 'concern' | 'parent_contact' | 'intervention' | 'note' | 'abc' | 'negative';
   note: string;
   is_flagged: boolean;
   teacher_id: string | null;
