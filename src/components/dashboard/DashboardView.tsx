@@ -93,7 +93,7 @@ function AdminAlertPanel() {
 
   const dismiss = async (id: string) => {
     await supabase.from('behavior_logs').update({ is_flagged: false }).eq('id', id)
-    setFlagged((p: any) => p.filter(f => f.id !== id))
+    setFlagged((p: any) => p.filter((f: any) => f.id !== id))
     showToast('Flag dismissed')
   }
 
@@ -202,7 +202,7 @@ function SharedCalendar() {
 
   useEffect(() => { load() }, [load])
 
-  const dayEvts = (d: string) => events.filter(e => e.date === d)
+  const dayEvts = (d: string) => events.filter((e: any) => e.date === d)
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this event?')) return
@@ -393,7 +393,7 @@ function AddEventModal({ date, onClose, onSaved }: { date: string; onClose: () =
 function ClassOverviewTable() {
   const { language } = useApp()
   const { counts, loading } = useClassCounts()
-  const totalStudents = counts.reduce((a, c) => a + c.count, 0)
+  const totalStudents = counts.reduce((a: any, c: any) => a + c.count, 0)
 
   return (
     <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
@@ -415,7 +415,7 @@ function ClassOverviewTable() {
           </thead>
           <tbody>
             {[2,3,4,5].map(grade => {
-              const gradeTotal = counts.filter(c => c.grade === grade).reduce((a, c) => a + c.count, 0)
+              const gradeTotal = counts.filter((c: any) => c.grade === grade).reduce((a, c) => a + c.count, 0)
               return (
                 <tr key={grade} className="border-t border-border">
                   <td className="px-2 py-2.5 font-semibold text-navy">Grade {grade}</td>
@@ -430,7 +430,7 @@ function ClassOverviewTable() {
             <tr className="border-t-2 border-navy/20">
               <td className="px-2 py-2.5 font-bold text-navy">Total</td>
               {ENGLISH_CLASSES.map(cls => {
-                const total = counts.filter(c => c.english_class === cls).reduce((a, c) => a + c.count, 0)
+                const total = counts.filter((c: any) => c.english_class === cls).reduce((a, c) => a + c.count, 0)
                 return <td key={cls} className="text-center px-2 py-2.5 font-bold">{total || '—'}</td>
               })}
               <td className="text-center px-2 py-2.5 font-bold text-gold text-lg">{totalStudents || '—'}</td>
