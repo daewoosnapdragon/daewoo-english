@@ -68,6 +68,9 @@ export default function LevelingView() {
               <div><p className="text-[14px] font-semibold text-navy">{t.name}</p><p className="text-[12px] text-text-tertiary mt-0.5">Grade {t.grade} | {t.semester} | {t.academic_year}</p></div>
               <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${t.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{t.status.toUpperCase()}</span>
             </button>))}</div>}
+
+        {/* Emergency Leveling - Grade 1 Only */}
+        {isAdmin && <EmergencyLeveling />}
       </div>
     </div>
   )
@@ -93,6 +96,116 @@ export default function LevelingView() {
       {phase === 'meeting' && <MeetingPhase levelTest={selectedTest} onFinalize={() => {
         setSelectedTest({ ...selectedTest, status: 'finalized' }); setLevelTests(prev => prev.map(t => t.id === selectedTest.id ? { ...t, status: 'finalized' } : t))
       }} />}
+    </div>
+  )
+}
+
+// ─── Emergency Leveling (Grade 1 Only) ──────────────────────────────
+
+function EmergencyLeveling() {
+  const { showToast, currentTeacher } = useApp()
+  const [students, setStudents] = useState<Student[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedStudent, setSelectedStudent] = useState<string>('')
+  const [newClass, setNewClass] = useState<EnglishClass>('Lily')
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [history, setHistory] = useState<any[]>([])
+
+  useEffect(() => {
+    (async () => {
+      const { data: studs } = await supabase.from('students').select('*').eq('grade', 1).eq('is_active', true).order('english_class').order('english_name')
+      if (studs) setStudents(studs)
+      // Load emergency move history from notes pattern
+      const { data: logs } = await supabase.from('behavior_logs').select('*, students(english_name, korean_name)').eq('type', 'note').like('note', 'EMERGENCY LEVEL CHANGE%').order('created_at', { ascending: false }).limit(20)
+      if (logs) setHistory(logs)
+      setLoading(false)
+    })()
+  }, [])
+
+  const handleMove = async () => {
+    if (!selectedStudent || !reason.trim()) { showToast('Select a student and provide a reason'); return }
+    const student = students.find(s => s.id === selectedStudent)
+    if (!student) return
+    const oldClass = student.english_class
+    if (oldClass === newClass) { showToast('Student is already in that class'); return }
+
+    if (!confirm(`Move ${student.english_name} from ${oldClass} to ${newClass}?\n\nReason: ${reason}`)) return
+
+    setSaving(true)
+    // Update student class
+    const teacherMap: Record<string, string> = { Lily: '00000000-0000-0000-0000-000000000001', Camellia: '00000000-0000-0000-0000-000000000002', Daisy: '00000000-0000-0000-0000-000000000003', Sunflower: '00000000-0000-0000-0000-000000000004', Marigold: '00000000-0000-0000-0000-000000000005', Snapdragon: '00000000-0000-0000-0000-000000000006' }
+    await supabase.from('students').update({ english_class: newClass, teacher_id: teacherMap[newClass] || null }).eq('id', selectedStudent)
+    // Log the change as a behavior note for tracking
+    await supabase.from('behavior_logs').insert({
+      student_id: selectedStudent, date: new Date().toISOString().split('T')[0], type: 'note',
+      note: `EMERGENCY LEVEL CHANGE: ${oldClass} -> ${newClass}. Reason: ${reason}`,
+      is_flagged: false, teacher_id: currentTeacher?.id || null,
+    })
+    setSaving(false)
+    showToast(`${student.english_name} moved from ${oldClass} to ${newClass}`)
+    setSelectedStudent(''); setReason(''); setNewClass('Lily')
+    // Refresh
+    const { data: studs } = await supabase.from('students').select('*').eq('grade', 1).eq('is_active', true).order('english_class').order('english_name')
+    if (studs) setStudents(studs)
+    const { data: logs } = await supabase.from('behavior_logs').select('*, students(english_name, korean_name)').eq('type', 'note').like('note', 'EMERGENCY LEVEL CHANGE%').order('created_at', { ascending: false }).limit(20)
+    if (logs) setHistory(logs)
+  }
+
+  if (loading) return null
+
+  return (
+    <div className="mt-8 pt-6 border-t border-border">
+      <div className="flex items-center gap-2 mb-4">
+        <AlertTriangle size={18} className="text-amber-500" />
+        <h3 className="font-display text-lg font-semibold text-navy">Emergency Leveling</h3>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Grade 1 Only</span>
+      </div>
+      <p className="text-[12px] text-text-secondary mb-4">Move Grade 1 students between classes mid-semester if they are not a good fit. This is tracked and logged.</p>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student</label>
+            <select value={selectedStudent} onChange={e => { setSelectedStudent(e.target.value); const s = students.find(st => st.id === e.target.value); if (s) setNewClass(s.english_class as EnglishClass) }}
+              className="w-full px-2.5 py-2 border border-amber-300 rounded-lg text-[12px] bg-white outline-none">
+              <option value="">Select student...</option>
+              {students.map(s => <option key={s.id} value={s.id}>{s.english_name} ({s.korean_name}) -- {s.english_class}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Move To</label>
+            <select value={newClass} onChange={e => setNewClass(e.target.value as EnglishClass)}
+              className="w-full px-2.5 py-2 border border-amber-300 rounded-lg text-[12px] bg-white outline-none">
+              {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Reason *</label>
+            <input value={reason} onChange={e => setReason(e.target.value)} placeholder="Why is this student being moved?"
+              className="w-full px-2.5 py-2 border border-amber-300 rounded-lg text-[12px] bg-white outline-none" />
+          </div>
+        </div>
+        <button onClick={handleMove} disabled={saving || !selectedStudent || !reason.trim()}
+          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-medium bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40">
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <AlertTriangle size={14} />} Move Student
+        </button>
+      </div>
+
+      {history.length > 0 && (
+        <div className="mt-4">
+          <p className="text-[11px] font-semibold text-text-secondary mb-2">Recent Emergency Moves</p>
+          <div className="space-y-1">
+            {history.map((h: any) => (
+              <div key={h.id} className="flex items-center gap-2 text-[11px] text-text-secondary bg-surface-alt rounded-lg px-3 py-1.5">
+                <span className="font-medium text-navy">{h.students?.english_name || 'Unknown'}</span>
+                <span className="text-text-tertiary">{h.note.replace('EMERGENCY LEVEL CHANGE: ', '')}</span>
+                <span className="ml-auto text-text-tertiary">{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -137,6 +250,8 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Leve
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<EnglishClass>(teacherClass || 'Lily')
+  const [editingSections, setEditingSections] = useState(false)
+  const [editSections, setEditSections] = useState<{ key: string; label: string; max: number | null }[]>([])
 
   const sections = levelTest.config?.sections || [
     { key: 'word_reading_correct', label: 'WR Correct', max: 80 },
@@ -146,6 +261,13 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Leve
     { key: 'written_mc', label: 'MC', max: 21 },
     { key: 'writing', label: 'Writing', max: 20 },
   ]
+
+  const handleSaveSections = async () => {
+    const config = { ...(levelTest.config || {}), sections: editSections }
+    const { error } = await supabase.from('level_tests').update({ config }).eq('id', levelTest.id)
+    if (error) showToast(`Error: ${error.message}`)
+    else { showToast('Sections updated -- reload to see changes'); setEditingSections(false) }
+  }
 
   useEffect(() => {
     (async () => {
@@ -190,10 +312,47 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Leve
     <div className="px-10 py-6">
       <div className="flex items-center justify-between">
         <ClassTabs active={activeTab} onSelect={setActiveTab} counts={classCounts} available={available} />
-        <button onClick={handleSaveClass} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 mb-4">
-          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save {activeTab}
-        </button>
+        <div className="flex items-center gap-2 mb-4">
+          {isAdmin && !editingSections && (
+            <button onClick={() => { setEditSections(sections.map(s => ({ ...s }))); setEditingSections(true) }}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+              <SlidersHorizontal size={12} /> Edit Sections
+            </button>
+          )}
+          <button onClick={handleSaveClass} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save {activeTab}
+          </button>
+        </div>
       </div>
+
+      {editingSections && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 space-y-2">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[12px] font-semibold text-amber-800">Edit Test Sections</p>
+            <div className="flex gap-2">
+              <button onClick={() => setEditSections([...editSections, { key: `section_${Date.now()}`, label: 'New Section', max: null }])}
+                className="text-[11px] px-2 py-1 rounded bg-amber-200 text-amber-800 hover:bg-amber-300"><Plus size={10} className="inline" /> Add</button>
+              <button onClick={handleSaveSections} className="text-[11px] px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700">Save Sections</button>
+              <button onClick={() => setEditingSections(false)} className="text-[11px] px-2 py-1 rounded text-amber-700 hover:bg-amber-100">Cancel</button>
+            </div>
+          </div>
+          {editSections.map((sec, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input value={sec.label} onChange={e => { const ns = [...editSections]; ns[i] = { ...ns[i], label: e.target.value }; setEditSections(ns) }}
+                className="flex-1 px-2 py-1 border border-amber-300 rounded text-[12px] bg-white" placeholder="Label" />
+              <input value={sec.key} onChange={e => { const ns = [...editSections]; ns[i] = { ...ns[i], key: e.target.value.replace(/\s/g, '_').toLowerCase() }; setEditSections(ns) }}
+                className="w-32 px-2 py-1 border border-amber-300 rounded text-[11px] bg-white font-mono" placeholder="key_name" />
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-amber-700">Max:</span>
+                <input type="number" value={sec.max ?? ''} onChange={e => { const ns = [...editSections]; ns[i] = { ...ns[i], max: e.target.value === '' ? null : Number(e.target.value) }; setEditSections(ns) }}
+                  className="w-14 px-1.5 py-1 border border-amber-300 rounded text-[11px] text-center bg-white" placeholder="--" />
+              </div>
+              <button onClick={() => setEditSections(editSections.filter((_, j) => j !== i))} className="p-1 text-amber-600 hover:text-red-600"><X size={12} /></button>
+            </div>
+          ))}
+          <p className="text-[9px] text-amber-600">Changes apply after page reload. Key names should be unique, lowercase, no spaces.</p>
+        </div>
+      )}
       <div className="bg-surface border border-border rounded-xl overflow-x-auto">
         <table className="w-full text-[12px]">
           <thead><tr className="bg-surface-alt">
@@ -564,6 +723,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   const [saving, setSaving] = useState(false)
   const [dragStudent, setDragStudent] = useState<string | null>(null)
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
+  const [profileStudent, setProfileStudent] = useState<Student | null>(null)
+  const [profileData, setProfileData] = useState<any>(null)
   const [weights, setWeights] = useState({ test: 30, grades: 40, anecdotal: 30 })
   const [showWeights, setShowWeights] = useState(false)
 
@@ -576,7 +737,10 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
         supabase.from('class_benchmarks').select('*').eq('grade', levelTest.grade),
         supabase.from('level_test_placements').select('*').eq('level_test_id', levelTest.id),
       ])
-      if (studs) setStudents(studs)
+      // Sort by class order (Lily→Snapdragon) then alphabetically within each class
+      const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }
+      const sortedStuds = (studs || []).sort((a: any, b: any) => (classOrder[a.english_class] || 99) - (classOrder[b.english_class] || 99) || a.english_name.localeCompare(b.english_name))
+      if (sortedStuds.length) setStudents(sortedStuds)
       const bm: Record<string, any> = {}; bd?.forEach((b: any) => { bm[b.english_class] = b }); setBenchmarks(bm)
       const sm: Record<string, any> = {}; sd?.forEach((s: any) => { sm[s.student_id] = s }); setScores(sm)
       const am: Record<string, any> = {}; ad?.forEach((a: any) => { am[a.student_id] = a }); setAnecdotals(am)
@@ -665,15 +829,29 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                 const isOvr = auto && auto !== cls
                 const up = ENGLISH_CLASSES.indexOf(cls) > ENGLISH_CLASSES.indexOf(student.english_class as EnglishClass)
                 const down = ENGLISH_CLASSES.indexOf(cls) < ENGLISH_CLASSES.indexOf(student.english_class as EnglishClass)
+                const levelDiff = Math.abs(ENGLISH_CLASSES.indexOf(cls) - ENGLISH_CLASSES.indexOf(student.english_class as EnglishClass))
+                const bigJump = levelDiff >= 2
                 return (
                   <div key={student.id} draggable={levelTest.status !== 'finalized'} onDragStart={() => setDragStudent(student.id)} onDragEnd={() => setDragStudent(null)}
-                    className={`bg-white rounded-lg border p-2 cursor-grab active:cursor-grabbing hover:shadow-sm transition-all ${isOvr ? 'border-amber-300' : anec?.is_watchlist ? 'border-amber-400' : 'border-border'} ${expandedCard === student.id ? 'ring-2 ring-navy/20' : ''}`}
+                    className={`bg-white rounded-lg border p-2 cursor-grab active:cursor-grabbing hover:shadow-sm transition-all ${bigJump ? 'border-red-400 ring-1 ring-red-200' : isOvr ? 'border-amber-300' : anec?.is_watchlist ? 'border-amber-400' : 'border-border'} ${expandedCard === student.id ? 'ring-2 ring-navy/20' : ''}`}
                     onClick={() => setExpandedCard(expandedCard === student.id ? null : student.id)}>
                     <div className="flex items-center gap-1">
                       <GripVertical size={10} className="text-text-tertiary flex-shrink-0" />
-                      <div className="flex-1 min-w-0"><p className="text-[10px] font-semibold text-navy truncate">{student.english_name}</p><p className="text-[8px] text-text-tertiary truncate">{student.korean_name}</p></div>
+                      <div className="flex-1 min-w-0"><p className="text-[10px] font-semibold text-navy truncate cursor-pointer hover:underline" onClick={async (e) => {
+                        e.stopPropagation()
+                        setProfileStudent(student)
+                        const [{ data: sg }, { data: rd }, { data: bh }, { data: at }] = await Promise.all([
+                          supabase.from('semester_grades').select('*, semesters(name)').eq('student_id', student.id),
+                          supabase.from('reading_assessments').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(5),
+                          supabase.from('behavior_logs').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
+                          supabase.from('attendance').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(30),
+                        ])
+                        const attCounts = { present: 0, absent: 0, tardy: 0 }; at?.forEach((a: any) => { if (attCounts[a.status as keyof typeof attCounts] !== undefined) attCounts[a.status as keyof typeof attCounts]++ })
+                        setProfileData({ grades: sg || [], reading: rd || [], behavior: bh || [], attCounts, notes: student.notes || '' })
+                      }}>{student.english_name}</p><p className="text-[8px] text-text-tertiary truncate">{student.korean_name}</p></div>
                       <div className="flex items-center gap-0.5">
                         {up && <ArrowUp size={10} className="text-green-500" />}{down && <ArrowDown size={10} className="text-red-500" />}{!up && !down && <Minus size={10} className="text-text-tertiary" />}
+                        {bigJump && <span className="text-[7px] font-bold bg-red-500 text-white px-1 rounded">{levelDiff}+</span>}
                         {anec?.is_watchlist && <Star size={9} className="text-amber-500 fill-amber-500" />}{isOvr && <AlertTriangle size={9} className="text-amber-500" />}
                       </div>
                     </div>
@@ -692,11 +870,90 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
             </div>)
         })}
       </div>
+
+      {/* Student Profile Modal */}
+      {profileStudent && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => { setProfileStudent(null); setProfileData(null) }}>
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <div>
+                <h3 className="font-display text-lg font-semibold text-navy">{profileStudent.english_name}</h3>
+                <p className="text-text-secondary text-[13px]">{profileStudent.korean_name} -- {profileStudent.english_class} -- Grade {profileStudent.grade}</p>
+              </div>
+              <button onClick={() => { setProfileStudent(null); setProfileData(null) }} className="p-2 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+            </div>
+            {!profileData ? (
+              <div className="p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+            ) : (
+              <div className="px-6 py-4 space-y-4 text-[12px]">
+                {/* Notes */}
+                {profileData.notes && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-1">Teacher Notes</p>
+                    <p className="text-text-secondary">{profileData.notes}</p>
+                  </div>
+                )}
+                {/* Grades */}
+                {profileData.grades.length > 0 && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Semester Grades</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {profileData.grades.slice(0, 6).map((g: any, i: number) => (
+                        <div key={i} className="bg-surface-alt rounded-lg p-2 text-center">
+                          <p className="text-[10px] text-text-tertiary capitalize">{g.domain}</p>
+                          <p className={`text-[14px] font-bold ${g.score >= 80 ? 'text-green-600' : g.score >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{g.score?.toFixed(0)}%</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Reading */}
+                {profileData.reading.length > 0 && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Recent Reading</p>
+                    <div className="flex gap-3">
+                      {profileData.reading.slice(0, 3).map((r: any, i: number) => (
+                        <div key={i} className="bg-surface-alt rounded-lg p-2 text-center flex-1">
+                          <p className="text-[10px] text-text-tertiary">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                          <p className="text-[16px] font-bold text-navy">{r.cwpm ? Math.round(r.cwpm) : '—'}</p>
+                          <p className="text-[9px] text-text-tertiary">CWPM</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Attendance */}
+                <div className="flex gap-3">
+                  <div className="bg-green-50 rounded-lg p-2 text-center flex-1">
+                    <p className="text-[14px] font-bold text-green-600">{profileData.attCounts.present}</p><p className="text-[9px] text-green-700">Present</p>
+                  </div>
+                  <div className="bg-red-50 rounded-lg p-2 text-center flex-1">
+                    <p className="text-[14px] font-bold text-red-600">{profileData.attCounts.absent}</p><p className="text-[9px] text-red-700">Absent</p>
+                  </div>
+                  <div className="bg-amber-50 rounded-lg p-2 text-center flex-1">
+                    <p className="text-[14px] font-bold text-amber-600">{profileData.attCounts.tardy}</p><p className="text-[9px] text-amber-700">Tardy</p>
+                  </div>
+                </div>
+                {/* Behavior */}
+                {profileData.behavior.length > 0 && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Recent Behavior ({profileData.behavior.length})</p>
+                    <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                      {profileData.behavior.slice(0, 5).map((b: any) => (
+                        <div key={b.id} className={`text-[11px] px-2 py-1 rounded ${b.type === 'positive' ? 'bg-green-50 text-green-700' : b.type === 'negative' || b.type === 'abc' ? 'bg-red-50 text-red-700' : 'bg-surface-alt text-text-secondary'}`}>
+                          <span className="font-medium capitalize">{b.type}</span> -- {b.note || (b.behaviors || []).join(', ') || '—'} <span className="text-text-tertiary ml-1">({new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
-}
-
-// ─── Helpers ────────────────────────────────────────────────────────
 
 function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>) {
   const sc = scores[s.id]?.raw_scores || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []

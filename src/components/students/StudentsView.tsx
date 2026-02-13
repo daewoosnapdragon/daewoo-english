@@ -431,10 +431,11 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
   const { language, showToast } = useApp()
   const { updateStudent } = useStudentActions()
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<any>({
     english_name: student.english_name, korean_name: student.korean_name, grade: student.grade,
     korean_class: student.korean_class as KoreanClass, class_number: student.class_number,
     english_class: student.english_class as EnglishClass, notes: student.notes || '',
+    is_transfer: (student as any).is_transfer || false, transfer_date: (student as any).transfer_date || '',
   })
   const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
@@ -523,7 +524,9 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
 
   const handleSaveEdit = async () => {
     setSaving(true)
-    const { data, error } = await updateStudent(student.id, { ...form, teacher_id: teacherMap[form.english_class] || null })
+    const updateData: any = { ...form, teacher_id: teacherMap[form.english_class] || null }
+    if ((form as any).is_transfer !== undefined) { updateData.is_transfer = (form as any).is_transfer; updateData.transfer_date = (form as any).transfer_date || null }
+    const { data, error } = await updateStudent(student.id, updateData)
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
     else { showToast('Student updated'); setEditing(false); if (data) onUpdated(data) }
@@ -563,6 +566,14 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
                 </span>
                 <span className="text-text-tertiary">·</span>
                 <span className="text-[12px] text-text-tertiary">{student.korean_class}반 {student.class_number}번</span>
+                {(student as any).is_transfer && (
+                  <>
+                    <span className="text-text-tertiary">·</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                      Transfer {(student as any).transfer_date ? `(${new Date((student as any).transfer_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })})` : ''}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -604,6 +615,22 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
                   <input type="number" min={1} max={35} value={form.class_number} onChange={e => setForm({ ...form, class_number: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface" /></div>
                 <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">English Class</label>
                   <select value={form.english_class} onChange={e => setForm({ ...form, english_class: e.target.value as EnglishClass })} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none bg-surface">{ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+              </div>
+              {/* Transfer Student */}
+              <div className="flex items-center gap-4 pt-1">
+                <label className="inline-flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={(form as any).is_transfer || false}
+                    onChange={e => setForm({ ...form, is_transfer: e.target.checked, transfer_date: e.target.checked ? ((form as any).transfer_date || new Date().toISOString().split('T')[0]) : '' } as any)}
+                    className="w-4 h-4 rounded border-border text-navy focus:ring-navy" />
+                  <span className="text-[12px] font-medium text-text-secondary">Transfer Student</span>
+                </label>
+                {(form as any).is_transfer && (
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Transfer Date:</label>
+                    <input type="date" value={(form as any).transfer_date || ''} onChange={e => setForm({ ...form, transfer_date: e.target.value } as any)}
+                      className="px-2 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface" />
+                  </div>
+                )}
               </div>
               <div className="flex justify-end gap-2">
                 <button onClick={() => setEditing(false)} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface">Cancel</button>

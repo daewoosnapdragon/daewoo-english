@@ -42,5 +42,22 @@ ALTER TABLE semesters ADD CONSTRAINT semesters_type_check
 ALTER TABLE semesters ADD COLUMN IF NOT EXISTS midterm_cutoff_date DATE;
 ALTER TABLE semesters ADD COLUMN IF NOT EXISTS report_card_cutoff_date DATE;
 
+-- 9. Add transfer student fields
+ALTER TABLE students ADD COLUMN IF NOT EXISTS is_transfer BOOLEAN DEFAULT false;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS transfer_date DATE;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS transfer_notes TEXT DEFAULT '';
+
+-- 10. Add shared assessment columns
+ALTER TABLE assessments ADD COLUMN IF NOT EXISTS shared_with_classes JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE assessments ADD COLUMN IF NOT EXISTS source_assessment_id UUID;
+
+-- 11. Add photo_url to teachers if not present
+ALTER TABLE teachers ADD COLUMN IF NOT EXISTS photo_url TEXT DEFAULT NULL;
+
+-- 12. Fix attendance status constraint
+ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_status_check;
+ALTER TABLE attendance ADD CONSTRAINT attendance_status_check
+  CHECK (status IN ('present', 'absent', 'tardy', 'field_trip'));
+
 -- Verify:
-SELECT name, english_class, role, password, is_head_teacher FROM teachers ORDER BY english_class;
+SELECT name, english_class, role, password FROM teachers ORDER BY english_class;

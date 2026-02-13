@@ -66,9 +66,104 @@ export default function DashboardView() {
         </div>
       </div>
       <div className="px-10 py-6">
+        <TodayAtGlance />
         {isAdmin && <AdminAlertPanel />}
         <SharedCalendar />
         <ClassOverviewTable />
+      </div>
+    </div>
+  )
+}
+
+// ─── Today at a Glance ──────────────────────────────────────────────
+function TodayAtGlance() {
+  const { currentTeacher, language } = useApp()
+  const isAdmin = currentTeacher?.role === 'admin'
+  const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class : null
+  const [data, setData] = useState<{ unmarkedAttendance: number; behaviorToday: number; eventsToday: any[]; recentBehaviorFlags: number; upcomingDeadlines: any[] }>({ unmarkedAttendance: 0, behaviorToday: 0, eventsToday: [], recentBehaviorFlags: 0, upcomingDeadlines: [] })
+  const [loading, setLoading] = useState(true)
+  const today = new Date().toISOString().split('T')[0]
+
+  useEffect(() => {
+    (async () => {
+      const [eventsRes, behaviorRes, flagsRes, semRes] = await Promise.all([
+        supabase.from('calendar_events').select('*').eq('date', today),
+        supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('date', today),
+        supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('is_flagged', true),
+        supabase.from('semesters').select('*').eq('is_active', true).single(),
+      ])
+
+      // Check unmarked attendance for teacher's class or all classes
+      let unmarked = 0
+      if (teacherClass) {
+        const { data: studs } = await supabase.from('students').select('id').eq('english_class', teacherClass).eq('is_active', true)
+        if (studs) {
+          const { data: att } = await supabase.from('attendance').select('student_id').eq('date', today).in('student_id', studs.map((s: any) => s.id))
+          unmarked = studs.length - (att?.length || 0)
+        }
+      } else if (isAdmin) {
+        const { data: studs } = await supabase.from('students').select('id').eq('is_active', true)
+        if (studs) {
+          const { data: att } = await supabase.from('attendance').select('student_id').eq('date', today)
+          unmarked = studs.length - (att?.length || 0)
+        }
+      }
+
+      // Upcoming deadlines from semester
+      const deadlines: any[] = []
+      if (semRes.data) {
+        const sem = semRes.data
+        if (sem.midterm_cutoff_date && new Date(sem.midterm_cutoff_date) >= new Date(today)) deadlines.push({ label: 'Midterm Cutoff', date: sem.midterm_cutoff_date })
+        if (sem.report_card_cutoff_date && new Date(sem.report_card_cutoff_date) >= new Date(today)) deadlines.push({ label: 'Report Card Cutoff', date: sem.report_card_cutoff_date })
+        if (sem.end_date && new Date(sem.end_date) >= new Date(today)) deadlines.push({ label: 'Semester End', date: sem.end_date })
+      }
+
+      setData({
+        unmarkedAttendance: Math.max(0, unmarked),
+        behaviorToday: behaviorRes.count || 0,
+        eventsToday: eventsRes.data || [],
+        recentBehaviorFlags: flagsRes.count || 0,
+        upcomingDeadlines: deadlines.slice(0, 3),
+      })
+      setLoading(false)
+    })()
+  }, [teacherClass, isAdmin])
+
+  if (loading) return null
+
+  const cards = [
+    { label: language === 'ko' ? '미기록 출석' : 'Unmarked Attendance', value: data.unmarkedAttendance, color: data.unmarkedAttendance > 0 ? 'text-red-600' : 'text-green-600', bg: data.unmarkedAttendance > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200', sub: data.unmarkedAttendance > 0 ? 'Take attendance!' : 'All done' },
+    { label: language === 'ko' ? '오늘 행동 기록' : 'Behavior Logs Today', value: data.behaviorToday, color: 'text-navy', bg: 'bg-surface-alt border-border', sub: '' },
+    { label: language === 'ko' ? '플래그된 행동' : 'Flagged Behaviors', value: data.recentBehaviorFlags, color: data.recentBehaviorFlags > 0 ? 'text-amber-600' : 'text-text-tertiary', bg: data.recentBehaviorFlags > 0 ? 'bg-amber-50 border-amber-200' : 'bg-surface-alt border-border', sub: isAdmin ? 'Review needed' : '' },
+  ]
+
+  return (
+    <div className="mb-6">
+      <h3 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">{language === 'ko' ? '오늘 한눈에' : 'Today at a Glance'} -- {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
+      <div className="grid grid-cols-4 gap-3">
+        {cards.map((c, i) => (
+          <div key={i} className={`rounded-xl border p-4 ${c.bg}`}>
+            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">{c.label}</p>
+            <p className={`text-[24px] font-bold ${c.color}`}>{c.value}</p>
+            {c.sub && <p className="text-[10px] text-text-tertiary mt-0.5">{c.sub}</p>}
+          </div>
+        ))}
+        <div className="rounded-xl border bg-surface-alt border-border p-4">
+          <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">{language === 'ko' ? '오늘 일정' : "Today's Events"}</p>
+          {data.eventsToday.length === 0 ? <p className="text-[13px] text-text-tertiary mt-1">No events today</p> :
+            <div className="space-y-1 mt-1">{data.eventsToday.slice(0, 3).map((ev: any) => {
+              const cfg = EVENT_TYPES.find(t => t.value === ev.type)
+              return <p key={ev.id} className={`text-[11px] font-medium px-2 py-0.5 rounded ${cfg?.bg || 'bg-gray-100 text-gray-700'}`}>{ev.title}</p>
+            })}</div>}
+          {data.upcomingDeadlines.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-border">
+              <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Upcoming</p>
+              {data.upcomingDeadlines.map((d: any, i: number) => (
+                <p key={i} className="text-[10px] text-text-secondary">{d.label}: <span className="font-semibold">{new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></p>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
