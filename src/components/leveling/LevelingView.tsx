@@ -272,7 +272,7 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Leve
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: existing }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
       ])
       if (studs) setStudents(studs)
@@ -390,7 +390,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: existing }, { data: testScores }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').order('english_name'),
         supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
       ])
@@ -613,7 +613,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: sd }, { data: ad }, { data: bd }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
         supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id),
         supabase.from('class_benchmarks').select('*').eq('grade', levelTest.grade),
@@ -731,7 +731,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: sd }, { data: ad }, { data: bd }, { data: pd }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
         supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id),
         supabase.from('class_benchmarks').select('*').eq('grade', levelTest.grade),
