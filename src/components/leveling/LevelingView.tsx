@@ -954,6 +954,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
       )}
     </div>
   )
+}
 
 function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>) {
   const sc = scores[s.id]?.raw_scores || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
