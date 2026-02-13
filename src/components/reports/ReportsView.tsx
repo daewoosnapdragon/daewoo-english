@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useSemesters } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
-import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
+import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, Plus, Camera } from 'lucide-react'
 
@@ -87,7 +87,7 @@ export default function ReportsView() {
 
   const isTeacher = currentTeacher?.role === 'teacher'
   const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
-    ? [currentTeacher.english_class as EnglishClass] : ENGLISH_CLASSES
+    ? [currentTeacher.english_class as EnglishClass] : ALL_ENGLISH_CLASSES
   const { students } = useStudents({ grade: selectedGrade, english_class: selectedClass })
   const selectedSemester = semesters.find((s: any) => s.id === selectedSemesterId)
 

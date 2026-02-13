@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
-import { ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
+import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar } from 'lucide-react'
 
@@ -76,7 +76,7 @@ export default function GradesView() {
 
   const isTeacher = currentTeacher?.role === 'teacher'
   const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
-    ? [currentTeacher.english_class as EnglishClass] : ENGLISH_CLASSES
+    ? [currentTeacher.english_class as EnglishClass] : ALL_ENGLISH_CLASSES
 
   const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
 

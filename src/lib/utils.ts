@@ -31,25 +31,27 @@ export function letterToColor(letter: string): string {
 }
 
 export function classToColor(cls: EnglishClass): string {
-  const colors: Record<EnglishClass, string> = {
+  const colors: Record<string, string> = {
     Lily: '#E8B4B8',
     Camellia: '#F5D0A9',
     Daisy: '#F9E79F',
     Sunflower: '#ABEBC6',
     Marigold: '#AED6F1',
     Snapdragon: '#D2B4DE',
+    Sample: '#B0BEC5',
   }
   return colors[cls] || '#E5E7EB'
 }
 
 export function classToTextColor(cls: EnglishClass): string {
-  const colors: Record<EnglishClass, string> = {
+  const colors: Record<string, string> = {
     Lily: '#9B2C3A',
     Camellia: '#92400E',
     Daisy: '#78350F',
     Sunflower: '#065F46',
     Marigold: '#1E40AF',
     Snapdragon: '#5B21B6',
+    Sample: '#37474F',
   }
   return colors[cls] || '#374151'
 }

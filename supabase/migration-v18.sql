@@ -47,6 +47,9 @@ ALTER TABLE students ADD COLUMN IF NOT EXISTS is_transfer BOOLEAN DEFAULT false;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS transfer_date DATE;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS transfer_notes TEXT DEFAULT '';
 
+-- 9b. Add is_demo flag for demo/sample data cleanup
+ALTER TABLE students ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false;
+
 -- 10. Add shared assessment columns
 ALTER TABLE assessments ADD COLUMN IF NOT EXISTS shared_with_classes JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE assessments ADD COLUMN IF NOT EXISTS source_assessment_id UUID;

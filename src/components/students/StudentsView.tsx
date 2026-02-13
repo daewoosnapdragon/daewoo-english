@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useStudentActions } from '@/hooks/useData'
-import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
+import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2 } from 'lucide-react'
@@ -105,7 +105,7 @@ export default function StudentsView() {
             <select value={filterClass || ''} onChange={e => setFilterClass((e.target.value || null) as EnglishClass | null)}
               className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none">
               <option value="">{t.common.all} Classes</option>
-              {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+              {ALL_ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
           <div className="flex items-center gap-1 ml-auto">

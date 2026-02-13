@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
-import { ENGLISH_CLASSES, EnglishClass } from '@/types'
+import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 
