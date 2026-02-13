@@ -353,7 +353,7 @@ function SemesterSection() {
 
 function ProgramBenchmarksSection() {
   const { language, showToast, currentTeacher } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
+  const isAdmin = currentTeacher?.role === 'admin'
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher?.english_class : null
   const canEdit = (cls: string) => isAdmin || teacherClass === cls
   const [benchmarks, setBenchmarks] = useState<any[]>([])

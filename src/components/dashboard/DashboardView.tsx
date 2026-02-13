@@ -25,7 +25,7 @@ interface FlaggedEntry { id: string; student_id: string; date: string; type: str
 
 export default function DashboardView() {
   const { language, currentTeacher } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
+  const isAdmin = currentTeacher?.role === 'admin'
   const [semesters, setSemesters] = useState<{ id: string; name: string; name_ko: string; is_active: boolean }[]>([])
   const [activeSem, setActiveSem] = useState<string>('')
 

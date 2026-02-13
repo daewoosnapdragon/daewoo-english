@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers, useSemesters } from '@/hooks/useData'
-import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/layout/Sidebar'
 import Toast from '@/components/ui/Toast'
 import DashboardView from '@/components/dashboard/DashboardView'
@@ -14,82 +13,7 @@ import ReadingLevelsView from '@/components/reading/ReadingLevelsView'
 import ReportsView from '@/components/reports/ReportsView'
 import SettingsView from '@/components/settings/SettingsView'
 import LevelingView from '@/components/leveling/LevelingView'
-import { Loader2, Lock, Eye, EyeOff } from 'lucide-react'
-import { Teacher } from '@/types'
-
-// ─── Login Screen ────────────────────────────────────────────────────
-
-function LoginScreen({ teachers, onLogin }: { teachers: Teacher[]; onLogin: (teacher: Teacher) => void }) {
-  const [selectedTeacherId, setSelectedTeacherId] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [checking, setChecking] = useState(false)
-
-  const handleLogin = async () => {
-    if (!selectedTeacherId) { setError('Please select your name.'); return }
-    if (!password) { setError('Please enter your password.'); return }
-    setChecking(true)
-    setError('')
-    const { data, error: dbError } = await supabase
-      .from('teachers')
-      .select('*')
-      .eq('id', selectedTeacherId)
-      .single()
-    if (dbError || !data) { setError('Could not verify. Try again.'); setChecking(false); return }
-    if (data.password && data.password !== password) { setError('Incorrect password.'); setChecking(false); return }
-    setChecking(false)
-    localStorage.setItem('daewoo_teacher_id', data.id)
-    onLogin(data as Teacher)
-  }
-
-  return (
-    <div className="min-h-screen bg-bg flex items-center justify-center">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <img src="/logo.png" alt="Logo" className="w-20 h-20 mx-auto mb-4 object-contain"
-            onError={(e: any) => { e.target.style.display = 'none' }} />
-          <h1 className="font-display text-2xl font-semibold text-navy tracking-tight">Daewoo English Program</h1>
-          <p className="text-text-secondary text-sm mt-1">Sign in to continue</p>
-        </div>
-        <div className="bg-surface border border-border rounded-xl shadow-sm p-6 space-y-4">
-          <div>
-            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1.5">Name</label>
-            <select value={selectedTeacherId} onChange={e => { setSelectedTeacherId(e.target.value); setError('') }}
-              className="w-full px-3 py-2.5 border border-border rounded-lg text-[14px] outline-none focus:border-navy bg-surface">
-              <option value="">Select your name...</option>
-              {teachers.map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.name} {t.english_class === 'Snapdragon' && t.role === 'admin' ? '(Head Teacher)' : t.role === 'admin' ? '(Admin)' : `- ${t.english_class}`}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1.5">Password</label>
-            <div className="relative">
-              <input type={showPassword ? 'text' : 'password'} value={password}
-                onChange={e => { setPassword(e.target.value); setError('') }}
-                onKeyDown={e => { if (e.key === 'Enter') handleLogin() }}
-                placeholder="Enter your password"
-                className="w-full px-3 py-2.5 border border-border rounded-lg text-[14px] outline-none focus:border-navy bg-surface pr-10" />
-              <button onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary">
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-          {error && <p className="text-[12px] text-danger font-medium">{error}</p>}
-          <button onClick={handleLogin} disabled={checking}
-            className="w-full py-2.5 rounded-lg text-[14px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
-            {checking ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
-            Sign In
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+import { Loader2 } from 'lucide-react'
 
 function PlaceholderView({ title, description }: { title: string; description: string }) {
   return (
@@ -110,26 +34,15 @@ function PlaceholderView({ title, description }: { title: string; description: s
 
 export default function Home() {
   const [activeView, setActiveView] = useState('dashboard')
-  const { t, currentTeacher, setCurrentTeacher, setActiveSemester } = useApp()
+  const { t, setActiveSemester } = useApp()
   const { teachers, loading: teachersLoading } = useTeachers()
   const { activeSemester, loading: semestersLoading } = useSemesters()
-  const [authChecked, setAuthChecked] = useState(false)
-
-  useEffect(() => {
-    if (teachersLoading || teachers.length === 0) return
-    const savedId = localStorage.getItem('daewoo_teacher_id')
-    if (savedId) {
-      const found = teachers.find(t => t.id === savedId)
-      if (found) setCurrentTeacher(found)
-    }
-    setAuthChecked(true)
-  }, [teachers, teachersLoading, setCurrentTeacher])
 
   useEffect(() => {
     if (activeSemester) setActiveSemester(activeSemester)
   }, [activeSemester, setActiveSemester])
 
-  if (teachersLoading || semestersLoading || !authChecked) {
+  if (teachersLoading || semestersLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <div className="text-center">
@@ -138,10 +51,6 @@ export default function Home() {
         </div>
       </div>
     )
-  }
-
-  if (!currentTeacher) {
-    return <LoginScreen teachers={teachers} onLogin={(teacher) => setCurrentTeacher(teacher)} />
   }
 
   const renderView = () => {

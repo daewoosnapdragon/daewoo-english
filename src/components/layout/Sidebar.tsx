@@ -41,7 +41,7 @@ export default function Sidebar({
   const [loginError, setLoginError] = useState('')
 
   useEffect(() => {
-    const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
+    const isAdmin = currentTeacher?.role === 'admin'
     if (!isAdmin) { setFlaggedCount(0); return }
     (async () => {
       const { count } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('is_flagged', true)
@@ -126,7 +126,7 @@ export default function Sidebar({
             <p className="text-white text-[13px] font-medium truncate">{currentTeacher.name}</p>
             <p className="text-blue-300/50 text-[10px]">
               {currentTeacher.role === 'admin' ? 'Admin' : currentTeacher.english_class}
-              {currentTeacher.is_head_teacher ? ' (Head Teacher)' : ''}
+              
             </p>
           </div>
           <button onClick={handleLogout} className="p-1.5 rounded-lg text-blue-300/40 hover:text-white hover:bg-white/10 transition-all" title="Sign out">
