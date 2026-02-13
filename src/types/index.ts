@@ -4,7 +4,7 @@
 
 export type EnglishClass = 'Lily' | 'Camellia' | 'Daisy' | 'Sunflower' | 'Marigold' | 'Snapdragon' | 'Sample';
 export type KoreanClass = '대' | '솔' | '매';
-export type Grade = 1 | 2 | 3 | 4 | 5 | 6;
+export type Grade = 1 | 2 | 3 | 4 | 5;
 export type Domain = 'reading' | 'phonics' | 'writing' | 'speaking' | 'language';
 export type SemesterType = 'fall_mid' | 'fall_final' | 'spring_mid' | 'spring_final';
 export type BehaviorGrade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+' | 'C' | 'C-' | 'D+' | 'D' | 'D-' | 'E';
@@ -14,7 +14,7 @@ export type Language = 'en' | 'ko';
 export const ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon'];
 export const ALL_ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon', 'Sample'];
 export const KOREAN_CLASSES: KoreanClass[] = ['대', '솔', '매'];
-export const GRADES: Grade[] = [1, 2, 3, 4, 5, 6];
+export const GRADES: Grade[] = [1, 2, 3, 4, 5];
 export const DOMAINS: Domain[] = ['reading', 'phonics', 'writing', 'speaking', 'language'];
 export const DOMAIN_LABELS: Record<Domain, { en: string; ko: string }> = {
   reading: { en: 'Reading', ko: '읽기' },
