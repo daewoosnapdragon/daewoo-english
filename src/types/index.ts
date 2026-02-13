@@ -64,6 +64,9 @@ export interface Teacher {
   english_class: string;
   role: Role;
   is_active: boolean;
+  password?: string;
+  is_head_teacher?: boolean;
+  photo_url?: string;
 }
 
 export interface SchoolSettings {
@@ -259,7 +262,7 @@ export interface AttendanceRecord {
   id: string;
   student_id: string;
   date: string;
-  status: 'present' | 'absent' | 'tardy' | 'excused';
+  status: 'present' | 'absent' | 'tardy';
   note: string;
 }
 

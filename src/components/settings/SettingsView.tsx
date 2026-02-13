@@ -189,9 +189,10 @@ function SemesterSection() {
   const handleAdd = async () => {
     if (!newSem.name.trim()) return
     const { data, error } = await supabase.from('semesters').insert({
-      ...newSem, start_date: newSem.start_date || null, end_date: newSem.end_date || null,
-      midterm_cutoff_date: newSem.midterm_cutoff_date || null,
-      report_card_cutoff_date: newSem.report_card_cutoff_date || null, is_active: false,
+      name: newSem.name, name_ko: newSem.name_ko, academic_year: newSem.academic_year,
+      type: newSem.type, start_date: newSem.start_date || null, end_date: newSem.end_date || null,
+      grades_due_date: newSem.midterm_cutoff_date || null,
+      comments_due_date: newSem.report_card_cutoff_date || null, is_active: false,
     }).select().single()
     if (error) showToast(`Error: ${error.message}`)
     else { setSemesters((prev: any) => [data, ...prev]); setAdding(false); setNewSem({ name: '', name_ko: '', academic_year: '2025-2026', type: 'spring', start_date: '', end_date: '', midterm_cutoff_date: '', report_card_cutoff_date: '' }); showToast('Semester added') }
@@ -261,13 +262,33 @@ function SemesterSection() {
 
       {adding && (
         <div className="bg-accent-light border border-border rounded-xl p-4 mb-4 space-y-3">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name *</label>
               <input value={newSem.name} onChange={(e: any) => setNewSem({ ...newSem, name: e.target.value })} placeholder="e.g. Spring 2026" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name (Korean)</label>
               <input value={newSem.name_ko} onChange={(e: any) => setNewSem({ ...newSem, name_ko: e.target.value })} placeholder="2026 봄학기" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Academic Year</label>
               <input value={newSem.academic_year} onChange={(e: any) => setNewSem({ ...newSem, academic_year: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
+              <select value={newSem.type} onChange={(e: any) => setNewSem({ ...newSem, type: e.target.value })}
+                className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy">
+                <option value="spring">Spring</option>
+                <option value="fall">Fall</option>
+                <option value="spring_mid">Spring Midterm</option>
+                <option value="spring_final">Spring Final</option>
+                <option value="fall_mid">Fall Midterm</option>
+                <option value="fall_final">Fall Final</option>
+              </select></div>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Start Date</label>
+              <input type="date" value={newSem.start_date} onChange={(e: any) => setNewSem({ ...newSem, start_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">End Date</label>
+              <input type="date" value={newSem.end_date} onChange={(e: any) => setNewSem({ ...newSem, end_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Midterm Cutoff</label>
+              <input type="date" value={newSem.midterm_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, midterm_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Report Card Cutoff</label>
+              <input type="date" value={newSem.report_card_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, report_card_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
           </div>
           <div className="flex gap-2">
             <button onClick={handleAdd} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Add</button>
@@ -332,7 +353,9 @@ function SemesterSection() {
 
 function ProgramBenchmarksSection() {
   const { language, showToast, currentTeacher } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin'
+  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
+  const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher?.english_class : null
+  const canEdit = (cls: string) => isAdmin || teacherClass === cls
   const [benchmarks, setBenchmarks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -454,7 +477,7 @@ function ProgramBenchmarksSection() {
             <p className="text-[10px] text-text-tertiary">CWPM, Lexile, and reading level targets per grade and class. Visible to all teachers.</p>
           </div>
         </div>
-        {isAdmin && (
+        {(isAdmin || teacherClass) && (
           <button onClick={handleSave} disabled={saving}
             className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save Benchmarks
@@ -482,7 +505,6 @@ function ProgramBenchmarksSection() {
               <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">CWPM Mid</th>
               <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">CWPM End</th>
               <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Lexile Range</th>
-              <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Reading Level</th>
               <th className="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Focus / Notes</th>
             </tr>
           </thead>
@@ -490,6 +512,7 @@ function ProgramBenchmarksSection() {
             {CLASSES.map((cls) => {
               const b = getBenchmark(selectedGrade, cls)
               if (!b) return null
+              const editable = canEdit(cls)
               return (
                 <tr key={cls} className="border-t border-border">
                   <td className="px-4 py-2.5">
@@ -498,19 +521,19 @@ function ProgramBenchmarksSection() {
                     </span>
                   </td>
                   <td className="px-3 py-2.5 text-center">
-                    {isAdmin ? (
+                    {editable ? (
                       <input type="number" value={b.cwpm_mid} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'cwpm_mid', e.target.value)}
                         className="w-16 px-2 py-1 border border-border rounded text-center text-[12px] outline-none focus:border-navy" />
                     ) : <span className="font-bold text-navy">{b.cwpm_mid}</span>}
                   </td>
                   <td className="px-3 py-2.5 text-center">
-                    {isAdmin ? (
+                    {editable ? (
                       <input type="number" value={b.cwpm_end} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'cwpm_end', e.target.value)}
                         className="w-16 px-2 py-1 border border-border rounded text-center text-[12px] outline-none focus:border-navy" />
                     ) : <span className="font-bold text-navy">{b.cwpm_end}</span>}
                   </td>
                   <td className="px-3 py-2.5 text-center">
-                    {isAdmin ? (
+                    {editable ? (
                       <span className="flex items-center justify-center gap-1">
                         <input type="number" value={b.lexile_min} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'lexile_min', e.target.value)}
                           className="w-14 px-1.5 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
@@ -521,14 +544,8 @@ function ProgramBenchmarksSection() {
                       </span>
                     ) : <span className="text-text-secondary">{b.lexile_min}-{b.lexile_max}L</span>}
                   </td>
-                  <td className="px-3 py-2.5 text-center">
-                    {isAdmin ? (
-                      <input value={b.reading_level} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'reading_level', e.target.value)}
-                        className="w-20 px-2 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
-                    ) : <span className="text-text-secondary">{b.reading_level}</span>}
-                  </td>
                   <td className="px-3 py-2.5">
-                    {isAdmin ? (
+                    {editable ? (
                       <input value={b.notes} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'notes', e.target.value)}
                         className="w-full px-2 py-1 border border-border rounded text-[11px] outline-none focus:border-navy" />
                     ) : <span className="text-text-tertiary text-[11px]">{b.notes}</span>}

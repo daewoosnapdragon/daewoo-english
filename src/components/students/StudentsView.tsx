@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Eye, EyeOff } from 'lucide-react'
+import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2 } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 
 // ─── Main View ──────────────────────────────────────────────────────
@@ -258,11 +258,11 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
 function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string; studentName: string; lang: 'en' | 'ko' }) {
   const [activeTab, setActiveTab] = useState('about')
   const tabs = [
-    { id: 'about', label: lang === 'ko' ? '정보' : 'About', icon: '👤' },
-    { id: 'behavior', label: lang === 'ko' ? '행동 기록' : 'Behavior Log', icon: '📋' },
-    { id: 'academic', label: lang === 'ko' ? '학업 이력' : 'Academic History', icon: '📊' },
-    { id: 'reading', label: lang === 'ko' ? '읽기 수준' : 'Reading Levels', icon: '📖' },
-    { id: 'attendance', label: lang === 'ko' ? '출석' : 'Attendance', icon: '📅' },
+    { id: 'about', label: lang === 'ko' ? '정보' : 'About' },
+    { id: 'behavior', label: lang === 'ko' ? '행동 기록' : 'Behavior Log' },
+    { id: 'academic', label: lang === 'ko' ? '학업 이력' : 'Academic History' },
+    { id: 'reading', label: lang === 'ko' ? '읽기 수준' : 'Reading' },
+    { id: 'attendance', label: lang === 'ko' ? '출석' : 'Attendance' },
   ]
 
   return (
@@ -271,18 +271,15 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`px-3 py-2 text-[12px] font-medium transition-all border-b-2 -mb-px ${activeTab === tab.id ? 'border-navy text-navy' : 'border-transparent text-text-tertiary hover:text-text-secondary'}`}>
-            <span className="mr-1">{tab.icon}</span> {tab.label}
+            {tab.label}
           </button>
         ))}
       </div>
       {activeTab === 'about' && <AboutTab studentId={studentId} lang={lang} />}
       {activeTab === 'behavior' && <BehaviorTracker studentId={studentId} studentName={studentName} />}
       {activeTab === 'academic' && <AcademicHistoryTab studentId={studentId} lang={lang} />}
-      {activeTab !== 'about' && activeTab !== 'behavior' && activeTab !== 'academic' && (
-        <div className="py-8 text-center text-text-tertiary text-[13px]">
-          {lang === 'ko' ? '준비 중입니다.' : 'Coming soon.'}
-        </div>
-      )}
+      {activeTab === 'reading' && <ReadingTabInModal studentId={studentId} lang={lang} />}
+      {activeTab === 'attendance' && <AttendanceTabInModal studentId={studentId} studentName={studentName} lang={lang} />}
     </div>
   )
 }
@@ -442,7 +439,6 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
   const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [photoUrl, setPhotoUrl] = useState(student.photo_url || '')
-  const [isAbsent, setIsAbsent] = useState(!student.is_active)
   const [deleting, setDeleting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -525,12 +521,6 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
     setPhotoUrl(''); showToast('Photo removed'); onUpdated({ ...student, photo_url: '' })
   }
 
-  const handleToggleAbsent = async () => {
-    const newActive = isAbsent // currently absent → make active
-    const { error } = await supabase.from('students').update({ is_active: newActive }).eq('id', student.id)
-    if (!error) { setIsAbsent(!isAbsent); showToast(newActive ? 'Student marked active' : 'Student marked absent'); onUpdated({ ...student, is_active: newActive }) }
-  }
-
   const handleSaveEdit = async () => {
     setSaving(true)
     const { data, error } = await updateStudent(student.id, { ...form, teacher_id: teacherMap[form.english_class] || null })
@@ -583,14 +573,6 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
               title="Export student portfolio as PDF">
               <FileSpreadsheet size={13} /> Export PDF
             </button>
-            {/* Absent Toggle */}
-            <button onClick={handleToggleAbsent}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
-                isAbsent ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100' : 'bg-surface border-border text-text-secondary hover:bg-surface-alt'
-              }`}>
-              {isAbsent ? <EyeOff size={13} /> : <Eye size={13} />}
-              {isAbsent ? (language === 'ko' ? '결석' : 'Absent') : (language === 'ko' ? '출석' : 'Present')}
-            </button>
             {!editing && (
               <button onClick={() => setEditing(true)} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary hover:text-navy transition-all" title="Edit"><Pencil size={16} /></button>
             )}
@@ -635,7 +617,7 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
 
         {/* Content */}
         <div className="px-8 py-6">
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-surface-alt rounded-lg p-4">
               <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Teacher</p>
               <p className="text-[14px] font-medium text-navy">{student.teacher_name || '—'}</p>
@@ -644,15 +626,142 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
               <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Homeroom</p>
               <p className="text-[14px] font-medium text-navy">{student.korean_class}반 {student.class_number}번</p>
             </div>
-            <div className="bg-surface-alt rounded-lg p-4">
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Status</p>
-              <p className={`text-[14px] font-medium ${isAbsent ? 'text-red-600' : 'text-success'}`}>{isAbsent ? 'Absent' : 'Active'}</p>
-            </div>
           </div>
 
           <StudentModuleTabs studentId={student.id} studentName={student.english_name} lang={language as 'en' | 'ko'} />
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── Reading Tab (in Modal) ──────────────────────────────────────────
+
+function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+  const [records, setRecords] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false })
+      if (data) setRecords(data)
+      setLoading(false)
+    })()
+  }, [studentId])
+
+  if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
+  if (records.length === 0) return <div className="py-8 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '읽기 기록이 없습니다.' : 'No reading assessments recorded yet.'}</div>
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[11px] text-text-tertiary">{records.length} {lang === 'ko' ? '개 기록' : 'assessments recorded'}</p>
+      <div className="bg-surface border border-border rounded-lg overflow-hidden">
+        <table className="w-full text-[12px]">
+          <thead><tr className="bg-surface-alt">
+            <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Date</th>
+            <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
+            <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Accuracy</th>
+            <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Level</th>
+            <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Notes</th>
+          </tr></thead>
+          <tbody>
+            {records.map((r: any) => (
+              <tr key={r.id} className="border-t border-border">
+                <td className="px-3 py-2">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                <td className="px-3 py-2 text-center font-semibold text-navy">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
+                <td className="px-3 py-2 text-center">{r.accuracy_rate != null ? `${r.accuracy_rate}%` : '—'}</td>
+                <td className="px-3 py-2 text-center">{r.passage_level || r.reading_level || '—'}</td>
+                <td className="px-3 py-2 text-text-tertiary truncate max-w-[150px]">{r.notes || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ─── Attendance Tab (in Modal) ──────────────────────────────────────
+
+function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: string; studentName: string; lang: 'en' | 'ko' }) {
+  const [records, setRecords] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('attendance').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(100)
+      if (data) setRecords(data)
+      setLoading(false)
+    })()
+  }, [studentId])
+
+  if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
+
+  const counts = { present: 0, absent: 0, tardy: 0, field_trip: 0 }
+  records.forEach((r: any) => { if (counts[r.status as keyof typeof counts] !== undefined) counts[r.status as keyof typeof counts]++ })
+  const total = records.length
+
+  return (
+    <div className="space-y-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-4 gap-2">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+          <p className="text-[20px] font-bold text-green-700">{counts.present}</p>
+          <p className="text-[10px] uppercase tracking-wider text-green-600 font-semibold">{lang === 'ko' ? '출석' : 'Present'}</p>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+          <p className="text-[20px] font-bold text-red-700">{counts.absent}</p>
+          <p className="text-[10px] uppercase tracking-wider text-red-600 font-semibold">{lang === 'ko' ? '결석' : 'Absent'}</p>
+        </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+          <p className="text-[20px] font-bold text-amber-700">{counts.tardy}</p>
+          <p className="text-[10px] uppercase tracking-wider text-amber-600 font-semibold">{lang === 'ko' ? '지각' : 'Tardy'}</p>
+        </div>
+        <div className="bg-surface-alt border border-border rounded-lg p-3 text-center">
+          <p className="text-[20px] font-bold text-navy">{total}</p>
+          <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">{lang === 'ko' ? '전체' : 'Total Days'}</p>
+        </div>
+      </div>
+
+      {/* Attendance rate */}
+      {total > 0 && (
+        <div className="bg-surface-alt rounded-lg p-3">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[11px] font-semibold text-text-secondary">Attendance Rate</span>
+            <span className="text-[13px] font-bold text-navy">{((counts.present / total) * 100).toFixed(1)}%</span>
+          </div>
+          <div className="w-full bg-border rounded-full h-2">
+            <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(counts.present / total) * 100}%` }} />
+          </div>
+        </div>
+      )}
+
+      {/* Recent records */}
+      {records.length === 0 ? (
+        <p className="text-center text-text-tertiary text-[13px] py-4">{lang === 'ko' ? '출석 기록이 없습니다.' : 'No attendance records yet.'}</p>
+      ) : (
+        <div className="bg-surface border border-border rounded-lg overflow-hidden max-h-[200px] overflow-y-auto">
+          <table className="w-full text-[12px]">
+            <thead className="sticky top-0"><tr className="bg-surface-alt">
+              <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Date</th>
+              <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Status</th>
+              <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Note</th>
+            </tr></thead>
+            <tbody>
+              {records.slice(0, 30).map((r: any) => {
+                const colors: Record<string, string> = { present: 'text-green-600', absent: 'text-red-600', tardy: 'text-amber-600', field_trip: 'text-teal-600' }
+                return (
+                  <tr key={r.id} className="border-t border-border">
+                    <td className="px-3 py-1.5">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}</td>
+                    <td className={`px-3 py-1.5 text-center font-semibold capitalize ${colors[r.status] || ''}`}>{r.status === 'field_trip' ? 'Field Trip' : r.status}</td>
+                    <td className="px-3 py-1.5 text-text-tertiary">{r.note || ''}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

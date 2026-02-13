@@ -24,7 +24,7 @@ const DIMS = [
 
 export default function LevelingView() {
   const { showToast, currentTeacher } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin'
+  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class as EnglishClass : null
   const [levelTests, setLevelTests] = useState<LevelTest[]>([])
   const [selectedTest, setSelectedTest] = useState<LevelTest | null>(null)
@@ -552,7 +552,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
 
 function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinalize: () => void }) {
   const { showToast, currentTeacher } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin'
+  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
   const [students, setStudents] = useState<Student[]>([])
   const [scores, setScores] = useState<Record<string, any>>({})
   const [anecdotals, setAnecdotals] = useState<Record<string, any>>({})
