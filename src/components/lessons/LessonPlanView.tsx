@@ -69,15 +69,6 @@ export default function LessonPlanView() {
   const [entries, setEntries] = useState<Record<string, LessonEntry>>({})
   const [homework, setHomework] = useState<Record<string, HomeworkEntry>>({})
   const [calEvents, setCalEvents] = useState<Record<string, CalendarEvent>>({})
-  const [blockedTypes, setBlockedTypes] = useState<Set<string>>(new Set(['holiday', 'event', 'field_trip', 'testing']))
-  const [showEventFilter, setShowEventFilter] = useState(false)
-  const ALL_EVENT_TYPES = [
-    { value: 'holiday', label: 'Holiday' }, { value: 'event', label: 'School Event' },
-    { value: 'field_trip', label: 'Field Trip' }, { value: 'testing', label: 'Testing' },
-    { value: 'deadline', label: 'Deadline' }, { value: 'meeting', label: 'Meeting' },
-    { value: 'midterm', label: 'Midterm' }, { value: 'report_cards', label: 'Report Cards' },
-    { value: 'other', label: 'Other' },
-  ]
   const [loading, setLoading] = useState(true)
   const [showSetup, setShowSetup] = useState(false)
   const [editingCell, setEditingCell] = useState<{ date: string; slot: string } | null>(null)
@@ -112,10 +103,10 @@ export default function LessonPlanView() {
     if (hwRes.data) hwRes.data.forEach((h: any) => { hm[h.week_start] = h })
     setHomework(hm)
     const ce: Record<string, CalendarEvent> = {}
-    if (eventsRes.data) eventsRes.data.forEach((ev: any) => { if (blockedTypes.has(ev.type)) ce[ev.date] = ev })
+    if (eventsRes.data) eventsRes.data.forEach((ev: any) => { if (ev.show_on_lesson_plan) ce[ev.date] = ev })
     setCalEvents(ce)
     setLoading(false)
-  }, [selectedClass, selectedGrade, year, month, blockedTypes])
+  }, [selectedClass, selectedGrade, year, month])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -199,53 +190,128 @@ export default function LessonPlanView() {
     const pw = window.open('', '_blank'); if (!pw) return
     const allLabels = Array.from(new Set(slots.map(s => s.slot_label)))
     allLabels.forEach(l => getSlotColor(l))
+    const mn = MONTH_NAMES[month]
+    const clsColor = classToColor(selectedClass)
 
-    let html = `<html><head><title>${selectedClass} Gr${selectedGrade} - ${MONTH_NAMES[month]} ${year}</title>
-    <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;padding:16px;background:white}
-    .hdr{background:#1B2A4A;color:white;padding:14px 24px;border-radius:10px 10px 0 0;position:relative}
-    .hdr::after{content:'';position:absolute;bottom:0;left:24px;right:24px;height:3px;background:#C9A84C}
-    .hdr h1{font-size:20px;font-weight:700}.hdr .sub{font-size:11px;opacity:.7;margin-top:2px}
-    .wk{margin-bottom:14px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;page-break-inside:avoid}
-    .wg{display:grid;grid-template-columns:repeat(5,1fr)}
-    .dy{border-right:1px solid #e8e8e8;padding:8px 10px;min-height:90px;background:white}
-    .dy:last-child{border-right:none}.dh{font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding-bottom:4px;border-bottom:1.5px solid #e2e8f0}
-    .ev{background:#f1f5f9}.evl{font-size:11px;font-weight:700;color:#475569;text-align:center;margin-top:16px}
-    .sl{margin-top:6px}.sp{display:inline-block;font-size:8px;font-weight:700;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.3px}
-    .st{font-size:11px;font-weight:600;color:#1a1a1a;margin-top:2px;line-height:1.3}
-    .so{font-size:9.5px;color:#555;margin-top:1px;line-height:1.35}.so em{color:#888;font-style:italic}
-    .hw{font-size:9px;color:#64748b;padding:5px 12px;background:#f8fafc;border-top:1px solid #e8e8e8;font-style:italic}
-    .emp{background:#fafafa}.ft{text-align:center;margin-top:12px;font-size:8px;color:#94a3b8}
-    @media print{body{padding:8px}.wk{page-break-inside:avoid}}</style></head><body>
-    <div class="hdr"><h1>${selectedClass} Class &mdash; Grade ${selectedGrade}</h1>
-    <div class="sub">${MONTH_NAMES[month]} ${year} Lesson Plan &bull; Daewoo Elementary School English Program</div></div><div style="height:10px"></div>`
+    // Build slot color CSS classes
+    const slotCSS = allLabels.map(l => { const sc = getSlotColor(l); return `.pill-${l.replace(/[^a-zA-Z]/g,'')}{background:${sc.print};color:#374151}` }).join('\n')
 
-    weeks.forEach(week => {
+    let weeksHTML = ''
+    weeks.forEach((week, wi) => {
       const fw: (typeof days[0] | null)[] = [null, null, null, null, null]
       week.forEach(d => { fw[d.dayOfWeek - 1] = d })
       const ws = week.length > 0 ? getWeekStart(week[0].date) : ''
       const hw = homework[ws]
-      html += `<div class="wk"><div class="wg">`
+
+      let daysHTML = ''
       fw.forEach((day, di) => {
-        if (!day) { html += `<div class="dy emp"></div>`; return }
+        if (!day) { daysHTML += `<td class="day empty"></td>`; return }
         const event = calEvents[day.date]
-        if (event) { html += `<div class="dy ev"><div class="dh">${DAY_NAMES[di]} ${month + 1}/${day.dayNum}</div><div class="evl">${event.title}</div></div>`; return }
+        if (event) {
+          daysHTML += `<td class="day event-day">
+            <div class="day-hdr">${DAY_NAMES[di]} ${month + 1}/${day.dayNum}</div>
+            <div class="event-block"><div class="event-icon">&#9733;</div><div class="event-title">${event.title}</div></div></td>`
+          return
+        }
         const ds = classSlots[di + 1] || []
-        html += `<div class="dy"><div class="dh">${DAY_NAMES[di]} ${month + 1}/${day.dayNum}</div>`
+        let slotsHTML = ''
         ds.forEach(slot => {
           const entry = entries[`${day.date}::${slot}`]; const sc = getSlotColor(slot)
-          html += `<div class="sl"><span class="sp" style="background:${sc.print};color:#374151">${slot}</span>`
-          if (entry?.title) html += `<div class="st">${entry.title}</div>`
-          if (entry?.objective) html += `<div class="so"><em>Students will </em>${entry.objective}</div>`
-          html += `</div>`
+          slotsHTML += `<div class="slot">
+            <span class="pill" style="background:${sc.print}">${slot}</span>`
+          if (entry?.title) slotsHTML += `<div class="slot-title">${entry.title}</div>`
+          if (entry?.objective) slotsHTML += `<div class="slot-obj"><em>Students will</em> ${entry.objective}</div>`
+          slotsHTML += `</div>`
         })
-        html += `</div>`
+        daysHTML += `<td class="day"><div class="day-hdr">${DAY_NAMES[di]} ${month + 1}/${day.dayNum}</div>${slotsHTML}</td>`
       })
-      html += `</div>`
-      if (hw?.homework_text) html += `<div class="hw">This week&rsquo;s homework: ${hw.homework_text}</div>`
-      html += `</div>`
+
+      weeksHTML += `<div class="week-wrap">
+        <table class="week"><tr>${daysHTML}</tr></table>
+        ${hw?.homework_text ? `<div class="hw-line"><span class="hw-icon">&#9998;</span> <strong>Homework:</strong> ${hw.homework_text}</div>` : ''}
+      </div>`
     })
-    html += `<div class="ft">Daewoo Elementary School &bull; English Program &bull; ${MONTH_NAMES[month]} ${year}</div></body></html>`
-    pw.document.write(html); pw.document.close(); setTimeout(() => pw.print(), 300)
+
+    pw.document.write(`<html><head><title>${selectedClass} Grade ${selectedGrade} - ${mn} ${year}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Roboto:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Roboto',sans-serif; background:#f5f0eb; padding:20px; }
+  .card { max-width:780px; margin:0 auto; background:white; border-radius:14px; overflow:hidden; box-shadow:0 2px 16px rgba(0,0,0,0.08); }
+
+  /* Header - matches report card */
+  .header { background:#1e3a5f; padding:18px 28px 14px; position:relative; }
+  .header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:4px; background:linear-gradient(90deg, #C9A84C 0%, #e8d48b 50%, #C9A84C 100%); }
+  .header-top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .header h1 { font-family:'Lora',Georgia,serif; font-size:22px; font-weight:700; color:white; }
+  .header .sub { font-size:11px; color:rgba(255,255,255,0.55); margin-top:3px; letter-spacing:0.5px; }
+  .header .badge { display:inline-block; background:${clsColor}; color:white; font-size:10px; font-weight:700; padding:3px 10px; border-radius:12px; letter-spacing:0.3px; }
+  .header .month-title { font-family:'Lora',Georgia,serif; font-size:15px; color:rgba(255,255,255,0.85); text-align:right; }
+
+  /* Body */
+  .body { padding:20px 24px 16px; }
+
+  /* Week grid */
+  .week-wrap { margin-bottom:16px; page-break-inside:avoid; }
+  .week { width:100%; border-collapse:separate; border-spacing:0; border:1px solid #e8e0d8; border-radius:10px; overflow:hidden; }
+  .week td { vertical-align:top; width:20%; border-right:1px solid #ece6df; }
+  .week td:last-child { border-right:none; }
+
+  .day { padding:8px 10px; min-height:95px; background:white; }
+  .day.empty { background:#faf8f5; }
+  .day.event-day { background:#f8f5f0; }
+  .day-hdr { font-size:8.5px; font-weight:600; color:#8b7e6f; text-transform:uppercase; letter-spacing:0.6px; padding-bottom:5px; margin-bottom:6px; border-bottom:1.5px solid #ece6df; }
+
+  /* Event blocked day */
+  .event-block { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:55px; }
+  .event-icon { font-size:14px; color:#C9A84C; margin-bottom:3px; }
+  .event-title { font-family:'Lora',Georgia,serif; font-size:11px; font-weight:600; color:#5a4e3c; text-align:center; }
+
+  /* Slot content */
+  .slot { margin-top:5px; }
+  .slot:first-child { margin-top:0; }
+  .pill { display:inline-block; font-size:7px; font-weight:700; padding:2px 6px; border-radius:3px; text-transform:uppercase; letter-spacing:0.4px; border:1px solid rgba(0,0,0,0.06); }
+  .slot-title { font-size:10.5px; font-weight:600; color:#1e293b; margin-top:2px; line-height:1.3; }
+  .slot-obj { font-size:9px; color:#64748b; margin-top:1px; line-height:1.35; }
+  .slot-obj em { color:#94a3b8; font-style:italic; }
+
+  /* Homework line */
+  .hw-line { font-size:9px; color:#8b7e6f; padding:5px 14px; background:#faf8f5; border:1px solid #ece6df; border-top:none; border-radius:0 0 10px 10px; margin-top:-1px; }
+  .hw-icon { font-size:10px; }
+
+  /* Footer */
+  .footer { text-align:center; padding:12px 24px 16px; border-top:1px solid #ece6df; }
+  .footer-text { font-size:8.5px; color:#b8a89a; letter-spacing:1.5px; text-transform:uppercase; }
+
+  ${slotCSS}
+
+  @media print {
+    body { background:white; padding:8px; }
+    .card { box-shadow:none; border-radius:0; }
+    .week-wrap { page-break-inside:avoid; }
+  }
+</style></head><body>
+<div class="card">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <p style="font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.4);margin-bottom:4px">Monthly Lesson Plan</p>
+        <h1>${selectedClass} Class</h1>
+        <div class="sub">Grade ${selectedGrade} &bull; Daewoo Elementary School English Program</div>
+      </div>
+      <div style="text-align:right;padding-top:4px">
+        <div class="month-title">${mn}</div>
+        <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,0.25);font-family:'Lora',serif;line-height:1">${year}</div>
+      </div>
+    </div>
+  </div>
+  <div class="body">${weeksHTML}</div>
+  <div class="footer">
+    <div class="footer-text">Daewoo Elementary School &bull; English Program &bull; ${mn} ${year}</div>
+  </div>
+</div>
+</body></html>`)
+    pw.document.close(); setTimeout(() => pw.print(), 400)
   }
 
   if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
@@ -259,24 +325,6 @@ export default function LessonPlanView() {
             <p className="text-[13px] text-text-secondary mt-1">Monthly lesson planning by class and grade</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <button onClick={() => setShowEventFilter(!showEventFilter)} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium border transition-all ${showEventFilter ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border'}`}>
-                <Calendar size={14} /> Events ({blockedTypes.size})
-              </button>
-              {showEventFilter && (
-                <div className="absolute right-0 top-full mt-1 w-52 bg-surface border border-border rounded-xl shadow-lg z-50 p-3">
-                  <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Show on lesson plan:</p>
-                  {ALL_EVENT_TYPES.map(et => (
-                    <label key={et.value} className="flex items-center gap-2 py-1 cursor-pointer">
-                      <input type="checkbox" checked={blockedTypes.has(et.value)}
-                        onChange={() => { const next = new Set(Array.from(blockedTypes)); if (next.has(et.value)) next.delete(et.value); else next.add(et.value); setBlockedTypes(next) }}
-                        className="w-3.5 h-3.5 rounded border-border text-navy" />
-                      <span className="text-[11px] text-text-primary">{et.label}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
             {canEdit && <button onClick={() => setShowSetup(!showSetup)} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium border transition-all ${showSetup ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border'}`}><Settings size={14} /> Day Setup</button>}
             <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print for Parents</button>
           </div>

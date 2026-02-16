@@ -642,12 +642,13 @@ function AddEventModal({ date, onClose, onSaved }: { date: string; onClose: () =
   const [eventDate, setEventDate] = useState(date)
   const [type, setType] = useState('lesson_plan')
   const [desc, setDesc] = useState('')
+  const [showOnLessonPlan, setShowOnLessonPlan] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
     if (!title.trim()) return
     setSaving(true)
-    const { error } = await supabase.from('calendar_events').insert({ title: title.trim(), date: eventDate, type, description: desc.trim(), created_by: currentTeacher?.id || null })
+    const { error } = await supabase.from('calendar_events').insert({ title: title.trim(), date: eventDate, type, description: desc.trim(), show_on_lesson_plan: showOnLessonPlan, created_by: currentTeacher?.id || null })
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
     else { showToast('Event added'); onSaved() }
@@ -685,6 +686,14 @@ function AddEventModal({ date, onClose, onSaved }: { date: string; onClose: () =
               </button>
             ))}
           </div>
+          <label className="flex items-center gap-2.5 cursor-pointer py-1 px-5 pb-2">
+            <input type="checkbox" checked={showOnLessonPlan} onChange={e => setShowOnLessonPlan(e.target.checked)}
+              className="w-4 h-4 rounded border-border text-navy focus:ring-navy" />
+            <div>
+              <span className="text-[12px] font-medium text-text-primary">Show on Lesson Plans</span>
+              <span className="text-[10px] text-text-tertiary block">Block this day on monthly lesson plans</span>
+            </div>
+          </label>
         </div>
         <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Cancel</button>
