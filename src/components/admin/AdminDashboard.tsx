@@ -218,6 +218,7 @@ export default function AdminDashboard() {
       {activeTab === 'behavior' && <BehaviorPatternsTab data={data} ko={ko} />}
     </div>
   )
+}
 
 // ─── Overview Tab ──────────────────────────────────────────────────
 
