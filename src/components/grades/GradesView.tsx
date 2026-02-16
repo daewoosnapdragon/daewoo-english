@@ -35,6 +35,7 @@ interface Assessment {
   description: string
   created_by: string | null
   created_at: string
+  standards?: any[]
 }
 
 interface StudentRow { id: string; english_name: string; korean_name: string; photo_url?: string }
