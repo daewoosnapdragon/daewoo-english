@@ -351,9 +351,6 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                   <span className="text-[10px] bg-navy/10 text-navy px-2 py-0.5 rounded-full font-medium">{catLabel(selectedAssessment.type)}</span>
                   {selectedAssessment.date && <span className="text-[11px] text-text-tertiary flex items-center gap-1"><Calendar size={11} />{new Date(selectedAssessment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
                   {selectedAssessment.description && <span className="text-[11px] text-text-tertiary" title={selectedAssessment.description}>📝 {selectedAssessment.description.length > 40 ? selectedAssessment.description.slice(0, 40) + '...' : selectedAssessment.description}</span>}
-                  {selectedAssessment.standards?.length > 0 && selectedAssessment.standards.map((s: any) => (
-                    <span key={s.code} className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium" title={s.description}>{s.code}</span>
-                  ))}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[12px] text-text-secondary">{enteredCount}/{students.length} entered</span>
@@ -558,14 +555,17 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
 
 // ─── Domain Overview ────────────────────────────────────────────────
 
+interface DomainStats { avg: number | null; count: number; assessmentCount: number; assessments: { name: string; avg: number }[] }
+const emptyStats = (): Record<string, DomainStats> => ({ reading: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, phonics: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, writing: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, speaking: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, language: { avg: null, count: 0, assessmentCount: 0, assessments: [] } })
+
 function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: { allAssessments: Assessment[]; selectedGrade: Grade; selectedClass: EnglishClass; lang: LangKey }) {
-  const [stats, setStats] = useState<Record<Domain, { avg: number | null; count: number; assessmentCount: number; assessments: { name: string; avg: number }[] }>>({ reading: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, phonics: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, writing: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, speaking: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, language: { avg: null, count: 0, assessmentCount: 0, assessments: [] } })
+  const [stats, setStats] = useState(emptyStats())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const result: typeof stats = { reading: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, phonics: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, writing: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, speaking: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, language: { avg: null, count: 0, assessmentCount: 0, assessments: [] } }
+      const result = emptyStats()
       for (const domain of DOMAINS) {
         const da = allAssessments.filter(a => a.domain === domain)
         result[domain].assessmentCount = da.length
@@ -595,7 +595,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
 
   const validAvgs = DOMAINS.map(d => stats[d].avg).filter((v): v is number => v != null)
   const overallAvg = validAvgs.length > 0 ? validAvgs.reduce((a, b) => a + b, 0) / validAvgs.length : null
-  const domainColors: Record<Domain, string> = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' }
+  const domainColors = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' } as Record<Domain, string>
 
   return (
     <div className="space-y-4">
