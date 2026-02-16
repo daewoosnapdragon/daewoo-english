@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar } from 'lucide-react'
+import WIDABadge from '@/components/shared/WIDABadge'
+import StudentPopover from '@/components/shared/StudentPopover'
 
 const ASSESSMENT_CATEGORIES = [
   { value: 'quiz', label: 'Quiz', labelKo: '퀴즈' },
@@ -350,6 +352,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                 <div className="flex items-center gap-3">
                   <span className="text-[12px] text-text-secondary">{enteredCount}/{students.length} entered</span>
                   <div className="w-24 h-1.5 bg-navy/10 rounded-full overflow-hidden"><div className="h-full bg-navy rounded-full transition-all" style={{ width: `${students.length > 0 ? (enteredCount / students.length) * 100 : 0}%` }} /></div>
+                  <CrossClassCompare assessmentName={selectedAssessment.name} domain={selectedAssessment.domain} maxScore={selectedAssessment.max_score} currentClass={selectedClass} grade={selectedGrade} semesterId={selectedSemester || ''} />
                 </div>
               </div>
             </div>
@@ -377,7 +380,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                             <div className="w-7 h-7 rounded-full bg-surface-alt flex items-center justify-center"><User size={12} className="text-text-tertiary" /></div>
                           )}
                         </td>
-                        <td className="px-4 py-2.5"><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></td>
+                        <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
                         <td className="px-4 py-2.5 text-center"><input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" /></td>
                         <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{pct ? `${pct}%` : '—'}</td>
                       </tr>
@@ -711,6 +714,61 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── Cross-Class Comparison ────────────────────────────────────────
+function CrossClassCompare({ assessmentName, domain, maxScore, currentClass, grade, semesterId }: {
+  assessmentName: string; domain: string; maxScore: number; currentClass: string; grade: number; semesterId: string
+}) {
+  const [show, setShow] = useState(false)
+  const [data, setData] = useState<{ cls: string; avg: number; count: number }[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const loadComparison = async () => {
+    if (show) { setShow(false); return }
+    setLoading(true)
+    // Find assessments with same name, domain, grade across other classes
+    const { data: matches } = await supabase.from('assessments').select('id, english_class')
+      .eq('name', assessmentName).eq('domain', domain).eq('grade', grade).eq('semester_id', semesterId)
+      .neq('english_class', currentClass)
+    if (!matches || matches.length === 0) { setData([]); setShow(true); setLoading(false); return }
+    const ids = matches.map(m => m.id)
+    const { data: grades } = await supabase.from('grades').select('score, assessment_id').in('assessment_id', ids).not('score', 'is', null)
+    const byClass: Record<string, number[]> = {}
+    matches.forEach(m => { byClass[m.english_class] = [] })
+    grades?.forEach((g: any) => {
+      const m = matches.find(mm => mm.id === g.assessment_id)
+      if (m) byClass[m.english_class].push((g.score / maxScore) * 100)
+    })
+    setData(Object.entries(byClass).map(([cls, scores]) => ({
+      cls, avg: scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0, count: scores.length,
+    })).sort((a, b) => b.avg - a.avg))
+    setShow(true); setLoading(false)
+  }
+
+  return (
+    <div className="relative">
+      <button onClick={loadComparison} className="text-[10px] px-2 py-1 rounded-lg border border-border text-text-secondary hover:bg-surface-alt font-medium flex items-center gap-1">
+        {loading ? <Loader2 size={10} className="animate-spin" /> : <BarChart3 size={10} />} Compare
+      </button>
+      {show && (
+        <div className="absolute right-0 top-8 bg-surface border border-border rounded-xl shadow-lg z-50 w-56 p-3">
+          <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider mb-2">Same assessment in other classes</p>
+          {data.length === 0 ? <p className="text-[11px] text-text-tertiary italic">Not shared with other classes</p> :
+          <div className="space-y-1.5">{data.map(d => (
+            <div key={d.cls} className="flex items-center justify-between">
+              <span className="text-[11px] font-medium" style={{ color: classToTextColor(d.cls as EnglishClass) }}>{d.cls}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(d.avg, 100)}%`, backgroundColor: classToColor(d.cls as EnglishClass) }} /></div>
+                <span className="text-[11px] font-bold text-navy">{d.avg.toFixed(1)}%</span>
+                <span className="text-[9px] text-text-tertiary">n={d.count}</span>
+              </div>
+            </div>
+          ))}</div>}
+        </div>
+      )}
     </div>
   )
 }

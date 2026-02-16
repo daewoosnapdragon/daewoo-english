@@ -187,3 +187,12 @@ export function getKSTDateString(): string {
 export function getKSTNow(): string {
   return new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' })
 }
+
+// Domain display name helper
+const DOMAIN_DISPLAY: Record<string, string> = {
+  reading: 'Reading', phonics: 'Phonics', writing: 'Writing',
+  speaking: 'Speaking', language: 'Language',
+}
+export function domainLabel(d: string): string {
+  return DOMAIN_DISPLAY[d] || d.charAt(0).toUpperCase() + d.slice(1)
+}

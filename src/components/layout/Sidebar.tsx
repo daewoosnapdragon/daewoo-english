@@ -7,19 +7,19 @@ import { supabase } from '@/lib/supabase'
 import {
   LayoutDashboard, Users, ClipboardEdit, FileText, Layers,
   CalendarCheck, BookOpen, Settings, Globe, LogOut, GraduationCap,
-  ChevronsLeft, ChevronsRight, Map
+  ChevronsLeft, ChevronsRight, Map, AlertTriangle
 } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { section: 'MENU' },
+  { section: 'DAILY' },
   { id: 'dashboard', icon: LayoutDashboard },
-  { id: 'students', icon: Users },
   { id: 'grades', icon: ClipboardEdit },
-  { id: 'reports', icon: FileText },
-  { id: 'leveling', icon: Layers },
-  { section: 'DATA' },
   { id: 'attendance', icon: CalendarCheck },
   { id: 'readingLevels', icon: BookOpen },
+  { section: 'MANAGE' },
+  { id: 'students', icon: Users },
+  { id: 'reports', icon: FileText },
+  { id: 'leveling', icon: Layers },
   { id: 'curriculum', icon: Map },
   { section: 'SYSTEM' },
   { id: 'settings', icon: Settings },
@@ -58,7 +58,6 @@ export default function Sidebar({
   return (
     <aside className={`fixed left-0 top-0 bottom-0 ${w} bg-navy-dark flex flex-col z-50 transition-all duration-200`}>
       <div className={`${collapsed ? 'px-2' : 'px-3'} pt-4 mb-1`}>
-        {/* Logo area */}
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5 px-1'} mb-2`}>
           <div className="w-8 h-8 rounded-xl bg-gold/20 flex items-center justify-center flex-shrink-0">
             <GraduationCap size={16} className="text-gold" />
@@ -70,7 +69,6 @@ export default function Sidebar({
             </div>
           )}
         </div>
-        {/* User area */}
         {!collapsed ? (
           <div className="flex items-center gap-2.5 px-1 py-2 rounded-lg bg-white/5">
             <div className="w-6 h-6 rounded-full bg-gold/20 flex items-center justify-center text-[10px] font-bold text-gold">
@@ -104,11 +102,13 @@ export default function Sidebar({
           const Icon = item.icon
           const label = (t.nav as any)[item.id] || item.id
           const isActive = activeView === item.id
+          const badge = item.id === 'dashboard' && flaggedCount > 0 ? flaggedCount : null
           if (collapsed) {
             return (
               <button key={item.id} onClick={() => onNavigate(item.id!)} title={label}
-                className={`w-full flex items-center justify-center py-2 rounded-lg transition-all mb-0.5 ${isActive ? 'bg-gold/15 text-gold' : 'text-blue-200/70 hover:text-white hover:bg-white/5'}`}>
+                className={`w-full flex items-center justify-center py-2 rounded-lg transition-all mb-0.5 relative ${isActive ? 'bg-gold/15 text-gold' : 'text-blue-200/70 hover:text-white hover:bg-white/5'}`}>
                 <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
+                {badge && <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">{badge > 9 ? '9+' : badge}</span>}
               </button>
             )
           }
@@ -117,9 +117,7 @@ export default function Sidebar({
               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12.5px] font-medium transition-all mb-0.5 ${isActive ? 'bg-gold/15 text-gold' : 'text-blue-200/70 hover:text-white hover:bg-white/5'}`}>
               <Icon size={16} strokeWidth={isActive ? 2.2 : 1.8} />
               {label}
-              {item.id === 'dashboard' && flaggedCount > 0 && (
-                <span className="ml-auto bg-red-500 text-white text-[9px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">{flaggedCount > 9 ? '9+' : flaggedCount}</span>
-              )}
+              {badge && <span className="ml-auto bg-red-500 text-white text-[9px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">{badge > 9 ? '9+' : badge}</span>}
             </button>
           )
         })}

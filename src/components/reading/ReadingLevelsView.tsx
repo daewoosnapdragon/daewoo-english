@@ -5,8 +5,10 @@ import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
+import { getKSTDateString, classToColor, classToTextColor } from '@/lib/utils'
 import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2 } from 'lucide-react'
+import WIDABadge from '@/components/shared/WIDABadge'
+import StudentPopover from '@/components/shared/StudentPopover'
 
 type LangKey = 'en' | 'ko'
 interface ReadingRecord {
@@ -163,7 +165,7 @@ function ClassOverview({ students, loading, lang, grade, onAddRecord, onSelectSt
               return (
                 <tr key={s.id} className="border-t border-border table-row-hover cursor-pointer" onClick={() => onSelectStudent(s.id)}>
                   <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
-                  <td className="px-4 py-2.5"><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></td>
+                  <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
                   <td className="px-4 py-2.5 text-center font-bold text-navy text-[15px]">{rec?.cwpm != null ? Math.round(rec.cwpm) : '—'}</td>
                   <td className="px-4 py-2.5 text-center">
                     {band ? <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${band.color}`}>{band.label}</span> : '—'}
@@ -615,8 +617,9 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   studentId: string | null; students: any[]; lang: LangKey; onClose: () => void; onSaved: () => void
 }) {
   const { currentTeacher, showToast } = useApp()
+  const [mode, setMode] = useState<'single' | 'batch'>('single')
   const [selStudent, setSelStudent] = useState(studentId || '')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(getKSTDateString())
   const [passageTitle, setPassageTitle] = useState('')
   const [passageLevel, setPassageLevel] = useState('')
   const [wordCount, setWordCount] = useState<number | ''>('')
@@ -626,85 +629,166 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
+  // Batch mode state: studentId -> { wordCount, timeSeconds, errors, selfCorrections, notes }
+  const [batchScores, setBatchScores] = useState<Record<string, { wc: string; ts: string; err: string; sc: string; notes: string }>>({})
+
   const wc = typeof wordCount === 'number' ? wordCount : 0
   const ts = typeof timeSeconds === 'number' ? timeSeconds : 0
   const err = typeof errors === 'number' ? errors : 0
   const cwpm = ts > 0 ? ((wc - err) / (ts / 60)) : 0
   const accuracy = wc > 0 ? ((wc - err) / wc) * 100 : 0
 
-  const handleSave = async () => {
-    if (!selStudent) { showToast('Select a student'); return }
-    if (!wordCount || !timeSeconds) { showToast('Enter word count and time'); return }
-    setSaving(true)
-    const { error } = await supabase.from('reading_assessments').insert({
-      student_id: selStudent, date, passage_title: passageTitle || null, passage_level: passageLevel || null,
-      word_count: wc, time_seconds: ts, errors: err, self_corrections: typeof selfCorrections === 'number' ? selfCorrections : 0,
-      cwpm: Math.round(cwpm * 10) / 10, accuracy_rate: Math.round(accuracy * 10) / 10,
-      reading_level: null, notes: notes.trim() || null,
-      assessed_by: currentTeacher?.id || null,
-    })
-    setSaving(false)
-    if (error) showToast(`Error: ${error.message}`)
-    else { showToast('Reading record saved'); onSaved() }
+  const setBatchField = (sid: string, field: string, value: string) => {
+    setBatchScores(prev => ({ ...prev, [sid]: { ...(prev[sid] || { wc: '', ts: '', err: '0', sc: '0', notes: '' }), [field]: value } }))
   }
+
+  const calcBatchCwpm = (b: { wc: string; ts: string; err: string }) => {
+    const w = parseInt(b.wc) || 0; const t = parseInt(b.ts) || 0; const e = parseInt(b.err) || 0
+    return t > 0 ? Math.round(((w - e) / (t / 60)) * 10) / 10 : 0
+  }
+  const calcBatchAcc = (b: { wc: string; err: string }) => {
+    const w = parseInt(b.wc) || 0; const e = parseInt(b.err) || 0
+    return w > 0 ? Math.round(((w - e) / w) * 1000) / 10 : 0
+  }
+
+  const handleSave = async () => {
+    if (mode === 'single') {
+      if (!selStudent) { showToast('Select a student'); return }
+      if (!wordCount || !timeSeconds) { showToast('Enter word count and time'); return }
+      setSaving(true)
+      const { error } = await supabase.from('reading_assessments').insert({
+        student_id: selStudent, date, passage_title: passageTitle || null, passage_level: passageLevel || null,
+        word_count: wc, time_seconds: ts, errors: err, self_corrections: typeof selfCorrections === 'number' ? selfCorrections : 0,
+        cwpm: Math.round(cwpm * 10) / 10, accuracy_rate: Math.round(accuracy * 10) / 10,
+        reading_level: null, notes: notes.trim() || null, assessed_by: currentTeacher?.id || null,
+      })
+      setSaving(false)
+      if (error) showToast(`Error: ${error.message}`)
+      else { showToast('Reading record saved'); onSaved() }
+    } else {
+      // Batch save
+      const rows = Object.entries(batchScores)
+        .filter(([_, b]) => b.wc && b.ts)
+        .map(([sid, b]) => {
+          const w = parseInt(b.wc) || 0; const t = parseInt(b.ts) || 0; const e = parseInt(b.err) || 0; const sc = parseInt(b.sc) || 0
+          return {
+            student_id: sid, date, passage_title: passageTitle || null, passage_level: passageLevel || null,
+            word_count: w, time_seconds: t, errors: e, self_corrections: sc,
+            cwpm: calcBatchCwpm(b), accuracy_rate: calcBatchAcc(b),
+            reading_level: null, notes: b.notes?.trim() || null, assessed_by: currentTeacher?.id || null,
+          }
+        })
+      if (rows.length === 0) { showToast('Enter scores for at least one student'); return }
+      setSaving(true)
+      const { error } = await supabase.from('reading_assessments').insert(rows)
+      setSaving(false)
+      if (error) showToast(`Error: ${error.message}`)
+      else { showToast(`Saved ${rows.length} reading records`); onSaved() }
+    }
+  }
+
+  const batchFilled = Object.values(batchScores).filter(b => b.wc && b.ts).length
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={onClose}>
-      <div className="bg-surface rounded-xl shadow-lg w-full max-w-lg" onClick={(e: any) => e.stopPropagation()}>
+      <div className={`bg-surface rounded-xl shadow-lg w-full ${mode === 'batch' ? 'max-w-3xl max-h-[85vh] overflow-hidden flex flex-col' : 'max-w-lg'}`} onClick={(e: any) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold text-navy">Add ORF Record</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1 bg-surface-alt rounded-lg p-0.5">
+              <button onClick={() => setMode('single')} className={`px-3 py-1 rounded-md text-[11px] font-medium ${mode === 'single' ? 'bg-white shadow-sm text-navy' : 'text-text-tertiary'}`}>Single</button>
+              <button onClick={() => setMode('batch')} className={`px-3 py-1 rounded-md text-[11px] font-medium ${mode === 'batch' ? 'bg-white shadow-sm text-navy' : 'text-text-tertiary'}`}>Batch</button>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+          </div>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student *</label>
-              <select value={selStudent} onChange={(e: any) => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
-                <option value="">Select...</option>
-                {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name}</option>)}
-              </select></div>
+
+        {/* Shared passage info for both modes */}
+        <div className="px-6 pt-4 pb-2 space-y-3 border-b border-border">
+          <div className="grid grid-cols-3 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
               <input type="date" value={date} onChange={(e: any) => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
               <input value={passageTitle} onChange={(e: any) => setPassageTitle(e.target.value)} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Lexile</label>
               <input value={passageLevel} onChange={(e: any) => setPassageLevel(e.target.value)} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           </div>
-          <div className="grid grid-cols-4 gap-3">
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words *</label>
-              <input type="number" min={0} value={wordCount} onChange={(e: any) => setWordCount(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Time (sec) *</label>
-              <input type="number" min={1} value={timeSeconds} onChange={(e: any) => setTimeSeconds(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
-              <input type="number" min={0} value={errors} onChange={(e: any) => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
-              <input type="number" min={0} value={selfCorrections} onChange={(e: any) => setSelfCorrections(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-          </div>
-
-          {wc > 0 && ts > 0 && (
-            <div className="bg-accent-light rounded-lg p-4 grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">CWPM</span>
-                <p className="text-2xl font-display font-bold text-navy">{Math.round(cwpm)}</p>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Accuracy</span>
-                <p className={`text-2xl font-display font-bold ${accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{accuracy.toFixed(1)}%</p>
-                <p className="text-[9px] text-text-tertiary">{accuracy >= 97 ? 'Easy — move up' : accuracy >= 95 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration — move down'}</p>
-              </div>
-            </div>
-          )}
-
-          <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
-            <textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} rows={2} placeholder="Observations..." className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
         </div>
-        <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">Cancel</button>
-          <button onClick={handleSave} disabled={saving || !selStudent || !wordCount || !timeSeconds}
-            className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
-            {saving && <Loader2 size={14} className="animate-spin" />} Save
-          </button>
+
+        {mode === 'single' ? (
+          <div className="p-6 space-y-4">
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student *</label>
+              <select value={selStudent} onChange={(e: any) => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
+                <option value="">Select...</option>
+                {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name}</option>)}
+              </select></div>
+            <div className="grid grid-cols-4 gap-3">
+              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words *</label>
+                <input type="number" min={0} value={wordCount} onChange={(e: any) => setWordCount(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Time (sec) *</label>
+                <input type="number" min={1} value={timeSeconds} onChange={(e: any) => setTimeSeconds(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
+                <input type="number" min={0} value={errors} onChange={(e: any) => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
+                <input type="number" min={0} value={selfCorrections} onChange={(e: any) => setSelfCorrections(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+            </div>
+            {wc > 0 && ts > 0 && (
+              <div className="bg-accent-light rounded-lg p-4 grid grid-cols-2 gap-4">
+                <div><span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">CWPM</span>
+                  <p className="text-2xl font-display font-bold text-navy">{Math.round(cwpm)}</p></div>
+                <div><span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Accuracy</span>
+                  <p className={`text-2xl font-display font-bold ${accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{accuracy.toFixed(1)}%</p>
+                  <p className="text-[9px] text-text-tertiary">{accuracy >= 97 ? 'Easy — move up' : accuracy >= 95 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration — move down'}</p></div>
+              </div>
+            )}
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
+              <textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} rows={2} placeholder="Observations..." className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-auto p-4">
+            <p className="text-[11px] text-text-tertiary mb-3">Enter word count and time for each student who read this passage. Leave blank to skip.</p>
+            <table className="w-full text-[12px]">
+              <thead><tr className="border-b border-border">
+                <th className="text-left py-2 px-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-36">Student</th>
+                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Words</th>
+                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Time(s)</th>
+                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Err</th>
+                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">SC</th>
+                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">CWPM</th>
+                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Acc%</th>
+              </tr></thead>
+              <tbody>
+                {students.map((s: any) => {
+                  const b = batchScores[s.id] || { wc: '', ts: '', err: '0', sc: '0', notes: '' }
+                  const bCwpm = calcBatchCwpm(b)
+                  const bAcc = calcBatchAcc(b)
+                  const filled = b.wc && b.ts
+                  return (
+                    <tr key={s.id} className={`border-b border-border/50 ${filled ? 'bg-green-50/50' : ''}`}>
+                      <td className="py-1.5 px-2 text-[12px] font-medium">{s.english_name}</td>
+                      <td className="py-1.5 px-1"><input type="number" min={0} value={b.wc} onChange={e => setBatchField(s.id, 'wc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
+                      <td className="py-1.5 px-1"><input type="number" min={1} value={b.ts} onChange={e => setBatchField(s.id, 'ts', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
+                      <td className="py-1.5 px-1"><input type="number" min={0} value={b.err} onChange={e => setBatchField(s.id, 'err', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
+                      <td className="py-1.5 px-1"><input type="number" min={0} value={b.sc} onChange={e => setBatchField(s.id, 'sc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
+                      <td className="py-1.5 px-1 text-center text-[12px] font-bold text-navy">{filled ? bCwpm : ''}</td>
+                      <td className={`py-1.5 px-1 text-center text-[12px] font-bold ${bAcc >= 95 ? 'text-green-600' : bAcc >= 90 ? 'text-amber-600' : filled ? 'text-red-600' : ''}`}>{filled ? `${bAcc}%` : ''}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+          <span className="text-[11px] text-text-tertiary">{mode === 'batch' ? `${batchFilled} of ${students.length} students` : ''}</span>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">Cancel</button>
+            <button onClick={handleSave} disabled={saving || (mode === 'single' ? (!selStudent || !wordCount || !timeSeconds) : batchFilled === 0)}
+              className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
+              {saving && <Loader2 size={14} className="animate-spin" />} {mode === 'batch' ? `Save ${batchFilled} Records` : 'Save'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

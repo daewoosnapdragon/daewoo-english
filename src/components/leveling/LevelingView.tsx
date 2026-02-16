@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
+import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal } from 'lucide-react'
 
 type Phase = 'setup' | 'scores' | 'anecdotal' | 'results' | 'meeting'
@@ -65,7 +65,7 @@ export default function LevelingView() {
           <div className="space-y-2">{levelTests.map(t => (
             <button key={t.id} onClick={() => { setSelectedTest(t); setPhase('scores') }}
               className="w-full flex items-center justify-between bg-surface border border-border rounded-xl p-4 hover:border-navy/30 transition-all text-left">
-              <div><p className="text-[14px] font-semibold text-navy">{t.name}</p><p className="text-[12px] text-text-tertiary mt-0.5">Grade {t.grade} | {t.semester} | {t.academic_year}</p></div>
+              <div><p className="text-[14px] font-semibold text-navy">{t.name}</p><p className="text-[12px] text-text-tertiary mt-0.5">Grade {t.grade} | {t.semester === 'spring' ? 'Spring' : t.semester === 'fall' ? 'Fall' : t.semester} | {t.academic_year}</p></div>
               <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${t.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{t.status.toUpperCase()}</span>
             </button>))}</div>}
 
@@ -533,7 +533,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                   </div>
                   <div>
                     <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Semester Grades</p>
-                    {studentData[modalStudent.id]?.grades.length > 0 ? <div className="space-y-0.5">{studentData[modalStudent.id].grades.slice(0, 5).map((g: any, i: number) => <p key={i}>{g.domain}: <span className="font-bold text-navy">{g.score?.toFixed(0)}%</span> <span className="text-text-tertiary">({g.semesters?.name})</span></p>)}</div> : <p className="text-text-tertiary italic">No grades</p>}
+                    {studentData[modalStudent.id]?.grades.length > 0 ? <div className="space-y-0.5">{studentData[modalStudent.id].grades.slice(0, 5).map((g: any, i: number) => <p key={i}>{domainLabel(g.domain)}: <span className="font-bold text-navy">{g.score?.toFixed(0)}%</span> <span className="text-text-tertiary">({g.semesters?.name})</span></p>)}</div> : <p className="text-text-tertiary italic">No grades</p>}
                   </div>
                   <div>
                     <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Recent Reading</p>

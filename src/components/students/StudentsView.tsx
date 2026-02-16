@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
-import { classToColor, classToTextColor, sortByKoreanClassAndNumber } from '@/lib/utils'
+import { classToColor, classToTextColor, sortByKoreanClassAndNumber, domainLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2 } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
@@ -837,7 +837,7 @@ function buildStudentPDFHtml(student: Student, data: {
 <h2>Semester Grades</h2>
 ${semesterGrades.length > 0 ? `<table>
   <tr><th>Semester</th><th>Domain</th><th>Score</th><th>Letter</th></tr>
-  ${semesterGrades.map((sg: any) => `<tr><td>${sg.semesters?.name || '—'}</td><td>${sg.domain}</td><td>${sg.score != null ? sg.score.toFixed(1) + '%' : '—'}</td><td>${sg.letter_grade || '—'}</td></tr>`).join('')}
+  ${semesterGrades.map((sg: any) => `<tr><td>${sg.semesters?.name || '—'}</td><td>${domainLabel(sg.domain)}</td><td>${sg.score != null ? sg.score.toFixed(1) + '%' : '—'}</td><td>${sg.letter_grade || '—'}</td></tr>`).join('')}
 </table>` : '<p class="empty">No semester grades recorded.</p>'}
 
 <h2>Reading Assessments (${readingRecords.length})</h2>

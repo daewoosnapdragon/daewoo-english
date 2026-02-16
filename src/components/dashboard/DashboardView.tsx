@@ -69,6 +69,7 @@ export default function DashboardView() {
       </div>
       <div className="px-10 py-6">
         <TodayAtGlance />
+        <QuickActions />
         {isAdmin && <AdminAlertPanel />}
         <SharedCalendar />
         {isAdmin && <ClassOverviewTable />}
@@ -186,6 +187,57 @@ function TodayAtGlance() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Quick Actions ────────────────────────────────────────────────
+function QuickActions() {
+  const { currentTeacher } = useApp()
+  const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
+  const [recentAssessments, setRecentAssessments] = useState<any[]>([])
+
+  useEffect(() => {
+    if (!isTeacher) return
+    (async () => {
+      // Find assessments this teacher recently worked on
+      const { data } = await supabase.from('assessments').select('id, name, domain, max_score, english_class, grade')
+        .eq('english_class', currentTeacher.english_class)
+        .order('created_at', { ascending: false }).limit(3)
+      if (data && data.length > 0) {
+        // For each, count entered grades
+        const withCounts = await Promise.all(data.map(async (a: any) => {
+          const { count } = await supabase.from('grades').select('*', { count: 'exact', head: true }).eq('assessment_id', a.id)
+          const { data: studs } = await supabase.from('students').select('id', { count: 'exact', head: true }).eq('english_class', a.english_class).eq('grade', a.grade).eq('is_active', true)
+          return { ...a, entered: count || 0, total: studs?.length || 0 }
+        }))
+        setRecentAssessments(withCounts.filter(a => a.total > 0))
+      }
+    })()
+  }, [currentTeacher, isTeacher])
+
+  if (!isTeacher || recentAssessments.length === 0) return null
+
+  const incomplete = recentAssessments.filter(a => a.entered < a.total)
+  if (incomplete.length === 0) return null
+
+  return (
+    <div className="mb-6">
+      <h3 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Continue Grading</h3>
+      <div className="flex gap-3">
+        {incomplete.map(a => (
+          <div key={a.id} className="flex-1 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <p className="text-[13px] font-semibold text-navy">{a.name}</p>
+            <p className="text-[11px] text-text-tertiary mt-0.5 capitalize">{a.domain} -- /{a.max_score}</p>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="flex-1 h-1.5 bg-amber-200 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-500 rounded-full" style={{ width: `${(a.entered / a.total) * 100}%` }} />
+              </div>
+              <span className="text-[11px] font-medium text-amber-700">{a.entered}/{a.total}</span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

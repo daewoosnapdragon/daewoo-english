@@ -42,9 +42,18 @@ export default function AttendanceView() {
       .in('student_id', students.map((s: any) => s.id))
     const map: Record<string, { status: Status; note: string; id?: string }> = {}
     if (data) data.forEach((r: any) => { map[r.student_id] = { status: r.status, note: r.note || '', id: r.id } })
-    setRecords(map)
-    setLoading(false)
-    setHasChanges(false)
+    // Auto-fill all present for today if no records exist yet
+    const isToday = selectedDate === getKSTDateString()
+    if (isToday && (!data || data.length === 0) && students.length > 0) {
+      students.forEach((s: any) => { map[s.id] = { status: 'present', note: '' } })
+      setRecords(map)
+      setLoading(false)
+      setHasChanges(true) // Mark as needing save
+    } else {
+      setRecords(map)
+      setLoading(false)
+      setHasChanges(false)
+    }
   }, [selectedDate, students])
 
   useEffect(() => { if (students.length > 0) loadRecords() }, [loadRecords, students])
