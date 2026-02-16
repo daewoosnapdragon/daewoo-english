@@ -61,7 +61,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
       return
     }
 
-    const [{ data: sg }, { data: rd }, { data: at }, { data: bh }] = await Promise.all([
+    const [{ data: sg }, { data: rd }, { data: at }, { count: bhCount }] = await Promise.all([
       supabase.from('semester_grades').select('domain, score').eq('student_id', studentId).order('created_at', { ascending: false }).limit(10),
       supabase.from('reading_assessments').select('date, cwpm').eq('student_id', studentId).order('date', { ascending: false }).limit(3),
       supabase.from('attendance').select('status').eq('student_id', studentId),
@@ -83,7 +83,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
       attCounts,
       wida: widaCache[studentId] || {},
       anecdotal: null,
-      behaviorCount: bh || 0,
+      behaviorCount: bhCount || 0,
     })
     setLoading(false)
   }, [studentId, data, preloadedData])
