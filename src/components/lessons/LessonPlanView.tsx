@@ -80,7 +80,7 @@ export default function LessonPlanView() {
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
   const days = useMemo(() => getMonthDays(year, month), [year, month])
   const weeks = useMemo(() => {
-    const w: typeof days[number][] = []
+    const w: (typeof days[number])[][] = []
     days.forEach(d => { while (w.length <= d.weekIdx) w.push([]); w[d.weekIdx].push(d) })
     return w
   }, [days])
@@ -138,7 +138,7 @@ export default function LessonPlanView() {
     setEditingHomework(null)
   }
 
-  const copyPreviousWeek = async (targetWeek: typeof days[number][]) => {
+  const copyPreviousWeek = async (targetWeek: (typeof days[number])[]) => {
     if (targetWeek.length === 0) return
     const targetMonday = getWeekStart(targetWeek[0].date)
     const targetDate = new Date(targetMonday + 'T00:00:00')
@@ -175,7 +175,7 @@ export default function LessonPlanView() {
   }
   const removeSlot = async (id: string) => { await supabase.from('lesson_plan_slots').delete().eq('id', id); setSlots(prev => prev.filter(s => s.id !== id)) }
 
-  const weekCompletion = (week: typeof days[number][]) => {
+  const weekCompletion = (week: (typeof days[number])[]) => {
     let filled = 0; let total = 0
     week.forEach(d => {
       if (calEvents[d.date]) return
