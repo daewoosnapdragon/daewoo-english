@@ -574,7 +574,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
         const ids = da.map((a: any) => a.id)
         const { data: grades } = await supabase.from('grades').select('score, assessment_id').in('assessment_id', ids).not('score', 'is', null)
         if (grades && grades.length > 0) {
-          const pcts = grades.map((g: any) => { const a = da.find((x: any) => x.id === g.assessment_id); return a && a.max_score > 0 ? (g.score / a.max_score) * 100 : null }).filter((p: any) => p != null)
+          const pcts = grades.map((g: any) => { const a = da.find((x: any) => x.id === g.assessment_id); return a && a.max_score > 0 ? (g.score / a.max_score) * 100 : null }).filter((p: any) => p != null) as number[]
           result[domain].count = pcts.length
           result[domain].avg = pcts.length > 0 ? pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length : null
           for (const a of da) {
@@ -601,7 +601,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
     )
   }
 
-  const validAvgs = DOMAINS.map(d => stats[d].avg).filter((v: any) => v != null)
+  const validAvgs = DOMAINS.map(d => stats[d].avg).filter((v: any): v is number => v != null)
   const overallAvg = validAvgs.length > 0 ? validAvgs.reduce((a: number, b: number) => a + b, 0) / validAvgs.length : null
   const domainColors = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' }
 
