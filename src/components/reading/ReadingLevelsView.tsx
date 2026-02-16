@@ -6,7 +6,8 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { getKSTDateString, classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2 } from 'lucide-react'
+import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download } from 'lucide-react'
+import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
 
@@ -17,7 +18,7 @@ interface ReadingRecord {
   cwpm: number; accuracy_rate: number; reading_level: string; notes: string; assessed_by: string
 }
 
-// Grade-level CWPM benchmarks (beginning / mid / end of year)
+// Grade-level CWPM benchmarks -- fallback defaults (used if no DB benchmarks found)
 const CWPM_BENCHMARKS: Record<number, { below: number; approaching: number; proficient: number; advanced: number }> = {
   1: { below: 30, approaching: 53, proficient: 80, advanced: 100 },
   2: { below: 50, approaching: 72, proficient: 100, advanced: 120 },
@@ -25,6 +26,18 @@ const CWPM_BENCHMARKS: Record<number, { below: number; approaching: number; prof
   4: { below: 85, approaching: 110, proficient: 140, advanced: 165 },
   5: { below: 100, approaching: 127, proficient: 155, advanced: 180 },
   6: { below: 110, approaching: 140, proficient: 170, advanced: 195 },
+}
+
+// Load class benchmarks from DB for the selected class
+function useClassBenchmarks(englishClass: string, grade: number) {
+  const [dbBench, setDbBench] = useState<any>(null)
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('class_benchmarks').select('*').eq('english_class', englishClass).eq('grade', grade).limit(1).single()
+      if (data) setDbBench(data)
+    })()
+  }, [englishClass, grade])
+  return dbBench
 }
 
 export default function ReadingLevelsView() {
@@ -93,7 +106,7 @@ export default function ReadingLevelsView() {
           )}
         </div>
 
-        {subView === 'class' && <ClassOverview key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} onSelectStudent={(sid: string) => { setSelectedStudentId(sid); setSubView('student') }} />}
+        {subView === 'class' && <ClassOverview key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} onSelectStudent={(sid: string) => { setSelectedStudentId(sid); setSubView('student') }} />}
         {subView === 'student' && <StudentReadingView key={refreshKey} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} grade={selectedGrade} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} />}
         {subView === 'groups' && <FluencyGroups key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} />}
       </div>
@@ -105,11 +118,12 @@ export default function ReadingLevelsView() {
 
 // ─── Class Overview ─────────────────────────────────────────────────
 
-function ClassOverview({ students, loading, lang, grade, onAddRecord, onSelectStudent }: {
-  students: any[]; loading: boolean; lang: LangKey; grade: number; onAddRecord: (sid: string) => void; onSelectStudent: (sid: string) => void
+function ClassOverview({ students, loading, lang, grade, englishClass, onAddRecord, onSelectStudent }: {
+  students: any[]; loading: boolean; lang: LangKey; grade: number; englishClass: string; onAddRecord: (sid: string) => void; onSelectStudent: (sid: string) => void
 }) {
   const [latestRecords, setLatestRecords] = useState<Record<string, ReadingRecord>>({})
   const [loadingRecords, setLoadingRecords] = useState(true)
+  const dbBench = useClassBenchmarks(englishClass, grade)
 
   useEffect(() => {
     if (students.length === 0) { setLoadingRecords(false); return }
@@ -126,7 +140,10 @@ function ClassOverview({ students, loading, lang, grade, onAddRecord, onSelectSt
 
   if (loading || loadingRecords) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
 
-  const bench = CWPM_BENCHMARKS[grade] || CWPM_BENCHMARKS[4]
+  // Use DB benchmarks if available, fall back to hardcoded
+  const bench = dbBench
+    ? { below: 0, approaching: dbBench.cwpm_mid || 0, proficient: dbBench.cwpm_end || 0, advanced: Math.round((dbBench.cwpm_end || 0) * 1.2) }
+    : CWPM_BENCHMARKS[grade] || CWPM_BENCHMARKS[4]
 
   const getBand = (cwpm: number) => {
     if (cwpm >= bench.advanced) return { label: 'Advanced', color: 'bg-blue-100 text-blue-700 border-blue-300' }
@@ -138,12 +155,26 @@ function ClassOverview({ students, loading, lang, grade, onAddRecord, onSelectSt
   return (
     <div>
       {/* Benchmark legend */}
-      <div className="flex items-center gap-4 mb-4 text-[11px]">
-        <span className="text-text-tertiary font-semibold">Grade {grade} Benchmarks:</span>
-        <span className="px-2 py-0.5 rounded border bg-red-100 text-red-700 border-red-300">Below &lt;{bench.approaching}</span>
-        <span className="px-2 py-0.5 rounded border bg-amber-100 text-amber-700 border-amber-300">Approaching {bench.approaching}-{bench.proficient - 1}</span>
-        <span className="px-2 py-0.5 rounded border bg-green-100 text-green-700 border-green-300">Proficient {bench.proficient}-{bench.advanced - 1}</span>
-        <span className="px-2 py-0.5 rounded border bg-blue-100 text-blue-700 border-blue-300">Advanced {bench.advanced}+</span>
+      <div className="mb-4">
+        <div className="flex items-center gap-4 text-[11px]">
+          <span className="text-text-tertiary font-semibold">{englishClass} Gr {grade} Benchmarks{dbBench ? '' : ' (defaults)'}:</span>
+          <span className="px-2 py-0.5 rounded border bg-red-100 text-red-700 border-red-300">Below &lt;{bench.approaching}</span>
+          <span className="px-2 py-0.5 rounded border bg-amber-100 text-amber-700 border-amber-300">Approaching {bench.approaching}-{bench.proficient - 1}</span>
+          <span className="px-2 py-0.5 rounded border bg-green-100 text-green-700 border-green-300">Proficient {bench.proficient}-{bench.advanced - 1}</span>
+          <span className="px-2 py-0.5 rounded border bg-blue-100 text-blue-700 border-blue-300">Advanced {bench.advanced}+</span>
+          <button onClick={() => {
+            exportToCSV(`reading-${englishClass}-G${grade}`,
+              ['Student', 'Korean Name', 'CWPM', 'Band', 'Accuracy', 'Passage Level', 'Last Assessed'],
+              students.map((s: any) => {
+                const r = latestRecords[s.id]
+                const band = r?.cwpm != null ? getBand(r.cwpm) : null
+                return [s.english_name, s.korean_name, r?.cwpm != null ? Math.round(r.cwpm) : '', band?.label || '', r?.accuracy_rate?.toFixed(1) || '', r?.passage_level || '', r?.date || '']
+              }))
+          }} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+            <Download size={11} /> CSV
+          </button>
+        </div>
+        {dbBench && <p className="text-[10px] text-text-tertiary mt-1">CWPM Mid ({dbBench.cwpm_mid}) = expected fluency by mid-semester. CWPM End ({dbBench.cwpm_end}) = target fluency by end of semester. Set in Settings &gt; Benchmarks.</p>}
       </div>
 
       <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
@@ -156,7 +187,6 @@ function ClassOverview({ students, loading, lang, grade, onAddRecord, onSelectSt
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-28">Passage Lexile</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Accuracy</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-28">Last Assessed</th>
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-16"></th>
           </tr></thead>
           <tbody>
             {students.map((s: any, i: number) => {
@@ -178,9 +208,6 @@ function ClassOverview({ students, loading, lang, grade, onAddRecord, onSelectSt
                   </td>
                   <td className="px-4 py-2.5 text-center text-[11px] text-text-tertiary">
                     {rec?.date ? new Date(rec.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
-                  </td>
-                  <td className="px-4 py-2.5 text-center">
-                    <button onClick={(ev: any) => { ev.stopPropagation(); onAddRecord(s.id) }} className="text-[10px] text-navy hover:underline font-medium">+ Add</button>
                   </td>
                 </tr>
               )
@@ -531,82 +558,188 @@ function CwpmLineChart({ records, classBench }: { records: any[]; classBench: an
 function FluencyGroups({ students, loading, lang, grade }: {
   students: any[]; loading: boolean; lang: LangKey; grade: number
 }) {
+  const { currentTeacher, showToast } = useApp()
+  const selectedClass = (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as string
   const [latestRecords, setLatestRecords] = useState<Record<string, ReadingRecord>>({})
   const [loadingRecords, setLoadingRecords] = useState(true)
+  const [subgroups, setSubgroups] = useState<any[]>([])
+  const [members, setMembers] = useState<Record<string, string>>({}) // studentId -> subgroupId
+  const [editingGroup, setEditingGroup] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [addingBand, setAddingBand] = useState<string | null>(null)
+  const [newGroupName, setNewGroupName] = useState('')
   const bench = CWPM_BENCHMARKS[grade] || CWPM_BENCHMARKS[4]
 
   useEffect(() => {
     if (students.length === 0) { setLoadingRecords(false); return }
     ;(async () => {
       setLoadingRecords(true)
-      const { data } = await supabase.from('reading_assessments').select('*')
-        .in('student_id', students.map((s: any) => s.id)).order('date', { ascending: false })
+      const [{ data }, { data: sg }, { data: sgm }] = await Promise.all([
+        supabase.from('reading_assessments').select('*').in('student_id', students.map((s: any) => s.id)).order('date', { ascending: false }),
+        supabase.from('fluency_subgroups').select('*').eq('english_class', selectedClass).eq('grade', grade).order('sort_order'),
+        supabase.from('fluency_subgroup_members').select('*, fluency_subgroups!inner(english_class, grade)').eq('fluency_subgroups.english_class', selectedClass).eq('fluency_subgroups.grade', grade),
+      ])
       const map: Record<string, ReadingRecord> = {}
       if (data) data.forEach((r: any) => { if (!map[r.student_id]) map[r.student_id] = r })
       setLatestRecords(map)
+      setSubgroups(sg || [])
+      const mm: Record<string, string> = {}
+      sgm?.forEach((m: any) => { mm[m.student_id] = m.subgroup_id })
+      setMembers(mm)
       setLoadingRecords(false)
     })()
-  }, [students])
+  }, [students, selectedClass, grade])
 
   if (loading || loadingRecords) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
 
-  const groups = {
-    advanced: [] as { student: any; rec: ReadingRecord }[],
-    proficient: [] as { student: any; rec: ReadingRecord }[],
-    approaching: [] as { student: any; rec: ReadingRecord }[],
-    below: [] as { student: any; rec: ReadingRecord }[],
-    unassessed: [] as { student: any }[],
+  const addSubgroup = async (band: string) => {
+    if (!newGroupName.trim()) return
+    const { data, error } = await supabase.from('fluency_subgroups').insert({ english_class: selectedClass, grade, band, name: newGroupName.trim(), sort_order: subgroups.filter(s => s.band === band).length }).select().single()
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setSubgroups(prev => [...prev, data])
+    setNewGroupName(''); setAddingBand(null)
+    showToast(`Created group "${data.name}"`)
   }
 
+  const renameSubgroup = async (id: string) => {
+    if (!editName.trim()) return
+    await supabase.from('fluency_subgroups').update({ name: editName.trim() }).eq('id', id)
+    setSubgroups(prev => prev.map(s => s.id === id ? { ...s, name: editName.trim() } : s))
+    setEditingGroup(null)
+  }
+
+  const deleteSubgroup = async (id: string) => {
+    if (!confirm('Delete this subgroup? Students will be unassigned.')) return
+    await supabase.from('fluency_subgroups').delete().eq('id', id)
+    setSubgroups(prev => prev.filter(s => s.id !== id))
+    setMembers(prev => { const n = { ...prev }; Object.keys(n).forEach(k => { if (n[k] === id) delete n[k] }); return n })
+  }
+
+  const assignStudent = async (studentId: string, subgroupId: string | null) => {
+    // Remove from current subgroup
+    const current = members[studentId]
+    if (current) await supabase.from('fluency_subgroup_members').delete().eq('student_id', studentId).eq('subgroup_id', current)
+    // Add to new subgroup
+    if (subgroupId) await supabase.from('fluency_subgroup_members').insert({ subgroup_id: subgroupId, student_id: studentId })
+    setMembers(prev => { const n = { ...prev }; if (subgroupId) n[studentId] = subgroupId; else delete n[studentId]; return n })
+  }
+
+  const getBand = (cwpm: number) => {
+    if (cwpm >= bench.advanced) return 'advanced'
+    if (cwpm >= bench.proficient) return 'proficient'
+    if (cwpm >= bench.approaching) return 'approaching'
+    return 'below'
+  }
+
+  const groups: Record<string, { student: any; rec: ReadingRecord | null }[]> = { advanced: [], proficient: [], approaching: [], below: [], unassessed: [] }
   students.forEach((s: any) => {
     const rec = latestRecords[s.id]
-    if (!rec || rec.cwpm == null) { groups.unassessed.push({ student: s }); return }
-    if (rec.cwpm >= bench.advanced) groups.advanced.push({ student: s, rec })
-    else if (rec.cwpm >= bench.proficient) groups.proficient.push({ student: s, rec })
-    else if (rec.cwpm >= bench.approaching) groups.approaching.push({ student: s, rec })
-    else groups.below.push({ student: s, rec })
+    if (!rec || rec.cwpm == null) { groups.unassessed.push({ student: s, rec: null }); return }
+    groups[getBand(rec.cwpm)].push({ student: s, rec })
   })
 
   const groupConfig = [
-    { key: 'advanced', label: 'Advanced', desc: `${bench.advanced}+ CWPM — Independent readers, can handle challenging text`, color: 'border-blue-300 bg-blue-50', badge: 'bg-blue-200 text-blue-800', students: groups.advanced },
-    { key: 'proficient', label: 'Proficient', desc: `${bench.proficient}-${bench.advanced - 1} CWPM — On grade level`, color: 'border-green-300 bg-green-50', badge: 'bg-green-200 text-green-800', students: groups.proficient },
-    { key: 'approaching', label: 'Approaching', desc: `${bench.approaching}-${bench.proficient - 1} CWPM — Needs targeted practice`, color: 'border-amber-300 bg-amber-50', badge: 'bg-amber-200 text-amber-800', students: groups.approaching },
-    { key: 'below', label: 'Below Grade Level', desc: `<${bench.approaching} CWPM — Needs intensive support`, color: 'border-red-300 bg-red-50', badge: 'bg-red-200 text-red-800', students: groups.below },
-    { key: 'unassessed', label: 'Not Yet Assessed', desc: 'No reading data available', color: 'border-gray-300 bg-gray-50', badge: 'bg-gray-200 text-gray-700', students: groups.unassessed.map((s: any) => ({ student: s.student, rec: null })) },
+    { key: 'advanced', label: 'Advanced', desc: `${bench.advanced}+ CWPM`, color: 'border-blue-300 bg-blue-50', badge: 'bg-blue-200 text-blue-800' },
+    { key: 'proficient', label: 'Proficient', desc: `${bench.proficient}-${bench.advanced - 1} CWPM`, color: 'border-green-300 bg-green-50', badge: 'bg-green-200 text-green-800' },
+    { key: 'approaching', label: 'Approaching', desc: `${bench.approaching}-${bench.proficient - 1} CWPM`, color: 'border-amber-300 bg-amber-50', badge: 'bg-amber-200 text-amber-800' },
+    { key: 'below', label: 'Below Grade Level', desc: `<${bench.approaching} CWPM`, color: 'border-red-300 bg-red-50', badge: 'bg-red-200 text-red-800' },
+    { key: 'unassessed', label: 'Not Yet Assessed', desc: 'No reading data', color: 'border-gray-300 bg-gray-50', badge: 'bg-gray-200 text-gray-700' },
   ]
 
   return (
     <div className="space-y-4">
-      <p className="text-[13px] text-text-secondary">Students grouped by latest CWPM against Grade {grade} benchmarks — use for small group planning.</p>
-      {groupConfig.map((g) => (
-        <div key={g.key} className={`border rounded-xl overflow-hidden ${g.color}`}>
-          <div className="px-5 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className={`px-2.5 py-1 rounded-lg text-[12px] font-bold ${g.badge}`}>{g.label}</span>
-              <span className="text-[12px] text-text-secondary">{g.desc}</span>
-            </div>
-            <span className="text-[13px] font-bold">{g.students.length} students</span>
-          </div>
-          {g.students.length > 0 && (
-            <div className="px-5 pb-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {g.students.map((item: any) => (
-                  <div key={item.student.id} className="bg-surface rounded-lg border border-border/60 px-3 py-2">
-                    <p className="text-[12px] font-medium truncate">{item.student.english_name}</p>
-                    <p className="text-[10px] text-text-tertiary">{item.student.korean_name}</p>
-                    {item.rec && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[13px] font-bold text-navy">{Math.round(item.rec.cwpm)} CWPM</span>
-                        {item.rec.passage_level && <span className="text-[9px] bg-surface-alt px-1.5 py-0.5 rounded text-text-tertiary">{item.rec.passage_level}</span>}
-                      </div>
-                    )}
+      <p className="text-[13px] text-text-secondary">Students grouped by latest CWPM. Create subgroups within each band for small group planning.</p>
+      {groupConfig.map((g) => {
+        const bandStudents = groups[g.key] || []
+        const bandSubgroups = subgroups.filter(sg => sg.band === g.key)
+        return (
+          <div key={g.key} className={`border rounded-xl overflow-hidden ${g.color}`}>
+            <div className="px-5 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`px-2.5 py-1 rounded-lg text-[12px] font-bold ${g.badge}`}>{g.label}</span>
+                <span className="text-[12px] text-text-secondary">{g.desc}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-bold">{bandStudents.length} students</span>
+                {addingBand === g.key ? (
+                  <div className="flex gap-1">
+                    <input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="Group name"
+                      className="px-2 py-1 text-[11px] border border-border rounded-lg w-28" autoFocus
+                      onKeyDown={e => { if (e.key === 'Enter') addSubgroup(g.key); if (e.key === 'Escape') setAddingBand(null) }} />
+                    <button onClick={() => addSubgroup(g.key)} className="px-2 py-1 rounded-lg bg-navy text-white text-[9px]">Add</button>
                   </div>
-                ))}
+                ) : (
+                  <button onClick={() => { setAddingBand(g.key); setNewGroupName('') }} className="text-[10px] text-text-tertiary hover:text-navy font-medium"><Plus size={11} className="inline" /> Subgroup</button>
+                )}
               </div>
             </div>
-          )}
-        </div>
-      ))}
+            {bandStudents.length > 0 && (
+              <div className="px-5 pb-4">
+                {/* Subgroups within this band */}
+                {bandSubgroups.length > 0 && (
+                  <div className="space-y-3 mb-3">
+                    {bandSubgroups.map(sg => {
+                      const sgStudents = bandStudents.filter(item => members[item.student.id] === sg.id)
+                      return (
+                        <div key={sg.id} className="bg-white/60 rounded-lg border border-border/40 p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            {editingGroup === sg.id ? (
+                              <input value={editName} onChange={e => setEditName(e.target.value)} className="px-2 py-0.5 text-[12px] border border-navy rounded font-semibold" autoFocus
+                                onKeyDown={e => { if (e.key === 'Enter') renameSubgroup(sg.id); if (e.key === 'Escape') setEditingGroup(null) }} />
+                            ) : (
+                              <span className="text-[12px] font-semibold text-navy cursor-pointer hover:underline" onClick={() => { setEditingGroup(sg.id); setEditName(sg.name) }}>{sg.name}</span>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] text-text-tertiary">{sgStudents.length}</span>
+                              <button onClick={() => deleteSubgroup(sg.id)} className="p-0.5 text-text-tertiary hover:text-red-500"><Trash2 size={11} /></button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5">
+                            {sgStudents.map((item: any) => (
+                              <div key={item.student.id} className="bg-surface rounded px-2 py-1.5 border border-border/40 flex items-center justify-between">
+                                <div>
+                                  <p className="text-[11px] font-medium truncate">{item.student.english_name}</p>
+                                  {item.rec && <p className="text-[10px] font-bold text-navy">{Math.round(item.rec.cwpm)} CWPM</p>}
+                                </div>
+                                <button onClick={() => assignStudent(item.student.id, null)} className="text-[9px] text-text-tertiary hover:text-red-500" title="Remove from group">x</button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                {/* Unassigned students in this band */}
+                <div>
+                  {bandSubgroups.length > 0 && <p className="text-[10px] text-text-tertiary font-semibold mb-1.5 uppercase tracking-wider">Unassigned</p>}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {bandStudents.filter(item => !members[item.student.id] || !bandSubgroups.find(sg => sg.id === members[item.student.id])).map((item: any) => (
+                      <div key={item.student.id} className="bg-surface rounded-lg border border-border/60 px-3 py-2">
+                        <p className="text-[12px] font-medium truncate">{item.student.english_name}</p>
+                        <p className="text-[10px] text-text-tertiary">{item.student.korean_name}</p>
+                        {item.rec && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[13px] font-bold text-navy">{Math.round(item.rec.cwpm)} CWPM</span>
+                            {item.rec.passage_level && <span className="text-[9px] bg-surface-alt px-1.5 py-0.5 rounded text-text-tertiary">{item.rec.passage_level}</span>}
+                          </div>
+                        )}
+                        {bandSubgroups.length > 0 && (
+                          <select value="" onChange={e => { if (e.target.value) assignStudent(item.student.id, e.target.value) }}
+                            className="mt-1.5 w-full px-1.5 py-1 border border-border rounded text-[10px] bg-surface">
+                            <option value="">Assign to group...</option>
+                            {bandSubgroups.map(sg => <option key={sg.id} value={sg.id}>{sg.name}</option>)}
+                          </select>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -624,6 +757,9 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const [passageLevel, setPassageLevel] = useState('')
   const [wordCount, setWordCount] = useState<number | ''>('')
   const [timeSeconds, setTimeSeconds] = useState<number | ''>('')
+  const [timeMode, setTimeMode] = useState<'sec' | 'minsec'>('sec')
+  const [timeMin, setTimeMin] = useState('')
+  const [timeSec, setTimeSec] = useState('')
   const [errors, setErrors] = useState<number | ''>(0)
   const [selfCorrections, setSelfCorrections] = useState<number | ''>(0)
   const [notes, setNotes] = useState('')
@@ -725,8 +861,17 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
             <div className="grid grid-cols-4 gap-3">
               <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words *</label>
                 <input type="number" min={0} value={wordCount} onChange={(e: any) => setWordCount(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Time (sec) *</label>
-                <input type="number" min={1} value={timeSeconds} onChange={(e: any) => setTimeSeconds(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+                Time * <button onClick={() => { setTimeMode(timeMode === 'sec' ? 'minsec' : 'sec'); setTimeSeconds(''); setTimeMin(''); setTimeSec('') }} className="text-[9px] text-navy hover:underline ml-1 normal-case">({timeMode === 'sec' ? 'switch to min:sec' : 'switch to seconds'})</button></label>
+                {timeMode === 'sec' ? (
+                  <input type="number" min={1} value={timeSeconds} onChange={(e: any) => setTimeSeconds(e.target.value ? parseInt(e.target.value) : '')} placeholder="seconds" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
+                ) : (
+                  <div className="flex gap-1 items-center">
+                    <input type="number" min={0} value={timeMin} onChange={(e: any) => { setTimeMin(e.target.value); const m = parseInt(e.target.value) || 0; const s = parseInt(timeSec) || 0; setTimeSeconds(m * 60 + s || '') }} placeholder="min" className="w-1/2 px-2 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy text-center" />
+                    <span className="text-text-tertiary font-bold">:</span>
+                    <input type="number" min={0} max={59} value={timeSec} onChange={(e: any) => { setTimeSec(e.target.value); const m = parseInt(timeMin) || 0; const s = parseInt(e.target.value) || 0; setTimeSeconds(m * 60 + s || '') }} placeholder="sec" className="w-1/2 px-2 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy text-center" />
+                  </div>
+                )}</div>
               <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
                 <input type="number" min={0} value={errors} onChange={(e: any) => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
               <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
@@ -751,7 +896,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
               <thead><tr className="border-b border-border">
                 <th className="text-left py-2 px-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-36">Student</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Words</th>
-                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Time(s)</th>
+                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-20">Time <span className="text-[8px] normal-case">(m:ss or sec)</span></th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Err</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">SC</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">CWPM</th>
@@ -767,7 +912,12 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                     <tr key={s.id} className={`border-b border-border/50 ${filled ? 'bg-green-50/50' : ''}`}>
                       <td className="py-1.5 px-2 text-[12px] font-medium">{s.english_name}</td>
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.wc} onChange={e => setBatchField(s.id, 'wc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
-                      <td className="py-1.5 px-1"><input type="number" min={1} value={b.ts} onChange={e => setBatchField(s.id, 'ts', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
+                      <td className="py-1.5 px-1"><input value={b.ts} onChange={e => {
+                        const v = e.target.value
+                        if (v.includes(':')) { const parts = v.split(':'); setBatchField(s.id, 'ts', String((parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0))) }
+                        else { setBatchField(s.id, 'ts', v) }
+                      }} placeholder="60 or 1:00" className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy"
+                        onBlur={e => { const v = e.target.value; if (v.includes(':')) { const parts = v.split(':'); setBatchField(s.id, 'ts', String((parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0))) } }} /></td>
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.err} onChange={e => setBatchField(s.id, 'err', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.sc} onChange={e => setBatchField(s.id, 'sc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
                       <td className="py-1.5 px-1 text-center text-[12px] font-bold text-navy">{filled ? bCwpm : ''}</td>

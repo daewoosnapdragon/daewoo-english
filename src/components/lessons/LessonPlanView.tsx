@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Printer, Settings, Plus, X, Loader2, Copy, Calendar, AlertCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Printer, Settings, Plus, X, Loader2, Calendar, AlertCircle } from 'lucide-react'
 
 interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number }
 interface LessonEntry { id?: string; slot_label: string; title: string; objective: string; notes: string }
@@ -115,6 +115,20 @@ export default function LessonPlanView() {
     slots.forEach(s => { if (!byDay[s.day_of_week].includes(s.slot_label)) byDay[s.day_of_week].push(s.slot_label) })
     return byDay
   }, [slots])
+
+  const [addingSlotDate, setAddingSlotDate] = useState<string | null>(null)
+  const [newSlotLabel, setNewSlotLabel] = useState('')
+
+  // Get all slots for a specific date: template slots + any ad-hoc entries
+  const getDaySlots = (date: string, dayOfWeek: number) => {
+    const template = classSlots[dayOfWeek] || []
+    // Find ad-hoc entries for this date that aren't in the template
+    const adHoc = Object.keys(entries)
+      .filter(k => k.startsWith(`${date}::`))
+      .map(k => k.split('::')[1])
+      .filter(s => !template.includes(s))
+    return [...template, ...Array.from(new Set(adHoc))]
+  }
 
   const hasSlots = slots.length > 0
   const prevMonth = () => { if (month === 0) { setYear(y => y - 1); setMonth(11) } else setMonth(m => m - 1) }
@@ -378,28 +392,36 @@ export default function LessonPlanView() {
           const fw: (typeof days[0] | null)[] = [null, null, null, null, null]
           week.forEach(d => { fw[d.dayOfWeek - 1] = d })
           const ws = week.length > 0 ? getWeekStart(week[0].date) : ''
-          const hw = homework[ws]; const comp = weekCompletion(week)
+          const hw = homework[ws]
 
           return (
             <div key={wi} className="mb-6">
               <div className="flex items-center justify-between mb-1.5">
-                {comp.total > 0 && <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${comp.filled === comp.total ? 'bg-green-100 text-green-700' : comp.filled > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>{comp.filled}/{comp.total} planned</span>}
-                {canEdit && <button onClick={() => copyPreviousWeek(week)} className="inline-flex items-center gap-1 text-[10px] text-text-tertiary hover:text-navy font-medium"><Copy size={11} /> Copy prev week</button>}
+                {canEdit && hw?.homework_text && <span className="text-[10px] text-text-tertiary italic">HW: {hw.homework_text}</span>}
               </div>
 
               <div className="grid grid-cols-5 gap-px bg-border rounded-xl overflow-hidden border border-border shadow-sm">
                 {fw.map((day, di) => {
-                  const daySlots = classSlots[di + 1] || []
+                  const daySlots = day ? getDaySlots(day.date, di + 1) : (classSlots[di + 1] || [])
                   const isToday = day?.date === getKSTDateString()
                   const event = day ? calEvents[day.date] : null
+                  const isMonday = di === 0
+                  const noG5Monday = isMonday && selectedGrade === 5
                   return (
-                    <div key={di} className={`p-3 min-h-[130px] transition-colors ${!day ? 'bg-gray-50' : event ? 'bg-slate-100' : isToday ? 'bg-amber-50/40 ring-2 ring-inset ring-gold/60' : 'bg-white'}`}>
+                    <div key={di} className={`p-3 min-h-[130px] transition-colors ${!day ? 'bg-gray-50' : noG5Monday ? 'bg-gray-100' : event ? 'bg-slate-100' : isToday ? 'bg-amber-50/40 ring-2 ring-inset ring-gold/60' : 'bg-white'}`}>
                       {day ? (
                         <>
                           <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 pb-1.5 border-b ${isToday ? 'text-gold border-gold/30' : 'text-text-tertiary border-border'}`}>
                             {DAY_SHORT[di]} <span className="text-text-primary">{month + 1}/{day.dayNum}</span>
                           </div>
-                          {event ? (
+                          {noG5Monday ? (
+                            <div className="flex items-center justify-center h-[70px]">
+                              <div className="text-center">
+                                <p className="text-[11px] font-semibold text-text-tertiary">No Grade 5</p>
+                                <p className="text-[9px] text-text-tertiary mt-0.5">on Mondays</p>
+                              </div>
+                            </div>
+                          ) : event ? (
                             <div className="flex items-center justify-center h-[70px]">
                               <div className="text-center">
                                 <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 text-[11px] font-bold"><AlertCircle size={12} /> {event.title}</div>
@@ -408,7 +430,7 @@ export default function LessonPlanView() {
                             </div>
                           ) : (
                             <>
-                              {daySlots.length === 0 && <p className="text-[10px] text-text-tertiary italic mt-3">No slots for {DAY_NAMES[di]}</p>}
+                              {daySlots.length === 0 && !canEdit && <p className="text-[10px] text-text-tertiary italic mt-3">No slots for {DAY_NAMES[di]}</p>}
                               {daySlots.map(slot => {
                                 const key = `${day.date}::${slot}`; const entry = entries[key]; const sc = getSlotColor(slot)
                                 const isEditing = editingCell?.date === day.date && editingCell?.slot === slot
@@ -443,6 +465,26 @@ export default function LessonPlanView() {
                                   </div>
                                 )
                               })}
+                              {/* Per-day add slot for one-off overrides */}
+                              {canEdit && day && (
+                                addingSlotDate === day.date ? (
+                                  <div className="mt-2">
+                                    <input value={newSlotLabel} onChange={e => setNewSlotLabel(e.target.value)} placeholder="e.g., Phonics"
+                                      className="w-full px-2 py-1 text-[10px] border border-navy rounded-lg outline-none" autoFocus
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter' && newSlotLabel.trim()) {
+                                          setEditingCell({ date: day.date, slot: newSlotLabel.trim() })
+                                          setEditTitle(''); setEditObjective('')
+                                          setEntries(prev => ({ ...prev, [`${day.date}::${newSlotLabel.trim()}`]: { title: '', objective: '', notes: '' } as any }))
+                                          setNewSlotLabel(''); setAddingSlotDate(null)
+                                        }
+                                        if (e.key === 'Escape') { setAddingSlotDate(null); setNewSlotLabel('') }
+                                      }} />
+                                  </div>
+                                ) : (
+                                  <button onClick={() => setAddingSlotDate(day.date)} className="mt-2 text-[9px] text-text-tertiary/50 hover:text-navy font-medium">+ Add slot</button>
+                                )
+                              )}
                             </>
                           )}
                         </>

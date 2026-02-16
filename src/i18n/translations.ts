@@ -19,6 +19,7 @@ export const translations = {
       readingLevels: 'Reading Fluency',
       curriculum: 'Curriculum',
       lessonPlans: 'Lesson Plans',
+      adminDashboard: 'Program Overview',
     },
     // Common
     common: {
@@ -176,6 +177,7 @@ export const translations = {
       readingLevels: '읽기 수준',
       curriculum: '교육과정',
       lessonPlans: '수업 계획',
+      adminDashboard: '프로그램 개요',
     },
     common: {
       save: '저장',

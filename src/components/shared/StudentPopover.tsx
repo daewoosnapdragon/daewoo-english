@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Loader2, X, BookOpen, BarChart3, AlertTriangle } from 'lucide-react'
+import { useApp } from '@/lib/context'
+import { Loader2, X, BookOpen, BarChart3, AlertTriangle, MessageSquare } from 'lucide-react'
 import WIDABadge from './WIDABadge'
 
 interface PopoverData {
@@ -10,14 +11,18 @@ interface PopoverData {
   gradeAvg: number | null
   behaviorCount: number
   attendanceRate: number | null
+  note: string
 }
 
 export default function StudentPopover({ studentId, name, koreanName, trigger }: {
   studentId: string; name: string; koreanName?: string; trigger: React.ReactNode
 }) {
+  const { currentTeacher } = useApp()
   const [open, setOpen] = useState(false)
   const [data, setData] = useState<PopoverData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [noteText, setNoteText] = useState('')
+  const [savingNote, setSavingNote] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -29,14 +34,26 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
     return () => document.removeEventListener('mousedown', handleClick)
   }, [open])
 
+  const saveNote = async () => {
+    if (!noteText.trim() || !currentTeacher) return
+    setSavingNote(true)
+    await supabase.from('student_notes').insert({
+      student_id: studentId, teacher_id: currentTeacher.id, note: noteText.trim(),
+    })
+    setData(prev => prev ? { ...prev, note: noteText.trim() } : prev)
+    setNoteText('')
+    setSavingNote(false)
+  }
+
   const loadData = async () => {
     if (data) { setOpen(true); return }
     setOpen(true); setLoading(true)
-    const [readingRes, gradesRes, behaviorRes, attRes] = await Promise.all([
+    const [readingRes, gradesRes, behaviorRes, attRes, noteRes] = await Promise.all([
       supabase.from('reading_assessments').select('cwpm, date').eq('student_id', studentId).order('date', { ascending: false }).limit(1),
       supabase.from('grades').select('score, assessments(max_score)').eq('student_id', studentId).not('score', 'is', null).limit(50),
       supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('student_id', studentId),
       supabase.from('attendance').select('status').eq('student_id', studentId),
+      supabase.from('student_notes').select('note').eq('student_id', studentId).order('created_at', { ascending: false }).limit(1),
     ])
 
     const reading = readingRes.data?.[0] ? { cwpm: readingRes.data[0].cwpm, date: readingRes.data[0].date } : null
@@ -52,7 +69,7 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
       attendanceRate = Math.round((present / attRes.data.length) * 100)
     }
 
-    setData({ reading, gradeAvg, behaviorCount, attendanceRate })
+    setData({ reading, gradeAvg, behaviorCount, attendanceRate, note: noteRes.data?.[0]?.note || '' })
     setLoading(false)
   }
 
@@ -60,7 +77,7 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
     <div className="relative inline-block" ref={ref}>
       <span onClick={loadData} className="cursor-pointer hover:underline decoration-dotted underline-offset-2">{trigger}</span>
       {open && (
-        <div className="absolute left-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-[80] w-64 p-4 animate-fade-in">
+        <div className="absolute left-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-[80] w-72 p-4 animate-fade-in">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-[13px] font-semibold text-navy">{name}</p>
@@ -92,6 +109,17 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
                   <span className={`font-bold ${data.attendanceRate >= 95 ? 'text-green-600' : data.attendanceRate >= 85 ? 'text-amber-600' : 'text-red-600'}`}>{data.attendanceRate}%</span>
                 </div>
               )}
+              {/* Quick note */}
+              {data.note && <p className="text-[10px] text-text-secondary bg-surface-alt rounded-lg px-2.5 py-1.5 mt-2 italic"><MessageSquare size={10} className="inline mr-1 text-text-tertiary" />{data.note}</p>}
+              <div className="pt-2 border-t border-border mt-2">
+                <div className="flex gap-1.5">
+                  <input value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Quick note..." onKeyDown={e => { if (e.key === 'Enter') saveNote() }}
+                    className="flex-1 px-2 py-1 border border-border rounded text-[11px] outline-none focus:border-navy" />
+                  <button onClick={saveNote} disabled={savingNote || !noteText.trim()} className="px-2 py-1 rounded bg-navy text-white text-[10px] font-medium disabled:opacity-40">
+                    {savingNote ? '...' : 'Save'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

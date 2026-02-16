@@ -5,10 +5,11 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
-import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal } from 'lucide-react'
+import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
+import { exportToCSV } from '@/lib/export'
 
 type Phase = 'setup' | 'scores' | 'anecdotal' | 'results' | 'meeting'
 
@@ -269,7 +270,12 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Leve
     const config = { ...(levelTest.config || {}), sections: editSections }
     const { error } = await supabase.from('level_tests').update({ config }).eq('id', levelTest.id)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast('Sections updated -- reload to see changes'); setEditingSections(false) }
+    else {
+      // Update local levelTest config so changes show immediately
+      levelTest.config = config
+      showToast('Sections updated')
+      setEditingSections(false)
+    }
   }
 
   useEffect(() => {
@@ -619,6 +625,67 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>('all')
   const [showBorderline, setShowBorderline] = useState(false)
 
+  const handlePrintSummary = (allRows: any[]) => {
+    const pw = window.open('', '_blank'); if (!pw) return
+    // Group by current class
+    const byClass: Record<string, any[]> = {}
+    ENGLISH_CLASSES.forEach(c => { byClass[c] = [] })
+    allRows.forEach(r => { if (byClass[r.student.english_class]) byClass[r.student.english_class].push(r) })
+    // Sort each class by composite desc
+    Object.values(byClass).forEach(arr => arr.sort((a, b) => b.composite - a.composite))
+
+    let pagesHTML = ''
+    ENGLISH_CLASSES.forEach(cls => {
+      const students = byClass[cls]
+      if (students.length === 0) return
+      let rowsHTML = students.map((r: any, i: number) => {
+        const move = r.suggestedClass !== r.student.english_class
+        return `<tr style="${move ? 'background:#fef3c7;' : ''}">
+          <td style="padding:6px 10px;font-weight:600;color:#1e3a5f">${i + 1}</td>
+          <td style="padding:6px 10px;font-weight:600">${r.student.english_name}<br><span style="color:#94a3b8;font-size:10px">${r.student.korean_name}</span></td>
+          <td style="padding:6px 10px;text-align:center">${r.rawCwpm != null ? Math.round(r.rawCwpm) : '—'}</td>
+          <td style="padding:6px 10px;text-align:center">${r.rawWriting ?? '—'}</td>
+          <td style="padding:6px 10px;text-align:center">${r.rawMc != null ? r.rawMc + '/21' : '—'}</td>
+          <td style="padding:6px 10px;text-align:center">${(r.gradeScore * 100).toFixed(0)}%</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:700;color:#1e3a5f">${(r.composite * 100).toFixed(0)}</td>
+          <td style="padding:6px 10px;text-align:center">${Math.round(r.percentile * 100)}%</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:600;${move ? 'color:#d97706' : ''}">${r.suggestedClass}${move ? ' *' : ''}</td>
+          <td style="padding:6px 10px;text-align:center;font-size:10px;color:${r.anec?.teacher_recommends === 'move_up' ? '#16a34a' : r.anec?.teacher_recommends === 'move_down' ? '#dc2626' : '#6b7280'}">${r.anec?.teacher_recommends === 'keep' ? 'KEEP' : r.anec?.teacher_recommends === 'move_up' ? 'UP' : r.anec?.teacher_recommends === 'move_down' ? 'DOWN' : '—'}</td>
+        </tr>`
+      }).join('')
+
+      pagesHTML += `<div style="page-break-after:always;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 16px;background:#1e3a5f;border-radius:8px;color:white">
+          <div><span style="font-size:18px;font-weight:700;font-family:Lora,serif">${cls}</span><span style="font-size:12px;margin-left:8px;opacity:0.7">${students.length} students</span></div>
+          <div style="font-size:11px">Grade ${levelTest.grade} Level Test Summary</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #e2e8f0">
+          <thead><tr style="background:#f1f5f9">
+            <th style="padding:6px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">#</th>
+            <th style="padding:6px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Student</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">CWPM</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Writing</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">MC</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Grades</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:800">Composite</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">%ile</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Suggested</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Teacher</th>
+          </tr></thead>
+          <tbody>${rowsHTML}</tbody>
+        </table>
+        <p style="font-size:9px;color:#94a3b8;margin-top:8px">* = suggested class differs from current. Composite = 30% test + 40% grades + 30% anecdotal. Printed ${new Date().toLocaleDateString()}</p>
+      </div>`
+    })
+
+    pw.document.write(`<!DOCTYPE html><html><head><title>Leveling Summary - Grade ${levelTest.grade}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+      <style>body{font-family:Roboto,sans-serif;margin:20px;color:#1a1a2e} table{border-collapse:collapse} td,th{border-bottom:1px solid #e2e8f0} @media print{@page{margin:12mm 14mm}}</style>
+      </head><body>${pagesHTML}</body></html>`)
+    pw.document.close()
+    pw.print()
+  }
+
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: sd }, { data: ad }, { data: bd }] = await Promise.all([
@@ -676,6 +743,19 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
         </select>
         <button onClick={() => setShowBorderline(!showBorderline)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showBorderline ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}>
           <AlertTriangle size={12} /> Borderline
+        </button>
+        <button onClick={() => handlePrintSummary(rows)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+          <Printer size={12} /> Print Summary
+        </button>
+        <button onClick={() => {
+          exportToCSV(`leveling-G${levelTest.grade}`,
+            ['Student', 'Korean Name', 'Current Class', 'CWPM', 'Writing', 'MC', 'Grade Avg%', 'Anecdotal', 'Composite', 'Percentile', 'Suggested'],
+            displayed.map(r => [r.student.english_name, r.student.korean_name, r.student.english_class,
+              r.rawCwpm != null ? Math.round(r.rawCwpm) : '', r.rawWriting ?? '', r.rawMc ?? '',
+              (r.gradeScore * 100).toFixed(0), (r.anecScore * 100).toFixed(0), (r.composite * 100).toFixed(0),
+              Math.round(r.percentile * 100), r.suggestedClass]))
+        }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+          <Download size={12} /> CSV
         </button>
         <span className="text-[11px] text-text-tertiary ml-auto">{displayed.length} students</span>
       </div>
@@ -737,6 +817,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   const [profileData, setProfileData] = useState<any>(null)
   const [weights, setWeights] = useState({ test: 30, grades: 40, anecdotal: 30 })
   const [showWeights, setShowWeights] = useState(false)
+  const [compareStudents, setCompareStudents] = useState<string[]>([])
+  const [showCompare, setShowCompare] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -814,7 +896,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowWeights(!showWeights)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showWeights ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}><SlidersHorizontal size={13} /> Weights</button>
-          <button onClick={resetToCurrentClasses} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-amber-50 hover:text-amber-700">Reset to Current Classes</button>
+          <button onClick={() => setShowCompare(!showCompare)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showCompare ? 'bg-blue-100 text-blue-700' : 'bg-surface-alt text-text-secondary'}`}><Users size={13} /> Compare{compareStudents.length > 0 ? ` (${compareStudents.length})` : ''}</button>
+          {(isAdmin || currentTeacher?.english_class === 'Snapdragon') && <button onClick={resetToCurrentClasses} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-amber-50 hover:text-amber-700">Reset to Current Classes</button>}
           <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save</button>
           {isAdmin && levelTest.status !== 'finalized' && <button onClick={handleFinalize} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-green-600 text-white hover:bg-green-700"><Lock size={14} /> Finalize</button>}
         </div>
@@ -831,6 +914,51 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
           ))}
           <span className={`text-[11px] font-bold ${weights.test + weights.grades + weights.anecdotal === 100 ? 'text-green-700' : 'text-red-600'}`}>= {weights.test + weights.grades + weights.anecdotal}%</span>
           <button onClick={recompute} className="ml-auto px-4 py-1.5 rounded-lg text-[11px] font-medium bg-amber-600 text-white hover:bg-amber-700">Recalculate</button>
+        </div>
+      )}
+
+      {/* Side-by-side comparison panel */}
+      {showCompare && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[12px] font-semibold text-blue-800">Compare Students Side-by-Side</p>
+            <div className="flex gap-2">
+              {compareStudents.length > 0 && <button onClick={() => setCompareStudents([])} className="text-[10px] px-2 py-1 rounded bg-blue-200 text-blue-800 hover:bg-blue-300">Clear All</button>}
+              <button onClick={() => setShowCompare(false)} className="text-[10px] px-2 py-1 rounded text-blue-700 hover:bg-blue-100">Close</button>
+            </div>
+          </div>
+          {compareStudents.length < 2 && <p className="text-[11px] text-blue-600 mb-3">Click student cards below to add them to the comparison (2-4 students).</p>}
+          {compareStudents.length >= 2 && (
+            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(compareStudents.length, 4)}, 1fr)` }}>
+              {compareStudents.map(sid => {
+                const s = students.find(st => st.id === sid)
+                if (!s) return null
+                const sc = scores[sid]; const an = anecdotals[sid]; const sg = semGrades[sid] || []
+                const gradeAvg = sg.length > 0 ? sg.reduce((sum: number, g: any) => sum + (g.score || 0), 0) / sg.length : null
+                return (
+                  <div key={sid} className="bg-white rounded-lg border border-blue-200 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="text-[13px] font-bold text-navy">{s.english_name}</p>
+                        <p className="text-[10px] text-text-tertiary">{s.korean_name}</p>
+                      </div>
+                      <button onClick={() => setCompareStudents(prev => prev.filter(id => id !== sid))} className="text-text-tertiary hover:text-red-500"><X size={12} /></button>
+                    </div>
+                    <div className="space-y-1.5 text-[11px]">
+                      <div className="flex justify-between"><span className="text-text-tertiary">Current</span><span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) + '40', color: classToTextColor(s.english_class as EnglishClass) }}>{s.english_class}</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">CWPM</span><span className="font-bold text-navy">{sc?.raw_scores?.passage_cwpm != null ? Math.round(sc.raw_scores.passage_cwpm) : '—'}</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">Writing</span><span className="font-bold text-navy">{sc?.raw_scores?.writing ?? '—'}/20</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">MC</span><span className="font-bold text-navy">{sc?.raw_scores?.written_mc ?? '—'}/21</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">Grade Avg</span><span className={`font-bold ${gradeAvg != null ? (gradeAvg >= 80 ? 'text-green-600' : gradeAvg >= 60 ? 'text-amber-600' : 'text-red-600') : ''}`}>{gradeAvg != null ? `${gradeAvg.toFixed(0)}%` : '—'}</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">Anecdotal Avg</span><span className="font-bold text-navy">{an ? ((([an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null).length) || 0).toFixed(1) : '—'}/4</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">Teacher Rec</span><span className={`font-bold text-[10px] ${an?.teacher_recommends === 'move_up' ? 'text-green-600' : an?.teacher_recommends === 'move_down' ? 'text-red-600' : 'text-blue-600'}`}>{an?.teacher_recommends === 'keep' ? 'KEEP' : an?.teacher_recommends === 'move_up' ? 'MOVE UP' : an?.teacher_recommends === 'move_down' ? 'MOVE DOWN' : '—'}</span></div>
+                      {an?.notes && <p className="text-[10px] text-text-secondary bg-surface-alt rounded px-2 py-1 mt-1 italic">{an.notes}</p>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -855,6 +983,11 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                     className={`bg-white rounded-lg border p-2 cursor-grab active:cursor-grabbing hover:shadow-sm transition-all ${bigJump ? 'border-red-400 ring-1 ring-red-200' : isOvr ? 'border-amber-300' : anec?.is_watchlist ? 'border-amber-400' : 'border-border'} ${expandedCard === student.id ? 'ring-2 ring-navy/20' : ''}`}
                     onClick={() => setExpandedCard(expandedCard === student.id ? null : student.id)}>
                     <div className="flex items-center gap-1">
+                      {showCompare && (
+                        <input type="checkbox" checked={compareStudents.includes(student.id)}
+                          onChange={e => { e.stopPropagation(); setCompareStudents(prev => prev.includes(student.id) ? prev.filter(id => id !== student.id) : prev.length < 4 ? [...prev, student.id] : prev) }}
+                          className="w-3 h-3 rounded border-blue-300 text-blue-600 flex-shrink-0" />
+                      )}
                       <GripVertical size={10} className="text-text-tertiary flex-shrink-0" />
                       <div className="flex-1 min-w-0"><LevelingHoverCard studentId={student.id} studentName={student.english_name} koreanName={student.korean_name} className={student.english_class} grade={student.grade}
                         trigger={<p className="text-[10px] font-semibold text-navy truncate cursor-pointer hover:underline">{student.english_name}</p>}

@@ -6,7 +6,7 @@ import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX } from 'lucide-react'
+import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, Pencil, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX } from 'lucide-react'
 
 const EVENT_TYPES = [
   { value: 'day_off', label: 'Day Off', color: '#22C55E', bg: 'bg-green-100 text-green-800' },
@@ -84,7 +84,7 @@ function TodayAtGlance() {
   const { currentTeacher, language } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class : null
-  const [data, setData] = useState<{ unmarkedAttendance: number; behaviorToday: number; eventsToday: any[]; gradingProgress: { graded: number; total: number }; upcomingDeadlines: any[] }>({ unmarkedAttendance: 0, behaviorToday: 0, eventsToday: [], gradingProgress: { graded: 0, total: 0 }, upcomingDeadlines: [] })
+  const [data, setData] = useState<{ unmarkedAttendance: number; behaviorToday: number; eventsToday: any[]; alerts: { declining: number; behaviorSpike: number; missingData: number }; upcomingDeadlines: any[] }>({ unmarkedAttendance: 0, behaviorToday: 0, eventsToday: [], alerts: { declining: 0, behaviorSpike: 0, missingData: 0 }, upcomingDeadlines: [] })
   const [loading, setLoading] = useState(true)
   const today = getKSTDateString()
 
@@ -112,22 +112,28 @@ function TodayAtGlance() {
         }
       }
 
-      // Grading progress: how many students have grades entered for active semester assessments
-      let gradingProgress = { graded: 0, total: 0 }
-      if (semRes.data) {
-        const semId = semRes.data.id
-        let assessQuery = supabase.from('assessments').select('id').eq('semester_id', semId)
-        if (teacherClass) assessQuery = assessQuery.eq('english_class', teacherClass)
-        const { data: assessments } = await assessQuery
-        if (assessments && assessments.length > 0) {
-          let studQuery = supabase.from('students').select('id').eq('is_active', true)
-          if (teacherClass) studQuery = studQuery.eq('english_class', teacherClass)
-          const { data: studs } = await studQuery
-          const totalSlots = assessments.length * (studs?.length || 0)
-          if (totalSlots > 0) {
-            const { count } = await supabase.from('grades').select('*', { count: 'exact', head: true }).in('assessment_id', assessments.map((a: any) => a.id))
-            gradingProgress = { graded: count || 0, total: totalSlots }
-          }
+      // Student alerts: patterns that need attention
+      let alerts = { declining: 0, behaviorSpike: 0, missingData: 0 }
+      {
+        // Find students with declining grades (current vs previous semester)
+        let studQuery = supabase.from('students').select('id, english_class').eq('is_active', true)
+        if (teacherClass) studQuery = studQuery.eq('english_class', teacherClass)
+        const { data: studs } = await studQuery
+        if (studs && studs.length > 0) {
+          // Students with no reading assessments in last 60 days
+          const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          const { data: recentReading } = await supabase.from('reading_assessments').select('student_id')
+            .in('student_id', studs.map(s => s.id)).gte('date', sixtyDaysAgo)
+          const studentsWithReading = new Set((recentReading || []).map(r => r.student_id))
+          alerts.missingData = studs.filter(s => !studentsWithReading.has(s.id)).length
+
+          // Students with 3+ behavior incidents in last 14 days
+          const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          const { data: recentBehavior } = await supabase.from('behavior_logs').select('student_id')
+            .in('student_id', studs.map(s => s.id)).gte('date', twoWeeksAgo)
+          const behaviorCounts: Record<string, number> = {}
+          recentBehavior?.forEach(b => { behaviorCounts[b.student_id] = (behaviorCounts[b.student_id] || 0) + 1 })
+          alerts.behaviorSpike = Object.values(behaviorCounts).filter(c => c >= 3).length
         }
       }
 
@@ -144,7 +150,7 @@ function TodayAtGlance() {
         unmarkedAttendance: Math.max(0, unmarked),
         behaviorToday: behaviorRes.count || 0,
         eventsToday: eventsRes.data || [],
-        gradingProgress,
+        alerts,
         upcomingDeadlines: deadlines.slice(0, 3),
       })
       setLoading(false)
@@ -153,12 +159,12 @@ function TodayAtGlance() {
 
   if (loading) return null
 
-  const gPct = data.gradingProgress.total > 0 ? Math.round((data.gradingProgress.graded / data.gradingProgress.total) * 100) : 0
+  const totalAlerts = data.alerts.behaviorSpike + data.alerts.missingData
 
   const cards = [
     { label: language === 'ko' ? '미기록 출석' : 'Unmarked Attendance', value: data.unmarkedAttendance, color: data.unmarkedAttendance > 0 ? 'text-red-600' : 'text-green-600', bg: data.unmarkedAttendance > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200', sub: data.unmarkedAttendance > 0 ? 'Take attendance!' : 'All done' },
     { label: language === 'ko' ? '오늘 행동 기록' : 'Behavior Logs Today', value: data.behaviorToday, color: 'text-navy', bg: 'bg-surface-alt border-border', sub: '' },
-    { label: language === 'ko' ? '채점 진행률' : 'Grading Progress', value: `${gPct}%`, color: gPct >= 80 ? 'text-green-600' : gPct >= 40 ? 'text-amber-600' : 'text-navy', bg: gPct >= 80 ? 'bg-green-50 border-green-200' : 'bg-surface-alt border-border', sub: `${data.gradingProgress.graded} of ${data.gradingProgress.total} scores` },
+    { label: 'Student Alerts', value: totalAlerts, color: totalAlerts > 0 ? 'text-amber-600' : 'text-green-600', bg: totalAlerts > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200', sub: totalAlerts > 0 ? `${data.alerts.behaviorSpike} behavior${data.alerts.behaviorSpike !== 1 ? 's' : ''}, ${data.alerts.missingData} no recent ORF` : 'No concerns' },
   ]
 
   return (
@@ -490,6 +496,7 @@ function SharedCalendar() {
   const [loading, setLoading] = useState(true)
   const [selDay, setSelDay] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
+  const [editEvent, setEditEvent] = useState<any>(null)
 
   const y = cur.getFullYear(), m = cur.getMonth()
   const first = new Date(y, m, 1).getDay()
@@ -622,7 +629,10 @@ function SharedCalendar() {
                       </div>
                       {ev.description && <p className="text-[11px] text-text-secondary mt-0.5">{ev.description}</p>}
                     </div>
-                    <button onClick={() => handleDelete(ev.id)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-danger"><Trash2 size={13} /></button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setEditEvent(ev)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy"><Pencil size={13} /></button>
+                      <button onClick={() => handleDelete(ev.id)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-danger"><Trash2 size={13} /></button>
+                    </div>
                   </div>
                 )
               })}
@@ -632,33 +642,42 @@ function SharedCalendar() {
       )}
 
       {showAdd && <AddEventModal date={selDay || today} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
+      {editEvent && <AddEventModal date={editEvent.date} existingEvent={editEvent} onClose={() => setEditEvent(null)} onSaved={() => { setEditEvent(null); load() }} />}
     </div>
   )
 }
 
-function AddEventModal({ date, onClose, onSaved }: { date: string; onClose: () => void; onSaved: () => void }) {
+function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string; onClose: () => void; onSaved: () => void; existingEvent?: any }) {
   const { currentTeacher, showToast } = useApp()
-  const [title, setTitle] = useState('')
-  const [eventDate, setEventDate] = useState(date)
-  const [type, setType] = useState('event')
-  const [desc, setDesc] = useState('')
-  const [showOnLessonPlan, setShowOnLessonPlan] = useState(false)
+  const [title, setTitle] = useState(existingEvent?.title || '')
+  const [eventDate, setEventDate] = useState(existingEvent?.date || date)
+  const [type, setType] = useState(existingEvent?.type || 'event')
+  const [desc, setDesc] = useState(existingEvent?.description || '')
+  const [showOnLessonPlan, setShowOnLessonPlan] = useState(existingEvent?.show_on_lesson_plan || false)
   const [saving, setSaving] = useState(false)
+  const isEdit = !!existingEvent
 
   const handleSave = async () => {
     if (!title.trim()) return
     setSaving(true)
-    const { error } = await supabase.from('calendar_events').insert({ title: title.trim(), date: eventDate, type, description: desc.trim(), show_on_lesson_plan: showOnLessonPlan, created_by: currentTeacher?.id || null })
-    setSaving(false)
-    if (error) showToast(`Error: ${error.message}`)
-    else { showToast('Event added'); onSaved() }
+    if (isEdit) {
+      const { error } = await supabase.from('calendar_events').update({ title: title.trim(), date: eventDate, type, description: desc.trim(), show_on_lesson_plan: showOnLessonPlan }).eq('id', existingEvent.id)
+      setSaving(false)
+      if (error) showToast(`Error: ${error.message}`)
+      else { showToast('Event updated'); onSaved() }
+    } else {
+      const { error } = await supabase.from('calendar_events').insert({ title: title.trim(), date: eventDate, type, description: desc.trim(), show_on_lesson_plan: showOnLessonPlan, created_by: currentTeacher?.id || null })
+      setSaving(false)
+      if (error) showToast(`Error: ${error.message}`)
+      else { showToast('Event added'); onSaved() }
+    }
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-sm" onClick={(e: any) => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-display text-[15px] font-semibold text-navy">Add Calendar Event</h3>
+          <h3 className="font-display text-[15px] font-semibold text-navy">{isEdit ? 'Edit Event' : 'Add Calendar Event'}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
         </div>
         <div className="p-5 space-y-3">
@@ -699,7 +718,7 @@ function AddEventModal({ date, onClose, onSaved }: { date: string; onClose: () =
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Cancel</button>
           <button onClick={handleSave} disabled={saving || !title.trim()}
             className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
-            {saving && <Loader2 size={12} className="animate-spin" />} Add Event
+            {saving && <Loader2 size={12} className="animate-spin" />} {isEdit ? 'Update' : 'Add Event'}
           </button>
         </div>
       </div>

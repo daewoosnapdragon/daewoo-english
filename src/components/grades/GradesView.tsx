@@ -6,7 +6,8 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar } from 'lucide-react'
+import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save } from 'lucide-react'
+import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
 
@@ -37,7 +38,7 @@ interface Assessment {
 }
 
 interface StudentRow { id: string; english_name: string; korean_name: string; photo_url?: string }
-type SubView = 'entry' | 'overview' | 'student'
+type SubView = 'entry' | 'overview' | 'student' | 'batch'
 type LangKey = 'en' | 'ko'
 
 interface Semester { id: string; name: string; name_ko: string; type: string; is_active: boolean }
@@ -231,6 +232,7 @@ export default function GradesView() {
         <div className="flex gap-1 mt-4">
           {([
             { id: 'entry' as SubView, icon: FileText, label: lang === 'ko' ? '점수 입력' : 'Score Entry' },
+            { id: 'batch' as SubView, icon: ClipboardEdit, label: lang === 'ko' ? '일괄 입력' : 'Batch Grid' },
             { id: 'overview' as SubView, icon: BarChart3, label: lang === 'ko' ? '도메인 개요' : 'Domain Overview' },
             { id: 'student' as SubView, icon: User, label: lang === 'ko' ? '학생별 보기' : 'Student View' },
           ]).map(tab => (
@@ -276,6 +278,7 @@ export default function GradesView() {
         </div>
 
         {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateModal(true)} createLabel={t.grades.createAssessment} />}
+        {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
         {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
       </div>
@@ -348,6 +351,9 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                   <span className="text-[10px] bg-navy/10 text-navy px-2 py-0.5 rounded-full font-medium">{catLabel(selectedAssessment.type)}</span>
                   {selectedAssessment.date && <span className="text-[11px] text-text-tertiary flex items-center gap-1"><Calendar size={11} />{new Date(selectedAssessment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
                   {selectedAssessment.description && <span className="text-[11px] text-text-tertiary" title={selectedAssessment.description}>📝 {selectedAssessment.description.length > 40 ? selectedAssessment.description.slice(0, 40) + '...' : selectedAssessment.description}</span>}
+                  {selectedAssessment.standards?.length > 0 && selectedAssessment.standards.map((s: any) => (
+                    <span key={s.code} className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium" title={s.description}>{s.code}</span>
+                  ))}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[12px] text-text-secondary">{enteredCount}/{students.length} entered</span>
@@ -424,6 +430,132 @@ function StatsBar({ scores, maxScore, lang }: { scores: Record<string, number | 
   )
 }
 
+// ─── Batch Grid View ──────────────────────────────────────────────
+
+function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, students, selectedClass, selectedGrade, lang }: {
+  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; allAssessments: Assessment[]; students: StudentRow[]; selectedClass: EnglishClass; selectedGrade: Grade; lang: LangKey
+}) {
+  const { showToast } = useApp()
+  const [scores, setScores] = useState<Record<string, Record<string, number | null>>>({}) // studentId -> assessmentId -> score
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
+
+  const domainAssessments = allAssessments.filter(a => a.domain === selectedDomain)
+
+  useEffect(() => {
+    if (domainAssessments.length === 0 || students.length === 0) { setLoading(false); return }
+    ;(async () => {
+      setLoading(true)
+      const { data } = await supabase.from('grades').select('student_id, assessment_id, score')
+        .in('assessment_id', domainAssessments.map(a => a.id))
+        .in('student_id', students.map(s => s.id))
+      const map: Record<string, Record<string, number | null>> = {}
+      students.forEach(s => { map[s.id] = {} })
+      data?.forEach((g: any) => { if (map[g.student_id]) map[g.student_id][g.assessment_id] = g.score })
+      setScores(map)
+      setLoading(false)
+      setHasChanges(false)
+    })()
+  }, [selectedDomain, students.length, allAssessments.length])
+
+  const handleChange = (studentId: string, assessmentId: string, value: string) => {
+    setScores(prev => ({
+      ...prev,
+      [studentId]: { ...(prev[studentId] || {}), [assessmentId]: value === '' ? null : Number(value) }
+    }))
+    setHasChanges(true)
+  }
+
+  const handleSaveAll = async () => {
+    setSaving(true)
+    let errors = 0
+    const rows: any[] = []
+    for (const s of students) {
+      for (const a of domainAssessments) {
+        const score = scores[s.id]?.[a.id]
+        if (score != null) {
+          rows.push({ student_id: s.id, assessment_id: a.id, score, max_score: a.max_score })
+        }
+      }
+    }
+    if (rows.length > 0) {
+      const { error } = await supabase.from('grades').upsert(rows, { onConflict: 'student_id,assessment_id' })
+      if (error) errors++
+    }
+    setSaving(false)
+    setHasChanges(false)
+    showToast(errors > 0 ? `Saved with errors` : `Saved ${rows.length} scores`)
+  }
+
+  return (
+    <>
+      <div className="flex gap-1 mb-5 border-b border-border">
+        {DOMAINS.map(d => (
+          <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[13px] font-medium transition-all border-b-2 -mb-px ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
+            {DOMAIN_LABELS[d][lang]}
+          </button>
+        ))}
+      </div>
+
+      {loading ? <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div> : domainAssessments.length === 0 ? (
+        <div className="p-12 text-center text-text-tertiary">No assessments in {DOMAIN_LABELS[selectedDomain][lang]}</div>
+      ) : (
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12px]">
+              <thead><tr className="bg-surface-alt">
+                <th className="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
+                {domainAssessments.map(a => (
+                  <th key={a.id} className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[80px]" title={a.name}>
+                    <div className="truncate max-w-[80px]">{a.name}</div>
+                    <div className="text-[8px] text-text-tertiary font-normal">/{a.max_score}</div>
+                  </th>
+                ))}
+                <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Avg%</th>
+              </tr></thead>
+              <tbody>
+                {students.map(s => {
+                  const vals = domainAssessments.map(a => scores[s.id]?.[a.id]).filter((v): v is number => v != null)
+                  const pcts = domainAssessments.map(a => {
+                    const sc = scores[s.id]?.[a.id]
+                    return sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
+                  }).filter((v): v is number => v != null)
+                  const avg = pcts.length > 0 ? pcts.reduce((a, b) => a + b, 0) / pcts.length : null
+                  return (
+                    <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
+                      <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="text-text-tertiary font-normal text-[10px]">{s.korean_name}</span></td>
+                      {domainAssessments.map(a => {
+                        const sc = scores[s.id]?.[a.id]
+                        const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
+                        return (
+                          <td key={a.id} className="px-1 py-1.5 text-center">
+                            <input type="number" step="0.5" value={sc ?? ''} onChange={e => handleChange(s.id, a.id, e.target.value)}
+                              max={a.max_score} className={`w-16 px-2 py-1.5 border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${pct != null && pct < 60 ? 'border-red-300 bg-red-50' : 'border-border'}`} />
+                          </td>
+                        )
+                      })}
+                      <td className={`px-3 py-2 text-center font-bold text-[12px] ${avg != null ? (avg >= 80 ? 'text-green-600' : avg >= 60 ? 'text-amber-600' : 'text-red-600') : 'text-text-tertiary'}`}>{avg != null ? `${avg.toFixed(0)}%` : '—'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          {hasChanges && (
+            <div className="px-5 py-3 bg-warm-light border-t border-gold/20 flex items-center justify-between">
+              <p className="text-[12px] text-amber-700">{lang === 'ko' ? '저장되지 않은 변경사항' : 'Unsaved changes'}</p>
+              <button onClick={handleSaveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light">
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} {lang === 'ko' ? '전체 저장' : 'Save All'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
+
 // ─── Domain Overview ────────────────────────────────────────────────
 
 function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: { allAssessments: Assessment[]; selectedGrade: Grade; selectedClass: EnglishClass; lang: LangKey }) {
@@ -475,7 +607,15 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
               <h3 className="font-display text-lg font-semibold text-navy">{lang === 'ko' ? '도메인 개요' : 'Domain Overview'}</h3>
               <p className="text-[12px] text-text-tertiary">Grade {selectedGrade} · {selectedClass} · {allAssessments.length} {lang === 'ko' ? '개 평가' : 'assessments total'}</p>
             </div>
-            <div className="text-right">
+            <div className="flex items-center gap-3">
+              <button onClick={() => {
+                const headers = ['Domain', 'Average %', 'Assessments', 'Scores Entered']
+                const rows = DOMAINS.map(d => [DOMAIN_LABELS[d][lang], stats[d].avg?.toFixed(1) ?? 'N/A', stats[d].assessmentCount, stats[d].count])
+                exportToCSV(`grades-overview-${selectedClass}-G${selectedGrade}`, headers, rows)
+              }} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+                <Download size={12} /> CSV
+              </button>
+              <div className="text-right">
               <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">{lang === 'ko' ? '전체 평균' : 'Overall Average'}</p>
               <p className="text-3xl font-display font-bold text-navy">{overallAvg.toFixed(1)}%</p>
             </div>
@@ -580,8 +720,27 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
       </div>
       {selected && !loading && (
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
-          <div className="px-5 py-4 bg-accent-light border-b border-border">
+          <div className="px-5 py-4 bg-accent-light border-b border-border flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold text-navy">{selected.english_name}<span className="text-text-tertiary ml-2 text-[14px] font-normal">{selected.korean_name}</span></h3>
+            <button onClick={() => {
+              const pw = window.open('', '_blank'); if (!pw) return
+              let domainsHTML = ''
+              DOMAINS.forEach(domain => {
+                const da = allAssessments.filter(a => a.domain === domain)
+                if (da.length === 0) return
+                const sp = da.map(a => { const s = studentGrades[a.id]; return s != null && a.max_score > 0 ? (s / a.max_score) * 100 : null }).filter((p): p is number => p != null)
+                const dAvg = sp.length > 0 ? sp.reduce((a, b) => a + b, 0) / sp.length : null
+                let rows = da.map(a => {
+                  const sc = studentGrades[a.id]; const pct = sc != null && a.max_score > 0 ? ((sc / a.max_score) * 100).toFixed(1) : '—'
+                  return `<tr><td style="padding:4px 8px;border:1px solid #e2e8f0">${a.name}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">${sc != null ? `${sc}/${a.max_score}` : '—'}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:600">${pct}%</td></tr>`
+                }).join('')
+                domainsHTML += `<div style="margin-bottom:16px"><h3 style="font-size:13px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;display:flex;justify-content:space-between">${DOMAIN_LABELS[domain][lang]}${dAvg != null ? `<span style="color:${dAvg >= 80 ? '#16a34a' : dAvg >= 60 ? '#d97706' : '#dc2626'}">${dAvg.toFixed(1)}%</span>` : ''}</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f1f5f9"><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left">Assessment</th><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">Score</th><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">%</th></tr></thead><tbody>${rows}</tbody></table></div>`
+              })
+              pw.document.write(`<!DOCTYPE html><html><head><title>Grade Report - ${selected.english_name}</title><link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet"><style>body{font-family:Roboto,sans-serif;margin:24px;color:#1a1a2e}@media print{@page{margin:15mm}}</style></head><body><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#1e3a5f;border-radius:8px;color:white;margin-bottom:16px"><div><span style="font-size:20px;font-weight:700;font-family:Lora,serif">${selected.english_name}</span><span style="font-size:14px;margin-left:8px;opacity:0.7">${selected.korean_name}</span></div><div style="font-size:11px;text-align:right">Grade Report<br>${new Date().toLocaleDateString()}</div></div>${domainsHTML}<p style="font-size:9px;color:#94a3b8;margin-top:16px">Daewoo Elementary English Program</p></body></html>`)
+              pw.document.close(); pw.print()
+            }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border border border-border">
+              🖨️ Print Report
+            </button>
           </div>
           {DOMAINS.map(domain => {
             const da = allAssessments.filter(a => a.domain === domain)
@@ -637,14 +796,28 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
   const [notes, setNotes] = useState(editing?.description || '')
   const [saving, setSaving] = useState(false)
   const [shareClasses, setShareClasses] = useState<string[]>([])
+  const [standards, setStandards] = useState<string[]>(editing?.standards?.map(s => s.code) || [])
+  const [stdSearch, setStdSearch] = useState('')
   const nameRef = useRef<HTMLInputElement>(null)
   useEffect(() => { nameRef.current?.focus() }, [])
+
+  // Load CCSS standards for suggestions
+  const [ccssStandards, setCcssStandards] = useState<any[]>([])
+  useEffect(() => {
+    import('../curriculum/ccss-standards').then(m => { if (m.CCSS_STANDARDS) setCcssStandards(m.CCSS_STANDARDS) }).catch(() => {})
+  }, [])
+
+  const filteredStds = stdSearch.length >= 2 ? ccssStandards.filter(s =>
+    (s.code.toLowerCase().includes(stdSearch.toLowerCase()) || s.description?.toLowerCase().includes(stdSearch.toLowerCase()))
+    && !standards.includes(s.code)
+  ).slice(0, 6) : []
 
   const otherClasses = ENGLISH_CLASSES.filter((c: any) => c !== englishClass)
 
   const handleSave = async () => {
     if (!name.trim()) return; setSaving(true)
-    const basePayload = { name: name.trim(), domain: selDomain, max_score: maxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null }
+    const stdTags = standards.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.description || '' } })
+    const basePayload = { name: name.trim(), domain: selDomain, max_score: maxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null, standards: stdTags }
     if (editing) {
       const { data, error } = await supabase.from('assessments').update({ ...basePayload, english_class: englishClass }).eq('id', editing.id).select().single()
       setSaving(false)
@@ -688,6 +861,34 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
           </div>
           <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '메모' : 'Notes'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
             <textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder={lang === 'ko' ? '평가에 대한 메모...' : 'Notes about this assessment...'} rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '표준 (CCSS)' : 'Standards (CCSS)'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
+            {standards.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {standards.map(code => (
+                  <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-navy/10 text-navy text-[10px] font-medium">
+                    {code}
+                    <button onClick={() => setStandards(prev => prev.filter(c => c !== code))} className="text-navy/50 hover:text-red-500"><X size={10} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="relative">
+              <input value={stdSearch} onChange={e => setStdSearch(e.target.value)} placeholder={lang === 'ko' ? 'CCSS 코드 검색...' : 'Search CCSS code (e.g. RL.3.1)'}
+                className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
+              {filteredStds.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-border rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
+                  {filteredStds.map(s => (
+                    <button key={s.code} onClick={() => { setStandards(prev => [...prev, s.code]); setStdSearch('') }}
+                      className="w-full text-left px-3 py-2 hover:bg-surface-alt border-b border-border/50 last:border-0">
+                      <span className="text-[11px] font-bold text-navy">{s.code}</span>
+                      <span className="text-[10px] text-text-tertiary ml-2 line-clamp-1">{s.description}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           {!editing && (
             <div>
               <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-2">Share with Other Classes</label>

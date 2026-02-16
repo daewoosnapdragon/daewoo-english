@@ -7,7 +7,8 @@ import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
 import WIDABadge from '@/components/shared/WIDABadge'
-import { ChevronLeft, ChevronRight, Loader2, Check, UserCheck, UserX, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Check, UserCheck, UserX, Clock, Download, AlertTriangle } from 'lucide-react'
+import { exportToCSV } from '@/lib/export'
 
 type Status = 'present' | 'absent' | 'tardy'
 type LangKey = 'en' | 'ko'
@@ -264,6 +265,7 @@ export default function AttendanceView() {
             {new Date(selectedDate + 'T00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           </h3>
           {isWeekend && <p className="text-[12px] text-amber-600 font-medium mt-0.5">⚠️ This is a weekend</p>}
+          {(() => { const dow = new Date(selectedDate + 'T12:00:00').getDay(); return dow === 1 && selectedGrade === 5 ? <p className="text-[12px] text-amber-600 font-medium mt-0.5">⚠️ Grade 5 does not attend English on Mondays</p> : null })()}
           {isToday && <p className="text-[12px] text-green-600 font-medium mt-0.5">Today</p>}
           <p className="text-[10px] text-text-tertiary mt-1">Tip: Click a row, then use <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">P</kbd> <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">A</kbd> <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">T</kbd> keys and <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">↑</kbd><kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">↓</kbd> to navigate</p>
         </div>
@@ -344,16 +346,25 @@ export default function AttendanceView() {
           </div>
         )}
 
-        {/* Save bar */}
-        {hasChanges && (
-          <div className="mt-4 px-5 py-3 bg-warm-light border border-gold/20 rounded-lg flex items-center justify-between">
-            <p className="text-[12px] text-amber-700">{lang === 'ko' ? '저장되지 않은 변경사항이 있습니다' : 'You have unsaved changes'}</p>
-            <button onClick={handleSave} disabled={saving}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light transition-all">
-              {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Save
-            </button>
-          </div>
-        )}
+        {/* Export & Save bar */}
+        <div className="mt-4 flex items-center justify-between">
+          <button onClick={() => {
+            exportToCSV(`attendance-${selectedClass}-${selectedDate}`,
+              ['Student', 'Korean Name', 'Status', 'Note'],
+              students.map((s: any) => [s.english_name, s.korean_name, records[s.id]?.status || '', records[s.id]?.note || '']))
+          }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+            <Download size={12} /> Export CSV
+          </button>
+          {hasChanges && (
+            <div className="px-5 py-3 bg-warm-light border border-gold/20 rounded-lg flex items-center gap-4">
+              <p className="text-[12px] text-amber-700">{lang === 'ko' ? '저장되지 않은 변경사항이 있습니다' : 'Unsaved changes'}</p>
+              <button onClick={handleSave} disabled={saving}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light transition-all">
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Save
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

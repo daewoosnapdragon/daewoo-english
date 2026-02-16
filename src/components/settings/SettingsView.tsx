@@ -601,8 +601,8 @@ function ProgramBenchmarksSection() {
           <thead>
             <tr className="bg-surface-alt">
               <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-              <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">CWPM Mid</th>
-              <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">CWPM End</th>
+              <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold" title="Expected reading fluency by mid-semester">CWPM Mid <span className="normal-case text-text-tertiary block text-[8px]">mid-semester target</span></th>
+              <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold" title="Target reading fluency by end of semester">CWPM End <span className="normal-case text-text-tertiary block text-[8px]">end-semester target</span></th>
               <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Lexile Range</th>
               <th className="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Focus / WIDA Notes</th>
             </tr>
@@ -657,7 +657,7 @@ function ProgramBenchmarksSection() {
           </tbody>
         </table>
       </div>
-      <p className="text-[9px] text-text-tertiary mt-2">These benchmarks are used for CWPM charts, reading grouping, and progress tracking. They reflect realistic ELL program targets per grade level, not native-speaker norms. Use the Focus/WIDA Notes column to note WIDA levels (e.g. "WIDA 1-2, Entering/Emerging") and standards focus areas per class. Admin and class teachers can edit.</p>
+      <p className="text-[9px] text-text-tertiary mt-2"><strong>CWPM Mid</strong> = expected correct words per minute by mid-semester (used as "Approaching" threshold). <strong>CWPM End</strong> = target fluency by end of semester (used as "Proficient" threshold). These are realistic ELL program targets, not native-speaker norms. Benchmarks appear in Reading Fluency, Leveling, and Report Cards. Admin and class teachers can edit.</p>
     </div>
   )
 }

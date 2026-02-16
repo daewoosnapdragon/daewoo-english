@@ -6,9 +6,10 @@ import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber, domainLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2 } from 'lucide-react'
+import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WIDABadge from '@/components/shared/WIDABadge'
+import { exportToCSV } from '@/lib/export'
 
 // ─── Main View ──────────────────────────────────────────────────────
 
@@ -121,6 +122,13 @@ export default function StudentsView() {
           <button onClick={() => { setSortMode('korean_class'); showToast('Sorted for printing — Korean class → student number') }}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium bg-warm text-white hover:opacity-90 transition-all">
             <Printer size={14} /> {t.students.sortForPrinting}
+          </button>
+          <button onClick={() => {
+            exportToCSV('students', ['Name', 'Korean Name', 'Grade', 'English Class', 'Korean Class', 'Class Number', 'Active'],
+              sorted.map(s => [s.english_name, s.korean_name, s.grade, s.english_class, s.korean_class, s.class_number, s.is_active ? 'Yes' : 'No']))
+            showToast('Exported to CSV')
+          }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
+            <Download size={14} /> CSV
           </button>
         </div>
 

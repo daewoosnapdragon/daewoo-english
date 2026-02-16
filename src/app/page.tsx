@@ -16,6 +16,7 @@ import SettingsView from '@/components/settings/SettingsView'
 import LevelingView from '@/components/leveling/LevelingView'
 import CurriculumView from '@/components/curriculum/CurriculumView'
 import LessonPlanView from '@/components/lessons/LessonPlanView'
+import AdminDashboard from '@/components/admin/AdminDashboard'
 import { Loader2 } from 'lucide-react'
 
 export default function Home() {
@@ -73,6 +74,7 @@ export default function Home() {
       case 'readingLevels': return <ReadingLevelsView />
       case 'curriculum': return <CurriculumView />
       case 'lessonPlans': return <LessonPlanView />
+      case 'adminDashboard': return <AdminDashboard />
       case 'settings': return <SettingsView />
       default: return <DashboardView />
     }

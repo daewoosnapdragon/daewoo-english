@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import {
   LayoutDashboard, Users, ClipboardEdit, FileText, Layers,
   CalendarCheck, BookOpen, Settings, Globe, LogOut, GraduationCap,
-  ChevronsLeft, ChevronsRight, Map, AlertTriangle, CalendarDays, Moon, Sun
+  ChevronsLeft, ChevronsRight, Map, AlertTriangle, CalendarDays, Moon, Sun, BarChart3
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { id: 'leveling', icon: Layers },
   { id: 'curriculum', icon: Map },
   { section: 'SYSTEM' },
+  { id: 'adminDashboard', icon: BarChart3, adminOnly: true },
   { id: 'settings', icon: Settings },
 ]
 
@@ -129,6 +130,7 @@ export default function Sidebar({
             return <div key={i} className="text-[9px] uppercase tracking-widest text-blue-300/40 font-medium px-2.5 mt-4 mb-1.5">{item.section}</div>
           }
           if (!item.id || !item.icon) return null
+          if ((item as any).adminOnly && currentTeacher?.role !== 'admin') return null
           const Icon = item.icon
           const label = (t.nav as any)[item.id] || item.id
           const isActive = activeView === item.id
