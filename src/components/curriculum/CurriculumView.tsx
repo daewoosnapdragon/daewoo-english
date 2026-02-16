@@ -377,7 +377,7 @@ function Tracker() {
 
 function WIDAPanel({ gradeBand }: { gradeBand: string }) {
   const data = W.filter(d=>d.gradeBand===gradeBand&&d.keyUse==='recount')
-  const doms = [...new Set(data.map(d=>d.domain))]
+  const doms = Array.from(new Set(data.map(d=>d.domain)))
   if (!data.length) return <p className="text-[11px] text-text-tertiary italic">WIDA descriptors available for grade bands: K, 1, 2-3, 4-5</p>
   return <div className="space-y-2">{doms.map(dm=>
     <div key={dm}>
@@ -466,7 +466,7 @@ function WIDARef() {
   const [df, setDf] = useState<WIDADomain|'all'>('all')
 
   const data = W.filter(d=>d.gradeBand===gb&&d.keyUse===ku&&(df==='all'||d.domain===df))
-  const doms = [...new Set(data.map(d=>d.domain))]
+  const doms = Array.from(new Set(data.map(d=>d.domain)))
 
   return <div>
     <div className="flex flex-wrap items-center gap-4 mb-5">
