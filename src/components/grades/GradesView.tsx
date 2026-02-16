@@ -516,7 +516,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                   const pcts = domainAssessments.map(a => {
                     const sc = scores[s.id]?.[a.id]
                     return sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
-                  }).filter((v: any) => v != null)
+                  }).filter((v: any): v is number => v != null)
                   const avg = pcts.length > 0 ? pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length : null
                   return (
                     <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
