@@ -6,7 +6,7 @@ import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, GraduationCap, ClipboardCheck } from 'lucide-react'
+import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 
 const EVENT_TYPES = [
   { value: 'day_off', label: 'Day Off', color: '#22C55E', bg: 'bg-green-100 text-green-800' },
@@ -47,9 +47,7 @@ export default function DashboardView() {
       <div className="px-10 pt-6 pb-5 bg-surface border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-navy/10 flex items-center justify-center">
-              <GraduationCap size={24} className="text-navy" />
-            </div>
+            <img src="/logo.png" alt="School Logo" className="w-14 h-14 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
             <div>
               <h2 className="font-display text-[22px] font-semibold tracking-tight text-navy">{language === 'ko' ? '대시보드' : 'Dashboard'}</h2>
               <p className="text-text-secondary text-[13px] mt-0.5">{language === 'ko' ? '프로그램 전체 현황' : `Program overview — ${activeSem}`}</p>
@@ -71,7 +69,7 @@ export default function DashboardView() {
         <TodayAtGlance />
         {isAdmin && <AdminAlertPanel />}
         <SharedCalendar />
-        {isAdmin && <ClassOverviewTable />}
+        <ClassOverviewTable />
       </div>
     </div>
   )
@@ -82,19 +80,20 @@ function TodayAtGlance() {
   const { currentTeacher, language } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class : null
-  const [data, setData] = useState<{ unmarkedAttendance: number; behaviorToday: number; eventsToday: any[]; gradingProgress: { graded: number; total: number }; upcomingDeadlines: any[] }>({ unmarkedAttendance: 0, behaviorToday: 0, eventsToday: [], gradingProgress: { graded: 0, total: 0 }, upcomingDeadlines: [] })
+  const [data, setData] = useState<{ unmarkedAttendance: number; behaviorToday: number; eventsToday: any[]; recentBehaviorFlags: number; upcomingDeadlines: any[] }>({ unmarkedAttendance: 0, behaviorToday: 0, eventsToday: [], recentBehaviorFlags: 0, upcomingDeadlines: [] })
   const [loading, setLoading] = useState(true)
   const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
     (async () => {
-      const [eventsRes, behaviorRes, semRes] = await Promise.all([
+      const [eventsRes, behaviorRes, flagsRes, semRes] = await Promise.all([
         supabase.from('calendar_events').select('*').eq('date', today),
         supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('date', today),
+        supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('is_flagged', true),
         supabase.from('semesters').select('*').eq('is_active', true).single(),
       ])
 
-      // Check unmarked attendance
+      // Check unmarked attendance for teacher's class or all classes
       let unmarked = 0
       if (teacherClass) {
         const { data: studs } = await supabase.from('students').select('id').eq('english_class', teacherClass).eq('is_active', true)
@@ -110,26 +109,7 @@ function TodayAtGlance() {
         }
       }
 
-      // Grading progress: how many students have grades entered for active semester assessments
-      let gradingProgress = { graded: 0, total: 0 }
-      if (semRes.data) {
-        const semId = semRes.data.id
-        let assessQuery = supabase.from('assessments').select('id').eq('semester_id', semId)
-        if (teacherClass) assessQuery = assessQuery.eq('english_class', teacherClass)
-        const { data: assessments } = await assessQuery
-        if (assessments && assessments.length > 0) {
-          let studQuery = supabase.from('students').select('id').eq('is_active', true)
-          if (teacherClass) studQuery = studQuery.eq('english_class', teacherClass)
-          const { data: studs } = await studQuery
-          const totalSlots = assessments.length * (studs?.length || 0)
-          if (totalSlots > 0) {
-            const { count } = await supabase.from('grades').select('*', { count: 'exact', head: true }).in('assessment_id', assessments.map((a: any) => a.id))
-            gradingProgress = { graded: count || 0, total: totalSlots }
-          }
-        }
-      }
-
-      // Upcoming deadlines
+      // Upcoming deadlines from semester
       const deadlines: any[] = []
       if (semRes.data) {
         const sem = semRes.data
@@ -142,7 +122,7 @@ function TodayAtGlance() {
         unmarkedAttendance: Math.max(0, unmarked),
         behaviorToday: behaviorRes.count || 0,
         eventsToday: eventsRes.data || [],
-        gradingProgress,
+        recentBehaviorFlags: flagsRes.count || 0,
         upcomingDeadlines: deadlines.slice(0, 3),
       })
       setLoading(false)
@@ -151,12 +131,10 @@ function TodayAtGlance() {
 
   if (loading) return null
 
-  const gPct = data.gradingProgress.total > 0 ? Math.round((data.gradingProgress.graded / data.gradingProgress.total) * 100) : 0
-
   const cards = [
     { label: language === 'ko' ? '미기록 출석' : 'Unmarked Attendance', value: data.unmarkedAttendance, color: data.unmarkedAttendance > 0 ? 'text-red-600' : 'text-green-600', bg: data.unmarkedAttendance > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200', sub: data.unmarkedAttendance > 0 ? 'Take attendance!' : 'All done' },
     { label: language === 'ko' ? '오늘 행동 기록' : 'Behavior Logs Today', value: data.behaviorToday, color: 'text-navy', bg: 'bg-surface-alt border-border', sub: '' },
-    { label: language === 'ko' ? '채점 진행률' : 'Grading Progress', value: `${gPct}%`, color: gPct >= 80 ? 'text-green-600' : gPct >= 40 ? 'text-amber-600' : 'text-navy', bg: gPct >= 80 ? 'bg-green-50 border-green-200' : 'bg-surface-alt border-border', sub: `${data.gradingProgress.graded} of ${data.gradingProgress.total} scores` },
+    { label: language === 'ko' ? '플래그된 행동' : 'Flagged Behaviors', value: data.recentBehaviorFlags, color: data.recentBehaviorFlags > 0 ? 'text-amber-600' : 'text-text-tertiary', bg: data.recentBehaviorFlags > 0 ? 'bg-amber-50 border-amber-200' : 'bg-surface-alt border-border', sub: isAdmin ? 'Review needed' : '' },
   ]
 
   return (
@@ -354,10 +332,11 @@ function SharedCalendar() {
         ))}
       </div>
 
+      {/* Table setup needed */}
       {tableError && (
         <div className="mx-5 my-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-[13px] font-medium text-amber-800 mb-1">Calendar table needs setup</p>
-          <p className="text-[11px] text-amber-700">Run the SQL migration in Supabase SQL Editor to create the <code className="bg-amber-100 px-1 rounded">calendar_events</code> table.</p>
+          <p className="text-[11px] text-amber-700">Run the SQL migration in Supabase SQL Editor to create the <code className="bg-amber-100 px-1 rounded">calendar_events</code> table. See the migration file included in the deployment package.</p>
           <button onClick={() => load()} className="mt-2 px-3 py-1 rounded text-[11px] font-medium bg-amber-200 text-amber-800 hover:bg-amber-300">Retry</button>
         </div>
       )}
@@ -399,7 +378,7 @@ function SharedCalendar() {
         </div>
       </div>
 
-      {/* Day Detail */}
+      {/* Day Detail Modal */}
       {selDay && (
         <div className="px-5 pb-4 border-t border-border pt-4">
           <div className="flex items-center justify-between mb-3">
@@ -436,6 +415,7 @@ function SharedCalendar() {
         </div>
       )}
 
+      {/* Add Event Modal */}
       {showAdd && <AddEventModal date={selDay || today} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
     </div>
   )
@@ -481,6 +461,7 @@ function AddEventModal({ date, onClose, onSaved }: { date: string; onClose: () =
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Description <span className="normal-case text-text-tertiary">(opt)</span></label>
             <textarea value={desc} onChange={(e: any) => setDesc(e.target.value)} rows={2} placeholder="Details..."
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
+          {/* Type color preview */}
           <div className="flex flex-wrap gap-1.5">
             {EVENT_TYPES.map(t => (
               <button key={t.value} onClick={() => setType(t.value)}
@@ -503,7 +484,7 @@ function AddEventModal({ date, onClose, onSaved }: { date: string; onClose: () =
   )
 }
 
-// ─── Class Overview Table (Admin only) ────────────────────────────
+// ─── Class Overview Table ──────────────────────────────────────────
 function ClassOverviewTable() {
   const { language } = useApp()
   const { counts, loading } = useClassCounts()

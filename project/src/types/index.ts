@@ -2,7 +2,7 @@
 // DAEWOO ENGLISH - TYPE DEFINITIONS
 // ============================================================================
 
-export type EnglishClass = 'Lily' | 'Camellia' | 'Daisy' | 'Sunflower' | 'Marigold' | 'Snapdragon' | 'Trial';
+export type EnglishClass = 'Lily' | 'Camellia' | 'Daisy' | 'Sunflower' | 'Marigold' | 'Snapdragon' | 'Sample';
 export type KoreanClass = '대' | '솔' | '매';
 export type Grade = 1 | 2 | 3 | 4 | 5;
 export type Domain = 'reading' | 'phonics' | 'writing' | 'speaking' | 'language';
@@ -12,7 +12,7 @@ export type Role = 'teacher' | 'admin';
 export type Language = 'en' | 'ko';
 
 export const ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon'];
-export const ALL_ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon', 'Trial'];
+export const ALL_ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon', 'Sample'];
 export const KOREAN_CLASSES: KoreanClass[] = ['대', '솔', '매'];
 export const GRADES: Grade[] = [1, 2, 3, 4, 5];
 export const DOMAINS: Domain[] = ['reading', 'phonics', 'writing', 'speaking', 'language'];
@@ -32,11 +32,11 @@ export const CLASS_COLORS: Record<EnglishClass, string> = {
   Sunflower: '#ABEBC6',
   Marigold: '#AED6F1',
   Snapdragon: '#D2B4DE',
-  Trial: '#90CAF9',
+  Sample: '#B0BEC5',
 };
 
 export const CLASS_ORDER: Record<EnglishClass, number> = {
-  Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6, Trial: 99,
+  Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6, Sample: 99,
 };
 
 // ─── Database Row Types ──────────────────────────────────────────────

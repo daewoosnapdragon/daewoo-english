@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers, useSemesters } from '@/hooks/useData'
-import LoginPage from '@/components/layout/LoginPage'
 import Sidebar from '@/components/layout/Sidebar'
 import Toast from '@/components/ui/Toast'
 import DashboardView from '@/components/dashboard/DashboardView'
@@ -16,9 +15,26 @@ import SettingsView from '@/components/settings/SettingsView'
 import LevelingView from '@/components/leveling/LevelingView'
 import { Loader2 } from 'lucide-react'
 
+function PlaceholderView({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="animate-fade-in">
+      <div className="px-10 pt-8 pb-6 bg-surface border-b border-border">
+        <h2 className="font-display text-[26px] font-medium tracking-tight">{title}</h2>
+        <p className="text-text-secondary text-sm mt-1">{description}</p>
+      </div>
+      <div className="px-10 py-8">
+        <div className="bg-surface border border-border rounded-xl p-12 text-center">
+          <h3 className="font-display text-lg font-medium mb-2">Coming Soon</h3>
+          <p className="text-text-secondary text-sm max-w-md mx-auto">This module is being built.</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   const [activeView, setActiveView] = useState('dashboard')
-  const { t, currentTeacher, setActiveSemester } = useApp()
+  const { t, setActiveSemester } = useApp()
   const { teachers, loading: teachersLoading } = useTeachers()
   const { activeSemester, loading: semestersLoading } = useSemesters()
 
@@ -28,21 +44,12 @@ export default function Home() {
 
   if (teachersLoading || semestersLoading) {
     return (
-      <div className="min-h-screen bg-navy-dark flex items-center justify-center">
+      <div className="min-h-screen bg-bg flex items-center justify-center">
         <div className="text-center">
-          <Loader2 size={32} className="animate-spin text-gold mx-auto mb-3" />
-          <p className="text-blue-200/50 text-sm">Loading Daewoo English...</p>
+          <Loader2 size={32} className="animate-spin text-navy mx-auto mb-3" />
+          <p className="text-text-secondary text-sm">Loading Daewoo English...</p>
         </div>
       </div>
-    )
-  }
-
-  if (!currentTeacher) {
-    return (
-      <>
-        <LoginPage teachers={teachers} />
-        <Toast />
-      </>
     )
   }
 
@@ -55,6 +62,9 @@ export default function Home() {
       case 'leveling': return <LevelingView />
       case 'attendance': return <AttendanceView />
       case 'readingLevels': return <ReadingLevelsView />
+      case 'checklist': return <PlaceholderView title={t.nav.checklist} description="Semester kickoff checklist and task management" />
+      case 'tools': return <PlaceholderView title={t.nav.tools} description="Grade calculator, score analyzer, and grading scale reference" />
+      case 'alerts': return <PlaceholderView title={t.nav.alerts} description="View flagged students, generate warning letters" />
       case 'settings': return <SettingsView />
       default: return <DashboardView />
     }

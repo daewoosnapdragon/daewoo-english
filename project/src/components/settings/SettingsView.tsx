@@ -5,11 +5,10 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle } from 'lucide-react'
+import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target } from 'lucide-react'
 
 export default function SettingsView() {
-  const { language, showToast, currentTeacher } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
+  const { language, showToast } = useApp()
 
   return (
     <div className="animate-fade-in">
@@ -26,7 +25,6 @@ export default function SettingsView() {
         <TeacherSection />
         <SemesterSection />
         <ProgramBenchmarksSection />
-        {isAdmin && <ClassManagementSection />}
         <SchoolInfoSection />
       </div>
     </div>
@@ -507,7 +505,7 @@ function ProgramBenchmarksSection() {
               <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">CWPM Mid</th>
               <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">CWPM End</th>
               <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Lexile Range</th>
-              <th className="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Focus / WIDA Notes</th>
+              <th className="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Focus / Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -548,11 +546,9 @@ function ProgramBenchmarksSection() {
                   </td>
                   <td className="px-3 py-2.5">
                     {editable ? (
-                      <textarea value={b.notes} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'notes', e.target.value)}
-                        rows={2}
-                        className="w-full px-2 py-1.5 border border-border rounded text-[11px] outline-none focus:border-navy resize-y min-h-[48px]"
-                        placeholder="Focus areas, WIDA levels, standards..." />
-                    ) : <span className="text-text-tertiary text-[11px] whitespace-pre-wrap">{b.notes}</span>}
+                      <input value={b.notes} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'notes', e.target.value)}
+                        className="w-full px-2 py-1 border border-border rounded text-[11px] outline-none focus:border-navy" />
+                    ) : <span className="text-text-tertiary text-[11px]">{b.notes}</span>}
                   </td>
                 </tr>
               )
@@ -560,99 +556,7 @@ function ProgramBenchmarksSection() {
           </tbody>
         </table>
       </div>
-      <p className="text-[9px] text-text-tertiary mt-2">These benchmarks are used for CWPM charts, reading grouping, and progress tracking. They reflect realistic ELL program targets per grade level, not native-speaker norms. Use the Focus/WIDA Notes column to note WIDA levels (e.g. "WIDA 1-2, Entering/Emerging") and standards focus areas per class. Admin and class teachers can edit.</p>
-    </div>
-  )
-}
-
-function ClassManagementSection() {
-  const { showToast, language } = useApp()
-  const [classes, setClasses] = useState<{ english_class: string; count: number }[]>([])
-  const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState<string | null>(null)
-
-  useEffect(() => {
-    (async () => {
-      // Get all distinct classes with student counts
-      const { data } = await supabase.from('students').select('english_class').eq('is_active', true)
-      if (data) {
-        const counts: Record<string, number> = {}
-        data.forEach((s: any) => { counts[s.english_class] = (counts[s.english_class] || 0) + 1 })
-        const all = [...ENGLISH_CLASSES, 'Trial'].map(cls => ({ english_class: cls, count: counts[cls] || 0 }))
-        setClasses(all)
-      }
-      setLoading(false)
-    })()
-  }, [])
-
-  const handleDeleteClass = async (cls: string) => {
-    if (ENGLISH_CLASSES.includes(cls as EnglishClass) && cls !== 'Trial') {
-      showToast('Cannot delete core program classes (Lily-Snapdragon)')
-      return
-    }
-    const classData = classes.find(c => c.english_class === cls)
-    if (classData && classData.count > 0) {
-      if (!confirm(`"${cls}" has ${classData.count} active student(s). Deleting will deactivate all students in this class. This cannot be undone. Continue?`)) return
-    } else {
-      if (!confirm(`Delete class "${cls}"? All associated data (grades, attendance, behavior logs) for students in this class will remain but students will be deactivated.`)) return
-    }
-    setDeleting(cls)
-    // Deactivate students in this class
-    const { error } = await supabase.from('students').update({ is_active: false }).eq('english_class', cls)
-    if (error) { showToast(`Error: ${error.message}`); setDeleting(null); return }
-    // Remove benchmarks for this class
-    await supabase.from('class_benchmarks').delete().eq('english_class', cls)
-    setClasses(prev => prev.filter(c => c.english_class !== cls))
-    setDeleting(null)
-    showToast(`Class "${cls}" deleted and students deactivated`)
-  }
-
-  if (loading) return <div className="mb-8 p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
-
-  return (
-    <div className="mb-8">
-      <div className="flex items-center gap-2 mb-4">
-        <AlertTriangle size={20} className="text-amber-600" />
-        <div>
-          <h3 className="font-display text-lg font-semibold text-navy">Class Management</h3>
-          <p className="text-[10px] text-text-tertiary">Delete non-core classes. Core classes (Lily-Snapdragon) cannot be deleted.</p>
-        </div>
-      </div>
-      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="bg-surface-alt">
-              <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-              <th className="text-center px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Students</th>
-              <th className="text-right px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {classes.map(cls => {
-              const isCore = ENGLISH_CLASSES.includes(cls.english_class as EnglishClass) && cls.english_class !== 'Trial'
-              return (
-                <tr key={cls.english_class} className="border-t border-border">
-                  <td className="px-4 py-2.5">
-                    <span className="font-semibold text-[13px] px-2 py-0.5 rounded" style={{ backgroundColor: classToColor(cls.english_class as EnglishClass), color: classToTextColor(cls.english_class as EnglishClass) }}>
-                      {cls.english_class}
-                    </span>
-                    {isCore && <span className="text-[9px] text-text-tertiary ml-2">Core</span>}
-                  </td>
-                  <td className="text-center px-4 py-2.5 font-medium">{cls.count}</td>
-                  <td className="text-right px-4 py-2.5">
-                    {!isCore ? (
-                      <button onClick={() => handleDeleteClass(cls.english_class)} disabled={deleting === cls.english_class}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-40">
-                        {deleting === cls.english_class ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Delete
-                      </button>
-                    ) : <span className="text-[10px] text-text-tertiary">Protected</span>}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+      <p className="text-[9px] text-text-tertiary mt-2">These benchmarks are used for CWPM charts, reading grouping, and progress tracking. They reflect realistic ELL program targets per grade level, not native-speaker norms. Admin can edit.</p>
     </div>
   )
 }

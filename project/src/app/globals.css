@@ -57,7 +57,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .score-input {
-  width: 72px;
+  width: 64px;
   text-align: center;
   border: 1.5px solid #E0DDD6;
   border-radius: 6px;

@@ -272,7 +272,7 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Leve
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: existing }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial').order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
       ])
       if (studs) setStudents(studs)
@@ -390,7 +390,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: existing }, { data: testScores }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial').order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').order('english_name'),
         supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
       ])
@@ -613,7 +613,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: sd }, { data: ad }, { data: bd }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial').order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
         supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id),
         supabase.from('class_benchmarks').select('*').eq('grade', levelTest.grade),
@@ -731,7 +731,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: sd }, { data: ad }, { data: bd }, { data: pd }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial').order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
         supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id),
         supabase.from('class_benchmarks').select('*').eq('grade', levelTest.grade),
@@ -760,15 +760,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
 
   const recompute = () => {
     const auto = calcAuto(students, scores, anecdotals, benchmarks, semGrades, { test: weights.test / 100, grades: weights.grades / 100, anecdotal: weights.anecdotal / 100 })
-    setAutoPlacements(auto); showToast('Auto-placements recalculated (drag students to apply)')
-  }
-
-  const resetToCurrentClasses = () => {
-    if (!confirm('Reset all students to their current class assignments? Any manual moves will be undone.')) return
-    const pm: Record<string, EnglishClass> = {}
-    students.forEach((s: any) => { pm[s.id] = s.english_class })
-    setPlacements(pm)
-    showToast('Reset to current classes')
+    setAutoPlacements(auto); setPlacements(auto); showToast('Recalculated')
   }
 
   const handleSave = async () => {
@@ -804,7 +796,6 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowWeights(!showWeights)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showWeights ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}><SlidersHorizontal size={13} /> Weights</button>
-          <button onClick={resetToCurrentClasses} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-amber-50 hover:text-amber-700">Reset to Current Classes</button>
           <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save</button>
           {isAdmin && levelTest.status !== 'finalized' && <button onClick={handleFinalize} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-green-600 text-white hover:bg-green-700"><Lock size={14} /> Finalize</button>}
         </div>

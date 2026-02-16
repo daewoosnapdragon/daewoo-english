@@ -38,7 +38,7 @@ export function classToColor(cls: EnglishClass): string {
     Sunflower: '#ABEBC6',
     Marigold: '#AED6F1',
     Snapdragon: '#D2B4DE',
-    Trial: '#90CAF9',
+    Sample: '#B0BEC5',
   }
   return colors[cls] || '#E5E7EB'
 }
@@ -51,7 +51,7 @@ export function classToTextColor(cls: EnglishClass): string {
     Sunflower: '#065F46',
     Marigold: '#1E40AF',
     Snapdragon: '#5B21B6',
-    Trial: '#1565C0',
+    Sample: '#37474F',
   }
   return colors[cls] || '#374151'
 }

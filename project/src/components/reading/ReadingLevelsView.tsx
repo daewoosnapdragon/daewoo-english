@@ -6,7 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2 } from 'lucide-react'
+import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
 interface ReadingRecord {
@@ -245,30 +245,6 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
     }
   })()
 
-  const [editRecord, setEditRecord] = useState<any>(null)
-
-  const handleDeleteRecord = async (id: string) => {
-    if (!confirm('Delete this reading record?')) return
-    await supabase.from('reading_assessments').delete().eq('id', id)
-    setRecords(prev => prev.filter(r => r.id !== id))
-  }
-
-  const handleUpdateRecord = async (updated: any) => {
-    const { id, ...fields } = updated
-    // Recalculate CWPM and accuracy
-    const wc = Number(fields.word_count) || 0
-    const ts = Number(fields.time_seconds) || 0
-    const errors = Number(fields.errors) || 0
-    const cwpm = ts > 0 ? ((wc - errors) / ts) * 60 : null
-    const accuracy_rate = wc > 0 ? ((wc - errors) / wc) * 100 : null
-    const toUpdate = { ...fields, word_count: wc || null, time_seconds: ts || null, errors, cwpm, accuracy_rate }
-    const { error } = await supabase.from('reading_assessments').update(toUpdate).eq('id', id)
-    if (!error) {
-      setRecords(prev => prev.map(r => r.id === id ? { ...r, ...toUpdate } : r))
-      setEditRecord(null)
-    }
-  }
-
   return (
     <div className="space-y-4">
       <div className="bg-surface border border-border rounded-xl p-5">
@@ -294,6 +270,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 
           {records.length > 0 ? (
             <>
+              {/* Growth Summary Sentence */}
               {growthSentence && (
                 <div className={`px-5 py-3 border-b text-[12px] leading-relaxed ${growthSentence.onTrack ? 'bg-green-50/50 border-green-200 text-green-800' : 'bg-amber-50/50 border-amber-200 text-amber-800'}`}>
                   <span className="font-semibold">{selected.english_name}</span> has gained <span className="font-bold">{growthSentence.gain > 0 ? '+' : ''}{growthSentence.gain} CWPM</span> over {growthSentence.assessments} assessments ({growthSentence.perMonth}/month).
@@ -305,6 +282,8 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                   }
                 </div>
               )}
+
+              {/* CWPM Line Chart with Target Corridor */}
               <div className="px-5 py-5 border-b border-border">
                 <p className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold mb-3 flex items-center gap-1"><TrendingUp size={13} /> CWPM Progression</p>
                 <CwpmLineChart records={records} classBench={classBench} />
@@ -315,6 +294,8 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                   {classBench && <span className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-green-200 inline-block border border-green-300" /> Target corridor ({classBench.cwpm_mid}-{classBench.cwpm_end} CWPM)</span>}
                 </div>
               </div>
+
+              {/* Records table */}
               <table className="w-full text-[12px]">
                 <thead><tr className="bg-surface-alt text-[10px] uppercase tracking-wider text-text-tertiary">
                   <th className="text-left px-5 py-2">Date</th>
@@ -326,11 +307,10 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                   <th className="text-center px-3 py-2">CWPM</th>
                   <th className="text-center px-3 py-2">Accuracy</th>
                   <th className="text-left px-3 py-2">Notes</th>
-                  <th className="text-center px-2 py-2 w-16"></th>
                 </tr></thead>
                 <tbody>
                   {[...records].reverse().map((r: any) => (
-                    <tr key={r.id} className="border-t border-border/50 table-row-hover group">
+                    <tr key={r.id} className="border-t border-border/50 table-row-hover">
                       <td className="px-5 py-2 text-text-secondary">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                       <td className="px-3 py-2 font-medium">{r.passage_title || '—'}</td>
                       <td className="px-3 py-2 text-center font-medium text-text-secondary">{r.passage_level || '—'}</td>
@@ -340,12 +320,6 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                       <td className="px-3 py-2 text-center font-bold text-navy">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
                       <td className={`px-3 py-2 text-center font-semibold ${r.accuracy_rate >= 95 ? 'text-green-600' : r.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{r.accuracy_rate != null ? `${r.accuracy_rate.toFixed(1)}%` : '—'}</td>
                       <td className="px-3 py-2 text-text-tertiary truncate max-w-[150px]">{r.notes || ''}</td>
-                      <td className="px-2 py-2 text-center">
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => setEditRecord(r)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Edit"><Pencil size={12} /></button>
-                          <button onClick={() => handleDeleteRecord(r.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500" title="Delete"><Trash2 size={12} /></button>
-                        </div>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -357,72 +331,6 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
         </div>
       )}
       {loading && <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>}
-
-      {/* Edit Reading Record Modal */}
-      {editRecord && <EditReadingModal record={editRecord} onClose={() => setEditRecord(null)} onSave={handleUpdateRecord} />}
-    </div>
-  )
-}
-
-// ─── Edit Reading Record Modal ──────────────────────────────────────
-
-function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: () => void; onSave: (updated: any) => void }) {
-  const [form, setForm] = useState({
-    date: record.date || '',
-    passage_title: record.passage_title || '',
-    passage_level: record.passage_level || '',
-    word_count: record.word_count || '',
-    time_seconds: record.time_seconds || '',
-    errors: record.errors ?? '',
-    reading_level: record.reading_level || '',
-    notes: record.notes || '',
-  })
-
-  const set = (k: string, v: any) => setForm(prev => ({ ...prev, [k]: v }))
-  const wc = Number(form.word_count) || 0
-  const ts = Number(form.time_seconds) || 0
-  const err = Number(form.errors) || 0
-  const previewCwpm = ts > 0 ? ((wc - err) / ts) * 60 : null
-  const previewAcc = wc > 0 ? ((wc - err) / wc) * 100 : null
-
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={onClose}>
-      <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-display text-[15px] font-semibold text-navy">Edit Reading Record</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
-        </div>
-        <div className="p-5 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
-              <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Level</label>
-              <input value={form.passage_level} onChange={e => set('passage_level', e.target.value)} placeholder="e.g. 350L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-          </div>
-          <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
-            <input value={form.passage_title} onChange={e => set('passage_title', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Word Count</label>
-              <input type="number" value={form.word_count} onChange={e => set('word_count', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Time (sec)</label>
-              <input type="number" value={form.time_seconds} onChange={e => set('time_seconds', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
-              <input type="number" value={form.errors} onChange={e => set('errors', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-          </div>
-          {(previewCwpm != null || previewAcc != null) && (
-            <div className="flex gap-4 p-3 bg-accent-light rounded-lg text-[12px]">
-              {previewCwpm != null && <span>CWPM: <b className="text-navy">{Math.round(previewCwpm)}</b></span>}
-              {previewAcc != null && <span>Accuracy: <b className={previewAcc >= 95 ? 'text-green-600' : previewAcc >= 90 ? 'text-amber-600' : 'text-red-600'}>{previewAcc.toFixed(1)}%</b></span>}
-            </div>
-          )}
-          <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
-            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
-        </div>
-        <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Cancel</button>
-          <button onClick={() => onSave({ id: record.id, ...form })} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Save Changes</button>
-        </div>
-      </div>
     </div>
   )
 }

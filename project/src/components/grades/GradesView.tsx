@@ -652,7 +652,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '만점' : 'Total Points'}</label>
-              <input type="number" min={1} max={1000} step="any" value={maxScore} onChange={e => setMaxScore(parseFloat(e.target.value) || 10)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <input type="number" min={1} max={1000} value={maxScore} onChange={e => setMaxScore(parseFloat(e.target.value) || 10)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '날짜' : 'Date'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           </div>

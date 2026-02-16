@@ -6,7 +6,7 @@ import { useStudents, useSemesters } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, Plus, Camera, BarChart3 } from 'lucide-react'
+import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, Plus, Camera } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
 
@@ -76,7 +76,7 @@ interface ReportData {
 export default function ReportsView() {
   const { t, language, currentTeacher } = useApp()
   const lang = language as LangKey
-  const [mode, setMode] = useState<'individual' | 'progress' | 'class'>('individual')
+  const [mode, setMode] = useState<'individual' | 'class'>('individual')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
@@ -109,7 +109,6 @@ export default function ReportsView() {
         <p className="text-text-secondary text-sm mt-1">Generate report cards matching school format</p>
         <div className="flex gap-1 mt-4">
           <button onClick={() => setMode('individual')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'individual' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><User size={14} /> Report Card</button>
-          <button onClick={() => setMode('progress')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'progress' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><BarChart3 size={14} /> Progress Report</button>
           <button onClick={() => setMode('class')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'class' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><Users size={14} /> Class Summary</button>
         </div>
       </div>
@@ -130,7 +129,7 @@ export default function ReportsView() {
                 style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>{cls}</button>
             ))}
           </div>
-          {(mode === 'individual' || mode === 'progress') && (
+          {mode === 'individual' && (
             <>
               <div className="w-px h-6 bg-border" />
               <select value={selectedStudentId || ''} onChange={(e: any) => setSelectedStudentId(e.target.value || null)} className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy min-w-[200px]">
@@ -152,12 +151,6 @@ export default function ReportsView() {
         )}
         {mode === 'individual' && !selectedStudentId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a student to generate their report card.</div>
-        )}
-        {mode === 'progress' && selectedStudentId && selectedSemesterId && selectedSemester && (
-          <ProgressReport key={`prog-${selectedStudentId}`} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} />
-        )}
-        {mode === 'progress' && !selectedStudentId && (
-          <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a student to generate their progress report.</div>
         )}
         {mode === 'class' && selectedSemesterId && selectedSemester && (
           <ClassSummary students={students} semesterId={selectedSemesterId} semester={selectedSemester} lang={lang} selectedClass={selectedClass} selectedGrade={selectedGrade} />
@@ -628,168 +621,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           </div>
         </div>
 
-      </div>
-    </div>
-  )
-}
-
-// ─── Progress Report (simplified, overall averages only) ────────────
-function ProgressReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass }: {
-  studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: EnglishClass
-}) {
-  const { showToast, currentTeacher } = useApp()
-  const student = students.find((s: any) => s.id === studentId)
-  const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<any>(null)
-
-  useEffect(() => {
-    if (!student) { setLoading(false); return }
-    ;(async () => {
-      // Get assessments + grades for this semester
-      const { data: assessments } = await supabase.from('assessments').select('*').eq('semester_id', semesterId)
-      const { data: grades } = await supabase.from('grades').select('*').eq('student_id', studentId).in('assessment_id', (assessments || []).map((a: any) => a.id))
-
-      // Calculate domain averages
-      const domainGrades: Record<string, number | null> = {}
-      for (const dom of DOMAINS) {
-        const da = (assessments || []).filter((a: any) => a.domain === dom)
-        const pcts = da.map((a: any) => {
-          const g = (grades || []).find((g: any) => g.assessment_id === a.id)
-          if (!g || g.score == null || g.is_exempt) return null
-          return (g.score / a.max_score) * 100
-        }).filter((p: any): p is number => p != null)
-        domainGrades[dom] = pcts.length > 0 ? pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length : null
-      }
-      const validDomains = Object.values(domainGrades).filter((v): v is number => v != null)
-      const overallGrade = validDomains.length > 0 ? validDomains.reduce((a, b) => a + b, 0) / validDomains.length : null
-
-      // Get attendance stats
-      const { data: attendance } = await supabase.from('attendance').select('status').eq('student_id', studentId)
-      const attCounts = { present: 0, absent: 0, tardy: 0 }
-      attendance?.forEach((a: any) => { if (attCounts[a.status as keyof typeof attCounts] !== undefined) attCounts[a.status as keyof typeof attCounts]++ })
-
-      // Get latest reading assessment
-      const { data: reading } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1)
-
-      // Get behavior count
-      const { count: behaviorCount } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('student_id', studentId)
-
-      // Get teacher comment
-      const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
-
-      // Teacher name
-      const { data: teacherData } = await supabase.from('teachers').select('name').eq('english_class', student.english_class).limit(1).single()
-
-      setData({
-        domainGrades, overallGrade,
-        overallLetter: overallGrade != null ? getLetterGrade(overallGrade) : '--',
-        attCounts, totalAtt: (attendance || []).length,
-        latestReading: reading?.[0] || null,
-        behaviorCount: behaviorCount || 0,
-        comment: commentData?.text || '',
-        teacherName: teacherData?.name || '',
-        semesterName: semester?.name || '',
-      })
-      setLoading(false)
-    })()
-  }, [studentId, semesterId])
-
-  if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
-  if (!student || !data) return <div className="py-12 text-center text-text-tertiary">No data available.</div>
-
-  return (
-    <div className="max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
-        <div className="bg-navy px-6 py-4 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-blue-200/60 font-semibold">Progress Report</p>
-              <h3 className="font-display text-xl font-bold mt-1">{student.english_name}</h3>
-              <p className="text-blue-200/70 text-[13px]">{student.korean_name} -- {student.english_class} -- Grade {student.grade}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-blue-200/60 text-[11px]">{data.semesterName}</p>
-              <p className="text-blue-200/60 text-[11px]">Teacher: {data.teacherName}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-6">
-          {/* Overall Grade */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-xl flex items-center justify-center" style={{ backgroundColor: data.overallGrade != null ? tileBgPrint(data.overallGrade).bg : '#f8fafc', border: `2px solid ${data.overallGrade != null ? tileBgPrint(data.overallGrade).border : '#e2e8f0'}` }}>
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: data.overallGrade != null ? letterColor(data.overallLetter) : '#94a3b8' }}>{data.overallLetter}</p>
-                {data.overallGrade != null && <p className="text-[10px] text-text-tertiary">{data.overallGrade.toFixed(1)}%</p>}
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Overall Grade</p>
-              <p className="text-[14px] font-semibold text-navy mt-0.5">{data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}</p>
-            </div>
-          </div>
-
-          {/* Domain Breakdown */}
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Domain Scores</p>
-            <div className="grid grid-cols-5 gap-2">
-              {DOMAINS.map(dom => {
-                const v = data.domainGrades[dom]
-                const letter = v != null ? getLetterGrade(v) : '--'
-                return (
-                  <div key={dom} className={`text-center rounded-lg border p-3 ${v != null ? tileBgClass(v) : 'bg-surface-alt border-border'}`}>
-                    <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">{DOMAIN_SHORT[dom]}</p>
-                    <p className="text-lg font-bold" style={{ color: v != null ? letterColor(letter) : '#94a3b8' }}>{letter}</p>
-                    {v != null && <p className="text-[10px] text-text-secondary">{v.toFixed(1)}%</p>}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Quick Stats Row */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-surface-alt border border-border rounded-lg p-3">
-              <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Attendance</p>
-              <p className="text-[16px] font-bold text-navy">{data.totalAtt > 0 ? `${Math.round((data.attCounts.present / data.totalAtt) * 100)}%` : '--'}</p>
-              <p className="text-[10px] text-text-tertiary">{data.attCounts.present}P / {data.attCounts.absent}A / {data.attCounts.tardy}T</p>
-            </div>
-            <div className="bg-surface-alt border border-border rounded-lg p-3">
-              <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Reading (CWPM)</p>
-              <p className="text-[16px] font-bold text-navy">{data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'}</p>
-              <p className="text-[10px] text-text-tertiary">{data.latestReading ? `Level: ${data.latestReading.passage_level || data.latestReading.reading_level || '--'}` : 'No assessment'}</p>
-            </div>
-            <div className="bg-surface-alt border border-border rounded-lg p-3">
-              <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Behavior Logs</p>
-              <p className="text-[16px] font-bold text-navy">{data.behaviorCount}</p>
-              <p className="text-[10px] text-text-tertiary">total entries</p>
-            </div>
-          </div>
-
-          {/* Semester Progress Note */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-[10px] uppercase tracking-wider text-blue-700 font-semibold mb-1">Semester Progress</p>
-            <p className="text-[12px] text-blue-600">Semester-over-semester progress will appear here starting next reporting period.</p>
-          </div>
-
-          {/* Teacher Comment */}
-          {data.comment && (
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Teacher Comments</p>
-              <div className="bg-surface-alt border border-border rounded-lg p-4">
-                <p className="text-[13px] text-text-secondary leading-relaxed">{data.comment}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Print button */}
-      <div className="mt-4 text-center">
-        <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
-          <Printer size={14} /> Print Progress Report
-        </button>
       </div>
     </div>
   )
