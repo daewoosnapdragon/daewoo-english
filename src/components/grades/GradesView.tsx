@@ -6,7 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save } from 'lucide-react'
+import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
@@ -38,7 +38,7 @@ interface Assessment {
 }
 
 interface StudentRow { id: string; english_name: string; korean_name: string; photo_url?: string }
-type SubView = 'entry' | 'overview' | 'student' | 'batch'
+type SubView = 'entry' | 'overview' | 'student'
 type LangKey = 'en' | 'ko'
 
 interface Semester { id: string; name: string; name_ko: string; type: string; is_active: boolean }
@@ -232,7 +232,6 @@ export default function GradesView() {
         <div className="flex gap-1 mt-4">
           {([
             { id: 'entry' as SubView, icon: FileText, label: lang === 'ko' ? '점수 입력' : 'Score Entry' },
-            { id: 'batch' as SubView, icon: ClipboardEdit, label: lang === 'ko' ? '일괄 입력' : 'Batch Grid' },
             { id: 'overview' as SubView, icon: BarChart3, label: lang === 'ko' ? '도메인 개요' : 'Domain Overview' },
             { id: 'student' as SubView, icon: User, label: lang === 'ko' ? '학생별 보기' : 'Student View' },
           ]).map(tab => (
@@ -278,7 +277,6 @@ export default function GradesView() {
         </div>
 
         {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateModal(true)} createLabel={t.grades.createAssessment} />}
-        {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
         {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
       </div>
@@ -427,175 +425,58 @@ function StatsBar({ scores, maxScore, lang }: { scores: Record<string, number | 
   )
 }
 
-// ─── Batch Grid View ──────────────────────────────────────────────
-
-function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, students, selectedClass, selectedGrade, lang }: {
-  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; allAssessments: Assessment[]; students: StudentRow[]; selectedClass: EnglishClass; selectedGrade: Grade; lang: LangKey
-}) {
-  const { showToast } = useApp()
-  const [scores, setScores] = useState<any>({}) // studentId -> assessmentId -> score
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [hasChanges, setHasChanges] = useState(false)
-
-  const domainAssessments = allAssessments.filter(a => a.domain === selectedDomain)
-
-  useEffect(() => {
-    if (domainAssessments.length === 0 || students.length === 0) { setLoading(false); return }
-    ;(async () => {
-      setLoading(true)
-      const { data } = await supabase.from('grades').select('student_id, assessment_id, score')
-        .in('assessment_id', domainAssessments.map(a => a.id))
-        .in('student_id', students.map(s => s.id))
-      const map: { [key: string]: { [key: string]: number | null } } = {}
-      students.forEach(s => { map[s.id] = {} })
-      data?.forEach((g: any) => { if (map[g.student_id]) map[g.student_id][g.assessment_id] = g.score })
-      setScores(map)
-      setLoading(false)
-      setHasChanges(false)
-    })()
-  }, [selectedDomain, students.length, allAssessments.length])
-
-  const handleChange = (studentId: string, assessmentId: string, value: string) => {
-    setScores(prev => ({
-      ...prev,
-      [studentId]: { ...(prev[studentId] || {}), [assessmentId]: value === '' ? null : Number(value) }
-    }))
-    setHasChanges(true)
-  }
-
-  const handleSaveAll = async () => {
-    setSaving(true)
-    let errors = 0
-    const rows: any[] = []
-    for (const s of students) {
-      for (const a of domainAssessments) {
-        const score = scores[s.id]?.[a.id]
-        if (score != null) {
-          rows.push({ student_id: s.id, assessment_id: a.id, score, max_score: a.max_score })
-        }
-      }
-    }
-    if (rows.length > 0) {
-      const { error } = await supabase.from('grades').upsert(rows, { onConflict: 'student_id,assessment_id' })
-      if (error) errors++
-    }
-    setSaving(false)
-    setHasChanges(false)
-    showToast(errors > 0 ? `Saved with errors` : `Saved ${rows.length} scores`)
-  }
-
-  return (
-    <>
-      <div className="flex gap-1 mb-5 border-b border-border">
-        {DOMAINS.map(d => (
-          <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[13px] font-medium transition-all border-b-2 -mb-px ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
-            {DOMAIN_LABELS[d][lang]}
-          </button>
-        ))}
-      </div>
-
-      {loading ? <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div> : domainAssessments.length === 0 ? (
-        <div className="p-12 text-center text-text-tertiary">No assessments in {DOMAIN_LABELS[selectedDomain][lang]}</div>
-      ) : (
-        <div className="bg-surface border border-border rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
-              <thead><tr className="bg-surface-alt">
-                <th className="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
-                {domainAssessments.map(a => (
-                  <th key={a.id} className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[80px]" title={a.name}>
-                    <div className="truncate max-w-[80px]">{a.name}</div>
-                    <div className="text-[8px] text-text-tertiary font-normal">/{a.max_score}</div>
-                  </th>
-                ))}
-                <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Avg%</th>
-              </tr></thead>
-              <tbody>
-                {students.map(s => {
-                  const vals = domainAssessments.map(a => scores[s.id]?.[a.id]).filter((v): v is number => v != null)
-                  const pcts = domainAssessments.map(a => {
-                    const sc = scores[s.id]?.[a.id]
-                    return sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
-                  }).filter((v): v is number => v != null)
-                  const avg = pcts.length > 0 ? pcts.reduce((a, b) => a + b, 0) / pcts.length : null
-                  return (
-                    <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
-                      <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="text-text-tertiary font-normal text-[10px]">{s.korean_name}</span></td>
-                      {domainAssessments.map(a => {
-                        const sc = scores[s.id]?.[a.id]
-                        const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
-                        return (
-                          <td key={a.id} className="px-1 py-1.5 text-center">
-                            <input type="number" step="0.5" value={sc ?? ''} onChange={e => handleChange(s.id, a.id, e.target.value)}
-                              max={a.max_score} className={`w-16 px-2 py-1.5 border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${pct != null && pct < 60 ? 'border-red-300 bg-red-50' : 'border-border'}`} />
-                          </td>
-                        )
-                      })}
-                      <td className={`px-3 py-2 text-center font-bold text-[12px] ${avg != null ? (avg >= 80 ? 'text-green-600' : avg >= 60 ? 'text-amber-600' : 'text-red-600') : 'text-text-tertiary'}`}>{avg != null ? `${avg.toFixed(0)}%` : '—'}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          {hasChanges && (
-            <div className="px-5 py-3 bg-warm-light border-t border-gold/20 flex items-center justify-between">
-              <p className="text-[12px] text-amber-700">{lang === 'ko' ? '저장되지 않은 변경사항' : 'Unsaved changes'}</p>
-              <button onClick={handleSaveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light">
-                {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} {lang === 'ko' ? '전체 저장' : 'Save All'}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </>
-  )
-}
-
 // ─── Domain Overview ────────────────────────────────────────────────
 
-interface DomainStats { avg: number | null; count: number; assessmentCount: number; assessments: { name: string; avg: number }[] }
-const emptyStats = () => ({ reading: { avg: null as number | null, count: 0, assessmentCount: 0, assessments: [] as { name: string; avg: number }[] }, phonics: { avg: null as number | null, count: 0, assessmentCount: 0, assessments: [] as { name: string; avg: number }[] }, writing: { avg: null as number | null, count: 0, assessmentCount: 0, assessments: [] as { name: string; avg: number }[] }, speaking: { avg: null as number | null, count: 0, assessmentCount: 0, assessments: [] as { name: string; avg: number }[] }, language: { avg: null as number | null, count: 0, assessmentCount: 0, assessments: [] as { name: string; avg: number }[] } })
+function makeDomainStats() {
+  const empty = { avg: null, count: 0, assessmentCount: 0, assessments: [] }
+  return { reading: {...empty, assessments: []}, phonics: {...empty, assessments: []}, writing: {...empty, assessments: []}, speaking: {...empty, assessments: []}, language: {...empty, assessments: []} } as any
+}
 
-function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: { allAssessments: Assessment[]; selectedGrade: Grade; selectedClass: EnglishClass; lang: LangKey }) {
-  const [stats, setStats] = useState(emptyStats())
+function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: { allAssessments: any[]; selectedGrade: any; selectedClass: any; lang: any }) {
+  const [stats, setStats] = useState(makeDomainStats())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const result = emptyStats()
+      const result = makeDomainStats()
       for (const domain of DOMAINS) {
-        const da = allAssessments.filter(a => a.domain === domain)
+        const da = allAssessments.filter((a: any) => a.domain === domain)
         result[domain].assessmentCount = da.length
         if (da.length === 0) continue
-        const ids = da.map(a => a.id)
+        const ids = da.map((a: any) => a.id)
         const { data: grades } = await supabase.from('grades').select('score, assessment_id').in('assessment_id', ids).not('score', 'is', null)
         if (grades && grades.length > 0) {
-          const pcts = grades.map(g => { const a = da.find(x => x.id === g.assessment_id); return a && a.max_score > 0 ? (g.score / a.max_score) * 100 : null }).filter((p): p is number => p != null)
+          const pcts = grades.map((g: any) => { const a = da.find((x: any) => x.id === g.assessment_id); return a && a.max_score > 0 ? (g.score / a.max_score) * 100 : null }).filter((p: any) => p != null)
           result[domain].count = pcts.length
-          result[domain].avg = pcts.length > 0 ? pcts.reduce((a, b) => a + b, 0) / pcts.length : null
-          // Per-assessment averages for bar chart
+          result[domain].avg = pcts.length > 0 ? pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length : null
           for (const a of da) {
-            const aGrades = grades.filter(g => g.assessment_id === a.id)
+            const aGrades = grades.filter((g: any) => g.assessment_id === a.id)
             if (aGrades.length > 0 && a.max_score > 0) {
-              const avg = aGrades.reduce((sum, g) => sum + (g.score / a.max_score) * 100, 0) / aGrades.length
+              const avg = aGrades.reduce((sum: number, g: any) => sum + (g.score / a.max_score) * 100, 0) / aGrades.length
               result[domain].assessments.push({ name: a.name, avg })
             }
           }
         }
       }
-      setStats(result); setLoading(false)
+      setStats(result)
+      setLoading(false)
     }
     load()
   }, [allAssessments])
 
-  if (loading) return <div className="bg-surface border border-border rounded-xl p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-sm">Loading...</p></div>
+  if (loading) {
+    return (
+      <div className="bg-surface border border-border rounded-xl p-12 text-center">
+        <Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" />
+        <p className="text-text-tertiary text-sm">Loading...</p>
+      </div>
+    )
+  }
 
-  const validAvgs = DOMAINS.map(d => stats[d].avg).filter((v): v is number => v != null)
-  const overallAvg = validAvgs.length > 0 ? validAvgs.reduce((a, b) => a + b, 0) / validAvgs.length : null
-  const domainColors: any = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' }
+  const validAvgs = DOMAINS.map(d => stats[d].avg).filter((v: any) => v != null)
+  const overallAvg = validAvgs.length > 0 ? validAvgs.reduce((a: number, b: number) => a + b, 0) / validAvgs.length : null
+  const domainColors = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' }
 
   return (
     <div className="space-y-4">
