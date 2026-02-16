@@ -161,61 +161,61 @@ BEGIN
   END LOOP;
 
   -- ================================================================
-  -- BEHAVIOR LOGS (ABC tracking data)
+  -- BEHAVIOR LOGS (ABC tracking data) - columns are JSONB
   -- ================================================================
   INSERT INTO behavior_logs (student_id, teacher_id, date, type, note, is_flagged, time, duration, activity, antecedents, behaviors, consequences, frequency, intensity) VALUES
     -- Seojun: mostly positive
-    (v_s1, v_teacher_id, '2026-01-08', 'positive', 'Helped a classmate sound out a difficult word during partner reading. Showed patience and encouragement.', false, '10:15', '5 min', 'Partner reading', '{}', '{}', '{}', 0, 0),
-    (v_s1, v_teacher_id, '2026-01-15', 'positive', 'Volunteered to read aloud and did an excellent job with expression and fluency.', false, '09:30', '', 'Whole class reading', '{}', '{}', '{}', 0, 0),
-    (v_s1, v_teacher_id, '2026-01-22', 'abc', 'Became frustrated during writing and crumpled his paper. Redirected successfully with a brief break.', false, '11:00', '3 min', 'Independent writing', ARRAY['Task difficulty', 'Writing fatigue']::text[], ARRAY['Crumpled paper', 'Head on desk']::text[], ARRAY['Break offered', 'Task modified']::text[], 1, 2),
+    (v_s1, v_teacher_id, '2026-01-08', 'positive', 'Helped a classmate sound out a difficult word during partner reading. Showed patience and encouragement.', false, '10:15', '5 min', 'Partner reading', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 0, 0),
+    (v_s1, v_teacher_id, '2026-01-15', 'positive', 'Volunteered to read aloud and did an excellent job with expression and fluency.', false, '09:30', '', 'Whole class reading', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 0, 0),
+    (v_s1, v_teacher_id, '2026-01-22', 'abc', 'Became frustrated during writing and crumpled his paper. Redirected successfully with a brief break.', false, '11:00', '3 min', 'Independent writing', '["Task difficulty", "Writing fatigue"]'::jsonb, '["Crumpled paper", "Head on desk"]'::jsonb, '["Break offered", "Task modified"]'::jsonb, 1, 2),
 
     -- Hayoon: quiet, steady
-    (v_s2, v_teacher_id, '2026-01-10', 'positive', 'Spoke up during class discussion for the first time this week. Growing confidence in oral participation.', false, '09:45', '', 'Class discussion', '{}', '{}', '{}', 0, 0),
-    (v_s2, v_teacher_id, '2026-01-20', 'note', 'Parents requested extra homework materials for home practice. Provided supplemental phonics worksheets.', false, '14:00', '', 'Parent communication', '{}', '{}', '{}', 0, 0),
+    (v_s2, v_teacher_id, '2026-01-10', 'positive', 'Spoke up during class discussion for the first time this week. Growing confidence in oral participation.', false, '09:45', '', 'Class discussion', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 0, 0),
+    (v_s2, v_teacher_id, '2026-01-20', 'note', 'Parents requested extra homework materials for home practice. Provided supplemental phonics worksheets.', false, '14:00', '', 'Parent communication', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 0, 0),
 
     -- Jiho: high energy, some behavior tracking needed
-    (v_s3, v_teacher_id, '2026-01-06', 'abc', 'Called out answers without raising hand repeatedly during whole-class instruction. Given visual reminder card.', true, '09:20', '15 min', 'Whole class instruction', ARRAY['Excitement about topic', 'Peer attention']::text[], ARRAY['Calling out', 'Out of seat']::text[], ARRAY['Visual reminder', 'Proximity']::text[], 4, 2),
-    (v_s3, v_teacher_id, '2026-01-13', 'abc', 'Difficulty transitioning from recess to class. Took 8 minutes to settle and begin work.', false, '13:05', '8 min', 'Transition from recess', ARRAY['Transition difficulty', 'High energy after recess']::text[], ARRAY['Slow to start', 'Talking to peers']::text[], ARRAY['Timer used', 'First-then board']::text[], 1, 2),
-    (v_s3, v_teacher_id, '2026-01-17', 'positive', 'Completed entire writing assignment independently with strong effort. Best work this semester!', false, '11:30', '', 'Independent writing', '{}', '{}', '{}', 0, 0),
-    (v_s3, v_teacher_id, '2026-01-24', 'abc', 'Pushed another student lightly during group work disagreement. Mediated conversation, both students apologized.', true, '10:45', '2 min', 'Group work', ARRAY['Peer conflict', 'Sharing materials']::text[], ARRAY['Physical contact', 'Raised voice']::text[], ARRAY['Mediation', 'Separate seating', 'Cool-down time']::text[], 1, 3),
+    (v_s3, v_teacher_id, '2026-01-06', 'abc', 'Called out answers without raising hand repeatedly during whole-class instruction. Given visual reminder card.', true, '09:20', '15 min', 'Whole class instruction', '["Excitement about topic", "Peer attention"]'::jsonb, '["Calling out", "Out of seat"]'::jsonb, '["Visual reminder", "Proximity"]'::jsonb, 4, 2),
+    (v_s3, v_teacher_id, '2026-01-13', 'abc', 'Difficulty transitioning from recess to class. Took 8 minutes to settle and begin work.', false, '13:05', '8 min', 'Transition from recess', '["Transition difficulty", "High energy after recess"]'::jsonb, '["Slow to start", "Talking to peers"]'::jsonb, '["Timer used", "First-then board"]'::jsonb, 1, 2),
+    (v_s3, v_teacher_id, '2026-01-17', 'positive', 'Completed entire writing assignment independently with strong effort. Best work this semester!', false, '11:30', '', 'Independent writing', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 0, 0),
+    (v_s3, v_teacher_id, '2026-01-24', 'abc', 'Pushed another student lightly during group work disagreement. Mediated conversation, both students apologized.', true, '10:45', '2 min', 'Group work', '["Peer conflict", "Sharing materials"]'::jsonb, '["Physical contact", "Raised voice"]'::jsonb, '["Mediation", "Separate seating", "Cool-down time"]'::jsonb, 1, 3),
 
     -- Sua: exemplary
-    (v_s4, v_teacher_id, '2026-01-09', 'positive', 'Led book club discussion with excellent questioning strategies. Other students were engaged and responsive.', false, '10:00', '20 min', 'Book club', '{}', '{}', '{}', 0, 0),
-    (v_s4, v_teacher_id, '2026-01-16', 'positive', 'Wrote a persuasive essay that exceeded grade-level expectations. Recommended for advanced writing group.', false, '11:15', '', 'Writing workshop', '{}', '{}', '{}', 0, 0),
-    (v_s4, v_teacher_id, '2026-01-23', 'positive', 'Spontaneously helped Minseo with letter sounds during free choice time. Natural peer mentor.', false, '13:30', '10 min', 'Free choice', '{}', '{}', '{}', 0, 0),
+    (v_s4, v_teacher_id, '2026-01-09', 'positive', 'Led book club discussion with excellent questioning strategies. Other students were engaged and responsive.', false, '10:00', '20 min', 'Book club', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 0, 0),
+    (v_s4, v_teacher_id, '2026-01-16', 'positive', 'Wrote a persuasive essay that exceeded grade-level expectations. Recommended for advanced writing group.', false, '11:15', '', 'Writing workshop', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 0, 0),
+    (v_s4, v_teacher_id, '2026-01-23', 'positive', 'Spontaneously helped Minseo with letter sounds during free choice time. Natural peer mentor.', false, '13:30', '10 min', 'Free choice', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 0, 0),
 
     -- Minseo: new student, adjusting
-    (v_s5, v_teacher_id, '2026-01-08', 'note', 'First week in the program. Appears eager but overwhelmed by English immersion. Using lots of Korean with peers.', false, '09:00', '', 'General observation', '{}', '{}', '{}', 0, 0),
-    (v_s5, v_teacher_id, '2026-01-15', 'positive', 'Successfully identified all 26 letter names during assessment. Celebrated with a sticker chart milestone.', false, '10:30', '', 'Letter assessment', '{}', '{}', '{}', 0, 0),
-    (v_s5, v_teacher_id, '2026-01-22', 'abc', 'Cried during independent work time when unable to read instructions. Provided picture supports and buddy reader.', false, '11:20', '5 min', 'Independent work', ARRAY['Task too difficult', 'Lack of support']::text[], ARRAY['Crying', 'Withdrawal']::text[], ARRAY['Picture supports added', 'Buddy assigned']::text[], 1, 2);
+    (v_s5, v_teacher_id, '2026-01-08', 'note', 'First week in the program. Appears eager but overwhelmed by English immersion. Using lots of Korean with peers.', false, '09:00', '', 'General observation', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 0, 0),
+    (v_s5, v_teacher_id, '2026-01-15', 'positive', 'Successfully identified all 26 letter names during assessment. Celebrated with a sticker chart milestone.', false, '10:30', '', 'Letter assessment', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 0, 0),
+    (v_s5, v_teacher_id, '2026-01-22', 'abc', 'Cried during independent work time when unable to read instructions. Provided picture supports and buddy reader.', false, '11:20', '5 min', 'Independent work', '["Task too difficult", "Lack of support"]'::jsonb, '["Crying", "Withdrawal"]'::jsonb, '["Picture supports added", "Buddy assigned"]'::jsonb, 1, 2);
 
   -- ================================================================
   -- READING ASSESSMENTS (multiple per student showing growth)
   -- ================================================================
   INSERT INTO reading_assessments (student_id, date, passage_title, passage_level, word_count, time_seconds, errors, self_corrections, cwpm, accuracy_rate, reading_level, notes, assessed_by) VALUES
     -- Seojun: strong reader showing growth
-    (v_s1, '2025-09-15', 'The Lost Puppy', 'G', 120, 75, 4, 2, 93, 97, 'G', 'Fluent reading with good expression', 'Demo Teacher'),
-    (v_s1, '2025-11-20', 'Winter Festival', 'I', 145, 80, 3, 1, 107, 98, 'I', 'Moved up a level, strong comprehension', 'Demo Teacher'),
-    (v_s1, '2026-01-15', 'Space Adventure', 'J', 160, 82, 2, 2, 116, 99, 'J', 'Reading at expected level, excellent progress', 'Demo Teacher'),
+    (v_s1, '2025-09-15', 'The Lost Puppy', 'G', 120, 75, 4, 2, 93, 97, 'G', 'Fluent reading with good expression', v_teacher_id),
+    (v_s1, '2025-11-20', 'Winter Festival', 'I', 145, 80, 3, 1, 107, 98, 'I', 'Moved up a level, strong comprehension', v_teacher_id),
+    (v_s1, '2026-01-15', 'Space Adventure', 'J', 160, 82, 2, 2, 116, 99, 'J', 'Reading at expected level, excellent progress', v_teacher_id),
 
     -- Hayoon: steady growth
-    (v_s2, '2025-09-18', 'My Pet Cat', 'C', 50, 65, 6, 1, 41, 88, 'C', 'Developing decoding, needs HFW practice', 'Demo Teacher'),
-    (v_s2, '2025-11-22', 'The Park', 'D', 65, 70, 4, 2, 52, 94, 'D', 'Improved fluency, still choppy in places', 'Demo Teacher'),
-    (v_s2, '2026-01-18', 'Birthday Party', 'E', 80, 68, 3, 2, 68, 96, 'E', 'Good progress, nearing grade benchmark', 'Demo Teacher'),
+    (v_s2, '2025-09-18', 'My Pet Cat', 'C', 50, 65, 6, 1, 41, 88, 'C', 'Developing decoding, needs HFW practice', v_teacher_id),
+    (v_s2, '2025-11-22', 'The Park', 'D', 65, 70, 4, 2, 52, 94, 'D', 'Improved fluency, still choppy in places', v_teacher_id),
+    (v_s2, '2026-01-18', 'Birthday Party', 'E', 80, 68, 3, 2, 68, 96, 'E', 'Good progress, nearing grade benchmark', v_teacher_id),
 
     -- Jiho: adequate reader, needs comprehension support
-    (v_s3, '2025-09-20', 'Soccer Game', 'H', 130, 85, 5, 1, 88, 96, 'H', 'Reads quickly but misses details', 'Demo Teacher'),
-    (v_s3, '2025-11-25', 'Robot Builder', 'I', 150, 90, 4, 2, 97, 97, 'I', 'Speed improving, comprehension still needs work', 'Demo Teacher'),
-    (v_s3, '2026-01-20', 'Ocean Deep', 'J', 165, 88, 3, 1, 110, 98, 'J', 'Better expression, retelling improving', 'Demo Teacher'),
+    (v_s3, '2025-09-20', 'Soccer Game', 'H', 130, 85, 5, 1, 88, 96, 'H', 'Reads quickly but misses details', v_teacher_id),
+    (v_s3, '2025-11-25', 'Robot Builder', 'I', 150, 90, 4, 2, 97, 97, 'I', 'Speed improving, comprehension still needs work', v_teacher_id),
+    (v_s3, '2026-01-20', 'Ocean Deep', 'J', 165, 88, 3, 1, 110, 98, 'J', 'Better expression, retelling improving', v_teacher_id),
 
     -- Sua: advanced reader
-    (v_s4, '2025-09-22', 'Mystery Cave', 'M', 200, 78, 1, 1, 153, 100, 'M', 'Reading well above grade level', 'Demo Teacher'),
-    (v_s4, '2025-11-28', 'Time Travelers', 'O', 230, 82, 2, 1, 167, 99, 'O', 'Excellent vocabulary and comprehension', 'Demo Teacher'),
-    (v_s4, '2026-01-22', 'Dragon Quest', 'P', 250, 85, 1, 0, 176, 100, 'P', 'Near native fluency, ready for challenge texts', 'Demo Teacher'),
+    (v_s4, '2025-09-22', 'Mystery Cave', 'M', 200, 78, 1, 1, 153, 100, 'M', 'Reading well above grade level', v_teacher_id),
+    (v_s4, '2025-11-28', 'Time Travelers', 'O', 230, 82, 2, 1, 167, 99, 'O', 'Excellent vocabulary and comprehension', v_teacher_id),
+    (v_s4, '2026-01-22', 'Dragon Quest', 'P', 250, 85, 1, 0, 176, 100, 'P', 'Near native fluency, ready for challenge texts', v_teacher_id),
 
     -- Minseo: beginning reader
-    (v_s5, '2025-11-30', 'I See', 'Pre-A', 15, 45, 5, 0, 13, 67, 'Pre-A', 'Learning letter sounds, pointing to words', 'Demo Teacher'),
-    (v_s5, '2026-01-25', 'The Dog', 'A', 25, 50, 4, 1, 25, 84, 'A', 'Recognizing CVC words, improving quickly', 'Demo Teacher');
+    (v_s5, '2025-11-30', 'I See', 'Pre-A', 15, 45, 5, 0, 13, 67, 'Pre-A', 'Learning letter sounds, pointing to words', v_teacher_id),
+    (v_s5, '2026-01-25', 'The Dog', 'A', 25, 50, 4, 1, 25, 84, 'A', 'Recognizing CVC words, improving quickly', v_teacher_id);
 
   -- ================================================================
   -- TEACHER COMMENTS (175-200 words each)

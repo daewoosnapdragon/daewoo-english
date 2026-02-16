@@ -645,6 +645,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
     if (showBorderline) res = res.filter(r => r.suggestedClass !== r.student.english_class)
     switch (sortBy) {
       case 'composite': res.sort((a, b) => b.composite - a.composite); break
+      case 'percentile': res.sort((a, b) => b.percentile - a.percentile); break
       case 'cwpm': res.sort((a, b) => (b.rawCwpm ?? -1) - (a.rawCwpm ?? -1)); break
       case 'writing': res.sort((a, b) => (b.rawWriting ?? -1) - (a.rawWriting ?? -1)); break
       case 'name': res.sort((a, b) => a.student.english_name.localeCompare(b.student.english_name)); break
@@ -662,7 +663,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           {ENGLISH_CLASSES.map(cls => <button key={cls} onClick={() => setFilterClass(cls)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === cls ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`} style={filterClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>{cls}</button>)}
         </div>
         <select value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[11px] bg-surface">
-          <option value="composite">Sort: Composite</option><option value="cwpm">Sort: CWPM</option><option value="writing">Sort: Writing</option><option value="name">Sort: Name</option>
+          <option value="composite">Sort: Composite</option><option value="percentile">Sort: %ILE</option><option value="cwpm">Sort: CWPM</option><option value="writing">Sort: Writing</option><option value="name">Sort: Name</option>
         </select>
         <button onClick={() => setShowBorderline(!showBorderline)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showBorderline ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}>
           <AlertTriangle size={12} /> Borderline

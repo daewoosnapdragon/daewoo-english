@@ -14,10 +14,12 @@ import ReadingLevelsView from '@/components/reading/ReadingLevelsView'
 import ReportsView from '@/components/reports/ReportsView'
 import SettingsView from '@/components/settings/SettingsView'
 import LevelingView from '@/components/leveling/LevelingView'
+import CurriculumView from '@/components/curriculum/CurriculumView'
 import { Loader2 } from 'lucide-react'
 
 export default function Home() {
   const [activeView, setActiveView] = useState('dashboard')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { t, currentTeacher, setActiveSemester } = useApp()
   const { teachers, loading: teachersLoading } = useTeachers()
   const { activeSemester, loading: semestersLoading } = useSemesters()
@@ -25,6 +27,19 @@ export default function Home() {
   useEffect(() => {
     if (activeSemester) setActiveSemester(activeSemester)
   }, [activeSemester, setActiveSemester])
+
+  // Persist sidebar state
+  useEffect(() => {
+    const saved = sessionStorage.getItem('daewoo_sidebar_collapsed')
+    if (saved === 'true') setSidebarCollapsed(true)
+  }, [])
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      sessionStorage.setItem('daewoo_sidebar_collapsed', String(!prev))
+      return !prev
+    })
+  }
 
   if (teachersLoading || semestersLoading) {
     return (
@@ -55,15 +70,18 @@ export default function Home() {
       case 'leveling': return <LevelingView />
       case 'attendance': return <AttendanceView />
       case 'readingLevels': return <ReadingLevelsView />
+      case 'curriculum': return <CurriculumView />
       case 'settings': return <SettingsView />
       default: return <DashboardView />
     }
   }
 
+  const ml = sidebarCollapsed ? 'ml-[60px]' : 'ml-[220px]'
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar activeView={activeView} onNavigate={setActiveView} teachers={teachers} />
-      <main className="ml-[260px] flex-1 min-h-screen">
+      <Sidebar activeView={activeView} onNavigate={setActiveView} teachers={teachers} collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
+      <main className={`${ml} flex-1 min-h-screen transition-all duration-200`}>
         {renderView()}
       </main>
       <Toast />

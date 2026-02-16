@@ -34,11 +34,13 @@ export default function SettingsView() {
 }
 
 function TeacherSection() {
-  const { language, showToast } = useApp()
+  const { language, showToast, currentTeacher } = useApp()
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [edits, setEdits] = useState<Record<string, string>>({})
+  const [deleteConfirm, setDeleteConfirm] = useState<Teacher | null>(null)
+  const [deleteStats, setDeleteStats] = useState<{ students: number; logs: number; grades: number } | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -72,6 +74,54 @@ function TeacherSection() {
     setSaving(null)
   }
 
+  const startDelete = async (teacher: Teacher) => {
+    // Fetch stats about this teacher's data
+    const [{ count: studentCount }, { count: logCount }, { count: gradeCount }] = await Promise.all([
+      supabase.from('students').select('*', { count: 'exact', head: true }).eq('teacher_id', teacher.id).eq('is_active', true),
+      supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('teacher_id', teacher.id),
+      supabase.from('grades').select('*', { count: 'exact', head: true }).eq('entered_by', teacher.id),
+    ])
+    setDeleteStats({ students: studentCount || 0, logs: logCount || 0, grades: gradeCount || 0 })
+    setDeleteConfirm(teacher)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteConfirm) return
+    setSaving(deleteConfirm.id)
+    // Soft delete: set is_active = false, unassign students
+    await supabase.from('students').update({ teacher_id: null }).eq('teacher_id', deleteConfirm.id)
+    const { error } = await supabase.from('teachers').update({ is_active: false }).eq('id', deleteConfirm.id)
+    if (error) {
+      showToast(`Error: ${error.message}`)
+    } else {
+      setTeachers(prev => prev.filter(t => t.id !== deleteConfirm.id))
+      showToast(language === 'ko' ? '교사가 비활성화됨' : `${deleteConfirm.name} deactivated`)
+    }
+    setSaving(null)
+    setDeleteConfirm(null)
+    setDeleteStats(null)
+  }
+
+  const handleExportTeacherData = async (teacher: Teacher) => {
+    // Export all data associated with this teacher as JSON
+    const [{ data: students }, { data: logs }, { data: grades }] = await Promise.all([
+      supabase.from('students').select('*').eq('teacher_id', teacher.id),
+      supabase.from('behavior_logs').select('*').eq('teacher_id', teacher.id),
+      supabase.from('grades').select('*').eq('entered_by', teacher.id),
+    ])
+    const exportData = { teacher, students, behavior_logs: logs, grades, exported_at: new Date().toISOString() }
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `teacher-data-${teacher.name.replace(/\s+/g, '-')}.json`
+    a.click(); URL.revokeObjectURL(url)
+    showToast(language === 'ko' ? '데이터 다운로드됨' : 'Data exported')
+  }
+
+  // Core class teachers cannot be deleted
+  const coreClasses = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
+  const isCore = (t: Teacher) => coreClasses.includes(t.english_class) || t.role === 'admin'
+
   return (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-4">
@@ -81,7 +131,7 @@ function TeacherSection() {
         </h3>
       </div>
       <p className="text-[13px] text-text-secondary mb-4">
-        {language === 'ko' ? '교사 이름을 수정하고 Enter를 누르거나 저장 버튼을 클릭하세요.' : 'Edit teacher names and press Enter or click Save. Class assignments are fixed to the 6 English classes.'}
+        {language === 'ko' ? '교사 이름을 수정하고 Enter를 누르거나 저장 버튼을 클릭하세요.' : 'Edit teacher names and press Enter or click Save. Non-core teachers can be deactivated.'}
       </p>
 
       <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
@@ -100,7 +150,7 @@ function TeacherSection() {
                 <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">
                   {language === 'ko' ? '역할' : 'Role'}
                 </th>
-                <th className="px-5 py-3 w-20"></th>
+                <th className="px-5 py-3 w-32"></th>
               </tr>
             </thead>
             <tbody>
@@ -132,12 +182,18 @@ function TeacherSection() {
                       />
                     </td>
                     <td className="px-5 py-3 text-text-secondary capitalize">{teacher.role}</td>
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3 flex items-center gap-1">
                       {edited && (
                         <button onClick={() => handleSave(teacher)} disabled={saving === teacher.id}
                           className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark">
                           {saving === teacher.id ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                           {language === 'ko' ? '저장' : 'Save'}
+                        </button>
+                      )}
+                      {!edited && !isCore(teacher) && teacher.id !== currentTeacher?.id && (
+                        <button onClick={() => startDelete(teacher)}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-red-500 hover:bg-red-50 transition-colors">
+                          <Trash2 size={12} /> {language === 'ko' ? '삭제' : 'Remove'}
                         </button>
                       )}
                     </td>
@@ -148,6 +204,47 @@ function TeacherSection() {
           </table>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { setDeleteConfirm(null); setDeleteStats(null) }}>
+          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={20} className="text-amber-500" />
+              <h3 className="font-display text-lg font-semibold text-navy">
+                {language === 'ko' ? '교사 비활성화' : 'Deactivate Teacher'}
+              </h3>
+            </div>
+            <p className="text-[13px] text-text-secondary mb-3">
+              {language === 'ko'
+                ? `${deleteConfirm.name}을(를) 비활성화하시겠습니까? 이 작업은 로그인 목록에서 제거되지만 기록 데이터는 유지됩니다.`
+                : `Deactivate ${deleteConfirm.name}? This removes them from login but preserves all historical data.`}
+            </p>
+            {deleteStats && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-[12px]">
+                <p className="font-semibold text-amber-800 mb-1">Associated data:</p>
+                <p className="text-amber-700">{deleteStats.students} active students (will be unassigned)</p>
+                <p className="text-amber-700">{deleteStats.logs} behavior logs</p>
+                <p className="text-amber-700">{deleteStats.grades} grade entries</p>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button onClick={() => handleExportTeacherData(deleteConfirm)}
+                className="flex-1 py-2 rounded-lg text-[12px] font-medium border border-border text-text-secondary hover:bg-surface-alt transition-colors">
+                {language === 'ko' ? '데이터 다운로드' : 'Download Data First'}
+              </button>
+              <button onClick={handleDelete} disabled={saving === deleteConfirm.id}
+                className="flex-1 py-2 rounded-lg text-[12px] font-medium bg-red-500 text-white hover:bg-red-600 transition-colors">
+                {saving === deleteConfirm.id ? <Loader2 size={14} className="animate-spin mx-auto" /> : (language === 'ko' ? '비활성화' : 'Deactivate')}
+              </button>
+            </div>
+            <button onClick={() => { setDeleteConfirm(null); setDeleteStats(null) }}
+              className="w-full mt-2 py-2 rounded-lg text-[12px] text-text-tertiary hover:text-text-secondary transition-colors">
+              {language === 'ko' ? '취소' : 'Cancel'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
