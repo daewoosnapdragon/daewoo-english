@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import {
   LayoutDashboard, Users, ClipboardEdit, FileText, Layers,
   CalendarCheck, BookOpen, Settings, Globe, LogOut, GraduationCap,
-  ChevronsLeft, ChevronsRight, Map, AlertTriangle, CalendarDays
+  ChevronsLeft, ChevronsRight, Map, AlertTriangle, CalendarDays, Moon, Sun
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -26,6 +26,9 @@ const NAV_ITEMS = [
   { id: 'settings', icon: Settings },
 ]
 
+// Notification dot types
+interface NavDots { [key: string]: { count: number; color: string } }
+
 export default function Sidebar({
   activeView, onNavigate, teachers, collapsed, onToggleCollapse
 }: {
@@ -35,15 +38,41 @@ export default function Sidebar({
   collapsed: boolean
   onToggleCollapse: () => void
 }) {
-  const { t, language, setLanguage, currentTeacher, setCurrentTeacher } = useApp()
+  const { t, language, setLanguage, currentTeacher, setCurrentTeacher, theme, setTheme } = useApp()
   const [flaggedCount, setFlaggedCount] = useState(0)
+  const [dots, setDots] = useState<NavDots>({})
 
+  // Load notification dots
   useEffect(() => {
-    const isAdmin = currentTeacher?.role === 'admin'
-    if (!isAdmin) { setFlaggedCount(0); return }
-    (async () => {
-      const { count } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('is_flagged', true)
-      setFlaggedCount(count || 0)
+    if (!currentTeacher) return
+    const isAdmin = currentTeacher.role === 'admin'
+    const cls = currentTeacher.english_class
+
+    ;(async () => {
+      const newDots: NavDots = {}
+
+      // Flagged behavior count (admin only)
+      if (isAdmin) {
+        const { count } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('is_flagged', true)
+        if (count && count > 0) newDots.dashboard = { count, color: 'bg-red-500' }
+      }
+
+      // Check today's attendance
+      const today = new Date().toISOString().split('T')[0]
+      const studentQuery = isAdmin
+        ? supabase.from('students').select('id', { count: 'exact', head: true }).eq('is_active', true)
+        : supabase.from('students').select('id', { count: 'exact', head: true }).eq('english_class', cls).eq('is_active', true)
+      const { count: studentCount } = await studentQuery
+      const attQuery = isAdmin
+        ? supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today)
+        : supabase.from('attendance').select('id, students!inner(english_class)', { count: 'exact', head: true }).eq('date', today).eq('students.english_class', cls)
+      const { count: attCount } = await attQuery
+      if (studentCount && (!attCount || attCount < studentCount)) {
+        newDots.attendance = { count: 0, color: 'bg-amber-500' } // dot only, no number
+      }
+
+      setDots(newDots)
+      setFlaggedCount(newDots.dashboard?.count || 0)
     })()
   }, [currentTeacher, activeView])
 
@@ -104,12 +133,14 @@ export default function Sidebar({
           const label = (t.nav as any)[item.id] || item.id
           const isActive = activeView === item.id
           const badge = item.id === 'dashboard' && flaggedCount > 0 ? flaggedCount : null
+          const dot = item.id ? dots[item.id] : null
           if (collapsed) {
             return (
               <button key={item.id} onClick={() => onNavigate(item.id!)} title={label}
                 className={`w-full flex items-center justify-center py-2 rounded-lg transition-all mb-0.5 relative ${isActive ? 'bg-gold/15 text-gold' : 'text-blue-200/70 hover:text-white hover:bg-white/5'}`}>
                 <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
-                {badge && <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">{badge > 9 ? '9+' : badge}</span>}
+                {badge ? <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">{badge > 9 ? '9+' : badge}</span>
+                  : dot ? <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${dot.color} animate-pulse`} /> : null}
               </button>
             )
           }
@@ -118,16 +149,29 @@ export default function Sidebar({
               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12.5px] font-medium transition-all mb-0.5 ${isActive ? 'bg-gold/15 text-gold' : 'text-blue-200/70 hover:text-white hover:bg-white/5'}`}>
               <Icon size={16} strokeWidth={isActive ? 2.2 : 1.8} />
               {label}
-              {badge && <span className="ml-auto bg-red-500 text-white text-[9px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">{badge > 9 ? '9+' : badge}</span>}
+              {badge ? <span className="ml-auto bg-red-500 text-white text-[9px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">{badge > 9 ? '9+' : badge}</span>
+                : dot ? <span className={`ml-auto w-2 h-2 rounded-full ${dot.color} animate-pulse`} /> : null}
             </button>
           )
         })}
       </nav>
       <div className={`${collapsed ? 'px-1.5' : 'px-3'} py-3 border-t border-white/10`}>
         {!collapsed && (
-          <button onClick={() => setLanguage(language === 'en' ? 'ko' : 'en')}
-            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-blue-200/70 hover:text-white hover:bg-white/5 transition-all mb-1">
-            <Globe size={15} />{language === 'en' ? '한국어' : 'English'}
+          <>
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-blue-200/70 hover:text-white hover:bg-white/5 transition-all mb-0.5">
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </button>
+            <button onClick={() => setLanguage(language === 'en' ? 'ko' : 'en')}
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-blue-200/70 hover:text-white hover:bg-white/5 transition-all mb-1">
+              <Globe size={15} />{language === 'en' ? '한국어' : 'English'}
+            </button>
+          </>
+        )}
+        {collapsed && (
+          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-full flex items-center justify-center py-2 rounded-lg text-blue-200/70 hover:text-white hover:bg-white/5 transition-all mb-0.5" title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
         )}
         <button onClick={onToggleCollapse}

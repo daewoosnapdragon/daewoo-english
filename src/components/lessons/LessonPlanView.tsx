@@ -191,13 +191,9 @@ export default function LessonPlanView() {
     const allLabels = Array.from(new Set(slots.map(s => s.slot_label)))
     allLabels.forEach(l => getSlotColor(l))
     const mn = MONTH_NAMES[month]
-    const clsColor = classToColor(selectedClass)
-
-    // Build slot color CSS classes
-    const slotCSS = allLabels.map(l => { const sc = getSlotColor(l); return `.pill-${l.replace(/[^a-zA-Z]/g,'')}{background:${sc.print};color:#374151}` }).join('\n')
 
     let weeksHTML = ''
-    weeks.forEach((week, wi) => {
+    weeks.forEach((week) => {
       const fw: (typeof days[0] | null)[] = [null, null, null, null, null]
       week.forEach(d => { fw[d.dayOfWeek - 1] = d })
       const ws = week.length > 0 ? getWeekStart(week[0].date) : ''
@@ -210,15 +206,14 @@ export default function LessonPlanView() {
         if (event) {
           daysHTML += `<td class="day event-day">
             <div class="day-hdr">${DAY_NAMES[di]} ${month + 1}/${day.dayNum}</div>
-            <div class="event-block"><div class="event-icon">&#9733;</div><div class="event-title">${event.title}</div></div></td>`
+            <div class="event-block"><div class="event-star">&#9733;</div><div class="event-name">${event.title}</div></div></td>`
           return
         }
         const ds = classSlots[di + 1] || []
         let slotsHTML = ''
         ds.forEach(slot => {
           const entry = entries[`${day.date}::${slot}`]; const sc = getSlotColor(slot)
-          slotsHTML += `<div class="slot">
-            <span class="pill" style="background:${sc.print}">${slot}</span>`
+          slotsHTML += `<div class="slot"><span class="pill" style="background:${sc.print}">${slot}</span>`
           if (entry?.title) slotsHTML += `<div class="slot-title">${entry.title}</div>`
           if (entry?.objective) slotsHTML += `<div class="slot-obj"><em>Students will</em> ${entry.objective}</div>`
           slotsHTML += `</div>`
@@ -226,90 +221,108 @@ export default function LessonPlanView() {
         daysHTML += `<td class="day"><div class="day-hdr">${DAY_NAMES[di]} ${month + 1}/${day.dayNum}</div>${slotsHTML}</td>`
       })
 
-      weeksHTML += `<div class="week-wrap">
-        <table class="week"><tr>${daysHTML}</tr></table>
-        ${hw?.homework_text ? `<div class="hw-line"><span class="hw-icon">&#9998;</span> <strong>Homework:</strong> ${hw.homework_text}</div>` : ''}
-      </div>`
+      weeksHTML += `<table class="week"><tr>${daysHTML}</tr></table>`
+      if (hw?.homework_text) weeksHTML += `<div class="hw-row">&#9998; <strong>Homework:</strong> ${hw.homework_text}</div>`
+      weeksHTML += `<div style="height:12px"></div>`
     })
 
-    pw.document.write(`<html><head><title>${selectedClass} Grade ${selectedGrade} - ${mn} ${year}</title>
+    pw.document.write(`<!DOCTYPE html><html><head><title>${selectedClass} Grade ${selectedGrade} - ${mn} ${year}</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Roboto:wght@400;500;600&display=swap');
+  @page { size: landscape; margin: 12mm 14mm; }
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Roboto',sans-serif; background:#f5f0eb; padding:20px; }
-  .card { max-width:780px; margin:0 auto; background:white; border-radius:14px; overflow:hidden; box-shadow:0 2px 16px rgba(0,0,0,0.08); }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-  /* Header - matches report card */
-  .header { background:#1e3a5f; padding:18px 28px 14px; position:relative; }
-  .header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:4px; background:linear-gradient(90deg, #C9A84C 0%, #e8d48b 50%, #C9A84C 100%); }
-  .header-top { display:flex; justify-content:space-between; align-items:flex-start; }
-  .header h1 { font-family:'Lora',Georgia,serif; font-size:22px; font-weight:700; color:white; }
-  .header .sub { font-size:11px; color:rgba(255,255,255,0.55); margin-top:3px; letter-spacing:0.5px; }
-  .header .badge { display:inline-block; background:${clsColor}; color:white; font-size:10px; font-weight:700; padding:3px 10px; border-radius:12px; letter-spacing:0.3px; }
-  .header .month-title { font-family:'Lora',Georgia,serif; font-size:15px; color:rgba(255,255,255,0.85); text-align:right; }
+  /* ── HEADER ── */
+  .header {
+    background: #1e3a5f; color: white; padding: 16px 28px 12px;
+    border-radius: 10px 10px 0 0; position: relative;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .header::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 4px; background: linear-gradient(90deg, #C9A84C, #e8d48b, #C9A84C);
+  }
+  .header .label { font-size: 8px; text-transform: uppercase; letter-spacing: 2.5px; color: rgba(255,255,255,0.4); margin-bottom: 3px; }
+  .header h1 { font-size: 22px; font-weight: 700; font-family: Georgia, serif; }
+  .header .sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+  .header .month-box { text-align: right; }
+  .header .month-name { font-size: 18px; font-weight: 700; font-family: Georgia, serif; color: rgba(255,255,255,0.85); }
+  .header .year { font-size: 13px; color: rgba(255,255,255,0.35); font-weight: 600; }
 
-  /* Body */
-  .body { padding:20px 24px 16px; }
+  /* ── BODY ── */
+  .body { padding: 16px 0 8px; }
 
-  /* Week grid */
-  .week-wrap { margin-bottom:16px; page-break-inside:avoid; }
-  .week { width:100%; border-collapse:separate; border-spacing:0; border:1px solid #e8e0d8; border-radius:10px; overflow:hidden; }
-  .week td { vertical-align:top; width:20%; border-right:1px solid #ece6df; }
-  .week td:last-child { border-right:none; }
+  /* ── WEEK TABLE ── */
+  .week {
+    width: 100%; border-collapse: collapse;
+    border: 1.5px solid #d4cfc7; border-radius: 8px; overflow: hidden;
+    page-break-inside: avoid; margin-bottom: 2px;
+  }
+  .week td {
+    width: 20%; vertical-align: top;
+    border-right: 1px solid #e5e0d8;
+    padding: 10px 12px; min-height: 110px;
+    background: white;
+  }
+  .week td:last-child { border-right: none; }
 
-  .day { padding:8px 10px; min-height:95px; background:white; }
-  .day.empty { background:#faf8f5; }
-  .day.event-day { background:#f8f5f0; }
-  .day-hdr { font-size:8.5px; font-weight:600; color:#8b7e6f; text-transform:uppercase; letter-spacing:0.6px; padding-bottom:5px; margin-bottom:6px; border-bottom:1.5px solid #ece6df; }
+  /* Day header */
+  .day-hdr {
+    font-size: 10px; font-weight: 700; color: #6b5f50;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding-bottom: 6px; margin-bottom: 8px;
+    border-bottom: 2px solid #e8e0d4;
+  }
 
-  /* Event blocked day */
-  .event-block { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:55px; }
-  .event-icon { font-size:14px; color:#C9A84C; margin-bottom:3px; }
-  .event-title { font-family:'Lora',Georgia,serif; font-size:11px; font-weight:600; color:#5a4e3c; text-align:center; }
+  /* Empty / Event days */
+  .day.empty { background: #f9f7f4; }
+  .day.event-day { background: #f5f2ec; }
+  .event-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 0; }
+  .event-star { font-size: 18px; color: #C9A84C; margin-bottom: 4px; }
+  .event-name { font-size: 13px; font-weight: 700; color: #5a4e3c; font-family: Georgia, serif; text-align: center; }
 
   /* Slot content */
-  .slot { margin-top:5px; }
-  .slot:first-child { margin-top:0; }
-  .pill { display:inline-block; font-size:7px; font-weight:700; padding:2px 6px; border-radius:3px; text-transform:uppercase; letter-spacing:0.4px; border:1px solid rgba(0,0,0,0.06); }
-  .slot-title { font-size:10.5px; font-weight:600; color:#1e293b; margin-top:2px; line-height:1.3; }
-  .slot-obj { font-size:9px; color:#64748b; margin-top:1px; line-height:1.35; }
-  .slot-obj em { color:#94a3b8; font-style:italic; }
+  .slot { margin-top: 8px; }
+  .slot:first-child { margin-top: 0; }
+  .pill {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .slot-title { font-size: 12px; font-weight: 600; color: #1e293b; margin-top: 3px; line-height: 1.35; }
+  .slot-obj { font-size: 10.5px; color: #64748b; margin-top: 2px; line-height: 1.4; }
+  .slot-obj em { color: #94a3b8; font-style: italic; }
 
-  /* Homework line */
-  .hw-line { font-size:9px; color:#8b7e6f; padding:5px 14px; background:#faf8f5; border:1px solid #ece6df; border-top:none; border-radius:0 0 10px 10px; margin-top:-1px; }
-  .hw-icon { font-size:10px; }
+  /* Homework */
+  .hw-row {
+    font-size: 10px; color: #7a6e5e; padding: 5px 14px;
+    background: #f9f7f4; border: 1px solid #e5e0d8; border-top: none;
+    border-radius: 0 0 8px 8px;
+  }
 
-  /* Footer */
-  .footer { text-align:center; padding:12px 24px 16px; border-top:1px solid #ece6df; }
-  .footer-text { font-size:8.5px; color:#b8a89a; letter-spacing:1.5px; text-transform:uppercase; }
-
-  ${slotCSS}
-
-  @media print {
-    body { background:white; padding:8px; }
-    .card { box-shadow:none; border-radius:0; }
-    .week-wrap { page-break-inside:avoid; }
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center; padding-top: 10px; margin-top: 4px;
+    border-top: 1.5px solid #e5e0d8;
+  }
+  .footer span {
+    font-size: 8px; color: #b0a494; letter-spacing: 2px; text-transform: uppercase;
   }
 </style></head><body>
-<div class="card">
   <div class="header">
-    <div class="header-top">
-      <div>
-        <p style="font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.4);margin-bottom:4px">Monthly Lesson Plan</p>
-        <h1>${selectedClass} Class</h1>
-        <div class="sub">Grade ${selectedGrade} &bull; Daewoo Elementary School English Program</div>
-      </div>
-      <div style="text-align:right;padding-top:4px">
-        <div class="month-title">${mn}</div>
-        <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,0.25);font-family:'Lora',serif;line-height:1">${year}</div>
-      </div>
+    <div>
+      <div class="label">Monthly Lesson Plan</div>
+      <h1>${selectedClass} Class</h1>
+      <div class="sub">Grade ${selectedGrade} &bull; Daewoo Elementary School English Program</div>
+    </div>
+    <div class="month-box">
+      <div class="month-name">${mn}</div>
+      <div class="year">${year}</div>
     </div>
   </div>
   <div class="body">${weeksHTML}</div>
-  <div class="footer">
-    <div class="footer-text">Daewoo Elementary School &bull; English Program &bull; ${mn} ${year}</div>
-  </div>
-</div>
+  <div class="footer"><span>Daewoo Elementary School &bull; English Program &bull; ${mn} ${year}</span></div>
 </body></html>`)
     pw.document.close(); setTimeout(() => pw.print(), 400)
   }

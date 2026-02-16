@@ -30,6 +30,7 @@ export default function AttendanceView() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [focusedRow, setFocusedRow] = useState<number>(-1)
 
   const isTeacher = currentTeacher?.role === 'teacher'
   const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
@@ -45,7 +46,6 @@ export default function AttendanceView() {
       .in('student_id', students.map((s: any) => s.id))
     const map: Record<string, { status: Status; note: string; id?: string }> = {}
     if (data) data.forEach((r: any) => { map[r.student_id] = { status: r.status, note: r.note || '', id: r.id } })
-    // Auto-fill all present for today if no records exist yet and user hasn't manually cleared
     const isToday = selectedDate === getKSTDateString()
     if (isToday && (!data || data.length === 0) && students.length > 0 && !clearedOnce) {
       students.forEach((s: any) => { map[s.id] = { status: 'present', note: '' } })
@@ -65,6 +65,26 @@ export default function AttendanceView() {
     setRecords((prev: any) => ({ ...prev, [studentId]: { ...prev[studentId], status, note: prev[studentId]?.note || '' } }))
     setHasChanges(true)
   }
+
+  // Keyboard navigation: arrow keys + P/A/T
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (students.length === 0) return
+
+      if (e.key === 'ArrowDown') { e.preventDefault(); setFocusedRow(r => Math.min(r + 1, students.length - 1)) }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setFocusedRow(r => Math.max(r - 1, 0)) }
+      else if (focusedRow >= 0 && focusedRow < students.length) {
+        const sid = (students[focusedRow] as any).id
+        if (e.key === 'p' || e.key === 'P') { setStatus(sid, 'present') }
+        else if (e.key === 'a' || e.key === 'A') { setStatus(sid, 'absent') }
+        else if (e.key === 't' || e.key === 'T') { setStatus(sid, 'tardy') }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [students, focusedRow])
 
   const setNote = (studentId: string, note: string) => {
     setRecords((prev: any) => ({ ...prev, [studentId]: { ...prev[studentId], note, status: prev[studentId]?.status || 'present' } }))
@@ -245,6 +265,7 @@ export default function AttendanceView() {
           </h3>
           {isWeekend && <p className="text-[12px] text-amber-600 font-medium mt-0.5">⚠️ This is a weekend</p>}
           {isToday && <p className="text-[12px] text-green-600 font-medium mt-0.5">Today</p>}
+          <p className="text-[10px] text-text-tertiary mt-1">Tip: Click a row, then use <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">P</kbd> <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">A</kbd> <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">T</kbd> keys and <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">↑</kbd><kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">↓</kbd> to navigate</p>
         </div>
 
         {/* Stats bar */}
@@ -279,7 +300,8 @@ export default function AttendanceView() {
                   const rec = records[s.id]
                   const status = rec?.status
                   return (
-                    <tr key={s.id} className="border-t border-border table-row-hover">
+                    <tr key={s.id} className={`border-t border-border table-row-hover ${focusedRow === i ? 'ring-2 ring-inset ring-navy/30 bg-blue-50/30' : ''}`}
+                      onClick={() => setFocusedRow(i)}>
                       <td className="px-4 py-2 text-text-tertiary">{i + 1}</td>
                       <td className="px-4 py-2">
                         <span className="font-medium">{s.english_name}</span>

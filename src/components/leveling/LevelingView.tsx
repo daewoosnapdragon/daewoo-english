@@ -7,6 +7,7 @@ import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, Teach
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
+import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
 
 type Phase = 'setup' | 'scores' | 'anecdotal' | 'results' | 'meeting'
@@ -855,18 +856,9 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                     onClick={() => setExpandedCard(expandedCard === student.id ? null : student.id)}>
                     <div className="flex items-center gap-1">
                       <GripVertical size={10} className="text-text-tertiary flex-shrink-0" />
-                      <div className="flex-1 min-w-0"><p className="text-[10px] font-semibold text-navy truncate cursor-pointer hover:underline" onClick={async (e) => {
-                        e.stopPropagation()
-                        setProfileStudent(student)
-                        const [{ data: sg }, { data: rd }, { data: bh }, { data: at }] = await Promise.all([
-                          supabase.from('semester_grades').select('*, semesters(name)').eq('student_id', student.id),
-                          supabase.from('reading_assessments').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(5),
-                          supabase.from('behavior_logs').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
-                          supabase.from('attendance').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(30),
-                        ])
-                        const attCounts = { present: 0, absent: 0, tardy: 0 }; at?.forEach((a: any) => { if (attCounts[a.status as keyof typeof attCounts] !== undefined) attCounts[a.status as keyof typeof attCounts]++ })
-                        setProfileData({ grades: sg || [], reading: rd || [], behavior: bh || [], attCounts, notes: student.notes || '' })
-                      }}>{student.english_name}</p><p className="text-[8px] text-text-tertiary truncate">{student.korean_name}</p></div>
+                      <div className="flex-1 min-w-0"><LevelingHoverCard studentId={student.id} studentName={student.english_name} koreanName={student.korean_name} className={student.english_class} grade={student.grade}
+                        trigger={<p className="text-[10px] font-semibold text-navy truncate cursor-pointer hover:underline">{student.english_name}</p>}
+                      /><p className="text-[8px] text-text-tertiary truncate">{student.korean_name}</p></div>
                       <div className="flex items-center gap-0.5">
                         {up && <ArrowUp size={10} className="text-green-500" />}{down && <ArrowDown size={10} className="text-red-500" />}{!up && !down && <Minus size={10} className="text-text-tertiary" />}
                         {bigJump && <span className="text-[7px] font-bold bg-red-500 text-white px-1 rounded">{levelDiff}+</span>}
