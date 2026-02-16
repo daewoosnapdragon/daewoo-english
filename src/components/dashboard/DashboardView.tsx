@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
+import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
 import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, GraduationCap, ClipboardCheck } from 'lucide-react'
 
 const EVENT_TYPES = [
@@ -84,7 +84,7 @@ function TodayAtGlance() {
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class : null
   const [data, setData] = useState<{ unmarkedAttendance: number; behaviorToday: number; eventsToday: any[]; gradingProgress: { graded: number; total: number }; upcomingDeadlines: any[] }>({ unmarkedAttendance: 0, behaviorToday: 0, eventsToday: [], gradingProgress: { graded: 0, total: 0 }, upcomingDeadlines: [] })
   const [loading, setLoading] = useState(true)
-  const today = new Date().toISOString().split('T')[0]
+  const today = getKSTDateString()
 
   useEffect(() => {
     (async () => {
@@ -299,7 +299,7 @@ function SharedCalendar() {
   const y = cur.getFullYear(), m = cur.getMonth()
   const first = new Date(y, m, 1).getDay()
   const days = new Date(y, m + 1, 0).getDate()
-  const today = new Date().toISOString().split('T')[0]
+  const today = getKSTDateString()
 
   const [tableError, setTableError] = useState(false)
 

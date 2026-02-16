@@ -34,7 +34,8 @@ VALUES
   ('홍지민', 'Hong Jimin', 5, '솔', 71, 'Trial', true, 'Strong all-around student approaching native-like fluency. Reads chapter books independently and can discuss themes and character development. Writing sophisticated with varied sentence structure. Natural leader in group activities.'),
   ('전다은', 'Jeon Daeun', 5, '매', 72, 'Trial', true, 'Excellent reader with strong comprehension. Writing needs support with organization and evidence-based arguments. Speaking skills confident. Has been helping lower-level students as a reading buddy. Interested in journalism and current events.'),
   ('노현우', 'Noh Hyunwoo', 5, '대', 73, 'Trial', true, 'Reading at grade level for class tier. Comprehension strong with informational text, developing with literary analysis. Writing shows improvement with persuasive techniques. Active in class discussions. Benefits from exemplar models.'),
-  ('유서아', 'Yoo Seoa', 5, '솔', 74, 'Trial', true, 'Diligent student who completes all work thoughtfully. Reading fluency excellent, working on inferential comprehension. Writing detailed and well-organized. Sometimes perfectionist tendencies slow down work completion. Very responsive to constructive feedback.');
+  ('유서아', 'Yoo Seoa', 5, '솔', 74, 'Trial', true, 'Diligent student who completes all work thoughtfully. Reading fluency excellent, working on inferential comprehension. Writing detailed and well-organized. Sometimes perfectionist tendencies slow down work completion. Very responsive to constructive feedback.')
+ON CONFLICT (grade, korean_class, class_number) DO NOTHING;
 
 -- Now seed data for all 25 students
 DO $$
@@ -58,7 +59,8 @@ BEGIN
   UPDATE students SET teacher_id = v_teacher_id WHERE english_class = 'Trial' AND is_active = true;
 
   -- Seed ATTENDANCE for all new Trial students (20 days Jan 5-30)
-  FOR v_student IN SELECT id, class_number, grade FROM students WHERE english_class = 'Trial' AND is_active = true AND class_number >= 55 LOOP
+  -- Only seed for students that don't already have attendance
+  FOR v_student IN SELECT id, class_number, grade FROM students WHERE english_class = 'Trial' AND is_active = true AND class_number >= 55 AND id NOT IN (SELECT DISTINCT student_id FROM attendance WHERE student_id IN (SELECT id FROM students WHERE english_class='Trial' AND class_number >= 55)) LOOP
     FOR d IN SELECT generate_series('2026-01-05'::date, '2026-01-30'::date, '1 day'::interval)::date LOOP
       IF EXTRACT(DOW FROM d) NOT IN (0, 6) THEN
         INSERT INTO attendance (student_id, date, status, note) VALUES (

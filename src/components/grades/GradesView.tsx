@@ -53,6 +53,7 @@ export default function GradesView() {
   const [allAssessments, setAllAssessments] = useState<Assessment[]>([])
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null)
   const [scores, setScores] = useState<Record<string, number | null>>({})
+  const [rawInputs, setRawInputs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [loadingAssessments, setLoadingAssessments] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -109,13 +110,13 @@ export default function GradesView() {
   useEffect(() => { loadAllAssessments() }, [loadAllAssessments])
 
   useEffect(() => {
-    if (!selectedAssessment) { setScores({}); return }
+    if (!selectedAssessment) { setScores({}); setRawInputs({}); return }
     const aid = selectedAssessment.id
     async function loadScores() {
       const { data } = await supabase.from('grades').select('student_id, score').eq('assessment_id', aid)
       const map: Record<string, number | null> = {}
       if (data) data.forEach((g: { student_id: string; score: number | null }) => { map[g.student_id] = g.score })
-      setScores(map); setHasChanges(false)
+      setScores(map); setRawInputs({}); setHasChanges(false)
     }
     loadScores()
   }, [selectedAssessment])
@@ -127,6 +128,15 @@ export default function GradesView() {
 
   const handleScoreChange = (studentId: string, value: string) => {
     if (!selectedAssessment) return
+    // Store raw text for display -- allows typing decimals like "9."
+    setRawInputs(prev => ({ ...prev, [studentId]: value }))
+    setHasChanges(true)
+  }
+
+  const commitScore = (studentId: string) => {
+    if (!selectedAssessment) return
+    const value = rawInputs[studentId]
+    if (value === undefined) return
     let score: number | null = null
     if (value === '') { score = null }
     else if (value.startsWith('=') && value.includes('/')) {
@@ -138,12 +148,29 @@ export default function GradesView() {
       const n = parseFloat(parts[0]), d = parseFloat(parts[1])
       if (!isNaN(n) && !isNaN(d) && d > 0) score = Math.round((n / d) * selectedAssessment.max_score * 100) / 100
     } else { const n = parseFloat(value); if (!isNaN(n)) score = Math.round(n * 100) / 100 }
-    setScores(prev => ({ ...prev, [studentId]: score })); setHasChanges(true)
+    setScores(prev => ({ ...prev, [studentId]: score }))
+    setRawInputs(prev => { const next = { ...prev }; delete next[studentId]; return next })
   }
 
   const handleSaveAll = async () => {
-    if (!selectedAssessment) return; setSaving(true)
-    const entries = Object.entries(scores).filter(([, s]) => s !== null && s !== undefined)
+    if (!selectedAssessment) return
+    // Commit any pending raw inputs first
+    const pending = { ...rawInputs }
+    const finalScores = { ...scores }
+    for (const [sid, value] of Object.entries(pending)) {
+      if (value === '') { finalScores[sid] = null; continue }
+      let s: number | null = null
+      if (value.includes('/')) {
+        const isEq = value.startsWith('=')
+        const parts = (isEq ? value.substring(1) : value).split('/')
+        const n = parseFloat(parts[0]), d = parseFloat(parts[1])
+        if (!isNaN(n) && !isNaN(d) && d > 0) s = Math.round((n / d) * selectedAssessment.max_score * 100) / 100
+      } else { const n = parseFloat(value); if (!isNaN(n)) s = Math.round(n * 100) / 100 }
+      finalScores[sid] = s
+    }
+    setScores(finalScores); setRawInputs({})
+    setSaving(true)
+    const entries = Object.entries(finalScores).filter(([, s]) => s !== null && s !== undefined)
       .map(([sid, score]) => ({ assessment_id: selectedAssessment.id, student_id: sid, score }))
     for (const e of entries) {
       const { error } = await supabase.from('grades').upsert(
@@ -164,11 +191,11 @@ export default function GradesView() {
     else { showToast(lang === 'ko' ? '삭제되었습니다' : `Deleted "${a.name}"`); if (selectedAssessment?.id === a.id) setSelectedAssessment(null); loadAssessments(); loadAllAssessments() }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, i: number) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, i: number, studentId: string) => {
     if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown') {
-      e.preventDefault(); const inputs = document.querySelectorAll('.score-input') as NodeListOf<HTMLInputElement>; inputs[i + 1]?.focus()
+      e.preventDefault(); commitScore(studentId); const inputs = document.querySelectorAll('.score-input') as NodeListOf<HTMLInputElement>; inputs[i + 1]?.focus()
     }
-    if (e.key === 'ArrowUp') { e.preventDefault(); const inputs = document.querySelectorAll('.score-input') as NodeListOf<HTMLInputElement>; inputs[i - 1]?.focus() }
+    if (e.key === 'ArrowUp') { e.preventDefault(); commitScore(studentId); const inputs = document.querySelectorAll('.score-input') as NodeListOf<HTMLInputElement>; inputs[i - 1]?.focus() }
   }
 
   const enteredCount = Object.values(scores).filter(s => s !== null && s !== undefined).length
@@ -246,7 +273,7 @@ export default function GradesView() {
           )}
         </div>
 
-        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateModal(true)} createLabel={t.grades.createAssessment} />}
+        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateModal(true)} createLabel={t.grades.createAssessment} />}
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
         {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
       </div>
@@ -258,8 +285,8 @@ export default function GradesView() {
 
 // ─── Score Entry ─────────────────────────────────────────────────────
 
-function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, selectedAssessment, setSelectedAssessment, scores, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, handleScoreChange, handleKeyDown, handleSaveAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel }: {
-  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number) => void; handleSaveAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string
+function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, selectedAssessment, setSelectedAssessment, scores, rawInputs, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, handleScoreChange, handleKeyDown, commitScore, handleSaveAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel }: {
+  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string
 }) {
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   return (
@@ -351,7 +378,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                           )}
                         </td>
                         <td className="px-4 py-2.5"><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></td>
-                        <td className="px-4 py-2.5 text-center"><input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={score != null ? score : ''} onChange={e => handleScoreChange(s.id, e.target.value)} onKeyDown={e => handleKeyDown(e, i)} placeholder="" /></td>
+                        <td className="px-4 py-2.5 text-center"><input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" /></td>
                         <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{pct ? `${pct}%` : '—'}</td>
                       </tr>
                     )

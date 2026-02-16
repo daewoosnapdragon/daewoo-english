@@ -150,13 +150,25 @@ export default function ReportsView() {
         {mode === 'individual' && selectedStudentId && selectedSemesterId && selectedSemester && (
           <IndividualReport key={selectedStudentId} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} />
         )}
-        {mode === 'individual' && !selectedStudentId && (
+        {mode === 'individual' && !selectedStudentId && selectedSemesterId && (
+          <div className="bg-surface border border-border rounded-xl p-12 text-center">
+            <p className="text-text-tertiary mb-4">Select a student to generate their report card, or print all at once.</p>
+            <BatchPrintButton students={students} semesterId={selectedSemesterId} className={selectedClass} />
+          </div>
+        )}
+        {mode === 'individual' && !selectedStudentId && !selectedSemesterId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a student to generate their report card.</div>
         )}
         {mode === 'progress' && selectedStudentId && selectedSemesterId && selectedSemester && (
           <ProgressReport key={`prog-${selectedStudentId}`} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} />
         )}
-        {mode === 'progress' && !selectedStudentId && (
+        {mode === 'progress' && !selectedStudentId && selectedSemesterId && (
+          <div className="bg-surface border border-border rounded-xl p-12 text-center">
+            <p className="text-text-tertiary mb-4">Select a student to generate their progress report, or print all at once.</p>
+            <BatchPrintButton students={students} semesterId={selectedSemesterId} className={selectedClass} />
+          </div>
+        )}
+        {mode === 'progress' && !selectedStudentId && !selectedSemesterId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a student to generate their progress report.</div>
         )}
         {mode === 'class' && selectedSemesterId && selectedSemester && (
@@ -633,6 +645,161 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   )
 }
 
+// ─── Print Progress Report Helper ────────────────────────────────────
+function printProgressReport(student: any, data: any) {
+  const ds = DOMAINS.map(dom => {
+    const v = data.domainGrades[dom]; if (v == null) return `<div style="text-align:center;border:1px solid #e2e8f0;border-radius:8px;padding:10px 6px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">${DOMAIN_SHORT[dom]}</p><p style="font-size:18px;font-weight:700;color:#94a3b8;margin-top:4px">--</p></div>`
+    const letter = getLetterGrade(v); const t = tileBgPrint(v)
+    return `<div style="text-align:center;border:1px solid ${t.border};border-radius:8px;padding:10px 6px;background:${t.bg}"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">${DOMAIN_SHORT[dom]}</p><p style="font-size:18px;font-weight:700;color:${letterColor(letter)};margin-top:4px">${letter}</p><p style="font-size:10px;color:#64748b">${v.toFixed(1)}%</p></div>`
+  }).join('')
+
+  const attPct = data.totalAtt > 0 ? `${Math.round((data.attCounts.present / data.totalAtt) * 100)}%` : '--'
+  const cwpm = data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'
+  const readLvl = data.latestReading ? (data.latestReading.passage_level || data.latestReading.reading_level || '--') : '--'
+
+  const pw = window.open('', '_blank')
+  if (!pw) return
+  pw.document.write(`<html><head><title>Progress Report - ${student.english_name}</title>
+  <style>body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f5f0eb}
+  .card{max-width:680px;margin:20px auto;overflow:hidden;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
+  @media print{body{background:white}.card{margin:0;box-shadow:none;border-radius:0;page-break-after:always}}</style></head>
+  <body><div class="card">
+  <div style="background:#1e3a5f;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
+    <div><p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;opacity:0.6">Progress Report</p>
+    <p style="font-size:20px;font-weight:700;font-family:Georgia,serif;margin-top:4px">${student.english_name}</p>
+    <p style="font-size:12px;opacity:0.7">${student.korean_name} -- ${student.english_class} -- Grade ${student.grade}</p></div>
+    <div style="text-align:right"><p style="font-size:11px;opacity:0.6">${data.semesterName}</p><p style="font-size:11px;opacity:0.6">Teacher: ${data.teacherName}</p></div>
+  </div>
+  <div style="background:white;padding:20px 24px">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div style="width:64px;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:${data.overallGrade != null ? tileBgPrint(data.overallGrade).bg : '#f8fafc'};border:2px solid ${data.overallGrade != null ? tileBgPrint(data.overallGrade).border : '#e2e8f0'}">
+        <div style="text-align:center"><p style="font-size:22px;font-weight:800;color:${data.overallGrade != null ? letterColor(data.overallLetter) : '#94a3b8'}">${data.overallLetter}</p>
+        ${data.overallGrade != null ? `<p style="font-size:9px;color:#64748b">${data.overallGrade.toFixed(1)}%</p>` : ''}</div>
+      </div>
+      <div><p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600">Overall Grade</p>
+      <p style="font-size:14px;font-weight:700;color:#1e3a5f">${data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}</p></div>
+    </div>
+    <p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:8px">Domain Scores</p>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px">${ds}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Attendance</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${attPct}</p><p style="font-size:10px;color:#94a3b8">${data.attCounts.present}P / ${data.attCounts.absent}A / ${data.attCounts.tardy}T</p></div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Reading (CWPM)</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${cwpm}</p><p style="font-size:10px;color:#94a3b8">Level: ${readLvl}</p></div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Behavior Logs</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${data.behaviorCount}</p><p style="font-size:10px;color:#94a3b8">total entries</p></div>
+    </div>
+    ${data.comment ? `<p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:6px">Teacher Comments</p><div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.7;color:#374151">${data.comment}</div>` : ''}
+    <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid #e8e0d8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School \u00b7 English Program \u00b7 ${data.semesterName}</div>
+  </div></div></body></html>`)
+  pw.document.close(); pw.print()
+}
+
+// ─── Batch Print All Progress Reports ────────────────────────────────
+function BatchPrintButton({ students, semesterId, className: cls }: { students: any[]; semesterId: string; className: string }) {
+  const [printing, setPrinting] = useState(false)
+  const { currentTeacher } = useApp()
+
+  const handleBatchPrint = async () => {
+    if (students.length === 0) return
+    setPrinting(true)
+
+    const pw = window.open('', '_blank')
+    if (!pw) { setPrinting(false); return }
+
+    pw.document.write(`<html><head><title>Progress Reports - ${cls} Grade ${students[0]?.grade}</title>
+    <style>body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:white}
+    .card{max-width:680px;margin:0 auto;overflow:hidden;page-break-after:always}
+    .card:last-child{page-break-after:auto}
+    @media print{.card{margin:0;box-shadow:none}}</style></head><body>`)
+
+    for (const student of students) {
+      // Load data for each student
+      const { data: assessments } = await supabase.from('assessments').select('*').eq('semester_id', semesterId).or(`english_class.eq.${student.english_class},english_class.is.null`).eq('grade', student.grade)
+      const { data: grades } = await supabase.from('grades').select('*').eq('student_id', student.id).in('assessment_id', (assessments || []).map((a: any) => a.id))
+
+      const domainGrades: Record<string, number | null> = {}
+      for (const dom of DOMAINS) {
+        const da = (assessments || []).filter((a: any) => a.domain === dom)
+        const pcts = da.map((a: any) => {
+          const g = (grades || []).find((g: any) => g.assessment_id === a.id)
+          if (!g || g.score == null || g.is_exempt) return null
+          return (g.score / a.max_score) * 100
+        }).filter((p: any): p is number => p != null)
+        domainGrades[dom] = pcts.length > 0 ? pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length : null
+      }
+      const validDomains = Object.values(domainGrades).filter((v): v is number => v != null)
+      const overallGrade = validDomains.length > 0 ? validDomains.reduce((a, b) => a + b, 0) / validDomains.length : null
+      const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '--'
+
+      const { data: attendance } = await supabase.from('attendance').select('status').eq('student_id', student.id)
+      const attCounts = { present: 0, absent: 0, tardy: 0 }
+      attendance?.forEach((a: any) => { if (attCounts[a.status as keyof typeof attCounts] !== undefined) attCounts[a.status as keyof typeof attCounts]++ })
+      const totalAtt = (attendance || []).length
+      const { data: reading } = await supabase.from('reading_assessments').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(1)
+      const { count: behaviorCount } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('student_id', student.id)
+      const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', student.id).eq('semester_id', semesterId).limit(1).single()
+      const { data: teacherData } = await supabase.from('teachers').select('name').eq('english_class', student.english_class).limit(1).single()
+      const { data: semData } = await supabase.from('semesters').select('name').eq('id', semesterId).single()
+
+      const data = {
+        domainGrades, overallGrade, overallLetter,
+        attCounts, totalAtt,
+        latestReading: reading?.[0] || null,
+        behaviorCount: behaviorCount || 0,
+        comment: commentData?.text || '',
+        teacherName: teacherData?.name || currentTeacher?.name || '',
+        semesterName: semData?.name || '',
+      }
+
+      const ds = DOMAINS.map(dom => {
+        const v = data.domainGrades[dom]; if (v == null) return `<div style="text-align:center;border:1px solid #e2e8f0;border-radius:8px;padding:10px 6px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">${DOMAIN_SHORT[dom]}</p><p style="font-size:18px;font-weight:700;color:#94a3b8;margin-top:4px">--</p></div>`
+        const letter = getLetterGrade(v); const t = tileBgPrint(v)
+        return `<div style="text-align:center;border:1px solid ${t.border};border-radius:8px;padding:10px 6px;background:${t.bg}"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">${DOMAIN_SHORT[dom]}</p><p style="font-size:18px;font-weight:700;color:${letterColor(letter)};margin-top:4px">${letter}</p><p style="font-size:10px;color:#64748b">${v.toFixed(1)}%</p></div>`
+      }).join('')
+
+      const attPct = data.totalAtt > 0 ? `${Math.round((data.attCounts.present / data.totalAtt) * 100)}%` : '--'
+      const cwpm = data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'
+      const readLvl = data.latestReading ? (data.latestReading.passage_level || data.latestReading.reading_level || '--') : '--'
+
+      pw.document.write(`<div class="card">
+      <div style="background:#1e3a5f;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
+        <div><p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;opacity:0.6">Progress Report</p>
+        <p style="font-size:20px;font-weight:700;font-family:Georgia,serif;margin-top:4px">${student.english_name}</p>
+        <p style="font-size:12px;opacity:0.7">${student.korean_name} -- ${student.english_class} -- Grade ${student.grade}</p></div>
+        <div style="text-align:right"><p style="font-size:11px;opacity:0.6">${data.semesterName}</p><p style="font-size:11px;opacity:0.6">Teacher: ${data.teacherName}</p></div>
+      </div>
+      <div style="background:white;padding:20px 24px">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+          <div style="width:64px;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:${data.overallGrade != null ? tileBgPrint(data.overallGrade).bg : '#f8fafc'};border:2px solid ${data.overallGrade != null ? tileBgPrint(data.overallGrade).border : '#e2e8f0'}">
+            <div style="text-align:center"><p style="font-size:22px;font-weight:800;color:${data.overallGrade != null ? letterColor(data.overallLetter) : '#94a3b8'}">${data.overallLetter}</p></div>
+          </div>
+          <div><p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600">Overall Grade</p>
+          <p style="font-size:14px;font-weight:700;color:#1e3a5f">${data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}</p></div>
+        </div>
+        <p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Domain Scores</p>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px">${ds}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Attendance</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${attPct}</p><p style="font-size:10px;color:#94a3b8">${data.attCounts.present}P / ${data.attCounts.absent}A / ${data.attCounts.tardy}T</p></div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Reading (CWPM)</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${cwpm}</p><p style="font-size:10px;color:#94a3b8">Level: ${readLvl}</p></div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Behavior Logs</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${data.behaviorCount}</p><p style="font-size:10px;color:#94a3b8">total entries</p></div>
+        </div>
+        ${data.comment ? `<div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.7;color:#374151;margin-bottom:12px">${data.comment}</div>` : ''}
+        <div style="text-align:center;padding-top:10px;border-top:1px solid #e8e0d8;font-size:9px;color:#b8b0a6">Daewoo Elementary School \u00b7 English Program \u00b7 ${data.semesterName}</div>
+      </div></div>`)
+    }
+
+    pw.document.write('</body></html>')
+    pw.document.close()
+    // Small delay to ensure rendering
+    setTimeout(() => { pw.print(); setPrinting(false) }, 500)
+  }
+
+  return (
+    <button onClick={handleBatchPrint} disabled={printing || students.length === 0}
+      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-50">
+      {printing ? <><Loader2 size={14} className="animate-spin" /> Generating {students.length} reports...</> : <><Printer size={14} /> Print All {students.length} Students</>}
+    </button>
+  )
+}
+
 // ─── Progress Report (simplified, overall averages only) ────────────
 function ProgressReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass }: {
   studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: EnglishClass
@@ -786,8 +953,8 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       </div>
 
       {/* Print button */}
-      <div className="mt-4 text-center">
-        <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <button onClick={() => printProgressReport(student, data)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
           <Printer size={14} /> Print Progress Report
         </button>
       </div>

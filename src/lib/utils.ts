@@ -171,3 +171,19 @@ export function getWeekDates(startDate: Date, numDays: number = 5): Date[] {
   }
   return dates
 }
+
+// Korean Standard Time helpers (UTC+9)
+export function getKSTDate(): Date {
+  const now = new Date()
+  const kst = new Date(now.getTime() + (9 * 60 + now.getTimezoneOffset()) * 60000)
+  return kst
+}
+
+export function getKSTDateString(): string {
+  const d = getKSTDate()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function getKSTNow(): string {
+  return new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' })
+}

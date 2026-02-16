@@ -5,6 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { BehaviorLog } from '@/types'
 import { Plus, X, Loader2, ChevronDown, ChevronRight, Bell } from 'lucide-react'
+import { getKSTDateString } from '@/lib/utils'
 
 // ─── ABC Options organized by category ──────────────────────────────
 
@@ -216,7 +217,7 @@ function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: str
   const { currentTeacher, showToast } = useApp()
   const [type, setType] = useState<string>('note')
   const now = new Date()
-  const [date] = useState(now.toISOString().split('T')[0])
+  const [date] = useState(getKSTDateString())
   const [time] = useState(now.toTimeString().slice(0, 5))
   const [duration, setDuration] = useState('')
   const [activity, setActivity] = useState('')

@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
+import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
 import { ChevronLeft, ChevronRight, Loader2, Check, UserCheck, UserX, Clock } from 'lucide-react'
 
 type Status = 'present' | 'absent' | 'tardy'
@@ -20,7 +20,7 @@ const STATUS_CONFIG: Record<Status, { label: string; labelKo: string; icon: type
 export default function AttendanceView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = useState(getKSTDateString())
   const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
@@ -91,7 +91,7 @@ export default function AttendanceView() {
 
   const prevDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d.toISOString().split('T')[0]) }
   const nextDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d.toISOString().split('T')[0]) }
-  const isToday = selectedDate === new Date().toISOString().split('T')[0]
+  const isToday = selectedDate === getKSTDateString()
   const isWeekend = [0, 6].includes(new Date(selectedDate + 'T00:00').getDay())
 
   // Stats
@@ -187,7 +187,7 @@ export default function AttendanceView() {
             <input type="date" value={selectedDate} onChange={(e: any) => setSelectedDate(e.target.value)}
               className="px-3 py-1.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
             <button onClick={nextDay} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronRight size={16} /></button>
-            {!isToday && <button onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])} className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light ml-1">Today</button>}
+            {!isToday && <button onClick={() => setSelectedDate(getKSTDateString())} className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light ml-1">Today</button>}
           </div>
           <div className="w-px h-6 bg-border" />
           <button onClick={markAllPresent} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-green-100 text-green-700 hover:bg-green-200">
