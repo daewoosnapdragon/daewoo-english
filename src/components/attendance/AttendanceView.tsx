@@ -6,6 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
+import WIDABadge from '@/components/shared/WIDABadge'
 import { ChevronLeft, ChevronRight, Loader2, Check, UserCheck, UserX, Clock } from 'lucide-react'
 
 type Status = 'present' | 'absent' | 'tardy'
@@ -35,6 +36,8 @@ export default function AttendanceView() {
     ? [currentTeacher.english_class as EnglishClass] : ALL_ENGLISH_CLASSES
   const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
 
+  const [clearedOnce, setClearedOnce] = useState(false)
+
   const loadRecords = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('attendance').select('*')
@@ -42,19 +45,19 @@ export default function AttendanceView() {
       .in('student_id', students.map((s: any) => s.id))
     const map: Record<string, { status: Status; note: string; id?: string }> = {}
     if (data) data.forEach((r: any) => { map[r.student_id] = { status: r.status, note: r.note || '', id: r.id } })
-    // Auto-fill all present for today if no records exist yet
+    // Auto-fill all present for today if no records exist yet and user hasn't manually cleared
     const isToday = selectedDate === getKSTDateString()
-    if (isToday && (!data || data.length === 0) && students.length > 0) {
+    if (isToday && (!data || data.length === 0) && students.length > 0 && !clearedOnce) {
       students.forEach((s: any) => { map[s.id] = { status: 'present', note: '' } })
       setRecords(map)
       setLoading(false)
-      setHasChanges(true) // Mark as needing save
+      setHasChanges(true)
     } else {
       setRecords(map)
       setLoading(false)
       setHasChanges(false)
     }
-  }, [selectedDate, students])
+  }, [selectedDate, students, clearedOnce])
 
   useEffect(() => { if (students.length > 0) loadRecords() }, [loadRecords, students])
 
@@ -84,6 +87,11 @@ export default function AttendanceView() {
 
   const handleSave = async () => {
     setSaving(true)
+    // Get existing DB records for this date + these students
+    const { data: existing } = await supabase.from('attendance').select('id, student_id')
+      .eq('date', selectedDate).in('student_id', students.map((s: any) => s.id))
+
+    // Upsert current records
     const entries = Object.entries(records).map(([studentId, r]: [string, any]) => ({
       student_id: studentId, date: selectedDate, status: r.status, note: r.note,
       recorded_by: currentTeacher?.id || null,
@@ -92,10 +100,17 @@ export default function AttendanceView() {
       const { error } = await supabase.from('attendance').upsert(entry, { onConflict: 'student_id,date' })
       if (error) { showToast(`Error: ${error.message}`); setSaving(false); return }
     }
+
+    // Delete records that were cleared (exist in DB but not in current records)
+    const currentStudentIds = new Set(Object.keys(records))
+    const toDelete = (existing || []).filter(e => !currentStudentIds.has(e.student_id))
+    if (toDelete.length > 0) {
+      await supabase.from('attendance').delete().in('id', toDelete.map(d => d.id))
+    }
+
     setSaving(false)
     setHasChanges(false)
-    showToast(lang === 'ko' ? '출석이 저장되었습니다' : `Saved attendance for ${entries.length} students`)
-    loadRecords()
+    showToast(lang === 'ko' ? '출석이 저장되었습니다' : entries.length > 0 ? `Saved attendance for ${entries.length} students` : 'Attendance cleared')
   }
 
   const prevDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d.toISOString().split('T')[0]) }
@@ -216,7 +231,7 @@ export default function AttendanceView() {
             {lang === 'ko' ? '현장학습 (전원 결석)' : 'Field Trip (all absent)'}
           </label>
           {Object.keys(records).length > 0 && (
-            <button onClick={() => { setRecords({}); setHasChanges(true) }}
+            <button onClick={() => { setRecords({}); setHasChanges(true); setClearedOnce(true) }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
               Clear All
             </button>
@@ -269,6 +284,7 @@ export default function AttendanceView() {
                       <td className="px-4 py-2">
                         <span className="font-medium">{s.english_name}</span>
                         <span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span>
+                        <WIDABadge studentId={s.id} compact />
                       </td>
                       <td className="px-2 py-2 text-center">
                         {status ? (

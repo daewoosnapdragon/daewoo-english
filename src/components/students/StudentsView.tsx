@@ -8,6 +8,7 @@ import { classToColor, classToTextColor, sortByKoreanClassAndNumber, domainLabel
 import { supabase } from '@/lib/supabase'
 import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2 } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
+import WIDABadge from '@/components/shared/WIDABadge'
 
 // ─── Main View ──────────────────────────────────────────────────────
 
@@ -154,7 +155,7 @@ export default function StudentsView() {
                         <div className="w-7 h-7 rounded-full bg-surface-alt flex items-center justify-center"><User size={13} className="text-text-tertiary" /></div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-medium">{s.english_name}</td>
+                    <td className="px-4 py-3 font-medium">{s.english_name} <WIDABadge studentId={s.id} compact /></td>
                     <td className="px-4 py-3 text-text-secondary">{s.korean_name}</td>
                     <td className="px-4 py-3 text-center">{s.grade}</td>
                     <td className="px-4 py-3 text-center font-medium">{s.korean_class}</td>

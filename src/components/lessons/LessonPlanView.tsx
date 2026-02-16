@@ -69,7 +69,15 @@ export default function LessonPlanView() {
   const [entries, setEntries] = useState<Record<string, LessonEntry>>({})
   const [homework, setHomework] = useState<Record<string, HomeworkEntry>>({})
   const [calEvents, setCalEvents] = useState<Record<string, CalendarEvent>>({})
-  const [loading, setLoading] = useState(true)
+  const [blockedTypes, setBlockedTypes] = useState<Set<string>>(new Set(['holiday', 'event', 'field_trip', 'testing']))
+  const [showEventFilter, setShowEventFilter] = useState(false)
+  const ALL_EVENT_TYPES = [
+    { value: 'holiday', label: 'Holiday' }, { value: 'event', label: 'School Event' },
+    { value: 'field_trip', label: 'Field Trip' }, { value: 'testing', label: 'Testing' },
+    { value: 'deadline', label: 'Deadline' }, { value: 'meeting', label: 'Meeting' },
+    { value: 'midterm', label: 'Midterm' }, { value: 'report_cards', label: 'Report Cards' },
+    { value: 'other', label: 'Other' },
+  ]  const [loading, setLoading] = useState(true)
   const [showSetup, setShowSetup] = useState(false)
   const [editingCell, setEditingCell] = useState<{ date: string; slot: string } | null>(null)
   const [editTitle, setEditTitle] = useState('')
@@ -103,10 +111,10 @@ export default function LessonPlanView() {
     if (hwRes.data) hwRes.data.forEach((h: any) => { hm[h.week_start] = h })
     setHomework(hm)
     const ce: Record<string, CalendarEvent> = {}
-    if (eventsRes.data) eventsRes.data.forEach((ev: any) => { ce[ev.date] = ev })
+    if (eventsRes.data) eventsRes.data.forEach((ev: any) => { if (blockedTypes.has(ev.type)) ce[ev.date] = ev })
     setCalEvents(ce)
     setLoading(false)
-  }, [selectedClass, selectedGrade, year, month])
+  }, [selectedClass, selectedGrade, year, month, blockedTypes])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -250,6 +258,24 @@ export default function LessonPlanView() {
             <p className="text-[13px] text-text-secondary mt-1">Monthly lesson planning by class and grade</p>
           </div>
           <div className="flex items-center gap-2">
+            <div className="relative">
+              <button onClick={() => setShowEventFilter(!showEventFilter)} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium border transition-all ${showEventFilter ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border'}`}>
+                <Calendar size={14} /> Events ({blockedTypes.size})
+              </button>
+              {showEventFilter && (
+                <div className="absolute right-0 top-full mt-1 w-52 bg-surface border border-border rounded-xl shadow-lg z-50 p-3">
+                  <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Show on lesson plan:</p>
+                  {ALL_EVENT_TYPES.map(et => (
+                    <label key={et.value} className="flex items-center gap-2 py-1 cursor-pointer">
+                      <input type="checkbox" checked={blockedTypes.has(et.value)}
+                        onChange={() => { const next = new Set(Array.from(blockedTypes)); if (next.has(et.value)) next.delete(et.value); else next.add(et.value); setBlockedTypes(next) }}
+                        className="w-3.5 h-3.5 rounded border-border text-navy" />
+                      <span className="text-[11px] text-text-primary">{et.label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
             {canEdit && <button onClick={() => setShowSetup(!showSetup)} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium border transition-all ${showSetup ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border'}`}><Settings size={14} /> Day Setup</button>}
             <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print for Parents</button>
           </div>
