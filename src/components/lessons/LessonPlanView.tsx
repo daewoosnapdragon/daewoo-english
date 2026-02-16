@@ -77,7 +77,8 @@ export default function LessonPlanView() {
     { value: 'deadline', label: 'Deadline' }, { value: 'meeting', label: 'Meeting' },
     { value: 'midterm', label: 'Midterm' }, { value: 'report_cards', label: 'Report Cards' },
     { value: 'other', label: 'Other' },
-  ]  const [loading, setLoading] = useState(true)
+  ]
+  const [loading, setLoading] = useState(true)
   const [showSetup, setShowSetup] = useState(false)
   const [editingCell, setEditingCell] = useState<{ date: string; slot: string } | null>(null)
   const [editTitle, setEditTitle] = useState('')
