@@ -281,7 +281,7 @@ function StudentAlerts() {
         if (allGrades) {
           for (const student of students) {
             const studentAssessments = assessments.filter(a => a.english_class === student.english_class && a.grade === student.grade)
-            const domains = [...new Set(studentAssessments.map(a => a.domain))]
+            const domains = Array.from(new Set(studentAssessments.map(a => a.domain)))
             for (const domain of domains) {
               const domAssessments = studentAssessments.filter(a => a.domain === domain)
               const scores = domAssessments.map(a => {

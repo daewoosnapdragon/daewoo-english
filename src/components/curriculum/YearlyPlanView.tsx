@@ -238,7 +238,7 @@ export default function YearlyPlanView() {
                               if (cell?.content) contents.push(cell.content)
                             })
                             // Deduplicate
-                            const unique = [...new Set(contents)]
+                            const unique = Array.from(new Set(contents))
                             return (
                               <td key={period.id} className="px-2 py-1.5 border-l border-border align-top text-[10px] leading-snug text-text-primary min-w-[160px]">
                                 {unique.length > 0 ? unique.join(' | ') : <span className="text-text-tertiary italic">--</span>}
