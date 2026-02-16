@@ -559,7 +559,7 @@ function makeDomainStats() {
   return { reading: {...empty, assessments: []}, phonics: {...empty, assessments: []}, writing: {...empty, assessments: []}, speaking: {...empty, assessments: []}, language: {...empty, assessments: []} } as any
 }
 
-function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: { allAssessments: any[]; selectedGrade: any; selectedClass: any; lang: any }) {
+function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: { allAssessments: Assessment[]; selectedGrade: Grade; selectedClass: EnglishClass; lang: LangKey }) {
   const [stats, setStats] = useState(makeDomainStats())
   const [loading, setLoading] = useState(true)
 
