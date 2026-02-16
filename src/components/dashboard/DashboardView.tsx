@@ -351,7 +351,7 @@ function StudentAlerts() {
     })()
   }, [currentTeacher, isTeacher, isAdmin])
 
-  const dismiss = (id: string) => setDismissed(prev => new Set([...prev, id]))
+  const dismiss = (id: string) => setDismissed(prev => { const n = new Set(Array.from(prev)); n.add(id); return n })
 
   const visible = alerts.filter(a => !dismissed.has(a.id))
   if (loading || visible.length === 0) return null
