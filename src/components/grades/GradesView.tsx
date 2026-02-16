@@ -433,7 +433,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
   selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; allAssessments: Assessment[]; students: StudentRow[]; selectedClass: EnglishClass; selectedGrade: Grade; lang: LangKey
 }) {
   const { showToast } = useApp()
-  const [scores, setScores] = useState<Record<string, Record<string, number | null>>>({}) // studentId -> assessmentId -> score
+  const [scores, setScores] = useState<any>({}) // studentId -> assessmentId -> score
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -447,7 +447,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
       const { data } = await supabase.from('grades').select('student_id, assessment_id, score')
         .in('assessment_id', domainAssessments.map(a => a.id))
         .in('student_id', students.map(s => s.id))
-      const map: Record<string, Record<string, number | null>> = {}
+      const map: { [key: string]: { [key: string]: number | null } } = {}
       students.forEach(s => { map[s.id] = {} })
       data?.forEach((g: any) => { if (map[g.student_id]) map[g.student_id][g.assessment_id] = g.score })
       setScores(map)
@@ -556,7 +556,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
 // ─── Domain Overview ────────────────────────────────────────────────
 
 interface DomainStats { avg: number | null; count: number; assessmentCount: number; assessments: { name: string; avg: number }[] }
-const emptyStats = (): Record<string, DomainStats> => ({ reading: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, phonics: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, writing: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, speaking: { avg: null, count: 0, assessmentCount: 0, assessments: [] }, language: { avg: null, count: 0, assessmentCount: 0, assessments: [] } })
+const emptyStats = () => ({ reading: { avg: null as number | null, count: 0, assessmentCount: 0, assessments: [] as { name: string; avg: number }[] }, phonics: { avg: null as number | null, count: 0, assessmentCount: 0, assessments: [] as { name: string; avg: number }[] }, writing: { avg: null as number | null, count: 0, assessmentCount: 0, assessments: [] as { name: string; avg: number }[] }, speaking: { avg: null as number | null, count: 0, assessmentCount: 0, assessments: [] as { name: string; avg: number }[] }, language: { avg: null as number | null, count: 0, assessmentCount: 0, assessments: [] as { name: string; avg: number }[] } })
 
 function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: { allAssessments: Assessment[]; selectedGrade: Grade; selectedClass: EnglishClass; lang: LangKey }) {
   const [stats, setStats] = useState(emptyStats())
@@ -595,7 +595,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
 
   const validAvgs = DOMAINS.map(d => stats[d].avg).filter((v): v is number => v != null)
   const overallAvg = validAvgs.length > 0 ? validAvgs.reduce((a, b) => a + b, 0) / validAvgs.length : null
-  const domainColors = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' } as Record<Domain, string>
+  const domainColors: any = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' }
 
   return (
     <div className="space-y-4">
