@@ -16,8 +16,9 @@ export const translations = {
       tools: 'Grading Tools',
       settings: 'Settings',
       alerts: 'Alerts',
-      readingLevels: 'Reading Levels',
-      curriculum: 'Curriculum Map',
+      readingLevels: 'Reading Fluency',
+      curriculum: 'Curriculum',
+      lessonPlans: 'Lesson Plans',
     },
     // Common
     common: {
@@ -174,6 +175,7 @@ export const translations = {
       alerts: '알림',
       readingLevels: '읽기 수준',
       curriculum: '교육과정',
+      lessonPlans: '수업 계획',
     },
     common: {
       save: '저장',

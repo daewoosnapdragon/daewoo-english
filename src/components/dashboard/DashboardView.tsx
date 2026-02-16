@@ -6,7 +6,7 @@ import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, GraduationCap, ClipboardCheck } from 'lucide-react'
+import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX } from 'lucide-react'
 
 const EVENT_TYPES = [
   { value: 'day_off', label: 'Day Off', color: '#22C55E', bg: 'bg-green-100 text-green-800' },
@@ -70,6 +70,7 @@ export default function DashboardView() {
       <div className="px-10 py-6">
         <TodayAtGlance />
         <QuickActions />
+        <StudentAlerts />
         {isAdmin && <AdminAlertPanel />}
         <SharedCalendar />
         {isAdmin && <ClassOverviewTable />}
@@ -238,6 +239,148 @@ function QuickActions() {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Student Alerts ───────────────────────────────────────────────
+interface StudentAlert { id: string; type: 'grade_decline' | 'behavior_spike' | 'missing_grades'; studentName: string; studentClass: string; message: string }
+
+function StudentAlerts() {
+  const { currentTeacher } = useApp()
+  const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
+  const isAdmin = currentTeacher?.role === 'admin'
+  const [alerts, setAlerts] = useState<StudentAlert[]>([])
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!currentTeacher) return
+    ;(async () => {
+      const newAlerts: StudentAlert[] = []
+      const classFilter = isTeacher ? currentTeacher.english_class : null
+
+      // Get students
+      let studQuery = supabase.from('students').select('id, english_name, english_class, grade').eq('is_active', true).eq('is_demo', false)
+      if (classFilter) studQuery = studQuery.eq('english_class', classFilter)
+      const { data: students } = await studQuery
+      if (!students || students.length === 0) { setLoading(false); return }
+
+      // Get active semester
+      const { data: sem } = await supabase.from('semesters').select('id').eq('is_active', true).single()
+      if (!sem) { setLoading(false); return }
+
+      // 1. GRADE DECLINE: compare last 3 assessments per domain per student
+      const { data: assessments } = await supabase.from('assessments').select('id, domain, name, english_class, grade, max_score')
+        .eq('semester_id', sem.id)
+      if (assessments && assessments.length > 0) {
+        const { data: allGrades } = await supabase.from('grades').select('student_id, assessment_id, score')
+          .in('assessment_id', assessments.map(a => a.id)).not('score', 'is', null)
+
+        if (allGrades) {
+          for (const student of students) {
+            const studentAssessments = assessments.filter(a => a.english_class === student.english_class && a.grade === student.grade)
+            const domains = [...new Set(studentAssessments.map(a => a.domain))]
+            for (const domain of domains) {
+              const domAssessments = studentAssessments.filter(a => a.domain === domain)
+              const scores = domAssessments.map(a => {
+                const g = allGrades.find(gr => gr.student_id === student.id && gr.assessment_id === a.id)
+                return g?.score != null && a.max_score > 0 ? (g.score / a.max_score) * 100 : null
+              }).filter((s): s is number => s != null)
+
+              if (scores.length >= 3) {
+                const recent = scores.slice(-3)
+                const firstAvg = (recent[0] + recent[1]) / 2
+                const last = recent[2]
+                if (firstAvg - last >= 15) {
+                  newAlerts.push({
+                    id: `gd-${student.id}-${domain}`,
+                    type: 'grade_decline',
+                    studentName: student.english_name,
+                    studentClass: student.english_class,
+                    message: `${domain.charAt(0).toUpperCase() + domain.slice(1)} average dropped from ${firstAvg.toFixed(0)}% to ${last.toFixed(0)}%`
+                  })
+                }
+              }
+            }
+
+            // 3. MISSING GRADES: students with 0 scores for assessments that exist
+            const studentAssessmentsAll = assessments.filter(a => a.english_class === student.english_class && a.grade === student.grade)
+            const studentGrades = allGrades.filter(g => g.student_id === student.id)
+            const missing = studentAssessmentsAll.filter(a => !studentGrades.some(g => g.assessment_id === a.id))
+            if (missing.length >= 3 && studentAssessmentsAll.length >= 3) {
+              newAlerts.push({
+                id: `mg-${student.id}`,
+                type: 'missing_grades',
+                studentName: student.english_name,
+                studentClass: student.english_class,
+                message: `Missing scores for ${missing.length} of ${studentAssessmentsAll.length} assessments`
+              })
+            }
+          }
+        }
+      }
+
+      // 2. BEHAVIOR SPIKE: compare last 2 weeks vs prior 2 weeks
+      const now = new Date()
+      const twoWeeksAgo = new Date(now.getTime() - 14 * 86400000).toISOString().split('T')[0]
+      const fourWeeksAgo = new Date(now.getTime() - 28 * 86400000).toISOString().split('T')[0]
+
+      for (const student of students) {
+        const { count: recentCount } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true })
+          .eq('student_id', student.id).gte('date', twoWeeksAgo)
+        const { count: priorCount } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true })
+          .eq('student_id', student.id).gte('date', fourWeeksAgo).lt('date', twoWeeksAgo)
+
+        const recent = recentCount || 0
+        const prior = priorCount || 0
+        if (recent >= 3 && recent >= prior * 2) {
+          newAlerts.push({
+            id: `bs-${student.id}`,
+            type: 'behavior_spike',
+            studentName: student.english_name,
+            studentClass: student.english_class,
+            message: `${recent} behavior logs in last 2 weeks (up from ${prior} in prior 2 weeks)`
+          })
+        }
+      }
+
+      setAlerts(newAlerts)
+      setLoading(false)
+    })()
+  }, [currentTeacher, isTeacher, isAdmin])
+
+  const dismiss = (id: string) => setDismissed(prev => new Set([...prev, id]))
+
+  const visible = alerts.filter(a => !dismissed.has(a.id))
+  if (loading || visible.length === 0) return null
+
+  const icons = { grade_decline: TrendingDown, behavior_spike: AlertTriangle, missing_grades: FileX }
+  const colors = { grade_decline: { bg: 'bg-red-50', border: 'border-red-200', icon: 'text-red-500', text: 'text-red-700' }, behavior_spike: { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-500', text: 'text-amber-700' }, missing_grades: { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-500', text: 'text-blue-700' } }
+
+  return (
+    <div className="mb-6">
+      <h3 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Student Alerts ({visible.length})</h3>
+      <div className="space-y-2">
+        {visible.slice(0, 8).map(alert => {
+          const Icon = icons[alert.type]
+          const c = colors[alert.type]
+          return (
+            <div key={alert.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${c.bg} ${c.border}`}>
+              <Icon size={16} className={c.icon} />
+              <div className="flex-1 min-w-0">
+                <span className="text-[12px] font-semibold text-navy">{alert.studentName}</span>
+                <span className="text-[10px] text-text-tertiary ml-2">{alert.studentClass}</span>
+                <p className={`text-[11px] ${c.text}`}>{alert.message}</p>
+              </div>
+              <button onClick={() => dismiss(alert.id)} className="p-1 rounded-lg hover:bg-white/50 text-text-tertiary hover:text-text-primary" title="Dismiss">
+                <X size={14} />
+              </button>
+            </div>
+          )
+        })}
+        {visible.length > 8 && <p className="text-[11px] text-text-tertiary">+ {visible.length - 8} more alerts</p>}
       </div>
     </div>
   )

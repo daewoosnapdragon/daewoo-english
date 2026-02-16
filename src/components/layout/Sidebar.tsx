@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import {
   LayoutDashboard, Users, ClipboardEdit, FileText, Layers,
   CalendarCheck, BookOpen, Settings, Globe, LogOut, GraduationCap,
-  ChevronsLeft, ChevronsRight, Map, AlertTriangle
+  ChevronsLeft, ChevronsRight, Map, AlertTriangle, CalendarDays
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { id: 'grades', icon: ClipboardEdit },
   { id: 'attendance', icon: CalendarCheck },
   { id: 'readingLevels', icon: BookOpen },
+  { id: 'lessonPlans', icon: CalendarDays },
   { section: 'MANAGE' },
   { id: 'students', icon: Users },
   { id: 'reports', icon: FileText },

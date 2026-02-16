@@ -6,8 +6,9 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { BookOpen, Users2, Loader2, ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Info, Save } from 'lucide-react'
+import { BookOpen, Users2, Loader2, ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Info, Save, Calendar } from 'lucide-react'
 import { CCSS_STANDARDS, CCSS_DOMAINS, type CCSSDomain } from './ccss-standards'
+import YearlyPlanView from './YearlyPlanView'
 
 function getAdjustedGrade(studentGrade: Grade, englishClass: EnglishClass): number {
   if (['Lily', 'Camellia'].includes(englishClass)) return Math.max(0, studentGrade - 2)
@@ -62,15 +63,15 @@ function getClusters(domain: CCSSDomain, grade: number) {
 // ═══════════════════════════════════════════════════════════════════
 export default function CurriculumView() {
   const { language } = useApp()
-  const [view, setView] = useState<'wida' | 'standards'>('wida')
+  const [view, setView] = useState<'wida' | 'standards' | 'yearly'>('wida')
 
   return (
     <div className="animate-fade-in">
       <div className="bg-surface border-b border-border px-8 py-5">
         <h2 className="font-display text-2xl font-bold text-navy">{language === 'ko' ? '교육과정' : 'Curriculum'}</h2>
-        <p className="text-[13px] text-text-secondary mt-1">Student WIDA profiles and CCSS standards checklist</p>
+        <p className="text-[13px] text-text-secondary mt-1">Student WIDA profiles, CCSS standards, and program-wide curriculum planning</p>
         <div className="flex gap-1 mt-4">
-          {([['wida', 'WIDA Profiles', Users2], ['standards', 'Standards Checklist', BookOpen]] as const).map(([id, label, Icon]) => (
+          {([['wida', 'WIDA Profiles', Users2], ['standards', 'Standards Checklist', BookOpen], ['yearly', 'Yearly Plan', Calendar]] as const).map(([id, label, Icon]) => (
             <button key={id} onClick={() => setView(id as any)}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium transition-all ${view === id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
               <Icon size={15} /> {label}
@@ -81,6 +82,7 @@ export default function CurriculumView() {
       <div className="px-8 py-6">
         {view === 'wida' && <WIDAProfiles />}
         {view === 'standards' && <ClusterTracker />}
+        {view === 'yearly' && <YearlyPlanView />}
       </div>
     </div>
   )

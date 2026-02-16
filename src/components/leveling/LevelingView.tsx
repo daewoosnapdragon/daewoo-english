@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal } from 'lucide-react'
+import WIDABadge from '@/components/shared/WIDABadge'
+import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
 
 type Phase = 'setup' | 'scores' | 'anecdotal' | 'results' | 'meeting'
 
@@ -479,6 +481,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
               <div className="flex-1 min-w-0">
                 <span className="text-[13px] font-medium text-navy">{student.english_name}</span>
                 <span className="text-[12px] text-text-tertiary ml-2">{student.korean_name}</span>
+                <span className="ml-1.5"><WIDABadge studentId={student.id} compact /></span>
               </div>
               <div className="flex items-center gap-4">
                 {vals.map((val, i) => (
@@ -520,7 +523,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
             {/* Student data */}
             {studentData[modalStudent.id] && (
               <div className="px-6 py-3 bg-surface-alt/50 border-b border-border">
-                <div className="grid grid-cols-3 gap-3 text-[11px]">
+                <div className="grid grid-cols-4 gap-3 text-[11px]">
                   <div>
                     <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Level Test Scores</p>
                     {studentData[modalStudent.id]?.scores ? (
@@ -538,6 +541,11 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                   <div>
                     <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Recent Reading</p>
                     {studentData[modalStudent.id]?.reading.length > 0 ? <div className="space-y-0.5">{studentData[modalStudent.id].reading.slice(0, 3).map((r: any, i: number) => <p key={i}>{r.date}: <span className="font-bold text-navy">{Math.round(r.cwpm)} CWPM</span> {r.accuracy_rate != null && <span className="text-text-tertiary">({r.accuracy_rate}%)</span>}</p>)}</div> : <p className="text-text-tertiary italic">No reading data</p>}
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">WIDA Profile</p>
+                    <WIDABadge studentId={modalStudent.id} />
+                    <WIDADetail studentId={modalStudent.id} />
                   </div>
                 </div>
               </div>
@@ -1009,4 +1017,49 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
     result[item.id] = ENGLISH_CLASSES[Math.min(Math.floor(p / (1 / ENGLISH_CLASSES.length)), ENGLISH_CLASSES.length - 1)]
   })
   return result
+}
+
+// ─── WIDA Detail for Leveling Modal ──────────────────────────────
+function WIDADetail({ studentId }: { studentId: string }) {
+  const [levels, setLevels] = useState<Record<string, number>>({})
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId)
+      if (data) {
+        const m: Record<string, number> = {}
+        data.forEach((r: any) => { m[r.domain] = r.wida_level })
+        setLevels(m)
+      }
+      setLoaded(true)
+    })()
+  }, [studentId])
+
+  if (!loaded) return null
+  const vals = Object.values(levels).filter(v => v > 0)
+  if (vals.length === 0) return <p className="text-text-tertiary italic text-[10px] mt-1">No WIDA levels set</p>
+
+  const avg = Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10
+  const rounded = Math.round(avg)
+  const info = WIDA_LEVELS.find(w => w.level === rounded)
+
+  const domLabels: Record<string, string> = { listening: 'List', speaking: 'Spk', reading: 'Read', writing: 'Wrt' }
+
+  return (
+    <div className="mt-1 space-y-0.5">
+      {Object.entries(levels).filter(([, v]) => v > 0).map(([dom, lvl]) => {
+        const wl = WIDA_LEVELS.find(w => w.level === lvl)
+        return (
+          <p key={dom} className="text-[10px]">
+            {domLabels[dom] || dom}: <span className="font-bold" style={{ color: wl ? '#1e293b' : undefined }}>{lvl}</span>
+            <span className="text-text-tertiary ml-1">{wl?.name}</span>
+          </p>
+        )
+      })}
+      {info && avg !== rounded && (
+        <p className="text-[10px] text-text-tertiary mt-1">Avg: {avg.toFixed(1)}</p>
+      )}
+    </div>
+  )
 }

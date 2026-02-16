@@ -201,6 +201,105 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [comment, setComment] = useState('')
   const [savingComment, setSavingComment] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
+  const [commentTone, setCommentTone] = useState<'Balanced' | 'Highlight growth' | 'Constructive'>('Balanced')
+
+  const generateTemplateComment = useCallback(async () => {
+    if (!data || !studentId) return
+    const d = data, s = d.student
+    const name = s.english_name?.split(' ')[0] || s.english_name || 'This student'
+
+    // Fetch extra data for richer comments
+    const [widaRes, readingRes, behaviorRes] = await Promise.all([
+      supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId),
+      supabase.from('reading_assessments').select('cwpm, accuracy_rate, date').eq('student_id', studentId).order('date', { ascending: false }).limit(3),
+      supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('student_id', studentId),
+    ])
+
+    // WIDA info
+    const widaLevels = widaRes.data || []
+    const widaMap: Record<string, number> = {}
+    widaLevels.forEach((w: any) => { widaMap[w.domain] = w.wida_level })
+    const widaVals = Object.values(widaMap).filter(v => v > 0)
+    const widaAvg = widaVals.length > 0 ? Math.round((widaVals.reduce((a, b) => a + b, 0) / widaVals.length) * 10) / 10 : null
+    const WIDA_NAMES: Record<number, string> = { 1: 'Entering', 2: 'Emerging', 3: 'Developing', 4: 'Expanding', 5: 'Bridging', 6: 'Reaching' }
+
+    // Reading
+    const readings = readingRes.data || []
+    const latestCwpm = readings[0]?.cwpm ? Math.round(readings[0].cwpm) : null
+    const readingTrend = readings.length >= 2 ? (readings[0].cwpm > readings[1].cwpm ? 'improving' : readings[0].cwpm < readings[1].cwpm ? 'declining' : 'stable') : null
+
+    // Grades
+    const scoredDomains = DOMAINS.filter(dom => d.domainGrades[dom] != null)
+    const strongDomains = scoredDomains.filter(dom => (d.domainGrades[dom] || 0) >= 80)
+    const weakDomains = scoredDomains.filter(dom => (d.domainGrades[dom] || 0) < 65)
+    const growthDomains = d.prevDomainGrades ? scoredDomains.filter(dom => d.prevDomainGrades![dom] != null && (d.domainGrades[dom] || 0) > (d.prevDomainGrades![dom] || 0) + 3) : []
+
+    // Build comment
+    const parts: string[] = []
+
+    // Opening
+    if (d.overallGrade != null && d.overallGrade >= 85) {
+      parts.push(`${name} is performing very well in the English program this semester with an overall average of ${d.overallGrade.toFixed(1)}%.`)
+    } else if (d.overallGrade != null && d.overallGrade >= 70) {
+      parts.push(`${name} is making steady progress in the English program this semester with an overall average of ${d.overallGrade.toFixed(1)}%.`)
+    } else if (d.overallGrade != null) {
+      parts.push(`${name} is working to build foundational skills in the English program this semester with a current overall average of ${d.overallGrade.toFixed(1)}%.`)
+    } else {
+      parts.push(`${name} is a member of the ${s.english_class} class this semester.`)
+    }
+
+    // Strengths
+    if (strongDomains.length > 0) {
+      const labels = strongDomains.map(dom => DOMAIN_SHORT[dom]).join(' and ')
+      parts.push(`${name} shows particular strength in ${labels}.`)
+    }
+
+    // Growth areas (tone-dependent)
+    if (commentTone === 'Constructive' && weakDomains.length > 0) {
+      const labels = weakDomains.map(dom => DOMAIN_SHORT[dom]).join(' and ')
+      parts.push(`${labels} ${weakDomains.length > 1 ? 'are areas' : 'is an area'} where additional practice and support would be beneficial.`)
+    } else if (commentTone === 'Highlight growth' && growthDomains.length > 0) {
+      const labels = growthDomains.map(dom => DOMAIN_SHORT[dom]).join(' and ')
+      parts.push(`${name} has shown notable improvement in ${labels} compared to last semester.`)
+    }
+
+    // WIDA context
+    if (widaAvg != null) {
+      const widaRounded = Math.round(widaAvg)
+      const widaName = WIDA_NAMES[widaRounded] || ''
+      if (widaRounded <= 2) {
+        parts.push(`As a WIDA Level ${widaRounded} (${widaName}) English learner, ${name} benefits from visual supports, sentence frames, and vocabulary pre-teaching.`)
+      } else if (widaRounded === 3) {
+        parts.push(`As a WIDA Level 3 (Developing) English learner, ${name} is growing in independence and benefits from graphic organizers and structured writing support.`)
+      } else if (widaRounded >= 4) {
+        parts.push(`As a WIDA Level ${widaRounded} (${widaName}) English learner, ${name} communicates effectively and is working to refine academic language skills.`)
+      }
+    }
+
+    // Reading fluency
+    if (latestCwpm != null) {
+      if (readingTrend === 'improving') {
+        parts.push(`In reading fluency, ${name} is currently reading at ${latestCwpm} CWPM and showing an upward trend.`)
+      } else if (readingTrend === 'declining') {
+        parts.push(`${name}'s current reading fluency is ${latestCwpm} CWPM. Continued practice with independent reading would help build consistency.`)
+      } else {
+        parts.push(`${name} is currently reading at ${latestCwpm} CWPM.`)
+      }
+    }
+
+    // Closing
+    if (commentTone === 'Highlight growth' && d.prevOverall != null && d.overallGrade != null && d.overallGrade > d.prevOverall) {
+      parts.push(`Overall, ${name} has improved from ${d.prevOverall.toFixed(1)}% to ${d.overallGrade.toFixed(1)}% since last semester, which reflects real effort and growth.`)
+    } else if (commentTone === 'Constructive') {
+      parts.push(`With continued effort and targeted practice, ${name} is well-positioned for further growth.`)
+    } else {
+      parts.push(`${name} is a valued member of the classroom and I look forward to continued progress.`)
+    }
+
+    setComment(parts.join(' '))
+    setShowAiPanel(false)
+    showToast('Draft generated -- please review and edit before saving')
+  }, [data, studentId, commentTone])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const loadReport = useCallback(async () => {
@@ -599,17 +698,18 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             </button>
           </div>
 
-          {/* AI Panel */}
+          {/* AI Panel -- Template-based comment generator */}
           {showAiPanel && (
             <div className="print:hidden bg-[#f8f9fb] border border-[#d1d5db] rounded-xl p-4 mb-3.5">
-              <p className="text-[11px] font-bold text-[#475569] mb-2">AI Comment Assistant</p>
-              <p className="text-[11px] text-[#64748b] leading-relaxed mb-3">Generates a personalized draft from this student's grades, behavior logs, reading fluency, attendance, and your notes from the Students tab.</p>
+              <p className="text-[11px] font-bold text-[#475569] mb-2">Comment Draft Generator</p>
+              <p className="text-[11px] text-[#64748b] leading-relaxed mb-3">Generates a draft from this student's grades, reading fluency, and semester trends. Edit to add your personal observations.</p>
               <div className="flex gap-1.5 flex-wrap mb-3">
-                {['Balanced', 'Parent-friendly', 'Highlight growth', 'Constructive'].map((t) => (
-                  <button key={t} className="px-2.5 py-1 rounded-md text-[10px] font-semibold bg-white border border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]">{t}</button>
+                {(['Balanced', 'Highlight growth', 'Constructive'] as const).map((tone) => (
+                  <button key={tone} onClick={() => setCommentTone(tone)}
+                    className={`px-2.5 py-1 rounded-md text-[10px] font-semibold border transition-all ${commentTone === tone ? 'bg-navy text-white border-navy' : 'bg-white border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]'}`}>{tone}</button>
                 ))}
               </div>
-              <button className="w-full py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark">Generate Draft Comment</button>
+              <button onClick={() => generateTemplateComment()} className="w-full py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark">Generate Draft Comment</button>
             </div>
           )}
 
