@@ -6,9 +6,10 @@ import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber, domainLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download } from 'lucide-react'
+import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download, Users2 } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WIDABadge from '@/components/shared/WIDABadge'
+import { WIDAProfiles } from '@/components/curriculum/CurriculumView'
 import RosterUploadModal from './RosterUploadModal'
 import { exportToCSV } from '@/lib/export'
 
@@ -21,7 +22,8 @@ export default function StudentsView() {
   const [filterClass, setFilterClass] = useState<EnglishClass | null>(null)
   const [sortMode, setSortMode] = useState<'name' | 'korean_class' | 'english_class' | 'grade'>('english_class')
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
-  const [showManage, setShowManage] = useState(false) // manage panel for upload/add
+  const [showManage, setShowManage] = useState(false)
+  const [subView, setSubView] = useState<'roster' | 'wida'>('roster')
 
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class as EnglishClass : null
 
@@ -66,8 +68,15 @@ export default function StudentsView() {
             <Settings2 size={15} /> {language === 'ko' ? '학생 관리' : 'Manage Students'}
           </button>
         </div>
+        <div className="flex gap-1 mt-4">
+          <button onClick={() => setSubView('roster')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium transition-all ${subView === 'roster' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><User size={15} /> Roster</button>
+          <button onClick={() => setSubView('wida')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium transition-all ${subView === 'wida' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><Users2 size={15} /> WIDA Profiles</button>
+        </div>
       </div>
 
+      {subView === 'wida' ? (
+        <div className="px-8 py-6"><WIDAProfiles /></div>
+      ) : (
       <div className="px-10 py-6">
         {/* Manage Panel - slides open */}
         {showManage && (
@@ -183,6 +192,7 @@ export default function StudentsView() {
           )}
         </div>
       </div>
+      )}
 
       {selectedStudent && <StudentModal student={selectedStudent} onClose={() => setSelectedStudent(null)} onUpdated={(s) => { setSelectedStudent(s); refetch() }} />}
     </div>
@@ -277,10 +287,16 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
         <select value={form.english_class} onChange={e => setForm({ ...form, english_class: e.target.value as EnglishClass })} className="px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none">
           {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
       </div>
-      <button onClick={handleSave} disabled={saving || !form.korean_name || !form.english_name}
-        className="w-full px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center justify-center gap-1.5">
-        {saving && <Loader2 size={12} className="animate-spin" />} Add
-      </button>
+      <div className="flex gap-2">
+        <button onClick={async () => { await handleSave(); setShow(false) }} disabled={saving || !form.korean_name || !form.english_name}
+          className="flex-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-surface-alt text-text-secondary hover:bg-border disabled:opacity-40 flex items-center justify-center gap-1.5">
+          {saving && <Loader2 size={12} className="animate-spin" />} Add & Close
+        </button>
+        <button onClick={handleSave} disabled={saving || !form.korean_name || !form.english_name}
+          className="flex-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center justify-center gap-1.5">
+          {saving && <Loader2 size={12} className="animate-spin" />} Save & Add Another
+        </button>
+      </div>
     </div>
   )
 }

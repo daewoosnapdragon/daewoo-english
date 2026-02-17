@@ -5,8 +5,9 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Printer, Settings, Plus, X, Loader2, Calendar, AlertCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Printer, Settings, Plus, X, Loader2, Calendar, AlertCircle, CalendarRange } from 'lucide-react'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
+import YearlyPlanView from '@/components/curriculum/YearlyPlanView'
 
 interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number }
 interface LessonEntry { id?: string; slot_label: string; title: string; objective: string; notes: string }
@@ -58,6 +59,32 @@ function getWeekStart(dateStr: string): string {
 }
 
 export default function LessonPlanView() {
+  const [tab, setTab] = useState<'monthly' | 'yearly'>('monthly')
+  return (
+    <div className="animate-fade-in">
+      {tab === 'monthly' ? <MonthlyLessonPlanView tabBar={
+        <div className="flex gap-1 mt-4">
+          <button onClick={() => setTab('monthly')} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium bg-navy text-white"><Calendar size={15} /> Monthly Plans</button>
+          <button onClick={() => setTab('yearly')} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium text-text-secondary hover:bg-surface-alt"><CalendarRange size={15} /> Yearly Plan</button>
+        </div>
+      } /> : (
+        <div>
+          <div className="bg-surface border-b border-border px-8 py-5">
+            <h2 className="font-display text-2xl font-bold text-navy">Lesson Plans</h2>
+            <p className="text-[13px] text-text-secondary mt-1">Program-wide yearly curriculum planning</p>
+            <div className="flex gap-1 mt-4">
+              <button onClick={() => setTab('monthly')} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium text-text-secondary hover:bg-surface-alt"><Calendar size={15} /> Monthly Plans</button>
+              <button onClick={() => setTab('yearly')} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium bg-navy text-white"><CalendarRange size={15} /> Yearly Plan</button>
+            </div>
+          </div>
+          <div className="px-8 py-6"><YearlyPlanView /></div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
   const { currentTeacher, showToast } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
   const teacherClass = currentTeacher?.english_class as EnglishClass
@@ -357,6 +384,7 @@ export default function LessonPlanView() {
             <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print for Parents</button>
           </div>
         </div>
+        {tabBar}
         <div className="flex items-center gap-4 mt-4">
           <div className="flex gap-1">
             {(isAdmin ? ENGLISH_CLASSES : [teacherClass]).filter(Boolean).map(c => (

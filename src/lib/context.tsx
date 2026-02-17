@@ -46,7 +46,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback((message: string) => {
     setToast(message)
-    setTimeout(() => setToast(null), 3000)
+    const duration = message.toLowerCase().startsWith('error') ? 5000 : 3000
+    setTimeout(() => setToast(null), duration)
   }, [])
 
   return (

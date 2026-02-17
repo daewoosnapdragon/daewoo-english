@@ -126,6 +126,25 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
         </div>
       </div>
 
+      {/* Weekly summary */}
+      {(() => {
+        const now = new Date()
+        const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay())
+        const weekStr = weekStart.toISOString().split('T')[0]
+        const thisWeek = logs.filter(l => l.date >= weekStr)
+        const pos = thisWeek.filter(l => l.type === 'positive').length
+        const neg = thisWeek.filter(l => l.type === 'negative' || l.type === 'abc').length
+        if (thisWeek.length === 0) return null
+        return (
+          <div className="flex items-center gap-3 px-3 py-2 bg-surface-alt rounded-lg text-[11px]">
+            <span className="font-semibold text-text-secondary">This week:</span>
+            <span className="text-green-600 font-semibold">{pos} positive</span>
+            <span className="text-red-600 font-semibold">{neg} negative</span>
+            {thisWeek.length > 0 && <span className="text-text-tertiary">({thisWeek.length} total)</span>}
+          </div>
+        )
+      })()}
+
       {/* Filter tabs */}
       <div className="flex gap-1 border-b border-border overflow-x-auto">
         {[{ id: 'all', label: 'All', count: logs.length }, ...LOG_TYPES.map(t => ({ id: t.value, label: lang === 'ko' ? t.labelKo : t.label, count: logs.filter((l: any) => l.type === t.value || (t.value === 'negative' && l.type === 'abc')).length })), { id: 'flagged', label: '🔔 Flagged', count: flaggedCount }].map((tab: any) => (

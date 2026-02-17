@@ -94,7 +94,7 @@ export default function LevelingView() {
         ))}
         <span className={`ml-auto text-[10px] font-bold px-2 py-1 rounded-full ${selectedTest.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{selectedTest.status.toUpperCase()}</span>
       </div>
-      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />}
+      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} onContinue={() => setPhase('anecdotal')} />}
       {phase === 'anecdotal' && <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />}
       {phase === 'results' && <ResultsPhase levelTest={selectedTest} />}
       {phase === 'meeting' && <MeetingPhase levelTest={selectedTest} onFinalize={() => {
@@ -247,7 +247,7 @@ function ClassTabs({ active, onSelect, counts, available }: { active: EnglishCla
 
 // ─── Score Entry Phase ──────────────────────────────────────────────
 
-function ScoreEntryPhase({ levelTest, teacherClass, isAdmin }: { levelTest: LevelTest; teacherClass: EnglishClass | null; isAdmin: boolean }) {
+function ScoreEntryPhase({ levelTest, teacherClass, isAdmin, onContinue }: { levelTest: LevelTest; teacherClass: EnglishClass | null; isAdmin: boolean; onContinue: () => void }) {
   const { showToast, currentTeacher } = useApp()
   const [students, setStudents] = useState<Student[]>([])
   const [scores, setScores] = useState<Record<string, Record<string, number | null>>>({})
@@ -380,6 +380,11 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Leve
         </table>
       </div>
       <p className="text-[11px] text-text-tertiary mt-3">Entered by: {currentTeacher?.name || 'Unknown'} | Only {activeTab} students saved when you click Save.</p>
+      <div className="mt-4 flex justify-end">
+        <button onClick={onContinue} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light">
+          Done with Scores? Continue to Teacher Ratings →
+        </button>
+      </div>
     </div>
   )
 }

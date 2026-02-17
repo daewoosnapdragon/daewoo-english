@@ -62,6 +62,14 @@ export default function GradesView() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
+
+  // Warn on page leave with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => { if (hasChanges) { e.preventDefault(); e.returnValue = '' } }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasChanges])
+
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [semesters, setSemesters] = useState<Semester[]>([])
   const [selectedSemester, setSelectedSemester] = useState<string | null>(null)
@@ -817,6 +825,13 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
   const nameRef = useRef<HTMLInputElement>(null)
   useEffect(() => { nameRef.current?.focus() }, [])
 
+  // Inline score entry state
+  const [scorePhase, setScorePhase] = useState(false)
+  const [createdAssessment, setCreatedAssessment] = useState<Assessment | null>(null)
+  const [scoreStudents, setScoreStudents] = useState<any[]>([])
+  const [inlineScores, setInlineScores] = useState<Record<string, string>>({})
+  const [savingScores, setSavingScores] = useState(false)
+
   // Load CCSS standards for suggestions
   const [ccssStandards, setCcssStandards] = useState<any[]>([])
   useEffect(() => {
@@ -830,7 +845,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
 
   const otherClasses = ENGLISH_CLASSES.filter((c: any) => c !== englishClass)
 
-  const handleSave = async () => {
+  const handleSave = async (enterScores = false) => {
     if (!name.trim()) return; setSaving(true)
     const stdTags = standards.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.description || '' } })
     const basePayload = { name: name.trim(), domain: selDomain, max_score: maxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null, standards: stdTags }
@@ -839,27 +854,100 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
       setSaving(false)
       if (error) showToast(`Error: ${error.message}`); else { showToast(lang === 'ko' ? `"${name}" 수정 완료` : `Updated "${name}"`); onSaved(data) }
     } else {
-      // Create for current class
       const { data, error } = await supabase.from('assessments').insert({ ...basePayload, english_class: englishClass }).select().single()
       if (error) { setSaving(false); showToast(`Error: ${error.message}`); return }
-      // Create copies for shared classes
       if (shareClasses.length > 0) {
         const copies = shareClasses.map((cls: string) => ({ ...basePayload, english_class: cls }))
         await supabase.from('assessments').insert(copies)
       }
       setSaving(false)
-      showToast(lang === 'ko' ? `"${name}" 평가가 생성되었습니다` : `Created "${name}"${shareClasses.length > 0 ? ` (+ ${shareClasses.length} shared)` : ''}`)
-      onSaved(data)
+      if (enterScores && data) {
+        setCreatedAssessment(data)
+        // Load students for score entry
+        const { data: studs } = await supabase.from('students').select('*').eq('english_class', englishClass).eq('grade', grade).eq('is_active', true).order('english_name')
+        setScoreStudents(studs || [])
+        setScorePhase(true)
+        showToast(lang === 'ko' ? `"${name}" 생성됨 — 점수 입력` : `Created "${name}" — enter scores below`)
+      } else {
+        showToast(lang === 'ko' ? `"${name}" 평가가 생성되었습니다` : `Created "${name}"${shareClasses.length > 0 ? ` (+ ${shareClasses.length} shared)` : ''}`)
+        onSaved(data)
+      }
     }
+  }
+
+  const handleSaveScores = async () => {
+    if (!createdAssessment) return
+    setSavingScores(true)
+    const rows = Object.entries(inlineScores)
+      .filter(([, v]) => v !== '')
+      .map(([sid, v]) => ({ student_id: sid, assessment_id: createdAssessment.id, score: parseFloat(v), is_exempt: false }))
+    if (rows.length > 0) {
+      const { error } = await supabase.from('grades').insert(rows)
+      if (error) { showToast(`Error: ${error.message}`); setSavingScores(false); return }
+    }
+    setSavingScores(false)
+    showToast(`Saved ${rows.length} scores`)
+    onSaved(createdAssessment)
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={onClose}>
-      <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
+      <div className={`bg-surface rounded-xl shadow-lg w-full ${scorePhase ? 'max-w-2xl' : 'max-w-lg'} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-display text-lg font-semibold text-navy">{editing ? (lang === 'ko' ? '평가 수정' : 'Edit Assessment') : (lang === 'ko' ? '평가 생성' : 'Create Assessment')}</h3>
+          <h3 className="font-display text-lg font-semibold text-navy">{scorePhase ? `Enter Scores: ${createdAssessment?.name}` : editing ? (lang === 'ko' ? '평가 수정' : 'Edit Assessment') : (lang === 'ko' ? '평가 생성' : 'Create Assessment')}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
         </div>
+
+        {scorePhase ? (
+          <div>
+            <div className="px-6 py-2 bg-accent-light border-b border-border">
+              <p className="text-[11px] text-navy">{selDomain} · {category} · max {maxScore} pts · {scoreStudents.length} students</p>
+            </div>
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <table className="w-full text-[13px]">
+                <thead><tr className="border-b border-border">
+                  <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
+                  <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
+                  <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-24">Score / {maxScore}</th>
+                  <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">%</th>
+                </tr></thead>
+                <tbody>
+                  {scoreStudents.map((s: any, i: number) => {
+                    const val = inlineScores[s.id] || ''
+                    const pct = val !== '' ? ((parseFloat(val) / maxScore) * 100) : null
+                    return (
+                      <tr key={s.id} className="border-b border-border/50">
+                        <td className="py-1.5 text-text-tertiary text-[11px]">{i + 1}</td>
+                        <td className="py-1.5"><span className="font-medium">{s.english_name}</span> <span className="text-text-tertiary text-[11px] ml-1">{s.korean_name}</span></td>
+                        <td className="py-1.5 text-center">
+                          <input type="number" min={0} max={maxScore} step="any" value={val}
+                            onChange={e => setInlineScores(prev => ({ ...prev, [s.id]: e.target.value }))}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Tab') { const inputs = document.querySelectorAll<HTMLInputElement>('.inline-score-input'); const idx = Array.from(inputs).indexOf(e.target as HTMLInputElement); if (idx >= 0 && idx < inputs.length - 1) { e.preventDefault(); inputs[idx + 1].focus() } } }}
+                            className="inline-score-input w-16 px-2 py-1 text-center border border-border rounded text-[13px] outline-none focus:border-navy"
+                          />
+                        </td>
+                        <td className="py-1.5 text-center text-[11px]">
+                          {pct !== null ? <span className={`font-semibold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{pct.toFixed(0)}%</span> : ''}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+              <span className="text-[11px] text-text-tertiary">{Object.values(inlineScores).filter(v => v !== '').length} of {scoreStudents.length} entered</span>
+              <div className="flex gap-2">
+                <button onClick={() => { onSaved(createdAssessment!); }} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">Skip Scores</button>
+                <button onClick={handleSaveScores} disabled={savingScores || Object.values(inlineScores).filter(v => v !== '').length === 0}
+                  className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
+                  {savingScores && <Loader2 size={14} className="animate-spin" />} Save Scores
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+        <div>
         <div className="p-6 space-y-4">
           <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '평가 이름' : 'Assessment Name'}</label>
             <input ref={nameRef} value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSave() }} placeholder={lang === 'ko' ? '예: Reading Quiz 1' : 'e.g. Reading Quiz 1'} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
@@ -935,10 +1023,17 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
         </div>
         <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">{lang === 'ko' ? '취소' : 'Cancel'}</button>
-          <button onClick={handleSave} disabled={saving || !name.trim()} className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
+          {!editing && (
+            <button onClick={() => handleSave(true)} disabled={saving || !name.trim()} className="px-4 py-2 rounded-lg text-[13px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-40 flex items-center gap-1.5">
+              {saving && <Loader2 size={14} className="animate-spin" />} Create & Enter Scores
+            </button>
+          )}
+          <button onClick={() => handleSave(false)} disabled={saving || !name.trim()} className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
             {saving && <Loader2 size={14} className="animate-spin" />} {editing ? (lang === 'ko' ? '수정' : 'Update') : (lang === 'ko' ? '생성' : 'Create')}
           </button>
         </div>
+        </div>
+        )}
       </div>
     </div>
   )
