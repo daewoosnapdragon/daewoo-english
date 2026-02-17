@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
 import { ChevronLeft, ChevronRight, Printer, Settings, Plus, X, Loader2, Calendar, AlertCircle } from 'lucide-react'
+import LessonScaffoldBanner from './LessonScaffoldBanner'
 
 interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number }
 interface LessonEntry { id?: string; slot_label: string; title: string; objective: string; notes: string }
@@ -378,6 +379,8 @@ export default function LessonPlanView() {
         </div>
 
         {showSetup && canEdit && <DaySetupPanel selectedClass={selectedClass} slots={slots} onAdd={addSlot} onRemove={removeSlot} onClose={() => setShowSetup(false)} />}
+
+        <LessonScaffoldBanner englishClass={selectedClass} grade={selectedGrade} />
 
         {!hasSlots && (
           <div className="text-center py-16 bg-surface border border-dashed border-border rounded-2xl">

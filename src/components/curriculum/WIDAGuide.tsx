@@ -19,7 +19,7 @@ import {
 // Content sourced from the WIDA Teacher Training Manual
 // ═══════════════════════════════════════════════════════════════════
 
-interface Scaffold {
+export interface Scaffold {
   id: string
   domain: 'listening' | 'speaking' | 'reading' | 'writing' | 'general'
   levelRange: [number, number] // e.g. [1, 2] = L1-L2
@@ -27,7 +27,7 @@ interface Scaffold {
   category: string // grouping label
 }
 
-const SCAFFOLD_BANK: Scaffold[] = [
+export const SCAFFOLD_BANK: Scaffold[] = [
   // ═══════════════════════════════════════════════════════════════
   // LISTENING
   // ═══════════════════════════════════════════════════════════════
@@ -1153,6 +1153,44 @@ function AssignScaffolds() {
       .sort((a, b) => b.count - a.count)
   }, [classScaffolds, viewMode])
 
+  const updateEffectiveness = async (scaffoldId: string, effectiveness: string | null) => {
+    const { error } = await supabase.from('student_scaffolds').update({
+      effectiveness, effectiveness_updated_at: new Date().toISOString()
+    }).eq('id', scaffoldId)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setAssignedScaffolds(prev => prev.map(s => s.id === scaffoldId ? { ...s, effectiveness } : s))
+  }
+
+  const printScaffoldCard = () => {
+    if (!student || assignedScaffolds.length === 0) return
+    const pw = window.open('', '_blank'); if (!pw) return
+    const scaffoldHTML = assignedScaffolds.map(s =>
+      `<div class="scaffold"><span class="domain">${s.domain.toUpperCase()}</span> ${s.scaffold_text}${s.effectiveness === 'working' ? ' <span class="eff working">Working</span>' : s.effectiveness === 'not_working' ? ' <span class="eff notworking">Not Working</span>' : ''}</div>`
+    ).join('')
+    const widaHTML = WIDA_DOMAINS.map(d => {
+      const v = widaLevels[d]; return v ? `<span class="wida-badge">${d[0].toUpperCase()}: L${v}</span>` : ''
+    }).filter(Boolean).join(' ')
+    pw.document.write(`<!DOCTYPE html><html><head><title>Scaffold Card - ${student.english_name}</title>
+      <style>body{font-family:Arial,sans-serif;padding:24px;max-width:600px;margin:0 auto}
+      h2{color:#1B2A4A;margin:0 0 4px}p.sub{color:#666;font-size:12px;margin:0 0 12px}
+      .wida-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold;background:#E3F2FD;color:#1565C0;margin-right:4px}
+      .scaffold{padding:8px 12px;margin:4px 0;border-radius:8px;font-size:13px;border:1px solid #e2e8f0;background:#f8fafc}
+      .domain{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:bold;background:#EEF2FF;color:#1B2A4A;text-transform:uppercase;margin-right:6px}
+      .eff{font-size:9px;padding:1px 4px;border-radius:3px;margin-left:6px}
+      .working{background:#D1FAE5;color:#065F46}.notworking{background:#FEE2E2;color:#991B1B}
+      .footer{margin-top:16px;font-size:10px;color:#999;border-top:1px solid #eee;padding-top:8px}
+      @media print{body{padding:12px}}</style></head><body>
+      <h2>${student.english_name} <span style="color:#999;font-weight:normal">${student.korean_name}</span></h2>
+      <p class="sub">${cls} -- Grade ${gr}</p>
+      <div style="margin-bottom:12px">${widaHTML}</div>
+      <h3 style="font-size:13px;color:#1B2A4A;margin:12px 0 6px">Active Scaffolds</h3>
+      ${scaffoldHTML}
+      <p class="footer">Printed ${new Date().toLocaleDateString()} -- Daewoo English Program</p>
+      </body></html>`)
+    pw.document.close()
+    pw.print()
+  }
+
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
@@ -1313,22 +1351,45 @@ function AssignScaffolds() {
               <div className="bg-surface border border-border rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-[13px] font-bold text-navy">Assigned Scaffolds ({assignedScaffolds.length})</h4>
-                  <button onClick={() => setShowPicker(true)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark">
-                    <Plus size={13} /> Add Scaffold
-                  </button>
+                  <div className="flex gap-1.5">
+                    {assignedScaffolds.length > 0 && (
+                      <button onClick={printScaffoldCard}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary border border-border hover:bg-surface">
+                        Print Card
+                      </button>
+                    )}
+                    <button onClick={() => setShowPicker(true)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark">
+                      <Plus size={13} /> Add Scaffold
+                    </button>
+                  </div>
                 </div>
                 {assignedScaffolds.length === 0 ? (
                   <p className="text-[11px] text-text-tertiary italic py-4 text-center">No scaffolds assigned yet. Click "Add Scaffold" or use the suggestions below.</p>
                 ) : (
                   <div className="space-y-1.5">
                     {assignedScaffolds.map(s => (
-                      <div key={s.id} className="flex items-start gap-2 px-3 py-2 rounded-lg bg-surface-alt/50 border border-border/50 group">
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-navy/10 text-navy uppercase flex-shrink-0 mt-0.5">{s.domain}</span>
-                        <p className="text-[12px] text-text-primary leading-relaxed flex-1">{s.scaffold_text}</p>
-                        <button onClick={() => removeScaffold(s.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 flex-shrink-0">
-                          <X size={13} />
-                        </button>
+                      <div key={s.id} className="px-3 py-2 rounded-lg bg-surface-alt/50 border border-border/50 group">
+                        <div className="flex items-start gap-2">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-navy/10 text-navy uppercase flex-shrink-0 mt-0.5">{s.domain}</span>
+                          <p className="text-[12px] text-text-primary leading-relaxed flex-1">{s.scaffold_text}</p>
+                          <button onClick={() => removeScaffold(s.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 flex-shrink-0">
+                            <X size={13} />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1.5 ml-8">
+                          <span className="text-[8px] text-text-tertiary uppercase tracking-wider">Effectiveness:</span>
+                          {['working', 'not_working', 'unclear'].map(eff => (
+                            <button key={eff} onClick={() => updateEffectiveness(s.id, s.effectiveness === eff ? null : eff)}
+                              className={`px-2 py-0.5 rounded text-[9px] font-medium transition-all ${
+                                s.effectiveness === eff
+                                  ? eff === 'working' ? 'bg-green-100 text-green-700 border border-green-300' : eff === 'not_working' ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                  : 'bg-surface text-text-tertiary border border-border hover:bg-surface-alt'
+                              }`}>
+                              {eff === 'working' ? 'Working' : eff === 'not_working' ? 'Not Working' : 'Unclear'}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
