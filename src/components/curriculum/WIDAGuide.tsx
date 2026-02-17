@@ -11,8 +11,9 @@ import { CCSS_STANDARDS, CCSS_DOMAINS, type CCSSDomain } from './ccss-standards'
 import {
   BookOpen, Globe2, Layers, ChevronDown, ChevronRight, Info, Search,
   Plus, X, Check, Loader2, User, ArrowLeftRight, Lightbulb, GraduationCap,
-  Bookmark, BookMarked, ListChecks
+  Bookmark, BookMarked, ListChecks, Music, BarChart3, Volume2
 } from 'lucide-react'
+import { PhonicsSequence, PhonicsStrategies, AssessmentLiteracy, ReadingFluencyGuide } from './TeacherReferences'
 
 // ═══════════════════════════════════════════════════════════════════
 // SCAFFOLD DATABASE - Organized by domain and WIDA level
@@ -363,35 +364,59 @@ const DOMAIN_ICONS: Record<string, string> = {
 // MAIN GUIDE COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 
-type GuideSection = 'overview' | 'comparison' | 'scaffolds' | 'assign'
+type GuideSection = 'overview' | 'comparison' | 'scaffolds' | 'assign' | 'phonics-seq' | 'phonics-strat' | 'assessment' | 'fluency'
 
 export default function WIDAGuide() {
   const [section, setSection] = useState<GuideSection>('overview')
 
-  const tabs: { id: GuideSection; label: string; icon: typeof BookOpen }[] = [
-    { id: 'overview', label: 'WIDA Overview', icon: GraduationCap },
+  const tabs: { id: GuideSection; label: string; icon: typeof BookOpen; group?: string }[] = [
+    { id: 'overview', label: 'WIDA Overview', icon: GraduationCap, group: 'WIDA / CCSS' },
     { id: 'comparison', label: 'WIDA vs CCSS', icon: ArrowLeftRight },
     { id: 'scaffolds', label: 'Scaffold Index', icon: Lightbulb },
     { id: 'assign', label: 'Assign to Students', icon: BookMarked },
+    { id: 'phonics-seq', label: 'Phonics Sequence', icon: Layers, group: 'Teacher References' },
+    { id: 'phonics-strat', label: 'Phonics Strategies', icon: Music },
+    { id: 'assessment', label: 'Assessment Literacy', icon: BarChart3 },
+    { id: 'fluency', label: 'Fluency & Comprehension', icon: Volume2 },
   ]
+
+  const widaTabs = tabs.filter(t => !t.group || t.group === 'WIDA / CCSS')
+  const refTabs = tabs.filter(t => t.group === 'Teacher References' || ['phonics-strat', 'assessment', 'fluency'].includes(t.id))
 
   return (
     <div>
-      <div className="flex gap-1 mb-6">
-        {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setSection(tab.id)}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${
-              section === tab.id ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'
-            }`}>
-            <tab.icon size={14} /> {tab.label}
-          </button>
-        ))}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-1 mb-1.5">
+          {widaTabs.map(tab => (
+            <button key={tab.id} onClick={() => setSection(tab.id)}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${
+                section === tab.id ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'
+              }`}>
+              <tab.icon size={14} /> {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mr-1 py-2">Teacher References</span>
+          {refTabs.map(tab => (
+            <button key={tab.id} onClick={() => setSection(tab.id)}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${
+                section === tab.id ? 'bg-gold text-navy-dark' : 'bg-surface-alt text-text-secondary hover:bg-border'
+              }`}>
+              <tab.icon size={14} /> {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {section === 'overview' && <WIDAOverview />}
       {section === 'comparison' && <WIDAvsCCSS />}
       {section === 'scaffolds' && <ScaffoldIndex />}
       {section === 'assign' && <AssignScaffolds />}
+      {section === 'phonics-seq' && <PhonicsSequence />}
+      {section === 'phonics-strat' && <PhonicsStrategies />}
+      {section === 'assessment' && <AssessmentLiteracy />}
+      {section === 'fluency' && <ReadingFluencyGuide />}
     </div>
   )
 }
