@@ -43,7 +43,9 @@ export default function YearlyPlanView() {
         supabase.from('yearly_plan_periods').select('*').order('sort_order'),
         supabase.from('yearly_plan_tracks').select('*').order('sort_order'),
       ])
-      setPeriods(pRes.data || [])
+      // Deduplicate periods by name (fix double Spring A/Spring B columns)
+      const uniquePeriods = (pRes.data || []).filter((p: any, i: number, arr: any[]) => arr.findIndex((q: any) => q.name === p.name) === i)
+      setPeriods(uniquePeriods)
       setTracks(tRes.data || [])
       setLoading(false)
     })()

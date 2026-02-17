@@ -38,7 +38,7 @@ const CONSEQUENCE_CATEGORIES = [
 const LOG_TYPES = [
   { value: 'positive', label: 'Positive', labelKo: '긍정적', icon: '⭐', color: 'bg-green-50 border-green-200 text-green-800' },
   { value: 'concern', label: 'Concern', labelKo: '우려', icon: '⚠️', color: 'bg-yellow-50 border-yellow-200 text-yellow-800' },
-  { value: 'negative', label: 'Negative Behavior', labelKo: '부정 행동', icon: '🔴', color: 'bg-red-50 border-red-200 text-red-800' },
+  { value: 'negative', label: 'Negative', labelKo: '부정 행동', icon: '🔴', color: 'bg-red-50 border-red-200 text-red-800' },
   { value: 'parent_contact', label: 'Parent Contact', labelKo: '학부모 연락', icon: '📞', color: 'bg-purple-50 border-purple-200 text-purple-800' },
   { value: 'intervention', label: 'Intervention', labelKo: '개입', icon: '🛡️', color: 'bg-orange-50 border-orange-200 text-orange-800' },
   { value: 'note', label: 'Note', labelKo: '메모', icon: '📝', color: 'bg-gray-50 border-gray-200 text-gray-800' },
@@ -94,7 +94,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
     const printWin = window.open('', '_blank')
     if (!printWin) return
     const rows = filteredLogs.map((log: any) => {
-      const typeInfo = [...LOG_TYPES, { value: 'abc', label: 'Negative Behavior', labelKo: '부정 행동', icon: '🔴', color: '' }].find(t => t.value === log.type)
+      const typeInfo = [...LOG_TYPES, { value: 'abc', label: 'Negative', labelKo: '부정 행동', icon: '🔴', color: '' }].find(t => t.value === log.type)
       return `<tr>
         <td style="padding:6px;border:1px solid #ddd">${new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}${log.time ? ' ' + log.time : ''}</td>
         <td style="padding:6px;border:1px solid #ddd">${typeInfo?.label || log.type}</td>
@@ -145,7 +145,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
       ) : (
         <div className="space-y-1.5">
           {filteredLogs.map((log: any) => {
-            const typeInfo = [...LOG_TYPES, { value: 'abc', label: 'Negative Behavior', labelKo: '부정 행동', icon: '🔴', color: 'bg-red-50 border-red-200 text-red-800' }].find(t => t.value === log.type)
+            const typeInfo = [...LOG_TYPES, { value: 'abc', label: 'Negative', labelKo: '부정 행동', icon: '🔴', color: 'bg-red-50 border-red-200 text-red-800' }].find(t => t.value === log.type)
             const isExpanded = expandedLog === log.id
             const hasAbc = (log.antecedents?.length || 0) > 0 || (log.behaviors?.length || 0) > 0 || (log.consequences?.length || 0) > 0
             return (

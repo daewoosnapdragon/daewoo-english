@@ -221,6 +221,13 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
   const handleSave = async () => {
     if (!form.korean_name || !form.english_name) return
     setSaving(true)
+    // Check for duplicate before insert
+    const { data: existing } = await supabase.from('students').select('id, english_name').eq('grade', form.grade).eq('korean_class', form.korean_class).eq('class_number', form.class_number).eq('is_active', true).limit(1)
+    if (existing && existing.length > 0) {
+      setSaving(false)
+      showToast(`A student already exists with ${form.korean_class} #${form.class_number} in Grade ${form.grade} (${existing[0].english_name}). Change the class number or edit the existing student.`)
+      return
+    }
     const { error } = await addStudent({ ...form, teacher_id: teacherMap[form.english_class] || null, is_active: true, notes: '', photo_url: '', google_drive_folder_url: '' })
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
@@ -574,7 +581,7 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
                   {student.english_class}
                 </span>
                 <span className="text-text-tertiary">·</span>
-                <span className="text-[12px] text-text-tertiary">{student.korean_class}반 {student.class_number}번</span>
+                <span className="text-[12px] text-text-tertiary">{student.korean_class} {student.class_number}</span>
                 {(student as any).is_transfer && (
                   <>
                     <span className="text-text-tertiary">·</span>
@@ -660,7 +667,7 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
             </div>
             <div className="bg-surface-alt rounded-lg p-4">
               <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Homeroom</p>
-              <p className="text-[14px] font-medium text-navy">{student.korean_class}반 {student.class_number}번</p>
+              <p className="text-[14px] font-medium text-navy">{student.korean_class} {student.class_number}</p>
             </div>
           </div>
 
@@ -840,7 +847,7 @@ function buildStudentPDFHtml(student: Student, data: {
 </style></head><body>
 <div class="header">
   <h1>${student.english_name} <span style="color:#64748b;font-weight:400">(${student.korean_name})</span></h1>
-  <p class="meta">Grade ${student.grade} | <span class="badge">${student.english_class}</span> | ${student.korean_class}ban #${student.class_number} | Exported: ${date}</p>
+  <p class="meta">Grade ${student.grade} | <span class="badge">${student.english_class}</span> | ${student.korean_class} ${student.class_number} | Exported: ${date}</p>
 </div>
 
 <h2>Semester Grades</h2>

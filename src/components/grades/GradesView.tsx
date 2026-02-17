@@ -498,6 +498,12 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
       {loading ? <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div> : domainAssessments.length === 0 ? (
         <div className="p-12 text-center text-text-tertiary">No assessments in {DOMAIN_LABELS[selectedDomain][lang]}</div>
       ) : (
+        <div>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
+          <p className="text-[12px] text-blue-800 leading-relaxed">
+            <strong>Batch Grid</strong> lets you view and edit scores for all students across all assessments in one spreadsheet view. Click any cell to enter or change a score. Changes are saved when you click "Save Changes."
+          </p>
+        </div>
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-[12px]">
@@ -546,6 +552,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
               </button>
             </div>
           )}
+        </div>
         </div>
       )}
     </>
@@ -874,12 +881,15 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
             <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '표준 (CCSS)' : 'Standards (CCSS)'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
             {standards.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
-                {standards.map(code => (
-                  <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-navy/10 text-navy text-[10px] font-medium">
+                {standards.map(code => {
+                  const stdInfo = ccssStandards.find(x => x.code === code)
+                  return (
+                  <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-navy/10 text-navy text-[10px] font-medium cursor-help" title={stdInfo?.description || code}>
                     {code}
                     <button onClick={() => setStandards(prev => prev.filter(c => c !== code))} className="text-navy/50 hover:text-red-500"><X size={10} /></button>
                   </span>
-                ))}
+                  )
+                })}
               </div>
             )}
             <div className="relative">

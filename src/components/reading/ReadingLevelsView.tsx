@@ -32,7 +32,8 @@ const CWPM_BENCHMARKS: Record<number, { below: number; approaching: number; prof
 function useClassBenchmarks(englishClass: string, grade: number) {
   const [dbBench, setDbBench] = useState<any>(null)
   useEffect(() => {
-    (async () => {
+    setDbBench(null) // Reset on change to prevent stale legend
+    ;(async () => {
       const { data } = await supabase.from('class_benchmarks').select('*').eq('english_class', englishClass).eq('grade', grade).limit(1).single()
       if (data) setDbBench(data)
     })()
@@ -403,6 +404,7 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
     word_count: record.word_count || '',
     time_seconds: record.time_seconds || '',
     errors: record.errors ?? '',
+    self_corrections: record.self_corrections ?? '',
     reading_level: record.reading_level || '',
     notes: record.notes || '',
   })
@@ -430,13 +432,15 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
           </div>
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
             <input value={form.passage_title} onChange={e => set('passage_title', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Word Count</label>
+          <div className="grid grid-cols-4 gap-3">
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words</label>
               <input type="number" value={form.word_count} onChange={e => set('word_count', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Time (sec)</label>
               <input type="number" value={form.time_seconds} onChange={e => set('time_seconds', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
               <input type="number" value={form.errors} onChange={e => set('errors', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
+              <input type="number" value={form.self_corrections} onChange={e => set('self_corrections', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           </div>
           {(previewCwpm != null || previewAcc != null) && (
             <div className="flex gap-4 p-3 bg-accent-light rounded-lg text-[12px]">

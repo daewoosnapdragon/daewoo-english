@@ -451,7 +451,7 @@ function AdminAlertPanel() {
               <div className="grid grid-cols-2 gap-3 text-[12px]">
                 <div><span className="text-text-tertiary">Date</span><p className="font-medium">{new Date(detail.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p></div>
                 <div><span className="text-text-tertiary">Time</span><p className="font-medium">{detail.time || '—'}</p></div>
-                <div><span className="text-text-tertiary">Type</span><p className="font-medium capitalize">{detail.type === 'abc' || detail.type === 'negative' ? 'Negative Behavior' : detail.type}</p></div>
+                <div><span className="text-text-tertiary">Type</span><p className="font-medium capitalize">{detail.type === 'abc' || detail.type === 'negative' ? 'Negative' : detail.type}</p></div>
                 <div><span className="text-text-tertiary">Teacher</span><p className="font-medium">{detail.teacher_name || '—'}</p></div>
               </div>
               {detail.activity && <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Activity / Task</p><p className="text-[12px]">{detail.activity}</p></div>}
@@ -696,15 +696,6 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Description <span className="normal-case text-text-tertiary">(opt)</span></label>
             <textarea value={desc} onChange={(e: any) => setDesc(e.target.value)} rows={2} placeholder="Details..."
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
-          <div className="flex flex-wrap gap-1.5">
-            {EVENT_TYPES.map(t => (
-              <button key={t.value} onClick={() => setType(t.value)}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium border transition-all ${type === t.value ? 'border-navy bg-navy text-white' : 'border-border bg-surface hover:border-navy/30'}`}>
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: type === t.value ? '#fff' : t.color }} />
-                {t.label}
-              </button>
-            ))}
-          </div>
           <label className="flex items-center gap-2.5 cursor-pointer py-1 px-5 pb-2">
             <input type="checkbox" checked={showOnLessonPlan} onChange={e => setShowOnLessonPlan(e.target.checked)}
               className="w-4 h-4 rounded border-border text-navy focus:ring-navy" />

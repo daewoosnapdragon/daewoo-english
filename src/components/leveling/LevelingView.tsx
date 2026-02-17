@@ -463,6 +463,12 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
         </button>
       </div>
 
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+        <p className="text-[12px] text-amber-800 leading-relaxed">
+          <strong>How to rate:</strong> Rate each student <strong>relative to your class</strong>. A score of 3 means this student is keeping pace with your class expectations. A 4 means they may be ready for a higher level. A 1-2 means they are struggling relative to where your class is. This is NOT an absolute measure -- it is about fit within your specific class level.
+        </p>
+      </div>
+
       {/* Student list */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <div className="px-4 py-2 bg-surface-alt border-b border-border grid grid-cols-[1fr,auto] items-center">
