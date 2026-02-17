@@ -15,6 +15,7 @@ import ReportsView from '@/components/reports/ReportsView'
 import SettingsView from '@/components/settings/SettingsView'
 import LevelingView from '@/components/leveling/LevelingView'
 import CurriculumView from '@/components/curriculum/CurriculumView'
+import TeacherGuidesView from '@/components/curriculum/TeacherGuidesView'
 import LessonPlanView from '@/components/lessons/LessonPlanView'
 import AdminDashboard from '@/components/admin/AdminDashboard'
 import { Loader2 } from 'lucide-react'
@@ -73,6 +74,7 @@ export default function Home() {
       case 'attendance': return <AttendanceView />
       case 'readingLevels': return <ReadingLevelsView />
       case 'curriculum': return <CurriculumView />
+      case 'teacherGuides': return <TeacherGuidesView />
       case 'lessonPlans': return <LessonPlanView />
       case 'adminDashboard': return <AdminDashboard />
       case 'settings': return <SettingsView />

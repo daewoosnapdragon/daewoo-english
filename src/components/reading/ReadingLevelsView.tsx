@@ -28,6 +28,23 @@ const CWPM_BENCHMARKS: Record<number, { below: number; approaching: number; prof
   6: { below: 110, approaching: 140, proficient: 170, advanced: 195 },
 }
 
+// Passage difficulty levels A-E with CWPM weight multipliers
+// Harder passages = higher multiplier (rewards reading harder text even at lower raw CWPM)
+const PASSAGE_LEVELS = [
+  { id: 'A', label: 'Level A (Easiest)', weight: 0.70 },
+  { id: 'B', label: 'Level B', weight: 0.85 },
+  { id: 'C', label: 'Level C (Grade Level)', weight: 1.00 },
+  { id: 'D', label: 'Level D', weight: 1.15 },
+  { id: 'E', label: 'Level E (Hardest)', weight: 1.30 },
+]
+const getPassageWeight = (level: string | null | undefined): number => {
+  const found = PASSAGE_LEVELS.find(p => p.id === level)
+  return found?.weight || 1.0
+}
+const calcWeightedCwpm = (rawCwpm: number, level: string | null | undefined): number => {
+  return Math.round(rawCwpm * getPassageWeight(level) * 10) / 10
+}
+
 // Load class benchmarks from DB for the selected class
 function useClassBenchmarks(englishClass: string, grade: number) {
   const [dbBench, setDbBench] = useState<any>(null)
@@ -196,6 +213,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
             <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
             <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">CWPM</th>
+            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Wtd</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Level</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-28">Passage Lexile</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Accuracy</th>
@@ -211,6 +229,12 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
                   <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
                   <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
                   <td className="px-4 py-2.5 text-center font-bold text-navy text-[15px]">{rec?.cwpm != null ? Math.round(rec.cwpm) : '—'}</td>
+                  <td className="px-4 py-2.5 text-center font-bold text-[14px]">{rec?.cwpm != null ? (
+                    <span className={rec.passage_level ? 'text-purple-700' : 'text-text-tertiary'}
+                      title={rec.passage_level ? `Level ${rec.passage_level} (${getPassageWeight(rec.passage_level)}x)` : 'No passage level set'}>
+                      {calcWeightedCwpm(rec.cwpm, rec.passage_level)}
+                    </span>
+                  ) : '—'}</td>
                   <td className="px-4 py-2.5 text-center">
                     {band ? <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${band.color}`}>{band.label}</span> : '—'}
                   </td>
@@ -461,7 +485,10 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Level</label>
-              <input value={form.passage_level} onChange={e => set('passage_level', e.target.value)} placeholder="e.g. 350L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <select value={form.passage_level} onChange={e => set('passage_level', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface">
+                <option value="">-- Select --</option>
+                {PASSAGE_LEVELS.map(l => <option key={l.id} value={l.id}>{l.label} ({l.weight}x)</option>)}
+              </select></div>
           </div>
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
             <input value={form.passage_title} onChange={e => set('passage_title', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
@@ -883,8 +910,11 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
               <input type="date" value={date} onChange={(e: any) => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
               <input value={passageTitle} onChange={(e: any) => setPassageTitle(e.target.value)} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Lexile</label>
-              <input value={passageLevel} onChange={(e: any) => setPassageLevel(e.target.value)} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Level</label>
+              <select value={passageLevel} onChange={(e: any) => setPassageLevel(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface">
+                <option value="">-- Select A-E --</option>
+                {PASSAGE_LEVELS.map(l => <option key={l.id} value={l.id}>{l.label} ({l.weight}x)</option>)}
+              </select></div>
           </div>
         </div>
 

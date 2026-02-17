@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Printer, Settings, Plus, X, Loader2, Calendar, AlertCircle, CalendarRange, ClipboardList, Target, BookOpen, Save, Lightbulb, FileText } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Printer, Settings, Plus, X, Loader2, Calendar, AlertCircle, CalendarRange, ClipboardList, Save } from 'lucide-react'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 import YearlyPlanView from '@/components/curriculum/YearlyPlanView'
 
@@ -60,25 +60,23 @@ function getWeekStart(dateStr: string): string {
 
 export default function LessonPlanView() {
   const [tab, setTab] = useState<'monthly' | 'teacher' | 'yearly'>('monthly')
-
   const tabButtons = (
     <div className="flex gap-1 mt-4">
-      <button onClick={() => setTab('monthly')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium ${tab === 'monthly' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><Calendar size={15} /> Monthly Plans</button>
+      <button onClick={() => setTab('monthly')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium ${tab === 'monthly' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><Calendar size={15} /> Parent Calendar</button>
       <button onClick={() => setTab('teacher')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium ${tab === 'teacher' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><ClipboardList size={15} /> Teacher Plans</button>
       <button onClick={() => setTab('yearly')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium ${tab === 'yearly' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><CalendarRange size={15} /> Yearly Plan</button>
     </div>
   )
-
   return (
     <div className="animate-fade-in">
       {tab === 'monthly' ? <MonthlyLessonPlanView tabBar={tabButtons} /> : tab === 'teacher' ? (
         <div>
           <div className="bg-surface border-b border-border px-8 py-5">
             <h2 className="font-display text-2xl font-bold text-navy">Lesson Plans</h2>
-            <p className="text-[13px] text-text-secondary mt-1">Detailed teacher planning with objectives, differentiation, and reflection</p>
+            <p className="text-[13px] text-text-secondary mt-1">Weekly teacher planning -- freeform notes for each day</p>
             {tabButtons}
           </div>
-          <div className="px-8 py-6"><TeacherPlansView /></div>
+          <div className="px-8 py-6"><TeacherWeeklyPlans /></div>
         </div>
       ) : (
         <div>
@@ -418,16 +416,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
 
         {showSetup && canEdit && <DaySetupPanel selectedClass={selectedClass} slots={slots} onAdd={addSlot} onRemove={removeSlot} onClose={() => setShowSetup(false)} />}
 
-        {!hasSlots && (
-          <div className="text-center py-16 bg-surface border border-dashed border-border rounded-2xl">
-            <Calendar size={36} className="mx-auto text-text-tertiary mb-3" />
-            <h3 className="font-display text-lg font-semibold text-navy mb-2">Set Up Your Weekly Schedule</h3>
-            <p className="text-[13px] text-text-secondary max-w-md mx-auto mb-4">Define which content slots appear on each day of the week (e.g., Phonics on Monday, Into Reading on Tuesday-Thursday).</p>
-            <button onClick={() => setShowSetup(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Settings size={14} /> Set Up Days</button>
-          </div>
-        )}
-
-        {hasSlots && weeks.map((week, wi) => {
+        {weeks.map((week, wi) => {
           const fw: (typeof days[0] | null)[] = [null, null, null, null, null]
           week.forEach(d => { fw[d.dayOfWeek - 1] = d })
           const ws = week.length > 0 ? getWeekStart(week[0].date) : ''
@@ -606,96 +595,75 @@ function DaySetupPanel({ selectedClass, slots, onAdd, onRemove, onClose }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TEACHER PLANS VIEW -- Rich daily planning with objectives,
-// differentiation, materials, scaffolding, and reflection
+// TEACHER WEEKLY PLANS -- Freeform text, Mon-Fri, printable
 // ═══════════════════════════════════════════════════════════════════
 
-interface DailyPlan {
-  id?: string
-  date: string
-  english_class: string
-  learning_objectives: string
-  standards_addressed: string
-  activities: string
-  differentiation: string
-  materials: string
-  scaffolding_notes: string
-  reflection: string
+function getWeekDatesForPlans(dateStr: string): string[] {
+  const d = new Date(dateStr + 'T00:00:00')
+  const dow = d.getDay()
+  const diff = dow === 0 ? -6 : 1 - dow
+  const mon = new Date(d); mon.setDate(d.getDate() + diff)
+  return Array.from({ length: 5 }, (_, i) => {
+    const dd = new Date(mon); dd.setDate(mon.getDate() + i)
+    return dd.toISOString().split('T')[0]
+  })
 }
 
-function TeacherPlansView() {
+function formatShort(dateStr: string): string {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function TeacherWeeklyPlans() {
   const { currentTeacher, showToast } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
   const teacherClass = currentTeacher?.english_class as EnglishClass
 
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(teacherClass || 'Snapdragon')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(3)
-  const [selectedDate, setSelectedDate] = useState(getKSTDateString())
+  const todayStr = getKSTDateString()
+  const [weekDates, setWeekDates] = useState<string[]>(getWeekDatesForPlans(todayStr))
+  const [plans, setPlans] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [tableExists, setTableExists] = useState(true)
 
-  // Form state
-  const [form, setForm] = useState({
-    learning_objectives: '',
-    standards_addressed: '',
-    activities: '',
-    differentiation: '',
-    materials: '',
-    scaffolding_notes: '',
-    reflection: '',
-  })
-  const [existingId, setExistingId] = useState<string | null>(null)
-
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
 
-  const updateField = (field: string, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }))
-    setHasChanges(true)
-  }
+  const weekLabel = useMemo(() => {
+    const mon = new Date(weekDates[0] + 'T00:00:00')
+    const fri = new Date(weekDates[4] + 'T00:00:00')
+    return `${mon.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${fri.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+  }, [weekDates])
 
-  const loadPlan = useCallback(async () => {
+  const loadPlans = useCallback(async () => {
     setLoading(true)
     try {
       const { data, error } = await supabase
         .from('teacher_daily_plans')
-        .select('*')
-        .eq('date', selectedDate)
+        .select('date, plan_text')
         .eq('english_class', selectedClass)
-        .maybeSingle()
+        .in('date', weekDates)
 
-      if (error && error.message.includes('does not exist')) {
+      if (error && (error.message.includes('does not exist') || error.code === '42P01')) {
         setTableExists(false)
         setLoading(false)
         return
       }
 
-      if (data) {
-        setExistingId(data.id)
-        setForm({
-          learning_objectives: data.learning_objectives || '',
-          standards_addressed: data.standards_addressed || '',
-          activities: data.activities || '',
-          differentiation: data.differentiation || '',
-          materials: data.materials || '',
-          scaffolding_notes: data.scaffolding_notes || '',
-          reflection: data.reflection || '',
-        })
-      } else {
-        setExistingId(null)
-        setForm({ learning_objectives: '', standards_addressed: '', activities: '', differentiation: '', materials: '', scaffolding_notes: '', reflection: '' })
-      }
+      const map: Record<string, string> = {}
+      weekDates.forEach(d => { map[d] = '' })
+      data?.forEach((row: any) => { map[row.date] = row.plan_text || '' })
+      setPlans(map)
     } catch {
       setTableExists(false)
     }
     setLoading(false)
     setHasChanges(false)
-  }, [selectedDate, selectedClass])
+  }, [weekDates, selectedClass])
 
-  useEffect(() => { loadPlan() }, [loadPlan])
+  useEffect(() => { loadPlans() }, [loadPlans])
 
-  // Unsaved changes warning
   useEffect(() => {
     if (!hasChanges) return
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
@@ -703,181 +671,157 @@ function TeacherPlansView() {
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasChanges])
 
+  const changeWeek = (delta: number) => {
+    const mon = new Date(weekDates[0] + 'T00:00:00')
+    mon.setDate(mon.getDate() + (delta * 7))
+    setWeekDates(getWeekDatesForPlans(mon.toISOString().split('T')[0]))
+  }
+
+  const updateDay = (date: string, text: string) => {
+    setPlans(prev => ({ ...prev, [date]: text }))
+    setHasChanges(true)
+  }
+
   const handleSave = async () => {
     setSaving(true)
-    const row = {
-      date: selectedDate,
-      english_class: selectedClass,
-      ...form,
-      updated_by: currentTeacher?.id,
-      updated_at: new Date().toISOString(),
-    }
-
-    let error
-    if (existingId) {
-      const res = await supabase.from('teacher_daily_plans').update(row).eq('id', existingId)
-      error = res.error
-    } else {
-      const res = await supabase.from('teacher_daily_plans').insert(row).select().single()
-      error = res.error
-      if (res.data) setExistingId(res.data.id)
-    }
-
-    if (error) {
-      showToast(`Error saving plan: ${error.message}`)
-    } else {
-      showToast('Daily plan saved')
-      setHasChanges(false)
+    let errors = 0
+    for (const date of weekDates) {
+      const text = plans[date] || ''
+      const { error } = await supabase.from('teacher_daily_plans').upsert({
+        date,
+        english_class: selectedClass,
+        plan_text: text,
+        updated_by: currentTeacher?.id,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'date,english_class' })
+      if (error) errors++
     }
     setSaving(false)
+    setHasChanges(false)
+    showToast(errors > 0 ? `Saved with ${errors} error(s)` : 'Week plans saved')
   }
 
-  // Navigate dates
-  const changeDate = (delta: number) => {
-    const d = new Date(selectedDate + 'T00:00:00')
-    d.setDate(d.getDate() + delta)
-    // Skip weekends
-    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + (delta > 0 ? 1 : -1))
-    setSelectedDate(d.toISOString().split('T')[0])
+  const handlePrint = () => {
+    const printWin = window.open('', '_blank')
+    if (!printWin) return
+    const html = `<!DOCTYPE html><html><head><title>Teacher Plans - ${selectedClass} - ${weekLabel}</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Roboto:wght@400;500&display=swap');
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Roboto', sans-serif; font-size: 11px; color: #1a1a1a; padding: 20px; }
+      h1 { font-family: 'Lora', serif; font-size: 18px; color: #1a2744; margin-bottom: 4px; }
+      .sub { font-size: 11px; color: #666; margin-bottom: 16px; }
+      .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+      .day { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+      .dh { background: #1a2744; color: white; padding: 6px 10px; font-weight: 600; font-size: 11px; }
+      .dd { font-weight: 400; font-size: 9px; opacity: 0.7; }
+      .db { padding: 8px 10px; min-height: 200px; font-size: 10px; line-height: 1.5; white-space: pre-wrap; }
+      .db strong { font-weight: 600; }
+      @media print { body { padding: 10px; } .grid { gap: 4px; } }
+    </style></head><body>
+      <h1>${selectedClass} - Teacher Plans</h1>
+      <div class="sub">${weekLabel} | Grade ${selectedGrade}</div>
+      <div class="grid">${weekDates.map((date, i) => {
+        const text = (plans[date] || '(No plan)').replace(/</g, '&lt;').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')
+        return `<div class="day"><div class="dh">${DAY_NAMES[i]} <span class="dd">${formatShort(date)}</span></div><div class="db">${text}</div></div>`
+      }).join('')}</div>
+    </body></html>`
+    printWin.document.write(html)
+    printWin.document.close()
+    printWin.print()
   }
-
-  const dayName = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-
-  const FIELDS: { key: string; label: string; icon: typeof Target; placeholder: string; rows: number; hint?: string }[] = [
-    { key: 'learning_objectives', label: 'Learning Objectives', icon: Target, placeholder: 'Students will be able to...\n- Identify and decode CVC words with short a\n- Write 3 sentences using target vocabulary', rows: 3, hint: 'What should students know or be able to do by end of lesson?' },
-    { key: 'standards_addressed', label: 'Standards Addressed', icon: FileText, placeholder: 'CCSS.RF.1.3a - Know the sound-spelling correspondences for common consonant digraphs\nWIDA ELD Standard 2 - Language of Language Arts', rows: 2, hint: 'CCSS and/or WIDA standards this lesson targets' },
-    { key: 'activities', label: 'Activities & Procedures', icon: ClipboardList, placeholder: '1. Warm-up: Heggerty phonemic awareness routine (8 min)\n2. Mini-lesson: Introduce digraph sh using OG lesson flow (10 min)\n3. Guided practice: Word chains sh words (8 min)\n4. Independent practice: Decodable text with sh words (10 min)\n5. Wrap-up: Structured dictation with 2 sentences (5 min)', rows: 6, hint: 'Step-by-step lesson flow with approximate timing' },
-    { key: 'differentiation', label: 'Differentiation Notes', icon: Lightbulb, placeholder: 'WIDA L1-L2: Provide picture cards for all sh words. Bilingual buddy for instructions.\nWIDA L3: Sentence starters for written responses.\nWIDA L4-L5: Extended writing - compose original sentences with sh words.\nChallenge: Word hunt in independent reading books for sh words.', rows: 4, hint: 'How will you adjust for different proficiency levels?' },
-    { key: 'materials', label: 'Materials & Resources', icon: BookOpen, placeholder: 'Grapheme cards (sh, ch, th, wh), whiteboards, decodable reader "Ship Shape" (set of 16), picture vocabulary cards, dictation paper', rows: 2, hint: 'What do you need to prepare before the lesson?' },
-    { key: 'scaffolding_notes', label: 'Scaffolding Reminders', icon: Lightbulb, placeholder: 'Pulled from WIDA profile data. Check the scaffold banner below for class-specific recommendations.', rows: 3, hint: 'WIDA scaffold recommendations for this class. See the banner below for data-driven suggestions.' },
-    { key: 'reflection', label: 'Post-Lesson Reflection', icon: BookOpen, placeholder: '(Complete after teaching)\n\nWhat worked well?\nWhat would I change next time?\nWhich students need follow-up?\nData notes for grouping decisions.', rows: 4, hint: 'Fill this in after teaching. What worked? What needs adjustment? Who needs follow-up?' },
-  ]
 
   if (!tableExists) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center py-16 bg-surface border border-dashed border-border rounded-2xl">
-          <ClipboardList size={36} className="mx-auto text-text-tertiary mb-3" />
-          <h3 className="font-display text-lg font-semibold text-navy mb-2">Teacher Plans Coming Soon</h3>
-          <p className="text-[13px] text-text-secondary max-w-md mx-auto mb-4">
-            The teacher_daily_plans table needs to be created in Supabase before this feature can be used.
-            Run the migration script provided in the deployment package.
-          </p>
-          <div className="bg-surface-alt rounded-lg p-4 mx-8 text-left">
-            <p className="text-[10px] font-mono text-text-tertiary">
-              CREATE TABLE teacher_daily_plans (<br />
-              &nbsp;&nbsp;id UUID DEFAULT gen_random_uuid() PRIMARY KEY,<br />
-              &nbsp;&nbsp;date DATE NOT NULL,<br />
-              &nbsp;&nbsp;english_class TEXT NOT NULL,<br />
-              &nbsp;&nbsp;learning_objectives TEXT DEFAULT '',<br />
-              &nbsp;&nbsp;standards_addressed TEXT DEFAULT '',<br />
-              &nbsp;&nbsp;activities TEXT DEFAULT '',<br />
-              &nbsp;&nbsp;differentiation TEXT DEFAULT '',<br />
-              &nbsp;&nbsp;materials TEXT DEFAULT '',<br />
-              &nbsp;&nbsp;scaffolding_notes TEXT DEFAULT '',<br />
-              &nbsp;&nbsp;reflection TEXT DEFAULT '',<br />
-              &nbsp;&nbsp;updated_by UUID REFERENCES teachers(id),<br />
-              &nbsp;&nbsp;updated_at TIMESTAMPTZ DEFAULT NOW(),<br />
-              &nbsp;&nbsp;UNIQUE(date, english_class)<br />
-              );
-            </p>
-          </div>
-        </div>
+      <div className="max-w-2xl mx-auto text-center py-16 bg-surface border border-dashed border-border rounded-2xl">
+        <ClipboardList size={36} className="mx-auto text-text-tertiary mb-3" />
+        <h3 className="font-display text-lg font-semibold text-navy mb-2">Teacher Plans Setup Required</h3>
+        <p className="text-[13px] text-text-secondary max-w-md mx-auto">Run the teacher_daily_plans migration in Supabase to enable this feature.</p>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Class / Grade / Date Selectors */}
-      <div className="flex flex-wrap items-end gap-4 mb-5">
-        {isAdmin && (
+    <div className="max-w-[1400px] mx-auto">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+        <div className="flex flex-wrap items-end gap-4">
+          {isAdmin && (
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Class</label>
+              <div className="flex gap-1">
+                {ENGLISH_CLASSES.map(c => (
+                  <button key={c} onClick={() => setSelectedClass(c)}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${selectedClass === c ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`}
+                    style={selectedClass === c ? { backgroundColor: classToColor(c), color: classToTextColor(c) } : {}}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Class</label>
+            <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade</label>
             <div className="flex gap-1">
-              {ENGLISH_CLASSES.map(c => (
-                <button key={c} onClick={() => setSelectedClass(c)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${selectedClass === c ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`}
-                  style={selectedClass === c ? { backgroundColor: classToColor(c), color: classToTextColor(c) } : {}}>
-                  {c}
+              {GRADES.map(g => (
+                <button key={g} onClick={() => setSelectedGrade(g)}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>
+                  Gr {g}
                 </button>
               ))}
             </div>
           </div>
-        )}
-        <div>
-          <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Student Grade</label>
-          <div className="flex gap-1">
-            {GRADES.map(g => (
-              <button key={g} onClick={() => setSelectedGrade(g)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>
-                Gr {g}
-              </button>
-            ))}
-          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+            <Printer size={14} /> Print Week
+          </button>
+          {canEdit && (
+            <button onClick={handleSave} disabled={saving || !hasChanges}
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-semibold bg-gold text-navy-dark hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed">
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              {saving ? 'Saving...' : 'Save Week'}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Date Navigator */}
       <div className="flex items-center justify-center gap-4 mb-5">
-        <button onClick={() => changeDate(-1)} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronLeft size={20} /></button>
-        <div className="text-center">
-          <h3 className="text-lg font-display font-bold text-navy">{dayName}</h3>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={e => setSelectedDate(e.target.value)}
-            className="text-[11px] text-text-tertiary bg-transparent border-none outline-none cursor-pointer text-center"
-          />
-        </div>
-        <button onClick={() => changeDate(1)} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronRight size={20} /></button>
+        <button onClick={() => changeWeek(-1)} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronLeft size={20} /></button>
+        <h3 className="text-lg font-display font-bold text-navy min-w-[300px] text-center">{weekLabel}</h3>
+        <button onClick={() => changeWeek(1)} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronRight size={20} /></button>
       </div>
 
-      {/* WIDA Scaffold Banner */}
       <LessonScaffoldBanner englishClass={selectedClass} grade={selectedGrade} />
 
       {loading ? (
         <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
       ) : (
-        <div className="space-y-4">
-          {FIELDS.map(field => {
-            const Icon = field.icon
-            return (
-              <div key={field.key} className="bg-surface border border-border rounded-xl overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-alt/50 border-b border-border">
-                  <Icon size={14} className="text-navy" />
-                  <label className="text-[12px] font-bold text-navy">{field.label}</label>
-                  {field.hint && <span className="text-[10px] text-text-tertiary ml-auto">{field.hint}</span>}
+        <>
+          <div className="text-[10px] text-text-tertiary mb-2 text-right">Use **bold** for emphasis in print. Line breaks preserved.</div>
+          <div className="grid grid-cols-5 gap-3">
+            {weekDates.map((date, i) => {
+              const isToday = date === todayStr
+              return (
+                <div key={date} className={`bg-surface border rounded-xl overflow-hidden flex flex-col ${isToday ? 'border-gold ring-2 ring-gold/20' : 'border-border'}`}>
+                  <div className={`px-3 py-2 text-[12px] font-bold ${isToday ? 'bg-gold/10 text-navy' : 'bg-surface-alt text-text-secondary'}`}>
+                    {DAY_NAMES[i]}
+                    <span className="text-[10px] font-normal ml-1.5">{formatShort(date)}</span>
+                    {isToday && <span className="text-[9px] font-semibold text-gold ml-1.5">TODAY</span>}
+                  </div>
+                  <textarea
+                    value={plans[date] || ''}
+                    onChange={e => updateDay(date, e.target.value)}
+                    disabled={!canEdit}
+                    placeholder={`${DAY_NAMES[i]} plan...\n\n**Phonics** (15 min)\n- Pattern: sh digraph\n- Word chains activity\n\n**Reading** (20 min)\n- Guided reading Gr A\n- Independent Gr B`}
+                    className="flex-1 min-h-[280px] px-3 py-2.5 text-[11.5px] text-text-primary bg-surface resize-none outline-none focus:ring-2 focus:ring-gold/20 placeholder:text-text-tertiary/40 leading-relaxed disabled:opacity-50"
+                    spellCheck={true}
+                  />
                 </div>
-                <textarea
-                  value={(form as any)[field.key]}
-                  onChange={e => updateField(field.key, e.target.value)}
-                  placeholder={field.placeholder}
-                  rows={field.rows}
-                  disabled={!canEdit}
-                  className="w-full px-4 py-3 text-[12px] text-text-primary bg-surface resize-none outline-none focus:ring-2 focus:ring-gold/20 placeholder:text-text-tertiary/60 leading-relaxed disabled:opacity-50"
-                />
-              </div>
-            )
-          })}
-
-          {/* Save button */}
-          {canEdit && (
-            <div className="flex items-center justify-between pt-2">
-              <div>
-                {hasChanges && <span className="text-[11px] text-amber-600 font-medium">Unsaved changes</span>}
-              </div>
-              <button
-                onClick={handleSave}
-                disabled={saving || !hasChanges}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-gold text-navy-dark hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                {saving ? 'Saving...' : 'Save Plan'}
-              </button>
-            </div>
-          )}
-        </div>
+              )
+            })}
+          </div>
+          {hasChanges && <div className="mt-3 text-center"><span className="text-[11px] text-amber-600 font-medium">Unsaved changes</span></div>}
+        </>
       )}
     </div>
   )

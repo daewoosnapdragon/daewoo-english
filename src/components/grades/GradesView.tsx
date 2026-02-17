@@ -535,13 +535,34 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                   return (
                     <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
                       <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="text-text-tertiary font-normal text-[10px]">{s.korean_name}</span></td>
-                      {domainAssessments.map(a => {
+                      {domainAssessments.map((a, ai) => {
                         const sc = scores[s.id]?.[a.id]
                         const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
+                        const si = students.indexOf(s)
                         return (
                           <td key={a.id} className="px-1 py-1.5 text-center">
                             <input type="number" step="0.5" value={sc ?? ''} onChange={e => handleChange(s.id, a.id, e.target.value)}
-                              max={a.max_score} className={`w-16 px-2 py-1.5 border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${pct != null && pct < 60 ? 'border-red-300 bg-red-50' : 'border-border'}`} />
+                              data-col={ai} data-row={si}
+                              onKeyDown={e => {
+                                if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'ArrowDown') {
+                                  e.preventDefault()
+                                  const grid = (e.target as HTMLElement).closest('table')
+                                  if (grid) {
+                                    const nextRow = e.key === 'ArrowUp' ? si - 1 : si + 1
+                                    const next = grid.querySelector(`input[data-col="${ai}"][data-row="${nextRow}"]`) as HTMLInputElement
+                                    next?.focus()
+                                  }
+                                }
+                                if (e.key === 'ArrowUp') {
+                                  e.preventDefault()
+                                  const grid = (e.target as HTMLElement).closest('table')
+                                  if (grid) {
+                                    const next = grid.querySelector(`input[data-col="${ai}"][data-row="${si - 1}"]`) as HTMLInputElement
+                                    next?.focus()
+                                  }
+                                }
+                              }}
+                              max={a.max_score} className={`batch-input w-16 px-2 py-1.5 border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${pct != null && pct < 60 ? 'border-red-300 bg-red-50' : 'border-border'}`} />
                           </td>
                         )
                       })}
@@ -1014,12 +1035,6 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
             </div>
           )}
           <div className="bg-accent-light rounded-lg px-4 py-3"><p className="text-[12px] text-navy"><strong>Grade {grade} · {englishClass}{shareClasses.length > 0 ? ` + ${shareClasses.join(', ')}` : ''}</strong></p></div>
-          <div>
-            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Answer Key <span className="text-text-tertiary font-normal normal-case">(optional, for MC auto-grading)</span></label>
-            <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. ABCDABCDAB or 1,3,2,4,1,3..."
-              className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy font-mono tracking-wider" />
-            <p className="text-[9px] text-text-tertiary mt-0.5">Enter correct answers as letters (ABCD...) or numbers (1,2,3...). Used in batch grid to auto-calculate scores.</p>
-          </div>
         </div>
         <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">{lang === 'ko' ? '취소' : 'Cancel'}</button>

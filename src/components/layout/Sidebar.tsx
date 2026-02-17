@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { id: 'reports', icon: FileText },
   { id: 'leveling', icon: Layers },
   { id: 'curriculum', icon: Map },
+  { id: 'teacherGuides', icon: GraduationCap },
   { section: 'SYSTEM' },
   { id: 'adminDashboard', icon: BarChart3, adminOnly: true },
   { id: 'settings', icon: Settings },

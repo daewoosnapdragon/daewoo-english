@@ -765,14 +765,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 </div>
               </div>
 
-              <p className="text-[10px] font-semibold text-[#475569] mb-2">Quick Draft</p>
-              <div className="flex gap-1.5 flex-wrap mb-2">
-                {(['Balanced', 'Highlight growth', 'Constructive'] as const).map((tone) => (
-                  <button key={tone} onClick={() => setCommentTone(tone)}
-                    className={`px-2.5 py-1 rounded-md text-[10px] font-semibold border transition-all ${commentTone === tone ? 'bg-navy text-white border-navy' : 'bg-white border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]'}`}>{tone}</button>
-                ))}
-              </div>
-              <button onClick={() => generateTemplateComment()} className="w-full py-2 rounded-lg text-[11px] font-semibold bg-navy text-white hover:bg-navy-dark">Generate Draft Comment</button>
             </div>
           )}
 
