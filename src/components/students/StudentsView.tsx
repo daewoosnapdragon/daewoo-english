@@ -295,6 +295,7 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
     { id: 'academic', label: lang === 'ko' ? '학업 이력' : 'Academic History' },
     { id: 'reading', label: lang === 'ko' ? '읽기 수준' : 'Reading' },
     { id: 'attendance', label: lang === 'ko' ? '출석' : 'Attendance' },
+    { id: 'standards', label: lang === 'ko' ? '표준 숙달' : 'Standards' },
   ]
 
   return (
@@ -312,6 +313,7 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
       {activeTab === 'academic' && <AcademicHistoryTab studentId={studentId} lang={lang} />}
       {activeTab === 'reading' && <ReadingTabInModal studentId={studentId} lang={lang} />}
       {activeTab === 'attendance' && <AttendanceTabInModal studentId={studentId} studentName={studentName} lang={lang} />}
+      {activeTab === 'standards' && <StandardsMasteryTab studentId={studentId} lang={lang} />}
     </div>
   )
 }
@@ -821,6 +823,119 @@ function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: str
           </table>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Standards Mastery Tab ──────────────────────────────────────────
+
+function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+  const [loading, setLoading] = useState(true)
+  const [standardsData, setStandardsData] = useState<{ code: string; description: string; domain: string; assessments: { name: string; pct: number }[]; avgPct: number }[]>([])
+
+  useEffect(() => {
+    (async () => {
+      // Get all assessments that have standards tagged
+      const { data: assessments } = await supabase.from('assessments').select('*')
+      // Get all grades for this student
+      const { data: grades } = await supabase.from('grades').select('*').eq('student_id', studentId)
+
+      if (!assessments || !grades) { setLoading(false); return }
+
+      // Build a map: standard_code -> list of { assessment_name, score_pct }
+      const stdMap = new Map<string, { code: string; description: string; domain: string; assessments: { name: string; pct: number }[] }>()
+
+      assessments.forEach((a: any) => {
+        if (!a.standards || a.standards.length === 0) return
+        const grade = grades.find((g: any) => g.assessment_id === a.id)
+        if (!grade || grade.score == null || grade.is_exempt) return
+        const pct = (grade.score / a.max_score) * 100
+
+        a.standards.forEach((std: any) => {
+          if (!stdMap.has(std.code)) {
+            stdMap.set(std.code, { code: std.code, description: std.description || '', domain: a.domain, assessments: [] })
+          }
+          stdMap.get(std.code)!.assessments.push({ name: a.name, pct })
+        })
+      })
+
+      // Calculate averages and sort
+      const results = Array.from(stdMap.values()).map(s => ({
+        ...s,
+        avgPct: s.assessments.reduce((sum, a) => sum + a.pct, 0) / s.assessments.length
+      })).sort((a, b) => a.code.localeCompare(b.code))
+
+      setStandardsData(results)
+      setLoading(false)
+    })()
+  }, [studentId])
+
+  if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
+
+  if (standardsData.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <p className="text-text-tertiary text-[13px]">{lang === 'ko' ? '표준과 연결된 평가가 없습니다.' : 'No standards-tagged assessments found for this student.'}</p>
+        <p className="text-text-tertiary text-[11px] mt-1">Tag assessments with CCSS standards in the Grades tab to see mastery data here.</p>
+      </div>
+    )
+  }
+
+  const mastered = standardsData.filter(s => s.avgPct >= 80).length
+  const approaching = standardsData.filter(s => s.avgPct >= 60 && s.avgPct < 80).length
+  const below = standardsData.filter(s => s.avgPct < 60).length
+
+  const DOMAIN_COLORS: Record<string, string> = {
+    reading: '#3b82f6', phonics: '#8b5cf6', writing: '#f59e0b', speaking: '#10b981', language: '#ec4899',
+  }
+
+  return (
+    <div>
+      {/* Summary */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+          <span className="text-[11px] font-semibold text-green-700">{mastered} mastered</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+          <span className="text-[11px] font-semibold text-amber-700">{approaching} approaching</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <span className="text-[11px] font-semibold text-red-700">{below} below</span>
+        </div>
+        <span className="text-[10px] text-text-tertiary ml-2">{standardsData.length} standards across {standardsData.reduce((s, d) => s + d.assessments.length, 0)} assessments</span>
+      </div>
+
+      {/* Standards list */}
+      <div className="space-y-1.5">
+        {standardsData.map(std => {
+          const color = std.avgPct >= 80 ? 'green' : std.avgPct >= 60 ? 'amber' : 'red'
+          return (
+            <div key={std.code} className="bg-surface border border-border rounded-lg px-4 py-2.5 flex items-center gap-3">
+              <div className="w-10 text-center">
+                <p className={`text-[14px] font-bold text-${color}-600`}>{Math.round(std.avgPct)}%</p>
+              </div>
+              <div className={`w-1.5 h-8 rounded-full bg-${color}-400`} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-navy">{std.code}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[8px] font-semibold text-white" style={{ backgroundColor: DOMAIN_COLORS[std.domain] || '#6b7280' }}>
+                    {std.domain}
+                  </span>
+                  <span className="text-[9px] text-text-tertiary">{std.assessments.length} assessment{std.assessments.length !== 1 ? 's' : ''}</span>
+                </div>
+                <p className="text-[10px] text-text-secondary mt-0.5 truncate">{std.description}</p>
+              </div>
+              {/* Mini bar */}
+              <div className="w-24 h-2 bg-surface-alt rounded-full overflow-hidden">
+                <div className={`h-full rounded-full bg-${color}-400`} style={{ width: `${Math.min(100, std.avgPct)}%` }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

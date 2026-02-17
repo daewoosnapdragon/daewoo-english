@@ -6,7 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { getKSTDateString, classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download } from 'lucide-react'
+import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download, Printer } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
@@ -174,6 +174,18 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
           }} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
             <Download size={11} /> CSV
           </button>
+          <button onClick={() => {
+            const pw = window.open('', '_blank'); if (!pw) return
+            const rows = students.map((s: any) => {
+              const r = latestRecords[s.id]; const b = r?.cwpm != null ? getBand(r.cwpm) : null
+              const bColor = b ? (b.label === 'Advanced' ? '#dbeafe' : b.label === 'Proficient' ? '#dcfce7' : b.label === 'Approaching' ? '#fef3c7' : '#fee2e2') : '#f8fafc'
+              return `<tr><td style="padding:6px 12px;border-bottom:1px solid #e2e8f0">${s.english_name}</td><td style="padding:6px;text-align:center;font-weight:700;color:#1e3a5f;border-bottom:1px solid #e2e8f0">${r?.cwpm != null ? Math.round(r.cwpm) : '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0;background:${bColor}">${b?.label || '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0">${r?.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0">${r?.passage_level || '--'}</td></tr>`
+            }).join('')
+            pw.document.write(`<html><head><title>Reading Report - ${englishClass} Gr ${grade}</title><style>body{font-family:'Segoe UI',sans-serif;padding:24px}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#f1f5f9;padding:8px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #cbd5e1}@media print{body{padding:12px}}</style></head><body><h2 style="color:#1e3a5f;font-size:18px;margin:0">${englishClass} Grade ${grade} -- Reading Fluency Report</h2><p style="color:#94a3b8;font-size:11px;margin-top:4px">Benchmarks: Below &lt;${bench.approaching} | Approaching ${bench.approaching}-${bench.proficient - 1} | Proficient ${bench.proficient}-${bench.advanced - 1} | Advanced ${bench.advanced}+</p><table><thead><tr><th style="text-align:left">Student</th><th>CWPM</th><th>Band</th><th>Accuracy</th><th>Lexile</th></tr></thead><tbody>${rows}</tbody></table><p style="color:#94a3b8;font-size:10px;margin-top:16px;text-align:center">Printed ${new Date().toLocaleDateString()}</p></body></html>`)
+            pw.document.close(); pw.print()
+          }} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+            <Printer size={11} /> Print
+          </button>
         </div>
         {dbBench && <p className="text-[10px] text-text-tertiary mt-1">CWPM Mid ({dbBench.cwpm_mid}) = expected fluency by mid-semester. CWPM End ({dbBench.cwpm_end}) = target fluency by end of semester. Set in Settings &gt; Benchmarks.</p>}
       </div>
@@ -188,6 +200,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-28">Passage Lexile</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Accuracy</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-28">Last Assessed</th>
+            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-32">Progress</th>
           </tr></thead>
           <tbody>
             {students.map((s: any, i: number) => {
@@ -209,6 +222,26 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
                   </td>
                   <td className="px-4 py-2.5 text-center text-[11px] text-text-tertiary">
                     {rec?.date ? new Date(rec.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                  </td>
+                  <td className="px-2 py-2.5">
+                    {rec?.cwpm != null && bench.proficient > 0 ? (() => {
+                      const mid = bench.approaching
+                      const end = bench.proficient
+                      const adv = bench.advanced
+                      const maxBar = adv * 1.1
+                      const cwpmVal = Math.round(rec.cwpm)
+                      const pct = Math.min(100, (cwpmVal / maxBar) * 100)
+                      const midPct = (mid / maxBar) * 100
+                      const endPct = (end / maxBar) * 100
+                      const barColor = cwpmVal >= end ? '#22c55e' : cwpmVal >= mid ? '#f59e0b' : '#ef4444'
+                      return (
+                        <div className="relative h-3 bg-gray-100 rounded-full overflow-visible" title={`CWPM: ${cwpmVal} | Mid: ${mid} | End: ${end}`}>
+                          <div className="absolute h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                          <div className="absolute top-0 h-full border-l-2 border-dashed border-amber-400" style={{ left: `${midPct}%` }} title={`Mid: ${mid}`} />
+                          <div className="absolute top-0 h-full border-l-2 border-dashed border-green-500" style={{ left: `${endPct}%` }} title={`End: ${end}`} />
+                        </div>
+                      )
+                    })() : <span className="text-text-tertiary text-[10px]">--</span>}
                   </td>
                 </tr>
               )
@@ -938,9 +971,29 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           <span className="text-[11px] text-text-tertiary">{mode === 'batch' ? `${batchFilled} of ${students.length} students` : ''}</span>
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">Cancel</button>
+            {mode === 'single' && (
+              <button onClick={async () => {
+                if (!selStudent || !wordCount || !timeSeconds) { showToast('Enter all required fields'); return }
+                setSaving(true)
+                const { error } = await supabase.from('reading_assessments').insert({
+                  student_id: selStudent, date, passage_title: passageTitle || null, passage_level: passageLevel || null,
+                  word_count: wc, time_seconds: ts, errors: err, self_corrections: typeof selfCorrections === 'number' ? selfCorrections : 0,
+                  cwpm: Math.round(cwpm * 10) / 10, accuracy_rate: Math.round(accuracy * 10) / 10,
+                  reading_level: null, notes: notes.trim() || null, assessed_by: currentTeacher?.id || null,
+                })
+                setSaving(false)
+                if (error) { showToast(`Error: ${error.message}`); return }
+                showToast('Saved! Enter next passage.')
+                // Reset passage fields but keep student and date
+                setPassageTitle(''); setPassageLevel(''); setWordCount(''); setTimeSeconds(''); setTimeMin(''); setTimeSec(''); setErrors(0); setSelfCorrections(0); setNotes('')
+              }} disabled={saving || !selStudent || !wordCount || !timeSeconds}
+                className="px-4 py-2 rounded-lg text-[13px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-40 flex items-center gap-1.5">
+                {saving && <Loader2 size={14} className="animate-spin" />} Save & Add Another
+              </button>
+            )}
             <button onClick={handleSave} disabled={saving || (mode === 'single' ? (!selStudent || !wordCount || !timeSeconds) : batchFilled === 0)}
               className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
-              {saving && <Loader2 size={14} className="animate-spin" />} {mode === 'batch' ? `Save ${batchFilled} Records` : 'Save'}
+              {saving && <Loader2 size={14} className="animate-spin" />} {mode === 'batch' ? `Save ${batchFilled} Records` : 'Save & Close'}
             </button>
           </div>
         </div>

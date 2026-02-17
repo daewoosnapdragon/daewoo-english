@@ -192,6 +192,7 @@ export default function YearlyPlanView() {
                         {isEditing ? (
                           <div>
                             <textarea value={editText} onChange={e => setEditText(e.target.value)} autoFocus rows={3} className="w-full px-2 py-1.5 text-[11px] border border-navy rounded-lg outline-none resize-none" />
+                            <p className="text-[8px] text-text-tertiary mt-0.5">**bold**, *italic*, - bullet</p>
                             <div className="flex gap-1 mt-1">
                               <button onClick={() => saveCell(track.id, period.id, editText)} className="px-2 py-0.5 rounded bg-navy text-white text-[10px] font-medium">Save</button>
                               <button onClick={() => { setEditCell(null); setEditText('') }} className="px-2 py-0.5 rounded bg-surface-alt text-text-secondary text-[10px]">Cancel</button>
@@ -199,8 +200,14 @@ export default function YearlyPlanView() {
                           </div>
                         ) : (
                           <div onClick={() => { if (canEdit) { setEditCell(key); setEditText(cell?.content || '') } }}
-                            className={`min-h-[40px] rounded-lg px-2 py-1.5 text-[11px] leading-snug transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'}`}>
-                            {cell?.content || (canEdit ? 'Click to edit' : '')}
+                            className={`min-h-[40px] rounded-lg px-2 py-1.5 text-[11px] leading-snug transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'}`}
+                            dangerouslySetInnerHTML={cell?.content ? { __html: cell.content
+                              .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                              .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                              .replace(/^- (.+)$/gm, '<span style="display:block;padding-left:8px">• $1</span>')
+                              .replace(/\n/g, '<br>')
+                            } : undefined}>
+                            {!cell?.content ? (canEdit ? 'Click to edit' : '') : undefined}
                           </div>
                         )}
                       </td>

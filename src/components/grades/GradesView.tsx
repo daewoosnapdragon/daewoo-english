@@ -926,6 +926,12 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
             </div>
           )}
           <div className="bg-accent-light rounded-lg px-4 py-3"><p className="text-[12px] text-navy"><strong>Grade {grade} · {englishClass}{shareClasses.length > 0 ? ` + ${shareClasses.join(', ')}` : ''}</strong></p></div>
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Answer Key <span className="text-text-tertiary font-normal normal-case">(optional, for MC auto-grading)</span></label>
+            <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. ABCDABCDAB or 1,3,2,4,1,3..."
+              className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy font-mono tracking-wider" />
+            <p className="text-[9px] text-text-tertiary mt-0.5">Enter correct answers as letters (ABCD...) or numbers (1,2,3...). Used in batch grid to auto-calculate scores.</p>
+          </div>
         </div>
         <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">{lang === 'ko' ? '취소' : 'Cancel'}</button>

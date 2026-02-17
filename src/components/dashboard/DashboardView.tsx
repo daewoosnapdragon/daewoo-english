@@ -84,7 +84,7 @@ function TodayAtGlance() {
   const { currentTeacher, language } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class : null
-  const [data, setData] = useState<{ unmarkedAttendance: number; behaviorToday: number; eventsToday: any[]; alerts: { declining: number; behaviorSpike: number; missingData: number }; upcomingDeadlines: any[] }>({ unmarkedAttendance: 0, behaviorToday: 0, eventsToday: [], alerts: { declining: 0, behaviorSpike: 0, missingData: 0 }, upcomingDeadlines: [] })
+  const [data, setData] = useState<{ unmarkedAttendance: number; behaviorToday: number; eventsToday: any[]; alerts: { declining: number; behaviorSpike: number; missingData: number; attendancePattern: number }; upcomingDeadlines: any[] }>({ unmarkedAttendance: 0, behaviorToday: 0, eventsToday: [], alerts: { declining: 0, behaviorSpike: 0, missingData: 0, attendancePattern: 0 }, upcomingDeadlines: [] })
   const [loading, setLoading] = useState(true)
   const today = getKSTDateString()
 
@@ -113,9 +113,8 @@ function TodayAtGlance() {
       }
 
       // Student alerts: patterns that need attention
-      let alerts = { declining: 0, behaviorSpike: 0, missingData: 0 }
+      let alerts = { declining: 0, behaviorSpike: 0, missingData: 0, attendancePattern: 0 }
       {
-        // Find students with declining grades (current vs previous semester)
         let studQuery = supabase.from('students').select('id, english_class').eq('is_active', true)
         if (teacherClass) studQuery = studQuery.eq('english_class', teacherClass)
         const { data: studs } = await studQuery
@@ -134,6 +133,35 @@ function TodayAtGlance() {
           const behaviorCounts: Record<string, number> = {}
           recentBehavior?.forEach(b => { behaviorCounts[b.student_id] = (behaviorCounts[b.student_id] || 0) + 1 })
           alerts.behaviorSpike = Object.values(behaviorCounts).filter(c => c >= 3).length
+
+          // Grade decline: students whose recent grades avg is 10+ points below their earlier avg
+          const { data: allGrades } = await supabase.from('grades').select('student_id, score, assessment_id, assessments!inner(max_score, date)')
+            .in('student_id', studs.map(s => s.id)).not('score', 'is', null)
+          if (allGrades && allGrades.length > 0) {
+            const byStudent: Record<string, { date: string; pct: number }[]> = {}
+            allGrades.forEach((g: any) => {
+              if (!byStudent[g.student_id]) byStudent[g.student_id] = []
+              byStudent[g.student_id].push({ date: g.assessments?.date || '', pct: (g.score / (g.assessments?.max_score || 100)) * 100 })
+            })
+            Object.values(byStudent).forEach(entries => {
+              if (entries.length < 4) return
+              const sorted = entries.sort((a, b) => a.date.localeCompare(b.date))
+              const mid = Math.floor(sorted.length / 2)
+              const earlyAvg = sorted.slice(0, mid).reduce((s, e) => s + e.pct, 0) / mid
+              const lateAvg = sorted.slice(mid).reduce((s, e) => s + e.pct, 0) / (sorted.length - mid)
+              if (earlyAvg - lateAvg >= 10) alerts.declining++
+            })
+          }
+
+          // Attendance patterns: students with 3+ absences in last 30 days
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          const { data: recentAtt } = await supabase.from('attendance').select('student_id, status')
+            .in('student_id', studs.map(s => s.id)).gte('date', thirtyDaysAgo).eq('status', 'absent')
+          if (recentAtt) {
+            const absCounts: Record<string, number> = {}
+            recentAtt.forEach(a => { absCounts[a.student_id] = (absCounts[a.student_id] || 0) + 1 })
+            alerts.attendancePattern = Object.values(absCounts).filter(c => c >= 3).length
+          }
         }
       }
 
@@ -159,12 +187,12 @@ function TodayAtGlance() {
 
   if (loading) return null
 
-  const totalAlerts = data.alerts.behaviorSpike + data.alerts.missingData
+  const totalAlerts = data.alerts.behaviorSpike + data.alerts.missingData + data.alerts.declining + data.alerts.attendancePattern
 
   const cards = [
     { label: language === 'ko' ? '미기록 출석' : 'Unmarked Attendance', value: data.unmarkedAttendance, color: data.unmarkedAttendance > 0 ? 'text-red-600' : 'text-green-600', bg: data.unmarkedAttendance > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200', sub: data.unmarkedAttendance > 0 ? 'Take attendance!' : 'All done' },
     { label: language === 'ko' ? '오늘 행동 기록' : 'Behavior Logs Today', value: data.behaviorToday, color: 'text-navy', bg: 'bg-surface-alt border-border', sub: '' },
-    { label: 'Student Alerts', value: totalAlerts, color: totalAlerts > 0 ? 'text-amber-600' : 'text-green-600', bg: totalAlerts > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200', sub: totalAlerts > 0 ? `${data.alerts.behaviorSpike} behavior${data.alerts.behaviorSpike !== 1 ? 's' : ''}, ${data.alerts.missingData} no recent ORF` : 'No concerns' },
+    { label: 'Student Alerts', value: totalAlerts, color: totalAlerts > 0 ? 'text-amber-600' : 'text-green-600', bg: totalAlerts > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200', sub: totalAlerts > 0 ? [data.alerts.declining > 0 ? `${data.alerts.declining} grade decline` : '', data.alerts.behaviorSpike > 0 ? `${data.alerts.behaviorSpike} behavior` : '', data.alerts.attendancePattern > 0 ? `${data.alerts.attendancePattern} attendance` : '', data.alerts.missingData > 0 ? `${data.alerts.missingData} no ORF` : ''].filter(Boolean).join(', ') : 'No concerns' },
   ]
 
   return (

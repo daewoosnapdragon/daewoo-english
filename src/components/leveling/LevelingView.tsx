@@ -935,6 +935,69 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
           </div>
           {compareStudents.length < 2 && <p className="text-[11px] text-blue-600 mb-3">Click student cards below to add them to the comparison (2-4 students).</p>}
           {compareStudents.length >= 2 && (
+            <div>
+              {/* Radar Chart */}
+              <div className="bg-white rounded-lg border border-blue-200 p-4 mb-3">
+                <p className="text-[10px] uppercase tracking-wider text-blue-700 font-semibold mb-3">Visual Comparison</p>
+                <div className="flex justify-center">
+                  {(() => {
+                    const size = 240, cx = size / 2, cy = size / 2, r = 90
+                    const axes = ['CWPM', 'Writing', 'MC', 'Grades', 'Anecdotal']
+                    const n = axes.length
+                    const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b']
+                    // Normalize data to 0-1
+                    const studentData = compareStudents.map(sid => {
+                      const sc = scores[sid]; const an = anecdotals[sid]; const sg = semGrades[sid] || []
+                      const cwpmRaw = sc?.raw_scores?.passage_cwpm || 0
+                      const writing = sc?.raw_scores?.writing || 0
+                      const mc = sc?.raw_scores?.written_mc || 0
+                      const gradeAvg = sg.length > 0 ? sg.reduce((sum: number, g: any) => sum + (g.score || 0), 0) / sg.length : 0
+                      const anAvg = an ? ([an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / Math.max(1, [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null).length) : 0
+                      return [Math.min(1, cwpmRaw / 150), writing / 20, mc / 21, gradeAvg / 100, anAvg / 4]
+                    })
+                    const angleStep = (Math.PI * 2) / n
+                    const getPoint = (angle: number, val: number) => ({
+                      x: cx + r * val * Math.sin(angle), y: cy - r * val * Math.cos(angle)
+                    })
+                    return (
+                      <svg width={size} height={size + 24} viewBox={`0 0 ${size} ${size + 24}`}>
+                        {/* Grid lines */}
+                        {[0.25, 0.5, 0.75, 1].map(level => (
+                          <polygon key={level} points={Array.from({ length: n }, (_, i) => {
+                            const p = getPoint(i * angleStep, level)
+                            return `${p.x},${p.y}`
+                          }).join(' ')} fill="none" stroke="#e2e8f0" strokeWidth="1" />
+                        ))}
+                        {/* Axis lines and labels */}
+                        {axes.map((label, i) => {
+                          const p = getPoint(i * angleStep, 1.15)
+                          const ep = getPoint(i * angleStep, 1)
+                          return <g key={label}>
+                            <line x1={cx} y1={cy} x2={ep.x} y2={ep.y} stroke="#cbd5e1" strokeWidth="1" />
+                            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#64748b" fontWeight="600">{label}</text>
+                          </g>
+                        })}
+                        {/* Data polygons */}
+                        {studentData.map((vals, si) => {
+                          const points = vals.map((v, i) => getPoint(i * angleStep, v))
+                          return <polygon key={si}
+                            points={points.map(p => `${p.x},${p.y}`).join(' ')}
+                            fill={COLORS[si % COLORS.length] + '20'} stroke={COLORS[si % COLORS.length]} strokeWidth="2" />
+                        })}
+                        {/* Legend */}
+                        {compareStudents.map((sid, i) => {
+                          const s = students.find(st => st.id === sid)
+                          return <g key={sid} transform={`translate(${10 + i * 70}, ${size + 8})`}>
+                            <rect width="8" height="8" rx="2" fill={COLORS[i % COLORS.length]} />
+                            <text x="12" y="7" fontSize="9" fill="#475569">{s?.english_name?.split(' ')[0] || '?'}</text>
+                          </g>
+                        })}
+                      </svg>
+                    )
+                  })()}
+                </div>
+              </div>
+              {/* Cards */}
             <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(compareStudents.length, 4)}, 1fr)` }}>
               {compareStudents.map(sid => {
                 const s = students.find(st => st.id === sid)
@@ -963,6 +1026,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                   </div>
                 )
               })}
+            </div>
             </div>
           )}
         </div>
