@@ -843,6 +843,10 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
   const [shareClasses, setShareClasses] = useState<string[]>([])
   const [standards, setStandards] = useState<string[]>(editing?.standards?.map(s => s.code) || [])
   const [stdSearch, setStdSearch] = useState('')
+  const [useSections, setUseSections] = useState(!!editing?.sections?.length)
+  const [sections, setSections] = useState<{ label: string; standard: string; max_points: number }[]>(
+    editing?.sections || []
+  )
   const nameRef = useRef<HTMLInputElement>(null)
   useEffect(() => { nameRef.current?.focus() }, [])
 
@@ -869,7 +873,13 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
   const handleSave = async (enterScores = false) => {
     if (!name.trim()) return; setSaving(true)
     const stdTags = standards.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.description || '' } })
-    const basePayload = { name: name.trim(), domain: selDomain, max_score: maxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null, standards: stdTags }
+    // If using sections, merge section standards into stdTags and auto-calc max_score
+    const finalSections = useSections && sections.length > 0 ? sections : null
+    const finalMaxScore = finalSections ? finalSections.reduce((s, sec) => s + sec.max_points, 0) : maxScore
+    // Merge section standards into the assessment-level standards
+    const sectionStds = (finalSections || []).map(s => s.standard).filter(s => s && !standards.includes(s))
+    const allStdTags = [...stdTags, ...sectionStds.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.description || '' } })]
+    const basePayload = { name: name.trim(), domain: selDomain, max_score: finalMaxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null, standards: allStdTags, sections: finalSections }
     if (editing) {
       const { data, error } = await supabase.from('assessments').update({ ...basePayload, english_class: englishClass }).eq('id', editing.id).select().single()
       setSaving(false)
@@ -899,15 +909,39 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
   const handleSaveScores = async () => {
     if (!createdAssessment) return
     setSavingScores(true)
-    const rows = Object.entries(inlineScores)
-      .filter(([, v]) => v !== '')
-      .map(([sid, v]) => ({ student_id: sid, assessment_id: createdAssessment.id, score: parseFloat(v), is_exempt: false }))
-    if (rows.length > 0) {
-      const { error } = await supabase.from('grades').insert(rows)
-      if (error) { showToast(`Error: ${error.message}`); setSavingScores(false); return }
+
+    if (createdAssessment.sections && createdAssessment.sections.length > 0) {
+      // Section-based: compute total from section scores, store both
+      const rows = scoreStudents
+        .filter(s => createdAssessment.sections!.some((_: any, si: number) => inlineScores[`${s.id}:${si}`] && inlineScores[`${s.id}:${si}`] !== ''))
+        .map(s => {
+          const sectionScores: Record<string, number> = {}
+          let total = 0
+          createdAssessment.sections!.forEach((_: any, si: number) => {
+            const v = parseFloat(inlineScores[`${s.id}:${si}`] || '0') || 0
+            sectionScores[String(si)] = v
+            total += v
+          })
+          return { student_id: s.id, assessment_id: createdAssessment.id, score: total, section_scores: sectionScores, is_exempt: false }
+        })
+      if (rows.length > 0) {
+        const { error } = await supabase.from('grades').insert(rows)
+        if (error) { showToast(`Error: ${error.message}`); setSavingScores(false); return }
+      }
+      setSavingScores(false)
+      showToast(`Saved ${rows.length} section scores`)
+    } else {
+      // Simple score
+      const rows = Object.entries(inlineScores)
+        .filter(([, v]) => v !== '')
+        .map(([sid, v]) => ({ student_id: sid, assessment_id: createdAssessment.id, score: parseFloat(v), is_exempt: false }))
+      if (rows.length > 0) {
+        const { error } = await supabase.from('grades').insert(rows)
+        if (error) { showToast(`Error: ${error.message}`); setSavingScores(false); return }
+      }
+      setSavingScores(false)
+      showToast(`Saved ${rows.length} scores`)
     }
-    setSavingScores(false)
-    showToast(`Saved ${rows.length} scores`)
     onSaved(createdAssessment)
   }
 
@@ -922,39 +956,94 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
         {scorePhase ? (
           <div>
             <div className="px-6 py-2 bg-accent-light border-b border-border">
-              <p className="text-[11px] text-navy">{selDomain} · {category} · max {maxScore} pts · {scoreStudents.length} students</p>
+              <p className="text-[11px] text-navy">{selDomain} · {category} · max {createdAssessment?.max_score || maxScore} pts · {scoreStudents.length} students
+                {createdAssessment?.sections && ` · ${createdAssessment.sections.length} sections`}
+              </p>
             </div>
             <div className="p-6 max-h-[60vh] overflow-y-auto">
-              <table className="w-full text-[13px]">
-                <thead><tr className="border-b border-border">
-                  <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
-                  <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-                  <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-24">Score / {maxScore}</th>
-                  <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">%</th>
-                </tr></thead>
-                <tbody>
-                  {scoreStudents.map((s: any, i: number) => {
-                    const val = inlineScores[s.id] || ''
-                    const pct = val !== '' ? ((parseFloat(val) / maxScore) * 100) : null
-                    return (
-                      <tr key={s.id} className="border-b border-border/50">
-                        <td className="py-1.5 text-text-tertiary text-[11px]">{i + 1}</td>
-                        <td className="py-1.5"><span className="font-medium">{s.english_name}</span> <span className="text-text-tertiary text-[11px] ml-1">{s.korean_name}</span></td>
-                        <td className="py-1.5 text-center">
-                          <input type="number" min={0} max={maxScore} step="any" value={val}
-                            onChange={e => setInlineScores(prev => ({ ...prev, [s.id]: e.target.value }))}
-                            onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Tab') { const inputs = document.querySelectorAll<HTMLInputElement>('.inline-score-input'); const idx = Array.from(inputs).indexOf(e.target as HTMLInputElement); if (idx >= 0 && idx < inputs.length - 1) { e.preventDefault(); inputs[idx + 1].focus() } } }}
-                            className="inline-score-input w-16 px-2 py-1 text-center border border-border rounded text-[13px] outline-none focus:border-navy"
-                          />
-                        </td>
-                        <td className="py-1.5 text-center text-[11px]">
-                          {pct !== null ? <span className={`font-semibold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{pct.toFixed(0)}%</span> : ''}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+              {createdAssessment?.sections && createdAssessment.sections.length > 0 ? (
+                /* Section-based score entry */
+                <table className="w-full text-[12px]">
+                  <thead><tr className="border-b border-border">
+                    <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
+                    {createdAssessment.sections.map((sec: any, si: number) => (
+                      <th key={si} className="text-center py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[60px]">
+                        <div>{sec.label}</div>
+                        <div className="text-[8px] text-text-tertiary font-normal">/{sec.max_points}{sec.standard ? ` ${sec.standard}` : ''}</div>
+                      </th>
+                    ))}
+                    <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Total</th>
+                    <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-12">%</th>
+                  </tr></thead>
+                  <tbody>
+                    {scoreStudents.map((s: any, i: number) => {
+                      const sectionVals = createdAssessment.sections!.map((_: any, si: number) => parseFloat(inlineScores[`${s.id}:${si}`] || '') || 0)
+                      const total = sectionVals.reduce((a: number, b: number) => a + b, 0)
+                      const hasAny = createdAssessment.sections!.some((_: any, si: number) => inlineScores[`${s.id}:${si}`] !== '' && inlineScores[`${s.id}:${si}`] !== undefined)
+                      const pct = hasAny ? (total / createdAssessment.max_score) * 100 : null
+                      return (
+                        <tr key={s.id} className="border-b border-border/50">
+                          <td className="py-1.5"><span className="font-medium text-[11px]">{s.english_name}</span></td>
+                          {createdAssessment.sections!.map((_: any, si: number) => (
+                            <td key={si} className="py-1 text-center">
+                              <input type="number" min={0} max={createdAssessment.sections![si].max_points} step="any"
+                                value={inlineScores[`${s.id}:${si}`] || ''}
+                                onChange={e => setInlineScores(prev => ({ ...prev, [`${s.id}:${si}`]: e.target.value }))}
+                                data-col={si} data-row={i}
+                                onKeyDown={e => {
+                                  if (e.key === 'Tab' || e.key === 'Enter') {
+                                    e.preventDefault()
+                                    const tbl = (e.target as HTMLElement).closest('table')
+                                    const next = tbl?.querySelector(`input[data-col="${si}"][data-row="${i + 1}"]`) as HTMLInputElement
+                                    if (next) next.focus()
+                                  }
+                                }}
+                                className="w-12 px-1 py-1 text-center border border-border rounded text-[11px] outline-none focus:border-navy"
+                              />
+                            </td>
+                          ))}
+                          <td className="py-1.5 text-center text-[12px] font-bold text-navy">{hasAny ? total : ''}</td>
+                          <td className="py-1.5 text-center text-[11px]">
+                            {pct !== null ? <span className={`font-semibold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{pct.toFixed(0)}%</span> : ''}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                /* Simple single-score entry */
+                <table className="w-full text-[13px]">
+                  <thead><tr className="border-b border-border">
+                    <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
+                    <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
+                    <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-24">Score / {createdAssessment?.max_score || maxScore}</th>
+                    <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">%</th>
+                  </tr></thead>
+                  <tbody>
+                    {scoreStudents.map((s: any, i: number) => {
+                      const val = inlineScores[s.id] || ''
+                      const pct = val !== '' ? ((parseFloat(val) / (createdAssessment?.max_score || maxScore)) * 100) : null
+                      return (
+                        <tr key={s.id} className="border-b border-border/50">
+                          <td className="py-1.5 text-text-tertiary text-[11px]">{i + 1}</td>
+                          <td className="py-1.5"><span className="font-medium">{s.english_name}</span> <span className="text-text-tertiary text-[11px] ml-1">{s.korean_name}</span></td>
+                          <td className="py-1.5 text-center">
+                            <input type="number" min={0} max={createdAssessment?.max_score || maxScore} step="any" value={val}
+                              onChange={e => setInlineScores(prev => ({ ...prev, [s.id]: e.target.value }))}
+                              onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Tab') { const inputs = document.querySelectorAll<HTMLInputElement>('.inline-score-input'); const idx = Array.from(inputs).indexOf(e.target as HTMLInputElement); if (idx >= 0 && idx < inputs.length - 1) { e.preventDefault(); inputs[idx + 1].focus() } } }}
+                              className="inline-score-input w-16 px-2 py-1 text-center border border-border rounded text-[13px] outline-none focus:border-navy"
+                            />
+                          </td>
+                          <td className="py-1.5 text-center text-[11px]">
+                            {pct !== null ? <span className={`font-semibold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{pct.toFixed(0)}%</span> : ''}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
             <div className="px-6 py-4 border-t border-border flex items-center justify-between">
               <span className="text-[11px] text-text-tertiary">{Object.values(inlineScores).filter(v => v !== '').length} of {scoreStudents.length} entered</span>
@@ -1017,6 +1106,63 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
               )}
             </div>
           </div>
+
+          {/* Assessment Sections Builder */}
+          <div className="border border-border rounded-lg overflow-hidden">
+            <button onClick={() => { setUseSections(!useSections); if (!useSections && sections.length === 0) setSections([{ label: 'Section 1', standard: '', max_points: 5 }]) }}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-surface-alt hover:bg-surface-alt/80 transition-all">
+              <span className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold">
+                Assessment Sections <span className="text-text-tertiary font-normal normal-case">(split into parts with standards)</span>
+              </span>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${useSections ? 'bg-navy text-white' : 'bg-surface text-text-tertiary border border-border'}`}>
+                {useSections ? 'ON' : 'OFF'}
+              </span>
+            </button>
+            {useSections && (
+              <div className="p-4 space-y-2">
+                {sections.map((sec, si) => (
+                  <div key={si} className="flex items-center gap-2">
+                    <input value={sec.label} onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], label: e.target.value }; setSections(ns) }}
+                      placeholder="e.g. Q1-3" className="w-24 px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy" />
+                    <div className="relative flex-1">
+                      <input value={sec.standard} onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], standard: e.target.value }; setSections(ns) }}
+                        placeholder="Standard (e.g. RL.2.1)" className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy" />
+                      {sec.standard.length >= 2 && (() => {
+                        const matches = ccssStandards.filter(s => s.code.toLowerCase().includes(sec.standard.toLowerCase()) && s.code !== sec.standard).slice(0, 4)
+                        if (matches.length === 0) return null
+                        return (
+                          <div className="absolute left-0 right-0 top-full mt-0.5 bg-surface border border-border rounded-lg shadow-lg z-50 max-h-32 overflow-y-auto">
+                            {matches.map(s => (
+                              <button key={s.code} onClick={() => { const ns = [...sections]; ns[si] = { ...ns[si], standard: s.code }; setSections(ns) }}
+                                className="w-full text-left px-2 py-1.5 hover:bg-surface-alt text-[10px] border-b border-border/50 last:border-0">
+                                <span className="font-bold text-navy">{s.code}</span>
+                                <span className="text-text-tertiary ml-1.5 line-clamp-1">{s.description}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )
+                      })()}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <input type="number" min={1} value={sec.max_points} onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], max_points: parseInt(e.target.value) || 1 }; setSections(ns) }}
+                        className="w-12 px-1.5 py-1.5 border border-border rounded-lg text-[11px] text-center outline-none focus:border-navy" />
+                      <span className="text-[9px] text-text-tertiary">pts</span>
+                    </div>
+                    <button onClick={() => setSections(sections.filter((_, i) => i !== si))} className="p-1 text-text-tertiary hover:text-red-500"><X size={12} /></button>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between pt-1">
+                  <button onClick={() => setSections([...sections, { label: `Section ${sections.length + 1}`, standard: '', max_points: 5 }])}
+                    className="inline-flex items-center gap-1 text-[10px] text-navy font-medium hover:text-navy-dark"><Plus size={11} /> Add Section</button>
+                  <span className="text-[10px] text-text-tertiary font-semibold">
+                    Total: {sections.reduce((s, sec) => s + sec.max_points, 0)} pts
+                  </span>
+                </div>
+                <p className="text-[9px] text-text-tertiary">Each section's score is tracked separately. Total points auto-calculated from sections. Standards mastery is tracked per-section.</p>
+              </div>
+            )}
+          </div>
+
           {!editing && (
             <div>
               <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-2">Share with Other Classes</label>

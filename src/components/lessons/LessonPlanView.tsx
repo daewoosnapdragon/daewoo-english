@@ -599,18 +599,20 @@ function DaySetupPanel({ selectedClass, slots, onAdd, onRemove, onClose }: {
 // ═══════════════════════════════════════════════════════════════════
 
 function getWeekDatesForPlans(dateStr: string): string[] {
-  const d = new Date(dateStr + 'T00:00:00')
-  const dow = d.getDay()
-  const diff = dow === 0 ? -6 : 1 - dow
-  const mon = new Date(d); mon.setDate(d.getDate() + diff)
+  // Parse date parts directly to avoid timezone issues
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d) // local midnight, no TZ ambiguity
+  const dow = date.getDay()
+  const mondayOffset = dow === 0 ? -6 : 1 - dow
   return Array.from({ length: 5 }, (_, i) => {
-    const dd = new Date(mon); dd.setDate(mon.getDate() + i)
-    return dd.toISOString().split('T')[0]
+    const dd = new Date(y, m - 1, d + mondayOffset + i)
+    return `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`
   })
 }
 
 function formatShort(dateStr: string): string {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 function TeacherWeeklyPlans() {
@@ -631,18 +633,21 @@ function TeacherWeeklyPlans() {
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
 
   const weekLabel = useMemo(() => {
-    const mon = new Date(weekDates[0] + 'T00:00:00')
-    const fri = new Date(weekDates[4] + 'T00:00:00')
+    const [y1, m1, d1] = weekDates[0].split('-').map(Number)
+    const [y2, m2, d2] = weekDates[4].split('-').map(Number)
+    const mon = new Date(y1, m1 - 1, d1)
+    const fri = new Date(y2, m2 - 1, d2)
     return `${mon.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${fri.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
   }, [weekDates])
 
   const loadPlans = useCallback(async () => {
     setLoading(true)
     try {
+      // Load day plans + reflection (reflection stored as class + '_refl' on Monday date)
       const { data, error } = await supabase
         .from('teacher_daily_plans')
-        .select('date, plan_text')
-        .eq('english_class', selectedClass)
+        .select('date, english_class, plan_text')
+        .in('english_class', [selectedClass, selectedClass + '_refl'])
         .in('date', weekDates)
 
       if (error && (error.message.includes('does not exist') || error.code === '42P01')) {
@@ -653,7 +658,13 @@ function TeacherWeeklyPlans() {
 
       const map: Record<string, string> = {}
       weekDates.forEach(d => { map[d] = '' })
-      data?.forEach((row: any) => { map[row.date] = row.plan_text || '' })
+      data?.forEach((row: any) => {
+        if (row.english_class === selectedClass + '_refl') {
+          map['_reflection'] = row.plan_text || ''
+        } else {
+          map[row.date] = row.plan_text || ''
+        }
+      })
       setPlans(map)
     } catch {
       setTableExists(false)
@@ -672,9 +683,10 @@ function TeacherWeeklyPlans() {
   }, [hasChanges])
 
   const changeWeek = (delta: number) => {
-    const mon = new Date(weekDates[0] + 'T00:00:00')
-    mon.setDate(mon.getDate() + (delta * 7))
-    setWeekDates(getWeekDatesForPlans(mon.toISOString().split('T')[0]))
+    const [y, m, d] = weekDates[0].split('-').map(Number)
+    const mon = new Date(y, m - 1, d + (delta * 7))
+    const ds = `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, '0')}-${String(mon.getDate()).padStart(2, '0')}`
+    setWeekDates(getWeekDatesForPlans(ds))
   }
 
   const updateDay = (date: string, text: string) => {
@@ -685,12 +697,25 @@ function TeacherWeeklyPlans() {
   const handleSave = async () => {
     setSaving(true)
     let errors = 0
+    // Save day plans
     for (const date of weekDates) {
       const text = plans[date] || ''
       const { error } = await supabase.from('teacher_daily_plans').upsert({
         date,
         english_class: selectedClass,
         plan_text: text,
+        updated_by: currentTeacher?.id,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'date,english_class' })
+      if (error) errors++
+    }
+    // Save reflection as a special entry using the Monday date + '_refl' suffix
+    if (plans['_reflection'] !== undefined) {
+      const reflDate = weekDates[0] // Monday
+      const { error } = await supabase.from('teacher_daily_plans').upsert({
+        date: reflDate,
+        english_class: selectedClass + '_refl',
+        plan_text: plans['_reflection'] || '',
         updated_by: currentTeacher?.id,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'date,english_class' })
@@ -722,7 +747,7 @@ function TeacherWeeklyPlans() {
       <h1>${selectedClass} - Teacher Plans</h1>
       <div class="sub">${weekLabel} | Grade ${selectedGrade}</div>
       <div class="grid">${weekDates.map((date, i) => {
-        const text = (plans[date] || '(No plan)').replace(/</g, '&lt;').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')
+        const text = plans[date] || '<span style="color:#999">(No plan)</span>'
         return `<div class="day"><div class="dh">${DAY_NAMES[i]} <span class="dd">${formatShort(date)}</span></div><div class="db">${text}</div></div>`
       }).join('')}</div>
     </body></html>`
@@ -772,6 +797,30 @@ function TeacherWeeklyPlans() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {canEdit && (
+            <button onClick={async () => {
+              const prevWeek = getWeekDatesForPlans((() => {
+                const [y, m, d] = weekDates[0].split('-').map(Number)
+                const prev = new Date(y, m - 1, d - 7)
+                return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`
+              })())
+              const { data } = await supabase.from('teacher_daily_plans').select('date, plan_text').eq('english_class', selectedClass).in('date', prevWeek)
+              if (!data || data.length === 0) { showToast('No plans found for last week'); return }
+              const newPlans = { ...plans }
+              data.forEach((row: any, idx: number) => {
+                const prevDate = row.date
+                const prevIdx = prevWeek.indexOf(prevDate)
+                if (prevIdx >= 0 && weekDates[prevIdx]) {
+                  newPlans[weekDates[prevIdx]] = row.plan_text || ''
+                }
+              })
+              setPlans(newPlans)
+              setHasChanges(true)
+              showToast('Copied last week plans -- review and edit, then save')
+            }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border" title="Copy plans from previous week as a starting point">
+              Copy Last Week
+            </button>
+          )}
           <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
             <Printer size={14} /> Print Week
           </button>
@@ -797,30 +846,69 @@ function TeacherWeeklyPlans() {
         <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
       ) : (
         <>
-          <div className="text-[10px] text-text-tertiary mb-2 text-right">Use **bold** for emphasis in print. Line breaks preserved.</div>
           <div className="grid grid-cols-5 gap-3">
             {weekDates.map((date, i) => {
               const isToday = date === todayStr
               return (
                 <div key={date} className={`bg-surface border rounded-xl overflow-hidden flex flex-col ${isToday ? 'border-gold ring-2 ring-gold/20' : 'border-border'}`}>
-                  <div className={`px-3 py-2 text-[12px] font-bold ${isToday ? 'bg-gold/10 text-navy' : 'bg-surface-alt text-text-secondary'}`}>
-                    {DAY_NAMES[i]}
-                    <span className="text-[10px] font-normal ml-1.5">{formatShort(date)}</span>
-                    {isToday && <span className="text-[9px] font-semibold text-gold ml-1.5">TODAY</span>}
+                  <div className={`px-3 py-2 text-[12px] font-bold flex items-center justify-between ${isToday ? 'bg-gold/10 text-navy' : 'bg-surface-alt text-text-secondary'}`}>
+                    <span>
+                      {DAY_NAMES[i]}
+                      <span className="text-[10px] font-normal ml-1.5">{formatShort(date)}</span>
+                      {isToday && <span className="text-[9px] font-semibold text-gold ml-1.5">TODAY</span>}
+                    </span>
+                    {canEdit && (
+                      <div className="flex gap-0.5">
+                        <button onClick={() => { document.getElementById(`editor-${date}`)?.focus(); document.execCommand('bold') }}
+                          className="w-5 h-5 rounded text-[10px] font-bold hover:bg-navy/10 flex items-center justify-center" title="Bold">B</button>
+                        <button onClick={() => { document.getElementById(`editor-${date}`)?.focus(); document.execCommand('italic') }}
+                          className="w-5 h-5 rounded text-[10px] italic hover:bg-navy/10 flex items-center justify-center" title="Italic">I</button>
+                        <button onClick={() => { document.getElementById(`editor-${date}`)?.focus(); document.execCommand('insertUnorderedList') }}
+                          className="w-5 h-5 rounded text-[9px] hover:bg-navy/10 flex items-center justify-center" title="Bullet list">&bull;</button>
+                      </div>
+                    )}
                   </div>
-                  <textarea
-                    value={plans[date] || ''}
-                    onChange={e => updateDay(date, e.target.value)}
-                    disabled={!canEdit}
-                    placeholder={`${DAY_NAMES[i]} plan...\n\n**Phonics** (15 min)\n- Pattern: sh digraph\n- Word chains activity\n\n**Reading** (20 min)\n- Guided reading Gr A\n- Independent Gr B`}
-                    className="flex-1 min-h-[280px] px-3 py-2.5 text-[11.5px] text-text-primary bg-surface resize-none outline-none focus:ring-2 focus:ring-gold/20 placeholder:text-text-tertiary/40 leading-relaxed disabled:opacity-50"
-                    spellCheck={true}
+                  <div
+                    id={`editor-${date}`}
+                    contentEditable={canEdit}
+                    suppressContentEditableWarning
+                    onInput={e => updateDay(date, (e.target as HTMLElement).innerHTML)}
+                    onPaste={e => {
+                      e.preventDefault()
+                      const text = e.clipboardData.getData('text/plain')
+                      document.execCommand('insertText', false, text)
+                    }}
+                    dangerouslySetInnerHTML={{ __html: plans[date] || '' }}
+                    data-placeholder={`${DAY_NAMES[i]} plan...`}
+                    className="flex-1 min-h-[280px] px-3 py-2.5 text-[11.5px] text-text-primary bg-surface outline-none focus:ring-2 focus:ring-gold/20 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-text-tertiary/40 [&_b]:font-bold [&_i]:italic [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5 [&_li]:text-[11.5px] overflow-y-auto"
+                    style={{ wordBreak: 'break-word' }}
                   />
                 </div>
               )
             })}
           </div>
           {hasChanges && <div className="mt-3 text-center"><span className="text-[11px] text-amber-600 font-medium">Unsaved changes</span></div>}
+
+          {/* Weekly Reflection */}
+          <div className="mt-6 bg-surface border border-border rounded-xl overflow-hidden">
+            <div className="px-4 py-2.5 bg-surface-alt/50 border-b border-border flex items-center gap-2">
+              <span className="text-[11px] font-bold text-navy">Weekly Reflection</span>
+              <span className="text-[9px] text-text-tertiary">(saved with your plans)</span>
+            </div>
+            <div
+              id="editor-reflection"
+              contentEditable={canEdit}
+              suppressContentEditableWarning
+              onInput={e => {
+                setPlans(prev => ({ ...prev, _reflection: (e.target as HTMLElement).innerHTML }))
+                setHasChanges(true)
+              }}
+              dangerouslySetInnerHTML={{ __html: plans['_reflection'] || '' }}
+              data-placeholder="End-of-week reflection... What worked well? What needs adjustment? Which students need follow-up? Notes for next week."
+              className="min-h-[80px] px-4 py-3 text-[11.5px] text-text-primary bg-surface outline-none focus:ring-2 focus:ring-gold/20 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-text-tertiary/40 [&_b]:font-bold [&_i]:italic [&_ul]:list-disc [&_ul]:pl-4 overflow-y-auto"
+              style={{ wordBreak: 'break-word' }}
+            />
+          </div>
         </>
       )}
     </div>

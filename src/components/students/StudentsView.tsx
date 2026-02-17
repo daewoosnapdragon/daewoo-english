@@ -927,13 +927,14 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
       {/* Standards list */}
       <div className="space-y-1.5">
         {standardsData.map(std => {
-          const color = std.avgPct >= 80 ? 'green' : std.avgPct >= 60 ? 'amber' : 'red'
+          const pctColor = std.avgPct >= 80 ? 'text-green-600' : std.avgPct >= 60 ? 'text-amber-600' : 'text-red-600'
+          const barColor = std.avgPct >= 80 ? 'bg-green-400' : std.avgPct >= 60 ? 'bg-amber-400' : 'bg-red-400'
           return (
             <div key={std.code} className="bg-surface border border-border rounded-lg px-4 py-2.5 flex items-center gap-3">
               <div className="w-10 text-center">
-                <p className={`text-[14px] font-bold text-${color}-600`}>{Math.round(std.avgPct)}%</p>
+                <p className={`text-[14px] font-bold ${pctColor}`}>{Math.round(std.avgPct)}%</p>
               </div>
-              <div className={`w-1.5 h-8 rounded-full bg-${color}-400`} />
+              <div className={`w-1.5 h-8 rounded-full ${barColor}`} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-navy">{std.code}</span>
@@ -944,9 +945,9 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
                 </div>
                 <p className="text-[10px] text-text-secondary mt-0.5 truncate">{std.description}</p>
               </div>
-              {/* Mini bar */}
+              {/* Mini progress bar */}
               <div className="w-24 h-2 bg-surface-alt rounded-full overflow-hidden">
-                <div className={`h-full rounded-full bg-${color}-400`} style={{ width: `${Math.min(100, std.avgPct)}%` }} />
+                <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(100, std.avgPct)}%` }} />
               </div>
             </div>
           )

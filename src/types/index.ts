@@ -120,7 +120,14 @@ export interface Assessment {
   weight: number;
   description: string;
   standards: StandardTag[];
+  sections?: AssessmentSection[] | null;
   created_by: string | null;
+}
+
+export interface AssessmentSection {
+  label: string;
+  standard: string;
+  max_points: number;
 }
 
 export interface StandardTag {
