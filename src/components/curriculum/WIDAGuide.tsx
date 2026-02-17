@@ -28,7 +28,11 @@ interface Scaffold {
 }
 
 const SCAFFOLD_BANK: Scaffold[] = [
-  // ─── LISTENING ─────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // LISTENING
+  // ═══════════════════════════════════════════════════════════════
+
+  // L1-L2: Direct Instruction (Krashen) -- heavy teacher scaffolding
   { id: 'L-1', domain: 'listening', levelRange: [1, 2], category: 'Input Modification',
     text: 'Use simplified language with short sentences, clear enunciation, and frequent pauses' },
   { id: 'L-2', domain: 'listening', levelRange: [1, 2], category: 'Input Modification',
@@ -41,6 +45,14 @@ const SCAFFOLD_BANK: Scaffold[] = [
     text: 'Allow bilingual buddy to translate key instructions into Korean' },
   { id: 'L-6', domain: 'listening', levelRange: [1, 2], category: 'Comprehension Support',
     text: 'Use yes/no and either/or comprehension checks instead of open-ended questions' },
+  { id: 'L-6b', domain: 'listening', levelRange: [1, 2], category: 'Comprehension Support',
+    text: 'Use physical objects and realia to make abstract concepts concrete during instruction' },
+  { id: 'L-6c', domain: 'listening', levelRange: [1, 2], category: 'Input Modification',
+    text: 'Pace instruction slowly with frequent modeling -- show then tell, not just tell' },
+  { id: 'L-6d', domain: 'listening', levelRange: [1, 2], category: 'Input Modification',
+    text: 'View content videos in Korean first to build schema, then replay in English' },
+
+  // L3: Joint Construction -- teacher guides, student begins constructing
   { id: 'L-7', domain: 'listening', levelRange: [3, 3], category: 'Input Modification',
     text: 'Speak at a natural pace but repeat key information and rephrase complex ideas' },
   { id: 'L-8', domain: 'listening', levelRange: [3, 3], category: 'Input Modification',
@@ -49,14 +61,40 @@ const SCAFFOLD_BANK: Scaffold[] = [
     text: 'Provide listening guides with key questions written out before audio/video activities' },
   { id: 'L-10', domain: 'listening', levelRange: [3, 3], category: 'Comprehension Support',
     text: 'Use think-pair-share after listening tasks to allow oral processing before writing' },
+  { id: 'L-10b', domain: 'listening', levelRange: [3, 3], category: 'Comprehension Support',
+    text: 'Use annotated diagrams and outlines during lectures to anchor verbal input visually' },
+  { id: 'L-10c', domain: 'listening', levelRange: [3, 3], category: 'Comprehension Support',
+    text: 'Highlight key words using color-coding on the board to distinguish categories of information' },
+
+  // L4-L5: Coached Construction -- teacher provides feedback as students use strategies independently
   { id: 'L-11', domain: 'listening', levelRange: [4, 5], category: 'Academic Extension',
     text: 'Introduce academic listening -- note-taking strategies, identifying main idea vs. detail' },
   { id: 'L-12', domain: 'listening', levelRange: [4, 5], category: 'Academic Extension',
     text: 'Use content-area videos and podcasts with comprehension tasks' },
   { id: 'L-13', domain: 'listening', levelRange: [4, 5], category: 'Academic Extension',
     text: 'Teach students to identify signal words (however, therefore, in contrast) in oral language' },
+  { id: 'L-13b', domain: 'listening', levelRange: [4, 5], category: 'Academic Extension',
+    text: 'Have students evaluate ideas from oral presentations and provide reasoned responses' },
 
-  // ─── SPEAKING ──────────────────────────────────────────
+  // L5-L6: Monitor -- monitor students\' independent use of strategies
+  { id: 'L-14', domain: 'listening', levelRange: [5, 6], category: 'Critical Listening',
+    text: 'Analyze speaker\'s purpose, bias, and rhetorical strategies in oral texts (speeches, debates, ads)' },
+  { id: 'L-15', domain: 'listening', levelRange: [5, 6], category: 'Critical Listening',
+    text: 'Compare information across multiple oral sources and evaluate conflicting claims' },
+  { id: 'L-16', domain: 'listening', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Identify register shifts in spoken language -- how the same speaker adjusts for audience (formal presentation vs. casual chat)' },
+  { id: 'L-17', domain: 'listening', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Listen to academic lectures and take structured Cornell-style notes independently' },
+  { id: 'L-18', domain: 'listening', levelRange: [5, 6], category: 'Metalinguistic Awareness',
+    text: 'Identify and discuss idioms, sarcasm, and implied meaning in spoken English' },
+  { id: 'L-19', domain: 'listening', levelRange: [5, 6], category: 'Metalinguistic Awareness',
+    text: 'Notice and discuss how intonation and stress change meaning in English sentences' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SPEAKING
+  // ═══════════════════════════════════════════════════════════════
+
+  // L1-L2: Direct Instruction
   { id: 'S-1', domain: 'speaking', levelRange: [1, 2], category: 'Output Support',
     text: 'Accept one-word and short-phrase responses; do not force full sentences' },
   { id: 'S-2', domain: 'speaking', levelRange: [1, 2], category: 'Output Support',
@@ -69,6 +107,10 @@ const SCAFFOLD_BANK: Scaffold[] = [
     text: 'Value nonverbal participation (pointing, gesturing, drawing) as communication' },
   { id: 'S-6', domain: 'speaking', levelRange: [1, 2], category: 'Participation',
     text: 'Pair with a bilingual peer for small group activities' },
+  { id: 'S-6b', domain: 'speaking', levelRange: [1, 2], category: 'Output Support',
+    text: 'Use labeling, naming, and gesturing activities -- match images to vocabulary orally' },
+
+  // L3: Joint Construction
   { id: 'S-7', domain: 'speaking', levelRange: [3, 3], category: 'Output Support',
     text: 'Provide discussion sentence starters: "I think ___ because ___." "I agree/disagree because ___."' },
   { id: 'S-8', domain: 'speaking', levelRange: [3, 3], category: 'Output Support',
@@ -77,14 +119,46 @@ const SCAFFOLD_BANK: Scaffold[] = [
     text: 'Assign specific discussion roles (questioner, summarizer, connector)' },
   { id: 'S-10', domain: 'speaking', levelRange: [3, 3], category: 'Structured Practice',
     text: 'Use structured turn-taking protocols (numbered heads, talking chips)' },
+  { id: 'S-10b', domain: 'speaking', levelRange: [3, 3], category: 'Structured Practice',
+    text: 'Practice prepared summaries -- students rehearse oral summaries before sharing with the class' },
+  { id: 'S-10c', domain: 'speaking', levelRange: [3, 3], category: 'Output Support',
+    text: 'Use compare-and-contrast speaking tasks with provided vocabulary and structure' },
+
+  // L4-L5: Coached Construction
   { id: 'S-11', domain: 'speaking', levelRange: [4, 5], category: 'Academic Language',
     text: 'Teach academic language functions: compare/contrast, cause/effect, persuade' },
   { id: 'S-12', domain: 'speaking', levelRange: [4, 5], category: 'Academic Language',
     text: 'Assign as discussion leader or peer tutor to deepen understanding through teaching' },
   { id: 'S-13', domain: 'speaking', levelRange: [4, 5], category: 'Academic Language',
     text: 'Challenge with higher-order questions: "What would happen if ___?" "How does ___ relate to ___?"' },
+  { id: 'S-13b', domain: 'speaking', levelRange: [4, 5], category: 'Academic Language',
+    text: 'Use sentence frames that require explaining and justifying: "The evidence suggests ___ because ___."' },
+  { id: 'S-13c', domain: 'speaking', levelRange: [4, 5], category: 'Academic Language',
+    text: 'Practice oral presentations with audience-awareness coaching (eye contact, volume, pacing)' },
 
-  // ─── READING ───────────────────────────────────────────
+  // L5-L6: Monitor
+  { id: 'S-14', domain: 'speaking', levelRange: [5, 6], category: 'Critical Literacy',
+    text: 'Lead Socratic seminars -- facilitate discussion using open-ended questions and textual evidence' },
+  { id: 'S-15', domain: 'speaking', levelRange: [5, 6], category: 'Critical Literacy',
+    text: 'Debate a topic using formal argumentation structure (claim, evidence, counterargument, rebuttal)' },
+  { id: 'S-16', domain: 'speaking', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Practice register shifting -- deliver the same information formally (to a teacher) and informally (to a friend)' },
+  { id: 'S-17', domain: 'speaking', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Use hedging and qualifying language: "It could be argued that..." "While some evidence suggests..."' },
+  { id: 'S-18', domain: 'speaking', levelRange: [5, 6], category: 'Leadership & Mentoring',
+    text: 'Serve as language mentor for L1-L3 peers -- teach vocabulary, model pronunciation, explain concepts' },
+  { id: 'S-19', domain: 'speaking', levelRange: [5, 6], category: 'Leadership & Mentoring',
+    text: 'Facilitate small-group instruction -- lead a guided reading group or writing workshop for lower-level peers' },
+  { id: 'S-20', domain: 'speaking', levelRange: [5, 6], category: 'Metalinguistic Awareness',
+    text: 'Explain grammar rules to peers in own words -- articulating rules deepens internalization' },
+  { id: 'S-21', domain: 'speaking', levelRange: [5, 6], category: 'Metalinguistic Awareness',
+    text: 'Discuss word choice and connotation -- why "strolled" vs "walked" vs "trudged" matters' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // READING
+  // ═══════════════════════════════════════════════════════════════
+
+  // L1-L2: Direct Instruction
   { id: 'R-1', domain: 'reading', levelRange: [1, 2], category: 'Text Access',
     text: 'Provide texts with picture support on every page' },
   { id: 'R-2', domain: 'reading', levelRange: [1, 2], category: 'Text Access',
@@ -97,6 +171,10 @@ const SCAFFOLD_BANK: Scaffold[] = [
     text: 'Accept pointing to pictures, matching, and drawing as comprehension responses' },
   { id: 'R-6', domain: 'reading', levelRange: [1, 2], category: 'Comprehension',
     text: 'Create bilingual vocabulary cards for key terms in each text' },
+  { id: 'R-6b', domain: 'reading', levelRange: [1, 2], category: 'Text Access',
+    text: 'Read modified texts or Korean-language texts on the same topic to build schema before English text' },
+
+  // L3: Joint Construction
   { id: 'R-7', domain: 'reading', levelRange: [3, 3], category: 'Text Access',
     text: 'Highlight key vocabulary in texts before distributing' },
   { id: 'R-8', domain: 'reading', levelRange: [3, 3], category: 'Text Access',
@@ -105,14 +183,46 @@ const SCAFFOLD_BANK: Scaffold[] = [
     text: 'Teach text features explicitly (headings, bold words, captions, glossary)' },
   { id: 'R-10', domain: 'reading', levelRange: [3, 3], category: 'Comprehension',
     text: 'Use guided reading groups with teacher-led discussion of each section' },
+  { id: 'R-10b', domain: 'reading', levelRange: [3, 3], category: 'Comprehension',
+    text: 'Categorize information from texts using tables, charts, or sorting activities' },
+  { id: 'R-10c', domain: 'reading', levelRange: [3, 3], category: 'Comprehension',
+    text: 'Sequence events from a text using sentence strips or timeline activities' },
+
+  // L4-L5: Coached Construction
   { id: 'R-11', domain: 'reading', levelRange: [4, 5], category: 'Academic Reading',
     text: 'Introduce annotation strategies (underline key ideas, circle unknown words, margin notes)' },
   { id: 'R-12', domain: 'reading', levelRange: [4, 5], category: 'Academic Reading',
     text: 'Use text-dependent questions that require citing evidence' },
   { id: 'R-13', domain: 'reading', levelRange: [4, 5], category: 'Academic Reading',
     text: 'Assign mentor texts as models for writing style and structure' },
+  { id: 'R-13b', domain: 'reading', levelRange: [4, 5], category: 'Academic Reading',
+    text: 'Use analogies and connections between texts -- compare themes, characters, or arguments across readings' },
+  { id: 'R-13c', domain: 'reading', levelRange: [4, 5], category: 'Academic Reading',
+    text: 'Create infographics or posters to synthesize and present information from texts' },
 
-  // ─── WRITING ───────────────────────────────────────────
+  // L5-L6: Monitor
+  { id: 'R-14', domain: 'reading', levelRange: [5, 6], category: 'Critical Literacy',
+    text: 'Analyze author\'s craft -- why did the author choose this structure, word, or perspective?' },
+  { id: 'R-15', domain: 'reading', levelRange: [5, 6], category: 'Critical Literacy',
+    text: 'Identify bias, perspective, and missing voices in nonfiction texts' },
+  { id: 'R-16', domain: 'reading', levelRange: [5, 6], category: 'Critical Literacy',
+    text: 'Compare how two authors treat the same topic differently -- analyze purpose, audience, and rhetorical choices' },
+  { id: 'R-17', domain: 'reading', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Read content-area texts (science, social studies) and identify discipline-specific language patterns' },
+  { id: 'R-18', domain: 'reading', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Recognize passive voice, nominalizations, and other academic writing features and explain their purpose' },
+  { id: 'R-19', domain: 'reading', levelRange: [5, 6], category: 'Metalinguistic Awareness',
+    text: 'Study word origins, roots, prefixes, and suffixes to build deep vocabulary understanding' },
+  { id: 'R-20', domain: 'reading', levelRange: [5, 6], category: 'Metalinguistic Awareness',
+    text: 'Discuss figurative language (metaphor, irony, symbolism) and explain how it creates meaning beyond the literal' },
+  { id: 'R-21', domain: 'reading', levelRange: [5, 6], category: 'Leadership & Mentoring',
+    text: 'Lead literature circles -- facilitate peer discussion and model reading strategies for mixed-level groups' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // WRITING
+  // ═══════════════════════════════════════════════════════════════
+
+  // L1-L2: Direct Instruction
   { id: 'W-1', domain: 'writing', levelRange: [1, 2], category: 'Output Support',
     text: 'Accept drawings with labels, word lists, and copied sentences as valid writing' },
   { id: 'W-2', domain: 'writing', levelRange: [1, 2], category: 'Output Support',
@@ -123,6 +233,12 @@ const SCAFFOLD_BANK: Scaffold[] = [
     text: 'Use shared writing (teacher writes, students contribute ideas orally)' },
   { id: 'W-5', domain: 'writing', levelRange: [1, 2], category: 'Scaffolded Tasks',
     text: 'Provide sentence-level writing tasks rather than paragraph-level' },
+  { id: 'W-5b', domain: 'writing', levelRange: [1, 2], category: 'Scaffolded Tasks',
+    text: 'Create in home-language groups first, then translate specific words into English' },
+  { id: 'W-5c', domain: 'writing', levelRange: [1, 2], category: 'Output Support',
+    text: 'Use Quick Writes (1-2 minutes of low-pressure free writing) to build fluency without accuracy pressure' },
+
+  // L3: Joint Construction
   { id: 'W-6', domain: 'writing', levelRange: [3, 3], category: 'Output Support',
     text: 'Provide paragraph frames with transition words and sentence starters' },
   { id: 'W-7', domain: 'writing', levelRange: [3, 3], category: 'Output Support',
@@ -131,28 +247,108 @@ const SCAFFOLD_BANK: Scaffold[] = [
     text: 'Give writing checklists: "Did I include ___? Did I use a capital letter?"' },
   { id: 'W-9', domain: 'writing', levelRange: [3, 3], category: 'Process Support',
     text: 'Allow oral rehearsal before writing (tell a partner what you will write)' },
+  { id: 'W-9b', domain: 'writing', levelRange: [3, 3], category: 'Output Support',
+    text: 'Use concept maps to organize ideas before drafting' },
+  { id: 'W-9c', domain: 'writing', levelRange: [3, 3], category: 'Process Support',
+    text: 'Write collaboratively -- joint construction of a paragraph before independent practice' },
+  { id: 'W-9d', domain: 'writing', levelRange: [3, 3], category: 'Output Support',
+    text: 'Explain cause and effect and defend opinions using sentence frames that require reasoning' },
+
+  // L4-L5: Coached Construction
   { id: 'W-10', domain: 'writing', levelRange: [4, 5], category: 'Academic Writing',
     text: 'Teach editing and revision strategies using peer editing protocols' },
   { id: 'W-11', domain: 'writing', levelRange: [4, 5], category: 'Academic Writing',
     text: 'Use mentor texts to teach specific writing craft moves' },
   { id: 'W-12', domain: 'writing', levelRange: [4, 5], category: 'Academic Writing',
     text: 'Focus on academic vocabulary and connectors (however, therefore, in addition)' },
+  { id: 'W-12b', domain: 'writing', levelRange: [4, 5], category: 'Academic Writing',
+    text: 'Compose multi-paragraph texts to communicate a central message with evidence' },
+  { id: 'W-12c', domain: 'writing', levelRange: [4, 5], category: 'Academic Writing',
+    text: 'Hypothesize and provide written justification -- practice "because" and "evidence shows" structures' },
+  { id: 'W-12d', domain: 'writing', levelRange: [4, 5], category: 'Academic Writing',
+    text: 'Connect topics to different contexts -- apply ideas from one text/subject to another in writing' },
 
-  // ─── GENERAL / CROSS-DOMAIN ────────────────────────────
+  // L5-L6: Monitor
+  { id: 'W-13', domain: 'writing', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Teach nominalization -- turning verbs/adjectives into nouns for academic writing ("decide" > "the decision to...")' },
+  { id: 'W-14', domain: 'writing', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Practice writing in different registers for different audiences (email to teacher vs. letter to editor vs. lab report)' },
+  { id: 'W-15', domain: 'writing', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Use hedging language in analytical writing: "The data suggests..." "It appears that..." "One interpretation is..."' },
+  { id: 'W-16', domain: 'writing', levelRange: [5, 6], category: 'Critical Literacy',
+    text: 'Write literary analysis examining author\'s craft, theme development, and use of literary devices' },
+  { id: 'W-17', domain: 'writing', levelRange: [5, 6], category: 'Critical Literacy',
+    text: 'Construct persuasive essays with counterarguments and rebuttals' },
+  { id: 'W-18', domain: 'writing', levelRange: [5, 6], category: 'Creative Extension',
+    text: 'Experiment with voice, style, and genre -- write the same event as a news article, diary entry, and poem' },
+  { id: 'W-19', domain: 'writing', levelRange: [5, 6], category: 'Creative Extension',
+    text: 'Design a product, create a process, or produce an exhibit with written explanation and rationale' },
+  { id: 'W-20', domain: 'writing', levelRange: [5, 6], category: 'Metalinguistic Awareness',
+    text: 'Self-edit for academic register -- identify and revise informal language into academic tone' },
+  { id: 'W-21', domain: 'writing', levelRange: [5, 6], category: 'Metalinguistic Awareness',
+    text: 'Analyze own writing for patterns of error and develop personalized editing checklists' },
+  { id: 'W-22', domain: 'writing', levelRange: [5, 6], category: 'Leadership & Mentoring',
+    text: 'Serve as peer editor for lower-level writers -- provide constructive feedback using a rubric' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // GENERAL / CROSS-DOMAIN
+  // ═══════════════════════════════════════════════════════════════
+
+  // L1-L2
   { id: 'G-1', domain: 'general', levelRange: [1, 2], category: 'Classroom Environment',
     text: 'Seat near teacher and bilingual buddy' },
   { id: 'G-2', domain: 'general', levelRange: [1, 2], category: 'Classroom Environment',
     text: 'Maintain a bilingual word wall updated weekly with current unit vocabulary' },
   { id: 'G-3', domain: 'general', levelRange: [1, 2], category: 'Classroom Environment',
     text: 'Post visual daily schedule and classroom routines' },
+  { id: 'G-3b', domain: 'general', levelRange: [1, 2], category: 'Classroom Environment',
+    text: 'Work 1-on-1 with the teacher during independent practice time for direct instruction' },
+  { id: 'G-3c', domain: 'general', levelRange: [1, 2], category: 'Comprehensible Input',
+    text: 'Use Google Translate strategically -- translate key concepts from Korean to English, not entire lessons' },
+
+  // L3
   { id: 'G-4', domain: 'general', levelRange: [3, 3], category: 'Classroom Environment',
     text: 'Use collaborative seating arrangements for structured peer interaction' },
   { id: 'G-5', domain: 'general', levelRange: [3, 3], category: 'Classroom Environment',
     text: 'Provide anchor charts for frequently used academic language' },
-  { id: 'G-6', domain: 'general', levelRange: [4, 5], category: 'Enrichment',
+  { id: 'G-5b', domain: 'general', levelRange: [3, 3], category: 'Comprehensible Input',
+    text: 'Use examples, outlines, and videos to supplement verbal instruction' },
+  { id: 'G-5c', domain: 'general', levelRange: [3, 3], category: 'Comprehensible Input',
+    text: 'Use graphs, tables, and charts to present information in non-linguistic formats' },
+
+  // L4-L5
+  { id: 'G-6', domain: 'general', levelRange: [4, 5], category: 'Coached Construction',
     text: 'Assign leadership roles: peer tutor, discussion facilitator, materials manager' },
-  { id: 'G-7', domain: 'general', levelRange: [4, 5], category: 'Enrichment',
+  { id: 'G-7', domain: 'general', levelRange: [4, 5], category: 'Coached Construction',
     text: 'Provide extension activities and independent research opportunities' },
+  { id: 'G-7b', domain: 'general', levelRange: [4, 5], category: 'Coached Construction',
+    text: 'Use mix-pair collaboration -- partner advanced ELLs with native speakers for content-area projects' },
+  { id: 'G-7c', domain: 'general', levelRange: [4, 5], category: 'Coached Construction',
+    text: 'Create models -- students build and explain physical or digital models of concepts' },
+
+  // L5-L6
+  { id: 'G-8', domain: 'general', levelRange: [5, 6], category: 'Leadership & Mentoring',
+    text: 'Assign as cross-class language ambassador -- visit lower-level classes to model and assist' },
+  { id: 'G-9', domain: 'general', levelRange: [5, 6], category: 'Leadership & Mentoring',
+    text: 'Create and teach mini-lessons to peers -- the act of teaching deepens the teacher\'s own mastery' },
+  { id: 'G-10', domain: 'general', levelRange: [5, 6], category: 'Leadership & Mentoring',
+    text: 'Facilitate small-group collaborative projects with mixed-proficiency teams' },
+  { id: 'G-11', domain: 'general', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Study how language differs across content areas -- science language vs. literary language vs. math language' },
+  { id: 'G-12', domain: 'general', levelRange: [5, 6], category: 'Academic Register',
+    text: 'Practice code-switching explicitly -- when and how to shift between casual and academic English' },
+  { id: 'G-13', domain: 'general', levelRange: [5, 6], category: 'Critical Literacy',
+    text: 'Evaluate sources for credibility, bias, and purpose -- develop information literacy skills' },
+  { id: 'G-14', domain: 'general', levelRange: [5, 6], category: 'Critical Literacy',
+    text: 'Debate ethical and social issues using structured academic discourse protocols' },
+  { id: 'G-15', domain: 'general', levelRange: [5, 6], category: 'Metalinguistic Awareness',
+    text: 'Compare English grammar/structures with Korean -- use L1 knowledge as a resource, not a barrier' },
+  { id: 'G-16', domain: 'general', levelRange: [5, 6], category: 'Metalinguistic Awareness',
+    text: 'Study how language changes across time periods and genres -- develop awareness of English as a living system' },
+  { id: 'G-17', domain: 'general', levelRange: [5, 6], category: 'Creative Extension',
+    text: 'Produce exhibits, blogs, or presentations for authentic audiences beyond the classroom' },
+  { id: 'G-18', domain: 'general', levelRange: [5, 6], category: 'Creative Extension',
+    text: 'Design and execute independent research projects with teacher as advisor rather than instructor' },
 ]
 
 const DOMAIN_LABELS: Record<string, string> = {
@@ -241,6 +437,64 @@ function WIDAOverview() {
       </div>
 
       <div className="bg-surface border border-border rounded-xl p-5 mb-6">
+        <h3 className="text-[14px] font-bold text-navy mb-1">Native Speaker Benchmarks by Grade</h3>
+        <p className="text-[11px] text-text-tertiary mb-4">What a typical native English-speaking student can do at each grade level. Use this as an anchor to calibrate where your ELLs fall. A WIDA L5-L6 student should approximate these benchmarks for their grade.</p>
+        <div className="overflow-hidden rounded-lg border border-border">
+          <table className="w-full text-[11px]">
+            <thead>
+              <tr className="bg-surface-alt">
+                <th className="text-left px-4 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold w-[60px]">Grade</th>
+                <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Listening</th>
+                <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Speaking</th>
+                <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Reading</th>
+                <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {[
+                { grade: '1', 
+                  listening: 'Follows 2-3 step oral directions. Understands stories read aloud with picture support. Can identify rhyming words and beginning sounds.',
+                  speaking: 'Speaks in complete sentences. Retells familiar stories in order. Asks and answers questions about a text. Vocabulary of ~6,000 words.',
+                  reading: 'Reads simple texts (levels D-J). Decodes CVC words. Recognizes ~100 sight words. Reads 60-80 CWPM by end of year.',
+                  writing: 'Writes 3-5 simple sentences on a topic. Uses invented spelling. Capitalizes first word and uses periods. Can label and list.' },
+                { grade: '2',
+                  listening: 'Follows multi-step directions. Understands grade-level read-alouds without picture support. Identifies main idea in oral presentations.',
+                  speaking: 'Uses complete sentences with growing complexity. Can explain reasoning. Participates in sustained conversations. Retells with key details.',
+                  reading: 'Reads chapter books (levels K-N). Fluency of 90-110 CWPM. Uses context clues for unknown words. Identifies story elements.',
+                  writing: 'Writes paragraphs with topic sentence. Uses basic punctuation and capitalization correctly. Spells common words correctly. Writes simple opinions and narratives.' },
+                { grade: '3',
+                  listening: 'Understands academic language in content areas. Follows classroom discussions and takes simple notes. Can distinguish fact from opinion in oral text.',
+                  speaking: 'Explains ideas using academic vocabulary. Asks clarifying questions. Can summarize information from a presentation. Uses compound sentences.',
+                  reading: 'Reads grade-level text independently (levels O-S). Fluency of 110-130 CWPM. Makes inferences. Identifies theme and main idea. Uses text features.',
+                  writing: 'Writes multi-paragraph pieces with introduction and conclusion. Uses transition words. Writes in different genres (narrative, opinion, informational). Revises own writing.' },
+                { grade: '4',
+                  listening: 'Understands abstract concepts presented orally. Can synthesize information from multiple speakers. Identifies speaker purpose and perspective.',
+                  speaking: 'Uses academic language functions (compare, analyze, evaluate). Presents organized oral reports. Supports opinions with evidence. Uses complex sentences.',
+                  reading: 'Reads complex texts across genres (levels T-V). Fluency of 120-145 CWPM. Analyzes character development. Compares texts. Reads content-area textbooks.',
+                  writing: 'Writes organized essays with evidence. Uses varied sentence structure. Edits for grammar and conventions. Writes research-based informational pieces.' },
+                { grade: '5',
+                  listening: 'Comprehends nuanced academic discourse. Evaluates oral arguments. Understands figurative language, idioms, and sarcasm in context.',
+                  speaking: 'Engages in academic debate. Uses precise vocabulary. Adjusts register for audience. Can teach concepts to peers. Uses conditional and hypothetical language.',
+                  reading: 'Reads at adult-level fluency 140-170 CWPM. Analyzes author\'s craft and perspective. Reads across disciplines independently. Synthesizes multiple sources.',
+                  writing: 'Writes sophisticated multi-paragraph essays. Uses literary devices. Writes in formal and informal registers. Self-edits effectively. Develops and supports a thesis.' },
+              ].map(row => (
+                <tr key={row.grade}>
+                  <td className="px-4 py-3 align-top">
+                    <span className="inline-flex w-8 h-8 items-center justify-center rounded-lg bg-navy text-white text-[12px] font-bold">{row.grade}</span>
+                  </td>
+                  <td className="px-3 py-3 align-top text-[10px] text-text-secondary leading-relaxed">{row.listening}</td>
+                  <td className="px-3 py-3 align-top text-[10px] text-text-secondary leading-relaxed">{row.speaking}</td>
+                  <td className="px-3 py-3 align-top text-[10px] text-text-secondary leading-relaxed">{row.reading}</td>
+                  <td className="px-3 py-3 align-top text-[10px] text-text-secondary leading-relaxed">{row.writing}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[9px] text-text-tertiary mt-2 italic">Sources: Common Core State Standards, Hasbrouck-Tindal ORF norms, and typical developmental milestones. CWPM figures represent 50th percentile spring benchmarks.</p>
+      </div>
+
+      <div className="bg-surface border border-border rounded-xl p-5 mb-6">
         <h3 className="text-[14px] font-bold text-navy mb-1">Typical WIDA Distributions by Class</h3>
         <p className="text-[11px] text-text-tertiary mb-4">These are general expectations. Individual students may vary -- and those outliers are the whole point of tracking WIDA levels.</p>
         <div className="overflow-hidden rounded-lg border border-border">
@@ -259,7 +513,7 @@ function WIDAOverview() {
                 { cls: 'Daisy', range: 'L2-L3', desc: 'Mostly Developing. Students follow familiar topics, speak in simple sentences, write with support. Graphic organizers and structured activities are key scaffolds.' },
                 { cls: 'Sunflower', range: 'L3-L4', desc: 'Developing to Expanding. Growing independence. Less scaffolding needed, but academic vocabulary and text features still require explicit teaching.' },
                 { cls: 'Marigold', range: 'L3-L5', desc: 'Expanding to Bridging. Students can work independently on most tasks. Focus shifts to academic language precision, complex texts, and writing craft.' },
-                { cls: 'Snapdragon', range: 'L4-L5', desc: 'Expanding to Bridging. Near-independent. Occasional support with complex academic language, figurative language, and nuanced comprehension.' },
+                { cls: 'Snapdragon', range: 'L4-L6', desc: 'Expanding to Reaching. Most students are L4-L5 with a few at L6. Focus on academic register, critical literacy, metalinguistic awareness, and leadership roles for the highest-proficiency students.' },
               ].map(row => (
                 <tr key={row.cls} className="border-t border-border">
                   <td className="px-4 py-2.5">
@@ -468,6 +722,173 @@ function WIDAvsCCSS() {
         </div>
       </div>
 
+      {/* ─── Krashen Comprehensible Input/Output Framework ─── */}
+      <div className="bg-surface border border-border rounded-xl p-5 mb-6">
+        <h3 className="text-[14px] font-bold text-navy mb-1">Comprehensible Input & Output Framework</h3>
+        <p className="text-[11px] text-text-secondary leading-relaxed mb-1">
+          Based on Krashen (1981). As students move from Beginning to Bridging, teacher scaffolding decreases and student output independence increases. The four columns below show how the teacher's role shifts from <strong>Direct Instruction</strong> (doing it for them) through <strong>Joint Construction</strong> (doing it with them) and <strong>Coached Construction</strong> (guiding while they do it) to <strong>Monitoring</strong> (watching them do it independently).
+        </p>
+        <p className="text-[10px] text-text-tertiary italic mb-4">
+          Source: Krashen, S.D. (1981). Second language acquisition and second language learning. Oxford: Pergamon Press. Adapted by EmpoweringELLs.
+        </p>
+
+        <div className="overflow-hidden rounded-xl border border-border">
+          <table className="w-full text-[11px]">
+            <thead>
+              <tr>
+                <th className="px-3 py-2.5 text-left text-[9px] uppercase tracking-wider font-semibold bg-surface-alt text-text-tertiary w-[100px]">WIDA Level</th>
+                <th className="px-3 py-2.5 text-left text-[9px] uppercase tracking-wider font-semibold text-white" style={{ backgroundColor: '#0277BD' }}>
+                  Direct Instruction
+                  <span className="block font-normal normal-case tracking-normal text-[8px] opacity-80 mt-0.5">Teacher directly teaches strategies to build knowledge and comprehension</span>
+                </th>
+                <th className="px-3 py-2.5 text-left text-[9px] uppercase tracking-wider font-semibold text-white" style={{ backgroundColor: '#0288D1' }}>
+                  Joint Construction
+                  <span className="block font-normal normal-case tracking-normal text-[8px] opacity-80 mt-0.5">Teacher prompts students to construct meaning using learned strategies</span>
+                </th>
+                <th className="px-3 py-2.5 text-left text-[9px] uppercase tracking-wider font-semibold text-white" style={{ backgroundColor: '#039BE5' }}>
+                  Coached Construction
+                  <span className="block font-normal normal-case tracking-normal text-[8px] opacity-80 mt-0.5">Teacher provides feedback as students use strategies independently</span>
+                </th>
+                <th className="px-3 py-2.5 text-left text-[9px] uppercase tracking-wider font-semibold text-white" style={{ backgroundColor: '#03A9F4' }}>
+                  Monitor
+                  <span className="block font-normal normal-case tracking-normal text-[8px] opacity-80 mt-0.5">Teacher monitors students' independent use of strategies</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {/* L1-L2: Beginning / Entering-Emerging */}
+              <tr>
+                <td className="px-3 py-3 align-top">
+                  <div className="px-2 py-1 rounded text-[10px] font-bold text-center" style={{ backgroundColor: '#FFEBEE', color: '#C62828' }}>L1-L2</div>
+                  <p className="text-[8px] text-text-tertiary text-center mt-1">Beginning</p>
+                </td>
+                <td className="px-3 py-3 align-top" style={{ backgroundColor: '#E1F5FE' }}>
+                  <div className="space-y-1">
+                    {['Images and gestures', 'Modeling tasks step-by-step', 'Physical objects and realia', 'Pacing instruction slowly', 'Viewing videos in Korean (HL)', 'Reading texts in Korean first', '1-on-1 teacher support', 'Google Translate for key concepts'].map((s, i) => (
+                      <p key={i} className="text-[10px] text-text-secondary leading-snug pl-2 relative before:content-['\2022'] before:absolute before:left-0 before:text-blue-400">{s}</p>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-3 py-3 align-top" style={{ backgroundColor: '#E1F5FE40' }}>
+                  <div className="space-y-1">
+                    {['Cloze passages', 'Sentence frames', 'Highlighting with colors', 'Annotated diagrams', 'Short sentences translating HL to English', 'Draw, label, circle, name'].map((s, i) => (
+                      <p key={i} className="text-[10px] text-text-secondary leading-snug pl-2 relative before:content-['\2022'] before:absolute before:left-0 before:text-blue-300">{s}</p>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-3 py-3 align-top text-[10px] text-text-tertiary italic" colSpan={2}>
+                  <p className="mt-4">Students at L1-L2 are primarily in the Direct Instruction and Joint Construction zones. Teacher scaffolding is heavy.</p>
+                </td>
+              </tr>
+
+              {/* L3: Developing */}
+              <tr>
+                <td className="px-3 py-3 align-top">
+                  <div className="px-2 py-1 rounded text-[10px] font-bold text-center" style={{ backgroundColor: '#FFFDE7', color: '#F57F17' }}>L3</div>
+                  <p className="text-[8px] text-text-tertiary text-center mt-1">Developing</p>
+                </td>
+                <td className="px-3 py-3 align-top" style={{ backgroundColor: '#E1F5FE30' }}>
+                  <div className="space-y-1">
+                    {['Modified texts', 'Examples before tasks', 'Collaborating in HL groups'].map((s, i) => (
+                      <p key={i} className="text-[10px] text-text-secondary leading-snug pl-2 relative before:content-['\2022'] before:absolute before:left-0 before:text-blue-400">{s}</p>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-3 py-3 align-top" style={{ backgroundColor: '#E1F5FE60' }}>
+                  <div className="space-y-1">
+                    {['Compare & contrast tasks', 'Prepared summaries', 'Lists and categorize activities', 'Outlines and videos', 'Graphs, tables, and charts', 'Summarize and sequence events', 'Quick Writes'].map((s, i) => (
+                      <p key={i} className="text-[10px] text-text-secondary leading-snug pl-2 relative before:content-['\2022'] before:absolute before:left-0 before:text-blue-300">{s}</p>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-3 py-3 align-top" style={{ backgroundColor: '#E1F5FE40' }}>
+                  <div className="space-y-1">
+                    {['Explain & evaluate ideas', 'Compare & contrast ideas', 'Explain cause and effect', 'Defend opinions', 'Concept maps', 'Sentence frames that require explaining'].map((s, i) => (
+                      <p key={i} className="text-[10px] text-text-secondary leading-snug pl-2 relative before:content-['\2022'] before:absolute before:left-0 before:text-blue-200">{s}</p>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-3 py-3 align-top text-[10px] text-text-tertiary italic">
+                  <p className="mt-4">Some students beginning to reach monitored output for familiar tasks</p>
+                </td>
+              </tr>
+
+              {/* L4-L5: Expanding / Bridging */}
+              <tr>
+                <td className="px-3 py-3 align-top">
+                  <div className="px-2 py-1 rounded text-[10px] font-bold text-center" style={{ backgroundColor: '#E8F5E9', color: '#2E7D32' }}>L4-L5</div>
+                  <p className="text-[8px] text-text-tertiary text-center mt-1">Expanding / Bridging</p>
+                </td>
+                <td className="px-3 py-3 align-top text-[10px] text-text-tertiary italic" colSpan={1}>
+                  <p className="mt-2">Minimal direct instruction needed</p>
+                </td>
+                <td className="px-3 py-3 align-top" style={{ backgroundColor: '#E1F5FE30' }}>
+                  <div className="space-y-1">
+                    {['Case studies', 'Mentor texts and analogies', 'Blog and infograph creation'].map((s, i) => (
+                      <p key={i} className="text-[10px] text-text-secondary leading-snug pl-2 relative before:content-['\2022'] before:absolute before:left-0 before:text-blue-300">{s}</p>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-3 py-3 align-top" style={{ backgroundColor: '#E1F5FE50' }}>
+                  <div className="space-y-1">
+                    {['Mix groups and presentations', 'Poster creation', 'Construct single paragraphs', 'Evaluate ideas with sentence starters', 'Mix-pair collaboration'].map((s, i) => (
+                      <p key={i} className="text-[10px] text-text-secondary leading-snug pl-2 relative before:content-['\2022'] before:absolute before:left-0 before:text-blue-200">{s}</p>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-3 py-3 align-top" style={{ backgroundColor: '#E1F5FE60' }}>
+                  <div className="space-y-1">
+                    {['Compose multi-paragraph texts', 'Independent construction', 'Hypothesize & provide justification', 'Inferencing & providing reasoning', 'Connect topics to different contexts', 'Using mainly English with some HL'].map((s, i) => (
+                      <p key={i} className="text-[10px] text-text-secondary leading-snug pl-2 relative before:content-['\2022'] before:absolute before:left-0 before:text-blue-200">{s}</p>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+
+              {/* L5-L6: Bridging / Reaching */}
+              <tr>
+                <td className="px-3 py-3 align-top">
+                  <div className="px-2 py-1 rounded text-[10px] font-bold text-center" style={{ backgroundColor: '#E3F2FD', color: '#1565C0' }}>L5-L6</div>
+                  <p className="text-[8px] text-text-tertiary text-center mt-1">Bridging / Reaching</p>
+                </td>
+                <td className="px-3 py-3 align-top text-[10px] text-text-tertiary italic" colSpan={2}>
+                  <p className="mt-2">Students at L5-L6 operate primarily in the Coached Construction and Monitor zones. Teacher role shifts to advisor.</p>
+                </td>
+                <td className="px-3 py-3 align-top" style={{ backgroundColor: '#E1F5FE40' }}>
+                  <div className="space-y-1">
+                    {['Formal debate and argumentation', 'Literary analysis', 'Cross-text comparison', 'Register shifting practice', 'Peer teaching and mentoring'].map((s, i) => (
+                      <p key={i} className="text-[10px] text-text-secondary leading-snug pl-2 relative before:content-['\2022'] before:absolute before:left-0 before:text-blue-200">{s}</p>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-3 py-3 align-top" style={{ backgroundColor: '#E1F5FE60' }}>
+                  <div className="space-y-1">
+                    {['Design products and processes', 'Produce exhibits for real audiences', 'Teach others (language mentor role)', 'Independent research projects', 'Creative writing with voice and style', 'Create models and systems'].map((s, i) => (
+                      <p key={i} className="text-[10px] text-text-secondary leading-snug pl-2 relative before:content-['\2022'] before:absolute before:left-0 before:text-blue-100">{s}</p>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="bg-navy/5 rounded-lg p-3">
+            <p className="text-[10px] font-bold text-navy mb-1">Reading the table</p>
+            <p className="text-[10px] text-text-secondary leading-relaxed">
+              The vertical axis represents teacher scaffolding (heavy at top, light at bottom). The horizontal axis represents student output independence (low at left, high at right). As WIDA level increases, activities shift from the top-left (teacher-directed, simple output) toward the bottom-right (student-directed, complex output).
+            </p>
+          </div>
+          <div className="bg-navy/5 rounded-lg p-3">
+            <p className="text-[10px] font-bold text-navy mb-1">Using this in practice</p>
+            <p className="text-[10px] text-text-secondary leading-relaxed">
+              For any lesson, identify where each student falls on this grid. A student at L2 working on the same content as an L5 student needs strategies from a different column. The content standard (CCSS) stays the same -- the input strategies and output expectations shift based on the student's WIDA level.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
         <h3 className="text-[14px] font-bold text-blue-900 mb-2">Grade-Level Offset Reminder</h3>
         <p className="text-[11px] text-blue-800 leading-relaxed mb-3">
@@ -502,7 +923,7 @@ function ScaffoldIndex() {
     return SCAFFOLD_BANK.filter(s => {
       if (filterDomain !== 'all' && s.domain !== filterDomain) return false
       if (filterLevel !== 'all') {
-        const [lo, hi] = filterLevel === '1-2' ? [1, 2] : filterLevel === '3' ? [3, 3] : [4, 5]
+        const [lo, hi] = filterLevel === '1-2' ? [1, 2] : filterLevel === '3' ? [3, 3] : filterLevel === '5-6' ? [5, 6] : [4, 5]
         if (s.levelRange[0] > hi || s.levelRange[1] < lo) return false
       }
       if (searchTerm && !s.text.toLowerCase().includes(searchTerm.toLowerCase()) && !s.category.toLowerCase().includes(searchTerm.toLowerCase())) return false
@@ -543,7 +964,7 @@ function ScaffoldIndex() {
         <div className="w-px h-6 bg-border" />
         <div className="flex gap-1">
           <button onClick={() => setFilterLevel('all')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterLevel === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All Levels</button>
-          {[{ key: '1-2', label: 'L1-L2' }, { key: '3', label: 'L3' }, { key: '4-5', label: 'L4-L5' }].map(l => (
+          {[{ key: '1-2', label: 'L1-L2' }, { key: '3', label: 'L3' }, { key: '4-5', label: 'L4-L5' }, { key: '5-6', label: 'L5-L6' }].map(l => (
             <button key={l.key} onClick={() => setFilterLevel(l.key)}
               className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterLevel === l.key ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>
               {l.label}
@@ -579,6 +1000,7 @@ function ScaffoldIndex() {
                     {scaffolds.map(s => {
                       const levelLabel = s.levelRange[0] === s.levelRange[1] ? `L${s.levelRange[0]}` : `L${s.levelRange[0]}-L${s.levelRange[1]}`
                       const levelColor = s.levelRange[1] <= 2 ? { bg: '#FFEBEE', text: '#C62828', border: '#EF9A9A' }
+                        : s.levelRange[0] >= 5 ? { bg: '#E3F2FD', text: '#1565C0', border: '#90CAF9' }
                         : s.levelRange[0] >= 4 ? { bg: '#E8F5E9', text: '#2E7D32', border: '#A5D6A7' }
                         : { bg: '#FFFDE7', text: '#F57F17', border: '#FFF59D' }
                       return (
@@ -617,6 +1039,9 @@ function AssignScaffolds() {
   const [saving, setSaving] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
   const [pickerDomain, setPickerDomain] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<'individual' | 'class'>('individual')
+  const [classScaffolds, setClassScaffolds] = useState<Record<string, any[]>>({})
+  const [classLoading, setClassLoading] = useState(false)
 
   const availableClasses = isAdmin ? ENGLISH_CLASSES : [currentTeacher?.english_class as EnglishClass].filter(Boolean)
 
@@ -695,6 +1120,39 @@ function AssignScaffolds() {
   const [customDomain, setCustomDomain] = useState('general')
   const [customText, setCustomText] = useState('')
 
+  // Load all scaffolds for class view
+  useEffect(() => {
+    if (viewMode !== 'class' || students.length === 0) return
+    setClassLoading(true)
+    ;(async () => {
+      const { data } = await supabase.from('student_scaffolds').select('student_id, domain, scaffold_text')
+        .in('student_id', students.map(s => s.id)).eq('is_active', true)
+      const map: Record<string, any[]> = {}
+      if (data) data.forEach((r: any) => {
+        if (!map[r.student_id]) map[r.student_id] = []
+        map[r.student_id].push(r)
+      })
+      setClassScaffolds(map)
+      setClassLoading(false)
+    })()
+  }, [viewMode, students])
+
+  // Group students by shared scaffolds for class view
+  const scaffoldGroups = useMemo(() => {
+    if (viewMode !== 'class') return []
+    const textToStudents = new Map<string, { domain: string; text: string; studentIds: Set<string> }>()
+    Object.entries(classScaffolds).forEach(([sid, scaffs]) => {
+      scaffs.forEach(s => {
+        const key = s.scaffold_text
+        if (!textToStudents.has(key)) textToStudents.set(key, { domain: s.domain, text: s.scaffold_text, studentIds: new Set() })
+        textToStudents.get(key)!.studentIds.add(sid)
+      })
+    })
+    return Array.from(textToStudents.values())
+      .map(g => ({ ...g, studentIds: Array.from(g.studentIds), count: g.studentIds.size }))
+      .sort((a, b) => b.count - a.count)
+  }, [classScaffolds, viewMode])
+
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
@@ -713,8 +1171,88 @@ function AssignScaffolds() {
             </button>
           ))}
         </div>
+        <div className="w-px h-6 bg-border" />
+        <div className="flex gap-1">
+          <button onClick={() => setViewMode('individual')}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${viewMode === 'individual' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>
+            Individual
+          </button>
+          <button onClick={() => setViewMode('class')}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${viewMode === 'class' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>
+            Class View
+          </button>
+        </div>
       </div>
 
+      {viewMode === 'class' ? (
+        <div>
+          <div className="bg-navy/5 border border-navy/10 rounded-xl p-4 mb-5">
+            <p className="text-[12px] text-text-secondary leading-relaxed">
+              See all assigned scaffolds across your class, grouped by strategy. Students who share the same scaffold appear together -- use this to identify natural groupings for differentiated instruction.
+            </p>
+          </div>
+          {classLoading ? (
+            <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+          ) : scaffoldGroups.length === 0 ? (
+            <div className="bg-surface border border-border rounded-xl p-12 text-center">
+              <p className="text-text-tertiary text-[13px]">No scaffolds assigned to students in this class yet.</p>
+              <p className="text-text-tertiary text-[11px] mt-1">Switch to Individual mode to assign scaffolds, then come back here to see groupings.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {scaffoldGroups.map((group, gi) => (
+                <div key={gi} className="bg-surface border border-border rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-navy/10 flex items-center justify-center">
+                      <span className="text-[14px] font-bold text-navy">{group.count}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 uppercase">{group.domain}</span>
+                        <p className="text-[12px] text-text-primary leading-relaxed">{group.text}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {group.studentIds.map(sid => {
+                          const s = students.find(st => st.id === sid)
+                          return s ? (
+                            <span key={sid} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-alt border border-border text-[10px] font-medium text-text-secondary">
+                              {s.english_name}
+                            </span>
+                          ) : null
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Summary stats */}
+              <div className="bg-surface-alt rounded-xl p-4 mt-4">
+                <p className="text-[11px] font-semibold text-navy mb-2">Quick Stats</p>
+                <div className="flex gap-4 text-[11px] text-text-secondary">
+                  <span>{students.length} students in class</span>
+                  <span>{Object.keys(classScaffolds).length} with assigned scaffolds</span>
+                  <span>{students.length - Object.keys(classScaffolds).length} without scaffolds</span>
+                  <span>{scaffoldGroups.length} unique strategies in use</span>
+                </div>
+                {students.length - Object.keys(classScaffolds).length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-[10px] text-amber-700 font-medium">Students without scaffolds:</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {students.filter(s => !classScaffolds[s.id]).map(s => (
+                        <button key={s.id} onClick={() => { setViewMode('individual'); setSelectedStudent(s.id) }}
+                          className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[10px] text-amber-700 hover:bg-amber-100">
+                          {s.english_name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="grid grid-cols-12 gap-5">
         {/* Student list */}
         <div className="col-span-3 bg-surface border border-border rounded-xl overflow-hidden">
@@ -846,6 +1384,7 @@ function AssignScaffolds() {
           )}
         </div>
       </div>
+      )}
 
       {/* Scaffold picker modal */}
       {showPicker && (

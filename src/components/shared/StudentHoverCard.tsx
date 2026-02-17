@@ -32,6 +32,7 @@ interface CardData {
   wida: Record<string, number>
   anecdotal: any
   behaviorCount: number
+  scaffolds: { domain: string; text: string }[]
 }
 
 export default function StudentHoverCard({ studentId, studentName, koreanName, englishClass, grade, children, preloadedData }: StudentHoverCardProps) {
@@ -48,7 +49,10 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
 
     // If preloaded data exists, use it
     if (preloadedData) {
-      const widaCache = await loadWIDACache()
+      const [widaCache, { data: scaffData }] = await Promise.all([
+        loadWIDACache(),
+        supabase.from('student_scaffolds').select('domain, scaffold_text').eq('student_id', studentId).eq('is_active', true).limit(5),
+      ])
       setData({
         domainGrades: (preloadedData.grades || []).map((g: any) => ({ domain: g.domain, score: g.score })),
         reading: (preloadedData.reading || []).slice(0, 3).map((r: any) => ({ date: r.date, cwpm: r.cwpm ? Math.round(r.cwpm) : 0 })),
@@ -56,16 +60,18 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
         wida: widaCache[studentId] || {},
         anecdotal: preloadedData.anecdotal || null,
         behaviorCount: 0,
+        scaffolds: (scaffData || []).map((s: any) => ({ domain: s.domain, text: s.scaffold_text })),
       })
       setLoading(false)
       return
     }
 
-    const [{ data: sg }, { data: rd }, { data: at }, { count: bhCount }] = await Promise.all([
+    const [{ data: sg }, { data: rd }, { data: at }, { count: bhCount }, { data: scaffData }] = await Promise.all([
       supabase.from('semester_grades').select('domain, score').eq('student_id', studentId).order('created_at', { ascending: false }).limit(10),
       supabase.from('reading_assessments').select('date, cwpm').eq('student_id', studentId).order('date', { ascending: false }).limit(3),
       supabase.from('attendance').select('status').eq('student_id', studentId),
       supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('student_id', studentId),
+      supabase.from('student_scaffolds').select('domain, scaffold_text').eq('student_id', studentId).eq('is_active', true).limit(5),
     ])
 
     const attCounts = { present: 0, absent: 0, tardy: 0 }
@@ -84,6 +90,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
       wida: widaCache[studentId] || {},
       anecdotal: null,
       behaviorCount: bhCount || 0,
+      scaffolds: (scaffData || []).map((s: any) => ({ domain: s.domain, text: s.scaffold_text })),
     })
     setLoading(false)
   }, [studentId, data, preloadedData])
@@ -189,6 +196,21 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
                         <p className="text-[8px] text-text-tertiary">{new Date(r.date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                         <p className="text-[14px] font-bold text-navy">{r.cwpm}</p>
                         <p className="text-[7px] text-text-tertiary">CWPM</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Assigned Scaffolds */}
+              {data.scaffolds.length > 0 && (
+                <div>
+                  <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Active Scaffolds</p>
+                  <div className="space-y-1">
+                    {data.scaffolds.map((s, i) => (
+                      <div key={i} className="flex items-start gap-1.5 px-2 py-1 rounded bg-blue-50 border border-blue-100">
+                        <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 uppercase flex-shrink-0 mt-px">{s.domain.slice(0, 4)}</span>
+                        <p className="text-[9px] text-blue-800 leading-snug">{s.text}</p>
                       </div>
                     ))}
                   </div>
