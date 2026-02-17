@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WIDABadge from '@/components/shared/WIDABadge'
+import RosterUploadModal from './RosterUploadModal'
 import { exportToCSV } from '@/lib/export'
 
 // ─── Main View ──────────────────────────────────────────────────────
@@ -192,16 +193,31 @@ export default function StudentsView() {
 
 function ManageUploadCard({ onComplete }: { onComplete: () => void }) {
   const { language, showToast } = useApp()
-  const [dragOver, setDragOver] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [existingStudents, setExistingStudents] = useState<Student[]>([])
+
+  const openUpload = async () => {
+    const { data } = await supabase.from('students').select('*').eq('is_active', true)
+    setExistingStudents(data || [])
+    setShowModal(true)
+  }
+
   return (
-    <div className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${dragOver ? 'border-navy bg-white' : 'border-border hover:border-navy/40 bg-surface'}`}
-      onDragOver={e => { e.preventDefault(); setDragOver(true) }} onDragLeave={() => setDragOver(false)}
-      onDrop={e => { e.preventDefault(); setDragOver(false); showToast('Excel parsing coming in next update') }}
-      onClick={() => showToast('Excel parsing coming in next update')}>
-      <FileSpreadsheet size={28} className="mx-auto text-text-tertiary mb-2" />
-      <p className="text-[13px] font-medium">{language === 'ko' ? '명단 업로드' : 'Upload Roster'}</p>
-      <p className="text-[11px] text-text-tertiary mt-0.5">.xlsx, .xls, or .csv</p>
-    </div>
+    <>
+      <div className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors border-border hover:border-navy/40 bg-surface"
+        onClick={openUpload}>
+        <FileSpreadsheet size={28} className="mx-auto text-text-tertiary mb-2" />
+        <p className="text-[13px] font-medium">{language === 'ko' ? '명단 업로드' : 'Upload Roster'}</p>
+        <p className="text-[11px] text-text-tertiary mt-0.5">.xlsx, .xls, or .csv</p>
+      </div>
+      {showModal && (
+        <RosterUploadModal
+          existingStudents={existingStudents}
+          onComplete={() => { setShowModal(false); onComplete() }}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
   )
 }
 

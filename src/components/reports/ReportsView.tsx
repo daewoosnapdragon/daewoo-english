@@ -690,26 +690,89 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 <div className="text-[10px] text-[#94a3b8]">{s.english_class} Class</div>
               </div>
             </div>
-            {/* AI Draft — hidden on print */}
+            {/* Student Reference — hidden on print */}
             <button onClick={() => setShowAiPanel(!showAiPanel)}
               className={`print:hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${showAiPanel ? 'bg-navy text-white border-navy' : 'bg-[#f8f5f1] text-[#475569] border-[#d1d5db] hover:bg-[#f1ede8]'}`}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-              AI Draft
+              <BarChart3 size={14} />
+              Student Reference
             </button>
           </div>
 
-          {/* AI Panel -- Template-based comment generator */}
+          {/* Student Reference Panel */}
           {showAiPanel && (
             <div className="print:hidden bg-[#f8f9fb] border border-[#d1d5db] rounded-xl p-4 mb-3.5">
-              <p className="text-[11px] font-bold text-[#475569] mb-2">Comment Draft Generator</p>
-              <p className="text-[11px] text-[#64748b] leading-relaxed mb-3">Generates a draft from this student's grades, reading fluency, and semester trends. Edit to add your personal observations.</p>
-              <div className="flex gap-1.5 flex-wrap mb-3">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[11px] font-bold text-[#475569]">Student Reference -- All Data at a Glance</p>
+                <button onClick={() => {
+                  const lines = [
+                    `${s.english_name} (${s.korean_name}) -- ${s.english_class} -- Grade ${s.grade}`,
+                    `Semester: ${d.semesterName}`,
+                    '',
+                    'DOMAIN GRADES:',
+                    ...DOMAINS.map(dom => `  ${DOMAIN_SHORT[dom]}: ${d.domainGrades[dom] != null ? `${d.domainGrades[dom]!.toFixed(1)}% (${getLetterGrade(d.domainGrades[dom]!)})` : 'No grade'}`),
+                    `  Overall: ${d.overallGrade != null ? `${d.overallGrade.toFixed(1)}% (${d.overallLetter})` : 'No grade'}`,
+                    '',
+                    'READING FLUENCY:',
+                    `  CWPM: ${d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : 'N/A'}`,
+                    `  Lexile: ${d.latestReading?.passage_level || d.latestReading?.reading_level || 'N/A'}`,
+                    `  Accuracy: ${d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : 'N/A'}`,
+                    '',
+                    `ATTENDANCE: ${d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}% (${d.attCounts.present}P/${d.attCounts.absent}A/${d.attCounts.tardy}T)` : 'N/A'}`,
+                    `BEHAVIOR LOGS: ${d.behaviorCount} entries`,
+                  ]
+                  navigator.clipboard.writeText(lines.join('\n'))
+                  showToast('Copied to clipboard')
+                }} className="px-2.5 py-1 rounded-lg text-[10px] font-medium bg-white border border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]">
+                  Copy to Clipboard
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-2">Domain Grades</p>
+                  {DOMAINS.map(dom => {
+                    const v = d.domainGrades[dom]
+                    return (
+                      <div key={dom} className="flex items-center justify-between py-0.5">
+                        <span className="text-[11px] text-[#64748b]">{DOMAIN_SHORT[dom]}</span>
+                        <span className="text-[11px] font-bold" style={{ color: v != null ? letterColor(getLetterGrade(v)) : '#94a3b8' }}>
+                          {v != null ? `${v.toFixed(1)}% (${getLetterGrade(v)})` : '--'}
+                        </span>
+                      </div>
+                    )
+                  })}
+                  <div className="border-t border-[#e2e8f0] mt-1 pt-1 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-navy">Overall</span>
+                    <span className="text-[11px] font-bold text-navy">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}% (${d.overallLetter})` : '--'}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+                    <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Reading Fluency</p>
+                    <div className="flex gap-4">
+                      <div><p className="text-[9px] text-[#94a3b8]">CWPM</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : '--'}</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">Lexile</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.passage_level || d.latestReading?.reading_level || '--'}</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">Acc.</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '--'}</p></div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+                    <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Attendance / Behavior</p>
+                    <div className="flex gap-4">
+                      <div><p className="text-[9px] text-[#94a3b8]">Attendance</p><p className="text-[12px] font-bold text-navy">{d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}%` : '--'}</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">Behavior</p><p className="text-[12px] font-bold text-navy">{d.behaviorCount} logs</p></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] font-semibold text-[#475569] mb-2">Quick Draft</p>
+              <div className="flex gap-1.5 flex-wrap mb-2">
                 {(['Balanced', 'Highlight growth', 'Constructive'] as const).map((tone) => (
                   <button key={tone} onClick={() => setCommentTone(tone)}
                     className={`px-2.5 py-1 rounded-md text-[10px] font-semibold border transition-all ${commentTone === tone ? 'bg-navy text-white border-navy' : 'bg-white border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]'}`}>{tone}</button>
                 ))}
               </div>
-              <button onClick={() => generateTemplateComment()} className="w-full py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark">Generate Draft Comment</button>
+              <button onClick={() => generateTemplateComment()} className="w-full py-2 rounded-lg text-[11px] font-semibold bg-navy text-white hover:bg-navy-dark">Generate Draft Comment</button>
             </div>
           )}
 
@@ -753,9 +816,9 @@ function printProgressReport(student: any, data: any) {
     return `<div style="text-align:center;border:1px solid ${t.border};border-radius:8px;padding:10px 6px;background:${t.bg}"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">${DOMAIN_SHORT[dom]}</p><p style="font-size:18px;font-weight:700;color:${letterColor(letter)};margin-top:4px">${letter}</p><p style="font-size:10px;color:#64748b">${v.toFixed(1)}%</p></div>`
   }).join('')
 
-  const attPct = data.totalAtt > 0 ? `${Math.round((data.attCounts.present / data.totalAtt) * 100)}%` : '--'
   const cwpm = data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'
-  const readLvl = data.latestReading ? (data.latestReading.passage_level || data.latestReading.reading_level || '--') : '--'
+  const lexile = data.latestReading ? (data.latestReading.passage_level || data.latestReading.reading_level || '--') : '--'
+  const accuracy = data.latestReading?.accuracy_rate != null ? `${data.latestReading.accuracy_rate.toFixed(1)}%` : '--'
 
   const pw = window.open('', '_blank')
   if (!pw) return
@@ -781,12 +844,15 @@ function printProgressReport(student: any, data: any) {
     </div>
     <p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:8px">Domain Scores</p>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px">${ds}</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Attendance</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${attPct}</p><p style="font-size:10px;color:#94a3b8">${data.attCounts.present}P / ${data.attCounts.absent}A / ${data.attCounts.tardy}T</p></div>
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Reading (CWPM)</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${cwpm}</p><p style="font-size:10px;color:#94a3b8">Level: ${readLvl}</p></div>
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Behavior Logs</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${data.behaviorCount}</p><p style="font-size:10px;color:#94a3b8">total entries</p></div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin-bottom:20px">
+      <p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:8px">Reading Fluency</p>
+      <div style="display:flex;gap:24px">
+        <div><p style="font-size:9px;color:#94a3b8">CWPM</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${cwpm}</p></div>
+        <div><p style="font-size:9px;color:#94a3b8">Lexile</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${lexile}</p></div>
+        <div><p style="font-size:9px;color:#94a3b8">Accuracy</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${accuracy}</p></div>
+      </div>
     </div>
-    ${data.comment ? `<p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:6px">Teacher Comments</p><div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.7;color:#374151">${data.comment}</div>` : ''}
+    ${data.comment ? `<p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:6px">Teacher Comment</p><div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.7;color:#374151">${data.comment}</div>` : ''}
     <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid #e8e0d8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School \u00b7 English Program \u00b7 ${data.semesterName}</div>
   </div></div></body></html>`)
   pw.document.close(); pw.print()
@@ -829,21 +895,14 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
       const overallGrade = validDomains.length > 0 ? validDomains.reduce((a, b) => a + b, 0) / validDomains.length : null
       const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '--'
 
-      const { data: attendance } = await supabase.from('attendance').select('status').eq('student_id', student.id)
-      const attCounts = { present: 0, absent: 0, tardy: 0 }
-      attendance?.forEach((a: any) => { if (attCounts[a.status as keyof typeof attCounts] !== undefined) attCounts[a.status as keyof typeof attCounts]++ })
-      const totalAtt = (attendance || []).length
       const { data: reading } = await supabase.from('reading_assessments').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(1)
-      const { count: behaviorCount } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('student_id', student.id)
       const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', student.id).eq('semester_id', semesterId).limit(1).single()
       const { data: teacherData } = await supabase.from('teachers').select('name').eq('english_class', student.english_class).limit(1).single()
       const { data: semData } = await supabase.from('semesters').select('name').eq('id', semesterId).single()
 
       const data = {
         domainGrades, overallGrade, overallLetter,
-        attCounts, totalAtt,
         latestReading: reading?.[0] || null,
-        behaviorCount: behaviorCount || 0,
         comment: commentData?.text || '',
         teacherName: teacherData?.name || currentTeacher?.name || '',
         semesterName: semData?.name || '',
@@ -855,9 +914,9 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
         return `<div style="text-align:center;border:1px solid ${t.border};border-radius:8px;padding:10px 6px;background:${t.bg}"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">${DOMAIN_SHORT[dom]}</p><p style="font-size:18px;font-weight:700;color:${letterColor(letter)};margin-top:4px">${letter}</p><p style="font-size:10px;color:#64748b">${v.toFixed(1)}%</p></div>`
       }).join('')
 
-      const attPct = data.totalAtt > 0 ? `${Math.round((data.attCounts.present / data.totalAtt) * 100)}%` : '--'
       const cwpm = data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'
-      const readLvl = data.latestReading ? (data.latestReading.passage_level || data.latestReading.reading_level || '--') : '--'
+      const lexile = data.latestReading ? (data.latestReading.passage_level || data.latestReading.reading_level || '--') : '--'
+      const accuracy = data.latestReading?.accuracy_rate != null ? `${data.latestReading.accuracy_rate.toFixed(1)}%` : '--'
 
       pw.document.write(`<div class="card">
       <div style="background:#1e3a5f;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
@@ -876,12 +935,15 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
         </div>
         <p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Domain Scores</p>
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px">${ds}</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Attendance</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${attPct}</p><p style="font-size:10px;color:#94a3b8">${data.attCounts.present}P / ${data.attCounts.absent}A / ${data.attCounts.tardy}T</p></div>
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Reading (CWPM)</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${cwpm}</p><p style="font-size:10px;color:#94a3b8">Level: ${readLvl}</p></div>
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">Behavior Logs</p><p style="font-size:16px;font-weight:700;color:#1e3a5f;margin-top:4px">${data.behaviorCount}</p><p style="font-size:10px;color:#94a3b8">total entries</p></div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin-bottom:16px">
+          <p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Reading Fluency</p>
+          <div style="display:flex;gap:24px">
+            <div><p style="font-size:9px;color:#94a3b8">CWPM</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${cwpm}</p></div>
+            <div><p style="font-size:9px;color:#94a3b8">Lexile</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${lexile}</p></div>
+            <div><p style="font-size:9px;color:#94a3b8">Accuracy</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${accuracy}</p></div>
+          </div>
         </div>
-        ${data.comment ? `<div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.7;color:#374151;margin-bottom:12px">${data.comment}</div>` : ''}
+        ${data.comment ? `<p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:6px">Teacher Comment</p><div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.7;color:#374151;margin-bottom:12px">${data.comment}</div>` : ''}
         <div style="text-align:center;padding-top:10px;border-top:1px solid #e8e0d8;font-size:9px;color:#b8b0a6">Daewoo Elementary School \u00b7 English Program \u00b7 ${data.semesterName}</div>
       </div></div>`)
     }
@@ -908,6 +970,8 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
   const student = students.find((s: any) => s.id === studentId)
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<any>(null)
+  const [comment, setComment] = useState('')
+  const [savingComment, setSavingComment] = useState(false)
 
   useEffect(() => {
     if (!student) { setLoading(false); return }
@@ -930,16 +994,8 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       const validDomains = Object.values(domainGrades).filter((v): v is number => v != null)
       const overallGrade = validDomains.length > 0 ? validDomains.reduce((a, b) => a + b, 0) / validDomains.length : null
 
-      // Get attendance stats
-      const { data: attendance } = await supabase.from('attendance').select('status').eq('student_id', studentId)
-      const attCounts = { present: 0, absent: 0, tardy: 0 }
-      attendance?.forEach((a: any) => { if (attCounts[a.status as keyof typeof attCounts] !== undefined) attCounts[a.status as keyof typeof attCounts]++ })
-
       // Get latest reading assessment
       const { data: reading } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1)
-
-      // Get behavior count
-      const { count: behaviorCount } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('student_id', studentId)
 
       // Get teacher comment
       const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
@@ -950,23 +1006,32 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       setData({
         domainGrades, overallGrade,
         overallLetter: overallGrade != null ? getLetterGrade(overallGrade) : '--',
-        attCounts, totalAtt: (attendance || []).length,
         latestReading: reading?.[0] || null,
-        behaviorCount: behaviorCount || 0,
         comment: commentData?.text || '',
         teacherName: teacherData?.name || '',
         semesterName: semester?.name || '',
       })
+      setComment(commentData?.text || '')
       setLoading(false)
     })()
   }, [studentId, semesterId])
+
+  const saveComment = async () => {
+    setSavingComment(true)
+    const { error } = await supabase.from('comments').upsert({
+      student_id: studentId, semester_id: semesterId, text: comment.trim(),
+      teacher_id: currentTeacher?.id, updated_at: new Date().toISOString(),
+    }, { onConflict: 'student_id,semester_id' })
+    setSavingComment(false)
+    if (error) showToast(`Error: ${error.message}`)
+    else { showToast('Comment saved'); setData((prev: any) => ({ ...prev, comment: comment.trim() })) }
+  }
 
   if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
   if (!student || !data) return <div className="py-12 text-center text-text-tertiary">No data available.</div>
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Header */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
         <div className="bg-navy px-6 py-4 text-white">
           <div className="flex items-center justify-between">
@@ -1015,44 +1080,51 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
             </div>
           </div>
 
-          {/* Quick Stats Row */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-surface-alt border border-border rounded-lg p-3">
-              <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Attendance</p>
-              <p className="text-[16px] font-bold text-navy">{data.totalAtt > 0 ? `${Math.round((data.attCounts.present / data.totalAtt) * 100)}%` : '--'}</p>
-              <p className="text-[10px] text-text-tertiary">{data.attCounts.present}P / {data.attCounts.absent}A / {data.attCounts.tardy}T</p>
+          {/* Reading Info */}
+          <div className="bg-surface-alt border border-border rounded-lg p-4">
+            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Reading Fluency</p>
+            <div className="flex items-center gap-6">
+              <div>
+                <p className="text-[9px] text-text-tertiary">CWPM</p>
+                <p className="text-[20px] font-bold text-navy">{data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'}</p>
+              </div>
+              <div>
+                <p className="text-[9px] text-text-tertiary">Lexile</p>
+                <p className="text-[20px] font-bold text-navy">{data.latestReading?.passage_level || data.latestReading?.reading_level || '--'}</p>
+              </div>
+              {data.latestReading?.accuracy_rate != null && (
+                <div>
+                  <p className="text-[9px] text-text-tertiary">Accuracy</p>
+                  <p className="text-[20px] font-bold text-navy">{data.latestReading.accuracy_rate.toFixed(1)}%</p>
+                </div>
+              )}
+              {data.latestReading?.date && (
+                <div>
+                  <p className="text-[9px] text-text-tertiary">Last Assessed</p>
+                  <p className="text-[12px] font-medium text-text-secondary">{new Date(data.latestReading.date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                </div>
+              )}
             </div>
-            <div className="bg-surface-alt border border-border rounded-lg p-3">
-              <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Reading (CWPM)</p>
-              <p className="text-[16px] font-bold text-navy">{data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'}</p>
-              <p className="text-[10px] text-text-tertiary">{data.latestReading ? `Level: ${data.latestReading.passage_level || data.latestReading.reading_level || '--'}` : 'No assessment'}</p>
-            </div>
-            <div className="bg-surface-alt border border-border rounded-lg p-3">
-              <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Behavior Logs</p>
-              <p className="text-[16px] font-bold text-navy">{data.behaviorCount}</p>
-              <p className="text-[10px] text-text-tertiary">total entries</p>
-            </div>
-          </div>
-
-          {/* Semester Progress Note */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-[10px] uppercase tracking-wider text-blue-700 font-semibold mb-1">Semester Progress</p>
-            <p className="text-[12px] text-blue-600">Semester-over-semester progress will appear here starting next reporting period.</p>
           </div>
 
           {/* Teacher Comment */}
-          {data.comment && (
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Teacher Comments</p>
-              <div className="bg-surface-alt border border-border rounded-lg p-4">
-                <p className="text-[13px] text-text-secondary leading-relaxed">{data.comment}</p>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Teacher Comment</p>
+            <textarea value={comment} onChange={e => setComment(e.target.value)}
+              rows={4} placeholder="Write a comment about this student's progress..."
+              className="w-full px-4 py-3 border border-border rounded-lg text-[13px] text-text-secondary outline-none focus:border-navy resize-none leading-relaxed" />
+            {comment !== (data.comment || '') && (
+              <div className="flex justify-end mt-2">
+                <button onClick={saveComment} disabled={savingComment}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-50">
+                  {savingComment ? <Loader2 size={12} className="animate-spin" /> : null} Save Comment
+                </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Print button */}
       <div className="mt-4 flex items-center justify-center gap-3">
         <button onClick={() => printProgressReport(student, data)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
           <Printer size={14} /> Print Progress Report

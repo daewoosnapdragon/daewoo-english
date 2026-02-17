@@ -359,7 +359,7 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Leve
               <button onClick={() => setEditSections(editSections.filter((_, j) => j !== i))} className="p-1 text-amber-600 hover:text-red-600"><X size={12} /></button>
             </div>
           ))}
-          <p className="text-[9px] text-amber-600">Changes apply after page reload. Key names should be unique, lowercase, no spaces.</p>
+          <p className="text-[9px] text-amber-600">Changes are saved to the database and apply immediately.</p>
         </div>
       )}
       <div className="bg-surface border border-border rounded-xl overflow-x-auto">
