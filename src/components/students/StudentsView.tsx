@@ -524,8 +524,10 @@ function QuickNotesTab({ studentId }: { studentId: string }) {
 
 function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
   const [data, setData] = useState<{ domain: string; assessments: { name: string; score: number; max: number; pct: number; classAvg: number | null; date: string | null }[] }[]>([])
+  const [semesterHistory, setSemesterHistory] = useState<{ semester: string; grades: Record<string, number | null>; behavior: string | null }[]>([])
   const [loading, setLoading] = useState(true)
 
+  const DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language']
   const DOMAIN_LABELS: Record<string, Record<string, string>> = {
     reading: { en: 'Reading', ko: '읽기' }, phonics: { en: 'Phonics', ko: '파닉스' },
     writing: { en: 'Writing', ko: '쓰기' }, speaking: { en: 'Speaking', ko: '말하기' },
@@ -535,11 +537,28 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
 
   useState(() => {
     (async () => {
-      // Get all grades for this student with assessment info
+      // 1. Load semester_grades history
+      const { data: semGrades } = await supabase.from('semester_grades').select('*, semesters(name)').eq('student_id', studentId)
+      if (semGrades && semGrades.length > 0) {
+        const bySem: Record<string, { name: string; grades: Record<string, number | null>; behavior: string | null }> = {}
+        semGrades.forEach((sg: any) => {
+          const semName = sg.semesters?.name || 'Unknown'
+          const semId = sg.semester_id
+          if (!bySem[semId]) bySem[semId] = { name: semName, grades: {}, behavior: null }
+          if (sg.domain === 'overall') {
+            bySem[semId].behavior = sg.behavior_grade
+          } else {
+            bySem[semId].grades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+          }
+        })
+        const history = Object.values(bySem).filter(s => DOMAINS.some(d => s.grades[d] != null))
+        setSemesterHistory(history)
+      }
+
+      // 2. Load individual assessment grades (existing logic)
       const { data: grades } = await supabase.from('grades').select('score, assessment_id, assessments(name, domain, max_score, date)').eq('student_id', studentId).not('score', 'is', null)
       if (!grades || grades.length === 0) { setLoading(false); return }
 
-      // Group by domain
       const byDomain: Record<string, { name: string; score: number; max: number; pct: number; date: string | null; assessmentId: string }[]> = {}
       for (const g of grades) {
         const a = (g as any).assessments
@@ -548,7 +567,6 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
         byDomain[a.domain].push({ name: a.name, score: g.score, max: a.max_score, pct: a.max_score > 0 ? (g.score / a.max_score) * 100 : 0, date: a.date, assessmentId: g.assessment_id })
       }
 
-      // Get class averages for each assessment
       const allIds = grades.map(g => g.assessment_id)
       const { data: allGrades } = await supabase.from('grades').select('assessment_id, score').in('assessment_id', allIds).not('score', 'is', null)
       const avgMap: Record<string, number> = {}
@@ -572,10 +590,74 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
   })
 
   if (loading) return <div className="py-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-[12px]">Loading grades...</p></div>
-  if (data.length === 0) return <div className="py-8 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '아직 성적이 없습니다.' : 'No grades recorded yet for this student.'}</div>
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Semester-over-semester summary */}
+      {semesterHistory.length > 0 && (
+        <div className="border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 bg-navy/5 border-b border-border">
+            <span className="text-[12px] font-bold text-navy uppercase tracking-wider">{lang === 'ko' ? '학기별 성적' : 'Semester Grades'}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="border-b border-border bg-surface-alt/50">
+                  <th className="px-4 py-2 text-left text-[10px] font-semibold text-text-secondary uppercase">Domain</th>
+                  {semesterHistory.map((s, i) => (
+                    <th key={i} className="px-3 py-2 text-center text-[10px] font-semibold text-text-secondary uppercase">{s.name}</th>
+                  ))}
+                  {semesterHistory.length >= 2 && <th className="px-3 py-2 text-center text-[10px] font-semibold text-text-secondary uppercase">Change</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {DOMAINS.map(domain => {
+                  const vals = semesterHistory.map(s => s.grades[domain])
+                  const first = vals[0]
+                  const last = vals[vals.length - 1]
+                  const change = first != null && last != null && vals.length >= 2 ? last - first : null
+                  return (
+                    <tr key={domain} className="border-b border-border/50 hover:bg-surface-alt/30">
+                      <td className="px-4 py-2 font-medium" style={{ color: domainColors[domain] }}>{DOMAIN_LABELS[domain]?.[lang] || domain}</td>
+                      {vals.map((v, i) => (
+                        <td key={i} className="px-3 py-2 text-center font-semibold">
+                          {v != null ? (
+                            <span className={v >= 80 ? 'text-green-600' : v >= 60 ? 'text-amber-600' : 'text-red-600'}>{v.toFixed(1)}%</span>
+                          ) : <span className="text-text-tertiary">--</span>}
+                        </td>
+                      ))}
+                      {semesterHistory.length >= 2 && (
+                        <td className="px-3 py-2 text-center font-bold text-[11px]">
+                          {change != null ? (
+                            <span className={change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-text-tertiary'}>
+                              {change > 0 ? '▲' : change < 0 ? '▼' : '–'} {Math.abs(change).toFixed(1)}
+                            </span>
+                          ) : '--'}
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
+                {/* Behavior row */}
+                {semesterHistory.some(s => s.behavior) && (
+                  <tr className="border-t border-border">
+                    <td className="px-4 py-2 font-medium text-text-secondary">{lang === 'ko' ? '행동' : 'Behavior'}</td>
+                    {semesterHistory.map((s, i) => (
+                      <td key={i} className="px-3 py-2 text-center font-bold text-navy">{s.behavior || '--'}</td>
+                    ))}
+                    {semesterHistory.length >= 2 && <td />}
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Individual assessments by domain */}
+      {data.length === 0 && semesterHistory.length === 0 && (
+        <div className="py-8 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '아직 성적이 없습니다.' : 'No grades recorded yet for this student.'}</div>
+      )}
       {data.map(({ domain, assessments }) => {
         const color = domainColors[domain] || '#6B7280'
         const domAvg = assessments.length > 0 ? assessments.reduce((s, a) => s + a.pct, 0) / assessments.length : 0

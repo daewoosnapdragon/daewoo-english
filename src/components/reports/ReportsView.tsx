@@ -366,13 +366,16 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const overallGrade = scoredDomains.length > 0 ? Math.round(scoredDomains.reduce((a: number, d) => a + (domainGrades[d] as number), 0) / scoredDomains.length * 10) / 10 : null
     const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '\u2014'
 
-    // 3. Previous semester data
+    // 3. Previous semester data -- find the most recent semester BEFORE this one that has data for this student
     let prevDomainGrades: Record<string, number | null> | null = null
     let prevOverall: number | null = null
     let prevSemesterName: string | null = null
 
-    const semesterIdx = allSemesters.findIndex((s: any) => s.id === semesterId)
-    const prevSemester = semesterIdx < allSemesters.length - 1 ? allSemesters[semesterIdx + 1] : null
+    // Sort semesters chronologically by type for comparison
+    const typeOrder: Record<string, number> = { fall_mid: 1, fall_final: 2, spring_mid: 3, spring_final: 4 }
+    const sortedSems = [...allSemesters].sort((a: any, b: any) => (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0))
+    const semesterIdx = sortedSems.findIndex((s: any) => s.id === semesterId)
+    const prevSemester = semesterIdx > 0 ? sortedSems[semesterIdx - 1] : null
     if (prevSemester) {
       const { data: prevAssessments } = await supabase.from('assessments').select('*')
         .eq('semester_id', prevSemester.id).eq('grade', student.grade).eq('english_class', selectedClass)
