@@ -431,6 +431,13 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
+  // Warn on page leave with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => { if (hasChanges) { e.preventDefault(); e.returnValue = '' } }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasChanges])
+
   useEffect(() => {
     (async () => {
       setLoading(true)

@@ -33,6 +33,13 @@ export default function AttendanceView() {
   const [hasChanges, setHasChanges] = useState(false)
   const [focusedRow, setFocusedRow] = useState<number>(-1)
 
+  // Warn on page leave with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => { if (hasChanges) { e.preventDefault(); e.returnValue = '' } }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasChanges])
+
   const isTeacher = currentTeacher?.role === 'teacher'
   const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
     ? [currentTeacher.english_class as EnglishClass] : ALL_ENGLISH_CLASSES

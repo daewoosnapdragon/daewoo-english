@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import React from 'react'
 import {
   Search, ChevronDown, ChevronRight, BookOpen, Layers, Music, Puzzle,
   Target, BarChart3, TrendingUp, Volume2, Brain, Scissors, FileText,
@@ -13,12 +14,26 @@ import {
 // Aligned to Science of Reading / Structured Literacy research
 // ═══════════════════════════════════════════════════════════════════
 
+interface TeachingGuideInfo {
+  guide: number      // Guide 2 or 3
+  lesson: string     // e.g. "Lesson 2", "Lesson 1A"
+  pages: string      // e.g. "6-27"
+  rule: string       // The key rule statement
+  wordFamilies?: string[]  // e.g. ["-ake", "-ane", "-ale"]
+  hfWords?: string[]  // High-frequency words taught
+  samplePhrases?: string[] // Practice phrases
+  contrastPairs?: string[] // Minimal pairs for comparison
+  activitySequence?: string[] // Teaching activity order
+  sortingTip?: string // What to sort and how
+}
+
 interface PhonicsPattern {
   pattern: string
   examples: string
   hfWords?: string
   notes?: string
   isMorphology?: boolean
+  teachingGuide?: TeachingGuideInfo
 }
 
 interface PhonicsStage {
@@ -78,14 +93,64 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Magic e / silent e makes the vowel say its name. A critical decoding milestone.',
     suggestedClasses: 'Camellia, Daisy',
     patterns: [
-      { pattern: 'a_e', examples: 'cake, name, make, game, lake', notes: 'Most common VCe pattern. Contrast pairs: can/cane, tap/tape, cap/cape.' },
-      { pattern: 'i_e', examples: 'bike, kite, time, line, five', notes: 'Contrast: bit/bite, kit/kite, fin/fine, dim/dime.' },
-      { pattern: 'o_e', examples: 'home, bone, nose, rope, hope', notes: 'Contrast: hop/hope, not/note, rob/robe, cod/code.' },
-      { pattern: 'u_e', examples: 'cube, cute, mule, use, fuse', notes: 'Two pronunciations: /oo/ (rude, June) and /yoo/ (cube, cute).' },
+      { pattern: 'a_e', examples: 'cake, name, make, game, lake', notes: 'Most common VCe pattern. Contrast pairs: can/cane, tap/tape, cap/cape.', teachingGuide: {
+        guide: 2, lesson: 'Lesson 2', pages: '6-27',
+        rule: 'When you see the pattern a-consonant-e, the <a> will usually represent the long sound /a/. The <e> is silent.',
+        wordFamilies: ['-ake (cake, lake, make, bake, wake, shake, snake, stake, flake)', '-ane (cane, lane, mane, plane, crane)', '-ale (sale, male, tale, pale, whale, scale)', '-ate (late, gate, mate, plate, skate, state)', '-ame (name, game, same, came, flame, shame)', '-ade (made, shade, grade, trade, blade)'],
+        hfWords: ['made', 'make', 'take', 'came', 'gave', 'ate'],
+        samplePhrases: ['make it for me', 'take it with you', 'Don\'t be late!', 'give it a shake', 'save the date', 'not the same', 'such a shame', 'pet the mane', 'sit in the shade', 'wave to him'],
+        contrastPairs: ['can/cane', 'tap/tape', 'cap/cape', 'mad/made', 'pan/pane', 'rat/rate', 'bat/bate', 'van/vane', 'pal/pale', 'stat/state'],
+        activitySequence: ['Visual Drill: Say sounds for ch, a, v, y, z, th, e, w, r, m, tch, i, c, q, g', 'Phonemic Awareness: Which words have the /a/ sound?', 'Review: Read words, identify vowel sound and syllable type', 'Introduce: What sound do these words share? What does your mouth look like?', 'Teach Rule: a-consonant-e = long /a/, silent e', 'Model Encoding: Say word, segment sounds, write (silent e goes in last box or outside)', 'Model Decoding: Read CVC words, then add silent e and reread', 'Guided Practice: Decoding and encoding with word lists', 'High-Frequency Words: Map and read (made, make, take, came, gave, ate)', 'More Practice: Match endings (-ake, -ate, -ame, -ane, -ade), sort vowel sounds', 'Word Families: Build -ake, -ane, -ale, -ate, -ame, -ade families', 'Phrases and Sentences: Read controlled phrases and decodable sentences', 'Fill and Read: Complete sentences with target words', 'Dictation: Write sentences about pictures'],
+        sortingTip: 'Sort by word family ending (-ake vs -ate vs -ame) and by vowel sound (short a: chat, clap, slam vs long a: skate, rake, tale)'
+      } },
+      { pattern: 'i_e', examples: 'bike, kite, time, line, five', notes: 'Contrast: bit/bite, kit/kite, fin/fine, dim/dime.', teachingGuide: {
+        guide: 2, lesson: 'Lesson 3', pages: '28-48',
+        rule: 'When you see the pattern i-consonant-e, the <i> will usually represent the long sound /i/. The <e> is silent.',
+        wordFamilies: ['-ike (bike, like, hike, spike, strike)', '-ine (line, fine, mine, vine, shine, pine)', '-ile (mile, tile, smile, pile, while)', '-ide (ride, side, hide, wide, slide, pride)', '-ime (time, dime, lime, slime, climb, crime)', '-ite (kite, bite, quite, white, write, site)'],
+        hfWords: ['like', 'five', 'time', 'ride', 'white', 'give'],
+        samplePhrases: ['ride with me', 'do not like', 'side by side', 'wipe the tile', 'tide comes in', 'smile at me', 'fine with me', 'Is it time?', 'fly the kite', 'drive a mile'],
+        contrastPairs: ['bit/bite', 'kit/kite', 'fin/fine', 'dim/dime', 'rid/ride', 'slid/slide', 'shin/shine', 'slim/slime', 'rip/ripe', 'pin/pine'],
+        activitySequence: ['Visual Drill: Review all previously taught graphemes', 'Phonemic Awareness: Which words have the /i/ sound?', 'Review: Read words, identify vowel sound and highlight graphemes', 'Introduce: What sound do these words share?', 'Teach Rule: i-consonant-e = long /i/, silent e', 'Model Encoding: Segment sounds, write word (silent e placement)', 'Model Decoding: Read CVC words, add silent e, reread (bit->bite)', 'Guided Practice: Decoding and encoding', 'High-Frequency Words: Map and read (like, five, time, ride, white, give)', 'More Practice: Match endings, sort words, build word families', 'Word Families: -ike, -ine, -ile, -ide, -ime, -ite', 'Phrases and Sentences: Controlled text reading', 'Fill and Read: Complete sentences', 'Dictation: Write sentences'],
+        sortingTip: 'Sort by word family ending and by short i vs long i (spin, list, kid, film vs slime, quite, shine, smile, time)'
+      } },
+      { pattern: 'o_e', examples: 'home, bone, nose, rope, hope', notes: 'Contrast: hop/hope, not/note, rob/robe, cod/code.', teachingGuide: {
+        guide: 2, lesson: 'Lesson 4', pages: '49-69',
+        rule: 'When you see the pattern o-consonant-e, the <o> will usually represent the long sound /o/. The <e> is silent.',
+        wordFamilies: ['-oke (joke, smoke, spoke, broke, woke, poke)', '-one (bone, cone, stone, phone, zone, alone)', '-ope (hope, rope, slope, cope)', '-ose (nose, rose, close, those, chose)', '-ole (hole, mole, pole, role, whole, stole)', '-ome (home, dome, gnome, chrome)'],
+        hfWords: ['home', 'those', 'close', 'hope', 'whole', 'stone'],
+        contrastPairs: ['not/note', 'hop/hope', 'rob/robe', 'cod/code', 'lob/lobe', 'slop/slope', 'mop/mope', 'glob/globe', 'cop/cope', 'rod/rode'],
+        activitySequence: ['Visual Drill: All graphemes including a_e, i_e rimes', 'Phonemic Awareness: Which words have the /o/ sound?', 'Review: Read words with all VCe patterns taught so far', 'Teach Rule: o-consonant-e = long /o/, silent e', 'Model Decoding: Read CVC words, add silent e, reread (not->note)', 'Guided Practice: Decode and encode o_e words', 'Spelling Practice: Segment sounds, color circles, write word', 'High-Frequency Words: Map and read', 'More Practice: Match endings, sort word families', 'Phrases: Controlled phrase reading'],
+        sortingTip: 'Sort by word family ending (-oke, -one, -ope, -ose, -ole, -ome) and short o vs long o'
+      } },
+      { pattern: 'u_e', examples: 'cube, cute, mule, use, fuse', notes: 'Two pronunciations: /oo/ (rude, June) and /yoo/ (cube, cute).', teachingGuide: {
+        guide: 2, lesson: 'Lesson 5', pages: '70-100',
+        rule: 'When you see the pattern u-consonant-e, the <u> will represent the sounds /yoo/ or /oo/. The <e> is silent.',
+        wordFamilies: ['-ube (cube, tube)', '-ute (cute, mute, flute, brute)', '-ule (mule, rule, yule)', '-une (June, dune, tune, prune)', '-ude (rude, dude, crude)', '-use (fuse, use, fume, refuse)'],
+        hfWords: ['use', 'June', 'rule', 'cute'],
+        samplePhrases: ['play the flute', 'Make a cube.', 'ride the mule', 'That\'s the rule!', 'smell the fume', 'on the sand dune', 'not so cute', 'sing the tune', 'Mute that song!', 'fill the tube'],
+        contrastPairs: ['cub/cube', 'tub/tube', 'cut/cute', 'us/use', 'dud/dude'],
+        activitySequence: ['Visual Drill: All graphemes including VCe rimes', 'Phonemic Awareness: Listen for the vowel sound', 'Review: Read words with all VCe patterns', 'Introduce: Compare /yoo/ and /oo/ sounds', 'Teach Rule: u-consonant-e = /yoo/ or /oo/, silent e', 'Model Decoding and Encoding', 'Guided Practice: Decode and encode u_e words', 'Spelling Practice', 'More Practice: Sort /yoo/ (cube, mule, cute, mute, fume) vs /oo/ (rude, tube, flute, tune, rule)', 'Phrases and Sentences: Controlled text', 'Fill and Read: Complete sentences'],
+        sortingTip: 'Sort by pronunciation: /yoo/ words (cube, cute, mule, mute, fume) vs /oo/ words (rude, tube, flute, tune, rule, June, prune)'
+      } },
       { pattern: 'e_e (rare)', examples: 'Pete, these, Steve', notes: 'Uncommon but exists. Most long e is spelled ee, ea, or y.' },
-      { pattern: '-dge', examples: 'bridge, judge, badge, hedge', notes: 'After a short vowel, /j/ is spelled -dge. After everything else, -ge.' },
+      { pattern: '-dge', examples: 'bridge, judge, badge, hedge', notes: 'After a short vowel, /j/ is spelled -dge. After everything else, -ge.', teachingGuide: {
+        guide: 2, lesson: 'Lesson 8b', pages: '151-163',
+        rule: 'The letters <dge> represent the /j/ sound when a short vowel comes right before it. After long vowels or consonants, use -ge.',
+        wordFamilies: ['-idge (bridge, ridge, fridge)', '-edge (edge, hedge, ledge, wedge, pledge)', '-udge (judge, fudge, budge, nudge, grudge, smudge)', '-odge (dodge, lodge, hodgepodge)', '-adge (badge, cadge)'],
+        samplePhrases: ['not my age', 'all the rage', 'smell the sage', 'on that page', 'in the cage', 'on the stage', 'can you plunge?', 'felt a twinge', 'made me cringe'],
+        activitySequence: ['Visual Drill: ce, ge, g, c, tch, a_e, i_e, k, u_e, ch, ck, j', 'Review: Read words, identify -ge vs -dge pattern', 'Introduce: -dge after short vowels, -ge after long vowels/consonants', 'Model Encoding and Decoding', 'Guided Practice with word lists', 'Sound Sort: /j/ words vs /z/ words vs /s/ words'],
+        sortingTip: 'Sort by sound: -dge words (short vowel before: bridge, fudge, badge) vs -ge words (long vowel/consonant before: cage, page, huge, stage, hinge, plunge)'
+      } },
       { pattern: '-tch', examples: 'match, catch, kitchen, witch', notes: 'After a short vowel, /ch/ is spelled -tch. Exceptions: much, such, rich, which.' },
-      { pattern: '-ce, -ge for soft sounds', examples: 'ice, face, age, cage, huge', notes: 'Silent e keeps c and g soft. Remove e and they harden: icing vs. ick.' },
+      { pattern: '-ce, -ge for soft sounds', examples: 'ice, face, age, cage, huge', notes: 'Silent e keeps c and g soft. Remove e and they harden: icing vs. ick.', teachingGuide: {
+        guide: 2, lesson: 'Lessons 7a-8a', pages: '116-150',
+        rule: 'The letter <s> can represent /z/ in words like wise, base. The letters <ce> represent /s/ (ice, race, place). The letters <ge> represent /j/ (age, cage, stage). The silent e keeps c and g soft.',
+        wordFamilies: ['-ice (ice, mice, rice, nice, price, twice, dice, slice, spice)', '-ace (face, race, place, space, grace, trace, lace, pace)', '-ance/-ence (chance, dance, lance, fence, hence, prince)', '-age (age, cage, page, stage, rage, sage, wage)'],
+        hfWords: ['ice', 'face', 'place', 'nice', 'since', 'once', 'dance'],
+        samplePhrases: ['not my age', 'all the rage', 'on that page', 'in the cage', 'on the stage'],
+        activitySequence: ['Lesson 7a: <s> representing /z/ (wise, base); <ce> representing /s/ (ice)', 'Lesson 7b: Introduce -nce pattern (chance, dance); underline graphemes', 'Lesson 8: Consolidate -ce patterns; introduce -ge (age, cage)', 'Lesson 8a: Phrases and sentences with -ge words', 'Sound Sort: /j/ sounds vs /z/ sounds vs /s/ sounds (cage/mazes/case, face/rise/badge, hinge/nose/price)'],
+        sortingTip: 'Sound sort: Which sound does the final pattern make? /j/ (cage, age, hinge) vs /z/ (mazes, rise, nose) vs /s/ (face, ice, price, case, base)'
+      } },
       { pattern: 'Suffix -ful', examples: 'helpful, careful, hopeful', isMorphology: true, notes: 'Meaning: "full of." Note: suffix has one l, word "full" has two.' },
       { pattern: 'Suffix -less', examples: 'helpless, careless, hopeless', isMorphology: true, notes: 'Meaning: "without." Pair with -ful for contrast.' },
     ]
@@ -96,10 +161,39 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Two vowels working together to make one sound. "When two vowels go walking, the first one does the talking" -- sometimes.',
     suggestedClasses: 'Daisy, Sunflower',
     patterns: [
-      { pattern: 'ai, ay', examples: 'rain, play, wait, say, train', notes: 'ai = middle of word/syllable; ay = end of word/syllable.' },
-      { pattern: 'ee, ea', examples: 'tree, read, seed, beach, sleep', notes: 'Both make /ee/. ea also makes /eh/ (bread, head) -- teach as a "tricky pair."' },
-      { pattern: 'oa, ow', examples: 'boat, snow, road, grow, coat', notes: 'oa = middle; ow = end. But ow also makes /ow/ (cow, now) -- context dependent.' },
-      { pattern: 'ie, igh', examples: 'pie, tie, high, night, light', notes: 'ie at end = long i. igh = long i (the gh is silent).' },
+      { pattern: 'ai, ay', examples: 'rain, play, wait, say, train', notes: 'ai = middle of word/syllable; ay = end of word/syllable.', teachingGuide: {
+        guide: 3, lesson: 'Lessons 1A-1B', pages: '4-43',
+        rule: 'The letters <ai> represent long /a/ at the beginning or middle of words. The letters <ay> represent long /a/ at the end of base words.',
+        wordFamilies: ['-ain (rain, main, train, brain, chain, plain, stain, drain, grain, strain, explain)', '-ait (wait, bait)', '-ail (tail, mail, nail, rail, sail, trail, snail, fail)', '-ay (day, play, say, way, may, stay, pray, clay, gray, spray, display)'],
+        hfWords: ['rain', 'play', 'say', 'day', 'way', 'may', 'stay'],
+        contrastPairs: ['ai in middle (rain, wait, tail)', 'ay at end (day, play, say)'],
+        activitySequence: ['Lesson 1A: Introduce <ai> for long /a/ in middle of words', 'Phonemic Awareness: Thumbs up if you hear /a/ sound', 'Review: Contrast closed syllable (cap, cape) with vowel team', 'Introduce: What sound do these words share?', 'Model Encoding and Decoding with ai words', 'Guided Practice: Word lists and spelling', 'Lesson 1B: Introduce <ay> for long /a/ at end of words', 'Connected Text: Sentence fill activities', 'Lesson 1 Review: Mix ai and ay words, sort by position'],
+        sortingTip: 'Position sort: ai words (middle: rain, wait, paint, chain) vs ay words (end: play, day, stay, gray). Also sort by word family.'
+      } },
+      { pattern: 'ee, ea', examples: 'tree, read, seed, beach, sleep', notes: 'Both make /ee/. ea also makes /eh/ (bread, head) -- teach as a "tricky pair."', teachingGuide: {
+        guide: 3, lesson: 'Lessons 2A-2B + 5A-5B + 6', pages: '44-84, 151-194',
+        rule: 'The letters <ee> represent long /e/ at the beginning, middle, or end of words. The letters <ea> represent long /e/ in the same positions. But <ea> is tricky: it can also represent short /e/ (bread, head) and even long /a/ (steak, break).',
+        wordFamilies: ['-ee: -eed (feed, seed, weed, speed, bleed), -eep (deep, keep, sleep, sweep, creep, steep), -eet (feet, meet, sheet, street, sweet), -eel (feel, heel, wheel, steel, peel), -een (green, seen, keen, screen, queen)', '-ea: -ead (read, lead, bead), -eal (seal, meal, deal, real, heal, steal), -eat (eat, meat, seat, beat, heat, treat, wheat), -each (teach, beach, reach, peach), -ean (bean, mean, clean, lean, jean)'],
+        hfWords: ['see', 'tree', 'three', 'eat', 'read', 'each', 'teach', 'mean', 'real'],
+        activitySequence: ['Lesson 2A: Introduce <ee> for long /e/', 'Model Encoding: Say word, tap sounds, match to letters (ee = one sound, one box)', 'Guided Practice: Decode and encode ee words', 'Lesson 2B: Introduce <ea> for long /e/', 'Compare: ee and ea both make /e/, sort by spelling', 'Lesson 2 Review: Mix ee and ea words', 'Lesson 5A: <ea> can also represent short /e/ (bread, head, spread, thread, dead, instead, weather, feather)', 'Lesson 5B: <ea> can also represent long /a/ (steak, break, great -- rare but important)', 'Lesson 6: <ie> can represent long /e/ (field, shield, piece, thief, belief)'],
+        sortingTip: 'Three-way ea sort: long /e/ (eat, read, beach, mean) vs short /e/ (bread, head, spread, thread) vs long /a/ (steak, break, great). Then ee vs ea sort for long /e/ words.'
+      } },
+      { pattern: 'oa, ow', examples: 'boat, snow, road, grow, coat', notes: 'oa = middle; ow = end. But ow also makes /ow/ (cow, now) -- context dependent.', teachingGuide: {
+        guide: 3, lesson: 'Lessons 3A-3C', pages: '85-124',
+        rule: 'The letters <oa> represent long /o/ at the beginning or middle of words. The letters <ow> represent long /o/ at the end of base words. The letters <oe> represent long /o/ at the end of words (rare). Warning: <ow> can also represent the /ow/ diphthong (cow, now).',
+        wordFamilies: ['-oa: -oat (boat, coat, goat, float, throat), -oad (road, toad, load), -oal (coal, goal, foal), -oam (foam, roam), -oast (coast, toast, roast, boast)', '-ow: bow, crow, flow, glow, grow, know, low, mow, row, show, slow, snow, throw, blow, stow', '-oe: doe, foe, hoe, joe, toe, woe, aloe'],
+        hfWords: ['road', 'boat', 'coat', 'snow', 'know', 'show', 'grow'],
+        activitySequence: ['Lesson 3A: Introduce <oa> for long /o/ in beginning/middle', 'Review: Contrast closed syllable (hop) with VCe (hope) with vowel team (boat)', 'Model Encoding and Decoding with oa words', 'Lesson 3B: Introduce <ow> for long /o/ at end of words', 'Lesson 3C: Introduce <oe> (rare, end of words: toe, doe)', 'Lesson 3 Review: Mix all three spellings, sort by position'],
+        sortingTip: 'Position sort: oa (middle: boat, road, coal) vs ow (end: snow, grow, show) vs oe (end, rare: toe, doe). Alert: ow can also be /ow/ -- sort long /o/ ow words vs /ow/ diphthong words.'
+      } },
+      { pattern: 'ie, igh', examples: 'pie, tie, high, night, light', notes: 'ie at end = long i. igh = long i (the gh is silent).', teachingGuide: {
+        guide: 3, lesson: 'Lessons 4-4B', pages: '125-147',
+        rule: 'The letters <igh> represent the long /i/ sound in the middle or at the end of words. The gh is silent. The letters <ie> can also represent long /i/ at the end of words (pie, tie, die, lie).',
+        wordFamilies: ['-igh: -ight (light, night, right, sight, tight, bright, flight, fright, knight, might, slight, delight)', 'high, sigh, thigh', '-ie (long i at end): pie, tie, die, lie, vie, cries, tries, flies, fries, dried, fried'],
+        hfWords: ['light', 'night', 'right', 'high', 'might'],
+        activitySequence: ['Lesson 4: Introduce <igh> for long /i/', 'Compare: i_e (bike, kite) vs igh (light, night) -- same sound, different spelling', 'Model Encoding and Decoding: Note that igh = one sound', 'Guided Practice: Decode and encode igh words', 'Lesson 4B: Introduce <ie> for long /i/ at end of words', 'Lesson 4 Review: Mix i_e, igh, and ie words', 'Lessons 1-4 Review: Comprehensive review of all vowel teams taught so far'],
+        sortingTip: 'Triple sort for long /i/: i_e (bike, time, slide) vs igh (light, night, bright) vs ie (pie, tie, lie). Position matters: i_e in middle, igh in middle, ie at end.'
+      } },
       { pattern: 'ue, ew', examples: 'blue, true, new, grew, few', notes: 'Both make /oo/ or /yoo/. ew at end of words.' },
       { pattern: 'oi, oy', examples: 'oil, boy, coin, enjoy, point', notes: 'oi = middle; oy = end. Diphthong (mouth moves during sound).' },
       { pattern: 'ou, ow (diphthong)', examples: 'house, cow, out, down, cloud', notes: 'Same /ow/ sound. ow can be long o OR /ow/ -- must check context.' },
@@ -150,7 +244,13 @@ const PHONICS_STAGES: PhonicsStage[] = [
       { pattern: '-ous', examples: 'famous, nervous, generous', notes: 'Makes /us/. Latin adjective ending meaning "full of" or "having."' },
       { pattern: '-ture', examples: 'nature, picture, future, adventure', notes: 'Makes /cher/. Very common in academic vocabulary.' },
       { pattern: '-ible, -able', examples: 'possible, comfortable, readable', notes: 'Both mean "can be done." -able more common with native English roots.' },
-      { pattern: 'ei, ey', examples: 'ceiling, they, vein, obey', notes: '"i before e except after c" -- has many exceptions. Teach common words.' },
+      { pattern: 'ei, ey', examples: 'ceiling, they, vein, obey', notes: '"i before e except after c" -- has many exceptions. Teach common words.', teachingGuide: {
+        guide: 3, lesson: 'Lesson 8', pages: '206-217',
+        rule: 'The letters <ei> and <eigh> spell long /a/ in some words (veil, rein, eight, sleigh, weigh, neighbor, freight). These are less common spellings that should be taught as a group.',
+        wordFamilies: ['-eigh (eight, weigh, sleigh, freight, neighbor, weight)', '-ei- (veil, rein, vein, reign, reindeer)'],
+        activitySequence: ['Lesson 8: Introduce <ei> and <eigh> for long /a/', 'Compare: ai (rain) vs eigh (reign) -- same sound, different spelling, often homophones', 'Practice with high-frequency words containing these patterns', 'Connect to Lesson 7 Homophones: rain/reign/rein, vain/vein/vane, wait/weight'],
+        sortingTip: 'Group by sound: long /a/ words with ei/eigh (veil, rein, eight, weigh) vs long /e/ words with ei (ceiling, receive, seize) -- "i before e except after c" applies to the /e/ sound group.'
+      } },
       { pattern: '-ough patterns', examples: 'though, through, thought, tough, cough', notes: 'Most irregular spelling in English. 7+ pronunciations. Teach as sight words.' },
       { pattern: 'Prefix dis-', examples: 'disagree, disappear, discover', isMorphology: true, notes: 'Meaning: "not" or "opposite of." Latin prefix.' },
       { pattern: 'Prefix mis-', examples: 'mistake, misread, misunderstand', isMorphology: true, notes: 'Meaning: "wrongly." Old English origin.' },
@@ -176,10 +276,107 @@ const PHONICS_STAGES: PhonicsStage[] = [
   },
 ]
 
+function TeachingGuidePanel({ guide }: { guide: TeachingGuideInfo }) {
+  const [showActivities, setShowActivities] = useState(false)
+  return (
+    <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-4 my-3">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <BookOpen size={14} className="text-blue-700" />
+            <span className="text-[12px] font-bold text-blue-900">Teaching Guide {guide.guide} -- {guide.lesson}</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 font-medium">Pages {guide.pages}</span>
+          </div>
+          <p className="text-[11px] text-blue-800 leading-relaxed italic">{guide.rule}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Word Families */}
+        {guide.wordFamilies && guide.wordFamilies.length > 0 && (
+          <div className="bg-white/70 rounded-lg p-3 border border-blue-100">
+            <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wide mb-2">Word Families</h4>
+            <div className="space-y-1">
+              {guide.wordFamilies.map((wf, i) => (
+                <p key={i} className="text-[10px] text-text-primary leading-relaxed font-mono">{wf}</p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Right column: HF Words + Phrases */}
+        <div className="space-y-3">
+          {guide.hfWords && guide.hfWords.length > 0 && (
+            <div className="bg-white/70 rounded-lg p-3 border border-blue-100">
+              <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wide mb-1.5">High-Frequency Words</h4>
+              <div className="flex flex-wrap gap-1">
+                {guide.hfWords.map((w, i) => (
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">{w}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {guide.contrastPairs && guide.contrastPairs.length > 0 && (
+            <div className="bg-white/70 rounded-lg p-3 border border-blue-100">
+              <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wide mb-1.5">Contrast Pairs (Minimal Pairs)</h4>
+              <div className="flex flex-wrap gap-1">
+                {guide.contrastPairs.map((cp, i) => (
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono">{cp}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {guide.samplePhrases && guide.samplePhrases.length > 0 && (
+            <div className="bg-white/70 rounded-lg p-3 border border-blue-100">
+              <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wide mb-1.5">Practice Phrases</h4>
+              <div className="flex flex-wrap gap-1">
+                {guide.samplePhrases.map((ph, i) => (
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-surface-alt text-text-primary border border-border font-medium">{ph}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sorting Tip */}
+      {guide.sortingTip && (
+        <div className="mt-3 bg-amber-50/80 rounded-lg p-2.5 border border-amber-200">
+          <span className="text-[10px] font-bold text-amber-800">Sorting Activity: </span>
+          <span className="text-[10px] text-amber-700 leading-relaxed">{guide.sortingTip}</span>
+        </div>
+      )}
+
+      {/* Activity Sequence (collapsible) */}
+      {guide.activitySequence && guide.activitySequence.length > 0 && (
+        <div className="mt-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowActivities(!showActivities) }}
+            className="text-[10px] font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1"
+          >
+            {showActivities ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            Full Lesson Sequence ({guide.activitySequence.length} steps)
+          </button>
+          {showActivities && (
+            <ol className="mt-2 space-y-1 pl-4">
+              {guide.activitySequence.map((step, i) => (
+                <li key={i} className="text-[10px] text-text-secondary leading-relaxed list-decimal">{step}</li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function PhonicsSequence() {
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [showMorphology, setShowMorphology] = useState(true)
+  const [expandedGuide, setExpandedGuide] = useState<string | null>(null)
 
   const filteredStages = useMemo(() => {
     if (!search.trim()) return PHONICS_STAGES
@@ -190,7 +387,11 @@ export function PhonicsSequence() {
         p.pattern.toLowerCase().includes(q) ||
         p.examples.toLowerCase().includes(q) ||
         (p.notes || '').toLowerCase().includes(q) ||
-        (p.hfWords || '').toLowerCase().includes(q)
+        (p.hfWords || '').toLowerCase().includes(q) ||
+        (p.teachingGuide?.rule || '').toLowerCase().includes(q) ||
+        (p.teachingGuide?.wordFamilies || []).some(wf => wf.toLowerCase().includes(q)) ||
+        (p.teachingGuide?.hfWords || []).some(w => w.toLowerCase().includes(q)) ||
+        (p.teachingGuide?.samplePhrases || []).some(ph => ph.toLowerCase().includes(q))
       )
     })).filter(s => s.patterns.length > 0)
   }, [search])
@@ -205,6 +406,7 @@ export function PhonicsSequence() {
         <p className="text-[12px] text-amber-800 leading-relaxed">
           Based on Science of Reading research and structured literacy principles. {totalPatterns} patterns across 9 stages, progressing from alphabet knowledge through multisyllabic morphology.
           Morphology concepts are integrated throughout (marked with gold badges) rather than isolated at the end.
+          Patterns with a <span className="inline-flex items-center text-[9px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200">G2</span> or <span className="inline-flex items-center text-[9px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200">G3</span> badge have linked lesson guides with word families, contrast pairs, phrases, and full activity sequences.
         </p>
         <p className="text-[10px] text-amber-700 mt-2 italic">
           Sources: Ehri (2005) phases of word reading; Moats (2020) Speech to Print; Scarborough (2001) reading rope.
@@ -271,22 +473,49 @@ export function PhonicsSequence() {
                       </tr>
                     </thead>
                     <tbody>
-                      {stage.patterns.map((p, i) => (
-                        <tr key={i} className={`border-b border-border/50 last:border-0 ${
-                          p.isMorphology && showMorphology ? 'bg-amber-50/60' : ''
-                        }`}>
-                          <td className="px-5 py-2.5 font-semibold text-navy align-top">
-                            <div className="flex items-center gap-1.5">
-                              {p.isMorphology && showMorphology && (
-                                <Puzzle size={11} className="text-amber-600 flex-shrink-0" />
-                              )}
-                              {p.pattern}
-                            </div>
-                          </td>
-                          <td className="px-3 py-2.5 text-text-primary align-top font-mono text-[10.5px]">{p.examples}</td>
-                          <td className="px-3 py-2.5 text-text-secondary align-top leading-relaxed">{p.notes || '--'}</td>
-                        </tr>
-                      ))}
+                      {stage.patterns.map((p, i) => {
+                        const guideKey = `${stage.id}-${i}`
+                        const isGuideExpanded = expandedGuide === guideKey
+                        return (
+                          <React.Fragment key={i}>
+                            <tr className={`border-b border-border/50 last:border-0 ${
+                              p.isMorphology && showMorphology ? 'bg-amber-50/60' : ''
+                            } ${p.teachingGuide ? 'cursor-pointer hover:bg-surface-alt/40' : ''}`}
+                              onClick={() => p.teachingGuide && setExpandedGuide(isGuideExpanded ? null : guideKey)}
+                            >
+                              <td className="px-5 py-2.5 font-semibold text-navy align-top">
+                                <div className="flex items-center gap-1.5">
+                                  {p.isMorphology && showMorphology && (
+                                    <Puzzle size={11} className="text-amber-600 flex-shrink-0" />
+                                  )}
+                                  {p.pattern}
+                                  {p.teachingGuide && (
+                                    <span className="ml-1 text-[8px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0">
+                                      G{p.teachingGuide.guide}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-3 py-2.5 text-text-primary align-top font-mono text-[10.5px]">{p.examples}</td>
+                              <td className="px-3 py-2.5 text-text-secondary align-top leading-relaxed">
+                                {p.notes || '--'}
+                                {p.teachingGuide && (
+                                  <span className="ml-2 text-[9px] text-blue-600 font-medium">
+                                    {isGuideExpanded ? '[-] hide lesson guide' : '[+] lesson guide'}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                            {isGuideExpanded && p.teachingGuide && (
+                              <tr>
+                                <td colSpan={3} className="px-5 py-0 border-b border-border/50">
+                                  <TeachingGuidePanel guide={p.teachingGuide} />
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1108,7 +1337,7 @@ export function ReadingFluencyGuide() {
                 <p><span className="font-semibold">Annotation/Coding:</span> Mark text with symbols: ? (confusing), ! (surprising), * (important), ~ (connection).</p>
                 <p><span className="font-semibold">Think-Pair-Share:</span> Process ideas orally before writing. Essential for ELLs.</p>
                 <p><span className="font-semibold">Graphic Organizers:</span> Story maps, T-charts, cause/effect diagrams. Visual structure supports comprehension.</p>
-                <p className="italic mt-2 text-[10px]">ELL tip: Allow use of bilingual dictionaries or translation apps for unknown vocabulary. Comprehension > decoding every word.</p>
+                <p className="italic mt-2 text-[10px]">ELL tip: Allow use of bilingual dictionaries or translation apps for unknown vocabulary. Comprehension matters more than decoding every word.</p>
               </div>
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -1145,7 +1374,7 @@ export function ReadingFluencyGuide() {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <p className="text-[12px] font-bold text-amber-900">Tier 2: High-Utility Academic Words (PRIMARY FOCUS)</p>
                 <p className="text-[11px] text-amber-800">Words that appear across many subjects and contexts: analyze, compare, evidence, sufficient, consequence, interpret. These are the words that unlock academic reading comprehension. Teach 5-10 per week explicitly.</p>
-                <p className="text-[10px] text-amber-700 mt-1 italic">Selection strategy: Choose words that students will encounter repeatedly across texts and subjects, that are NOT easily demonstrated with a picture, and that have morphological relatives (analyze -> analysis, analytical).</p>
+                <p className="text-[10px] text-amber-700 mt-1 italic">Selection strategy: Choose words that students will encounter repeatedly across texts and subjects, that are NOT easily demonstrated with a picture, and that have morphological relatives (e.g. analyze, analysis, analytical).</p>
               </div>
               <div className="bg-surface-alt rounded-lg p-3">
                 <p className="text-[12px] font-bold text-navy">Tier 3: Domain-Specific / Technical Words</p>

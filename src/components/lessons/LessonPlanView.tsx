@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight, Printer, Settings, Plus, X, Loader2, Calenda
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 import YearlyPlanView from '@/components/curriculum/YearlyPlanView'
 
-interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number }
+interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number; grade?: number }
 interface LessonEntry { id?: string; slot_label: string; title: string; objective: string; notes: string }
 interface HomeworkEntry { id?: string; homework_text: string }
 interface CalendarEvent { id: string; title: string; date: string; type: string }
@@ -107,6 +107,8 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
   const [calEvents, setCalEvents] = useState<Record<string, CalendarEvent>>({})
   const [loading, setLoading] = useState(true)
   const [showSetup, setShowSetup] = useState(false)
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
+  const [currentWeekIdx, setCurrentWeekIdx] = useState(0)
   const [editingCell, setEditingCell] = useState<{ date: string; slot: string } | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editObjective, setEditObjective] = useState('')
@@ -126,7 +128,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
     const firstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`
     const lastDay = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`
     const [slotsRes, entriesRes, hwRes, eventsRes] = await Promise.all([
-      supabase.from('lesson_plan_slots').select('*').eq('english_class', selectedClass).order('sort_order'),
+      supabase.from('lesson_plan_slots').select('*').eq('english_class', selectedClass).or(`grade.eq.${selectedGrade},grade.is.null`).order('sort_order'),
       supabase.from('lesson_plan_entries').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade).gte('date', firstDay).lte('date', lastDay),
       supabase.from('lesson_plan_homework').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade),
       supabase.from('calendar_events').select('*').gte('date', firstDay).lte('date', lastDay),
@@ -219,7 +221,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
 
   const addSlot = async (dayOfWeek: number, label: string) => {
     const maxOrder = slots.filter(s => s.day_of_week === dayOfWeek).reduce((max, s) => Math.max(max, s.sort_order), 0)
-    const { data, error } = await supabase.from('lesson_plan_slots').upsert({ english_class: selectedClass, day_of_week: dayOfWeek, slot_label: label.trim(), sort_order: maxOrder + 1 }, { onConflict: 'english_class,day_of_week,slot_label' }).select().single()
+    const { data, error } = await supabase.from('lesson_plan_slots').insert({ english_class: selectedClass, grade: selectedGrade, day_of_week: dayOfWeek, slot_label: label.trim(), sort_order: maxOrder + 1 }).select().single()
     if (error) { showToast(`Error: ${error.message}`); return }
     setSlots(prev => [...prev, data])
   }
@@ -236,7 +238,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
     return { filled, total }
   }
 
-  const handlePrint = () => {
+  const handlePrint = (orientation: 'landscape' | 'portrait' = 'landscape') => {
     const pw = window.open('', '_blank'); if (!pw) return
     const allLabels = Array.from(new Set(slots.map(s => s.slot_label)))
     allLabels.forEach(l => getSlotColor(l))
@@ -278,7 +280,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
 
     pw.document.write(`<!DOCTYPE html><html><head><title>${selectedClass} Grade ${selectedGrade} - ${mn} ${year}</title>
 <style>
-  @page { size: landscape; margin: 12mm 14mm; }
+  @page { size: ${orientation}; margin: 12mm 14mm; }
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
@@ -388,8 +390,13 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
             <p className="text-[13px] text-text-secondary mt-1">Monthly lesson planning by class and grade</p>
           </div>
           <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex rounded-lg border border-border overflow-hidden">
+              <button onClick={() => setViewMode('month')} className={`px-3 py-1.5 text-[11px] font-medium ${viewMode === 'month' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-gray-100'}`}>Month</button>
+              <button onClick={() => setViewMode('week')} className={`px-3 py-1.5 text-[11px] font-medium ${viewMode === 'week' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-gray-100'}`}>Week</button>
+            </div>
             {canEdit && <button onClick={() => setShowSetup(!showSetup)} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium border transition-all ${showSetup ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border'}`}><Settings size={14} /> Day Setup</button>}
-            <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print for Parents</button>
+            <button onClick={() => handlePrint('landscape')} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print</button>
           </div>
         </div>
         {tabBar}
@@ -409,14 +416,30 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
 
       <div className="px-8 py-6 max-w-[1400px] mx-auto">
         <div className="flex items-center justify-center gap-4 mb-6">
-          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronLeft size={20} /></button>
-          <h3 className="text-xl font-display font-bold text-navy min-w-[220px] text-center">{MONTH_NAMES[month]} {year}</h3>
-          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronRight size={20} /></button>
+          {viewMode === 'month' ? (
+            <>
+              <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronLeft size={20} /></button>
+              <h3 className="text-xl font-display font-bold text-navy min-w-[220px] text-center">{MONTH_NAMES[month]} {year}</h3>
+              <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronRight size={20} /></button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => { if (currentWeekIdx > 0) setCurrentWeekIdx(i => i - 1); else { prevMonth(); setCurrentWeekIdx(99) } }}
+                className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronLeft size={20} /></button>
+              <h3 className="text-xl font-display font-bold text-navy min-w-[280px] text-center">
+                {weeks[Math.min(currentWeekIdx, weeks.length - 1)]?.length > 0
+                  ? `Week of ${MONTH_NAMES[month]} ${weeks[Math.min(currentWeekIdx, weeks.length - 1)][0].dayNum}, ${year}`
+                  : `${MONTH_NAMES[month]} ${year}`}
+              </h3>
+              <button onClick={() => { if (currentWeekIdx < weeks.length - 1) setCurrentWeekIdx(i => i + 1); else { nextMonth(); setCurrentWeekIdx(0) } }}
+                className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronRight size={20} /></button>
+            </>
+          )}
         </div>
 
-        {showSetup && canEdit && <DaySetupPanel selectedClass={selectedClass} slots={slots} onAdd={addSlot} onRemove={removeSlot} onClose={() => setShowSetup(false)} />}
+        {showSetup && canEdit && <DaySetupPanel selectedClass={selectedClass} selectedGrade={selectedGrade} slots={slots} onAdd={addSlot} onRemove={removeSlot} onClose={() => setShowSetup(false)} />}
 
-        {weeks.map((week, wi) => {
+        {(viewMode === 'week' ? [weeks[Math.min(currentWeekIdx, weeks.length - 1)]].filter(Boolean) : weeks).map((week, wi) => {
           const fw: (typeof days[0] | null)[] = [null, null, null, null, null]
           week.forEach(d => { fw[d.dayOfWeek - 1] = d })
           const ws = week.length > 0 ? getWeekStart(week[0].date) : ''
@@ -473,9 +496,15 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
                                           <textarea value={editObjective} onChange={e => setEditObjective(e.target.value)} placeholder="(e.g., classify three kinds of matter)"
                                             className="w-full pl-[76px] pr-2 py-1.5 text-[10px] border border-border rounded-lg outline-none resize-none focus:border-navy" rows={2} />
                                         </div>
-                                        <div className="flex gap-1">
+                                        <div className="flex gap-1 items-center">
                                           <button onClick={saveEntry} className="px-2.5 py-1 rounded-lg bg-navy text-white text-[10px] font-medium">Save</button>
                                           <button onClick={() => setEditingCell(null)} className="px-2.5 py-1 rounded-lg bg-surface-alt text-text-secondary text-[10px]">Cancel</button>
+                                          {entry?.id && <button onClick={async () => {
+                                            await supabase.from('lesson_plan_entries').delete().eq('id', entry.id)
+                                            setEntries(prev => { const n = { ...prev }; delete n[key]; return n })
+                                            setEditingCell(null)
+                                            showToast('Entry deleted')
+                                          }} className="ml-auto px-2.5 py-1 rounded-lg text-red-500 hover:bg-red-50 text-[10px] font-medium">Delete</button>}
                                         </div>
                                       </div>
                                     ) : (
@@ -545,8 +574,8 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
   )
 }
 
-function DaySetupPanel({ selectedClass, slots, onAdd, onRemove, onClose }: {
-  selectedClass: EnglishClass; slots: SlotTemplate[]; onAdd: (dow: number, label: string) => void; onRemove: (id: string) => void; onClose: () => void
+function DaySetupPanel({ selectedClass, selectedGrade, slots, onAdd, onRemove, onClose }: {
+  selectedClass: EnglishClass; selectedGrade: Grade; slots: SlotTemplate[]; onAdd: (dow: number, label: string) => void; onRemove: (id: string) => void; onClose: () => void
 }) {
   const [addingDay, setAddingDay] = useState<number | null>(null)
   const [newLabel, setNewLabel] = useState('')
@@ -554,8 +583,8 @@ function DaySetupPanel({ selectedClass, slots, onAdd, onRemove, onClose }: {
     <div className="mb-6 bg-surface border border-border rounded-2xl p-5 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h4 className="text-[14px] font-semibold text-navy">Weekly Schedule for {selectedClass}</h4>
-          <p className="text-[11px] text-text-tertiary mt-0.5">Define what content appears on each day. This applies to all months and all grades.</p>
+          <h4 className="text-[14px] font-semibold text-navy">Weekly Schedule for {selectedClass} — Grade {selectedGrade}</h4>
+          <p className="text-[11px] text-text-tertiary mt-0.5">Define what content appears on each day for this class and grade.</p>
         </div>
         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
       </div>
@@ -577,11 +606,11 @@ function DaySetupPanel({ selectedClass, slots, onAdd, onRemove, onClose }: {
                 })}
               </div>
               {addingDay === di + 1 ? (
-                <div className="mt-2 flex gap-1">
+                <div className="mt-2 flex gap-1 relative z-10">
                   <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="e.g., Phonics"
-                    className="flex-1 px-2 py-1.5 text-[10px] border border-border rounded-lg outline-none focus:border-navy" autoFocus
+                    className="flex-1 min-w-0 px-2 py-1.5 text-[10px] border border-border rounded-lg outline-none focus:border-navy" autoFocus
                     onKeyDown={e => { if (e.key === 'Enter' && newLabel.trim()) { onAdd(di + 1, newLabel); setNewLabel(''); setAddingDay(null) }; if (e.key === 'Escape') setAddingDay(null) }} />
-                  <button onClick={() => { if (newLabel.trim()) { onAdd(di + 1, newLabel); setNewLabel(''); setAddingDay(null) } }} className="px-2 py-1 rounded-lg bg-navy text-white text-[9px] font-medium">Add</button>
+                  <button onClick={() => { if (newLabel.trim()) { onAdd(di + 1, newLabel); setNewLabel(''); setAddingDay(null) } }} className="px-2.5 py-1 rounded-lg bg-navy text-white text-[9px] font-medium whitespace-nowrap">Add</button>
                 </div>
               ) : (
                 <button onClick={() => setAddingDay(di + 1)} className="mt-2 flex items-center gap-1 text-[10px] text-text-tertiary hover:text-navy font-medium"><Plus size={11} /> Add slot</button>
