@@ -372,6 +372,103 @@ function ClusterTracker() {
           <span className="text-green-600 font-semibold">{mastered} done</span>
           <span className="text-blue-600 font-semibold">{inProg} started</span>
           <span className="text-text-tertiary">{total - mastered - inProg} not started</span>
+          <button onClick={async () => {
+            // Auto-suggest from assessment section scores
+            const { data: sem } = await supabase.from('semesters').select('id').eq('is_active', true).single()
+            if (!sem) { showToast('No active semester'); return }
+            const { data: assessments } = await supabase.from('assessments').select('id, sections, standards, english_class, grade, max_score')
+              .eq('english_class', cls).eq('grade', gr).eq('semester_id', sem.id)
+              .not('sections', 'is', null)
+            if (!assessments || assessments.length === 0) {
+              // Also check assessments with standards but no sections
+              const { data: stdAssessments } = await supabase.from('assessments').select('id, standards, english_class, grade, max_score')
+                .eq('english_class', cls).eq('grade', gr).eq('semester_id', sem.id)
+              if (!stdAssessments || stdAssessments.length === 0) { showToast('No assessments with standards tagged'); return }
+              // Get grades for these assessments
+              const { data: grades } = await supabase.from('grades').select('assessment_id, score')
+                .in('assessment_id', stdAssessments.map(a => a.id)).not('score', 'is', null)
+              if (!grades || grades.length === 0) { showToast('No scores found'); return }
+              // Calculate per-standard average from assessment-level standards
+              const stdAvgs: Record<string, { total: number; count: number }> = {}
+              stdAssessments.forEach(a => {
+                const aGrades = grades.filter(g => g.assessment_id === a.id)
+                if (aGrades.length === 0 || !a.standards?.length) return
+                const avg = aGrades.reduce((s: number, g: any) => s + ((g.score / a.max_score) * 100), 0) / aGrades.length
+                a.standards.forEach((st: any) => {
+                  if (!stdAvgs[st.code]) stdAvgs[st.code] = { total: 0, count: 0 }
+                  stdAvgs[st.code].total += avg
+                  stdAvgs[st.code].count++
+                })
+              })
+              let suggested = 0
+              const newStatuses = { ...statuses }
+              Object.entries(stdAvgs).forEach(([code, { total, count }]) => {
+                const avg = total / count
+                const current = statuses[code] || 'not_started'
+                const suggest: StdStatus = avg >= 80 ? 'mastered' : avg >= 50 ? 'in_progress' : 'not_started'
+                if (suggest !== current && (suggest === 'mastered' || (suggest === 'in_progress' && current === 'not_started'))) {
+                  newStatuses[code] = suggest
+                  suggested++
+                }
+              })
+              if (suggested > 0) {
+                setStatuses(newStatuses)
+                // Save all suggested changes
+                const rows = Object.entries(newStatuses).filter(([c]) => stdAvgs[c]).map(([code, status]) => ({
+                  english_class: cls, student_grade: gr, standard_code: code, status,
+                  updated_by: currentTeacher?.id, updated_at: new Date().toISOString()
+                }))
+                await supabase.from('class_standard_status').upsert(rows, { onConflict: 'english_class,student_grade,standard_code' })
+                showToast(`Updated ${suggested} standard(s) from grade data`)
+              } else {
+                showToast('No changes suggested -- current statuses match grade data')
+              }
+              return
+            }
+            // Section-based: analyze per-section scores for standards
+            const aIds = assessments.map(a => a.id)
+            const { data: grades } = await supabase.from('grades').select('assessment_id, section_scores, score')
+              .in('assessment_id', aIds).not('score', 'is', null)
+            if (!grades || grades.length === 0) { showToast('No scores found'); return }
+            const stdAvgs: Record<string, { total: number; count: number }> = {}
+            assessments.forEach(a => {
+              if (!a.sections) return
+              a.sections.forEach((sec: any, si: number) => {
+                if (!sec.standard) return
+                const sectionGrades = grades.filter(g => g.assessment_id === a.id && g.section_scores?.[String(si)] != null)
+                sectionGrades.forEach(g => {
+                  const pct = sec.max_points > 0 ? (g.section_scores[String(si)] / sec.max_points) * 100 : 0
+                  if (!stdAvgs[sec.standard]) stdAvgs[sec.standard] = { total: 0, count: 0 }
+                  stdAvgs[sec.standard].total += pct
+                  stdAvgs[sec.standard].count++
+                })
+              })
+            })
+            let suggested = 0
+            const newStatuses = { ...statuses }
+            Object.entries(stdAvgs).forEach(([code, { total, count }]) => {
+              const avg = total / count
+              const current = statuses[code] || 'not_started'
+              const suggest: StdStatus = avg >= 80 ? 'mastered' : avg >= 50 ? 'in_progress' : 'not_started'
+              if (suggest !== current && (suggest === 'mastered' || (suggest === 'in_progress' && current === 'not_started'))) {
+                newStatuses[code] = suggest
+                suggested++
+              }
+            })
+            if (suggested > 0) {
+              setStatuses(newStatuses)
+              const rows = Object.entries(newStatuses).filter(([c]) => stdAvgs[c]).map(([code, status]) => ({
+                english_class: cls, student_grade: gr, standard_code: code, status,
+                updated_by: currentTeacher?.id, updated_at: new Date().toISOString()
+              }))
+              await supabase.from('class_standard_status').upsert(rows, { onConflict: 'english_class,student_grade,standard_code' })
+              showToast(`Updated ${suggested} standard(s) from section scores`)
+            } else {
+              showToast('No changes suggested -- current statuses match grade data')
+            }
+          }} className="px-3 py-1 rounded-lg text-[10px] font-semibold bg-navy text-white hover:bg-navy-dark">
+            Suggest from Grades
+          </button>
         </div>
       </div>
 

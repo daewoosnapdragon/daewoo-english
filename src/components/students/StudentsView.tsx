@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
@@ -307,6 +307,7 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
   const [activeTab, setActiveTab] = useState('about')
   const tabs = [
     { id: 'about', label: lang === 'ko' ? '정보' : 'About' },
+    { id: 'notes', label: lang === 'ko' ? '메모' : 'Quick Notes' },
     { id: 'behavior', label: lang === 'ko' ? '행동 기록' : 'Behavior Log' },
     { id: 'academic', label: lang === 'ko' ? '학업 이력' : 'Academic History' },
     { id: 'reading', label: lang === 'ko' ? '읽기 수준' : 'Reading' },
@@ -325,6 +326,7 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
         ))}
       </div>
       {activeTab === 'about' && <AboutTab studentId={studentId} lang={lang} />}
+      {activeTab === 'notes' && <QuickNotesTab studentId={studentId} />}
       {activeTab === 'behavior' && <BehaviorTracker studentId={studentId} studentName={studentName} />}
       {activeTab === 'academic' && <AcademicHistoryTab studentId={studentId} lang={lang} />}
       {activeTab === 'reading' && <ReadingTabInModal studentId={studentId} lang={lang} />}
@@ -378,6 +380,135 @@ function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' })
           className="w-full px-3 py-2.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none bg-surface leading-relaxed" />
         <p className="text-[10px] text-text-tertiary mt-1">{lang === 'ko' ? '모든 교사가 볼 수 있습니다' : 'Visible to all teachers in this class'}</p>
       </div>
+    </div>
+  )
+}
+
+// ─── Quick Notes Tab ────────────────────────────────────────────────
+
+const NOTE_CATEGORIES = [
+  { value: 'general', label: 'General', color: 'bg-gray-100 text-gray-700' },
+  { value: 'academic', label: 'Academic', color: 'bg-blue-100 text-blue-700' },
+  { value: 'behavior', label: 'Behavior', color: 'bg-amber-100 text-amber-700' },
+  { value: 'social', label: 'Social/Emotional', color: 'bg-purple-100 text-purple-700' },
+  { value: 'parent', label: 'Parent Communication', color: 'bg-green-100 text-green-700' },
+  { value: 'followup', label: 'Follow Up Needed', color: 'bg-red-100 text-red-700' },
+]
+
+function QuickNotesTab({ studentId }: { studentId: string }) {
+  const { currentTeacher, showToast } = useApp()
+  const [notes, setNotes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [newNote, setNewNote] = useState('')
+  const [newCategory, setNewCategory] = useState('general')
+  const [saving, setSaving] = useState(false)
+  const [tableExists, setTableExists] = useState(true)
+
+  const loadNotes = useCallback(async () => {
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('student_notes')
+        .select('*, teachers(name)')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false })
+        .limit(50)
+      if (error && (error.message.includes('does not exist') || error.code === '42P01')) {
+        setTableExists(false)
+        setLoading(false)
+        return
+      }
+      setNotes(data || [])
+    } catch {
+      setTableExists(false)
+    }
+    setLoading(false)
+  }, [studentId])
+
+  useEffect(() => { loadNotes() }, [loadNotes])
+
+  const handleAdd = async () => {
+    if (!newNote.trim()) return
+    setSaving(true)
+    const { error } = await supabase.from('student_notes').insert({
+      student_id: studentId,
+      note: newNote.trim(),
+      category: newCategory,
+      created_by: currentTeacher?.id,
+    })
+    setSaving(false)
+    if (error) showToast(`Error: ${error.message}`)
+    else { setNewNote(''); loadNotes() }
+  }
+
+  const handleDelete = async (noteId: string) => {
+    const { error } = await supabase.from('student_notes').delete().eq('id', noteId)
+    if (error) showToast(`Error: ${error.message}`)
+    else loadNotes()
+  }
+
+  if (!tableExists) {
+    return <p className="text-[12px] text-text-tertiary py-4">Run the student_notes migration in Supabase to enable Quick Notes.</p>
+  }
+
+  const getCat = (c: string) => NOTE_CATEGORIES.find(x => x.value === c) || NOTE_CATEGORIES[0]
+
+  return (
+    <div className="space-y-4">
+      {/* Add note */}
+      <div className="bg-surface border border-border rounded-xl p-3">
+        <div className="flex gap-2 mb-2">
+          <input value={newNote} onChange={e => setNewNote(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd() } }}
+            placeholder="Quick note... (Enter to save)"
+            className="flex-1 px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy" autoFocus />
+          <button onClick={handleAdd} disabled={saving || !newNote.trim()}
+            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+            {saving ? <Loader2 size={12} className="animate-spin" /> : 'Add'}
+          </button>
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          {NOTE_CATEGORIES.map(c => (
+            <button key={c.value} onClick={() => setNewCategory(c.value)}
+              className={`px-2 py-0.5 rounded-full text-[9px] font-semibold transition-all ${newCategory === c.value ? c.color + ' ring-1 ring-navy/30' : 'bg-surface-alt text-text-tertiary hover:bg-border'}`}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Notes timeline */}
+      {loading ? (
+        <div className="py-8 text-center"><Loader2 size={16} className="animate-spin text-navy mx-auto" /></div>
+      ) : notes.length === 0 ? (
+        <p className="text-[12px] text-text-tertiary text-center py-6">No notes yet. Add your first one above.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {notes.map((n: any) => {
+            const cat = getCat(n.category)
+            const date = new Date(n.created_at)
+            const isOwn = n.created_by === currentTeacher?.id
+            return (
+              <div key={n.id} className="flex items-start gap-2 group">
+                <div className="w-1.5 h-1.5 rounded-full bg-navy/30 mt-2 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-semibold ${cat.color}`}>{cat.label}</span>
+                    <span className="text-[10px] text-text-tertiary">
+                      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    </span>
+                    <span className="text-[10px] text-text-tertiary">by {n.teachers?.name || 'Unknown'}</span>
+                    {isOwn && (
+                      <button onClick={() => handleDelete(n.id)} className="opacity-0 group-hover:opacity-100 text-[9px] text-red-400 hover:text-red-600 transition-opacity ml-1">delete</button>
+                    )}
+                  </div>
+                  <p className="text-[12px] text-text-primary mt-0.5 leading-relaxed">{n.note}</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

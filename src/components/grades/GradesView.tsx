@@ -719,30 +719,9 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                       {domainAssessments.map((a, ai) => {
                         const sc = scores[s.id]?.[a.id]
                         const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
-                        const si = students.indexOf(s)
                         return (
                           <td key={a.id} className="px-1 py-1.5 text-center">
                             <input type="number" step="0.5" value={sc ?? ''} onChange={e => handleChange(s.id, a.id, e.target.value)}
-                              data-col={ai} data-row={si}
-                              onKeyDown={e => {
-                                if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'ArrowDown') {
-                                  e.preventDefault()
-                                  const grid = (e.target as HTMLElement).closest('table')
-                                  if (grid) {
-                                    const nextRow = e.key === 'ArrowUp' ? si - 1 : si + 1
-                                    const next = grid.querySelector(`input[data-col="${ai}"][data-row="${nextRow}"]`) as HTMLInputElement
-                                    next?.focus()
-                                  }
-                                }
-                                if (e.key === 'ArrowUp') {
-                                  e.preventDefault()
-                                  const grid = (e.target as HTMLElement).closest('table')
-                                  if (grid) {
-                                    const next = grid.querySelector(`input[data-col="${ai}"][data-row="${si - 1}"]`) as HTMLInputElement
-                                    next?.focus()
-                                  }
-                                }
-                              }}
                               max={a.max_score} className={`batch-input w-16 px-2 py-1.5 border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${pct != null && pct < 60 ? 'border-red-300 bg-red-50' : 'border-border'}`} />
                           </td>
                         )
@@ -1028,6 +1007,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
   const [sections, setSections] = useState<{ label: string; standard: string; max_points: number }[]>(
     editing?.sections || []
   )
+  const [focusedSection, setFocusedSection] = useState<number | null>(null)
   const nameRef = useRef<HTMLInputElement>(null)
   useEffect(() => { nameRef.current?.focus() }, [])
 
@@ -1306,15 +1286,18 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                     <input value={sec.label} onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], label: e.target.value }; setSections(ns) }}
                       placeholder="e.g. Q1-3" className="w-24 px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy" />
                     <div className="relative flex-1">
-                      <input value={sec.standard} onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], standard: e.target.value }; setSections(ns) }}
+                      <input value={sec.standard}
+                        onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], standard: e.target.value }; setSections(ns); setFocusedSection(si) }}
+                        onFocus={() => setFocusedSection(si)}
+                        onBlur={() => setTimeout(() => setFocusedSection(null), 150)}
                         placeholder="Standard (e.g. RL.2.1)" className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy" />
-                      {sec.standard.length >= 2 && (() => {
+                      {focusedSection === si && sec.standard.length >= 2 && (() => {
                         const matches = ccssStandards.filter(s => s.code.toLowerCase().includes(sec.standard.toLowerCase()) && s.code !== sec.standard).slice(0, 4)
                         if (matches.length === 0) return null
                         return (
                           <div className="absolute left-0 right-0 top-full mt-0.5 bg-surface border border-border rounded-lg shadow-lg z-50 max-h-32 overflow-y-auto">
                             {matches.map(s => (
-                              <button key={s.code} onClick={() => { const ns = [...sections]; ns[si] = { ...ns[si], standard: s.code }; setSections(ns) }}
+                              <button key={s.code} onMouseDown={e => e.preventDefault()} onClick={() => { const ns = [...sections]; ns[si] = { ...ns[si], standard: s.code }; setSections(ns); setFocusedSection(null) }}
                                 className="w-full text-left px-2 py-1.5 hover:bg-surface-alt text-[10px] border-b border-border/50 last:border-0">
                                 <span className="font-bold text-navy">{s.code}</span>
                                 <span className="text-text-tertiary ml-1.5 line-clamp-1">{s.description}</span>

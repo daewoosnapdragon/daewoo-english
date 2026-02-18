@@ -26,6 +26,7 @@ interface FlaggedEntry { id: string; student_id: string; date: string; type: str
 export default function DashboardView() {
   const { language, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
+  const isTeacher = currentTeacher?.role === 'teacher'
   const [semesters, setSemesters] = useState<{ id: string; name: string; name_ko: string; is_active: boolean }[]>([])
   const [activeSem, setActiveSem] = useState<string>('')
 
@@ -42,18 +43,19 @@ export default function DashboardView() {
     })()
   }, [])
 
+  const today = new Date()
+  const greeting = today.getHours() < 12 ? 'Good morning' : today.getHours() < 17 ? 'Good afternoon' : 'Good evening'
+  const dayStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+
   return (
     <div className="animate-fade-in">
       <div className="px-10 pt-6 pb-5 bg-surface border-b border-border">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-navy/10 flex items-center justify-center">
-              <GraduationCap size={24} className="text-navy" />
-            </div>
-            <div>
-              <h2 className="font-display text-[22px] font-semibold tracking-tight text-navy">{language === 'ko' ? '대시보드' : 'Dashboard'}</h2>
-              <p className="text-text-secondary text-[13px] mt-0.5">{language === 'ko' ? '프로그램 전체 현황' : `Program overview — ${activeSem}`}</p>
-            </div>
+          <div>
+            <h2 className="font-display text-[22px] font-semibold tracking-tight text-navy">
+              {language === 'ko' ? '대시보드' : `${greeting}${currentTeacher?.name ? `, ${currentTeacher.name}` : ''}`}
+            </h2>
+            <p className="text-text-secondary text-[13px] mt-0.5">{dayStr} {activeSem ? `-- ${activeSem}` : ''}</p>
           </div>
           {semesters.length > 0 && (
             <select value={activeSem} onChange={(e: any) => setActiveSem(e.target.value)}
@@ -69,11 +71,124 @@ export default function DashboardView() {
       </div>
       <div className="px-10 py-6">
         <TodayAtGlance />
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <TodaysPlanPreview />
+          <RecentNotesPreview />
+        </div>
         <QuickActions />
         <StudentAlerts />
         {isAdmin && <AdminAlertPanel />}
         <SharedCalendar />
         {isAdmin && <ClassOverviewTable />}
+      </div>
+    </div>
+  )
+}
+
+// ─── Today's Plan Preview ─────────────────────────────────────────
+function TodaysPlanPreview() {
+  const { currentTeacher } = useApp()
+  const isTeacher = currentTeacher?.role === 'teacher'
+  const [plan, setPlan] = useState<string>('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!isTeacher || !currentTeacher?.english_class) { setLoading(false); return }
+    (async () => {
+      try {
+        const today = getKSTDateString()
+        const { data } = await supabase.from('teacher_daily_plans')
+          .select('plan_text')
+          .eq('date', today)
+          .eq('english_class', currentTeacher.english_class)
+          .single()
+        if (data) setPlan(data.plan_text || '')
+      } catch {}
+      setLoading(false)
+    })()
+  }, [currentTeacher, isTeacher])
+
+  if (!isTeacher) return null
+
+  return (
+    <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      <div className="px-4 py-2.5 bg-gold/10 border-b border-border">
+        <p className="text-[11px] font-bold text-navy">Today's Plan</p>
+      </div>
+      <div className="px-4 py-3 min-h-[100px] max-h-[160px] overflow-y-auto">
+        {loading ? (
+          <Loader2 size={14} className="animate-spin text-text-tertiary" />
+        ) : plan ? (
+          <div className="text-[11px] text-text-primary leading-relaxed [&_b]:font-bold [&_i]:italic [&_ul]:list-disc [&_ul]:pl-4" dangerouslySetInnerHTML={{ __html: plan }} />
+        ) : (
+          <p className="text-[11px] text-text-tertiary">No plan for today. Head to Teacher Plans to add one.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Recent Notes Preview ─────────────────────────────────────────
+function RecentNotesPreview() {
+  const { currentTeacher } = useApp()
+  const isTeacher = currentTeacher?.role === 'teacher'
+  const [notes, setNotes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const yesterday = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+        let query = supabase.from('student_notes')
+          .select('*, teachers(name), students!inner(english_name, english_class)')
+          .gte('created_at', yesterday)
+          .order('created_at', { ascending: false })
+          .limit(6)
+        if (isTeacher && currentTeacher?.english_class) {
+          query = query.eq('students.english_class', currentTeacher.english_class)
+        }
+        const { data, error } = await query
+        if (!error && data) setNotes(data)
+      } catch {}
+      setLoading(false)
+    })()
+  }, [currentTeacher, isTeacher])
+
+  const NOTE_CATS: Record<string, string> = {
+    general: 'bg-gray-100 text-gray-600',
+    academic: 'bg-blue-100 text-blue-600',
+    behavior: 'bg-amber-100 text-amber-600',
+    social: 'bg-purple-100 text-purple-600',
+    parent: 'bg-green-100 text-green-600',
+    followup: 'bg-red-100 text-red-600',
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
+        <p className="text-[11px] font-bold text-navy">Recent Student Notes <span className="font-normal text-text-tertiary">(last 48h)</span></p>
+      </div>
+      <div className="px-4 py-3 min-h-[100px] max-h-[160px] overflow-y-auto">
+        {loading ? (
+          <Loader2 size={14} className="animate-spin text-text-tertiary" />
+        ) : notes.length === 0 ? (
+          <p className="text-[11px] text-text-tertiary">No recent notes. Open a student profile to add quick notes.</p>
+        ) : (
+          <div className="space-y-2">
+            {notes.map((n: any) => (
+              <div key={n.id} className="flex items-start gap-1.5">
+                <span className={`px-1 py-0.5 rounded text-[7px] font-bold flex-shrink-0 mt-0.5 ${NOTE_CATS[n.category] || NOTE_CATS.general}`}>
+                  {n.category?.toUpperCase()?.slice(0, 3)}
+                </span>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold text-navy">{n.students?.english_name}</span>
+                  <span className="text-[9px] text-text-tertiary ml-1">by {n.teachers?.name || '?'}</span>
+                  <p className="text-[10px] text-text-secondary leading-snug truncate">{n.note}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
