@@ -14,17 +14,14 @@ import {
 // Aligned to Science of Reading / Structured Literacy research
 // ═══════════════════════════════════════════════════════════════════
 
-interface TeachingGuideInfo {
-  guide: number      // Guide 2 or 3
-  lesson: string     // e.g. "Lesson 2", "Lesson 1A"
-  pages: string      // e.g. "6-27"
-  rule: string       // The key rule statement
-  wordFamilies?: string[]  // e.g. ["-ake", "-ane", "-ale"]
-  hfWords?: string[]  // High-frequency words taught
-  samplePhrases?: string[] // Practice phrases
-  contrastPairs?: string[] // Minimal pairs for comparison
-  activitySequence?: string[] // Teaching activity order
-  sortingTip?: string // What to sort and how
+interface PatternDeepDive {
+  whyItWorks: string           // The underlying logic / "secret rule"
+  commonIrregulars?: string[]  // Exceptions and why they're exceptions
+  wordFamilies?: string[]      // Word family lists
+  contrastPairs?: string[]     // Minimal pairs
+  samplePhrases?: string[]     // Practice phrases
+  sortingTip?: string          // How to structure sorting activities
+  guideRef?: string            // Optional: "Guide 2, Lesson 3, p28-48"
 }
 
 interface PhonicsPattern {
@@ -33,7 +30,7 @@ interface PhonicsPattern {
   hfWords?: string
   notes?: string
   isMorphology?: boolean
-  teachingGuide?: TeachingGuideInfo
+  deepDive?: PatternDeepDive
 }
 
 interface PhonicsStage {
@@ -51,10 +48,32 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Letter names, sounds, and formation. Foundation for all decoding.',
     suggestedClasses: 'Lily (beginning), Camellia (review)',
     patterns: [
-      { pattern: 'Consonant sounds', examples: 'b, c, d, f, g, h, j, k, l, m, n, p, q, r, s, t, v, w, x, y, z', notes: 'Teach in high-utility order: s, m, t, a, p, n, c, i, f, b, g, d, h, r, l, o, e, u, k, w, j, v, y, z, x, q' },
-      { pattern: 'Short vowels', examples: 'a (cat), e (bed), i (sit), o (hot), u (cup)', notes: 'Introduce after 4-6 consonants. Use CVC words immediately.' },
-      { pattern: 'Letter formation', examples: 'Manuscript print, correct directionality', notes: 'Multisensory: skywriting, sand trays, bumpy boards. Connect formation to sound.' },
-      { pattern: 'Alphabetic principle', examples: 'Letters represent sounds; sounds blend into words', notes: 'Continuous blending (mmm-aaa-nnn) vs. choppy segmenting. Use Elkonin boxes.' },
+      { pattern: 'Consonant sounds', examples: 'b, c, d, f, g, h, j, k, l, m, n, p, q, r, s, t, v, w, x, y, z', notes: 'Teach in high-utility order: s, m, t, a, p, n, c, i, f, b, g, d, h, r, l, o, e, u, k, w, j, v, y, z, x, q', deepDive: {
+        whyItWorks: 'The teaching order is based on frequency and distinctiveness. High-utility letters (s, m, t) appear in the most words, so students can start reading sooner. Visually similar letters (b/d, p/q) and aurally similar sounds (m/n, f/v) are separated in the sequence to reduce confusion. For Korean ELLs, some English consonants have no Korean equivalent: /f/, /v/, /z/, /θ/ (th), /ð/ (voiced th), and the /l/-/r/ distinction. These need extra explicit instruction because students literally cannot hear the difference without training.',
+        commonIrregulars: [
+          'c has two sounds: /k/ before a, o, u (cat, cold, cup) and /s/ before e, i, y (cent, city, cycle). This is the "soft c" rule inherited from Latin.',
+          'g has two sounds: /g/ before a, o, u (gap, go, gum) and /j/ before e, i, y (gem, giant, gym). But g is less reliable than c -- "get," "give," "girl" break the rule. These exceptions are Germanic words that resisted the French/Latin pattern.',
+          'x is never truly its own sound -- it represents /ks/ (box, fox) or /gz/ (exact, exam). At the start of words it makes /z/ (xylophone).',
+          's has two sounds: /s/ (sun, sit) and /z/ (is, has, dogs). The /z/ pronunciation happens between vowels and after voiced consonants. Korean has no /z/ phoneme, so this needs explicit teaching.'
+        ]
+      } },
+      { pattern: 'Short vowels', examples: 'a (cat), e (bed), i (sit), o (hot), u (cup)', notes: 'Introduce after 4-6 consonants. Use CVC words immediately.', deepDive: {
+        whyItWorks: 'Short vowels are the default vowel sound in English. When a vowel is "closed in" by a consonant (CVC pattern like cat, bed, sit), it makes its short sound. This is the most common syllable type in English -- about 50% of all syllables are closed. The term "short" is misleading; it refers to the lax tongue position, not duration. Korean vowels are pure and consistent; English vowels shift depending on surrounding consonants, which is a major source of confusion for ELLs.',
+        commonIrregulars: [
+          'Short o (/ɒ/) varies by dialect. In many American accents, "hot" and "father" use the same vowel, but in British English they differ. Don\'t overcorrect students on this.',
+          'Short u (/ʌ/) is identical to schwa in sound but different in function -- short u occurs in stressed syllables (cup, but, run), schwa in unstressed syllables (about, pencil).',
+          '"Put," "push," "pull," "full," "bull" use /ʊ/ (as in "book"), not short u. These are common exceptions that must be taught as sight words at this stage.'
+        ]
+      } },
+      { pattern: 'Letter formation', examples: 'Manuscript print, correct directionality', notes: 'Multisensory: skywriting, sand trays, bumpy boards. Connect formation to sound.', deepDive: {
+        whyItWorks: 'Handwriting activates motor memory pathways that reinforce letter-sound connections. Research (James & Engelhardt, 2012) shows that children who practice writing letters by hand show greater neural activation in reading circuits than those who only type or trace. For Korean students, the left-to-right, top-to-bottom directionality of English differs from Hangul\'s block construction, so explicit practice is important. The key principle: always say the sound while forming the letter, creating a simultaneous auditory-visual-kinesthetic link.'
+      } },
+      { pattern: 'Alphabetic principle', examples: 'Letters represent sounds; sounds blend into words', notes: 'Continuous blending (mmm-aaa-nnn) vs. choppy segmenting. Use Elkonin boxes.', deepDive: {
+        whyItWorks: 'English is an alphabetic language -- letters map to sounds, and sounds combine into words. This seems obvious to literate adults but is a genuine cognitive breakthrough for children. Korean Hangul is also alphabetic but much more transparent (each symbol reliably maps to one sound). English has about 44 phonemes represented by 26 letters in roughly 250 different spellings. This means English requires more explicit teaching of the code than Korean does. Continuous blending (/mmmaaat/) is more effective than choppy segmenting (/m/-/a/-/t/) because it preserves the co-articulation that makes words recognizable.',
+        commonIrregulars: [
+          'Some high-frequency words cannot be fully decoded at this stage: "the," "was," "said," "of," "do." Teach the decodable parts (th-e: th is decodable, e is irregular) and flag the tricky part. Never call them "sight words" that must be memorized whole -- research shows even irregular words are partially decodable.'
+        ]
+      } },
     ]
   },
   {
@@ -63,15 +82,77 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Short vowel words with consonants closing the syllable. The most common English syllable type.',
     suggestedClasses: 'Lily, Camellia',
     patterns: [
-      { pattern: 'CVC words', examples: 'cat, bed, sit, hop, cup', notes: 'Master before advancing. Students should read and spell fluently.' },
-      { pattern: 'Initial consonant blends', examples: 'bl, cl, fl, gl, pl, sl, br, cr, dr, fr, gr, pr, tr, sc, sk, sm, sn, sp, st, sw', notes: 'Teach as two distinct sounds blended together, NOT as chunks.' },
-      { pattern: 'Final consonant blends', examples: '-nd, -nk, -nt, -mp, -lt, -lk, -ft, -sk, -st', notes: 'Students often drop the second consonant in spelling. Dictation practice essential.' },
-      { pattern: 'Digraphs', examples: 'sh, ch, th, wh, ck, ph', notes: 'Two letters, one sound. Distinguish from blends. th = voiced (this) and unvoiced (think).' },
-      { pattern: 'FLOSS rule (ff, ll, ss, zz)', examples: 'off, tell, miss, buzz, staff, dull', notes: 'Double the final consonant after a single short vowel in a one-syllable word.' },
-      { pattern: '-ng, -nk endings', examples: 'ring, sang, think, bank', notes: 'Nasal sounds. -nk includes the /k/ sound; -ng does not.' },
-      { pattern: 'Inflectional suffix -s', examples: 'cats, runs, beds', isMorphology: true, notes: 'First morphology concept. Three pronunciations: /s/ (cats), /z/ (beds), /iz/ (buses).' },
-      { pattern: 'Inflectional suffix -ed', examples: 'jumped /t/, rained /d/, wanted /id/', isMorphology: true, notes: 'Three pronunciations based on final sound of base word.' },
-      { pattern: 'Inflectional suffix -ing', examples: 'jumping, running, sitting', isMorphology: true, notes: 'Introduce doubling rule: CVC + -ing doubles final consonant.' },
+      { pattern: 'CVC words', examples: 'cat, bed, sit, hop, cup', notes: 'Master before advancing. Students should read and spell fluently.', deepDive: {
+        whyItWorks: 'The closed syllable is the backbone of English. The rule is simple: when a vowel is followed by a consonant (closed in), the vowel makes its short sound. This single rule covers roughly half of all English syllables. Mastery means students can decode hundreds of words. The reason we teach CVC before anything else is that it establishes the default expectation -- short vowel. Every other syllable type is then taught as a variation from this baseline.',
+        contrastPairs: ['cat/cake (closed vs silent-e)', 'hop/hope', 'cut/cute', 'bit/bite', 'not/note'],
+        commonIrregulars: [
+          '"Was," "what," "want," "wash" -- the w changes the following a to sound like short o. This is called the "w effect" and also applies to "war," "warm," "water."',
+          '"Put," "push," "pull" -- short u after p makes /ʊ/ instead of /ʌ/ in some common words.',
+          '"Said," "says" -- irregular ea pronunciation. These must be taught explicitly.'
+        ]
+      } },
+      { pattern: 'Initial consonant blends', examples: 'bl, cl, fl, gl, pl, sl, br, cr, dr, fr, gr, pr, tr, sc, sk, sm, sn, sp, st, sw', notes: 'Teach as two distinct sounds blended together, NOT as chunks.', deepDive: {
+        whyItWorks: 'Blends are NOT new sounds -- they are two (or three) consonant sounds pronounced in rapid sequence. Teaching them as chunks ("bl says /bl/") is harmful because it prevents students from segmenting them for spelling. A student who understands that "blend" is /b/+/l/+/e/+/n/+/d/ can spell it; a student who memorized "bl" as a unit will struggle with "bulb" or "lab" where b and l appear in different positions. Korean does not allow initial consonant clusters (no word starts with /bl/ or /tr/ in Korean), so students may insert a vowel sound: "blue" becomes "buh-loo." Explicit instruction in maintaining airflow between consonants is essential.',
+        commonIrregulars: [
+          'Three-letter blends exist: str (string), spl (splash), spr (spring), scr (scrub), squ (square). These follow the same principle but need extra practice.',
+          'The blend "wr" was historically pronounced (Old English "writan" with a w sound) but the w is now silent. Teach wr- as a spelling pattern, not a blend.'
+        ]
+      } },
+      { pattern: 'Final consonant blends', examples: '-nd, -nk, -nt, -mp, -lt, -lk, -ft, -sk, -st', notes: 'Students often drop the second consonant in spelling. Dictation practice essential.', deepDive: {
+        whyItWorks: 'Final blends are harder than initial blends because English naturally reduces word endings in speech. We say "han(d)" and "wen(t)" with the final consonant barely articulated. This is why students write "wet" for "went" or "han" for "hand" -- they are spelling what they hear. The fix is explicit sound segmentation: tap each sound on fingers before writing. Korean syllables always end in a single consonant (or none), so final clusters are especially challenging. The -nk ending is tricky: it sounds like /ngk/, and students need to understand that n before k changes to the /ng/ sound.',
+        commonIrregulars: [
+          '-lk words: "walk," "talk," "chalk" -- the l is silent. But "milk," "silk," "bulk" pronounce the l. The difference: when -lk follows a, the l drops.',
+          '-mb words: "lamb," "comb," "climb," "thumb" -- the b is silent. This is historical; the b was once pronounced in Old English.'
+        ]
+      } },
+      { pattern: 'Digraphs', examples: 'sh, ch, th, wh, ck, ph', notes: 'Two letters, one sound. Distinguish from blends. th = voiced (this) and unvoiced (think).', deepDive: {
+        whyItWorks: 'English has more sounds than letters (44 phonemes, 26 letters), so some sounds require two letters. This is fundamentally different from blends: "sh" is ONE sound (you cannot separate it into /s/ and /h/), while "sl" is TWO sounds blended. Understanding this distinction is critical for accurate Elkonin box work -- "ship" has 3 sound boxes (/sh/-/i/-/p/), not 4. The "th" digraph has two distinct sounds: voiceless /θ/ (think, math, thumb) and voiced /ð/ (this, that, the, mother). Place your hand on your throat -- voiced th vibrates. Korean has neither sound, so students commonly substitute /s/ or /d/.',
+        commonIrregulars: [
+          'The "ch" digraph has three pronunciations: /ch/ (chip -- English/Germanic), /k/ (school, Christmas -- Greek origin), and /sh/ (chef, machine -- French origin). The pronunciation tells you the word\'s etymological origin.',
+          '"Ph" making /f/ comes exclusively from Greek. Almost every ph word has a Greek root: phone (sound), photo (light), graph (write), philosophy (love of wisdom).',
+          '"Wh" in many dialects is now just /w/ (where = wear). Historically it was a voiceless w (/hw/). Some dialects preserve this: "which" vs "witch" sound different.'
+        ]
+      } },
+      { pattern: 'FLOSS rule (ff, ll, ss, zz)', examples: 'off, tell, miss, buzz, staff, dull', notes: 'Double the final consonant after a single short vowel in a one-syllable word.', deepDive: {
+        whyItWorks: 'After a single short vowel in a one-syllable word, the consonants f, l, s, and z are doubled. This is a spelling convention, not a pronunciation change -- "off" and "of" have the same /f/ sound, the doubling just signals the short vowel. The rule exists because English uses consonant patterns to indicate vowel quality: a single consonant followed by e signals a long vowel (hope), so doubling signals "no, stay short." Knowing this rule means students never write "of" for "off" or "mis" for "miss." The name FLOSS is a mnemonic: F, L, O (not used), S, S.',
+        commonIrregulars: [
+          '"If," "of," "us," "bus," "yes," "this," "has," "is," "his," "was" -- common words that break the rule. Most are function words (grammatical rather than content words) that historically had different pronunciations.',
+          '"All," "ill," "ell" follow the rule, but "al" in "also," "already," "always" uses a single l because it became a prefix.',
+          '"Jazz," "fizz," "fuzz," "buzz" follow the rule, but zz is the rarest doubling.'
+        ]
+      } },
+      { pattern: '-ng, -nk endings', examples: 'ring, sang, think, bank', notes: 'Nasal sounds. -nk includes the /k/ sound; -ng does not.', deepDive: {
+        whyItWorks: 'The /ng/ sound (as in "ring") is a single phoneme -- a nasal made at the back of the throat (the velum). It only appears at the end of syllables in English, never the beginning. The spelling -nk represents TWO sounds: /ng/ + /k/ (think = /th/-/i/-/ng/-/k/). This distinction matters for Elkonin boxes and spelling. Korean has a similar nasal final consonant (the ㅇ batchim), which gives Korean ELLs an advantage with this pattern compared to speakers of other L1s.',
+        commonIrregulars: [
+          'The -ng digraph makes /ng/ in "sing" but /ng/+/g/ in "finger" and "longer" -- the g is pronounced when -ng comes before a vowel suffix in the base word. "Singer" = /ng/ (sing+er), "finger" = /ng+g/ (not fing+er, it\'s a single morpheme).',
+          '"Anxiety," "angry," "angle" -- when n comes before g or k in the middle of a word, it nasalizes to /ng/ automatically.'
+        ]
+      } },
+      { pattern: 'Inflectional suffix -s', examples: 'cats, runs, beds', isMorphology: true, notes: 'First morphology concept. Three pronunciations: /s/ (cats), /z/ (beds), /iz/ (buses).', deepDive: {
+        whyItWorks: 'The plural/verb -s has three pronunciations determined by the preceding sound, following a voicing assimilation rule: after voiceless sounds (/p, t, k, f, θ/), -s says /s/ (cats, cups, books). After voiced sounds (/b, d, g, v, m, n, l, r/ and all vowels), -s says /z/ (dogs, beds, cans, trees). After sibilants (/s, z, sh, ch, j/), -es says /iz/ (buses, watches, judges). Students don\'t need to memorize this rule -- it happens naturally in speech. But for spelling, they need to know when to write -s vs -es: add -es after s, x, z, ch, sh.',
+        commonIrregulars: [
+          'Irregular plurals: child/children, mouse/mice, foot/feet, tooth/teeth, man/men, woman/women, goose/geese. The vowel-change plurals (foot/feet) are remnants of Old English "umlaut" plurals.',
+          'Unchanged plurals: sheep, fish, deer, moose, series, species. Many are animals -- possibly because they were counted as groups rather than individuals.',
+          'Latin/Greek plurals: cactus/cacti, fungus/fungi, nucleus/nuclei, analysis/analyses, criterion/criteria. These preserve the original language\'s plural form.'
+        ]
+      } },
+      { pattern: 'Inflectional suffix -ed', examples: 'jumped /t/, rained /d/, wanted /id/', isMorphology: true, notes: 'Three pronunciations based on final sound of base word.', deepDive: {
+        whyItWorks: 'Like -s, the past tense -ed has three pronunciations governed by the final sound of the base word: after voiceless sounds, -ed says /t/ (jumped, walked, kissed). After voiced sounds, -ed says /d/ (rained, played, called). After /t/ or /d/, -ed says /id/ (wanted, needed, loaded). The crucial teaching point: -ed is ALWAYS spelled -ed regardless of pronunciation. Students who write "jumpt" or "walkt" are spelling phonetically rather than morphologically. Teach that -ed is a meaning unit (past tense marker) that keeps its spelling.',
+        commonIrregulars: [
+          'Irregular past tenses don\'t use -ed at all: go/went, see/saw, run/ran, eat/ate, come/came, give/gave, take/took, make/made. These are among the most frequent verbs in English and are mostly Old English strong verbs that changed their vowel instead of adding a suffix.',
+          '"Said," "paid," "laid" are irregular in spelling (not "sayed") but follow normal pronunciation rules.',
+          'Adjective -ed: "a crooked man," "wicked witch," "naked eye" -- when -ed forms an adjective, it often says /id/ even after voiced sounds.'
+        ]
+      } },
+      { pattern: 'Inflectional suffix -ing', examples: 'jumping, running, sitting', isMorphology: true, notes: 'Introduce doubling rule: CVC + -ing doubles final consonant.', deepDive: {
+        whyItWorks: 'The doubling rule exists to protect the short vowel sound. Compare: "hoping" (hope + ing, long o) vs "hopping" (hop + ing, short o). Without the doubled p, "hopping" would look like "hoping" and be read with a long vowel. The rule: if a one-syllable word ends in CVC (consonant-vowel-consonant), double the final consonant before adding a vowel suffix (-ing, -ed, -er, -est). This rule also explains why we DON\'T double after blends ("jumping" not "jumppping") or long vowels ("sleeping" not "sleepping") -- the vowel is already protected by the consonant cluster or vowel spelling.',
+        commonIrregulars: [
+          'Silent-e words DROP the e: hope -> hoping, make -> making, write -> writing. The e is no longer needed because the suffix starts with a vowel.',
+          'Words ending in -x don\'t double: box -> boxing (not boxxing). Because x already represents two sounds (/ks/), the vowel is protected.',
+          'Words ending in -w don\'t double: show -> showing. W is not a true consonant here; it\'s part of the vowel team.',
+          '"Bus" -> "busing" or "bussing" -- both are accepted. "Quiz" -> "quizzing" (doubles because qu functions as one consonant).'
+        ]
+      } },
     ]
   },
   {
@@ -80,11 +161,45 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Syllables ending in a vowel -- the vowel says its name (long sound).',
     suggestedClasses: 'Camellia, Daisy',
     patterns: [
-      { pattern: 'Open syllable concept', examples: 'me, she, hi, go, no, we, be', notes: 'Syllable ends in a vowel = vowel is long. Contrast with closed (met vs. me).' },
-      { pattern: 'Two-syllable open/closed', examples: 'ro-bot, mu-sic, pa-per, ti-ger', notes: 'Teach syllable division: V/CV (open first) vs. VC/V (closed first).' },
-      { pattern: 'y as a vowel', examples: 'my, fly (long i); happy, candy (long e)', notes: 'y at end of one-syllable word = /ai/; y at end of multisyllable word = /ee/.' },
-      { pattern: 'Prefix un-', examples: 'unhappy, undo, unfair', isMorphology: true, notes: 'First prefix. Meaning: "not" or "reverse." Teach that prefixes change meaning.' },
-      { pattern: 'Prefix re-', examples: 'redo, rewrite, replay', isMorphology: true, notes: 'Meaning: "again." High-frequency and transparent for young learners.' },
+      { pattern: 'Open syllable concept', examples: 'me, she, hi, go, no, we, be', notes: 'Syllable ends in a vowel = vowel is long. Contrast with closed (met vs. me).', deepDive: {
+        whyItWorks: 'An open syllable ends in a vowel, and that vowel is long (says its name). This is the opposite of the closed syllable rule. The logic: when nothing "closes in" the vowel, it is free to make its full, long sound. This is why "me" has a long e but "met" has a short e -- the t closes the syllable. Understanding open vs. closed syllables is the single most powerful decoding strategy for multisyllabic words. When students encounter an unknown long word, they divide it into syllables, check if each syllable is open or closed, and assign the appropriate vowel sound.',
+        contrastPairs: ['me/met', 'she/shed', 'go/got', 'hi/hit', 'no/not', 'we/wet', 'be/bed'],
+        commonIrregulars: [
+          '"Do" and "to" have short/reduced vowels, not long o. These are among the most frequent words in English and are simply irregular.',
+          '"He," "she," "we," "me," "be" are regular (long vowel). But "the" has a schwa (unstressed) or short e before consonants ("the dog") and long e before vowels ("the apple").',
+          'Single-syllable function words often resist vowel rules because they\'re spoken so quickly they reduce to schwa.'
+        ]
+      } },
+      { pattern: 'Two-syllable open/closed', examples: 'ro-bot, mu-sic, pa-per, ti-ger', notes: 'Teach syllable division: V/CV (open first) vs. VC/V (closed first).', deepDive: {
+        whyItWorks: 'When dividing a two-syllable word, the first attempt should be V/CV (divide before the consonant), creating an open first syllable with a long vowel: ro-bot, mu-sic, ti-ger. If that doesn\'t produce a recognizable word, try VC/V (divide after the consonant), creating a closed first syllable with a short vowel: cam-el, riv-er, lim-it. V/CV is tried first because it\'s statistically more common in English. This "flex strategy" -- try open, then closed -- is one of the most important decoding tools for upper-level readers.',
+        contrastPairs: ['ro-bot (open) vs rab-bit (closed)', 'pa-per (open) vs nap-kin (closed)', 'mu-sic (open) vs mus-cle (closed)', 'ti-ger (open) vs tig-er... no, it\'s ti-ger -- try open first!'],
+        commonIrregulars: [
+          'Many words could go either way: "lemon" = lem-on (closed, short e, correct) but a student might try le-mon (open, long e, wrong). This is where the "flex" comes in -- try one, check if it sounds like a real word.',
+          '"Seven," "river," "never," "ever" -- all VC/V (closed first syllable) despite looking like they could be V/CV.'
+        ]
+      } },
+      { pattern: 'y as a vowel', examples: 'my, fly (long i); happy, candy (long e)', notes: 'y at end of one-syllable word = /ai/; y at end of multisyllable word = /ee/.', deepDive: {
+        whyItWorks: 'The letter y functions as a vowel when it appears at the end of a word or syllable (not at the beginning). The sound it makes depends on whether it\'s stressed: in one-syllable words, final y is stressed and says long i (my, fly, try, dry, sky, cry). In multisyllable words, final y is unstressed and says long e (happy, funny, baby, candy, party). This is consistent and reliable. The underlying principle: English doesn\'t like to end words in i, so y acts as the substitute. The y/i swap also explains spelling changes: happy -> happiness (y -> i before suffix), but play -> playing (y stays after a vowel).',
+        commonIrregulars: [
+          '"Y" at the beginning of words is a consonant: yes, you, year, yellow. Test: if you can\'t put "an" before it, y is a consonant.',
+          'The y -> i rule for suffixes: carry -> carried, happy -> happiness, beauty -> beautiful. BUT y stays when the suffix starts with i: carry -> carrying (not "carriing"), baby -> babyish.',
+          '"Shy," "dry," "sly" are one-syllable y-as-long-i words that students sometimes confuse with the multisyllable pattern.'
+        ]
+      } },
+      { pattern: 'Prefix un-', examples: 'unhappy, undo, unfair', isMorphology: true, notes: 'First prefix. Meaning: "not" or "reverse." Teach that prefixes change meaning.', deepDive: {
+        whyItWorks: 'Un- is the ideal first prefix to teach because it is transparent (easy to see), productive (attaches to hundreds of words), and meaningful (always means "not" or "reverse of"). It demonstrates the core morphological principle: words are built from meaningful parts, and those parts keep their spelling. "Unhappy" is un + happy, and both parts retain their form. This is the foundation for all later prefix/suffix work. It also introduces the concept that adding un- does not change the base word\'s part of speech: happy (adj) -> unhappy (adj), do (verb) -> undo (verb).',
+        commonIrregulars: [
+          '"Uncle," "under," "until," "unit," "unique" -- these start with "un" but it is NOT the prefix un-. The un- here is part of the base word. Students need to check: if I remove "un," is the remaining part a real word? uncle -> *cle? No. So it\'s not a prefix.',
+          'Un- can mean "not" (unhappy, unfair, unkind) or "reverse" (undo, untie, unlock, unwrap). Both meanings are productive.'
+        ]
+      } },
+      { pattern: 'Prefix re-', examples: 'redo, rewrite, replay', isMorphology: true, notes: 'Meaning: "again." High-frequency and transparent for young learners.', deepDive: {
+        whyItWorks: 'Re- means "again" or "back" and is the second most common prefix in English. Like un-, it is transparent and doesn\'t change the base word\'s part of speech. It\'s excellent for building morphological awareness: students can generate dozens of words once they understand the pattern (reread, rewrite, redo, replay, rebuild, rethink, retell, reuse). Teach students to peel off the prefix to find the base word, then recombine: re + build = rebuild = "build again."',
+        commonIrregulars: [
+          '"Really," "read," "red," "rest," "reach," "ready" -- these start with "re" but it is NOT the prefix re-. Apply the same test: remove "re" and check if the remainder is a base word. really -> *ally? No prefix.',
+          'Some re- words have shifted in meaning: "receive" (re + ceive, Latin "take back"), "remember" (re + member, "put back together"), "repair" (re + pair, "make ready again"). The prefix is historically present but not transparent to modern learners.'
+        ]
+      } },
     ]
   },
   {
@@ -93,66 +208,104 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Magic e / silent e makes the vowel say its name. A critical decoding milestone.',
     suggestedClasses: 'Camellia, Daisy',
     patterns: [
-      { pattern: 'a_e', examples: 'cake, name, make, game, lake', notes: 'Most common VCe pattern. Contrast pairs: can/cane, tap/tape, cap/cape.', teachingGuide: {
-        guide: 2, lesson: 'Lesson 2', pages: '6-27',
-        rule: 'When you see the pattern a-consonant-e, the <a> will usually represent the long sound /a/. The <e> is silent.',
+      { pattern: 'a_e', examples: 'cake, name, make, game, lake', notes: 'Most common VCe pattern. Contrast pairs: can/cane, tap/tape, cap/cape.', deepDive: {
+        whyItWorks: 'When you see the pattern a-consonant-e, the a makes its long sound (says its name) and the e is silent. The silent e is a signal to the reader: "look back at the vowel and make it long." This convention exists because Middle English scribes needed a way to distinguish homophones and show vowel length after English pronunciation shifted dramatically (the Great Vowel Shift, 1400-1700). Words like "mat" and "mate" were once pronounced differently in ways that didn\'t need a spelling distinction, but as pronunciation changed, the spelling system adapted.',
         wordFamilies: ['-ake (cake, lake, make, bake, wake, shake, snake, stake, flake)', '-ane (cane, lane, mane, plane, crane)', '-ale (sale, male, tale, pale, whale, scale)', '-ate (late, gate, mate, plate, skate, state)', '-ame (name, game, same, came, flame, shame)', '-ade (made, shade, grade, trade, blade)'],
-        hfWords: ['made', 'make', 'take', 'came', 'gave', 'ate'],
-        samplePhrases: ['make it for me', 'take it with you', 'Don\'t be late!', 'give it a shake', 'save the date', 'not the same', 'such a shame', 'pet the mane', 'sit in the shade', 'wave to him'],
         contrastPairs: ['can/cane', 'tap/tape', 'cap/cape', 'mad/made', 'pan/pane', 'rat/rate', 'bat/bate', 'van/vane', 'pal/pale', 'stat/state'],
-        activitySequence: ['Visual Drill: Say sounds for ch, a, v, y, z, th, e, w, r, m, tch, i, c, q, g', 'Phonemic Awareness: Which words have the /a/ sound?', 'Review: Read words, identify vowel sound and syllable type', 'Introduce: What sound do these words share? What does your mouth look like?', 'Teach Rule: a-consonant-e = long /a/, silent e', 'Model Encoding: Say word, segment sounds, write (silent e goes in last box or outside)', 'Model Decoding: Read CVC words, then add silent e and reread', 'Guided Practice: Decoding and encoding with word lists', 'High-Frequency Words: Map and read (made, make, take, came, gave, ate)', 'More Practice: Match endings (-ake, -ate, -ame, -ane, -ade), sort vowel sounds', 'Word Families: Build -ake, -ane, -ale, -ate, -ame, -ade families', 'Phrases and Sentences: Read controlled phrases and decodable sentences', 'Fill and Read: Complete sentences with target words', 'Dictation: Write sentences about pictures'],
-        sortingTip: 'Sort by word family ending (-ake vs -ate vs -ame) and by vowel sound (short a: chat, clap, slam vs long a: skate, rake, tale)'
+        samplePhrases: ['make it for me', 'take it with you', 'Don\'t be late!', 'give it a shake', 'save the date', 'not the same', 'such a shame', 'sit in the shade', 'wave to him'],
+        commonIrregulars: [
+          '"Have," "gave" -- "have" should rhyme with "cave" and "gave" by the pattern, but it doesn\'t. "Have" retains an older pronunciation.',
+          '"Are," "were," "come," "some," "done," "gone," "love," "dove," "move," "prove" -- VCe words where the vowel does NOT say its name. Most are extremely common words whose pronunciation shifted over centuries while spelling was fixed by printing.',
+          '"Make" -> "making" drops the e. "Make" -> "maker" drops the e. But "make" -> "makes" keeps the e (suffix starts with consonant).'
+        ],
+        guideRef: 'Guide 2, Lesson 2, p6-27',
+        sortingTip: 'Sort by word family ending (-ake, -ate, -ame, -ane, -ade) and by short a vs long a (chat, clap, slam vs skate, rake, tale)'
       } },
-      { pattern: 'i_e', examples: 'bike, kite, time, line, five', notes: 'Contrast: bit/bite, kit/kite, fin/fine, dim/dime.', teachingGuide: {
-        guide: 2, lesson: 'Lesson 3', pages: '28-48',
-        rule: 'When you see the pattern i-consonant-e, the <i> will usually represent the long sound /i/. The <e> is silent.',
-        wordFamilies: ['-ike (bike, like, hike, spike, strike)', '-ine (line, fine, mine, vine, shine, pine)', '-ile (mile, tile, smile, pile, while)', '-ide (ride, side, hide, wide, slide, pride)', '-ime (time, dime, lime, slime, climb, crime)', '-ite (kite, bite, quite, white, write, site)'],
-        hfWords: ['like', 'five', 'time', 'ride', 'white', 'give'],
-        samplePhrases: ['ride with me', 'do not like', 'side by side', 'wipe the tile', 'tide comes in', 'smile at me', 'fine with me', 'Is it time?', 'fly the kite', 'drive a mile'],
+      { pattern: 'i_e', examples: 'bike, kite, time, line, five', notes: 'Contrast: bit/bite, kit/kite, fin/fine, dim/dime.', deepDive: {
+        whyItWorks: 'Same principle as a_e: i-consonant-e signals long i. The silent e flips the vowel from short to long. This pattern is extremely productive and reliable.',
+        wordFamilies: ['-ike (bike, like, hike, spike, strike)', '-ine (line, fine, mine, vine, shine, pine)', '-ile (mile, tile, smile, pile, while)', '-ide (ride, side, hide, wide, slide, pride)', '-ime (time, dime, lime, slime, crime)', '-ite (kite, bite, quite, white, write, site)'],
         contrastPairs: ['bit/bite', 'kit/kite', 'fin/fine', 'dim/dime', 'rid/ride', 'slid/slide', 'shin/shine', 'slim/slime', 'rip/ripe', 'pin/pine'],
-        activitySequence: ['Visual Drill: Review all previously taught graphemes', 'Phonemic Awareness: Which words have the /i/ sound?', 'Review: Read words, identify vowel sound and highlight graphemes', 'Introduce: What sound do these words share?', 'Teach Rule: i-consonant-e = long /i/, silent e', 'Model Encoding: Segment sounds, write word (silent e placement)', 'Model Decoding: Read CVC words, add silent e, reread (bit->bite)', 'Guided Practice: Decoding and encoding', 'High-Frequency Words: Map and read (like, five, time, ride, white, give)', 'More Practice: Match endings, sort words, build word families', 'Word Families: -ike, -ine, -ile, -ide, -ime, -ite', 'Phrases and Sentences: Controlled text reading', 'Fill and Read: Complete sentences', 'Dictation: Write sentences'],
-        sortingTip: 'Sort by word family ending and by short i vs long i (spin, list, kid, film vs slime, quite, shine, smile, time)'
+        samplePhrases: ['ride with me', 'side by side', 'wipe the tile', 'Is it time?', 'fly the kite', 'drive a mile'],
+        commonIrregulars: [
+          '"Give," "live" (verb), "forgive" -- short i despite the VCe pattern. These are Old English words that kept their short vowel.',
+          '"Determine," "engine," "routine," "magazine," "examine" -- in multisyllable words, final -ine often has short i or schwa, NOT long i. The VCe rule is most reliable in one-syllable words.',
+          '"Write," "knife," "scene" -- the silent e here is doing double duty (keeping the consonant pattern and signaling the vowel).'
+        ],
+        guideRef: 'Guide 2, Lesson 3, p28-48'
       } },
-      { pattern: 'o_e', examples: 'home, bone, nose, rope, hope', notes: 'Contrast: hop/hope, not/note, rob/robe, cod/code.', teachingGuide: {
-        guide: 2, lesson: 'Lesson 4', pages: '49-69',
-        rule: 'When you see the pattern o-consonant-e, the <o> will usually represent the long sound /o/. The <e> is silent.',
+      { pattern: 'o_e', examples: 'home, bone, nose, rope, hope', notes: 'Contrast: hop/hope, not/note, rob/robe, cod/code.', deepDive: {
+        whyItWorks: 'Same silent e principle applied to o. When you see o-consonant-e, the o says its name (long o). This is the third VCe pattern students learn, and by now the principle should be solidifying: silent e = look back, vowel is long.',
         wordFamilies: ['-oke (joke, smoke, spoke, broke, woke, poke)', '-one (bone, cone, stone, phone, zone, alone)', '-ope (hope, rope, slope, cope)', '-ose (nose, rose, close, those, chose)', '-ole (hole, mole, pole, role, whole, stole)', '-ome (home, dome, gnome, chrome)'],
-        hfWords: ['home', 'those', 'close', 'hope', 'whole', 'stone'],
-        contrastPairs: ['not/note', 'hop/hope', 'rob/robe', 'cod/code', 'lob/lobe', 'slop/slope', 'mop/mope', 'glob/globe', 'cop/cope', 'rod/rode'],
-        activitySequence: ['Visual Drill: All graphemes including a_e, i_e rimes', 'Phonemic Awareness: Which words have the /o/ sound?', 'Review: Read words with all VCe patterns taught so far', 'Teach Rule: o-consonant-e = long /o/, silent e', 'Model Decoding: Read CVC words, add silent e, reread (not->note)', 'Guided Practice: Decode and encode o_e words', 'Spelling Practice: Segment sounds, color circles, write word', 'High-Frequency Words: Map and read', 'More Practice: Match endings, sort word families', 'Phrases: Controlled phrase reading'],
-        sortingTip: 'Sort by word family ending (-oke, -one, -ope, -ose, -ole, -ome) and short o vs long o'
+        contrastPairs: ['not/note', 'hop/hope', 'rob/robe', 'cod/code', 'lob/lobe', 'slop/slope', 'mop/mope'],
+        commonIrregulars: [
+          '"Come," "some," "done," "gone," "none," "love," "dove," "above," "glove," "shove" -- o_e words with short u sound (/ʌ/). These are among the most common VCe exceptions. All are Old English words where the pronunciation shifted but the spelling stayed.',
+          '"One," "once" -- o_e but starts with /w/ sound. Completely irregular.',
+          '"Lose," "whose," "move," "prove" -- o_e but with /oo/ sound instead of long o. French-influenced pronunciation.'
+        ],
+        guideRef: 'Guide 2, Lesson 4, p49-69'
       } },
-      { pattern: 'u_e', examples: 'cube, cute, mule, use, fuse', notes: 'Two pronunciations: /oo/ (rude, June) and /yoo/ (cube, cute).', teachingGuide: {
-        guide: 2, lesson: 'Lesson 5', pages: '70-100',
-        rule: 'When you see the pattern u-consonant-e, the <u> will represent the sounds /yoo/ or /oo/. The <e> is silent.',
+      { pattern: 'u_e', examples: 'cube, cute, mule, use, fuse', notes: 'Two pronunciations: /oo/ (rude, June) and /yoo/ (cube, cute).', deepDive: {
+        whyItWorks: 'The u_e pattern is unique because long u has TWO sounds: /yoo/ (cube, cute, mule, mute, fume, huge) and /oo/ (rude, June, flute, rule, tube, prune). The /yoo/ pronunciation occurs after most consonants; the /oo/ pronunciation occurs after r, l, j, ch, and s (where the y-glide is difficult to pronounce). Think about it: "rude" is easier to say than "ryude." This isn\'t an irregularity -- it\'s a phonetic simplification based on tongue position.',
         wordFamilies: ['-ube (cube, tube)', '-ute (cute, mute, flute, brute)', '-ule (mule, rule, yule)', '-une (June, dune, tune, prune)', '-ude (rude, dude, crude)', '-use (fuse, use, fume, refuse)'],
-        hfWords: ['use', 'June', 'rule', 'cute'],
-        samplePhrases: ['play the flute', 'Make a cube.', 'ride the mule', 'That\'s the rule!', 'smell the fume', 'on the sand dune', 'not so cute', 'sing the tune', 'Mute that song!', 'fill the tube'],
-        contrastPairs: ['cub/cube', 'tub/tube', 'cut/cute', 'us/use', 'dud/dude'],
-        activitySequence: ['Visual Drill: All graphemes including VCe rimes', 'Phonemic Awareness: Listen for the vowel sound', 'Review: Read words with all VCe patterns', 'Introduce: Compare /yoo/ and /oo/ sounds', 'Teach Rule: u-consonant-e = /yoo/ or /oo/, silent e', 'Model Decoding and Encoding', 'Guided Practice: Decode and encode u_e words', 'Spelling Practice', 'More Practice: Sort /yoo/ (cube, mule, cute, mute, fume) vs /oo/ (rude, tube, flute, tune, rule)', 'Phrases and Sentences: Controlled text', 'Fill and Read: Complete sentences'],
+        contrastPairs: ['cub/cube', 'tub/tube', 'cut/cute', 'us/use'],
+        commonIrregulars: [
+          'The /yoo/ vs /oo/ split: "cute" (/yoo/) vs "rude" (/oo/). The /yoo/ sound drops the y-glide after certain consonants (r, l, j, s, ch) for ease of articulation.',
+          '"Minute" as noun (MIN-it) vs adjective (my-NEWT) -- same spelling, different pronunciation and meaning.',
+          '"Sure," "pure" -- the u here makes /oo/ in some dialects and /yor/ in others.'
+        ],
+        guideRef: 'Guide 2, Lesson 5, p70-100',
         sortingTip: 'Sort by pronunciation: /yoo/ words (cube, cute, mule, mute, fume) vs /oo/ words (rude, tube, flute, tune, rule, June, prune)'
       } },
-      { pattern: 'e_e (rare)', examples: 'Pete, these, Steve', notes: 'Uncommon but exists. Most long e is spelled ee, ea, or y.' },
-      { pattern: '-dge', examples: 'bridge, judge, badge, hedge', notes: 'After a short vowel, /j/ is spelled -dge. After everything else, -ge.', teachingGuide: {
-        guide: 2, lesson: 'Lesson 8b', pages: '151-163',
-        rule: 'The letters <dge> represent the /j/ sound when a short vowel comes right before it. After long vowels or consonants, use -ge.',
-        wordFamilies: ['-idge (bridge, ridge, fridge)', '-edge (edge, hedge, ledge, wedge, pledge)', '-udge (judge, fudge, budge, nudge, grudge, smudge)', '-odge (dodge, lodge, hodgepodge)', '-adge (badge, cadge)'],
-        samplePhrases: ['not my age', 'all the rage', 'smell the sage', 'on that page', 'in the cage', 'on the stage', 'can you plunge?', 'felt a twinge', 'made me cringe'],
-        activitySequence: ['Visual Drill: ce, ge, g, c, tch, a_e, i_e, k, u_e, ch, ck, j', 'Review: Read words, identify -ge vs -dge pattern', 'Introduce: -dge after short vowels, -ge after long vowels/consonants', 'Model Encoding and Decoding', 'Guided Practice with word lists', 'Sound Sort: /j/ words vs /z/ words vs /s/ words'],
-        sortingTip: 'Sort by sound: -dge words (short vowel before: bridge, fudge, badge) vs -ge words (long vowel/consonant before: cage, page, huge, stage, hinge, plunge)'
+      { pattern: 'e_e (rare)', examples: 'Pete, these, Steve', notes: 'Uncommon but exists. Most long e is spelled ee, ea, or y.', deepDive: {
+        whyItWorks: 'The e_e pattern exists but is rare because English already has multiple common ways to spell long e (ee, ea, y, ie, -ey). The reason e_e is uncommon is partly historical -- many Old English long e words shifted their spelling to ee or ea during the standardization of English spelling. When you encounter e_e, it functions the same as other VCe patterns, but students should know that long e is far more commonly spelled other ways.',
+        commonIrregulars: [
+          '"There," "where," "were" -- e_e but with /air/ or /er/ sound, not long e. These are function words with irregular pronunciations.',
+          '"Here," "mere," "severe," "sincere" -- these actually work (long e), but the r changes the vowel slightly (r-controlled territory).'
+        ]
       } },
-      { pattern: '-tch', examples: 'match, catch, kitchen, witch', notes: 'After a short vowel, /ch/ is spelled -tch. Exceptions: much, such, rich, which.' },
-      { pattern: '-ce, -ge for soft sounds', examples: 'ice, face, age, cage, huge', notes: 'Silent e keeps c and g soft. Remove e and they harden: icing vs. ick.', teachingGuide: {
-        guide: 2, lesson: 'Lessons 7a-8a', pages: '116-150',
-        rule: 'The letter <s> can represent /z/ in words like wise, base. The letters <ce> represent /s/ (ice, race, place). The letters <ge> represent /j/ (age, cage, stage). The silent e keeps c and g soft.',
-        wordFamilies: ['-ice (ice, mice, rice, nice, price, twice, dice, slice, spice)', '-ace (face, race, place, space, grace, trace, lace, pace)', '-ance/-ence (chance, dance, lance, fence, hence, prince)', '-age (age, cage, page, stage, rage, sage, wage)'],
-        hfWords: ['ice', 'face', 'place', 'nice', 'since', 'once', 'dance'],
-        samplePhrases: ['not my age', 'all the rage', 'on that page', 'in the cage', 'on the stage'],
-        activitySequence: ['Lesson 7a: <s> representing /z/ (wise, base); <ce> representing /s/ (ice)', 'Lesson 7b: Introduce -nce pattern (chance, dance); underline graphemes', 'Lesson 8: Consolidate -ce patterns; introduce -ge (age, cage)', 'Lesson 8a: Phrases and sentences with -ge words', 'Sound Sort: /j/ sounds vs /z/ sounds vs /s/ sounds (cage/mazes/case, face/rise/badge, hinge/nose/price)'],
-        sortingTip: 'Sound sort: Which sound does the final pattern make? /j/ (cage, age, hinge) vs /z/ (mazes, rise, nose) vs /s/ (face, ice, price, case, base)'
+      { pattern: '-dge', examples: 'bridge, judge, badge, hedge', notes: 'After a short vowel, /j/ is spelled -dge. After everything else, -ge.', deepDive: {
+        whyItWorks: 'The d in -dge serves the same protective function as consonant doubling: it keeps the vowel short. Compare "badge" (short a, -dge) with "page" (long a, -ge). Without the d, "bage" would look like it rhymes with "page." The rule is simple and reliable: if the vowel before the /j/ sound is SHORT, use -dge. If the vowel is LONG, or there\'s a consonant between the vowel and the /j/ sound, use -ge. The d is a vowel protector, not a separately pronounced sound.',
+        wordFamilies: ['-idge (bridge, ridge, fridge)', '-edge (edge, hedge, ledge, wedge, pledge)', '-udge (judge, fudge, budge, nudge, grudge, smudge)', '-odge (dodge, lodge)', '-adge (badge, cadge)'],
+        commonIrregulars: [
+          '"Age," "cage," "page," "stage," "rage," "wage" all use -ge (not -dge) because the a is long.',
+          '"Huge," "luge" use -ge because the u is long.',
+          '"Hinge," "cringe," "singe," "binge," "plunge," "lunge" use -ge because a consonant (n) comes between the vowel and the /j/ sound -- the vowel is already protected by the n.'
+        ],
+        guideRef: 'Guide 2, Lesson 8b, p151-163'
       } },
-      { pattern: 'Suffix -ful', examples: 'helpful, careful, hopeful', isMorphology: true, notes: 'Meaning: "full of." Note: suffix has one l, word "full" has two.' },
-      { pattern: 'Suffix -less', examples: 'helpless, careless, hopeless', isMorphology: true, notes: 'Meaning: "without." Pair with -ful for contrast.' },
+      { pattern: '-tch', examples: 'match, catch, kitchen, witch', notes: 'After a short vowel, /ch/ is spelled -tch. Exceptions: much, such, rich, which.', deepDive: {
+        whyItWorks: 'The -tch rule works identically to -dge: the t protects the short vowel. Compare "match" (short a, -tch) with "much" -- wait, "much" breaks the rule. The -tch/-ch pattern is the same logic as -dge/-ge: short vowel = -tch (match, catch, fetch, stitch, hutch), long vowel or consonant before = -ch (beach, coach, pouch, lunch, march). The t is a vowel protector, signaling "this vowel is short."',
+        commonIrregulars: [
+          'The Big Five exceptions: "much," "such," "rich," "which," "touch" use -ch after a short vowel instead of -tch. These must be memorized. They are all extremely common Old English words that predate the spelling convention.',
+          '"Sandwich," "ostrich" -- end in -ch, not -tch, because the i is in an unstressed syllable (essentially schwa).',
+          '"Attach," "dispatch," "detach" -- the -tch is in a stressed syllable with a short vowel, so the rule works here.'
+        ]
+      } },
+      { pattern: '-ce, -ge for soft sounds', examples: 'ice, face, age, cage, huge', notes: 'Silent e keeps c and g soft. Remove e and they harden: icing vs. ick.', deepDive: {
+        whyItWorks: 'This is one of the silent e\'s OTHER jobs beyond making vowels long. The letters c and g have two sounds each: "hard" sounds (/k/ and /g/) before a, o, u, and "soft" sounds (/s/ and /j/) before e, i, y. This soft c/g rule was imported from French after the Norman Conquest (1066). When a word needs to end in a soft c or g sound, English adds a silent e to keep the consonant soft: "ice" (not "ic"), "age" (not "ag"). Remove that e and the pronunciation changes: compare "icing" (soft c maintained by the i) with "ic" (which would be hard c). This means silent e has at least 5 jobs: (1) make vowel long, (2) keep c soft, (3) keep g soft, (4) prevent words ending in v, (5) prevent words ending in u.',
+        commonIrregulars: [
+          'G is less reliable than c for soft/hard: "get," "give," "girl," "gift," "begin," "gear" all have hard g before e or i. These are Germanic words. The soft g rule works best with French/Latin-origin words.',
+          '"Gauge" has a hard g before au -- the u after g sometimes serves to harden it (guard, guide, guess, guilt, guitar).',
+          '"Gem," "general," "gentle" vs "get," "gecko" -- both have g before e, but only the French/Latin words follow the soft rule.'
+        ],
+        guideRef: 'Guide 2, Lessons 7a-8a, p116-150'
+      } },
+      { pattern: 'Suffix -ful', examples: 'helpful, careful, hopeful', isMorphology: true, notes: 'Meaning: "full of." Note: suffix has one l, word "full" has two.', deepDive: {
+        whyItWorks: 'The suffix -ful means "full of" and always has ONE l, unlike the adjective "full" which has two. This is a historical simplification -- when "full" became a suffix, it lost its second l. This is a reliable rule with no exceptions: hopeful, careful, beautiful, wonderful, cheerful, grateful, playful all have one l. The reason it matters: students who understand that -ful is a suffix (a meaning unit) will spell it consistently and recognize it in new words. It also changes nouns to adjectives: hope (noun) -> hopeful (adjective), care (noun) -> careful (adjective).',
+        commonIrregulars: [
+          'When adding -ly to a -ful word, you get -fully with two l\'s: "hopefully," "carefully." This is NOT double l in -ful; it\'s -ful + -ly combining.',
+          '"Awful" is the only -ful word that doesn\'t transparently mean "full of awe" in modern usage (it shifted from positive to negative meaning).',
+          '"Beautiful" uses the French-origin "beauty" -> "beauti" (y changes to i) + "ful." The y -> i change is a regular spelling rule.'
+        ]
+      } },
+      { pattern: 'Suffix -less', examples: 'helpless, careless, hopeless', isMorphology: true, notes: 'Meaning: "without." Pair with -ful for contrast.', deepDive: {
+        whyItWorks: 'The suffix -less means "without" and is the perfect pair for -ful: hopeful (full of hope) vs hopeless (without hope). Teaching them together builds morphological reasoning: students see that meaning is constructed by combining parts. The base word stays the same; only the suffix changes the meaning. -Less, like -ful, changes nouns to adjectives. Pairing opposites is one of the most effective morphology teaching strategies because it makes the meaning of each suffix crystal clear through contrast.',
+        commonIrregulars: [
+          'Some -less words have no -ful counterpart: "reckless" (no "reckful"), "ruthless" (no "ruthful" in modern English, though it existed historically).',
+          '"Regardless" is standard; "irregardless" is disputed (it has a double negative: ir- + -less both mean "without").',
+          '"Nevertheless" and "homeless" -- -less attaches to different parts of speech in different words.'
+        ]
+      } },
     ]
   },
   {
@@ -161,46 +314,107 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Two vowels working together to make one sound. "When two vowels go walking, the first one does the talking" -- sometimes.',
     suggestedClasses: 'Daisy, Sunflower',
     patterns: [
-      { pattern: 'ai, ay', examples: 'rain, play, wait, say, train', notes: 'ai = middle of word/syllable; ay = end of word/syllable.', teachingGuide: {
-        guide: 3, lesson: 'Lessons 1A-1B', pages: '4-43',
-        rule: 'The letters <ai> represent long /a/ at the beginning or middle of words. The letters <ay> represent long /a/ at the end of base words.',
-        wordFamilies: ['-ain (rain, main, train, brain, chain, plain, stain, drain, grain, strain, explain)', '-ait (wait, bait)', '-ail (tail, mail, nail, rail, sail, trail, snail, fail)', '-ay (day, play, say, way, may, stay, pray, clay, gray, spray, display)'],
-        hfWords: ['rain', 'play', 'say', 'day', 'way', 'may', 'stay'],
-        contrastPairs: ['ai in middle (rain, wait, tail)', 'ay at end (day, play, say)'],
-        activitySequence: ['Lesson 1A: Introduce <ai> for long /a/ in middle of words', 'Phonemic Awareness: Thumbs up if you hear /a/ sound', 'Review: Contrast closed syllable (cap, cape) with vowel team', 'Introduce: What sound do these words share?', 'Model Encoding and Decoding with ai words', 'Guided Practice: Word lists and spelling', 'Lesson 1B: Introduce <ay> for long /a/ at end of words', 'Connected Text: Sentence fill activities', 'Lesson 1 Review: Mix ai and ay words, sort by position'],
-        sortingTip: 'Position sort: ai words (middle: rain, wait, paint, chain) vs ay words (end: play, day, stay, gray). Also sort by word family.'
+      { pattern: 'ai, ay', examples: 'rain, play, wait, say, train', notes: 'ai = middle of word/syllable; ay = end of word/syllable.', deepDive: {
+        whyItWorks: 'The position rule is reliable and logical: ai appears in the middle of a word or syllable (rain, wait, paint, chain, explain), while ay appears at the end (play, day, say, stay, gray, spray). Why? English borrowed this convention from French, where "ai" was a medial spelling and "ay" was a final spelling. The rule exists so that words don\'t end in the letter i (English avoids ending words in i, v, u, and j -- it always adds a "guard letter"). So "day" not "dai," "play" not "plai." Knowing this one positional rule eliminates guessing between two spellings.',
+        wordFamilies: ['-ain (rain, main, train, brain, chain, plain, stain, drain, grain, strain)', '-ail (tail, mail, nail, rail, sail, trail, snail, fail)', '-ait (wait, bait)', '-ay (day, play, say, way, may, stay, pray, clay, gray, spray)'],
+        contrastPairs: ['rain/ray', 'train/tray', 'pain/pay', 'main/may', 'sail/say', 'tail/tray'],
+        commonIrregulars: [
+          '"Said" -- the most common ai exception. Historically rhymed with "made," but pronunciation shifted while spelling stayed. Students simply have to know this one.',
+          '"Again," "against" -- ai makes short e in these words. Another historical pronunciation shift.',
+          '"Aisle" -- ai makes long i. This word came from French "aile" and is truly irregular.'
+        ],
+        guideRef: 'Guide 3, Lessons 1A-1B, p4-43'
       } },
-      { pattern: 'ee, ea', examples: 'tree, read, seed, beach, sleep', notes: 'Both make /ee/. ea also makes /eh/ (bread, head) -- teach as a "tricky pair."', teachingGuide: {
-        guide: 3, lesson: 'Lessons 2A-2B + 5A-5B + 6', pages: '44-84, 151-194',
-        rule: 'The letters <ee> represent long /e/ at the beginning, middle, or end of words. The letters <ea> represent long /e/ in the same positions. But <ea> is tricky: it can also represent short /e/ (bread, head) and even long /a/ (steak, break).',
-        wordFamilies: ['-ee: -eed (feed, seed, weed, speed, bleed), -eep (deep, keep, sleep, sweep, creep, steep), -eet (feet, meet, sheet, street, sweet), -eel (feel, heel, wheel, steel, peel), -een (green, seen, keen, screen, queen)', '-ea: -ead (read, lead, bead), -eal (seal, meal, deal, real, heal, steal), -eat (eat, meat, seat, beat, heat, treat, wheat), -each (teach, beach, reach, peach), -ean (bean, mean, clean, lean, jean)'],
-        hfWords: ['see', 'tree', 'three', 'eat', 'read', 'each', 'teach', 'mean', 'real'],
-        activitySequence: ['Lesson 2A: Introduce <ee> for long /e/', 'Model Encoding: Say word, tap sounds, match to letters (ee = one sound, one box)', 'Guided Practice: Decode and encode ee words', 'Lesson 2B: Introduce <ea> for long /e/', 'Compare: ee and ea both make /e/, sort by spelling', 'Lesson 2 Review: Mix ee and ea words', 'Lesson 5A: <ea> can also represent short /e/ (bread, head, spread, thread, dead, instead, weather, feather)', 'Lesson 5B: <ea> can also represent long /a/ (steak, break, great -- rare but important)', 'Lesson 6: <ie> can represent long /e/ (field, shield, piece, thief, belief)'],
-        sortingTip: 'Three-way ea sort: long /e/ (eat, read, beach, mean) vs short /e/ (bread, head, spread, thread) vs long /a/ (steak, break, great). Then ee vs ea sort for long /e/ words.'
+      { pattern: 'ee, ea', examples: 'tree, read, seed, beach, sleep', notes: 'Both make /ee/. ea also makes /eh/ (bread, head) -- teach as a "tricky pair."', deepDive: {
+        whyItWorks: 'Both ee and ea represent long e, but ea is the "tricky" one because it can make THREE sounds: long e (eat, read-present, beach, mean, clean), short e (bread, head, dead, spread, thread, weather, feather, leather), and even long a (steak, break, great -- very rare). The reason for ea\'s inconsistency is that these words came from different Old English vowels that merged in spelling but not in pronunciation. The ee spelling is more reliable (always long e), so if students are unsure, ee is the safer guess. Teaching ea\'s three sounds as a "choose and check" strategy builds flexible decoding.',
+        wordFamilies: ['-ee: -eed (feed, seed, speed), -eep (deep, keep, sleep, sweep), -eet (feet, meet, sheet, street), -eel (feel, heel, wheel, steel), -een (green, seen, queen)', '-ea (long e): -ead (read, bead, lead-verb), -eal (seal, meal, deal, heal, steal), -eat (eat, meat, seat, beat, heat, treat), -each (teach, beach, reach, peach), -ean (bean, mean, clean, lean)'],
+        commonIrregulars: [
+          'Short e "ea" words: bread, head, dead, spread, thread, read (past tense), lead (noun), weather, feather, leather, breakfast, heavy, health, wealth, sweat, threat, deaf, death, breath. These are common and must be taught as a group.',
+          'Long a "ea" words: steak, break, great, bear, pear, wear, tear (rip). Only about 8-10 words. Teach as a small set.',
+          '"Read" is both long e (present: "I read books") and short e (past: "I read it yesterday"). Context determines pronunciation -- a genuinely challenging homograph.'
+        ],
+        guideRef: 'Guide 3, Lessons 2A-2B + 5A-5B, p44-84 + p151-194',
+        sortingTip: 'Three-way ea sort: long e (eat, read, beach, mean) vs short e (bread, head, spread, thread) vs long a (steak, break, great). Then ee vs ea sort for long e words.'
       } },
-      { pattern: 'oa, ow', examples: 'boat, snow, road, grow, coat', notes: 'oa = middle; ow = end. But ow also makes /ow/ (cow, now) -- context dependent.', teachingGuide: {
-        guide: 3, lesson: 'Lessons 3A-3C', pages: '85-124',
-        rule: 'The letters <oa> represent long /o/ at the beginning or middle of words. The letters <ow> represent long /o/ at the end of base words. The letters <oe> represent long /o/ at the end of words (rare). Warning: <ow> can also represent the /ow/ diphthong (cow, now).',
-        wordFamilies: ['-oa: -oat (boat, coat, goat, float, throat), -oad (road, toad, load), -oal (coal, goal, foal), -oam (foam, roam), -oast (coast, toast, roast, boast)', '-ow: bow, crow, flow, glow, grow, know, low, mow, row, show, slow, snow, throw, blow, stow', '-oe: doe, foe, hoe, joe, toe, woe, aloe'],
-        hfWords: ['road', 'boat', 'coat', 'snow', 'know', 'show', 'grow'],
-        activitySequence: ['Lesson 3A: Introduce <oa> for long /o/ in beginning/middle', 'Review: Contrast closed syllable (hop) with VCe (hope) with vowel team (boat)', 'Model Encoding and Decoding with oa words', 'Lesson 3B: Introduce <ow> for long /o/ at end of words', 'Lesson 3C: Introduce <oe> (rare, end of words: toe, doe)', 'Lesson 3 Review: Mix all three spellings, sort by position'],
-        sortingTip: 'Position sort: oa (middle: boat, road, coal) vs ow (end: snow, grow, show) vs oe (end, rare: toe, doe). Alert: ow can also be /ow/ -- sort long /o/ ow words vs /ow/ diphthong words.'
+      { pattern: 'oa, ow', examples: 'boat, snow, road, grow, coat', notes: 'oa = middle; ow = end. But ow also makes /ow/ (cow, now) -- context dependent.', deepDive: {
+        whyItWorks: 'Same positional rule as ai/ay: "oa" appears in the middle (boat, road, coat, coal, toast, foam, groan), "ow" appears at the end (snow, grow, show, blow, low, flow, know). The complication: "ow" is a double agent. It spells long o at the end of words (snow, show) AND the /ow/ diphthong (cow, now, how, brown, town, down). There is no visual rule to distinguish them -- students must try both sounds and check which makes a real word. However, "oa" is always long o (no exceptions in common words), so it\'s the reliable one.',
+        wordFamilies: ['-oa: -oat (boat, coat, goat, float), -oad (road, toad, load), -oal (coal, goal, foal), -oast (coast, toast, roast, boast)', '-ow (long o): bow, crow, flow, glow, grow, know, low, mow, row, show, slow, snow, throw, blow'],
+        contrastPairs: ['bow (ribbon) / bow (bending)', 'row (a line) / row (a fight)', 'sow (plant seeds) / sow (female pig)'],
+        commonIrregulars: [
+          '"Ow" ambiguity: snow (/o/) vs cow (/ow/) -- the same spelling, two different sounds. Students must flex: try long o first, then try /ow/.',
+          '"Broad" -- oa makes /aw/ instead of long o. One of the very few oa exceptions.',
+          '"Sew" -- ow makes long o but is spelled ew. Truly irregular.',
+          '"Know," "knot," "knowledge" -- the k in kn is silent (Stage 6), but the ow in "know" follows the regular long o pattern.'
+        ],
+        guideRef: 'Guide 3, Lessons 3A-3C, p85-124'
       } },
-      { pattern: 'ie, igh', examples: 'pie, tie, high, night, light', notes: 'ie at end = long i. igh = long i (the gh is silent).', teachingGuide: {
-        guide: 3, lesson: 'Lessons 4-4B', pages: '125-147',
-        rule: 'The letters <igh> represent the long /i/ sound in the middle or at the end of words. The gh is silent. The letters <ie> can also represent long /i/ at the end of words (pie, tie, die, lie).',
-        wordFamilies: ['-igh: -ight (light, night, right, sight, tight, bright, flight, fright, knight, might, slight, delight)', 'high, sigh, thigh', '-ie (long i at end): pie, tie, die, lie, vie, cries, tries, flies, fries, dried, fried'],
-        hfWords: ['light', 'night', 'right', 'high', 'might'],
-        activitySequence: ['Lesson 4: Introduce <igh> for long /i/', 'Compare: i_e (bike, kite) vs igh (light, night) -- same sound, different spelling', 'Model Encoding and Decoding: Note that igh = one sound', 'Guided Practice: Decode and encode igh words', 'Lesson 4B: Introduce <ie> for long /i/ at end of words', 'Lesson 4 Review: Mix i_e, igh, and ie words', 'Lessons 1-4 Review: Comprehensive review of all vowel teams taught so far'],
-        sortingTip: 'Triple sort for long /i/: i_e (bike, time, slide) vs igh (light, night, bright) vs ie (pie, tie, lie). Position matters: i_e in middle, igh in middle, ie at end.'
+      { pattern: 'ie, igh', examples: 'pie, tie, high, night, light', notes: 'ie at end = long i. igh = long i (the gh is silent).', deepDive: {
+        whyItWorks: 'The "igh" spelling has a fascinating history: the gh was once pronounced (as a throat sound, like Scottish "loch") in Old English. When that sound disappeared from standard English, the spelling remained. So "night" was once "niht" with a guttural h, and "light" was "liht." The gh became silent but stayed in the spelling as a fossil. The ie spelling (pie, tie, lie, die) is used at the end of short words. Confusingly, "ie" can also make long e (field, shield, belief, thief, piece) -- this is the "i before e" territory. The long i "ie" words are mostly one-syllable; the long e "ie" words are mostly multisyllable.',
+        wordFamilies: ['-ight (light, night, right, sight, tight, bright, flight, fright, knight, might, slight, delight)', '-igh (high, sigh, thigh)', '-ie (long i): pie, tie, die, lie, vie, cries, tries, flies'],
+        commonIrregulars: [
+          '"Friend" -- ie makes short e. The only common word where ie does this.',
+          '"Science," "patient," "ancient" -- ie makes /ee-eh/ across a syllable boundary (sci-ence), not a vowel team.',
+          '"Lie" (recline) vs "lay" (put down) vs "lie" (untruth) -- confusing meanings, all with ie spelling.',
+          '"ie" vs "ei" sorting: "i before e except after c" works for the /ee/ sound (believe, receive, ceiling) but not for other sounds (their, weird, either, neither, seize).'
+        ],
+        guideRef: 'Guide 3, Lessons 4-4B, p125-147'
       } },
-      { pattern: 'ue, ew', examples: 'blue, true, new, grew, few', notes: 'Both make /oo/ or /yoo/. ew at end of words.' },
-      { pattern: 'oi, oy', examples: 'oil, boy, coin, enjoy, point', notes: 'oi = middle; oy = end. Diphthong (mouth moves during sound).' },
-      { pattern: 'ou, ow (diphthong)', examples: 'house, cow, out, down, cloud', notes: 'Same /ow/ sound. ow can be long o OR /ow/ -- must check context.' },
-      { pattern: 'au, aw', examples: 'cause, saw, haul, draw, paw', notes: 'Both make /aw/. au = middle; aw = end or before n.' },
-      { pattern: 'oo', examples: 'moon (/oo/), book (/uh/)', notes: 'Two sounds! Long oo (food, school) vs. short oo (good, cook). Teach both.' },
-      { pattern: 'Suffix -er (comparative)', examples: 'taller, faster, bigger', isMorphology: true, notes: 'Meaning: "more." Doubling rule applies (big -> bigger). Drop e (large -> larger).' },
-      { pattern: 'Suffix -est (superlative)', examples: 'tallest, fastest, biggest', isMorphology: true, notes: 'Meaning: "most." Same spelling change rules as -er.' },
+      { pattern: 'ue, ew', examples: 'blue, true, new, grew, few', notes: 'Both make /oo/ or /yoo/. ew at end of words.', deepDive: {
+        whyItWorks: 'Like ai/ay and oa/ow, there\'s a positional pattern: "ue" appears at the end of words (blue, true, clue, glue, due, argue, rescue, continue), and "ew" also appears at the end (new, few, grew, blew, threw, drew, chew, stew). Both can make /oo/ or /yoo/, following the same rule as u_e: after r, l, j, ch, s the y-glide drops (/oo/: blue, grew, chew), after other consonants it keeps the y-glide (/yoo/: few, new, view). English avoids ending words in "u," so "ue" and "ew" serve as acceptable word endings.',
+        commonIrregulars: [
+          '"Sew" makes /o/ not /oo/. This is a genuine outlier -- just memorize it.',
+          '"Dew," "few," "new," "pew" have /yoo/. "Blew," "grew," "threw," "drew," "chew," "brew" have /oo/. The r/l before ew triggers the simpler /oo/.',
+          '"Queue" -- borrowed from French, keeps the French double-ue spelling.'
+        ]
+      } },
+      { pattern: 'oi, oy', examples: 'oil, boy, coin, enjoy, point', notes: 'oi = middle; oy = end. Diphthong (mouth moves during sound).', deepDive: {
+        whyItWorks: 'Same positional pattern: "oi" in the middle (oil, coin, point, join, soil, boil, voice, choice, noise, moist), "oy" at the end (boy, toy, joy, enjoy, annoy, destroy, employ, royal). This is one of the most reliable positional rules in English -- there are essentially no exceptions in common words. The /oi/ sound is a diphthong, meaning the mouth changes position during the sound (it starts as /o/ and slides to /i/). Korean does not have this diphthong, so students may need practice holding both sounds together.',
+        commonIrregulars: [
+          'This is one of the MOST regular patterns in English. There are virtually no common exceptions to the oi-middle/oy-end rule.',
+          '"Oyster" has oy in the middle -- but oy is at the start of the syllable (oy-ster), which counts as a beginning/end position.',
+          '"Coin" vs "join" -- both regular. "Moisture" -- oi in multisyllable, still regular.'
+        ]
+      } },
+      { pattern: 'ou, ow (diphthong)', examples: 'house, cow, out, down, cloud', notes: 'Same /ow/ sound. ow can be long o OR /ow/ -- must check context.', deepDive: {
+        whyItWorks: 'The /ow/ diphthong (as in "ouch") follows the positional pattern: "ou" in the middle (house, out, cloud, found, sound, mouth, round, ground, shout), "ow" at the end (cow, now, how, bow, plow, wow, allow). The problem: "ow" does double duty as both long o (snow, grow) and /ow/ diphthong (cow, now). There is NO visual rule to distinguish them. Students must try both sounds and check which produces a real word. Teach "ow" as a "flip" sound: try one, if it doesn\'t make sense, try the other.',
+        commonIrregulars: [
+          '"Ow" ambiguity is the main challenge: "bow" can be /bo/ (ribbon) or /bow/ (to bend). "Row" can be /ro/ (a line) or /row/ (an argument). "Sow" can be /so/ (plant) or /sow/ (pig). Context determines pronunciation.',
+          '"Ou" also has multiple sounds: /ow/ (house), /oo/ (soup, group, youth), /uh/ (touch, young, cousin, country), /o/ (shoulder, soul, though). The /ow/ sound is most common, but ou is genuinely one of the least reliable spellings in English.',
+          '"Ough" is the most irregular spelling in English: through (/oo/), though (/o/), thought (/aw/), tough (/uf/), cough (/off/), bough (/ow/), thorough (/uh/). Seven different pronunciations for the same four letters.'
+        ]
+      } },
+      { pattern: 'au, aw', examples: 'cause, saw, haul, draw, paw', notes: 'Both make /aw/. au = middle; aw = end or before n.', deepDive: {
+        whyItWorks: 'Positional rule again: "au" in the middle (cause, haul, fault, sauce, launch, August, daughter, caught), "aw" at the end or before n (saw, draw, paw, claw, law, yawn, dawn, lawn, crawl, shawl). This is reasonably reliable. The /aw/ sound is the "open o" -- the mouth is more open than for long o. Korean speakers may confuse /aw/ with long o since the distinction doesn\'t exist in Korean.',
+        commonIrregulars: [
+          '"Laugh" -- au makes /a/ (short a) not /aw/. Same family: "draught" (British spelling of "draft").',
+          '"Gauge" -- au makes long a. Irregular.',
+          '"Because" -- au makes schwa in casual speech (buh-KUZ) but /aw/ in careful speech (bee-KAWZ).',
+          '"Awe," "awesome" -- aw plus silent e, but aw already makes the sound without help from e. The e is there historically.'
+        ]
+      } },
+      { pattern: 'oo', examples: 'moon (/oo/), book (/uh/)', notes: 'Two sounds! Long oo (food, school) vs. short oo (good, cook). Teach both.', deepDive: {
+        whyItWorks: 'The "oo" spelling represents two distinct vowel sounds: long /oo/ (moon, food, school, room, cool, pool, spoon, tooth, goose, choose, loose) and short /oo/ (book, cook, good, wood, stood, look, hook, foot, wool). There is NO spelling rule to distinguish them -- you cannot tell from looking at the word which sound to use. However, there\'s a frequency pattern: long /oo/ is more common, so try it first. Short /oo/ tends to appear before k (book, cook, look, hook, took, shook) and d (good, wood, stood, hood, food -- wait, food is long). So -ook is usually short /oo/, but -ood and -ool can go either way.',
+        commonIrregulars: [
+          '"Blood" and "flood" -- oo makes short u (/ʌ/). These are the ONLY common words where oo makes this sound. Just memorize them.',
+          '"Door" and "floor" -- oo makes /or/ sound (r-controlled). Also irregular.',
+          '"Oo" before k is reliably short /oo/: book, cook, look, hook, took, brook, nook, crook. This is the most reliable sub-pattern.'
+        ]
+      } },
+      { pattern: 'Suffix -er (comparative)', examples: 'taller, faster, bigger', isMorphology: true, notes: 'Meaning: "more." Doubling rule applies (big -> bigger). Drop e (large -> larger).', deepDive: {
+        whyItWorks: 'The comparative -er follows a syllable-count rule that students find satisfying once they learn it: one-syllable adjectives add -er (tall/taller, fast/faster, short/shorter). Two-syllable adjectives ending in -y change y to i and add -er (happy/happier, easy/easier, funny/funnier). Two-syllable adjectives NOT ending in -y and all three+ syllable adjectives use "more" instead (more careful, more beautiful, more intelligent). The reason: English rhythm. "Beautifuller" has too many unstressed syllables -- it sounds awkward. "More beautiful" maintains the stress pattern. This is a genuine phonological rule, not just convention.',
+        commonIrregulars: [
+          'Irregular comparatives: good/better, bad/worse, far/farther (or further), little/less, many-much/more. These are suppletive forms -- entirely different words inherited from Old English.',
+          'Two-syllable adjectives are the gray zone: "clever/cleverer" or "more clever"? Both are acceptable. "Simple/simpler" or "more simple"? Both work. Generally, if the two-syllable word ends in -y, -ow, -le, or -er, add -er. Otherwise, use "more."',
+          'Spelling changes: big -> bigger (doubling), large -> larger (drop e), happy -> happier (y to i). All follow the regular suffix spelling rules.'
+        ]
+      } },
+      { pattern: 'Suffix -est (superlative)', examples: 'tallest, fastest, biggest', isMorphology: true, notes: 'Meaning: "most." Same spelling change rules as -er.', deepDive: {
+        whyItWorks: 'Identical syllable-count rule as -er: one syllable = -est (tallest), two syllables ending in -y = -iest (happiest), everything else = "most" (most beautiful). Same irregular forms: good/best, bad/worst, far/farthest. Teaching -er and -est together as a pair reinforces the system. The key insight for students: the NUMBER OF SYLLABLES in the base word determines whether you add a suffix or use a separate word. This is one of the clearest examples of a "secret rule" that native speakers follow instinctively but never learn explicitly.',
+        commonIrregulars: [
+          'Same irregulars as -er: good/best, bad/worst, far/farthest, little/least, many-much/most.',
+          '"Most" is both a superlative marker and a word meaning "the majority." Context: "most beautiful" (superlative) vs "most people" (majority).'
+        ]
+      } },
     ]
   },
   {
@@ -209,12 +423,54 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Letters present in spelling but not pronounced. Often historical remnants.',
     suggestedClasses: 'Sunflower, Rose',
     patterns: [
-      { pattern: 'kn-', examples: 'know, knee, knife, knock, knight', notes: 'k was originally pronounced in Old English. Silent before n.' },
-      { pattern: 'wr-', examples: 'write, wrong, wrap, wrist, wreck', notes: 'w was originally pronounced. Silent before r.' },
-      { pattern: 'gn-', examples: 'gnat, gnaw, gnome, sign, design', notes: 'g silent before n at start; both silent in -ign (sign, design).' },
-      { pattern: '-mb', examples: 'lamb, comb, climb, thumb, bomb', notes: 'b silent after m at end of word. Exception: number (b is voiced).' },
-      { pattern: 'gh', examples: 'ghost, night, thought, through', notes: 'Complex: gh = /g/ at start (ghost), silent in -ight, -ough patterns.' },
-      { pattern: '-lk, -lm, -lf', examples: 'walk, talk, calm, palm, half, calf', notes: 'l is silent in these combinations. Regional variation exists.' },
+      { pattern: 'kn-', examples: 'know, knee, knife, knock, knight', notes: 'k was originally pronounced in Old English. Silent before n.', deepDive: {
+        whyItWorks: 'In Old English (before about 1400), the k in "kn" words WAS pronounced: "knight" sounded like "k-nicht" (with the ch as in Scottish "loch"). As English pronunciation simplified, the /k/ dropped before /n/ because the tongue movement was awkward. But spelling was already being standardized by printing presses (Caxton set up the first English press in 1476), so the k remained in the spelling. The k is a fossil of an older pronunciation. German kept the k: "Knecht" (servant, cognate of "knight"), "Knie" (knee), "Knoten" (knot). This is a powerful teaching moment: spelling preserves history.',
+        commonIrregulars: [
+          'ALL kn- words follow the rule (k is always silent before n at the start of a word). This is perfectly consistent: know, knee, knife, knit, knock, knob, knot, knack, knead, kneel, knelt.',
+          'The k IS pronounced when kn appears in the middle of a word after a prefix: "acknowledge" (ac-KNOW-ledge) -- but this is because "know" is a separate morpheme.'
+        ]
+      } },
+      { pattern: 'wr-', examples: 'write, wrong, wrap, wrist, wreck', notes: 'w was originally pronounced. Silent before r.', deepDive: {
+        whyItWorks: 'Same historical story as kn-: Old English pronounced the w in "writan" (write), "wrang" (wrong), "wrecan" (wreck). The /w/ before /r/ was lost during Middle English because the lip rounding of /w/ followed by the tongue curl of /r/ was cumbersome. The spelling, already fixed in manuscripts, remained. Again, related languages kept the sound: compare "write" with German "reißen" (to tear/rip) -- the w dropped even in the German cognate.',
+        commonIrregulars: [
+          'Like kn-, this is perfectly consistent: ALL wr- words have silent w. write, wrong, wrap, wrist, wreck, wring, wreath, wrestle, wren, wrinkle, wrath.',
+          '"Playwright" -- wr appears in the middle but the w is pronounced because "wright" (maker/builder) is a separate morpheme.'
+        ]
+      } },
+      { pattern: 'gn-', examples: 'gnat, gnaw, gnome, sign, design', notes: 'g silent before n at start; both silent in -ign (sign, design).', deepDive: {
+        whyItWorks: 'Another Old English pronunciation fossil. "Gnat" was once "g-nat" with a hard g. In the -ign pattern (sign, design, align, resign, assign, benign, malign), the g is silent in the base word but COMES BACK in related forms: sign/signal/signature, design/designate, resign/resignation, malign/malignant, benign/benignant. This is a perfect example of the morphological spelling principle: English preserves the spelling connection between related words even when pronunciation differs. Teach students: "If you\'re unsure about a silent letter, think of a related word where you CAN hear it."',
+        commonIrregulars: [
+          '"Foreign" has gn in the middle with silent g. But "foreigner" -- still silent.',
+          '"Gnarly," "gnocchi" (Italian), "gnu" -- borrowed words that keep the gn spelling.',
+          'The "think of a related word" strategy works beautifully here: sign->signal, reign->regal, bomb->bombard, muscle->muscular, column->columnist, autumn->autumnal, condemn->condemnation.'
+        ]
+      } },
+      { pattern: '-mb', examples: 'lamb, comb, climb, thumb, bomb', notes: 'b silent after m at end of word. Exception: number (b is voiced).', deepDive: {
+        whyItWorks: 'The b in -mb was once pronounced in Old English. "Lamb" was "lamb-uh" (two syllables). When the final unstressed vowel dropped, the /b/ after /m/ became difficult to articulate (both are made with closed lips, and the /m/ nasality makes the /b/ release inaudible). The b remained in spelling. Like gn-, the silent b often REAPPEARS in related words: bomb/bombard, crumb/crumble, thumb/thimble (historically related), numb/number (the b is pronounced in "number" because a vowel follows).',
+        commonIrregulars: [
+          '"Number," "timber," "member," "remember," "chamber" -- the b IS pronounced because a vowel follows the mb combination.',
+          '"Plumber" -- the b is silent even though a vowel follows! This is because "plumber" comes from "plumb" (lead, as in lead pipes) + er suffix, and the b was already silent in "plumb."',
+          '"Subtle" -- the b is silent. This came from Latin "subtilis" where the b was pronounced.'
+        ]
+      } },
+      { pattern: 'gh', examples: 'ghost, night, thought, through', notes: 'Complex: gh = /g/ at start (ghost), silent in -ight, -ough patterns.', deepDive: {
+        whyItWorks: 'The gh represents a sound that once existed in English but has disappeared: a guttural fricative (like the ch in Scottish "loch" or German "Bach"). In words like "night," "thought," "through," the gh was once a throat sound that distinguished these words from other words. When the sound vanished (by about 1500), the gh remained in spelling. In some words, gh shifted to /f/ instead of going silent: "enough," "rough," "tough," "cough," "laugh," "trough." At the start of words, gh makes /g/: "ghost," "ghastly" -- these are Flemish-influenced spellings (Flemish printers added the h).',
+        commonIrregulars: [
+          'gh = silent: night, light, right, fight, eight, weight, caught, taught, daughter, through, though, thorough, dough, although, straightforward',
+          'gh = /f/: enough, rough, tough, cough, laugh, trough, draught (British spelling of draft)',
+          'gh = /g/: ghost, ghastly, gherkin, ghee, Ghana -- mostly at the beginning of words',
+          'The -ough nightmare: through (/oo/), though (/o/), thought (/aw/), tough (/uf/), cough (/off/), bough (/ow/), thorough (/uh/), hiccough (/up/) -- teach these as individual sight words, not as a pattern.'
+        ]
+      } },
+      { pattern: '-lk, -lm, -lf', examples: 'walk, talk, calm, palm, half, calf', notes: 'l is silent in these combinations. Regional variation exists.', deepDive: {
+        whyItWorks: 'The silent l in these combinations reflects a sound change where l vocalized (turned into a vowel-like sound and merged with the preceding vowel) before certain consonants. The l was once pronounced in "walk" (compare: "walking" where some dialects still have a slight l). The pattern: l is silent before k after a (walk, talk, chalk, stalk, balk), before m after a (calm, palm, psalm, balm, qualm, almond), and before f after a (half, calf, behalf). Notice the common thread: it\'s always after the vowel a. The l is NOT silent in "milk," "silk," "bulk," "help," "self," "film" because those have different vowels.',
+        commonIrregulars: [
+          '"Almond" -- some pronounce the l, some don\'t. Both are considered correct. This is a word in transition.',
+          '"Salmon" -- l is silent (SAM-un). "Salmonella" -- l is pronounced! Because it comes from Daniel Salmon (a person\'s name).',
+          '"Could," "would," "should" -- the l is silent. These originally had a pronounced l (compare German "soll" for "should").',
+          '"Folk," "yolk" -- l is silent. But "folklore" and "yoke" (different word) can cause confusion.'
+        ]
+      } },
     ]
   },
   {
@@ -223,14 +479,67 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Bossy r changes the vowel sound. Neither short nor long -- a new sound.',
     suggestedClasses: 'Daisy, Sunflower, Rose',
     patterns: [
-      { pattern: 'ar', examples: 'car, star, farm, park, card', notes: 'Makes /ar/ sound. Most consistent r-controlled vowel.' },
-      { pattern: 'or', examples: 'for, corn, sport, north, horn', notes: 'Makes /or/ sound. Also found in -ore (more, store).' },
-      { pattern: 'er', examples: 'her, fern, term, verse, nerve', notes: 'Makes /er/ sound. Most common spelling of this sound in medial position.' },
-      { pattern: 'ir', examples: 'bird, girl, first, stir, dirt', notes: 'Same /er/ sound as er. Cannot distinguish by sound alone.' },
-      { pattern: 'ur', examples: 'fur, burn, turn, hurt, nurse', notes: 'Same /er/ sound as er and ir. Spelling must be memorized.' },
-      { pattern: 'ar after w', examples: 'warm, war, ward, wart, swarm', notes: 'w changes ar to sound like /or/. Common exception to ar pattern.' },
-      { pattern: 'or after w', examples: 'word, work, world, worm, worth', notes: 'w changes or to sound like /er/. Must be memorized.' },
-      { pattern: 'Suffix -er (agent)', examples: 'teacher, reader, worker', isMorphology: true, notes: 'Meaning: "one who does." Different from -er comparative. Context determines meaning.' },
+      { pattern: 'ar', examples: 'car, star, farm, park, card', notes: 'Makes /ar/ sound. Most consistent r-controlled vowel.', deepDive: {
+        whyItWorks: 'When r follows a vowel, it changes (or "controls") the vowel sound so it\'s neither short nor long -- it becomes something new. The r-controlled "ar" makes /ar/ as in "father." This is the most reliable r-controlled vowel: ar almost always makes this sound. R-controlled vowels are one of the biggest sources of spelling errors because the r obscures the vowel identity. For Korean ELLs, r-controlled vowels are especially challenging because Korean has no equivalent sounds and the English /r/ itself is already difficult.',
+        commonIrregulars: [
+          '"War," "warm," "ward," "wart," "swarm," "dwarf," "quarter," "quart" -- after w (and qu), ar sounds like /or/. The w rounds the vowel.',
+          '"Dollar," "collar," "popular," "regular" -- in unstressed syllables, ar reduces to schwa (/er/ sound). "Dollar" sounds like "doller."',
+          '"Liar," "sugar," "calendar," "grammar" -- -ar at the end of unstressed syllables makes /er/, which is why students misspell these (writing "er" instead of "ar").'
+        ]
+      } },
+      { pattern: 'or', examples: 'for, corn, sport, north, horn', notes: 'Makes /or/ sound. Also found in -ore (more, store).', deepDive: {
+        whyItWorks: 'The "or" vowel makes the sound heard in "for," "born," "sport." It\'s distinct from "ar" and from "er/ir/ur." The -ore ending (more, store, core, bore, shore, score) is the same sound with a silent e that\'s historical rather than functional. English speakers rarely confuse ar and or in hearing, but or/er/ir/ur confusion is rampant in spelling because those three all sound identical in many dialects.',
+        commonIrregulars: [
+          '"Work," "word," "world," "worm," "worth," "worse," "worship" -- after w, or makes /er/ sound (same as "her"). The w shifts the vowel, just as it does with ar.',
+          '"Doctor," "color," "flavor," "humor," "motor," "actor" -- unstressed -or at the end reduces to schwa. This is why students write "er" (it sounds the same).',
+          '"Or" vs "ore" vs "oar" vs "our" vs "oor": four/for/fore, or/ore/oar, door/pour -- multiple spellings for the same sound. These must be learned by word family.'
+        ]
+      } },
+      { pattern: 'er', examples: 'her, fern, term, verse, nerve', notes: 'Makes /er/ sound. Most common spelling of this sound in medial position.', deepDive: {
+        whyItWorks: 'Here\'s the secret: er, ir, and ur ALL make the SAME sound (/er/ as in "butter"). You cannot distinguish them by listening -- "her," "sir," and "fur" have identical vowel sounds. So how do students know which spelling to use? Frequency and position help: "er" is the most common spelling overall and especially in suffixes (-er, -ever, -under, -over, -after, -under). "Ir" and "ur" are more common in base words. But ultimately, many er/ir/ur spellings must be learned through word families and morphological connections. The good news: the SOUND is consistent. Only the spelling varies.',
+        commonIrregulars: [
+          '"Were" -- er makes /er/ as expected, but the w might confuse students into expecting /wor/ (it doesn\'t work like "war").',
+          '"Very," "every," "series" -- er in unstressed positions sometimes reduces to just schwa without the r.',
+          '"Er" as a suffix always works: teacher, reader, worker, bigger, faster, under, over, after, sister, brother, mother, father, water.'
+        ]
+      } },
+      { pattern: 'ir', examples: 'bird, girl, first, stir, dirt', notes: 'Same /er/ sound as er. Cannot distinguish by sound alone.', deepDive: {
+        whyItWorks: 'Same sound as er, different spelling. "Ir" tends to appear in base words rather than suffixes: bird, girl, first, stir, dirt, skirt, birth, third, circle, firm, shirt, thirteen, thirty, birthday. The best strategy for remembering ir vs er vs ur: learn the common ir words as a group (there are fewer ir words than er words, so it\'s a manageable list), and teach morphological connections: "circle" -> "circular," "firm" -> "confirm," "first" -> "thirst" (same word family).',
+        commonIrregulars: [
+          '"Iron" -- ir makes /eye-urn/, not the /er/ sound. This is one of the few words where ir breaks the pattern.',
+          '"Spirit," "miracle," "piranha" -- ir in unstressed syllables can make different vowel sounds.'
+        ]
+      } },
+      { pattern: 'ur', examples: 'fur, burn, turn, hurt, nurse', notes: 'Same /er/ sound as er and ir. Spelling must be memorized.', deepDive: {
+        whyItWorks: 'Third spelling of the same /er/ sound. "Ur" is common in base words: fur, burn, turn, hurt, nurse, church, curl, purple, surface, turkey, burger, turtle, disturb, return, Saturday. Teaching tip: group all three spellings (er, ir, ur) and have students sort known words by spelling. Over time, word-specific knowledge builds. The morphological principle helps here too: "turn" -> "return," "burn" -> "sunburn," "nurse" -> "nursery" -- the ur spelling stays consistent within word families.',
+        commonIrregulars: [
+          '"Bury" -- ur makes short e (/beh-ree/). This is genuinely irregular and must be memorized.',
+          '"Jury," "fury," "curious," "during" -- ur makes /yoor/ or /oor/ in these words (the r-controlled u retains some of its long u quality when stressed).',
+          '"Surprise," "purpose" -- ur in unstressed syllables reduces to schwa, sounding like "er."'
+        ]
+      } },
+      { pattern: 'ar after w', examples: 'warm, war, ward, wart, swarm', notes: 'w changes ar to sound like /or/. Common exception to ar pattern.', deepDive: {
+        whyItWorks: 'The w-effect is a reliable phonological rule: when w (or qu) precedes ar, the vowel shifts from /ar/ to /or/. This happens because the lip rounding of /w/ carries forward and rounds the vowel. Compare "car" (/ar/) with "war" (/or/) -- same spelling pattern, different sound due to the w. This is not random: it\'s a consistent sound change. Words affected: war, warm, ward, warn, wart, swarm, dwarf, quarter, quart. Teaching students to watch for w before ar eliminates a whole category of "irregular" readings.',
+        commonIrregulars: [
+          '"Wary," "aware," "beware" -- war here makes /air/ in many dialects, not /or/. The stress pattern matters.',
+          '"Warp," "warrant," "warrior" -- these follow the /or/ pattern as expected.'
+        ]
+      } },
+      { pattern: 'or after w', examples: 'word, work, world, worm, worth', notes: 'w changes or to sound like /er/. Must be memorized.', deepDive: {
+        whyItWorks: 'Another w-effect: when w precedes or, the vowel shifts from /or/ to /er/. Compare "for" (/or/) with "word" (/er/) -- same "or" spelling but the w changes everything. Words affected: word, work, world, worm, worse, worst, worth, worship, worry. This is a smaller and less reliable pattern than w+ar, so many teachers simply teach these as a word family to memorize. The common thread: all start with "wor-" and make /wer/.',
+        commonIrregulars: [
+          '"Worn," "wore" -- wor here makes /or/, NOT /er/. So w+or is inconsistent: "word" (/wer/) vs "worn" (/wor/).',
+          '"Sword" -- the w is completely silent (sounds like "sord"). Historical pronunciation fossil.'
+        ]
+      } },
+      { pattern: 'Suffix -er (agent)', examples: 'teacher, reader, worker', isMorphology: true, notes: 'Meaning: "one who does." Different from -er comparative. Context determines meaning.', deepDive: {
+        whyItWorks: 'The agent suffix -er means "one who does X": teach -> teacher (one who teaches), read -> reader (one who reads), work -> worker (one who works). This is different from the comparative -er (taller, faster). Students can distinguish by checking: does the base word describe an action (verb)? Then -er means the doer. Is the base word a quality (adjective)? Then -er means "more." The agent -er competes with -or (actor, doctor, inventor, governor) and -ar (liar, burglar, beggar). Generally: -er is the Germanic/native English suffix (most common), -or is the Latin suffix (used with Latin roots like "act," "invent," "govern"), -ar is rare.',
+        commonIrregulars: [
+          'The -er/-or choice: "teacher" (Germanic) vs "actor" (Latin). There\'s no reliable rule for when to use -or -- it depends on etymology. However, -er is always the safe guess since it\'s far more common.',
+          '"Liar" uses -ar, not -er. "Beggar" also uses -ar. These are exceptions to memorize.',
+          '"Writer" drops the e from "write" (vowel suffix rule). "Singer" keeps the base. "Runner" doubles the n (doubling rule). All regular suffix patterns apply.'
+        ]
+      } },
     ]
   },
   {
@@ -239,21 +548,75 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Advanced and less common vowel spellings that expand decoding flexibility.',
     suggestedClasses: 'Rose, Snapdragon',
     patterns: [
-      { pattern: '-tion', examples: 'nation, action, station, motion', notes: 'Makes /shun/. Extremely common suffix pattern. Latin origin.' },
-      { pattern: '-sion', examples: 'vision, tension, mission, version', notes: 'Makes /zhun/ or /shun/. After a consonant = /shun/; after a vowel = /zhun/.' },
-      { pattern: '-ous', examples: 'famous, nervous, generous', notes: 'Makes /us/. Latin adjective ending meaning "full of" or "having."' },
-      { pattern: '-ture', examples: 'nature, picture, future, adventure', notes: 'Makes /cher/. Very common in academic vocabulary.' },
-      { pattern: '-ible, -able', examples: 'possible, comfortable, readable', notes: 'Both mean "can be done." -able more common with native English roots.' },
-      { pattern: 'ei, ey', examples: 'ceiling, they, vein, obey', notes: '"i before e except after c" -- has many exceptions. Teach common words.', teachingGuide: {
-        guide: 3, lesson: 'Lesson 8', pages: '206-217',
-        rule: 'The letters <ei> and <eigh> spell long /a/ in some words (veil, rein, eight, sleigh, weigh, neighbor, freight). These are less common spellings that should be taught as a group.',
-        wordFamilies: ['-eigh (eight, weigh, sleigh, freight, neighbor, weight)', '-ei- (veil, rein, vein, reign, reindeer)'],
-        activitySequence: ['Lesson 8: Introduce <ei> and <eigh> for long /a/', 'Compare: ai (rain) vs eigh (reign) -- same sound, different spelling, often homophones', 'Practice with high-frequency words containing these patterns', 'Connect to Lesson 7 Homophones: rain/reign/rein, vain/vein/vane, wait/weight'],
-        sortingTip: 'Group by sound: long /a/ words with ei/eigh (veil, rein, eight, weigh) vs long /e/ words with ei (ceiling, receive, seize) -- "i before e except after c" applies to the /e/ sound group.'
+      { pattern: '-tion', examples: 'nation, action, station, motion', notes: 'Makes /shun/. Extremely common suffix pattern. Latin origin.', deepDive: {
+        whyItWorks: 'The -tion ending makes /shun/ and is one of the most frequent suffixes in academic English. It comes from Latin and turns verbs into nouns: act -> action, create -> creation, educate -> education, invent -> invention. The "ti" making /sh/ seems random, but there\'s a rule: t + i + vowel = /sh/ in Latin-origin words. This also appears in "partial," "patient," "initial," "essential," "potential." For Korean students, this pattern is valuable because Korean academic vocabulary has many Chinese-origin words with similar suffix patterns (translating the concept of "word-part that changes verbs to nouns" transfers).',
+        commonIrregulars: [
+          '"Question" and "suggestion" -- tion here makes /chun/ not /shun/. This happens after s and certain other consonants.',
+          '-tion vs -sion: "action" (/shun/) vs "vision" (/zhun/). The rule: -sion after a vowel makes /zhun/ (vision, television, occasion, division), -sion after a consonant makes /shun/ (tension, mansion, pension).',
+          '-cian also makes /shun/: musician, physician, politician, electrician. This spelling indicates a person (like agent -er), not an abstract noun.'
+        ]
       } },
-      { pattern: '-ough patterns', examples: 'though, through, thought, tough, cough', notes: 'Most irregular spelling in English. 7+ pronunciations. Teach as sight words.' },
-      { pattern: 'Prefix dis-', examples: 'disagree, disappear, discover', isMorphology: true, notes: 'Meaning: "not" or "opposite of." Latin prefix.' },
-      { pattern: 'Prefix mis-', examples: 'mistake, misread, misunderstand', isMorphology: true, notes: 'Meaning: "wrongly." Old English origin.' },
+      { pattern: '-sion', examples: 'vision, tension, mission, version', notes: 'Makes /zhun/ or /shun/. After a consonant = /shun/; after a vowel = /zhun/.', deepDive: {
+        whyItWorks: 'The -sion ending has two pronunciations determined by what comes before it: after a vowel, it makes /zhun/ (vi-sion, tele-vi-sion, oc-ca-sion, divi-sion, deci-sion). After a consonant, it makes /shun/ (ten-sion, man-sion, pen-sion, expan-sion, exten-sion). The /zh/ sound (as in "measure") does not exist in Korean, so ELLs need explicit practice. After ss, -sion makes /shun/: mission, permission, admission, commission. The double s is a clue that the preceding vowel is short.',
+        commonIrregulars: [
+          '"Version," "immersion," "conversion" -- after r, -sion makes /zhun/ in some dialects and /shun/ in others.',
+          'The -ssion spelling (mission, passion, session) always makes /shun/ because the ss indicates a short vowel + /sh/ combination.'
+        ]
+      } },
+      { pattern: '-ous', examples: 'famous, nervous, generous', notes: 'Makes /us/. Latin adjective ending meaning "full of" or "having."', deepDive: {
+        whyItWorks: 'The -ous suffix comes from Latin and means "full of" or "characterized by": fame -> famous (full of fame), nerve -> nervous (full of nerves), danger -> dangerous. It\'s purely an adjective-making suffix. The "ou" here does NOT make the /ow/ diphthong -- it makes /us/ (rhymes with "bus"). This is a reliable pronunciation: -ous ALWAYS sounds like /us/ in English. Knowing this suffix unlocks a huge number of academic adjectives: curious, various, previous, obvious, serious, continuous, enormous, ridiculous.',
+        commonIrregulars: [
+          'Spelling changes before -ous: "fame" -> "famous" (drop e), "glory" -> "glorious" (y -> i + ous), "courage" -> "courageous" (keep the e to keep g soft!), "advantage" -> "advantageous" (same e-keeping).',
+          '"Gorgeous," "religious," "conscious," "precious" -- the vowel before -ous varies and must be learned per word.'
+        ]
+      } },
+      { pattern: '-ture', examples: 'nature, picture, future, adventure', notes: 'Makes /cher/. Very common in academic vocabulary.', deepDive: {
+        whyItWorks: 'The -ture ending makes /cher/ -- the t + u combination produces the /ch/ sound (same principle as -tion: t before certain vowels shifts pronunciation). This is a Latin suffix meaning "the act or result of": nature (act of being born, Latin "natus"), picture (act of painting, Latin "pictus"), future (about to be, Latin "futurus"), adventure (about to happen). Recognizing -ture as a suffix helps students decode long academic words: manufacture, temperature, architecture, agriculture, literature, furniture, structure.',
+        commonIrregulars: [
+          '"Mature," "premature" -- -ture makes /choor/ or /tyoor/ in some dialects rather than /cher/.',
+          '"Overture," "aperture" -- less common words where -ture is the same suffix but students may not recognize the base word.'
+        ]
+      } },
+      { pattern: '-ible, -able', examples: 'possible, comfortable, readable', notes: 'Both mean "can be done." -able more common with native English roots.', deepDive: {
+        whyItWorks: 'Both -able and -ible mean "able to be" or "capable of": readable (able to be read), comfortable (able to give comfort), possible (able to be done), visible (able to be seen). The secret rule for which to use: -able attaches to complete English words (read+able, break+able, comfort+able, enjoy+able, wash+able, afford+able). -Ible attaches to Latin roots that are NOT standalone English words (poss+ible, vis+ible, aud+ible, ed+ible, cred+ible). Test: remove the suffix. If what remains is a recognizable English word, use -able. If not, use -ible. This rule works about 80% of the time.',
+        commonIrregulars: [
+          'Exceptions to the test: "accessible" (access IS a word but uses -ible), "flexible" (flex IS a word but uses -ible), "responsible" (response IS a word but uses -ible). These are Latinate words where the -ible spelling was established.',
+          'Spelling changes: "make" -> "makable"? No -- "create" -> "creatable"? No -- these don\'t take -able because they already have other forms (creation). Generally words that already have -ation nouns don\'t also take -able.',
+          '-able is productive (you can create new -able words: "Googleable," "microwaveable") while -ible is a closed set (no new -ible words are being coined).'
+        ]
+      } },
+      { pattern: 'ei, ey', examples: 'ceiling, they, vein, obey', notes: '"i before e except after c" -- has many exceptions. Teach common words.', deepDive: {
+        whyItWorks: 'The "i before e except after c" rule ONLY works for the /ee/ sound: believe, achieve, field, shield, piece, thief, brief, chief (i before e = /ee/) vs ceiling, receive, deceive, conceive, perceive (after c, e before i = /ee/). For ANY other sound, the rule does not apply: "their" (/air/), "weird" (/eer/), "height" (/eye/), "vein" (/ay/), "eight" (/ay/), "foreign" (/in/), "science" (/eye-eh/). The -ei- and -eigh- spellings for long /a/ come from Old French and Old Norse: veil, rein, vein, reign, eight, weigh, sleigh, freight, neighbor, weight. Teach these as a word family rather than trying to apply the "i before e" rule.',
+        commonIrregulars: [
+          '"Weird," "seize," "either," "neither," "protein," "caffeine" -- ei makes /ee/ WITHOUT being after c. These are genuine exceptions to the rule.',
+          '"Species," "science," "sufficient," "ancient" -- "cie" exists despite the "except after c" rule. But here ie is not a vowel team; it spans a syllable boundary (sci-ence).',
+          'The rule only covers about 75% of ei/ie words. Many linguists argue it causes more confusion than it prevents. Teaching common word families is more reliable than teaching the rule.'
+        ],
+        guideRef: 'Guide 3, Lesson 8, p206-217'
+      } },
+      { pattern: '-ough patterns', examples: 'though, through, thought, tough, cough', notes: 'Most irregular spelling in English. 7+ pronunciations. Teach as sight words.', deepDive: {
+        whyItWorks: 'The -ough spelling is genuinely the most irregular pattern in English, with at least 7 pronunciations from the same four letters. This happened because "ough" originally represented a single sound (a guttural /x/ like Scottish "loch"), but as that sound disappeared, different words resolved the lost sound in different ways depending on dialect and era. The same thing happened differently in different regions, and all the variations got preserved in standard spelling. Teach these as individual words grouped by pronunciation, not as a pattern: /oo/ (through), /o/ (though, dough, although), /aw/ (thought, bought, sought, ought, brought), /uf/ (tough, rough, enough), /off/ (cough, trough), /ow/ (bough, plough), /uh/ (thorough, borough).',
+        commonIrregulars: [
+          'ALL -ough words are irregular in the sense that you cannot predict the pronunciation. This is the one pattern where the advice is genuinely "just memorize these."',
+          '"Hiccough" is an alternate spelling of "hiccup" that makes the /up/ sound. Most style guides now prefer "hiccup."',
+          '"Slough" has TWO pronunciations: /sloo/ (a marsh) and /sluf/ (to shed skin). Different meanings, different sounds, same spelling.'
+        ]
+      } },
+      { pattern: 'Prefix dis-', examples: 'disagree, disappear, discover', isMorphology: true, notes: 'Meaning: "not" or "opposite of." Latin prefix.', deepDive: {
+        whyItWorks: 'Dis- means "not," "opposite of," or "remove": disagree (not agree), disappear (opposite of appear), disconnect (remove the connection), dislike (not like), disorder (not in order), discomfort (remove comfort). It comes from Latin and is highly productive in English. The key spelling insight: dis- does NOT change its spelling regardless of what follows. Unlike some Latin prefixes that assimilate (in- becomes im- before p), dis- always stays dis-: disappoint, dissolve, different, difficult. This consistency makes it easy to teach.',
+        commonIrregulars: [
+          '"Dis" in "distance," "discover," "discuss," "distribute" -- these have the letters d-i-s but dis- is NOT a separable prefix (cover and cuss are not the relevant base words for these). Apply the test: remove "dis" and check if the remainder is a base word with related meaning.',
+          'Dis- vs un-: both mean "not," but dis- tends to attach to Latinate words (disagree, disapprove, disconnect) while un- attaches to Germanic words (unhappy, unkind, unlock). There\'s overlap (dislike/unlike both exist).'
+        ]
+      } },
+      { pattern: 'Prefix mis-', examples: 'mistake, misread, misunderstand', isMorphology: true, notes: 'Meaning: "wrongly." Old English origin.', deepDive: {
+        whyItWorks: 'Mis- means "wrongly" or "badly": misread (read wrongly), misunderstand (understand wrongly), misspell (spell wrongly), misplace (place wrongly), mislead (lead wrongly), mismatch (match wrongly). Unlike dis- (Latin), mis- comes from Old English and attaches freely to English verbs. Spelling rule: mis- never doubles the s, even before s-words: mis + spell = misspell (the double s comes from the s in "spell" plus the s in "mis-," not from doubling). This is a common source of spelling errors.',
+        commonIrregulars: [
+          '"Misspell" has double s (mis + spell). "Missend," "misshape," "misstate," "misstep" also double s. The double s is NOT the prefix doubling; it\'s the prefix s meeting the base word s.',
+          '"Mischief," "miscellaneous," "missile" -- these contain mis- as part of the root, not as a separable prefix.',
+          '"Miss" (the title, or to miss someone) is NOT the prefix mis-. Different word entirely.'
+        ]
+      } },
     ]
   },
   {
@@ -262,111 +625,162 @@ const PHONICS_STAGES: PhonicsStage[] = [
     description: 'Advanced word attack using syllable division, morphemic analysis, and Greek/Latin roots.',
     suggestedClasses: 'Rose, Snapdragon',
     patterns: [
-      { pattern: 'Syllable division: VC/CV', examples: 'rab-bit, kit-ten, hap-pen, com-mon', notes: 'Divide between two consonants. Each syllable has one vowel sound.' },
-      { pattern: 'Syllable division: V/CV', examples: 'ba-by, mu-sic, ro-bot, ti-ger', notes: 'Try open syllable first (long vowel). If word is unrecognizable, try closed.' },
-      { pattern: 'Syllable division: VC/V', examples: 'cam-el, lem-on, riv-er, mod-el', notes: 'Closed first syllable (short vowel). Try if V/CV does not produce a real word.' },
-      { pattern: 'Compound words', examples: 'sunflower, basketball, bedroom', notes: 'Divide at the word boundary. Each part is a known word.' },
-      { pattern: 'Latin roots', examples: 'port (carry), dict (say), struct (build), rupt (break)', isMorphology: true, notes: 'Unlock academic vocabulary. One root can generate dozens of words.' },
-      { pattern: 'Greek combining forms', examples: 'bio (life), graph (write), tele (far), phon (sound)', isMorphology: true, notes: 'Common in science and technology vocabulary.' },
-      { pattern: 'Prefix + root + suffix', examples: 'un-break-able, dis-agree-ment, re-construct-ion', isMorphology: true, notes: 'Teach word building as a system. Peel off affixes to find the base.' },
-      { pattern: 'Assimilated prefixes', examples: 'in- -> im (impossible), il (illegal), ir (irregular)', isMorphology: true, notes: 'Prefix changes spelling to match root consonant. Advanced but high-value.' },
-      { pattern: 'Suffix -ly', examples: 'quickly, happily, gently', isMorphology: true, notes: 'Changes adjective to adverb. y -> i before -ly (happy -> happily).' },
-      { pattern: 'Suffix -ment, -ness', examples: 'movement, happiness, darkness', isMorphology: true, notes: 'Noun-forming suffixes. -ment from verbs; -ness from adjectives.' },
+      { pattern: 'Syllable division: VC/CV', examples: 'rab-bit, kit-ten, hap-pen, com-mon', notes: 'Divide between two consonants. Each syllable has one vowel sound.', deepDive: {
+        whyItWorks: 'When two consonants appear between two vowels (VCCV), divide between the consonants. This creates a closed first syllable with a short vowel. This is the most common syllable division pattern. The logic: by splitting between consonants, the first consonant "closes" the first syllable (keeping its vowel short), and the second consonant starts the next syllable. "Rabbit" = rab-bit (short a, short i). "Napkin" = nap-kin. "Basket" = bas-ket. This works because English fundamentally uses consonants to signal vowel length.',
+        commonIrregulars: [
+          'Digraphs never split: "mother" = moth-er (not mot-her), "teacher" = teach-er, "father" = fa-ther. The digraph stays together because it represents one sound.',
+          'Consonant blends CAN split but usually don\'t if they\'re a natural onset: "pil-grim" (not "pilg-rim") because "gr" is a natural word-beginning blend. But "nap-kin" splits the blend because "pk" is not a natural onset.'
+        ]
+      } },
+      { pattern: 'Syllable division: V/CV', examples: 'ba-by, mu-sic, ro-bot, ti-ger', notes: 'Try open syllable first (long vowel). If word is unrecognizable, try closed.', deepDive: {
+        whyItWorks: 'When only ONE consonant appears between two vowels (VCV), the first division attempt should be V/CV (before the consonant), creating an open first syllable with a long vowel: ba-by (long a), mu-sic (long u), ro-bot (long o), ti-ger (long i). This is tried first because open first syllables are statistically more common in VCV words. If the long vowel doesn\'t produce a recognizable word, flex to VC/V (after the consonant): lem-on (not le-mon), riv-er (not ri-ver). This "flex and check" strategy is the core of multisyllabic decoding.',
+        commonIrregulars: [
+          'The flex strategy means no word is truly irregular for this pattern -- you just need to try both. "Robot" = ro-bot (open, works). "Robin" = rob-in (closed, works) not "ro-bin."',
+          '"Cabin," "magic," "medal," "model," "level" -- all VC/V (closed first syllable) despite being VCV. Students try V/CV first, recognize it doesn\'t sound right, then flex to VC/V.'
+        ]
+      } },
+      { pattern: 'Syllable division: VC/V', examples: 'cam-el, lem-on, riv-er, mod-el', notes: 'Closed first syllable (short vowel). Try if V/CV does not produce a real word.', deepDive: {
+        whyItWorks: 'This is the backup strategy when V/CV fails. When dividing after the consonant creates a closed first syllable with a short vowel, some words become recognizable: "lemon" read as "lee-mon" (V/CV) doesn\'t sound right, but "lem-on" (VC/V) does. The key teaching point: this is not a separate rule to memorize. It\'s the second step in a decision process: (1) try open, (2) if that doesn\'t work, try closed, (3) check if it sounds like a real word. Building this flexibility prevents students from getting stuck on unknown words.',
+        commonIrregulars: [
+          'Some words genuinely could go either way: "tomato" = to-ma-to (open) in standard pronunciation, but the student can\'t know this until they try it.',
+          '"Present" can be PREZ-ent (noun, VC/V) or pre-ZENT (verb, V/CV) depending on stress. Stress determines syllable division in some words.'
+        ]
+      } },
+      { pattern: 'Compound words', examples: 'sunflower, basketball, bedroom', notes: 'Divide at the word boundary. Each part is a known word.', deepDive: {
+        whyItWorks: 'Compound words are the easiest multisyllabic words to decode because each part is an already-known word: sun + flower, basket + ball, bed + room, any + thing, under + stand, every + body, with + out. The teaching power: compounds demonstrate that long words are built from smaller meaningful units. This is the simplest form of morphological analysis and it builds confidence: "If I can read the parts, I can read the whole word." It also introduces the idea that meaning is constructed by combining parts -- foundational for Latin/Greek root work.',
+        commonIrregulars: [
+          '"Breakfast" = break + fast (to break the overnight fast). The ea in "break" is irregular (/ay/ not /ee/), but the compound origin explains the word\'s meaning.',
+          '"Cupboard" = cup + board, but pronounced "CUB-berd." The pronunciation has drifted from the spelling.',
+          '"Understand," "outstanding," "withstand" -- the first part can be a preposition rather than a noun, which is less transparent.'
+        ]
+      } },
+      { pattern: 'Latin roots', examples: 'port (carry), dict (say), struct (build), rupt (break)', isMorphology: true, notes: 'Unlock academic vocabulary. One root can generate dozens of words.', deepDive: {
+        whyItWorks: 'About 60% of English words have Latin or Greek roots, and in academic texts, this rises to over 80%. Learning a single Latin root unlocks entire word families: "port" (carry) -> transport, import, export, report, portable, support, deport, opportunity, important. "Dict" (say/speak) -> predict, dictionary, contradict, verdict, dictate, diction, indict, dedicate. "Struct" (build) -> structure, construct, instruct, destroy (de-struct), obstruct, infrastructure, reconstruction. Teaching roots is the highest-leverage vocabulary strategy for upper-level students because it provides a system for approaching unknown words rather than requiring word-by-word memorization.',
+        commonIrregulars: [
+          'Root meanings can be opaque in modern English: "receive" (re + ceive, from Latin "capere" = take) doesn\'t transparently mean "take back." But knowing the root helps connect receive, conceive, deceive, perceive -- same root, related meanings.',
+          'Some roots have multiple forms: "scribe/script" (write), "rupt/rupt" (break), "duct/duce" (lead), "spect/spec" (look). The variation comes from different Latin verb forms (present vs past participle).'
+        ]
+      } },
+      { pattern: 'Greek combining forms', examples: 'bio (life), graph (write), tele (far), phon (sound)', isMorphology: true, notes: 'Common in science and technology vocabulary.', deepDive: {
+        whyItWorks: 'Greek roots dominate science and technology vocabulary: biology (bio + logy = life + study), telephone (tele + phone = far + sound), photograph (photo + graph = light + writing), microscope (micro + scope = small + look). Unlike Latin prefixes/roots/suffixes which combine in that order, Greek combining forms can appear in either position: "graph" can be at the beginning (graphic) or end (photograph, telegraph). Teaching 20-30 common Greek forms unlocks hundreds of science words. For Korean students, many Korean scientific terms are also built from classical language roots (Chinese characters function similarly), so the concept of "root + root = compound meaning" transfers.',
+        commonIrregulars: [
+          'Greek vs Latin overlap: "aqua" (Latin for water) vs "hydro" (Greek for water) -- both are used in English. Generally, Greek roots dominate science (hydrogen, hydrate) while Latin roots dominate law and government (aquatic, aqueduct).',
+          '"Phone" in everyday English means telephone, but the Greek root "phon" means sound (phonics, symphony, microphone, cacophony).'
+        ]
+      } },
+      { pattern: 'Prefix + root + suffix', examples: 'un-break-able, dis-agree-ment, re-construct-ion', isMorphology: true, notes: 'Teach word building as a system. Peel off affixes to find the base.', deepDive: {
+        whyItWorks: 'Mature readers decode complex words by recognizing morphemes (meaningful parts), not by sounding out letter by letter. "Uncomfortable" is processed as un + comfort + able, not u-n-c-o-m-f-o-r-t-a-b-l-e. Teaching the "peel and stick" strategy transforms long-word anxiety into a puzzle-solving game: (1) find the prefix(es) and peel them off, (2) find the suffix(es) and peel them off, (3) identify the base/root, (4) build the meaning from parts. "Reconstruction" = re (again) + con (together) + struct (build) + ion (noun) = "the act of building together again." This strategy transfers to every academic discipline.',
+        commonIrregulars: [
+          'Some words look decomposable but aren\'t: "uncle" is not un- + cle, "carpet" is not car + pet, "together" is not to + get + her. Students need to check that the parts make sense when combined.',
+          'Spelling changes at morpheme boundaries: "admit" + -ion = "admission" (t changes to ss). "Decide" + -ion = "decision" (de changes to ci). These assimilations happen at Latin morpheme boundaries and must be learned through exposure.'
+        ]
+      } },
+      { pattern: 'Assimilated prefixes', examples: 'in- -> im (impossible), il (illegal), ir (irregular)', isMorphology: true, notes: 'Prefix changes spelling to match root consonant. Advanced but high-value.', deepDive: {
+        whyItWorks: 'Assimilated (or "absorbed") prefixes change their final consonant to match the first consonant of the root. This happens for ease of pronunciation: try saying "in-possible" vs "impossible" -- the m-before-p is easier for your mouth. The prefix in- (not) becomes: im- before b, m, p (impossible, imbalance, immature), il- before l (illegal, illuminate, illustrate), ir- before r (irregular, irresponsible, irrelevant). It stays in- elsewhere (inactive, incomplete, invisible). Similarly, ad- (toward) becomes: ac- (accept), af- (affirm), al- (allow), ap- (approve), as- (assign), at- (attract). The doubled consonant is the clue that an assimilated prefix is present.',
+        commonIrregulars: [
+          'The double consonant is the fingerprint: "illegal" = il + legal (not "ill + egal"), "accept" = ac + cept (not "acc + ept"), "attract" = at + tract. Once students recognize this pattern, words like "aggressive," "announce," "accomplish," "associate" become decomposable.',
+          '"Inn," "ill," "add" -- these words just happen to start with double letters. They are NOT assimilated prefixes. Apply the test: is there a recognizable root after removing the possible prefix?'
+        ]
+      } },
+      { pattern: 'Suffix -ly', examples: 'quickly, happily, gently', isMorphology: true, notes: 'Changes adjective to adverb. y -> i before -ly (happy -> happily).', deepDive: {
+        whyItWorks: 'The suffix -ly converts adjectives to adverbs (telling HOW an action is done): quick -> quickly, gentle -> gently, happy -> happily, beautiful -> beautifully, careful -> carefully. Spelling rules: (1) usually just add -ly: sad -> sadly, nice -> nicely, brave -> bravely. (2) If the word ends in consonant + y, change y to i: happy -> happily, easy -> easily, angry -> angrily. (3) If the word ends in -le, change le to ly: gentle -> gently, simple -> simply, humble -> humbly. (4) If the word ends in -ic, add -ally: basic -> basically, dramatic -> dramatically, automatic -> automatically (exception: "publicly").',
+        commonIrregulars: [
+          '"Truly" (not "truely") -- drops the e. "Duly" -- also drops e. These are exceptions to the usual "just add -ly" pattern.',
+          '"Wholly" (from "whole") -- drops the e AND changes pronunciation.',
+          '"Good" -> "well" (not "goodly"). This is a suppletive form, like "better/best."',
+          '"Friendly," "lonely," "lovely," "lively" -- these end in -ly but are adjectives, NOT adverbs. "She\'s friendly" not "she acts friendlily." These -ly words are formed from noun/adjective + ly with an adjectival meaning.'
+        ]
+      } },
+      { pattern: 'Suffix -ment, -ness', examples: 'movement, happiness, darkness', isMorphology: true, notes: 'Noun-forming suffixes. -ment from verbs; -ness from adjectives.', deepDive: {
+        whyItWorks: 'These are the two main noun-forming suffixes, and they attach to different word classes: -ment attaches to VERBS to make nouns (move -> movement, agree -> agreement, manage -> management, develop -> development, enjoy -> enjoyment). -Ness attaches to ADJECTIVES to make nouns (happy -> happiness, dark -> darkness, kind -> kindness, weak -> weakness, aware -> awareness). This distinction helps students predict which suffix to use: "Is the base word something you DO (verb)? Use -ment. Is it something you ARE (adjective)? Use -ness." Both suffixes mean roughly "the state or condition of."',
+        commonIrregulars: [
+          'Spelling with -ness after y: happy -> happiness (y -> i), busy -> business (y -> i, plus vowel reduction makes it "BIZ-ness"), lonely -> loneliness.',
+          '-ment usually doesn\'t change the base word: enjoy -> enjoyment, amaze -> amazement (keeps the e!). "Judge" -> "judgment" or "judgement" -- both spellings are accepted.',
+          '"Government" (not "governament") and "argument" (not "arguement") -- the base words "govern" and "argue" lose their final e before -ment. This is inconsistent with "amazement" where the e stays.'
+        ]
+      } },
     ]
   },
 ]
 
-function TeachingGuidePanel({ guide }: { guide: TeachingGuideInfo }) {
-  const [showActivities, setShowActivities] = useState(false)
+function DeepDivePanel({ data }: { data: PatternDeepDive }) {
   return (
-    <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-4 my-3">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <BookOpen size={14} className="text-blue-700" />
-            <span className="text-[12px] font-bold text-blue-900">Teaching Guide {guide.guide} -- {guide.lesson}</span>
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 font-medium">Pages {guide.pages}</span>
-          </div>
-          <p className="text-[11px] text-blue-800 leading-relaxed italic">{guide.rule}</p>
+    <div className="bg-indigo-50/50 border border-indigo-200 rounded-lg p-4 my-3">
+      {/* Why It Works */}
+      <div className="mb-3">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Lightbulb size={13} className="text-indigo-700 flex-shrink-0" />
+          <span className="text-[11px] font-bold text-indigo-900">Why It Works This Way</span>
         </div>
+        <p className="text-[11px] text-indigo-800 leading-relaxed">{data.whyItWorks}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Word Families */}
-        {guide.wordFamilies && guide.wordFamilies.length > 0 && (
-          <div className="bg-white/70 rounded-lg p-3 border border-blue-100">
-            <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wide mb-2">Word Families</h4>
-            <div className="space-y-1">
-              {guide.wordFamilies.map((wf, i) => (
-                <p key={i} className="text-[10px] text-text-primary leading-relaxed font-mono">{wf}</p>
-              ))}
-            </div>
+      {/* Common Irregulars */}
+      {data.commonIrregulars && data.commonIrregulars.length > 0 && (
+        <div className="mb-3 bg-rose-50/60 rounded-lg p-3 border border-rose-200">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <AlertTriangle size={12} className="text-rose-700 flex-shrink-0" />
+            <span className="text-[10px] font-bold text-rose-900 uppercase tracking-wide">Common Irregulars & Why</span>
           </div>
-        )}
-
-        {/* Right column: HF Words + Phrases */}
-        <div className="space-y-3">
-          {guide.hfWords && guide.hfWords.length > 0 && (
-            <div className="bg-white/70 rounded-lg p-3 border border-blue-100">
-              <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wide mb-1.5">High-Frequency Words</h4>
-              <div className="flex flex-wrap gap-1">
-                {guide.hfWords.map((w, i) => (
-                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">{w}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {guide.contrastPairs && guide.contrastPairs.length > 0 && (
-            <div className="bg-white/70 rounded-lg p-3 border border-blue-100">
-              <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wide mb-1.5">Contrast Pairs (Minimal Pairs)</h4>
-              <div className="flex flex-wrap gap-1">
-                {guide.contrastPairs.map((cp, i) => (
-                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono">{cp}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {guide.samplePhrases && guide.samplePhrases.length > 0 && (
-            <div className="bg-white/70 rounded-lg p-3 border border-blue-100">
-              <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wide mb-1.5">Practice Phrases</h4>
-              <div className="flex flex-wrap gap-1">
-                {guide.samplePhrases.map((ph, i) => (
-                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-surface-alt text-text-primary border border-border font-medium">{ph}</span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Sorting Tip */}
-      {guide.sortingTip && (
-        <div className="mt-3 bg-amber-50/80 rounded-lg p-2.5 border border-amber-200">
-          <span className="text-[10px] font-bold text-amber-800">Sorting Activity: </span>
-          <span className="text-[10px] text-amber-700 leading-relaxed">{guide.sortingTip}</span>
+          <div className="space-y-1.5">
+            {data.commonIrregulars.map((irr, i) => (
+              <p key={i} className="text-[10px] text-rose-800 leading-relaxed pl-4 border-l-2 border-rose-200">{irr}</p>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Activity Sequence (collapsible) */}
-      {guide.activitySequence && guide.activitySequence.length > 0 && (
-        <div className="mt-3">
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowActivities(!showActivities) }}
-            className="text-[10px] font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1"
-          >
-            {showActivities ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            Full Lesson Sequence ({guide.activitySequence.length} steps)
-          </button>
-          {showActivities && (
-            <ol className="mt-2 space-y-1 pl-4">
-              {guide.activitySequence.map((step, i) => (
-                <li key={i} className="text-[10px] text-text-secondary leading-relaxed list-decimal">{step}</li>
-              ))}
-            </ol>
+      {/* Word Families + Contrast Pairs grid */}
+      {(data.wordFamilies || data.contrastPairs || data.samplePhrases) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {data.wordFamilies && data.wordFamilies.length > 0 && (
+            <div className="bg-white/70 rounded-lg p-3 border border-indigo-100">
+              <h4 className="text-[10px] font-bold text-indigo-800 uppercase tracking-wide mb-2">Word Families</h4>
+              <div className="space-y-1">
+                {data.wordFamilies.map((wf, i) => (
+                  <p key={i} className="text-[10px] text-text-primary leading-relaxed font-mono">{wf}</p>
+                ))}
+              </div>
+            </div>
           )}
+
+          <div className="space-y-3">
+            {data.contrastPairs && data.contrastPairs.length > 0 && (
+              <div className="bg-white/70 rounded-lg p-3 border border-indigo-100">
+                <h4 className="text-[10px] font-bold text-indigo-800 uppercase tracking-wide mb-1.5">Contrast Pairs</h4>
+                <div className="flex flex-wrap gap-1">
+                  {data.contrastPairs.map((cp, i) => (
+                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono">{cp}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {data.samplePhrases && data.samplePhrases.length > 0 && (
+              <div className="bg-white/70 rounded-lg p-3 border border-indigo-100">
+                <h4 className="text-[10px] font-bold text-indigo-800 uppercase tracking-wide mb-1.5">Practice Phrases</h4>
+                <div className="flex flex-wrap gap-1">
+                  {data.samplePhrases.map((ph, i) => (
+                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-surface-alt text-text-primary border border-border font-medium">{ph}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+      )}
+
+      {/* Sorting Tip */}
+      {data.sortingTip && (
+        <div className="mt-3 bg-amber-50/80 rounded-lg p-2.5 border border-amber-200">
+          <span className="text-[10px] font-bold text-amber-800">Sorting Activity: </span>
+          <span className="text-[10px] text-amber-700 leading-relaxed">{data.sortingTip}</span>
+        </div>
+      )}
+
+      {/* Guide Reference */}
+      {data.guideRef && (
+        <p className="mt-2 text-[9px] text-indigo-500 italic">Source: {data.guideRef}</p>
       )}
     </div>
   )
@@ -388,10 +802,10 @@ export function PhonicsSequence() {
         p.examples.toLowerCase().includes(q) ||
         (p.notes || '').toLowerCase().includes(q) ||
         (p.hfWords || '').toLowerCase().includes(q) ||
-        (p.teachingGuide?.rule || '').toLowerCase().includes(q) ||
-        (p.teachingGuide?.wordFamilies || []).some(wf => wf.toLowerCase().includes(q)) ||
-        (p.teachingGuide?.hfWords || []).some(w => w.toLowerCase().includes(q)) ||
-        (p.teachingGuide?.samplePhrases || []).some(ph => ph.toLowerCase().includes(q))
+        (p.deepDive?.whyItWorks || '').toLowerCase().includes(q) ||
+        (p.deepDive?.commonIrregulars || []).some(ir => ir.toLowerCase().includes(q)) ||
+        (p.deepDive?.wordFamilies || []).some(wf => wf.toLowerCase().includes(q)) ||
+        (p.deepDive?.samplePhrases || []).some(ph => ph.toLowerCase().includes(q))
       )
     })).filter(s => s.patterns.length > 0)
   }, [search])
@@ -405,8 +819,7 @@ export function PhonicsSequence() {
         <h3 className="text-[14px] font-bold text-amber-900 mb-1">Systematic Phonics Scope & Sequence</h3>
         <p className="text-[12px] text-amber-800 leading-relaxed">
           Based on Science of Reading research and structured literacy principles. {totalPatterns} patterns across 9 stages, progressing from alphabet knowledge through multisyllabic morphology.
-          Morphology concepts are integrated throughout (marked with gold badges) rather than isolated at the end.
-          Patterns with a <span className="inline-flex items-center text-[9px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200">G2</span> or <span className="inline-flex items-center text-[9px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200">G3</span> badge have linked lesson guides with word families, contrast pairs, phrases, and full activity sequences.
+          Morphology concepts are integrated throughout (marked with gold badges). Click any pattern row to reveal the underlying rule, common irregulars with explanations, and teaching materials.
         </p>
         <p className="text-[10px] text-amber-700 mt-2 italic">
           Sources: Ehri (2005) phases of word reading; Moats (2020) Speech to Print; Scarborough (2001) reading rope.
@@ -480,8 +893,8 @@ export function PhonicsSequence() {
                           <React.Fragment key={i}>
                             <tr className={`border-b border-border/50 last:border-0 ${
                               p.isMorphology && showMorphology ? 'bg-amber-50/60' : ''
-                            } ${p.teachingGuide ? 'cursor-pointer hover:bg-surface-alt/40' : ''}`}
-                              onClick={() => p.teachingGuide && setExpandedGuide(isGuideExpanded ? null : guideKey)}
+                            } ${p.deepDive ? 'cursor-pointer hover:bg-surface-alt/40' : ''}`}
+                              onClick={() => p.deepDive && setExpandedGuide(isGuideExpanded ? null : guideKey)}
                             >
                               <td className="px-5 py-2.5 font-semibold text-navy align-top">
                                 <div className="flex items-center gap-1.5">
@@ -489,27 +902,22 @@ export function PhonicsSequence() {
                                     <Puzzle size={11} className="text-amber-600 flex-shrink-0" />
                                   )}
                                   {p.pattern}
-                                  {p.teachingGuide && (
-                                    <span className="ml-1 text-[8px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0">
-                                      G{p.teachingGuide.guide}
-                                    </span>
-                                  )}
                                 </div>
                               </td>
                               <td className="px-3 py-2.5 text-text-primary align-top font-mono text-[10.5px]">{p.examples}</td>
                               <td className="px-3 py-2.5 text-text-secondary align-top leading-relaxed">
                                 {p.notes || '--'}
-                                {p.teachingGuide && (
-                                  <span className="ml-2 text-[9px] text-blue-600 font-medium">
-                                    {isGuideExpanded ? '[-] hide lesson guide' : '[+] lesson guide'}
+                                {p.deepDive && (
+                                  <span className="ml-2 text-[9px] text-indigo-600 font-medium">
+                                    {isGuideExpanded ? '[-] hide deep dive' : '[+] why this works'}
                                   </span>
                                 )}
                               </td>
                             </tr>
-                            {isGuideExpanded && p.teachingGuide && (
+                            {isGuideExpanded && p.deepDive && (
                               <tr>
                                 <td colSpan={3} className="px-5 py-0 border-b border-border/50">
-                                  <TeachingGuidePanel guide={p.teachingGuide} />
+                                  <DeepDivePanel data={p.deepDive} />
                                 </td>
                               </tr>
                             )}
