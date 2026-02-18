@@ -343,23 +343,27 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       })
     } else {
       // Fallback: read from semester_grades (historical/imported data)
-      const { data: semGrades } = await supabase.from('semester_grades').select('*').eq('student_id', studentId).eq('semester_id', semesterId)
-      if (semGrades) {
-        semGrades.forEach((sg: any) => {
-          if (DOMAINS.includes(sg.domain)) {
-            domainGrades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+      try {
+        const { data: semGrades } = await supabase.from('semester_grades').select('*').eq('student_id', studentId).eq('semester_id', semesterId)
+        if (semGrades && semGrades.length > 0) {
+          semGrades.forEach((sg: any) => {
+            if (sg.domain && DOMAINS.includes(sg.domain)) {
+              domainGrades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+            }
+          })
+        }
+        // Class averages from semester_grades for all students in class
+        if (students.length > 0) {
+          const { data: allSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade')
+            .eq('semester_id', semesterId).in('student_id', students.map((s: any) => s.id))
+          if (allSemGrades && allSemGrades.length > 0) {
+            DOMAINS.forEach((domain) => {
+              const vals = allSemGrades.filter((sg: any) => sg.domain === domain).map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
+              classAverages[domain] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : null
+            })
           }
-        })
-      }
-      // Class averages from semester_grades for all students in class
-      const { data: allSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade')
-        .eq('semester_id', semesterId).in('student_id', students.map((s: any) => s.id))
-      if (allSemGrades) {
-        DOMAINS.forEach((domain) => {
-          const vals = allSemGrades.filter((sg: any) => sg.domain === domain).map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
-          classAverages[domain] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : null
-        })
-      }
+        }
+      } catch (e) { console.error('semester_grades fallback error:', e) }
     }
 
     const scoredDomains = DOMAINS.filter((d) => domainGrades[d] != null)

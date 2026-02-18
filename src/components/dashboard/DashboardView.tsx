@@ -32,9 +32,10 @@ export default function DashboardView() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('semesters').select('id, name, name_ko, is_active').order('start_date', { ascending: false })
+      const { data } = await supabase.from('semesters').select('id, name, name_ko, is_active, type').order('start_date', { ascending: false })
       if (data && data.length > 0) {
-        setSemesters(data)
+        const activeSems = data.filter((s: any) => s.type !== 'archive')
+        setSemesters(activeSems.length > 0 ? activeSems : data)
         const active = data.find((s: any) => s.is_active)
         setActiveSem(active?.name || data[0].name)
       } else {

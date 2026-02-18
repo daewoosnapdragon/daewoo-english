@@ -79,7 +79,8 @@ export default function GradesView() {
     (async () => {
       const { data } = await supabase.from('semesters').select('*').order('start_date', { ascending: false })
       if (data && data.length > 0) {
-        setSemesters(data)
+        const activeSems = data.filter((s: Semester) => s.type !== 'archive')
+        setSemesters(activeSems.length > 0 ? activeSems : data)
         const active = data.find((s: Semester) => s.is_active)
         setSelectedSemester(active?.id || data[0].id)
       }
