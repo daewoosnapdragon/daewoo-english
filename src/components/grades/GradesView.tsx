@@ -1189,7 +1189,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                                     if (!next) next = tbl?.querySelector(`input[data-col="0"][data-row="${i + 1}"]`) as HTMLInputElement
                                     next?.focus()
                                   }
-                                }}}
+                                }}
                                 className="w-12 px-1 py-1 text-center border border-border rounded text-[11px] outline-none focus:border-navy"
                               />
                             </td>
