@@ -841,21 +841,18 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
 
   const handleExportPDF = async () => {
     showToast('Generating student portfolio...')
-    const [grades, semGrades, reading, behavior, attendance, comments, scaffolds, goals] = await Promise.all([
+    const [grades, semGrades, reading, behavior, attendance, comments] = await Promise.all([
       supabase.from('grades').select('*, assessments(name, domain, date)').eq('student_id', student.id).order('created_at', { ascending: false }),
       supabase.from('semester_grades').select('*, semesters(name)').eq('student_id', student.id),
       supabase.from('reading_assessments').select('*').eq('student_id', student.id).order('date', { ascending: true }),
       supabase.from('behavior_logs').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(50),
       supabase.from('attendance').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(100),
       supabase.from('comments').select('*, semesters(name)').eq('student_id', student.id),
-      supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', student.id).eq('is_active', true),
-      supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', student.id).eq('is_active', true),
     ])
     const html = buildStudentPDFHtml(student, {
       grades: grades.data || [], semesterGrades: semGrades.data || [],
       readingRecords: reading.data || [], behaviorLogs: behavior.data || [],
       attendanceRecords: attendance.data || [], comments: comments.data || [],
-      scaffolds: scaffolds.data || [], goals: goals.data || [],
     })
     const w = window.open('', '_blank')
     if (w) { w.document.write(html); w.document.close() }
@@ -1360,9 +1357,8 @@ function ScaffoldsTab({ studentId }: { studentId: string }) {
 function buildStudentPDFHtml(student: Student, data: {
   grades: any[]; semesterGrades: any[]; readingRecords: any[];
   behaviorLogs: any[]; attendanceRecords: any[]; comments: any[];
-  scaffolds?: any[]; goals?: any[];
 }) {
-  const { grades, semesterGrades, readingRecords, behaviorLogs, attendanceRecords, comments, scaffolds = [], goals = [] } = data
+  const { grades, semesterGrades, readingRecords, behaviorLogs, attendanceRecords, comments } = data
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
   // Semester grades grouped
@@ -1405,17 +1401,9 @@ ${semesterGrades.length > 0 ? `<table>
 
 <h2>Reading Assessments (${readingRecords.length})</h2>
 ${readingRecords.length > 0 ? `<table>
-  <tr><th>Date</th><th>CWPM</th><th>Accuracy</th><th>Level</th><th>Lexile</th><th>NAEP</th><th>Errors</th></tr>
-  ${readingRecords.map((r: any) => `<tr><td>${r.date}</td><td>${Math.round(r.cwpm || 0)}</td><td>${r.accuracy_rate != null ? r.accuracy_rate + '%' : '—'}</td><td>${r.passage_level || '—'}</td><td>${r.reading_level || '—'}</td><td>${r.naep_fluency ? 'L' + r.naep_fluency : '—'}</td><td>${r.errors || '—'}</td></tr>`).join('')}
+  <tr><th>Date</th><th>CWPM</th><th>Accuracy</th><th>Passage Level</th><th>Errors</th></tr>
+  ${readingRecords.map((r: any) => `<tr><td>${r.date}</td><td>${Math.round(r.cwpm || 0)}</td><td>${r.accuracy_rate != null ? r.accuracy_rate + '%' : '—'}</td><td>${r.passage_level || '—'}</td><td>${r.errors || '—'}</td></tr>`).join('')}
 </table>` : '<p class="empty">No reading assessments recorded.</p>'}
-
-${scaffolds.length > 0 ? `<h2>Active Scaffolds (${scaffolds.length})</h2>
-<div>${scaffolds.map((s: any) => `<div class="note"><strong style="text-transform:uppercase;font-size:9px;background:#EEF2FF;padding:1px 5px;border-radius:3px">${s.domain}</strong> ${s.scaffold_text}${s.effectiveness === 'working' ? ' <span style="color:#059669">✓ Working</span>' : s.effectiveness === 'not_working' ? ' <span style="color:#dc2626">✗ Not Working</span>' : ''}</div>`).join('')}
-</div>` : ''}
-
-${goals.length > 0 ? `<h2>Student Goals (${goals.length})</h2>
-<div>${goals.map((g: any) => `<div class="note">${g.completed_at ? '✅' : g.goal_type === 'stretch' ? '🚀' : g.goal_type === 'behavioral' ? '🎯' : '📚'} <span style="${g.completed_at ? 'text-decoration:line-through;color:#94a3b8' : ''}">${g.goal_text}</span>${g.completed_at ? ` <span style="color:#059669;font-size:9px">Done ${new Date(g.completed_at).toLocaleDateString()}</span>` : ''}</div>`).join('')}
-</div>` : ''}
 
 <h2>Behavior Log (last 50)</h2>
 ${behaviorLogs.length > 0 ? `<table>
