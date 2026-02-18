@@ -313,6 +313,7 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
     { id: 'reading', label: lang === 'ko' ? '읽기 수준' : 'Reading' },
     { id: 'attendance', label: lang === 'ko' ? '출석' : 'Attendance' },
     { id: 'standards', label: lang === 'ko' ? '표준 숙달' : 'Standards' },
+    { id: 'scaffolds', label: lang === 'ko' ? '스캐폴드' : 'Scaffolds' },
   ]
 
   return (
@@ -332,6 +333,7 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
       {activeTab === 'reading' && <ReadingTabInModal studentId={studentId} lang={lang} />}
       {activeTab === 'attendance' && <AttendanceTabInModal studentId={studentId} studentName={studentName} lang={lang} />}
       {activeTab === 'standards' && <StandardsMasteryTab studentId={studentId} lang={lang} />}
+      {activeTab === 'scaffolds' && <ScaffoldsTab studentId={studentId} />}
     </div>
   )
 }
@@ -1173,6 +1175,73 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ─── Scaffolds Tab ──────────────────────────────────────────────────
+
+function ScaffoldsTab({ studentId }: { studentId: string }) {
+  const { showToast } = useApp()
+  const [scaffolds, setScaffolds] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('student_scaffolds').select('*').eq('student_id', studentId).eq('is_active', true).order('assigned_at', { ascending: false })
+      setScaffolds(data || [])
+      setLoading(false)
+    })()
+  }, [studentId])
+
+  const DOMAIN_COLORS: Record<string, string> = {
+    reading: 'bg-blue-100 text-blue-700', phonics: 'bg-purple-100 text-purple-700',
+    writing: 'bg-amber-100 text-amber-700', speaking: 'bg-green-100 text-green-700',
+    language: 'bg-pink-100 text-pink-700', general: 'bg-gray-100 text-gray-700',
+  }
+
+  const toggleEffectiveness = async (id: string, current: string | null) => {
+    const next = current === 'working' ? 'not_working' : current === 'not_working' ? null : 'working'
+    const { error } = await supabase.from('student_scaffolds').update({ effectiveness: next, effectiveness_updated_at: new Date().toISOString() }).eq('id', id)
+    if (error) showToast(`Error: ${error.message}`)
+    else setScaffolds(prev => prev.map(s => s.id === id ? { ...s, effectiveness: next } : s))
+  }
+
+  const removeScaffold = async (id: string) => {
+    const { error } = await supabase.from('student_scaffolds').update({ is_active: false }).eq('id', id)
+    if (error) showToast(`Error: ${error.message}`)
+    else setScaffolds(prev => prev.filter(s => s.id !== id))
+  }
+
+  if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
+
+  if (scaffolds.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <p className="text-text-tertiary text-[13px]">No scaffolds assigned to this student.</p>
+        <p className="text-text-tertiary text-[11px] mt-1">Assign scaffolds in the WIDA/CCSS Guide tab under Standards.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] text-text-tertiary mb-3">{scaffolds.length} active scaffold{scaffolds.length !== 1 ? 's' : ''}. Click effectiveness to toggle.</p>
+      {scaffolds.map(s => (
+        <div key={s.id} className="flex items-start gap-3 p-3 bg-surface border border-border rounded-lg group">
+          <span className={`flex-shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${DOMAIN_COLORS[s.domain] || DOMAIN_COLORS.general}`}>{s.domain}</span>
+          <p className="flex-1 text-[12px] text-text-primary leading-relaxed">{s.scaffold_text}</p>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button onClick={() => toggleEffectiveness(s.id, s.effectiveness)}
+              className={`px-2 py-0.5 rounded text-[9px] font-semibold ${s.effectiveness === 'working' ? 'bg-green-100 text-green-700' : s.effectiveness === 'not_working' ? 'bg-red-100 text-red-700' : 'bg-surface-alt text-text-tertiary'}`}>
+              {s.effectiveness === 'working' ? '✓ Working' : s.effectiveness === 'not_working' ? '✗ Not working' : '? Untested'}
+            </button>
+            <button onClick={() => removeScaffold(s.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded text-text-tertiary hover:text-red-500 hover:bg-red-50">
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

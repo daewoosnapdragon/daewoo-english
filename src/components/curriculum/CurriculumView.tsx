@@ -289,6 +289,34 @@ function ClusterTracker() {
   const [statuses, setStatuses] = useState<Record<string, StdStatus>>({})
   const [expanded, setExpanded] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [stdAverages, setStdAverages] = useState<Record<string, number>>({})
+  const [showThresholdEdit, setShowThresholdEdit] = useState(false)
+
+  // Default mastery thresholds per class tier
+  const DEFAULT_THRESHOLDS: Record<string, { mastered: number; approaching: number }> = {
+    Lily: { mastered: 70, approaching: 45 }, Camellia: { mastered: 70, approaching: 45 },
+    Daisy: { mastered: 75, approaching: 50 }, Sunflower: { mastered: 75, approaching: 50 },
+    Marigold: { mastered: 85, approaching: 60 }, Snapdragon: { mastered: 90, approaching: 65 },
+  }
+  const [thresholds, setThresholds] = useState(DEFAULT_THRESHOLDS)
+
+  // Load saved thresholds from settings
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('app_settings').select('value').eq('key', 'mastery_thresholds').single()
+      if (data?.value) {
+        try { setThresholds(prev => ({ ...prev, ...JSON.parse(data.value) })) } catch {}
+      }
+    })()
+  }, [])
+
+  const saveThresholds = async () => {
+    await supabase.from('app_settings').upsert({ key: 'mastery_thresholds', value: JSON.stringify(thresholds) }, { onConflict: 'key' })
+    showToast('Mastery thresholds saved')
+    setShowThresholdEdit(false)
+  }
+
+  const t = thresholds[cls] || { mastered: 80, approaching: 50 }
 
   const adj = getAdjustedGrade(gr, cls)
   const tier = ['Lily', 'Camellia'].includes(cls) ? '2 below' : ['Daisy', 'Sunflower'].includes(cls) ? '1 below' : 'On level'
@@ -330,6 +358,49 @@ function ClusterTracker() {
     const { error } = await supabase.from('class_standard_status').upsert(rows, { onConflict: 'english_class,student_grade,standard_code' })
     if (error) showToast(`Error: ${error.message}`)
   }
+
+  // Load class averages for standards from grades
+  useEffect(() => {
+    (async () => {
+      const { data: sem } = await supabase.from('semesters').select('id').eq('is_active', true).single()
+      if (!sem) return
+      const { data: assessments } = await supabase.from('assessments').select('id, sections, standards, max_score')
+        .eq('english_class', cls).eq('grade', gr).eq('semester_id', sem.id)
+      if (!assessments || assessments.length === 0) return
+      const aIds = assessments.map(a => a.id)
+      const { data: grades } = await supabase.from('grades').select('assessment_id, score, section_scores')
+        .in('assessment_id', aIds).not('score', 'is', null)
+      if (!grades || grades.length === 0) return
+
+      const avgs: Record<string, { total: number; count: number }> = {}
+      assessments.forEach(a => {
+        // Section-based standards
+        if (a.sections) {
+          a.sections.forEach((sec: any, si: number) => {
+            if (!sec.standard) return
+            grades.filter(g => g.assessment_id === a.id && g.section_scores?.[String(si)] != null).forEach(g => {
+              const pct = sec.max_points > 0 ? (g.section_scores[String(si)] / sec.max_points) * 100 : 0
+              if (!avgs[sec.standard]) avgs[sec.standard] = { total: 0, count: 0 }
+              avgs[sec.standard].total += pct; avgs[sec.standard].count++
+            })
+          })
+        }
+        // Assessment-level standards
+        if (a.standards?.length) {
+          const aGrades = grades.filter(g => g.assessment_id === a.id)
+          if (aGrades.length === 0) return
+          const avg = aGrades.reduce((s: number, g: any) => s + ((g.score / a.max_score) * 100), 0) / aGrades.length
+          a.standards.forEach((st: any) => {
+            if (!avgs[st.code]) avgs[st.code] = { total: 0, count: 0 }
+            avgs[st.code].total += avg; avgs[st.code].count++
+          })
+        }
+      })
+      const result: Record<string, number> = {}
+      Object.entries(avgs).forEach(([code, { total, count }]) => { result[code] = Math.round(total / count * 10) / 10 })
+      setStdAverages(result)
+    })()
+  }, [cls, gr])
 
   const total = allClusters.length
   const mastered = allClusters.filter(c => getClusterStatus(c.codes) === 'mastered').length
@@ -384,11 +455,9 @@ function ClusterTracker() {
               const { data: stdAssessments } = await supabase.from('assessments').select('id, standards, english_class, grade, max_score')
                 .eq('english_class', cls).eq('grade', gr).eq('semester_id', sem.id)
               if (!stdAssessments || stdAssessments.length === 0) { showToast('No assessments with standards tagged'); return }
-              // Get grades for these assessments
               const { data: grades } = await supabase.from('grades').select('assessment_id, score')
                 .in('assessment_id', stdAssessments.map(a => a.id)).not('score', 'is', null)
               if (!grades || grades.length === 0) { showToast('No scores found'); return }
-              // Calculate per-standard average from assessment-level standards
               const stdAvgs: Record<string, { total: number; count: number }> = {}
               stdAssessments.forEach(a => {
                 const aGrades = grades.filter(g => g.assessment_id === a.id)
@@ -396,8 +465,7 @@ function ClusterTracker() {
                 const avg = aGrades.reduce((s: number, g: any) => s + ((g.score / a.max_score) * 100), 0) / aGrades.length
                 a.standards.forEach((st: any) => {
                   if (!stdAvgs[st.code]) stdAvgs[st.code] = { total: 0, count: 0 }
-                  stdAvgs[st.code].total += avg
-                  stdAvgs[st.code].count++
+                  stdAvgs[st.code].total += avg; stdAvgs[st.code].count++
                 })
               })
               let suggested = 0
@@ -405,27 +473,22 @@ function ClusterTracker() {
               Object.entries(stdAvgs).forEach(([code, { total, count }]) => {
                 const avg = total / count
                 const current = statuses[code] || 'not_started'
-                const suggest: StdStatus = avg >= 80 ? 'mastered' : avg >= 50 ? 'in_progress' : 'not_started'
+                const suggest: StdStatus = avg >= t.mastered ? 'mastered' : avg >= t.approaching ? 'in_progress' : 'not_started'
                 if (suggest !== current && (suggest === 'mastered' || (suggest === 'in_progress' && current === 'not_started'))) {
-                  newStatuses[code] = suggest
-                  suggested++
+                  newStatuses[code] = suggest; suggested++
                 }
               })
               if (suggested > 0) {
                 setStatuses(newStatuses)
-                // Save all suggested changes
                 const rows = Object.entries(newStatuses).filter(([c]) => stdAvgs[c]).map(([code, status]) => ({
                   english_class: cls, student_grade: gr, standard_code: code, status,
                   updated_by: currentTeacher?.id, updated_at: new Date().toISOString()
                 }))
                 await supabase.from('class_standard_status').upsert(rows, { onConflict: 'english_class,student_grade,standard_code' })
                 showToast(`Updated ${suggested} standard(s) from grade data`)
-              } else {
-                showToast('No changes suggested -- current statuses match grade data')
-              }
+              } else { showToast('No changes suggested') }
               return
             }
-            // Section-based: analyze per-section scores for standards
             const aIds = assessments.map(a => a.id)
             const { data: grades } = await supabase.from('grades').select('assessment_id, section_scores, score')
               .in('assessment_id', aIds).not('score', 'is', null)
@@ -435,12 +498,10 @@ function ClusterTracker() {
               if (!a.sections) return
               a.sections.forEach((sec: any, si: number) => {
                 if (!sec.standard) return
-                const sectionGrades = grades.filter(g => g.assessment_id === a.id && g.section_scores?.[String(si)] != null)
-                sectionGrades.forEach(g => {
+                grades.filter(g => g.assessment_id === a.id && g.section_scores?.[String(si)] != null).forEach(g => {
                   const pct = sec.max_points > 0 ? (g.section_scores[String(si)] / sec.max_points) * 100 : 0
                   if (!stdAvgs[sec.standard]) stdAvgs[sec.standard] = { total: 0, count: 0 }
-                  stdAvgs[sec.standard].total += pct
-                  stdAvgs[sec.standard].count++
+                  stdAvgs[sec.standard].total += pct; stdAvgs[sec.standard].count++
                 })
               })
             })
@@ -449,10 +510,9 @@ function ClusterTracker() {
             Object.entries(stdAvgs).forEach(([code, { total, count }]) => {
               const avg = total / count
               const current = statuses[code] || 'not_started'
-              const suggest: StdStatus = avg >= 80 ? 'mastered' : avg >= 50 ? 'in_progress' : 'not_started'
+              const suggest: StdStatus = avg >= t.mastered ? 'mastered' : avg >= t.approaching ? 'in_progress' : 'not_started'
               if (suggest !== current && (suggest === 'mastered' || (suggest === 'in_progress' && current === 'not_started'))) {
-                newStatuses[code] = suggest
-                suggested++
+                newStatuses[code] = suggest; suggested++
               }
             })
             if (suggested > 0) {
@@ -463,16 +523,52 @@ function ClusterTracker() {
               }))
               await supabase.from('class_standard_status').upsert(rows, { onConflict: 'english_class,student_grade,standard_code' })
               showToast(`Updated ${suggested} standard(s) from section scores`)
-            } else {
-              showToast('No changes suggested -- current statuses match grade data')
-            }
+            } else { showToast('No changes suggested') }
           }} className="px-3 py-1 rounded-lg text-[10px] font-semibold bg-navy text-white hover:bg-navy-dark">
             Suggest from Grades
+          </button>
+          <button onClick={() => setShowThresholdEdit(!showThresholdEdit)} className="px-3 py-1 rounded-lg text-[10px] font-semibold bg-surface-alt text-text-secondary hover:bg-border" title="Edit mastery thresholds">
+            ⚙ Thresholds
           </button>
         </div>
       </div>
 
-      <p className="text-[11px] text-text-tertiary mb-4">Click the status icon to cycle a whole cluster at once. Expand a cluster to see individual standards.</p>
+      {/* Threshold Editor */}
+      {showThresholdEdit && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+          <p className="text-[12px] font-semibold text-amber-800 mb-3">Mastery Thresholds by Class</p>
+          <div className="grid grid-cols-3 gap-3">
+            {ENGLISH_CLASSES.map(c => (
+              <div key={c} className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold w-20" style={{ color: classToColor(c) }}>{c}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-amber-700">Mastered:</span>
+                  <input type="number" min={0} max={100} value={thresholds[c]?.mastered ?? 80}
+                    onChange={e => setThresholds(prev => ({ ...prev, [c]: { ...(prev[c] || { mastered: 80, approaching: 50 }), mastered: Number(e.target.value) } }))}
+                    className="w-12 px-1 py-0.5 border border-amber-300 rounded text-[11px] text-center bg-white" />
+                  <span className="text-[9px] text-amber-600">%</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-amber-700">Approaching:</span>
+                  <input type="number" min={0} max={100} value={thresholds[c]?.approaching ?? 50}
+                    onChange={e => setThresholds(prev => ({ ...prev, [c]: { ...(prev[c] || { mastered: 80, approaching: 50 }), approaching: Number(e.target.value) } }))}
+                    className="w-12 px-1 py-0.5 border border-amber-300 rounded text-[11px] text-center bg-white" />
+                  <span className="text-[9px] text-amber-600">%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2 mt-3">
+            <button onClick={() => setShowThresholdEdit(false)} className="px-3 py-1 rounded text-[11px] text-amber-700 hover:bg-amber-100">Cancel</button>
+            <button onClick={saveThresholds} className="px-3 py-1 rounded text-[11px] bg-amber-600 text-white hover:bg-amber-700">Save Thresholds</button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mb-4">
+        <p className="text-[11px] text-text-tertiary">Click status icon to cycle clusters. Expand to see individual standards.</p>
+        <span className="text-[9px] text-text-tertiary ml-auto">Mastered ≥{t.mastered}% | Approaching ≥{t.approaching}%</span>
+      </div>
 
       {loading ? <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div> :
       <div className="space-y-6">
@@ -521,7 +617,14 @@ function ClusterTracker() {
                                   <SI size={16} className={sc.color} fill={ss === 'mastered' ? '#22c55e' : ss === 'in_progress' ? '#3b82f6' : 'none'} />
                                 </button>
                                 <div>
-                                  <span className="text-[11px] font-bold text-text-secondary">{std.code}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-bold text-text-secondary">{std.code}</span>
+                                    {stdAverages[std.code] != null && (
+                                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${stdAverages[std.code] >= t.mastered ? 'bg-green-100 text-green-700' : stdAverages[std.code] >= t.approaching ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                        avg {Math.round(stdAverages[std.code])}%
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="text-[11px] text-text-primary leading-snug">{std.text}</p>
                                 </div>
                               </div>

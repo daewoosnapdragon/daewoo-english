@@ -11,7 +11,7 @@ import { CCSS_STANDARDS, CCSS_DOMAINS, type CCSSDomain } from './ccss-standards'
 import {
   BookOpen, Globe2, Layers, ChevronDown, ChevronRight, Info, Search,
   Plus, X, Check, Loader2, User, ArrowLeftRight, Lightbulb, GraduationCap,
-  Bookmark, BookMarked, ListChecks
+  Bookmark, BookMarked, ListChecks, Printer
 } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1224,10 +1224,39 @@ function AssignScaffolds() {
 
       {viewMode === 'class' ? (
         <div>
-          <div className="bg-navy/5 border border-navy/10 rounded-xl p-4 mb-5">
+          <div className="flex items-center justify-between bg-navy/5 border border-navy/10 rounded-xl p-4 mb-5">
             <p className="text-[12px] text-text-secondary leading-relaxed">
-              See all assigned scaffolds across your class, grouped by strategy. Students who share the same scaffold appear together -- use this to identify natural groupings for differentiated instruction.
+              See all assigned scaffolds across your class, grouped by strategy. Students who share the same scaffold appear together.
             </p>
+            <button onClick={() => {
+              if (students.length === 0) return
+              const pw = window.open('', '_blank'); if (!pw) return
+              const cards = students.map(s => {
+                const scaff = classScaffolds[s.id] || []
+                const domainColors: Record<string, string> = { reading: '#3b82f6', phonics: '#8b5cf6', writing: '#f59e0b', speaking: '#10b981', language: '#ec4899', general: '#6b7280' }
+                const scaffHTML = scaff.length > 0
+                  ? scaff.map(sc => `<div style="padding:6px 10px;margin:3px 0;border-radius:6px;font-size:11px;border:1px solid #e2e8f0;background:#f8fafc;page-break-inside:avoid"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:bold;color:white;background:${domainColors[sc.domain] || '#6b7280'};text-transform:uppercase;margin-right:5px">${sc.domain}</span>${sc.scaffold_text}</div>`).join('')
+                  : '<p style="color:#999;font-size:11px;font-style:italic">No scaffolds assigned yet</p>'
+                return `<div style="page-break-after:always;padding:16px;border:2px solid #e2e8f0;border-radius:12px;margin-bottom:8px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid #1B2A4A">
+                    <div><h3 style="margin:0;color:#1B2A4A;font-size:16px">${s.english_name} <span style="color:#999;font-weight:normal;font-size:13px">${s.korean_name}</span></h3>
+                    <p style="margin:2px 0 0;font-size:11px;color:#666">${cls} — Grade ${gr}</p></div>
+                    <div style="font-size:10px;color:#999">WIDA: ${s.wida_level ? 'L' + s.wida_level : '—'}</div>
+                  </div>
+                  <p style="font-size:10px;font-weight:bold;color:#1B2A4A;text-transform:uppercase;letter-spacing:1px;margin:8px 0 4px">Scaffolds (${scaff.length})</p>
+                  ${scaffHTML}
+                </div>`
+              }).join('')
+              pw.document.write(`<!DOCTYPE html><html><head><title>Scaffold Cards - ${cls} Gr ${gr}</title>
+                <style>body{font-family:Arial,sans-serif;padding:12px;margin:0}
+                @media print{body{padding:8px}div{page-break-inside:avoid}}</style></head><body>
+                <div style="text-align:center;margin-bottom:12px"><h2 style="margin:0;color:#1B2A4A;font-size:14px">${cls} Grade ${gr} — Scaffold Cards</h2>
+                <p style="margin:2px 0 0;font-size:10px;color:#999">${new Date().toLocaleDateString()} • ${students.length} students</p></div>
+                ${cards}</body></html>`)
+              pw.document.close(); pw.print()
+            }} className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark">
+              <Printer size={12} /> Print Class Cards
+            </button>
           </div>
           {classLoading ? (
             <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>

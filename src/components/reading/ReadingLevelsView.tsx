@@ -845,7 +845,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const [saving, setSaving] = useState(false)
 
   // Batch mode state: studentId -> { wordCount, timeSeconds, errors, selfCorrections, notes }
-  const [batchScores, setBatchScores] = useState<Record<string, { wc: string; ts: string; err: string; sc: string; notes: string; pl: string; lex: string }>>({})
+  const [batchScores, setBatchScores] = useState<Record<string, { wc: string; ts: string; err: string; sc: string; notes: string; pl: string; lex: string; naep: string }>>({})
 
   const wc = typeof wordCount === 'number' ? wordCount : 0
   const ts = typeof timeSeconds === 'number' ? timeSeconds : 0
@@ -854,7 +854,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const accuracy = wc > 0 ? ((wc - err) / wc) * 100 : 0
 
   const setBatchField = (sid: string, field: string, value: string) => {
-    setBatchScores(prev => ({ ...prev, [sid]: { ...(prev[sid] || { wc: '', ts: '', err: '0', sc: '0', notes: '', pl: '', lex: '' }), [field]: value } }))
+    setBatchScores(prev => ({ ...prev, [sid]: { ...(prev[sid] || { wc: '', ts: '', err: '0', sc: '0', notes: '', pl: '', lex: '', naep: '' }), [field]: value } }))
   }
 
   const calcBatchCwpm = (b: { wc: string; ts: string; err: string }) => {
@@ -892,6 +892,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
             word_count: w, time_seconds: t, errors: e, self_corrections: sc,
             cwpm: calcBatchCwpm(b), accuracy_rate: calcBatchAcc(b),
             reading_level: b.lex?.trim() || null, notes: b.notes?.trim() || null, assessed_by: currentTeacher?.id || null,
+            naep_fluency: b.naep ? parseInt(b.naep) : null,
           }
         })
       if (rows.length === 0) { showToast('Enter scores for at least one student'); return }
@@ -997,10 +998,11 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Lvl</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">CWPM</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Acc%</th>
+                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">NAEP</th>
               </tr></thead>
               <tbody>
                 {students.map((s: any) => {
-                  const b = batchScores[s.id] || { wc: '', ts: '', err: '0', sc: '0', notes: '', pl: '', lex: '' }
+                  const b = batchScores[s.id] || { wc: '', ts: '', err: '0', sc: '0', notes: '', pl: '', lex: '', naep: '' }
                   const bCwpm = calcBatchCwpm(b)
                   const bAcc = calcBatchAcc(b)
                   const filled = b.wc && b.ts
@@ -1022,6 +1024,10 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                       </select></td>
                       <td className="py-1.5 px-1 text-center text-[12px] font-bold text-navy">{filled ? bCwpm : ''}</td>
                       <td className={`py-1.5 px-1 text-center text-[12px] font-bold ${bAcc >= 95 ? 'text-green-600' : bAcc >= 90 ? 'text-amber-600' : filled ? 'text-red-600' : ''}`}>{filled ? `${bAcc}%` : ''}</td>
+                      <td className="py-1.5 px-1"><select value={b.naep || ''} onChange={e => setBatchField(s.id, 'naep', e.target.value)} className="w-full text-center px-0.5 py-1 border border-border rounded text-[11px] outline-none focus:border-navy bg-surface">
+                        <option value="">--</option>
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                      </select></td>
                     </tr>
                   )
                 })}
