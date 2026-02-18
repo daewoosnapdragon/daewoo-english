@@ -322,7 +322,7 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin, onContinue }: { lev
       <div className="flex items-center justify-between">
         <ClassTabs active={activeTab} onSelect={setActiveTab} counts={classCounts} available={available} />
         <div className="flex items-center gap-2 mb-4">
-          {isAdmin && !editingSections && (
+          {!editingSections && (
             <button onClick={() => { setEditSections(sections.map(s => ({ ...s }))); setEditingSections(true) }}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
               <SlidersHorizontal size={12} /> Edit Sections

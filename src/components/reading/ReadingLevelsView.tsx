@@ -463,6 +463,7 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
     errors: record.errors ?? '',
     self_corrections: record.self_corrections ?? '',
     reading_level: record.reading_level || '',
+    naep_fluency: record.naep_fluency ?? '',
     notes: record.notes || '',
   })
 
@@ -508,6 +509,18 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
               {previewAcc != null && <span>Accuracy: <b className={previewAcc >= 95 ? 'text-green-600' : previewAcc >= 90 ? 'text-amber-600' : 'text-red-600'}>{previewAcc.toFixed(1)}%</b></span>}
             </div>
           )}
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile Level</label>
+              <input value={form.reading_level} onChange={e => set('reading_level', e.target.value)} placeholder="e.g. 250L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">NAEP Fluency <span className="normal-case text-[9px] text-text-tertiary">(1-4)</span></label>
+              <select value={form.naep_fluency} onChange={e => set('naep_fluency', e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface">
+                <option value="">--</option>
+                <option value="1">1 - Word by word</option>
+                <option value="2">2 - Mostly word by word</option>
+                <option value="3">3 - Mostly phrased</option>
+                <option value="4">4 - Phrased, expressive</option>
+              </select></div>
+          </div>
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
             <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
         </div>
@@ -827,10 +840,12 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const [errors, setErrors] = useState<number | ''>(0)
   const [selfCorrections, setSelfCorrections] = useState<number | ''>(0)
   const [notes, setNotes] = useState('')
+  const [lexile, setLexile] = useState('')
+  const [naepScore, setNaepScore] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
 
   // Batch mode state: studentId -> { wordCount, timeSeconds, errors, selfCorrections, notes }
-  const [batchScores, setBatchScores] = useState<Record<string, { wc: string; ts: string; err: string; sc: string; notes: string }>>({})
+  const [batchScores, setBatchScores] = useState<Record<string, { wc: string; ts: string; err: string; sc: string; notes: string; pl: string; lex: string }>>({})
 
   const wc = typeof wordCount === 'number' ? wordCount : 0
   const ts = typeof timeSeconds === 'number' ? timeSeconds : 0
@@ -839,7 +854,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const accuracy = wc > 0 ? ((wc - err) / wc) * 100 : 0
 
   const setBatchField = (sid: string, field: string, value: string) => {
-    setBatchScores(prev => ({ ...prev, [sid]: { ...(prev[sid] || { wc: '', ts: '', err: '0', sc: '0', notes: '' }), [field]: value } }))
+    setBatchScores(prev => ({ ...prev, [sid]: { ...(prev[sid] || { wc: '', ts: '', err: '0', sc: '0', notes: '', pl: '', lex: '' }), [field]: value } }))
   }
 
   const calcBatchCwpm = (b: { wc: string; ts: string; err: string }) => {
@@ -860,7 +875,8 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
         student_id: selStudent, date, passage_title: passageTitle || null, passage_level: passageLevel || null,
         word_count: wc, time_seconds: ts, errors: err, self_corrections: typeof selfCorrections === 'number' ? selfCorrections : 0,
         cwpm: Math.round(cwpm * 10) / 10, accuracy_rate: Math.round(accuracy * 10) / 10,
-        reading_level: null, notes: notes.trim() || null, assessed_by: currentTeacher?.id || null,
+        reading_level: lexile.trim() || null, notes: notes.trim() || null, assessed_by: currentTeacher?.id || null,
+        naep_fluency: typeof naepScore === 'number' ? naepScore : null,
       })
       setSaving(false)
       if (error) showToast(`Error: ${error.message}`)
@@ -872,10 +888,10 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
         .map(([sid, b]) => {
           const w = parseInt(b.wc) || 0; const t = parseInt(b.ts) || 0; const e = parseInt(b.err) || 0; const sc = parseInt(b.sc) || 0
           return {
-            student_id: sid, date, passage_title: passageTitle || null, passage_level: passageLevel || null,
+            student_id: sid, date, passage_title: passageTitle || null, passage_level: b.pl || passageLevel || null,
             word_count: w, time_seconds: t, errors: e, self_corrections: sc,
             cwpm: calcBatchCwpm(b), accuracy_rate: calcBatchAcc(b),
-            reading_level: null, notes: b.notes?.trim() || null, assessed_by: currentTeacher?.id || null,
+            reading_level: b.lex?.trim() || null, notes: b.notes?.trim() || null, assessed_by: currentTeacher?.id || null,
           }
         })
       if (rows.length === 0) { showToast('Enter scores for at least one student'); return }
@@ -953,6 +969,18 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                   <p className="text-[9px] text-text-tertiary">{accuracy >= 97 ? 'Easy — move up' : accuracy >= 95 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration — move down'}</p></div>
               </div>
             )}
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile Level</label>
+                <input value={lexile} onChange={(e: any) => setLexile(e.target.value)} placeholder="e.g. 250L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">NAEP Fluency <span className="normal-case text-[9px] text-text-tertiary">(1-4)</span></label>
+                <select value={naepScore} onChange={(e: any) => setNaepScore(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface">
+                  <option value="">--</option>
+                  <option value="1">1 - Word by word</option>
+                  <option value="2">2 - Mostly word by word, some phrasing</option>
+                  <option value="3">3 - Mostly phrased, some expression</option>
+                  <option value="4">4 - Phrased, expressive, natural</option>
+                </select></div>
+            </div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
               <textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} rows={2} placeholder="Observations..." className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
           </div>
@@ -966,12 +994,13 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-20">Time <span className="text-[8px] normal-case">(m:ss or sec)</span></th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Err</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">SC</th>
+                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Lvl</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">CWPM</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Acc%</th>
               </tr></thead>
               <tbody>
                 {students.map((s: any) => {
-                  const b = batchScores[s.id] || { wc: '', ts: '', err: '0', sc: '0', notes: '' }
+                  const b = batchScores[s.id] || { wc: '', ts: '', err: '0', sc: '0', notes: '', pl: '', lex: '' }
                   const bCwpm = calcBatchCwpm(b)
                   const bAcc = calcBatchAcc(b)
                   const filled = b.wc && b.ts
@@ -987,6 +1016,10 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                         onBlur={e => { const v = e.target.value; if (v.includes(':')) { const parts = v.split(':'); setBatchField(s.id, 'ts', String((parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0))) } }} /></td>
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.err} onChange={e => setBatchField(s.id, 'err', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.sc} onChange={e => setBatchField(s.id, 'sc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
+                      <td className="py-1.5 px-1"><select value={b.pl} onChange={e => setBatchField(s.id, 'pl', e.target.value)} className="w-full text-center px-0.5 py-1 border border-border rounded text-[11px] outline-none focus:border-navy bg-surface">
+                        <option value="">--</option>
+                        {PASSAGE_LEVELS.map(l => <option key={l.id} value={l.id}>{l.id}</option>)}
+                      </select></td>
                       <td className="py-1.5 px-1 text-center text-[12px] font-bold text-navy">{filled ? bCwpm : ''}</td>
                       <td className={`py-1.5 px-1 text-center text-[12px] font-bold ${bAcc >= 95 ? 'text-green-600' : bAcc >= 90 ? 'text-amber-600' : filled ? 'text-red-600' : ''}`}>{filled ? `${bAcc}%` : ''}</td>
                     </tr>

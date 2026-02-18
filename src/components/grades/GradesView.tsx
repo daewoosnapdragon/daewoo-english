@@ -1054,21 +1054,21 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
   }, [])
 
   const filteredStds = stdSearch.length >= 2 ? ccssStandards.filter(s =>
-    (s.code.toLowerCase().includes(stdSearch.toLowerCase()) || s.description?.toLowerCase().includes(stdSearch.toLowerCase()))
+    (s.code.toLowerCase().includes(stdSearch.toLowerCase()) || s.text?.toLowerCase().includes(stdSearch.toLowerCase()))
     && !standards.includes(s.code)
-  ).slice(0, 6) : []
+  ).slice(0, 8) : []
 
   const otherClasses = ENGLISH_CLASSES.filter((c: any) => c !== englishClass)
 
   const handleSave = async (enterScores = false) => {
     if (!name.trim()) return; setSaving(true)
-    const stdTags = standards.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.description || '' } })
+    const stdTags = standards.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.text || '' } })
     // If using sections, merge section standards into stdTags and auto-calc max_score
     const finalSections = useSections && sections.length > 0 ? sections : null
     const finalMaxScore = finalSections ? finalSections.reduce((s, sec) => s + sec.max_points, 0) : maxScore
     // Merge section standards into the assessment-level standards
     const sectionStds = (finalSections || []).map(s => s.standard).filter(s => s && !standards.includes(s))
-    const allStdTags = [...stdTags, ...sectionStds.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.description || '' } })]
+    const allStdTags = [...stdTags, ...sectionStds.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.text || '' } })]
     const basePayload = { name: name.trim(), domain: selDomain, max_score: finalMaxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null, standards: allStdTags, sections: finalSections }
     if (editing) {
       const { data, error } = await supabase.from('assessments').update({ ...basePayload, english_class: englishClass }).eq('id', editing.id).select().single()
@@ -1275,7 +1275,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                 {standards.map(code => {
                   const stdInfo = ccssStandards.find(x => x.code === code)
                   return (
-                  <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-navy/10 text-navy text-[10px] font-medium cursor-help" title={stdInfo?.description || code}>
+                  <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-navy/10 text-navy text-[10px] font-medium cursor-help" title={stdInfo?.text || code}>
                     {code}
                     <button onClick={() => setStandards(prev => prev.filter(c => c !== code))} className="text-navy/50 hover:text-red-500"><X size={10} /></button>
                   </span>
@@ -1292,7 +1292,8 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                     <button key={s.code} onClick={() => { setStandards(prev => [...prev, s.code]); setStdSearch('') }}
                       className="w-full text-left px-3 py-2 hover:bg-surface-alt border-b border-border/50 last:border-0">
                       <span className="text-[11px] font-bold text-navy">{s.code}</span>
-                      <span className="text-[10px] text-text-tertiary ml-2 line-clamp-1">{s.description}</span>
+                      <span className="text-[9px] text-text-tertiary ml-1.5">{s.cluster}</span>
+                      <p className="text-[10px] text-text-secondary mt-0.5 line-clamp-2">{s.text}</p>
                     </button>
                   ))}
                 </div>
