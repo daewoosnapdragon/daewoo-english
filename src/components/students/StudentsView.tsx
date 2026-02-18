@@ -413,7 +413,14 @@ function QuickNotesTab({ studentId }: { studentId: string }) {
         .eq('student_id', studentId)
         .order('created_at', { ascending: false })
         .limit(50)
-      if (error && (error.message.includes('does not exist') || error.code === '42P01')) {
+      if (error && (error.message.includes('does not exist') || error.code === '42P01' || error.message.includes('schema cache'))) {
+        if (error.message.includes('category')) {
+          // Column missing - try without category
+          const { data: d2 } = await supabase.from('student_notes').select('id, student_id, note, created_by, created_at, teachers(name)').eq('student_id', studentId).order('created_at', { ascending: false }).limit(50)
+          setNotes((d2 || []).map((n: any) => ({ ...n, category: 'general' })))
+          setLoading(false)
+          return
+        }
         setTableExists(false)
         setLoading(false)
         return

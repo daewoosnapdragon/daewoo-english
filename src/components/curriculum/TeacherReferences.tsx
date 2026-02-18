@@ -257,7 +257,6 @@ export function PhonicsSequence() {
                 </div>
                 <div className="flex-shrink-0 text-right">
                   <span className="text-[10px] text-text-tertiary">{stage.patterns.length} patterns</span>
-                  <p className="text-[9px] text-text-tertiary mt-0.5">{stage.suggestedClasses}</p>
                 </div>
               </button>
 
@@ -611,7 +610,6 @@ export function AssessmentLiteracy() {
     { id: 'types', label: 'Assessment Types', icon: Layers },
     { id: 'orf', label: 'Interpreting ORF Data', icon: BarChart3 },
     { id: 'grouping', label: 'Data-Driven Grouping', icon: Target },
-    { id: 'cycle', label: 'Instruction Cycle', icon: TrendingUp },
   ]
 
   return (
@@ -888,65 +886,6 @@ export function AssessmentLiteracy() {
           </AssessmentSectionCard>
         </div>
       )}
-
-      {section === 'cycle' && (
-        <div>
-          <AssessmentSectionCard title="The Data-Driven Instruction Cycle">
-            <p>
-              Effective instruction is cyclical, not linear. Each round of data informs the next round of teaching.
-              This is not extra work on top of teaching -- it IS teaching.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2 my-4">
-              {['Assess', 'Analyze', 'Plan', 'Teach', 'Reassess'].map((step, i) => (
-                <div key={step} className="flex items-center gap-2">
-                  <div className="flex items-center justify-center w-20 h-20 rounded-full bg-navy text-white text-center">
-                    <div>
-                      <p className="text-[9px] font-medium opacity-70">Step {i + 1}</p>
-                      <p className="text-[12px] font-bold">{step}</p>
-                    </div>
-                  </div>
-                  {i < 4 && <ArrowRight size={16} className="text-text-tertiary" />}
-                </div>
-              ))}
-            </div>
-          </AssessmentSectionCard>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <AssessmentSectionCard title="Step 1: Assess">
-              <p>Collect data using the right tool for the right purpose. Use diagnostic assessments at the start. Use formative assessments throughout. Use summative assessments to confirm.</p>
-              <p className="text-[11px] text-text-tertiary mt-1 italic">Key question: What do my students know right now?</p>
-            </AssessmentSectionCard>
-            <AssessmentSectionCard title="Step 2: Analyze">
-              <p>Look for patterns, not just individual scores. What percentage of the class mastered the target? What errors are most common? Which students are outliers (positive or negative)?</p>
-              <p className="text-[11px] text-text-tertiary mt-1 italic">Key question: What patterns do I see in the data?</p>
-            </AssessmentSectionCard>
-            <AssessmentSectionCard title="Step 3: Plan">
-              <p>Based on analysis, decide what to teach, to whom, and how. Form flexible groups. Choose appropriate materials and strategies. Set measurable targets for the next cycle.</p>
-              <p className="text-[11px] text-text-tertiary mt-1 italic">Key question: What will I do differently based on this data?</p>
-            </AssessmentSectionCard>
-            <AssessmentSectionCard title="Step 4: Teach">
-              <p>Deliver instruction with fidelity to the plan. Use the strategies from the Phonics Strategies guide. Monitor engagement and adjust pacing in real time. Collect informal data as you teach.</p>
-              <p className="text-[11px] text-text-tertiary mt-1 italic">Key question: Am I teaching what my students need?</p>
-            </AssessmentSectionCard>
-          </div>
-
-          <AssessmentSectionCard title="Step 5: Reassess & Repeat">
-            <p>
-              After the instructional cycle (typically 2-4 weeks), reassess the same skills. Compare to the initial data.
-              Celebrate growth. Identify students who need continued support. Adjust groups. Begin the cycle again.
-            </p>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2">
-              <p className="text-[11px] font-semibold text-amber-900">Recommended Cycle Timing for Our Program</p>
-              <p className="text-[11px] text-amber-800 mt-1">
-                ORF: Weekly progress monitoring (formative) + monthly benchmark (summative).
-                Phonics: Weekly spelling assessment + end-of-unit test every 3-4 weeks.
-                Grammar/Writing: Bi-weekly writing samples + end-of-unit rubric scoring.
-                Standards: Update the Standards Checklist as clusters are taught and assessed.
-              </p>
-            </div>
-          </AssessmentSectionCard>
-        </div>
-      )}
     </div>
   )
 }
@@ -1136,26 +1075,6 @@ export function ReadingFluencyGuide() {
             </div>
           </AssessmentSectionCard>
 
-          <AssessmentSectionCard title="Variations and Tips">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-surface-alt rounded-lg p-3">
-                <p className="text-[11px] font-semibold text-navy mb-1">Partner Repeated Reading</p>
-                <p className="text-[10.5px] text-text-secondary">Pair a stronger reader with a developing reader. Stronger reader models first, then both read together, then developing reader reads solo. Efficient use of time for whole-class fluency practice.</p>
-              </div>
-              <div className="bg-surface-alt rounded-lg p-3">
-                <p className="text-[11px] font-semibold text-navy mb-1">Performance Reading</p>
-                <p className="text-[10.5px] text-text-secondary">Give the repeated reading a purpose: "You will read this to the kindergarten class on Friday." Natural motivation for prosody and practice. Works beautifully for ELLs who may be shy about oral reading.</p>
-              </div>
-              <div className="bg-surface-alt rounded-lg p-3">
-                <p className="text-[11px] font-semibold text-navy mb-1">Graphing Progress</p>
-                <p className="text-[10.5px] text-text-secondary">Students graph their own cold/hot read scores. Visual evidence of growth is powerfully motivating. Use the ORF tracking feature in this app to maintain digital records alongside student-facing paper graphs.</p>
-              </div>
-              <div className="bg-surface-alt rounded-lg p-3">
-                <p className="text-[11px] font-semibold text-navy mb-1">Frequency</p>
-                <p className="text-[10.5px] text-text-secondary">3-4 sessions per week, 10-15 minutes each. Consistency matters more than duration. Even 8 minutes of focused repeated reading is beneficial. New passage every 1-2 weeks depending on progress.</p>
-              </div>
-            </div>
-          </AssessmentSectionCard>
         </div>
       )}
 

@@ -119,7 +119,7 @@ function TodaysPlanPreview() {
         {loading ? (
           <Loader2 size={14} className="animate-spin text-text-tertiary" />
         ) : plan ? (
-          <div className="text-[11px] text-text-primary leading-relaxed [&_b]:font-bold [&_i]:italic [&_ul]:list-disc [&_ul]:pl-4" dangerouslySetInnerHTML={{ __html: plan }} />
+          <div className="text-[11px] text-text-primary leading-relaxed whitespace-pre-wrap">{plan}</div>
         ) : (
           <p className="text-[11px] text-text-tertiary">No plan for today. Head to Teacher Plans to add one.</p>
         )}

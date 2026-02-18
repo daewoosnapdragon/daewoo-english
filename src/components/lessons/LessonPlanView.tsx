@@ -629,6 +629,12 @@ function TeacherWeeklyPlans() {
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [tableExists, setTableExists] = useState(true)
+  const [viewMode, setViewMode] = useState<'week' | 'day'>('week')
+  const [selectedDayIdx, setSelectedDayIdx] = useState(() => {
+    // Default to today's index in the week (0=Mon, 4=Fri)
+    const d = new Date(); const dow = d.getDay()
+    return dow >= 1 && dow <= 5 ? dow - 1 : 0
+  })
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
 
@@ -747,7 +753,8 @@ function TeacherWeeklyPlans() {
       <h1>${selectedClass} - Teacher Plans</h1>
       <div class="sub">${weekLabel} | Grade ${selectedGrade}</div>
       <div class="grid">${weekDates.map((date, i) => {
-        const text = plans[date] || '<span style="color:#999">(No plan)</span>'
+        const raw = plans[date] || ''
+        const text = raw ? raw.replace(/</g, '&lt;').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') : '<span style="color:#999">(No plan)</span>'
         return `<div class="day"><div class="dh">${DAY_NAMES[i]} <span class="dd">${formatShort(date)}</span></div><div class="db">${text}</div></div>`
       }).join('')}</div>
     </body></html>`
@@ -838,6 +845,10 @@ function TeacherWeeklyPlans() {
         <button onClick={() => changeWeek(-1)} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronLeft size={20} /></button>
         <h3 className="text-lg font-display font-bold text-navy min-w-[300px] text-center">{weekLabel}</h3>
         <button onClick={() => changeWeek(1)} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronRight size={20} /></button>
+        <div className="flex gap-0.5 ml-4 bg-surface-alt rounded-lg p-0.5">
+          <button onClick={() => setViewMode('week')} className={`px-3 py-1 rounded-md text-[10px] font-semibold ${viewMode === 'week' ? 'bg-navy text-white' : 'text-text-tertiary hover:text-text-secondary'}`}>Week</button>
+          <button onClick={() => setViewMode('day')} className={`px-3 py-1 rounded-md text-[10px] font-semibold ${viewMode === 'day' ? 'bg-navy text-white' : 'text-text-tertiary hover:text-text-secondary'}`}>Day</button>
+        </div>
       </div>
 
       <LessonScaffoldBanner englishClass={selectedClass} grade={selectedGrade} />
@@ -846,47 +857,60 @@ function TeacherWeeklyPlans() {
         <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
       ) : (
         <>
-          <div className="grid grid-cols-5 gap-3">
-            {weekDates.map((date, i) => {
-              const isToday = date === todayStr
-              return (
-                <div key={date} className={`bg-surface border rounded-xl overflow-hidden flex flex-col ${isToday ? 'border-gold ring-2 ring-gold/20' : 'border-border'}`}>
-                  <div className={`px-3 py-2 text-[12px] font-bold flex items-center justify-between ${isToday ? 'bg-gold/10 text-navy' : 'bg-surface-alt text-text-secondary'}`}>
-                    <span>
-                      {DAY_NAMES[i]}
-                      <span className="text-[10px] font-normal ml-1.5">{formatShort(date)}</span>
-                      {isToday && <span className="text-[9px] font-semibold text-gold ml-1.5">TODAY</span>}
-                    </span>
-                    {canEdit && (
-                      <div className="flex gap-0.5">
-                        <button onClick={() => { document.getElementById(`editor-${date}`)?.focus(); document.execCommand('bold') }}
-                          className="w-5 h-5 rounded text-[10px] font-bold hover:bg-navy/10 flex items-center justify-center" title="Bold">B</button>
-                        <button onClick={() => { document.getElementById(`editor-${date}`)?.focus(); document.execCommand('italic') }}
-                          className="w-5 h-5 rounded text-[10px] italic hover:bg-navy/10 flex items-center justify-center" title="Italic">I</button>
-                        <button onClick={() => { document.getElementById(`editor-${date}`)?.focus(); document.execCommand('insertUnorderedList') }}
-                          className="w-5 h-5 rounded text-[9px] hover:bg-navy/10 flex items-center justify-center" title="Bullet list">&bull;</button>
-                      </div>
-                    )}
-                  </div>
-                  <div
-                    id={`editor-${date}`}
-                    contentEditable={canEdit}
-                    suppressContentEditableWarning
-                    onInput={e => updateDay(date, (e.target as HTMLElement).innerHTML)}
-                    onPaste={e => {
-                      e.preventDefault()
-                      const text = e.clipboardData.getData('text/plain')
-                      document.execCommand('insertText', false, text)
-                    }}
-                    dangerouslySetInnerHTML={{ __html: plans[date] || '' }}
-                    data-placeholder={`${DAY_NAMES[i]} plan...`}
-                    className="flex-1 min-h-[280px] px-3 py-2.5 text-[11.5px] text-text-primary bg-surface outline-none focus:ring-2 focus:ring-gold/20 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-text-tertiary/40 [&_b]:font-bold [&_i]:italic [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5 [&_li]:text-[11.5px] overflow-y-auto"
-                    style={{ wordBreak: 'break-word' }}
-                  />
+          {viewMode === 'day' ? (
+            /* Day view -- single day at full width */
+            <div>
+              <div className="flex gap-1 mb-3">
+                {weekDates.map((date, i) => (
+                  <button key={date} onClick={() => setSelectedDayIdx(i)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-[11px] font-medium transition-all ${selectedDayIdx === i ? 'bg-navy text-white' : date === todayStr ? 'bg-gold/10 text-navy border border-gold/30' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                    {DAY_NAMES[i]} <span className="text-[9px] ml-1 opacity-70">{formatShort(date)}</span>
+                    {date === todayStr && selectedDayIdx !== i && <span className="text-[8px] ml-1">TODAY</span>}
+                  </button>
+                ))}
+              </div>
+              <div className={`bg-surface border rounded-xl overflow-hidden ${weekDates[selectedDayIdx] === todayStr ? 'border-gold ring-2 ring-gold/20' : 'border-border'}`}>
+                <div className={`px-4 py-3 text-[13px] font-bold ${weekDates[selectedDayIdx] === todayStr ? 'bg-gold/10 text-navy' : 'bg-surface-alt text-text-secondary'}`}>
+                  {DAY_NAMES[selectedDayIdx]} {formatShort(weekDates[selectedDayIdx])}
+                  {weekDates[selectedDayIdx] === todayStr && <span className="text-[10px] font-semibold text-gold ml-2">TODAY</span>}
                 </div>
-              )
-            })}
-          </div>
+                <textarea
+                  value={plans[weekDates[selectedDayIdx]] || ''}
+                  onChange={e => updateDay(weekDates[selectedDayIdx], e.target.value)}
+                  disabled={!canEdit}
+                  placeholder={`${DAY_NAMES[selectedDayIdx]} plan...`}
+                  className="w-full min-h-[400px] px-4 py-3 text-[13px] text-text-primary bg-surface resize-none outline-none focus:ring-2 focus:ring-gold/20 placeholder:text-text-tertiary/40 leading-relaxed disabled:opacity-50"
+                  spellCheck={true}
+                />
+              </div>
+            </div>
+          ) : (
+            /* Week view -- 5 columns */
+            <div className="grid grid-cols-5 gap-3">
+              {weekDates.map((date, i) => {
+                const isToday = date === todayStr
+                return (
+                  <div key={date} className={`bg-surface border rounded-xl overflow-hidden flex flex-col ${isToday ? 'border-gold ring-2 ring-gold/20' : 'border-border'}`}>
+                    <div className={`px-3 py-2 text-[12px] font-bold flex items-center justify-between ${isToday ? 'bg-gold/10 text-navy' : 'bg-surface-alt text-text-secondary'}`}>
+                      <span>
+                        {DAY_NAMES[i]}
+                        <span className="text-[10px] font-normal ml-1.5">{formatShort(date)}</span>
+                        {isToday && <span className="text-[9px] font-semibold text-gold ml-1.5">TODAY</span>}
+                      </span>
+                    </div>
+                    <textarea
+                      value={plans[date] || ''}
+                      onChange={e => updateDay(date, e.target.value)}
+                      disabled={!canEdit}
+                      placeholder={`${DAY_NAMES[i]} plan...`}
+                      className="flex-1 min-h-[280px] px-3 py-2.5 text-[11.5px] text-text-primary bg-surface resize-none outline-none focus:ring-2 focus:ring-gold/20 placeholder:text-text-tertiary/40 leading-relaxed disabled:opacity-50"
+                      spellCheck={true}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          )}
           {hasChanges && <div className="mt-3 text-center"><span className="text-[11px] text-amber-600 font-medium">Unsaved changes</span></div>}
 
           {/* Weekly Reflection */}
@@ -895,18 +919,12 @@ function TeacherWeeklyPlans() {
               <span className="text-[11px] font-bold text-navy">Weekly Reflection</span>
               <span className="text-[9px] text-text-tertiary">(saved with your plans)</span>
             </div>
-            <div
-              id="editor-reflection"
-              contentEditable={canEdit}
-              suppressContentEditableWarning
-              onInput={e => {
-                setPlans(prev => ({ ...prev, _reflection: (e.target as HTMLElement).innerHTML }))
-                setHasChanges(true)
-              }}
-              dangerouslySetInnerHTML={{ __html: plans['_reflection'] || '' }}
-              data-placeholder="End-of-week reflection... What worked well? What needs adjustment? Which students need follow-up? Notes for next week."
-              className="min-h-[80px] px-4 py-3 text-[11.5px] text-text-primary bg-surface outline-none focus:ring-2 focus:ring-gold/20 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-text-tertiary/40 [&_b]:font-bold [&_i]:italic [&_ul]:list-disc [&_ul]:pl-4 overflow-y-auto"
-              style={{ wordBreak: 'break-word' }}
+            <textarea
+              value={plans['_reflection'] || ''}
+              onChange={e => { setPlans(prev => ({ ...prev, _reflection: e.target.value })); setHasChanges(true) }}
+              disabled={!canEdit}
+              placeholder="End-of-week reflection... What worked well? What needs adjustment? Which students need follow-up? Notes for next week."
+              className="w-full min-h-[80px] px-4 py-3 text-[11.5px] text-text-primary bg-surface outline-none focus:ring-2 focus:ring-gold/20 leading-relaxed placeholder:text-text-tertiary/40 resize-none disabled:opacity-50"
             />
           </div>
         </>

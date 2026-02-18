@@ -140,7 +140,7 @@ export default function Sidebar({
           if (collapsed) {
             return (
               <button key={item.id} onClick={() => onNavigate(item.id!)} title={label}
-                className={`w-full flex items-center justify-center py-2 rounded-lg transition-all mb-0.5 relative ${isActive ? 'bg-gold/15 text-gold' : 'text-blue-200/70 hover:text-white hover:bg-white/5'}`}>
+                className={`nav-icon-wiggle w-full flex items-center justify-center py-2 rounded-lg transition-all mb-0.5 relative ${isActive ? 'bg-gold/15 text-gold' : 'text-blue-200/70 hover:text-white hover:bg-white/5'}`}>
                 <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
                 {badge ? <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">{badge > 9 ? '9+' : badge}</span>
                   : dot ? <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${dot.color} animate-pulse`} /> : null}
@@ -149,7 +149,7 @@ export default function Sidebar({
           }
           return (
             <button key={item.id} onClick={() => onNavigate(item.id!)}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12.5px] font-medium transition-all mb-0.5 ${isActive ? 'bg-gold/15 text-gold' : 'text-blue-200/70 hover:text-white hover:bg-white/5'}`}>
+              className={`nav-icon-wiggle w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12.5px] font-medium transition-all mb-0.5 ${isActive ? 'bg-gold/15 text-gold' : 'text-blue-200/70 hover:text-white hover:bg-white/5'}`}>
               <Icon size={16} strokeWidth={isActive ? 2.2 : 1.8} />
               {label}
               {badge ? <span className="ml-auto bg-red-500 text-white text-[9px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">{badge > 9 ? '9+' : badge}</span>

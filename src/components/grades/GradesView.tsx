@@ -568,6 +568,34 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
               )
             })}
           </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-navy/20 bg-surface-alt/50">
+              <td className="px-3 py-2 sticky left-0 bg-surface-alt/50 font-bold text-[11px] text-navy z-10">Class Average</td>
+              {sections.map((sec, si) => {
+                const vals = students.map(s => sectionScores[s.id]?.[String(si)]).filter((v): v is number => v != null)
+                const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
+                const pct = sec.max_points > 0 ? (avg / sec.max_points) * 100 : 0
+                return (
+                  <td key={si} className={`px-1 py-2 text-center text-[12px] font-bold ${vals.length === 0 ? 'text-text-tertiary' : pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                    {vals.length > 0 ? `${avg.toFixed(1)}` : ''}
+                  </td>
+                )
+              })}
+              {(() => {
+                const allTotals = students.filter(s => hasAnyScore(s.id)).map(s => getTotal(s.id))
+                const totalAvg = allTotals.length > 0 ? allTotals.reduce((a, b) => a + b, 0) / allTotals.length : 0
+                const totalPct = allTotals.length > 0 && assessment.max_score > 0 ? (totalAvg / assessment.max_score) * 100 : 0
+                return (
+                  <>
+                    <td className="px-3 py-2 text-center font-bold text-navy text-[13px]">{allTotals.length > 0 ? totalAvg.toFixed(1) : ''}</td>
+                    <td className={`px-3 py-2 text-center text-[11px] font-bold ${totalPct >= 80 ? 'text-green-600' : totalPct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                      {allTotals.length > 0 ? `${totalPct.toFixed(0)}%` : ''}
+                    </td>
+                  </>
+                )
+              })()}
+            </tr>
+          </tfoot>
         </table>
       </div>
       {/* Per-section stats */}
@@ -1155,10 +1183,13 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                                   if (e.key === 'Tab' || e.key === 'Enter') {
                                     e.preventDefault()
                                     const tbl = (e.target as HTMLElement).closest('table')
-                                    const next = tbl?.querySelector(`input[data-col="${si}"][data-row="${i + 1}"]`) as HTMLInputElement
-                                    if (next) next.focus()
+                                    // Try next section same student
+                                    let next = tbl?.querySelector(`input[data-col="${si + 1}"][data-row="${i}"]`) as HTMLInputElement
+                                    // If no more sections, go to first section of next student
+                                    if (!next) next = tbl?.querySelector(`input[data-col="0"][data-row="${i + 1}"]`) as HTMLInputElement
+                                    next?.focus()
                                   }
-                                }}
+                                }}}
                                 className="w-12 px-1 py-1 text-center border border-border rounded text-[11px] outline-none focus:border-navy"
                               />
                             </td>
@@ -1230,7 +1261,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '만점' : 'Total Points'}</label>
-              <input type="number" min={1} max={1000} step="any" value={maxScore} onChange={e => setMaxScore(parseFloat(e.target.value) || 10)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <input type="text" inputMode="decimal" value={maxScore || ''} onChange={e => { const v = e.target.value; if (v === '') setMaxScore(0 as any); else { const n = parseFloat(v); if (!isNaN(n)) setMaxScore(n) } }} onBlur={() => { if (!maxScore || maxScore < 1) setMaxScore(10) }} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '날짜' : 'Date'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           </div>

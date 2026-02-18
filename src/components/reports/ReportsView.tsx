@@ -317,26 +317,50 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const domainGrades: Record<string, number | null> = {}
     const classAverages: Record<string, number | null> = {}
 
-    DOMAINS.forEach((domain) => {
-      const domAssessments = (assessments || []).filter((a: any) => a.domain === domain)
-      const studentScores = domAssessments.map((a: any) => {
-        const g = (studentGrades || []).find((gr: any) => gr.assessment_id === a.id)
-        if (!g || g.score == null || g.is_exempt) return null
-        return (g.score / a.max_score) * 100
-      }).filter((x: any) => x !== null) as number[]
-      domainGrades[domain] = studentScores.length > 0 ? Math.round(studentScores.reduce((a: number, b: number) => a + b, 0) / studentScores.length * 10) / 10 : null
+    // Check if we have assessments for this semester, or if we need to fall back to semester_grades (historical imports)
+    const hasAssessments = (assessments || []).length > 0
 
-      const classScores: number[] = []
-      students.forEach((s: any) => {
-        const sScores = domAssessments.map((a: any) => {
-          const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
+    if (hasAssessments) {
+      DOMAINS.forEach((domain) => {
+        const domAssessments = (assessments || []).filter((a: any) => a.domain === domain)
+        const studentScores = domAssessments.map((a: any) => {
+          const g = (studentGrades || []).find((gr: any) => gr.assessment_id === a.id)
           if (!g || g.score == null || g.is_exempt) return null
           return (g.score / a.max_score) * 100
         }).filter((x: any) => x !== null) as number[]
-        if (sScores.length > 0) classScores.push(sScores.reduce((a: number, b: number) => a + b, 0) / sScores.length)
+        domainGrades[domain] = studentScores.length > 0 ? Math.round(studentScores.reduce((a: number, b: number) => a + b, 0) / studentScores.length * 10) / 10 : null
+
+        const classScores: number[] = []
+        students.forEach((s: any) => {
+          const sScores = domAssessments.map((a: any) => {
+            const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
+            if (!g || g.score == null || g.is_exempt) return null
+            return (g.score / a.max_score) * 100
+          }).filter((x: any) => x !== null) as number[]
+          if (sScores.length > 0) classScores.push(sScores.reduce((a: number, b: number) => a + b, 0) / sScores.length)
+        })
+        classAverages[domain] = classScores.length > 0 ? Math.round(classScores.reduce((a: number, b: number) => a + b, 0) / classScores.length * 10) / 10 : null
       })
-      classAverages[domain] = classScores.length > 0 ? Math.round(classScores.reduce((a: number, b: number) => a + b, 0) / classScores.length * 10) / 10 : null
-    })
+    } else {
+      // Fallback: read from semester_grades (historical/imported data)
+      const { data: semGrades } = await supabase.from('semester_grades').select('*').eq('student_id', studentId).eq('semester_id', semesterId)
+      if (semGrades) {
+        semGrades.forEach((sg: any) => {
+          if (DOMAINS.includes(sg.domain)) {
+            domainGrades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+          }
+        })
+      }
+      // Class averages from semester_grades for all students in class
+      const { data: allSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade')
+        .eq('semester_id', semesterId).in('student_id', students.map((s: any) => s.id))
+      if (allSemGrades) {
+        DOMAINS.forEach((domain) => {
+          const vals = allSemGrades.filter((sg: any) => sg.domain === domain).map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
+          classAverages[domain] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : null
+        })
+      }
+    }
 
     const scoredDomains = DOMAINS.filter((d) => domainGrades[d] != null)
     const overallGrade = scoredDomains.length > 0 ? Math.round(scoredDomains.reduce((a: number, d) => a + (domainGrades[d] as number), 0) / scoredDomains.length * 10) / 10 : null
@@ -368,8 +392,21 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         const prevScored = DOMAINS.filter((d) => prevDomainGrades![d] != null)
         prevOverall = prevScored.length > 0 ? Math.round(prevScored.reduce((a: number, d) => a + (prevDomainGrades![d] as number), 0) / prevScored.length * 10) / 10 : null
         prevSemesterName = prevSemester.name
-        // Only show if there's actual data
         if (prevScored.length === 0) { prevDomainGrades = null; prevOverall = null; prevSemesterName = null }
+      } else {
+        // Fallback: check semester_grades for historical data
+        const { data: prevSemGrades } = await supabase.from('semester_grades').select('*').eq('student_id', studentId).eq('semester_id', prevSemester.id)
+        if (prevSemGrades && prevSemGrades.length > 0) {
+          prevDomainGrades = {}
+          DOMAINS.forEach((domain) => {
+            const sg = prevSemGrades.find((g: any) => g.domain === domain)
+            prevDomainGrades![domain] = sg ? (sg.final_grade ?? sg.calculated_grade ?? null) : null
+          })
+          const prevScored = DOMAINS.filter((d) => prevDomainGrades![d] != null)
+          prevOverall = prevScored.length > 0 ? Math.round(prevScored.reduce((a: number, d) => a + (prevDomainGrades![d] as number), 0) / prevScored.length * 10) / 10 : null
+          prevSemesterName = prevSemester.name
+          if (prevScored.length === 0) { prevDomainGrades = null; prevOverall = null; prevSemesterName = null }
+        }
       }
     }
 
@@ -1142,24 +1179,47 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
         .eq('semester_id', semesterId).eq('grade', selectedGrade).eq('english_class', selectedClass)
       const { data: allGrades } = await supabase.from('grades').select('*').in('student_id', students.map((s: any) => s.id))
 
-      const results = students.map((s: any) => {
-        const domainAvgs: Record<string, number | null> = {}
-        let totalSum = 0, totalCount = 0
-        DOMAINS.forEach((domain) => {
-          const domAssessments = (assessments || []).filter((a: any) => a.domain === domain)
-          const scores = domAssessments.map((a: any) => {
-            const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
-            if (!g || g.score == null || g.is_exempt) return null
-            return (g.score / a.max_score) * 100
-          }).filter((x: any) => x !== null) as number[]
-          if (scores.length > 0) {
-            const avg = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10
-            domainAvgs[domain] = avg; totalSum += avg; totalCount++
-          } else { domainAvgs[domain] = null }
+      const hasAssessments = (assessments || []).length > 0
+
+      let results: any[]
+      if (hasAssessments) {
+        results = students.map((s: any) => {
+          const domainAvgs: Record<string, number | null> = {}
+          let totalSum = 0, totalCount = 0
+          DOMAINS.forEach((domain) => {
+            const domAssessments = (assessments || []).filter((a: any) => a.domain === domain)
+            const scores = domAssessments.map((a: any) => {
+              const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
+              if (!g || g.score == null || g.is_exempt) return null
+              return (g.score / a.max_score) * 100
+            }).filter((x: any) => x !== null) as number[]
+            if (scores.length > 0) {
+              const avg = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10
+              domainAvgs[domain] = avg; totalSum += avg; totalCount++
+            } else { domainAvgs[domain] = null }
+          })
+          const overall = totalCount > 0 ? Math.round((totalSum / totalCount) * 10) / 10 : null
+          return { student: s, domainAvgs, overall, letter: overall != null ? getLetterGrade(overall) : '\u2014' }
         })
-        const overall = totalCount > 0 ? Math.round((totalSum / totalCount) * 10) / 10 : null
-        return { student: s, domainAvgs, overall, letter: overall != null ? getLetterGrade(overall) : '\u2014' }
-      })
+      } else {
+        // Fallback: semester_grades (historical imports)
+        const { data: semGrades } = await supabase.from('semester_grades').select('*')
+          .eq('semester_id', semesterId).in('student_id', students.map((s: any) => s.id))
+        results = students.map((s: any) => {
+          const domainAvgs: Record<string, number | null> = {}
+          let totalSum = 0, totalCount = 0
+          const studentSG = (semGrades || []).filter((sg: any) => sg.student_id === s.id)
+          DOMAINS.forEach((domain) => {
+            const sg = studentSG.find((g: any) => g.domain === domain)
+            const val = sg ? (sg.final_grade ?? sg.calculated_grade ?? null) : null
+            domainAvgs[domain] = val
+            if (val != null) { totalSum += val; totalCount++ }
+          })
+          const overall = totalCount > 0 ? Math.round((totalSum / totalCount) * 10) / 10 : null
+          const behaviorSG = studentSG.find((g: any) => g.domain === 'overall')
+          return { student: s, domainAvgs, overall, letter: overall != null ? getLetterGrade(overall) : '\u2014', behaviorGrade: behaviorSG?.behavior_grade || null }
+        })
+      }
       results.sort((a: any, b: any) => (b.overall || 0) - (a.overall || 0))
       setSummaries(results)
       setLoading(false)
