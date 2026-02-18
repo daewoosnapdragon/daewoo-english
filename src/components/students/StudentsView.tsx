@@ -6,7 +6,7 @@ import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber, domainLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download, Users2 } from 'lucide-react'
+import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WIDABadge from '@/components/shared/WIDABadge'
 import { WIDAProfiles } from '@/components/curriculum/CurriculumView'
@@ -307,7 +307,6 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
   const [activeTab, setActiveTab] = useState('about')
   const tabs = [
     { id: 'about', label: lang === 'ko' ? '정보' : 'About' },
-    { id: 'notes', label: lang === 'ko' ? '메모' : 'Quick Notes' },
     { id: 'behavior', label: lang === 'ko' ? '행동 기록' : 'Behavior Log' },
     { id: 'academic', label: lang === 'ko' ? '학업 이력' : 'Academic History' },
     { id: 'reading', label: lang === 'ko' ? '읽기 수준' : 'Reading' },
@@ -327,7 +326,6 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
         ))}
       </div>
       {activeTab === 'about' && <AboutTab studentId={studentId} lang={lang} />}
-      {activeTab === 'notes' && <QuickNotesTab studentId={studentId} />}
       {activeTab === 'behavior' && <BehaviorTracker studentId={studentId} studentName={studentName} />}
       {activeTab === 'academic' && <AcademicHistoryTab studentId={studentId} lang={lang} />}
       {activeTab === 'reading' && <ReadingTabInModal studentId={studentId} lang={lang} />}
@@ -341,16 +339,23 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
 // ─── About Tab ──────────────────────────────────────────────────────
 
 function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
-  const { showToast } = useApp()
+  const { currentTeacher, showToast } = useApp()
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
+  const [goals, setGoals] = useState<any[]>([])
+  const [newGoal, setNewGoal] = useState('')
+  const [goalType, setGoalType] = useState<'academic' | 'stretch' | 'behavioral'>('academic')
 
   useState(() => {
     (async () => {
-      const { data } = await supabase.from('students').select('notes').eq('id', studentId).single()
+      const [{ data }, { data: goalsData }] = await Promise.all([
+        supabase.from('students').select('notes').eq('id', studentId).single(),
+        supabase.from('student_goals').select('*').eq('student_id', studentId).eq('is_active', true).order('created_at', { ascending: false })
+      ])
       if (data) setNotes(data.notes || '')
+      setGoals(goalsData || [])
       setLoading(false)
     })()
   })
@@ -381,6 +386,76 @@ function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' })
           placeholder={lang === 'ko' ? '학생에 대한 중요한 정보, 메모, 알레르기, 특이사항 등...' : 'Important info about this student — allergies, notes for subs, learning needs, parent communication, anything teachers should know...'}
           className="w-full px-3 py-2.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none bg-surface leading-relaxed" />
         <p className="text-[10px] text-text-tertiary mt-1">{lang === 'ko' ? '모든 교사가 볼 수 있습니다' : 'Visible to all teachers in this class'}</p>
+      </div>
+
+      {/* Student Goals */}
+      <div>
+        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-2">
+          {lang === 'ko' ? '학습 목표' : 'Student Goals'}
+        </label>
+        <div className="flex gap-2 mb-3">
+          <select value={goalType} onChange={e => setGoalType(e.target.value as any)}
+            className="px-2 py-1.5 border border-border rounded-lg text-[11px] bg-surface outline-none">
+            <option value="academic">📚 Academic</option>
+            <option value="stretch">🚀 Stretch</option>
+            <option value="behavioral">🎯 Behavioral</option>
+          </select>
+          <input value={newGoal} onChange={e => setNewGoal(e.target.value)} placeholder="Add a goal..."
+            onKeyDown={async e => {
+              if (e.key === 'Enter' && newGoal.trim()) {
+                const { data, error } = await supabase.from('student_goals').insert({
+                  student_id: studentId, goal_text: newGoal.trim(), goal_type: goalType,
+                  created_by: currentTeacher?.id, is_active: true
+                }).select().single()
+                if (error) showToast(`Error: ${error.message}`)
+                else { setGoals(prev => [data, ...prev]); setNewGoal(''); showToast('Goal added') }
+              }
+            }}
+            className="flex-1 px-3 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
+        </div>
+        {goals.length === 0 ? (
+          <p className="text-[11px] text-text-tertiary italic">No goals set. Add academic, stretch, or behavioral goals above.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {goals.map(g => {
+              const typeConfig: Record<string, { emoji: string; bg: string; text: string }> = {
+                academic: { emoji: '📚', bg: 'bg-blue-50 border-blue-200', text: 'text-blue-800' },
+                stretch: { emoji: '🚀', bg: 'bg-purple-50 border-purple-200', text: 'text-purple-800' },
+                behavioral: { emoji: '🎯', bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800' },
+              }
+              const tc = typeConfig[g.goal_type] || typeConfig.academic
+              return (
+                <div key={g.id} className={`flex items-start gap-2 p-2.5 rounded-lg border ${g.completed_at ? 'bg-green-50/50 border-green-200' : tc.bg} group`}>
+                  <button onClick={async () => {
+                    const completed = g.completed_at ? null : new Date().toISOString()
+                    await supabase.from('student_goals').update({ completed_at: completed }).eq('id', g.id)
+                    setGoals(prev => prev.map(x => x.id === g.id ? { ...x, completed_at: completed } : x))
+                  }} className="mt-0.5 flex-shrink-0">
+                    {g.completed_at
+                      ? <CheckCircle2 size={16} className="text-green-500" />
+                      : <Circle size={16} className="text-text-tertiary" />
+                    }
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[12px] leading-relaxed ${g.completed_at ? 'line-through text-text-tertiary' : tc.text}`}>
+                      <span className="mr-1">{tc.emoji}</span>{g.goal_text}
+                    </p>
+                    <p className="text-[9px] text-text-tertiary mt-0.5">
+                      {new Date(g.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {g.completed_at && <span className="ml-2 text-green-600">✓ {new Date(g.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                    </p>
+                  </div>
+                  <button onClick={async () => {
+                    await supabase.from('student_goals').update({ is_active: false }).eq('id', g.id)
+                    setGoals(prev => prev.filter(x => x.id !== g.id))
+                  }} className="opacity-0 group-hover:opacity-100 p-1 rounded text-text-tertiary hover:text-red-500">
+                    <X size={12} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -598,18 +673,19 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
       {/* Semester-over-semester summary */}
       {semesterHistory.length > 0 && (
         <div className="border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-2.5 bg-navy/5 border-b border-border">
+          <div className="px-4 py-2.5 bg-navy/5 border-b border-border flex items-center justify-between">
             <span className="text-[12px] font-bold text-navy uppercase tracking-wider">{lang === 'ko' ? '학기별 성적' : 'Semester Grades'}</span>
+            <span className="text-[10px] text-text-tertiary">{semesterHistory.length} semester{semesterHistory.length !== 1 ? 's' : ''}</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-[12px]">
               <thead>
                 <tr className="border-b border-border bg-surface-alt/50">
-                  <th className="px-4 py-2 text-left text-[10px] font-semibold text-text-secondary uppercase">Domain</th>
+                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-text-secondary uppercase w-24">Domain</th>
                   {semesterHistory.map((s, i) => (
-                    <th key={i} className="px-3 py-2 text-center text-[10px] font-semibold text-text-secondary uppercase">{s.name}</th>
+                    <th key={i} className="px-2 py-2 text-center text-[10px] font-semibold text-text-secondary uppercase">{s.name.replace('Fall 2025', 'F25').replace('Spring Mid 2026', 'S26-M').replace('Spring Final 2026', 'S26-F').replace('Spring 2026', 'S26')}</th>
                   ))}
-                  {semesterHistory.length >= 2 && <th className="px-3 py-2 text-center text-[10px] font-semibold text-text-secondary uppercase">Change</th>}
+                  {semesterHistory.length >= 2 && <th className="px-2 py-2 text-center text-[10px] font-semibold text-text-secondary uppercase w-16">Δ</th>}
                 </tr>
               </thead>
               <tbody>
@@ -619,20 +695,20 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
                   const last = vals[vals.length - 1]
                   const change = first != null && last != null && vals.length >= 2 ? last - first : null
                   return (
-                    <tr key={domain} className="border-b border-border/50 hover:bg-surface-alt/30">
-                      <td className="px-4 py-2 font-medium" style={{ color: domainColors[domain] }}>{DOMAIN_LABELS[domain]?.[lang] || domain}</td>
+                    <tr key={domain} className="border-b border-border/50">
+                      <td className="px-3 py-1.5 font-semibold text-[11px]" style={{ color: domainColors[domain] }}>{DOMAIN_LABELS[domain]?.[lang] || domain}</td>
                       {vals.map((v, i) => (
-                        <td key={i} className="px-3 py-2 text-center font-semibold">
+                        <td key={i} className="px-2 py-1.5 text-center">
                           {v != null ? (
-                            <span className={v >= 80 ? 'text-green-600' : v >= 60 ? 'text-amber-600' : 'text-red-600'}>{v.toFixed(1)}%</span>
-                          ) : <span className="text-text-tertiary">--</span>}
+                            <span className={`font-bold text-[12px] ${v >= 80 ? 'text-green-600' : v >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{v.toFixed(1)}</span>
+                          ) : <span className="text-text-tertiary text-[11px]">--</span>}
                         </td>
                       ))}
                       {semesterHistory.length >= 2 && (
-                        <td className="px-3 py-2 text-center font-bold text-[11px]">
+                        <td className="px-2 py-1.5 text-center font-bold text-[11px]">
                           {change != null ? (
                             <span className={change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-text-tertiary'}>
-                              {change > 0 ? '▲' : change < 0 ? '▼' : '–'} {Math.abs(change).toFixed(1)}
+                              {change > 0 ? '▲' : change < 0 ? '▼' : '–'}{Math.abs(change).toFixed(1)}
                             </span>
                           ) : '--'}
                         </td>
@@ -640,12 +716,38 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
                     </tr>
                   )
                 })}
+                {/* Overall row */}
+                {(() => {
+                  const overalls = semesterHistory.map(s => {
+                    const scored = DOMAINS.map(d => s.grades[d]).filter(v => v != null) as number[]
+                    return scored.length > 0 ? scored.reduce((a, b) => a + b, 0) / scored.length : null
+                  })
+                  const first = overalls[0]; const last = overalls[overalls.length - 1]
+                  const change = first != null && last != null && overalls.length >= 2 ? last - first : null
+                  return (
+                    <tr className="border-t-2 border-navy/20 bg-navy/5">
+                      <td className="px-3 py-2 font-bold text-[11px] text-navy">Overall</td>
+                      {overalls.map((v, i) => (
+                        <td key={i} className="px-2 py-2 text-center font-extrabold text-[13px] text-navy">{v != null ? v.toFixed(1) : '--'}</td>
+                      ))}
+                      {semesterHistory.length >= 2 && (
+                        <td className="px-2 py-2 text-center font-bold text-[12px]">
+                          {change != null ? (
+                            <span className={change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-text-tertiary'}>
+                              {change > 0 ? '▲' : change < 0 ? '▼' : '–'}{Math.abs(change).toFixed(1)}
+                            </span>
+                          ) : '--'}
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })()}
                 {/* Behavior row */}
                 {semesterHistory.some(s => s.behavior) && (
-                  <tr className="border-t border-border">
-                    <td className="px-4 py-2 font-medium text-text-secondary">{lang === 'ko' ? '행동' : 'Behavior'}</td>
+                  <tr className="border-t border-border/50">
+                    <td className="px-3 py-1.5 font-medium text-[11px] text-text-secondary">{lang === 'ko' ? '행동' : 'Behavior'}</td>
                     {semesterHistory.map((s, i) => (
-                      <td key={i} className="px-3 py-2 text-center font-bold text-navy">{s.behavior || '--'}</td>
+                      <td key={i} className="px-2 py-1.5 text-center font-bold text-[12px] text-navy">{s.behavior || '--'}</td>
                     ))}
                     {semesterHistory.length >= 2 && <td />}
                   </tr>
@@ -958,19 +1060,23 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
         <table className="w-full text-[12px]">
           <thead><tr className="bg-surface-alt">
             <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Date</th>
-            <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
-            <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Accuracy</th>
-            <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Level</th>
-            <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Notes</th>
+            <th className="text-left px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Passage</th>
+            <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
+            <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Acc%</th>
+            <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Lvl</th>
+            <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Lexile</th>
+            <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">NAEP</th>
           </tr></thead>
           <tbody>
             {records.map((r: any) => (
               <tr key={r.id} className="border-t border-border">
                 <td className="px-3 py-2">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
-                <td className="px-3 py-2 text-center font-semibold text-navy">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
-                <td className="px-3 py-2 text-center">{r.accuracy_rate != null ? `${r.accuracy_rate}%` : '—'}</td>
-                <td className="px-3 py-2 text-center">{r.passage_level || r.reading_level || '—'}</td>
-                <td className="px-3 py-2 text-text-tertiary truncate max-w-[150px]">{r.notes || '—'}</td>
+                <td className="px-2 py-2 font-medium truncate max-w-[100px]">{r.passage_title || '—'}</td>
+                <td className="px-2 py-2 text-center font-semibold text-navy">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
+                <td className={`px-2 py-2 text-center font-semibold ${(r.accuracy_rate || 0) >= 95 ? 'text-green-600' : (r.accuracy_rate || 0) >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{r.accuracy_rate != null ? `${r.accuracy_rate.toFixed(1)}%` : '—'}</td>
+                <td className="px-2 py-2 text-center text-text-secondary">{r.passage_level || '—'}</td>
+                <td className="px-2 py-2 text-center text-purple-600 font-medium">{r.reading_level || '—'}</td>
+                <td className="px-2 py-2 text-center text-text-secondary">{r.naep_fluency ? `L${r.naep_fluency}` : '—'}</td>
               </tr>
             ))}
           </tbody>

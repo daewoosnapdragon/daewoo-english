@@ -215,7 +215,8 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">CWPM</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Wtd</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Level</th>
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-28">Passage Lexile</th>
+            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Level</th>
+            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Lexile</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Accuracy</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-28">Last Assessed</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-32">Progress</th>
@@ -239,6 +240,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
                     {band ? <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${band.color}`}>{band.label}</span> : '—'}
                   </td>
                   <td className="px-4 py-2.5 text-center text-[12px] text-text-secondary">{rec?.passage_level || '—'}</td>
+                  <td className="px-4 py-2.5 text-center text-[12px] text-purple-600 font-medium">{rec?.reading_level || '—'}</td>
                   <td className="px-4 py-2.5 text-center">
                     {rec?.accuracy_rate != null ? (
                       <span className={`font-semibold ${rec.accuracy_rate >= 95 ? 'text-green-600' : rec.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{rec.accuracy_rate.toFixed(1)}%</span>
@@ -406,12 +408,14 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                 <thead><tr className="bg-surface-alt text-[10px] uppercase tracking-wider text-text-tertiary">
                   <th className="text-left px-5 py-2">Date</th>
                   <th className="text-left px-3 py-2">Passage</th>
-                  <th className="text-center px-3 py-2">Lexile</th>
+                  <th className="text-center px-2 py-2">Lvl</th>
+                  <th className="text-center px-2 py-2">Lexile</th>
                   <th className="text-center px-3 py-2">Words</th>
                   <th className="text-center px-3 py-2">Time</th>
                   <th className="text-center px-3 py-2">Errors</th>
                   <th className="text-center px-3 py-2">CWPM</th>
                   <th className="text-center px-3 py-2">Accuracy</th>
+                  <th className="text-center px-2 py-2">NAEP</th>
                   <th className="text-left px-3 py-2">Notes</th>
                   <th className="text-center px-2 py-2 w-16"></th>
                 </tr></thead>
@@ -420,13 +424,15 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                     <tr key={r.id} className="border-t border-border/50 table-row-hover group">
                       <td className="px-5 py-2 text-text-secondary">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                       <td className="px-3 py-2 font-medium">{r.passage_title || '—'}</td>
-                      <td className="px-3 py-2 text-center font-medium text-text-secondary">{r.passage_level || '—'}</td>
+                      <td className="px-2 py-2 text-center font-medium text-text-secondary">{r.passage_level || '—'}</td>
+                      <td className="px-2 py-2 text-center font-medium text-purple-600">{r.reading_level || '—'}</td>
                       <td className="px-3 py-2 text-center">{r.word_count || '—'}</td>
                       <td className="px-3 py-2 text-center">{r.time_seconds ? `${Math.floor(r.time_seconds / 60)}:${String(r.time_seconds % 60).padStart(2, '0')}` : '—'}</td>
                       <td className="px-3 py-2 text-center">{r.errors ?? '—'}</td>
                       <td className="px-3 py-2 text-center font-bold text-navy">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
                       <td className={`px-3 py-2 text-center font-semibold ${r.accuracy_rate >= 95 ? 'text-green-600' : r.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{r.accuracy_rate != null ? `${r.accuracy_rate.toFixed(1)}%` : '—'}</td>
-                      <td className="px-3 py-2 text-text-tertiary truncate max-w-[150px]">{r.notes || ''}</td>
+                      <td className="px-2 py-2 text-center text-[11px] text-text-secondary">{r.naep_fluency ? `L${r.naep_fluency}` : '—'}</td>
+                      <td className="px-3 py-2 text-text-tertiary truncate max-w-[120px]">{r.notes || ''}</td>
                       <td className="px-2 py-2 text-center">
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => setEditRecord(r)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Edit"><Pencil size={12} /></button>
@@ -612,9 +618,11 @@ function CwpmLineChart({ records, classBench }: { records: any[]; classBench: an
             <circle cx={x} cy={y} r="5" fill={dotColor(r.accuracy_rate || 0)} stroke="white" strokeWidth="1.5" />
             {/* CWPM label */}
             <text x={x} y={y - 10} textAnchor="middle" fontSize="9" fontWeight="700" fill="#1e3a5f">{Math.round(r.cwpm || 0)}</text>
-            {/* Passage level */}
-            {r.passage_level && (
-              <text x={x} y={y - 20} textAnchor="middle" fontSize="7" fill="#94a3b8">{r.passage_level}</text>
+            {/* Passage level + Lexile above dot */}
+            {(r.passage_level || r.reading_level) && (
+              <text x={x} y={y - 20} textAnchor="middle" fontSize="7" fill="#94a3b8">
+                {r.passage_level ? `Lv${r.passage_level}` : ''}{r.passage_level && r.reading_level ? ' · ' : ''}{r.reading_level || ''}
+              </text>
             )}
             {/* Date on x-axis */}
             <text x={x} y={H - 8} textAnchor="middle" fontSize="8" fill="#94a3b8">
@@ -995,7 +1003,6 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-20">Time <span className="text-[8px] normal-case">(m:ss or sec)</span></th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Err</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">SC</th>
-                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Lvl</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">CWPM</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Acc%</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">NAEP</th>
@@ -1018,10 +1025,6 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                         onBlur={e => { const v = e.target.value; if (v.includes(':')) { const parts = v.split(':'); setBatchField(s.id, 'ts', String((parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0))) } }} /></td>
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.err} onChange={e => setBatchField(s.id, 'err', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.sc} onChange={e => setBatchField(s.id, 'sc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
-                      <td className="py-1.5 px-1"><select value={b.pl} onChange={e => setBatchField(s.id, 'pl', e.target.value)} className="w-full text-center px-0.5 py-1 border border-border rounded text-[11px] outline-none focus:border-navy bg-surface">
-                        <option value="">--</option>
-                        {PASSAGE_LEVELS.map(l => <option key={l.id} value={l.id}>{l.id}</option>)}
-                      </select></td>
                       <td className="py-1.5 px-1 text-center text-[12px] font-bold text-navy">{filled ? bCwpm : ''}</td>
                       <td className={`py-1.5 px-1 text-center text-[12px] font-bold ${bAcc >= 95 ? 'text-green-600' : bAcc >= 90 ? 'text-amber-600' : filled ? 'text-red-600' : ''}`}>{filled ? `${bAcc}%` : ''}</td>
                       <td className="py-1.5 px-1"><select value={b.naep || ''} onChange={e => setBatchField(s.id, 'naep', e.target.value)} className="w-full text-center px-0.5 py-1 border border-border rounded text-[11px] outline-none focus:border-navy bg-surface">

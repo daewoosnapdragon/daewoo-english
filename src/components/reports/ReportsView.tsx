@@ -202,6 +202,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [savingComment, setSavingComment] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
   const [commentTone, setCommentTone] = useState<'Balanced' | 'Highlight growth' | 'Constructive'>('Balanced')
+  const [editingGrades, setEditingGrades] = useState(false)
+  const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
 
   const generateTemplateComment = useCallback(async () => {
     if (!data || !studentId) return
@@ -376,7 +378,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     let prevSemesterName: string | null = null
 
     // Sort semesters chronologically by type for comparison
-    const typeOrder: Record<string, number> = { fall_mid: 1, fall_final: 2, spring_mid: 3, spring_final: 4 }
+    const typeOrder: Record<string, number> = { archive: 0, fall_mid: 1, fall_final: 2, fall: 2, spring_mid: 3, spring_final: 4, spring: 4 }
     const sortedSems = [...allSemesters].sort((a: any, b: any) => (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0))
     const semesterIdx = sortedSems.findIndex((s: any) => s.id === semesterId)
     const prevSemester = semesterIdx > 0 ? sortedSems[semesterIdx - 1] : null
@@ -640,7 +642,58 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
         {/* ─── Score Tiles ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #e8e0d8' }}>
-          <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3.5">Academic Performance</div>
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Academic Performance</div>
+            {!editingGrades ? (
+              <button onClick={() => {
+                const eg: Record<string, string> = {}
+                DOMAINS.forEach(dom => { eg[dom] = d.domainGrades[dom] != null ? String(d.domainGrades[dom]) : '' })
+                eg.behavior = d.behaviorGrade || ''
+                setEditGradeValues(eg)
+                setEditingGrades(true)
+              }} className="text-[10px] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button onClick={() => setEditingGrades(false)} className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
+                <button onClick={async () => {
+                  // Save to semester_grades
+                  for (const dom of DOMAINS) {
+                    const val = parseFloat(editGradeValues[dom])
+                    if (!isNaN(val)) {
+                      await supabase.from('semester_grades').upsert({
+                        student_id: studentId, semester_id: semesterId, domain: dom, final_grade: val
+                      }, { onConflict: 'student_id,semester_id,domain' })
+                    } else {
+                      await supabase.from('semester_grades').delete().eq('student_id', studentId).eq('semester_id', semesterId).eq('domain', dom)
+                    }
+                  }
+                  // Save behavior
+                  if (editGradeValues.behavior) {
+                    await supabase.from('semester_grades').upsert({
+                      student_id: studentId, semester_id: semesterId, domain: 'overall', behavior_grade: editGradeValues.behavior
+                    }, { onConflict: 'student_id,semester_id,domain' })
+                  }
+                  setEditingGrades(false)
+                  showToast('Grades saved')
+                  loadReport()
+                }} className="px-3 py-1 rounded-lg text-[10px] font-semibold bg-navy text-white hover:bg-navy-dark">Save</button>
+              </div>
+            )}
+          </div>
+          {editingGrades ? (
+            <div className="grid grid-cols-5 gap-2.5">
+              {DOMAINS.map((dom) => (
+                <div key={dom} className="rounded-xl border-[1.5px] border-border p-3.5 text-center">
+                  <div className="text-[11px] text-[#64748b] font-semibold mb-2">{DOMAIN_SHORT[dom]}</div>
+                  <input type="number" min={0} max={100} step={0.1} value={editGradeValues[dom] || ''}
+                    onChange={e => setEditGradeValues(prev => ({ ...prev, [dom]: e.target.value }))}
+                    className="w-full text-center text-[18px] font-bold px-2 py-1.5 border border-border rounded-lg outline-none focus:border-navy"
+                    placeholder="--" />
+                  <div className="text-[9px] text-text-tertiary mt-1">%</div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className="grid grid-cols-5 gap-2.5">
             {DOMAINS.map((dom) => {
               const v = d.domainGrades[dom]
@@ -658,9 +711,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               )
             })}
           </div>
+          )}
         </div>
-
-        {/* ─── Semester Trends ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #e8e0d8' }}>
           <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3.5">
             {d.prevSemesterName ? `Semester Progress \u2014 ${d.prevSemesterName} to ${d.semesterName}` : 'Semester Progress'}
@@ -758,7 +810,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                     '',
                     'READING FLUENCY:',
                     `  CWPM: ${d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : 'N/A'}`,
-                    `  Lexile: ${d.latestReading?.passage_level || d.latestReading?.reading_level || 'N/A'}`,
+                    `  Lexile: ${d.latestReading?.reading_level || d.latestReading?.passage_level || 'N/A'}`,
                     `  Accuracy: ${d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : 'N/A'}`,
                     '',
                     `ATTENDANCE: ${d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}% (${d.attCounts.present}P/${d.attCounts.absent}A/${d.attCounts.tardy}T)` : 'N/A'}`,
@@ -795,7 +847,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                     <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Reading Fluency</p>
                     <div className="flex gap-4">
                       <div><p className="text-[9px] text-[#94a3b8]">CWPM</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : '--'}</p></div>
-                      <div><p className="text-[9px] text-[#94a3b8]">Lexile</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.passage_level || d.latestReading?.reading_level || '--'}</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">Lexile</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.reading_level || d.latestReading?.passage_level || '--'}</p></div>
                       <div><p className="text-[9px] text-[#94a3b8]">Acc.</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '--'}</p></div>
                     </div>
                   </div>
@@ -853,7 +905,7 @@ function printProgressReport(student: any, data: any) {
   }).join('')
 
   const cwpm = data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'
-  const lexile = data.latestReading ? (data.latestReading.passage_level || data.latestReading.reading_level || '--') : '--'
+  const lexile = data.latestReading ? (data.latestReading.reading_level || data.latestReading.passage_level || '--') : '--'
   const accuracy = data.latestReading?.accuracy_rate != null ? `${data.latestReading.accuracy_rate.toFixed(1)}%` : '--'
 
   const pw = window.open('', '_blank')
@@ -951,7 +1003,7 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
       }).join('')
 
       const cwpm = data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'
-      const lexile = data.latestReading ? (data.latestReading.passage_level || data.latestReading.reading_level || '--') : '--'
+      const lexile = data.latestReading ? (data.latestReading.reading_level || data.latestReading.passage_level || '--') : '--'
       const accuracy = data.latestReading?.accuracy_rate != null ? `${data.latestReading.accuracy_rate.toFixed(1)}%` : '--'
 
       pw.document.write(`<div class="card">
