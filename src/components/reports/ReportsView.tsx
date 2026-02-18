@@ -482,7 +482,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
     // Semester trends
     let trendsHtml = ''
-    if (d.prevDomainGrades && d.prevOverall != null) {
+    if (d.prevDomainGrades && d.prevOverall != null && d.overallGrade != null) {
       const arrowSvg = '<svg width="14" height="8" viewBox="0 0 16 10" style="flex-shrink:0;vertical-align:middle"><line x1="0" y1="5" x2="11" y2="5" stroke="#94a3b8" stroke-width="1.5"/><polygon points="9,1 15,5 9,9" fill="#94a3b8"/></svg>'
       const trendCells = DOMAINS.map((dom) => {
         const curr = d.domainGrades[dom]; const prev = d.prevDomainGrades![dom]
@@ -666,7 +666,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             {d.prevSemesterName ? `Semester Progress \u2014 ${d.prevSemesterName} to ${d.semesterName}` : 'Semester Progress'}
           </div>
 
-          {d.prevDomainGrades && d.prevOverall != null ? (
+          {d.prevDomainGrades && d.prevOverall != null && d.overallGrade != null ? (
             <div className="grid items-center" style={{ gridTemplateColumns: 'repeat(5, 1fr) auto' }}>
               {/* Headers */}
               {DOMAINS.map((dom) => (
