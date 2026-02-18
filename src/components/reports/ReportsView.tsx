@@ -313,143 +313,111 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
   const loadReport = useCallback(async () => {
     setLoading(true)
+    setEditingGrades(false)
     const student = students.find((s: any) => s.id === studentId)
     if (!student) { setLoading(false); return }
+    const semester = allSemesters.find((s: any) => s.id === semesterId)
+    if (!semester) { setLoading(false); return }
 
-    // 1. Current semester assessments + grades
-    const { data: assessments } = await supabase.from('assessments').select('*')
-      .eq('semester_id', semesterId).eq('grade', student.grade).eq('english_class', selectedClass)
-    const { data: studentGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
-    const { data: allGrades } = await supabase.from('grades').select('*').in('student_id', students.map((s: any) => s.id))
-
-    // 2. Domain averages
-    const domainGrades: Record<string, number | null> = {}
-    const classAverages: Record<string, number | null> = {}
-
-    // Check if we have assessments for this semester, or if we need to fall back to semester_grades (historical imports)
-    const hasAssessments = (assessments || []).length > 0
-
-    if (hasAssessments) {
-      DOMAINS.forEach((domain) => {
-        const domAssessments = (assessments || []).filter((a: any) => a.domain === domain)
-        const studentScores = domAssessments.map((a: any) => {
-          const g = (studentGrades || []).find((gr: any) => gr.assessment_id === a.id)
-          if (!g || g.score == null || g.is_exempt) return null
-          return (g.score / a.max_score) * 100
-        }).filter((x: any) => x !== null) as number[]
-        domainGrades[domain] = studentScores.length > 0 ? Math.round(studentScores.reduce((a: number, b: number) => a + b, 0) / studentScores.length * 10) / 10 : null
-
-        const classScores: number[] = []
-        students.forEach((s: any) => {
-          const sScores = domAssessments.map((a: any) => {
-            const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
-            if (!g || g.score == null || g.is_exempt) return null
-            return (g.score / a.max_score) * 100
-          }).filter((x: any) => x !== null) as number[]
-          if (sScores.length > 0) classScores.push(sScores.reduce((a: number, b: number) => a + b, 0) / sScores.length)
-        })
-        classAverages[domain] = classScores.length > 0 ? Math.round(classScores.reduce((a: number, b: number) => a + b, 0) / classScores.length * 10) / 10 : null
-      })
-    } else {
-      // Fallback: read from semester_grades (historical/imported data)
-      try {
-        const { data: semGrades } = await supabase.from('semester_grades').select('*').eq('student_id', studentId).eq('semester_id', semesterId)
-        if (semGrades && semGrades.length > 0) {
-          semGrades.forEach((sg: any) => {
-            if (sg.domain && DOMAINS.includes(sg.domain)) {
-              domainGrades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
-            }
-          })
-        }
-        // Class averages from semester_grades for all students in class
-        if (students.length > 0) {
-          const { data: allSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade')
-            .eq('semester_id', semesterId).in('student_id', students.map((s: any) => s.id))
-          if (allSemGrades && allSemGrades.length > 0) {
-            DOMAINS.forEach((domain) => {
-              const vals = allSemGrades.filter((sg: any) => sg.domain === domain).map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
-              classAverages[domain] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : null
-            })
-          }
-        }
-      } catch (e) { console.error('semester_grades fallback error:', e) }
-    }
-
-    const scoredDomains = DOMAINS.filter((d) => domainGrades[d] != null)
-    const overallGrade = scoredDomains.length > 0 ? Math.round(scoredDomains.reduce((a: number, d) => a + (domainGrades[d] as number), 0) / scoredDomains.length * 10) / 10 : null
-    const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '\u2014'
-
-    // 3. Previous semester data -- find the most recent semester BEFORE this one that has data for this student
-    let prevDomainGrades: Record<string, number | null> | null = null
-    let prevOverall: number | null = null
-    let prevSemesterName: string | null = null
-
-    // Sort semesters chronologically by name/date for comparison
-    // Parse year from semester name (e.g. "Fall 2025", "Spring Mid 2026") and use type for sub-ordering
-    const typeOrder: Record<string, number> = { archive: 0, fall_mid: 1, fall_final: 2, fall: 2, spring_mid: 3, spring_final: 4, spring: 4 }
-    const getYearFromSem = (s: any) => {
-      const m = s.name?.match(/\d{4}/)
-      return m ? parseInt(m[0]) : 2025
-    }
-    const sortedSems = [...allSemesters].sort((a: any, b: any) => {
-      const yearDiff = getYearFromSem(a) - getYearFromSem(b)
-      if (yearDiff !== 0) return yearDiff
-      return (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0)
-    })
-    const semesterIdx = sortedSems.findIndex((s: any) => s.id === semesterId)
-    const prevSemester = semesterIdx > 0 ? sortedSems[semesterIdx - 1] : null
-    if (prevSemester) {
-      // First try: check semester_grades (works for both historical imports and calculated)
-      const { data: prevSemGrades } = await supabase.from('semester_grades').select('*').eq('student_id', studentId).eq('semester_id', prevSemester.id)
-      if (prevSemGrades && prevSemGrades.length > 0) {
-        prevDomainGrades = {}
-        DOMAINS.forEach((domain) => {
-          const sg = prevSemGrades.find((g: any) => g.domain === domain)
-          prevDomainGrades![domain] = sg ? (sg.final_grade ?? sg.calculated_grade ?? null) : null
-        })
-        const prevScored = DOMAINS.filter((d) => prevDomainGrades![d] != null)
-        prevOverall = prevScored.length > 0 ? Math.round(prevScored.reduce((a: number, d) => a + (prevDomainGrades![d] as number), 0) / prevScored.length * 10) / 10 : null
-        prevSemesterName = prevSemester.name
-        if (prevScored.length === 0) { prevDomainGrades = null; prevOverall = null; prevSemesterName = null }
-      } else {
-        // Fallback: calculate from assessments
-        const { data: prevAssessments } = await supabase.from('assessments').select('*')
-          .eq('semester_id', prevSemester.id).eq('grade', student.grade).eq('english_class', selectedClass)
-        const { data: prevGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
-
-        if (prevAssessments && prevAssessments.length > 0) {
-          prevDomainGrades = {}
-          DOMAINS.forEach((domain) => {
-            const domAssessments = (prevAssessments || []).filter((a: any) => a.domain === domain)
+    // ─── STEP 1: For active semesters, calculate from assessments and sync to semester_grades ───
+    const isArchive = semester.type === 'archive'
+    if (!isArchive) {
+      const { data: assessments } = await supabase.from('assessments').select('*')
+        .eq('semester_id', semesterId).eq('grade', student.grade).eq('english_class', selectedClass)
+      if (assessments && assessments.length > 0) {
+        const { data: allGrades } = await supabase.from('grades').select('*').in('student_id', students.map((s: any) => s.id))
+        // Calculate and upsert for each student in current roster
+        for (const s of students) {
+          for (const domain of DOMAINS) {
+            const domAssessments = assessments.filter((a: any) => a.domain === domain)
             const scores = domAssessments.map((a: any) => {
-              const g = (prevGrades || []).find((gr: any) => gr.assessment_id === a.id)
+              const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
               if (!g || g.score == null || g.is_exempt) return null
               return (g.score / a.max_score) * 100
             }).filter((x: any) => x !== null) as number[]
-            prevDomainGrades![domain] = scores.length > 0 ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10 : null
-          })
-          const prevScored = DOMAINS.filter((d) => prevDomainGrades![d] != null)
-          prevOverall = prevScored.length > 0 ? Math.round(prevScored.reduce((a: number, d) => a + (prevDomainGrades![d] as number), 0) / prevScored.length * 10) / 10 : null
-          prevSemesterName = prevSemester.name
-          if (prevScored.length === 0) { prevDomainGrades = null; prevOverall = null; prevSemesterName = null }
+            if (scores.length > 0) {
+              const avg = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10
+              await supabase.from('semester_grades').upsert({
+                student_id: s.id, semester_id: semesterId, domain,
+                calculated_grade: avg, english_class: s.english_class, grade: s.grade,
+              }, { onConflict: 'student_id,semester_id,domain' })
+            }
+          }
         }
       }
     }
 
-    // 4. Comment
-    const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
+    // ─── STEP 2: Read this student's grades from semester_grades ───
+    const { data: myGrades } = await supabase.from('semester_grades').select('*')
+      .eq('student_id', studentId).eq('semester_id', semesterId)
+    
+    const domainGrades: Record<string, number | null> = {}
+    let behaviorGrade: string | null = null
+    DOMAINS.forEach(d => { domainGrades[d] = null })
+    ;(myGrades || []).forEach((sg: any) => {
+      if (sg.domain === 'overall') {
+        behaviorGrade = sg.behavior_grade || null
+      } else if (DOMAINS.includes(sg.domain)) {
+        // final_grade (manual override) takes priority over calculated_grade
+        domainGrades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+      }
+    })
 
-    // 5. Teacher info
+    const scoredDomains = DOMAINS.filter(d => domainGrades[d] != null)
+    const overallGrade = scoredDomains.length > 0 ? Math.round(scoredDomains.reduce((a: number, d) => a + (domainGrades[d] as number), 0) / scoredDomains.length * 10) / 10 : null
+    const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '\u2014'
+
+    // ─── STEP 3: Class averages from semester_grades (same semester + same class + same grade) ───
+    const classAverages: Record<string, number | null> = {}
+    const sgClass = (myGrades || []).find((sg: any) => sg.english_class)?.english_class || selectedClass
+    const sgGrade = (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade
+    const { data: classSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade')
+      .eq('semester_id', semesterId).eq('english_class', sgClass).eq('grade', sgGrade)
+    DOMAINS.forEach(domain => {
+      const vals = (classSemGrades || []).filter((sg: any) => sg.domain === domain)
+        .map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
+      classAverages[domain] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : null
+    })
+
+    // ─── STEP 4: Previous semester (just query semester_grades for previous semester) ───
+    let prevDomainGrades: Record<string, number | null> | null = null
+    let prevOverall: number | null = null
+    let prevSemesterName: string | null = null
+
+    const typeOrder: Record<string, number> = { archive: 0, fall_mid: 1, fall_final: 2, fall: 2, spring_mid: 3, spring_final: 4, spring: 4 }
+    const getYearFromSem = (s: any) => { const m = s.name?.match(/\d{4}/); return m ? parseInt(m[0]) : 2025 }
+    const sortedSems = [...allSemesters].sort((a: any, b: any) => {
+      const yd = getYearFromSem(a) - getYearFromSem(b)
+      return yd !== 0 ? yd : (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0)
+    })
+    const semIdx = sortedSems.findIndex((s: any) => s.id === semesterId)
+    const prevSem = semIdx > 0 ? sortedSems[semIdx - 1] : null
+    if (prevSem) {
+      const { data: prevGrades } = await supabase.from('semester_grades').select('*')
+        .eq('student_id', studentId).eq('semester_id', prevSem.id)
+      if (prevGrades && prevGrades.length > 0) {
+        prevDomainGrades = {}
+        DOMAINS.forEach(d => {
+          const sg = prevGrades.find((g: any) => g.domain === d)
+          prevDomainGrades![d] = sg ? (sg.final_grade ?? sg.calculated_grade ?? null) : null
+        })
+        const prevScored = DOMAINS.filter(d => prevDomainGrades![d] != null)
+        prevOverall = prevScored.length > 0 ? Math.round(prevScored.reduce((a: number, d) => a + (prevDomainGrades![d] as number), 0) / prevScored.length * 10) / 10 : null
+        prevSemesterName = prevSem.name
+        if (prevScored.length === 0) { prevDomainGrades = null; prevOverall = null; prevSemesterName = null }
+      }
+    }
+
+    // ─── STEP 5: Comment, teacher, reading, attendance, behavior, scaffolds, goals ───
+    const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
-    // 6. Reading fluency, attendance, behavior, scaffolds, goals
-    const [readingRes, attRes, behaviorRes, scaffoldRes, goalsRes, semGradeRes] = await Promise.all([
+    const [readingRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(5),
       supabase.from('attendance').select('status').eq('student_id', studentId),
-      supabase.from('behavior_logs').select('id, log_type, created_at', { count: 'exact' }).eq('student_id', studentId),
+      supabase.from('behavior_logs').select('id', { count: 'exact' }).eq('student_id', studentId),
       supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', studentId).eq('is_active', true),
       supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', studentId).eq('is_active', true),
-      supabase.from('semester_grades').select('behavior_grade').eq('student_id', studentId).eq('semester_id', semesterId).eq('domain', 'overall').limit(1).single(),
     ])
     const attRecords = attRes.data || []
     const attCounts = { present: 0, absent: 0, tardy: 0 }
@@ -465,7 +433,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       semesterName: semester.name,
       latestReading: readingRes.data?.[0] || null,
       behaviorCount: behaviorRes.count || 0,
-      behaviorGrade: semGradeRes.data?.behavior_grade || null,
+      behaviorGrade,
       totalAtt: attRecords.length,
       attCounts,
       scaffolds: scaffoldRes.data || [],
@@ -473,7 +441,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     })
     setComment(commentData?.text || '')
     setLoading(false)
-  }, [studentId, semesterId, semester, students, allSemesters, selectedClass, currentTeacher])
+  }, [studentId, semesterId, students, allSemesters, selectedClass, currentTeacher])
 
   useEffect(() => { loadReport() }, [loadReport])
 
@@ -693,12 +661,14 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               <div className="flex items-center gap-2">
                 <button onClick={() => setEditingGrades(false)} className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
                 <button onClick={async () => {
-                  // Save to semester_grades
+                  const student = students.find((s: any) => s.id === studentId)
+                  // Save to semester_grades with class snapshot
                   for (const dom of DOMAINS) {
                     const val = parseFloat(editGradeValues[dom])
                     if (!isNaN(val)) {
                       await supabase.from('semester_grades').upsert({
-                        student_id: studentId, semester_id: semesterId, domain: dom, final_grade: val
+                        student_id: studentId, semester_id: semesterId, domain: dom, final_grade: val,
+                        english_class: student?.english_class || selectedClass, grade: student?.grade,
                       }, { onConflict: 'student_id,semester_id,domain' })
                     } else {
                       await supabase.from('semester_grades').delete().eq('student_id', studentId).eq('semester_id', semesterId).eq('domain', dom)
@@ -707,7 +677,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   // Save behavior
                   if (editGradeValues.behavior) {
                     await supabase.from('semester_grades').upsert({
-                      student_id: studentId, semester_id: semesterId, domain: 'overall', behavior_grade: editGradeValues.behavior
+                      student_id: studentId, semester_id: semesterId, domain: 'overall', behavior_grade: editGradeValues.behavior,
+                      english_class: student?.english_class || selectedClass, grade: student?.grade,
                     }, { onConflict: 'student_id,semester_id,domain' })
                   }
                   setEditingGrades(false)
