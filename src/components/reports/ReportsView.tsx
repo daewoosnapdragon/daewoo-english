@@ -69,6 +69,15 @@ interface ReportData {
   teacherName: string
   teacherPhotoUrl: string | null
   semesterName: string
+  latestReading: any | null
+  semesterGrade: number | null
+  semesterClass: string | null
+  behaviorCount: number
+  behaviorGrade: string | null
+  totalAtt: number
+  attCounts: { present: number; absent: number; tardy: number }
+  scaffolds: any[]
+  goals: any[]
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
@@ -192,6 +201,116 @@ function InfoCell({ label, value, bold = false }: { label: string; value: any; b
 
 // ─── Individual Report Card ─────────────────────────────────────────
 
+// ─── Radar Chart (Pentagon) ──────────────────────────────────────────
+
+function RadarChart({ studentGrades, classAverages }: {
+  studentGrades: Record<string, number | null>
+  classAverages: Record<string, number | null>
+}) {
+  const size = 220
+  const cx = size / 2, cy = size / 2
+  const maxR = 85 // max radius for 100%
+  const levels = [20, 40, 60, 80, 100]
+  const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
+  const labels = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
+  // Angles: start from top (-90°), go clockwise
+  const angles = domains.map((_, i) => (Math.PI * 2 * i) / domains.length - Math.PI / 2)
+
+  const toXY = (angle: number, pct: number) => ({
+    x: cx + Math.cos(angle) * (pct / 100) * maxR,
+    y: cy + Math.sin(angle) * (pct / 100) * maxR,
+  })
+
+  const makePolygon = (values: (number | null)[]) => {
+    return values.map((v, i) => {
+      const pt = toXY(angles[i], v ?? 0)
+      return `${pt.x},${pt.y}`
+    }).join(' ')
+  }
+
+  const studentValues = domains.map(d => studentGrades[d])
+  const classValues = domains.map(d => classAverages[d])
+  const hasStudent = studentValues.some(v => v != null)
+  const hasClass = classValues.some(v => v != null)
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto" style={{ maxWidth: '100%' }}>
+      {/* Background grid rings */}
+      {levels.map(lvl => (
+        <polygon key={lvl}
+          points={angles.map(a => { const p = toXY(a, lvl); return `${p.x},${p.y}` }).join(' ')}
+          fill="none" stroke="#e8e0d8" strokeWidth={lvl === 60 ? 0.8 : 0.5}
+          strokeDasharray={lvl === 100 ? undefined : '2,2'}
+        />
+      ))}
+
+      {/* Axis lines */}
+      {angles.map((a, i) => {
+        const end = toXY(a, 100)
+        return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke="#e8e0d8" strokeWidth={0.5} />
+      })}
+
+      {/* Class average polygon */}
+      {hasClass && (
+        <polygon
+          points={makePolygon(classValues)}
+          fill="rgba(148,163,184,0.08)" stroke="#cbd5e1" strokeWidth={1.5}
+          strokeDasharray="4,3"
+        />
+      )}
+
+      {/* Student polygon */}
+      {hasStudent && (
+        <polygon
+          points={makePolygon(studentValues)}
+          fill="rgba(30,58,95,0.15)" stroke="#1e3a5f" strokeWidth={2}
+        />
+      )}
+
+      {/* Student dots */}
+      {studentValues.map((v, i) => {
+        if (v == null) return null
+        const pt = toXY(angles[i], v)
+        return <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r={3.5} fill="#1e3a5f" stroke="white" strokeWidth={1.5} />
+      })}
+
+      {/* Domain labels */}
+      {angles.map((a, i) => {
+        const labelR = maxR + 22
+        const pt = toXY(a, (labelR / maxR) * 100)
+        // Score below label
+        const sv = studentValues[i]
+        const cv = classValues[i]
+        return (
+          <g key={`label-${i}`}>
+            <text x={pt.x} y={pt.y - 5} textAnchor="middle" dominantBaseline="middle"
+              style={{ fontSize: '10px', fontWeight: 700, fill: '#475569' }}>
+              {labels[i]}
+            </text>
+            {sv != null && (
+              <text x={pt.x} y={pt.y + 7} textAnchor="middle" dominantBaseline="middle"
+                style={{ fontSize: '9px', fontWeight: 700, fill: '#1e3a5f' }}>
+                {sv.toFixed(0)}%
+              </text>
+            )}
+          </g>
+        )
+      })}
+
+      {/* Center scale labels */}
+      {[60, 80, 100].map(lvl => {
+        const pt = toXY(-Math.PI / 2, lvl) // along top axis
+        return (
+          <text key={`scale-${lvl}`} x={pt.x + 10} y={pt.y + 3}
+            style={{ fontSize: '7px', fill: '#94a3b8' }}>
+            {lvl}
+          </text>
+        )
+      })}
+    </svg>
+  )
+}
+
 function IndividualReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass }: {
   studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: string
 }) {
@@ -306,124 +425,118 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
   const loadReport = useCallback(async () => {
     setLoading(true)
+    setEditingGrades(false)
     const student = students.find((s: any) => s.id === studentId)
     if (!student) { setLoading(false); return }
+    const semester = allSemesters.find((s: any) => s.id === semesterId)
+    if (!semester) { setLoading(false); return }
 
-    // 1. Current semester assessments + grades
-    const { data: assessments } = await supabase.from('assessments').select('*')
-      .eq('semester_id', semesterId).eq('grade', student.grade).eq('english_class', selectedClass)
-    const { data: studentGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
-    const { data: allGrades } = await supabase.from('grades').select('*').in('student_id', students.map((s: any) => s.id))
-
-    // 2. Domain averages
-    const domainGrades: Record<string, number | null> = {}
-    const classAverages: Record<string, number | null> = {}
-
-    // Check if we have assessments for this semester, or if we need to fall back to semester_grades (historical imports)
-    const hasAssessments = (assessments || []).length > 0
-
-    if (hasAssessments) {
-      DOMAINS.forEach((domain) => {
-        const domAssessments = (assessments || []).filter((a: any) => a.domain === domain)
-        const studentScores = domAssessments.map((a: any) => {
-          const g = (studentGrades || []).find((gr: any) => gr.assessment_id === a.id)
-          if (!g || g.score == null || g.is_exempt) return null
-          return (g.score / a.max_score) * 100
-        }).filter((x: any) => x !== null) as number[]
-        domainGrades[domain] = studentScores.length > 0 ? Math.round(studentScores.reduce((a: number, b: number) => a + b, 0) / studentScores.length * 10) / 10 : null
-
-        const classScores: number[] = []
-        students.forEach((s: any) => {
-          const sScores = domAssessments.map((a: any) => {
-            const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
-            if (!g || g.score == null || g.is_exempt) return null
-            return (g.score / a.max_score) * 100
-          }).filter((x: any) => x !== null) as number[]
-          if (sScores.length > 0) classScores.push(sScores.reduce((a: number, b: number) => a + b, 0) / sScores.length)
-        })
-        classAverages[domain] = classScores.length > 0 ? Math.round(classScores.reduce((a: number, b: number) => a + b, 0) / classScores.length * 10) / 10 : null
-      })
-    } else {
-      // Fallback: read from semester_grades (historical/imported data)
-      try {
-        const { data: semGrades } = await supabase.from('semester_grades').select('*').eq('student_id', studentId).eq('semester_id', semesterId)
-        if (semGrades && semGrades.length > 0) {
-          semGrades.forEach((sg: any) => {
-            if (sg.domain && DOMAINS.includes(sg.domain)) {
-              domainGrades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+    // ─── STEP 1: For active semesters, calculate from assessments and sync to semester_grades ───
+    const isArchive = semester.type === 'archive'
+    if (!isArchive) {
+      const { data: assessments } = await supabase.from('assessments').select('*')
+        .eq('semester_id', semesterId).eq('grade', student.grade).eq('english_class', selectedClass)
+      if (assessments && assessments.length > 0) {
+        const { data: allGrades } = await supabase.from('grades').select('*').in('student_id', students.map((s: any) => s.id))
+        // Calculate and upsert for each student in current roster
+        for (const s of students) {
+          for (const domain of DOMAINS) {
+            const domAssessments = assessments.filter((a: any) => a.domain === domain)
+            const scores = domAssessments.map((a: any) => {
+              const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
+              if (!g || g.score == null || g.is_exempt) return null
+              return (g.score / a.max_score) * 100
+            }).filter((x: any) => x !== null) as number[]
+            if (scores.length > 0) {
+              const avg = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10
+              await supabase.from('semester_grades').upsert({
+                student_id: s.id, semester_id: semesterId, domain,
+                calculated_grade: avg, english_class: s.english_class, grade: s.grade,
+              }, { onConflict: 'student_id,semester_id,domain' })
             }
-          })
-        }
-        // Class averages from semester_grades for all students in class
-        if (students.length > 0) {
-          const { data: allSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade')
-            .eq('semester_id', semesterId).in('student_id', students.map((s: any) => s.id))
-          if (allSemGrades && allSemGrades.length > 0) {
-            DOMAINS.forEach((domain) => {
-              const vals = allSemGrades.filter((sg: any) => sg.domain === domain).map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
-              classAverages[domain] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : null
-            })
           }
-        }
-      } catch (e) { console.error('semester_grades fallback error:', e) }
-    }
-
-    const scoredDomains = DOMAINS.filter((d) => domainGrades[d] != null)
-    const overallGrade = scoredDomains.length > 0 ? Math.round(scoredDomains.reduce((a: number, d) => a + (domainGrades[d] as number), 0) / scoredDomains.length * 10) / 10 : null
-    const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '\u2014'
-
-    // 3. Previous semester data -- find the most recent semester BEFORE this one that has data for this student
-    let prevDomainGrades: Record<string, number | null> | null = null
-    let prevOverall: number | null = null
-    let prevSemesterName: string | null = null
-
-    // Sort semesters chronologically by type for comparison
-    const typeOrder: Record<string, number> = { archive: 0, fall_mid: 1, fall_final: 2, fall: 2, spring_mid: 3, spring_final: 4, spring: 4 }
-    const sortedSems = [...allSemesters].sort((a: any, b: any) => (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0))
-    const semesterIdx = sortedSems.findIndex((s: any) => s.id === semesterId)
-    const prevSemester = semesterIdx > 0 ? sortedSems[semesterIdx - 1] : null
-    if (prevSemester) {
-      const { data: prevAssessments } = await supabase.from('assessments').select('*')
-        .eq('semester_id', prevSemester.id).eq('grade', student.grade).eq('english_class', selectedClass)
-      const { data: prevGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
-
-      if (prevAssessments && prevAssessments.length > 0) {
-        prevDomainGrades = {}
-        DOMAINS.forEach((domain) => {
-          const domAssessments = (prevAssessments || []).filter((a: any) => a.domain === domain)
-          const scores = domAssessments.map((a: any) => {
-            const g = (prevGrades || []).find((gr: any) => gr.assessment_id === a.id)
-            if (!g || g.score == null || g.is_exempt) return null
-            return (g.score / a.max_score) * 100
-          }).filter((x: any) => x !== null) as number[]
-          prevDomainGrades![domain] = scores.length > 0 ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10 : null
-        })
-        const prevScored = DOMAINS.filter((d) => prevDomainGrades![d] != null)
-        prevOverall = prevScored.length > 0 ? Math.round(prevScored.reduce((a: number, d) => a + (prevDomainGrades![d] as number), 0) / prevScored.length * 10) / 10 : null
-        prevSemesterName = prevSemester.name
-        if (prevScored.length === 0) { prevDomainGrades = null; prevOverall = null; prevSemesterName = null }
-      } else {
-        // Fallback: check semester_grades for historical data
-        const { data: prevSemGrades } = await supabase.from('semester_grades').select('*').eq('student_id', studentId).eq('semester_id', prevSemester.id)
-        if (prevSemGrades && prevSemGrades.length > 0) {
-          prevDomainGrades = {}
-          DOMAINS.forEach((domain) => {
-            const sg = prevSemGrades.find((g: any) => g.domain === domain)
-            prevDomainGrades![domain] = sg ? (sg.final_grade ?? sg.calculated_grade ?? null) : null
-          })
-          const prevScored = DOMAINS.filter((d) => prevDomainGrades![d] != null)
-          prevOverall = prevScored.length > 0 ? Math.round(prevScored.reduce((a: number, d) => a + (prevDomainGrades![d] as number), 0) / prevScored.length * 10) / 10 : null
-          prevSemesterName = prevSemester.name
-          if (prevScored.length === 0) { prevDomainGrades = null; prevOverall = null; prevSemesterName = null }
         }
       }
     }
 
-    // 4. Comment
-    const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
+    // ─── STEP 2: Read this student's grades from semester_grades ───
+    const { data: myGrades } = await supabase.from('semester_grades').select('*')
+      .eq('student_id', studentId).eq('semester_id', semesterId)
+    
+    const domainGrades: Record<string, number | null> = {}
+    let behaviorGrade: string | null = null
+    DOMAINS.forEach(d => { domainGrades[d] = null })
+    ;(myGrades || []).forEach((sg: any) => {
+      if (sg.domain === 'overall') {
+        behaviorGrade = sg.behavior_grade || null
+      } else if (DOMAINS.includes(sg.domain)) {
+        // final_grade (manual override) takes priority over calculated_grade
+        domainGrades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+      }
+    })
 
-    // 5. Teacher info
+    const scoredDomains = DOMAINS.filter(d => domainGrades[d] != null)
+    const overallGrade = scoredDomains.length > 0 ? Math.round(scoredDomains.reduce((a: number, d) => a + (domainGrades[d] as number), 0) / scoredDomains.length * 10) / 10 : null
+    const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '\u2014'
+
+    // ─── STEP 3: Class averages from semester_grades (same semester + same class + same grade) ───
+    const classAverages: Record<string, number | null> = {}
+    const sgClass = (myGrades || []).find((sg: any) => sg.english_class)?.english_class || selectedClass
+    const sgGrade = (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade
+    const { data: classSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade')
+      .eq('semester_id', semesterId).eq('english_class', sgClass).eq('grade', sgGrade)
+    DOMAINS.forEach(domain => {
+      const vals = (classSemGrades || []).filter((sg: any) => sg.domain === domain)
+        .map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
+      classAverages[domain] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : null
+    })
+
+    // ─── STEP 4: Previous semester (just query semester_grades for previous semester) ───
+    let prevDomainGrades: Record<string, number | null> | null = null
+    let prevOverall: number | null = null
+    let prevSemesterName: string | null = null
+
+    const typeOrder: Record<string, number> = { archive: 0, fall_mid: 1, fall_final: 2, fall: 2, spring_mid: 3, spring_final: 4, spring: 4 }
+    const getYearFromSem = (s: any) => { const m = s.name?.match(/\d{4}/); return m ? parseInt(m[0]) : 2025 }
+    const sortedSems = [...allSemesters].sort((a: any, b: any) => {
+      const yd = getYearFromSem(a) - getYearFromSem(b)
+      return yd !== 0 ? yd : (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0)
+    })
+    const semIdx = sortedSems.findIndex((s: any) => s.id === semesterId)
+    const prevSem = semIdx > 0 ? sortedSems[semIdx - 1] : null
+    console.log('[Report] Semesters sorted:', sortedSems.map((s: any) => `${s.name} (${s.type}, yr=${getYearFromSem(s)}, id=${s.id?.slice(0,8)})`))
+    console.log('[Report] Current semester idx:', semIdx, 'prev:', prevSem?.name, 'prevId:', prevSem?.id?.slice(0,8))
+    if (prevSem) {
+      const { data: prevGrades } = await supabase.from('semester_grades').select('*')
+        .eq('student_id', studentId).eq('semester_id', prevSem.id)
+      console.log('[Report] Prev semester grades for', studentId.slice(0,8), ':', prevGrades?.length, 'rows', prevGrades?.map((g: any) => `${g.domain}=${g.final_grade ?? g.calculated_grade}`))
+      if (prevGrades && prevGrades.length > 0) {
+        prevDomainGrades = {}
+        DOMAINS.forEach(d => {
+          const sg = prevGrades.find((g: any) => g.domain === d)
+          prevDomainGrades![d] = sg ? (sg.final_grade ?? sg.calculated_grade ?? null) : null
+        })
+        const prevScored = DOMAINS.filter(d => prevDomainGrades![d] != null)
+        prevOverall = prevScored.length > 0 ? Math.round(prevScored.reduce((a: number, d) => a + (prevDomainGrades![d] as number), 0) / prevScored.length * 10) / 10 : null
+        prevSemesterName = prevSem.name
+        if (prevScored.length === 0) { prevDomainGrades = null; prevOverall = null; prevSemesterName = null }
+      }
+    }
+
+    // ─── STEP 5: Comment, teacher, reading, attendance, behavior, scaffolds, goals ───
+    const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
+
+    const [readingRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
+      supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(5),
+      supabase.from('attendance').select('status').eq('student_id', studentId),
+      supabase.from('behavior_logs').select('id', { count: 'exact' }).eq('student_id', studentId),
+      supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', studentId).eq('is_active', true),
+      supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', studentId).eq('is_active', true),
+    ])
+    const attRecords = attRes.data || []
+    const attCounts = { present: 0, absent: 0, tardy: 0 }
+    attRecords.forEach((r: any) => { if (r.status === 'present') attCounts.present++; else if (r.status === 'absent') attCounts.absent++; else if (r.status === 'tardy') attCounts.tardy++ })
 
     setData({
       student, domainGrades, overallGrade, overallLetter, classAverages,
@@ -433,10 +546,20 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       teacherName: teacher?.name || currentTeacher?.name || '',
       teacherPhotoUrl: teacher?.photo_url || null,
       semesterName: semester.name,
+      // Use grade/class from semester_grades if available (historical accuracy), else current student
+      semesterGrade: (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade,
+      semesterClass: (myGrades || []).find((sg: any) => sg.english_class)?.english_class || student.english_class,
+      latestReading: readingRes.data?.[0] || null,
+      behaviorCount: behaviorRes.count || 0,
+      behaviorGrade,
+      totalAtt: attRecords.length,
+      attCounts,
+      scaffolds: scaffoldRes.data || [],
+      goals: goalsRes.data || [],
     })
     setComment(commentData?.text || '')
     setLoading(false)
-  }, [studentId, semesterId, semester, students, allSemesters, selectedClass, currentTeacher])
+  }, [studentId, semesterId, students, allSemesters, selectedClass, currentTeacher])
 
   useEffect(() => { loadReport() }, [loadReport])
 
@@ -469,48 +592,63 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const gc = d.overallGrade != null ? letterColor(d.overallLetter) : '#94a3b8'
     const pct = (d.overallGrade || 0) / 100
     const radius = 50, stroke = 8, circ = 2 * Math.PI * radius
+    const displayGrade = d.semesterGrade || s.grade
+    const displayClass = d.semesterClass || s.english_class
 
-    // Score tiles
+    // Score tiles (clean — no vs class badge)
     const tiles = DOMAINS.map((dom) => {
       const v = d.domainGrades[dom]; if (v == null) return '<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px">--</div>'
-      const g = getLetterGrade(v); const diff = v - (d.classAverages[dom] || v); const t = tileBgPrint(v)
+      const g = getLetterGrade(v); const t = tileBgPrint(v)
       return `<div style="text-align:center;padding:14px 8px;background:${t.bg};border:1.5px solid ${t.border};border-radius:12px">
         <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
         <div style="font-size:26px;font-weight:800;color:#1e293b;margin-top:6px">${v.toFixed(1)}%</div>
         <div style="font-size:14px;font-weight:700;color:${letterColor(g)};margin-top:3px">${g}</div>
-        <div style="font-size:9px;margin-top:6px;color:${diff >= 0 ? '#16a34a' : '#dc2626'};font-weight:600;background:${diff >= 0 ? '#dcfce7' : '#fee2e2'};display:inline-block;padding:2px 6px;border-radius:10px">${diff >= 0 ? '+' : ''}${diff.toFixed(1)} vs class</div>
       </div>`
     }).join('')
 
-    // Semester trends
-    let trendsHtml = ''
-    if (d.prevDomainGrades && d.prevOverall != null && d.overallGrade != null) {
-      const arrowSvg = '<svg width="14" height="8" viewBox="0 0 16 10" style="flex-shrink:0;vertical-align:middle"><line x1="0" y1="5" x2="11" y2="5" stroke="#94a3b8" stroke-width="1.5"/><polygon points="9,1 15,5 9,9" fill="#94a3b8"/></svg>'
-      const trendCells = DOMAINS.map((dom) => {
-        const curr = d.domainGrades[dom]; const prev = d.prevDomainGrades![dom]
-        if (curr == null || prev == null) return '<td style="text-align:center;padding:10px 4px;font-size:12px;color:#94a3b8">--</td>'
-        const diff = curr - prev
-        return `<td style="text-align:center;padding:10px 4px">
-          <div style="display:flex;align-items:center;justify-content:center;gap:3px"><span style="font-size:11px;color:#94a3b8">${prev.toFixed(1)}</span> ${arrowSvg} <span style="font-size:12px;font-weight:700;color:#1e293b">${curr.toFixed(1)}</span></div>
-          <div style="font-size:10px;font-weight:700;margin-top:3px;color:${diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#64748b'}">${diff > 0 ? '+' : ''}${diff.toFixed(1)}</div>
-        </td>`
-      }).join('')
-      const overallDiff = d.overallGrade! - d.prevOverall!
-      trendsHtml = `<div style="background:#fff;padding:16px 24px;border-bottom:1px solid #e8e0d8">
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Semester Progress \u2014 ${d.prevSemesterName} to ${d.semesterName}</div>
-        <table style="width:100%;border-collapse:collapse"><thead><tr>${DOMAINS.map((dom) => `<th style="text-align:center;padding-bottom:6px;font-size:10px;color:#94a3b8;font-weight:600;border-bottom:1px solid #f1ede8">${DOMAIN_SHORT[dom]}</th>`).join('')}<th style="text-align:center;padding-bottom:6px;font-size:10px;color:#94a3b8;font-weight:700;border-bottom:1px solid #f1ede8;padding-left:10px;border-left:1px solid #f1ede8">Overall</th></tr></thead>
-        <tbody><tr>${trendCells}<td style="text-align:center;padding:10px 4px 10px 10px;border-left:1px solid #f1ede8">
-          <div style="display:flex;align-items:center;justify-content:center;gap:3px"><span style="font-size:11px;color:#94a3b8">${d.prevOverall!.toFixed(1)}</span> ${arrowSvg} <span style="font-size:13px;font-weight:800;color:#1e3a5f">${d.overallGrade!.toFixed(1)}</span></div>
-          <div style="font-size:11px;font-weight:800;margin-top:3px;color:${overallDiff > 0 ? '#16a34a' : '#dc2626'}">${overallDiff > 0 ? '+' : ''}${overallDiff.toFixed(1)}</div>
-        </td></tr></tbody></table></div>`
-    } else {
-      trendsHtml = `<div style="background:#fff;padding:16px 24px;border-bottom:1px solid #e8e0d8">
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Semester Progress</div>
-        <div style="background:#f8f9fb;border-radius:10px;padding:16px 20px;text-align:center">
-          <div style="font-size:13px;font-weight:600;color:#475569">First semester in the English Program</div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:4px">Semester-over-semester progress will appear here starting next reporting period.</div>
-        </div></div>`
-    }
+    // Radar chart SVG for print
+    const radarSize = 200, rcx = radarSize / 2, rcy = radarSize / 2, maxR = 75
+    const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
+    const rLabels = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
+    const rAngles = domains.map((_, i) => (Math.PI * 2 * i) / 5 - Math.PI / 2)
+    const toXY = (a: number, p: number) => ({ x: rcx + Math.cos(a) * (p / 100) * maxR, y: rcy + Math.sin(a) * (p / 100) * maxR })
+    const makePoly = (vals: (number | null)[]) => vals.map((v, i) => { const pt = toXY(rAngles[i], v ?? 0); return `${pt.x},${pt.y}` }).join(' ')
+    const sVals = domains.map(dm => d.domainGrades[dm])
+    const cVals = domains.map(dm => d.classAverages[dm])
+
+    const gridLines = [20, 40, 60, 80, 100].map(lvl =>
+      `<polygon points="${rAngles.map(a => { const p = toXY(a, lvl); return `${p.x},${p.y}` }).join(' ')}" fill="none" stroke="#e8e0d8" stroke-width="0.5" ${lvl < 100 ? 'stroke-dasharray="2,2"' : ''}/>`
+    ).join('')
+    const axisLines = rAngles.map(a => { const e = toXY(a, 100); return `<line x1="${rcx}" y1="${rcy}" x2="${e.x}" y2="${e.y}" stroke="#e8e0d8" stroke-width="0.5"/>` }).join('')
+    const classPoly = cVals.some(v => v != null) ? `<polygon points="${makePoly(cVals)}" fill="rgba(148,163,184,0.08)" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,3"/>` : ''
+    const studentPoly = sVals.some(v => v != null) ? `<polygon points="${makePoly(sVals)}" fill="rgba(30,58,95,0.15)" stroke="#1e3a5f" stroke-width="2"/>` : ''
+    const dots = sVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="3" fill="#1e3a5f" stroke="white" stroke-width="1.5"/>` }).join('')
+    const radarLabels = rAngles.map((a, i) => {
+      const pt = toXY(a, ((maxR + 20) / maxR) * 100)
+      const sv = sVals[i]
+      return `<text x="${pt.x}" y="${pt.y - 4}" text-anchor="middle" dominant-baseline="middle" style="font-size:9px;font-weight:700;fill:#475569">${rLabels[i]}</text>
+        ${sv != null ? `<text x="${pt.x}" y="${pt.y + 7}" text-anchor="middle" dominant-baseline="middle" style="font-size:8px;font-weight:700;fill:#1e3a5f">${sv.toFixed(0)}%</text>` : ''}`
+    }).join('')
+
+    const radarSvg = `<svg width="${radarSize}" height="${radarSize}" viewBox="0 0 ${radarSize} ${radarSize}">${gridLines}${axisLines}${classPoly}${studentPoly}${dots}${radarLabels}</svg>`
+
+    // Reading fluency HTML
+    const r = d.latestReading
+    const readingHtml = r ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="background:#f8f9fb;border-radius:8px;padding:10px;text-align:center"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">CWPM</div><div style="font-size:20px;font-weight:800;color:#1e3a5f">${Math.round(r.cwpm)}</div></div>
+        <div style="background:#f8f9fb;border-radius:8px;padding:10px;text-align:center"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Accuracy</div><div style="font-size:20px;font-weight:800;color:${r.accuracy_rate >= 95 ? '#16a34a' : r.accuracy_rate >= 90 ? '#d97706' : '#dc2626'}">${r.accuracy_rate?.toFixed(1)}%</div></div>
+        <div style="background:#f8f9fb;border-radius:8px;padding:10px;text-align:center"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Level</div><div style="font-size:16px;font-weight:700;color:#475569">${r.reading_level || r.passage_level || '—'}</div></div>
+        <div style="background:#f8f9fb;border-radius:8px;padding:10px;text-align:center"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">NAEP Fluency</div><div style="font-size:16px;font-weight:700;color:#475569">${r.naep_fluency ? 'Level ' + r.naep_fluency : '—'}</div></div>
+      </div>` : '<div style="background:#f8f9fb;border-radius:8px;padding:14px;text-align:center;font-size:11px;color:#94a3b8">No reading assessments recorded yet.</div>'
+
+    // Goals HTML
+    const goalsHtml = d.goals?.length ? d.goals.slice(0, 5).map((g: any) =>
+      `<div style="display:flex;align-items:start;gap:6px;font-size:11px;margin-bottom:4px">
+        <span style="flex-shrink:0">${g.completed_at ? '✅' : g.goal_type === 'stretch' ? '🚀' : g.goal_type === 'behavioral' ? '🎯' : '📚'}</span>
+        <span style="${g.completed_at ? 'text-decoration:line-through;color:#94a3b8' : 'color:#475569;line-height:1.5'}">${g.goal_text}</span>
+      </div>`
+    ).join('') : '<div style="background:#f8f9fb;border-radius:8px;padding:10px;text-align:center;font-size:11px;color:#94a3b8">No goals set yet.</div>'
 
     // Grading scale
     const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#f8f5f1;border:1px solid #e8e0d8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
@@ -538,7 +676,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     <div style="background:#fff;padding:14px 28px;border-bottom:1px solid #e8e0d8">
       <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr auto;gap:0 14px">
         <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Name</div><div style="font-size:13px;font-weight:700;margin-top:1px">${s.korean_name}  ${s.english_name}</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Grade</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.grade}</div></div>
+        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Grade</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayGrade}</div></div>
         <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Korean Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.korean_class}반</div></div>
         <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Class Number</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.class_number}번</div></div>
         <div style="grid-row:1/3;display:flex;align-items:center;justify-content:center;padding-left:8px">
@@ -551,7 +689,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             </div>
           </div>
         </div>
-        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">English Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.english_class}</div></div>
+        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">English Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayClass}</div></div>
         <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Teacher</div><div style="font-size:13px;font-weight:600;margin-top:1px">${d.teacherName}</div></div>
         <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Team Manager</div><div style="font-size:13px;font-weight:600;margin-top:1px">Victoria Park</div></div>
         <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Principal</div><div style="font-size:13px;font-weight:600;margin-top:1px">Kwak Cheol Ok</div></div>
@@ -562,11 +700,28 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
     </div>
-    <!-- Trends -->
-    ${trendsHtml}
+    <!-- Student Snapshot: Radar + Reading + Goals -->
+    <div style="background:#fff;padding:20px 28px;border-bottom:1px solid #e8e0d8">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div>
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Class Comparison</div>
+          <div style="text-align:center">${radarSvg}</div>
+          <div style="text-align:center;margin-top:4px;font-size:8px;color:#94a3b8">
+            <span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(30,58,95,0.25);border:1.5px solid #1e3a5f;display:inline-block"></span> Student</span>
+            <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(148,163,184,0.15);border:1.5px solid #cbd5e1;display:inline-block"></span> Class Avg</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Reading Fluency</div>
+          ${readingHtml}
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin:14px 0 8px">Student Goals</div>
+          ${goalsHtml}
+        </div>
+      </div>
+    </div>
     <!-- Comment -->
     <div style="background:#fff;padding:20px 28px;border-bottom:1px solid #e8e0d8">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${s.english_class} Class</div></div></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
       <div style="font-size:12px;line-height:1.8;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 18px;border:1px solid #e8e0d8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>
     </div>
     <!-- Scale + Footer -->
@@ -614,7 +769,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           <div className="grid gap-x-4" style={{ gridTemplateColumns: '1.2fr 0.8fr 0.8fr 0.8fr auto' }}>
             {/* Row 1 */}
             <InfoCell label="이름 / Name" value={`${s.korean_name}  ${s.english_name}`} bold />
-            <InfoCell label="학년 / Grade" value={s.grade} />
+            <InfoCell label="학년 / Grade" value={d.semesterGrade || s.grade} />
             <InfoCell label="반 / Korean Class" value={`${s.korean_class}반`} />
             <InfoCell label="번호 / Class Number" value={`${s.class_number}번`} />
             {/* Donut — spans 2 rows */}
@@ -633,7 +788,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               </div>
             </div>
             {/* Row 2 */}
-            <InfoCell label="영어반 / English Class" value={s.english_class} />
+            <InfoCell label="영어반 / English Class" value={d.semesterClass || s.english_class} />
             <InfoCell label="담당 / Teacher" value={d.teacherName} />
             <InfoCell label="Team Manager" value="Victoria Park" />
             <InfoCell label="교장 / Principal" value="Kwak Cheol Ok" />
@@ -656,12 +811,14 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               <div className="flex items-center gap-2">
                 <button onClick={() => setEditingGrades(false)} className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
                 <button onClick={async () => {
-                  // Save to semester_grades
+                  const student = students.find((s: any) => s.id === studentId)
+                  // Save to semester_grades with class snapshot
                   for (const dom of DOMAINS) {
                     const val = parseFloat(editGradeValues[dom])
                     if (!isNaN(val)) {
                       await supabase.from('semester_grades').upsert({
-                        student_id: studentId, semester_id: semesterId, domain: dom, final_grade: val
+                        student_id: studentId, semester_id: semesterId, domain: dom, final_grade: val,
+                        english_class: student?.english_class || selectedClass, grade: student?.grade,
                       }, { onConflict: 'student_id,semester_id,domain' })
                     } else {
                       await supabase.from('semester_grades').delete().eq('student_id', studentId).eq('semester_id', semesterId).eq('domain', dom)
@@ -670,7 +827,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   // Save behavior
                   if (editGradeValues.behavior) {
                     await supabase.from('semester_grades').upsert({
-                      student_id: studentId, semester_id: semesterId, domain: 'overall', behavior_grade: editGradeValues.behavior
+                      student_id: studentId, semester_id: semesterId, domain: 'overall', behavior_grade: editGradeValues.behavior,
+                      english_class: student?.english_class || selectedClass, grade: student?.grade,
                     }, { onConflict: 'student_id,semester_id,domain' })
                   }
                   setEditingGrades(false)
@@ -698,69 +856,80 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             {DOMAINS.map((dom) => {
               const v = d.domainGrades[dom]
               if (v == null) return <div key={dom} className="rounded-xl border border-border p-3.5 text-center text-text-tertiary text-[12px]">--</div>
-              const g = getLetterGrade(v); const diff = v - (d.classAverages[dom] || v)
+              const g = getLetterGrade(v)
               return (
                 <div key={dom} className={`rounded-xl border-[1.5px] ${tileBgClass(v)} p-3.5 text-center`}>
                   <div className="text-[11px] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
                   <div className="text-[28px] font-extrabold text-[#1e293b] mt-2 leading-none">{v.toFixed(1)}%</div>
                   <div className="text-[15px] font-bold mt-1" style={{ color: letterColor(g) }}>{g}</div>
-                  <div className={`text-[9px] mt-2 font-semibold inline-block px-1.5 py-0.5 rounded-full ${diff >= 0 ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'}`}>
-                    {diff >= 0 ? '+' : ''}{diff.toFixed(1)} vs class
-                  </div>
                 </div>
               )
             })}
           </div>
           )}
         </div>
+        {/* ─── Student Snapshot: Radar + Reading + Goals ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #e8e0d8' }}>
-          <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3.5">
-            {d.prevSemesterName ? `Semester Progress \u2014 ${d.prevSemesterName} to ${d.semesterName}` : 'Semester Progress'}
-          </div>
-
-          {d.prevDomainGrades && d.prevOverall != null && d.overallGrade != null ? (
-            <div className="grid items-center" style={{ gridTemplateColumns: 'repeat(5, 1fr) auto' }}>
-              {/* Headers */}
-              {DOMAINS.map((dom) => (
-                <div key={dom + '-h'} className="text-center pb-2 text-[10px] text-[#94a3b8] font-semibold" style={{ borderBottom: '1px solid #f1ede8' }}>{DOMAIN_SHORT[dom]}</div>
-              ))}
-              <div className="text-center pb-2 text-[10px] text-[#94a3b8] font-bold pl-3" style={{ borderBottom: '1px solid #f1ede8', borderLeft: '1px solid #f1ede8' }}>Overall</div>
-              {/* Values */}
-              {DOMAINS.map((dom) => {
-                const curr = d.domainGrades[dom]; const prev = d.prevDomainGrades![dom]
-                if (curr == null || prev == null) return <div key={dom + '-v'} className="text-center py-3 text-[12px] text-[#94a3b8]">--</div>
-                const diff = curr - prev
-                return (
-                  <div key={dom + '-v'} className="text-center py-3">
-                    <div className="flex items-center justify-center gap-1">
-                      <span className="text-[12px] text-[#94a3b8]">{prev.toFixed(1)}</span>
-                      <svg width="14" height="8" viewBox="0 0 16 10"><line x1="0" y1="5" x2="11" y2="5" stroke="#94a3b8" strokeWidth="1.5" /><polygon points="9,1 15,5 9,9" fill="#94a3b8" /></svg>
-                      <span className="text-[13px] font-bold text-[#1e293b]">{curr.toFixed(1)}</span>
-                    </div>
-                    <div className={`text-[11px] font-bold mt-1 ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-[#64748b]'}`}>
-                      {diff > 0 ? '+' : ''}{diff.toFixed(1)}
-                    </div>
-                  </div>
-                )
-              })}
-              {/* Overall */}
-              <div className="text-center py-3 pl-3" style={{ borderLeft: '1px solid #f1ede8' }}>
-                <div className="flex items-center justify-center gap-1">
-                  <span className="text-[12px] text-[#94a3b8]">{d.prevOverall!.toFixed(1)}</span>
-                  <svg width="14" height="8" viewBox="0 0 16 10"><line x1="0" y1="5" x2="11" y2="5" stroke="#94a3b8" strokeWidth="1.5" /><polygon points="9,1 15,5 9,9" fill="#94a3b8" /></svg>
-                  <span className="text-[14px] font-extrabold text-navy">{d.overallGrade!.toFixed(1)}</span>
-                </div>
-                <div className={`text-[12px] font-extrabold mt-1 ${(d.overallGrade! - d.prevOverall!) > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {(d.overallGrade! - d.prevOverall!) > 0 ? '+' : ''}{(d.overallGrade! - d.prevOverall!).toFixed(1)}
-                </div>
+          <div className="grid gap-6" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            {/* Left: Radar Chart — Student vs Class */}
+            <div>
+              <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3">Class Comparison</div>
+              <RadarChart studentGrades={d.domainGrades} classAverages={d.classAverages} />
+              <div className="flex items-center justify-center gap-4 mt-2 text-[9px]">
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(30,58,95,0.25)', border: '1.5px solid #1e3a5f' }} /> Student</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(148,163,184,0.15)', border: '1.5px solid #cbd5e1' }} /> Class Average</span>
               </div>
             </div>
-          ) : (
-            <div className="bg-[#f8f9fb] rounded-xl p-5 text-center">
-              <p className="text-[13px] font-semibold text-[#475569]">First semester in the English Program</p>
-              <p className="text-[12px] text-[#94a3b8] mt-1">Semester-over-semester progress will appear here starting next reporting period.</p>
+
+            {/* Right: Reading Fluency + Goals */}
+            <div className="space-y-4">
+              {/* Reading Fluency */}
+              <div>
+                <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2.5">Reading Fluency</div>
+                {d.latestReading ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
+                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">CWPM</div>
+                      <div className="text-[22px] font-extrabold text-navy leading-none">{Math.round(d.latestReading.cwpm)}</div>
+                    </div>
+                    <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
+                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Accuracy</div>
+                      <div className={`text-[22px] font-extrabold leading-none ${d.latestReading.accuracy_rate >= 95 ? 'text-green-600' : d.latestReading.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-500'}`}>
+                        {d.latestReading.accuracy_rate?.toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
+                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Level</div>
+                      <div className="text-[18px] font-bold text-[#475569]">{d.latestReading.reading_level || d.latestReading.passage_level || '—'}</div>
+                    </div>
+                    <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
+                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">NAEP Fluency</div>
+                      <div className="text-[18px] font-bold text-[#475569]">{d.latestReading.naep_fluency ? `Level ${d.latestReading.naep_fluency}` : '—'}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-[#f8f9fb] rounded-lg p-4 text-center text-[12px] text-[#94a3b8]">No reading assessments recorded yet.</div>
+                )}
+              </div>
+
+              {/* Student Goals */}
+              <div>
+                <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2">Student Goals</div>
+                {d.goals && d.goals.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {d.goals.slice(0, 5).map((g: any, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-[11px]">
+                        <span className="flex-shrink-0 mt-0.5">{g.completed_at ? '✅' : g.goal_type === 'stretch' ? '🚀' : g.goal_type === 'behavioral' ? '🎯' : '📚'}</span>
+                        <span className={g.completed_at ? 'line-through text-[#94a3b8]' : 'text-[#475569] leading-relaxed'}>{g.goal_text}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-[#f8f9fb] rounded-lg p-3 text-center text-[11px] text-[#94a3b8]">No goals set yet.</div>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* ─── Teacher Comment ─── */}
@@ -812,9 +981,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                     `  CWPM: ${d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : 'N/A'}`,
                     `  Lexile: ${d.latestReading?.reading_level || d.latestReading?.passage_level || 'N/A'}`,
                     `  Accuracy: ${d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : 'N/A'}`,
+                    `  NAEP Fluency: ${d.latestReading?.naep_fluency ? `Level ${d.latestReading.naep_fluency}` : 'N/A'}`,
                     '',
                     `ATTENDANCE: ${d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}% (${d.attCounts.present}P/${d.attCounts.absent}A/${d.attCounts.tardy}T)` : 'N/A'}`,
                     `BEHAVIOR LOGS: ${d.behaviorCount} entries`,
+                    ...(d.scaffolds?.length ? ['', 'SCAFFOLDS:', ...d.scaffolds.map((sc: any) => `  [${sc.domain}] ${sc.scaffold_text}${sc.effectiveness ? ` (${sc.effectiveness})` : ''}`)] : []),
+                    ...(d.goals?.length ? ['', 'GOALS:', ...d.goals.map((g: any) => `  ${g.completed_at ? '✅' : '⬜'} [${g.goal_type}] ${g.goal_text}`)] : []),
                   ]
                   navigator.clipboard.writeText(lines.join('\n'))
                   showToast('Copied to clipboard')
@@ -849,6 +1021,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                       <div><p className="text-[9px] text-[#94a3b8]">CWPM</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : '--'}</p></div>
                       <div><p className="text-[9px] text-[#94a3b8]">Lexile</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.reading_level || d.latestReading?.passage_level || '--'}</p></div>
                       <div><p className="text-[9px] text-[#94a3b8]">Acc.</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '--'}</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">NAEP</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.naep_fluency ? `L${d.latestReading.naep_fluency}` : '--'}</p></div>
                     </div>
                   </div>
                   <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
@@ -861,6 +1034,36 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 </div>
               </div>
 
+              {/* Scaffolds */}
+              {d.scaffolds && d.scaffolds.length > 0 && (
+                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3 mb-2">
+                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Active Scaffolds ({d.scaffolds.length})</p>
+                  <div className="flex flex-wrap gap-1">
+                    {d.scaffolds.map((sc: any, i: number) => (
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-[10px] text-blue-800">
+                        <span className="font-bold uppercase text-[8px]">{sc.domain}</span> {sc.scaffold_text}
+                        {sc.effectiveness === 'working' && <span className="text-green-600">✓</span>}
+                        {sc.effectiveness === 'not_working' && <span className="text-red-600">✗</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Goals */}
+              {d.goals && d.goals.length > 0 && (
+                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Student Goals ({d.goals.length})</p>
+                  <div className="space-y-0.5">
+                    {d.goals.map((g: any, i: number) => (
+                      <div key={i} className="flex items-center gap-1.5 text-[10px]">
+                        <span>{g.completed_at ? '✅' : g.goal_type === 'stretch' ? '🚀' : g.goal_type === 'behavioral' ? '🎯' : '📚'}</span>
+                        <span className={g.completed_at ? 'line-through text-text-tertiary' : 'text-[#475569]'}>{g.goal_text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

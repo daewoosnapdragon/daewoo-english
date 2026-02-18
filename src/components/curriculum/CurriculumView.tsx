@@ -147,47 +147,6 @@ export function WIDAProfiles() {
     return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10
   }
 
-  const [applyingScaffolds, setApplyingScaffolds] = useState(false)
-  const autoApplyScaffolds = async () => {
-    setApplyingScaffolds(true)
-    let totalApplied = 0
-    // For each student with WIDA levels, check if they have scaffolds already
-    for (const s of students) {
-      const sl = levels[s.id]
-      if (!sl) continue
-      const vals = WIDA_DOMAINS.map(d => sl[d]).filter((v): v is number => v != null && v > 0)
-      if (vals.length === 0) continue
-      const avgLevel = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
-
-      // Check if student already has scaffolds
-      const { count } = await supabase.from('student_scaffolds').select('id', { count: 'exact', head: true }).eq('student_id', s.id).eq('is_active', true)
-      if ((count || 0) > 0) continue // Skip students who already have scaffolds
-
-      // Pick 3-4 default scaffolds for their level
-      const { SCAFFOLD_BANK } = await import('./WIDAGuide')
-      const matching = SCAFFOLD_BANK
-        ? SCAFFOLD_BANK.filter((sc: any) => avgLevel >= sc.levelRange[0] && avgLevel <= sc.levelRange[1])
-        : []
-      // Pick one per domain if possible, then fill with general
-      const picks: any[] = []
-      const domains = ['listening', 'speaking', 'reading', 'writing', 'general']
-      for (const dom of domains) {
-        const domMatch = matching.filter((sc: any) => sc.domain === dom)
-        if (domMatch.length > 0 && picks.length < 4) picks.push(domMatch[0])
-      }
-      if (picks.length > 0) {
-        const rows = picks.map(p => ({
-          student_id: s.id, domain: p.domain, scaffold_text: p.text,
-          wida_level: p.levelRange[0], assigned_by: currentTeacher?.id,
-        }))
-        await supabase.from('student_scaffolds').insert(rows)
-        totalApplied += picks.length
-      }
-    }
-    setApplyingScaffolds(false)
-    showToast(totalApplied > 0 ? `Applied ${totalApplied} scaffolds to students without existing scaffolds` : 'All students already have scaffolds assigned')
-  }
-
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-5">
@@ -208,14 +167,6 @@ export function WIDAProfiles() {
           <div className="ml-auto flex gap-2">
             <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save WIDA Levels
-            </button>
-          </div>
-        )}
-        {!hasChanges && students.length > 0 && (
-          <div className="ml-auto">
-            <button onClick={autoApplyScaffolds} disabled={applyingScaffolds}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-50">
-              {applyingScaffolds ? <Loader2 size={13} className="animate-spin" /> : null} Auto-Apply Scaffolds
             </button>
           </div>
         )}
