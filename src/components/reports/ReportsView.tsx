@@ -207,13 +207,12 @@ function RadarChart({ studentGrades, classAverages }: {
   studentGrades: Record<string, number | null>
   classAverages: Record<string, number | null>
 }) {
-  const size = 220
-  const cx = size / 2, cy = size / 2
-  const maxR = 85 // max radius for 100%
+  const size = 260
+  const cx = size / 2, cy = size / 2 + 6 // shift center down slightly so top label fits
+  const maxR = 75
   const levels = [20, 40, 60, 80, 100]
   const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
   const labels = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
-  // Angles: start from top (-90°), go clockwise
   const angles = domains.map((_, i) => (Math.PI * 2 * i) / domains.length - Math.PI / 2)
 
   const toXY = (angle: number, pct: number) => ({
@@ -230,7 +229,7 @@ function RadarChart({ studentGrades, classAverages }: {
 
   const studentValues = domains.map(d => studentGrades[d])
   const classValues = domains.map(d => classAverages[d])
-  const hasStudent = studentValues.some(v => v != null)
+  const filledCount = studentValues.filter(v => v != null).length
   const hasClass = classValues.some(v => v != null)
 
   return (
@@ -259,36 +258,42 @@ function RadarChart({ studentGrades, classAverages }: {
         />
       )}
 
-      {/* Student polygon */}
-      {hasStudent && (
+      {/* Student polygon — only draw if 3+ domains, otherwise just dots */}
+      {filledCount >= 3 && (
         <polygon
           points={makePolygon(studentValues)}
           fill="rgba(30,58,95,0.15)" stroke="#1e3a5f" strokeWidth={2}
         />
       )}
 
-      {/* Student dots */}
+      {/* For 2 domains, draw a line between them */}
+      {filledCount === 2 && (() => {
+        const pts = studentValues.map((v, i) => v != null ? toXY(angles[i], v) : null).filter(Boolean) as { x: number; y: number }[]
+        return pts.length === 2 ? <line x1={pts[0].x} y1={pts[0].y} x2={pts[1].x} y2={pts[1].y} stroke="#1e3a5f" strokeWidth={2} /> : null
+      })()}
+
+      {/* Student dots — always show */}
       {studentValues.map((v, i) => {
         if (v == null) return null
         const pt = toXY(angles[i], v)
-        return <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r={3.5} fill="#1e3a5f" stroke="white" strokeWidth={1.5} />
+        return <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r={4} fill="#1e3a5f" stroke="white" strokeWidth={1.5} />
       })}
 
-      {/* Domain labels */}
+      {/* Domain labels — positioned further out with smart anchoring */}
       {angles.map((a, i) => {
-        const labelR = maxR + 22
+        const labelR = maxR + 28
         const pt = toXY(a, (labelR / maxR) * 100)
-        // Score below label
         const sv = studentValues[i]
-        const cv = classValues[i]
+        // Smart text anchor: left side = end, right side = start, top/bottom = middle
+        const anchor = pt.x < cx - 10 ? 'end' : pt.x > cx + 10 ? 'start' : 'middle'
         return (
           <g key={`label-${i}`}>
-            <text x={pt.x} y={pt.y - 5} textAnchor="middle" dominantBaseline="middle"
+            <text x={pt.x} y={pt.y - 5} textAnchor={anchor} dominantBaseline="middle"
               style={{ fontSize: '10px', fontWeight: 700, fill: '#475569' }}>
               {labels[i]}
             </text>
             {sv != null && (
-              <text x={pt.x} y={pt.y + 7} textAnchor="middle" dominantBaseline="middle"
+              <text x={pt.x} y={pt.y + 7} textAnchor={anchor} dominantBaseline="middle"
                 style={{ fontSize: '9px', fontWeight: 700, fill: '#1e3a5f' }}>
                 {sv.toFixed(0)}%
               </text>
@@ -297,9 +302,9 @@ function RadarChart({ studentGrades, classAverages }: {
         )
       })}
 
-      {/* Center scale labels */}
+      {/* Scale labels along top axis */}
       {[60, 80, 100].map(lvl => {
-        const pt = toXY(-Math.PI / 2, lvl) // along top axis
+        const pt = toXY(-Math.PI / 2, lvl)
         return (
           <text key={`scale-${lvl}`} x={pt.x + 10} y={pt.y + 3}
             style={{ fontSize: '7px', fill: '#94a3b8' }}>
@@ -607,7 +612,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     }).join('')
 
     // Radar chart SVG for print
-    const radarSize = 200, rcx = radarSize / 2, rcy = radarSize / 2, maxR = 75
+    const radarSize = 240, rcx = radarSize / 2, rcy = radarSize / 2 + 6, maxR = 70
     const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
     const rLabels = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
     const rAngles = domains.map((_, i) => (Math.PI * 2 * i) / 5 - Math.PI / 2)
@@ -615,32 +620,34 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const makePoly = (vals: (number | null)[]) => vals.map((v, i) => { const pt = toXY(rAngles[i], v ?? 0); return `${pt.x},${pt.y}` }).join(' ')
     const sVals = domains.map(dm => d.domainGrades[dm])
     const cVals = domains.map(dm => d.classAverages[dm])
+    const sFilledCount = sVals.filter(v => v != null).length
 
     const gridLines = [20, 40, 60, 80, 100].map(lvl =>
       `<polygon points="${rAngles.map(a => { const p = toXY(a, lvl); return `${p.x},${p.y}` }).join(' ')}" fill="none" stroke="#e8e0d8" stroke-width="0.5" ${lvl < 100 ? 'stroke-dasharray="2,2"' : ''}/>`
     ).join('')
     const axisLines = rAngles.map(a => { const e = toXY(a, 100); return `<line x1="${rcx}" y1="${rcy}" x2="${e.x}" y2="${e.y}" stroke="#e8e0d8" stroke-width="0.5"/>` }).join('')
     const classPoly = cVals.some(v => v != null) ? `<polygon points="${makePoly(cVals)}" fill="rgba(148,163,184,0.08)" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,3"/>` : ''
-    const studentPoly = sVals.some(v => v != null) ? `<polygon points="${makePoly(sVals)}" fill="rgba(30,58,95,0.15)" stroke="#1e3a5f" stroke-width="2"/>` : ''
-    const dots = sVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="3" fill="#1e3a5f" stroke="white" stroke-width="1.5"/>` }).join('')
+    const studentPoly = sFilledCount >= 3 ? `<polygon points="${makePoly(sVals)}" fill="rgba(30,58,95,0.15)" stroke="#1e3a5f" stroke-width="2"/>` : ''
+    const dots = sVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="#1e3a5f" stroke="white" stroke-width="1.5"/>` }).join('')
     const radarLabels = rAngles.map((a, i) => {
-      const pt = toXY(a, ((maxR + 20) / maxR) * 100)
+      const pt = toXY(a, ((maxR + 26) / maxR) * 100)
       const sv = sVals[i]
-      return `<text x="${pt.x}" y="${pt.y - 4}" text-anchor="middle" dominant-baseline="middle" style="font-size:9px;font-weight:700;fill:#475569">${rLabels[i]}</text>
-        ${sv != null ? `<text x="${pt.x}" y="${pt.y + 7}" text-anchor="middle" dominant-baseline="middle" style="font-size:8px;font-weight:700;fill:#1e3a5f">${sv.toFixed(0)}%</text>` : ''}`
+      const anchor = pt.x < rcx - 10 ? 'end' : pt.x > rcx + 10 ? 'start' : 'middle'
+      return `<text x="${pt.x}" y="${pt.y - 4}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:9px;font-weight:700;fill:#475569">${rLabels[i]}</text>
+        ${sv != null ? `<text x="${pt.x}" y="${pt.y + 7}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:8px;font-weight:700;fill:#1e3a5f">${sv.toFixed(0)}%</text>` : ''}`
     }).join('')
 
     const radarSvg = `<svg width="${radarSize}" height="${radarSize}" viewBox="0 0 ${radarSize} ${radarSize}">${gridLines}${axisLines}${classPoly}${studentPoly}${dots}${radarLabels}</svg>`
 
-    // Reading fluency HTML
+    // Reading fluency HTML — with null safety
     const r = d.latestReading
     const readingHtml = r ? `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div style="background:#f8f9fb;border-radius:8px;padding:10px;text-align:center"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">CWPM</div><div style="font-size:20px;font-weight:800;color:#1e3a5f">${Math.round(r.cwpm)}</div></div>
-        <div style="background:#f8f9fb;border-radius:8px;padding:10px;text-align:center"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Accuracy</div><div style="font-size:20px;font-weight:800;color:${r.accuracy_rate >= 95 ? '#16a34a' : r.accuracy_rate >= 90 ? '#d97706' : '#dc2626'}">${r.accuracy_rate?.toFixed(1)}%</div></div>
-        <div style="background:#f8f9fb;border-radius:8px;padding:10px;text-align:center"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Level</div><div style="font-size:16px;font-weight:700;color:#475569">${r.reading_level || r.passage_level || '—'}</div></div>
-        <div style="background:#f8f9fb;border-radius:8px;padding:10px;text-align:center"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">NAEP Fluency</div><div style="font-size:16px;font-weight:700;color:#475569">${r.naep_fluency ? 'Level ' + r.naep_fluency : '—'}</div></div>
-      </div>` : '<div style="background:#f8f9fb;border-radius:8px;padding:14px;text-align:center;font-size:11px;color:#94a3b8">No reading assessments recorded yet.</div>'
+        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Words Per Minute</div><div style="font-size:20px;font-weight:800;color:#1e3a5f">${r.cwpm != null ? Math.round(r.cwpm) : '—'}</div></div>
+        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Reading Accuracy</div><div style="font-size:20px;font-weight:800;color:${r.accuracy_rate != null ? (r.accuracy_rate >= 95 ? '#16a34a' : r.accuracy_rate >= 90 ? '#d97706' : '#dc2626') : '#94a3b8'}">${r.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '—'}</div></div>
+        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Reading Level</div><div style="font-size:16px;font-weight:700;color:#475569">${r.reading_level || r.passage_level || '—'}</div></div>
+        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Fluency Rating</div><div style="font-size:16px;font-weight:700;color:#475569">${r.naep_fluency ? r.naep_fluency + ' of 4' : '—'}</div></div>
+      </div>` : '<div style="background:#f8f5f1;border:1px solid #e8e0d8;border-radius:8px;padding:14px;text-align:center;font-size:11px;color:#94a3b8">No reading assessments recorded yet.</div>'
 
     // Goals HTML
     const goalsHtml = d.goals?.length ? d.goals.slice(0, 5).map((g: any) =>
@@ -648,7 +655,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         <span style="flex-shrink:0">${g.completed_at ? '✅' : g.goal_type === 'stretch' ? '🚀' : g.goal_type === 'behavioral' ? '🎯' : '📚'}</span>
         <span style="${g.completed_at ? 'text-decoration:line-through;color:#94a3b8' : 'color:#475569;line-height:1.5'}">${g.goal_text}</span>
       </div>`
-    ).join('') : '<div style="background:#f8f9fb;border-radius:8px;padding:10px;text-align:center;font-size:11px;color:#94a3b8">No goals set yet.</div>'
+    ).join('') : '<div style="background:#f8f5f1;border:1px solid #e8e0d8;border-radius:8px;padding:10px;text-align:center;font-size:11px;color:#94a3b8">No goals set yet.</div>'
 
     // Grading scale
     const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#f8f5f1;border:1px solid #e8e0d8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
@@ -661,9 +668,11 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const pw = window.open('', '_blank')
     if (!pw) return
     pw.document.write(`<html><head><title>Report Card \u2014 ${s.english_name}</title>
-    <style>body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:12px;background:#f5f0eb}
-    .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
-    @media print{body{background:white;padding:0}.card{margin:0;box-shadow:none;border-radius:0}}</style></head>
+    <style>
+      body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb}
+      @media print{body{padding:0}.card{margin:0;box-shadow:none;border-radius:0}}
+    </style></head>
     <body><div class="card">
     <!-- Header -->
     <div style="background:#1e3a5f;padding:18px 28px;color:white;display:flex;justify-content:space-between;align-items:center">
@@ -673,7 +682,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2)"><img src="/logo.png" style="width:36px;height:36px;object-fit:contain" onerror="this.style.display='none'" /></div>
     </div>
     <!-- Student Info -->
-    <div style="background:#fff;padding:14px 28px;border-bottom:1px solid #e8e0d8">
+    <div style="background:#fdfcfa;padding:14px 28px;border-bottom:1px solid #e8e0d8">
       <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr auto;gap:0 14px">
         <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Name</div><div style="font-size:13px;font-weight:700;margin-top:1px">${s.korean_name}  ${s.english_name}</div></div>
         <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Grade</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayGrade}</div></div>
@@ -696,12 +705,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       </div>
     </div>
     <!-- Score Tiles -->
-    <div style="background:#fff;padding:18px 28px 22px;border-bottom:1px solid #e8e0d8">
+    <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #e8e0d8">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
     </div>
     <!-- Student Snapshot: Radar + Reading + Goals -->
-    <div style="background:#fff;padding:20px 28px;border-bottom:1px solid #e8e0d8">
+    <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #e8e0d8">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
         <div>
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Class Comparison</div>
@@ -720,12 +729,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       </div>
     </div>
     <!-- Comment -->
-    <div style="background:#fff;padding:20px 28px;border-bottom:1px solid #e8e0d8">
+    <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #e8e0d8">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
       <div style="font-size:12px;line-height:1.8;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 18px;border:1px solid #e8e0d8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>
     </div>
     <!-- Scale + Footer -->
-    <div style="background:#fff;padding:14px 28px">
+    <div style="background:#fdfcfa;padding:14px 28px">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Grading Scale</div>
       <div style="display:flex;gap:3px;flex-wrap:wrap">${scaleHtml}</div>
       <div style="text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid #e8e0d8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School \u00b7 English Program \u00b7 ${d.semesterName}</div>
@@ -889,22 +898,22 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 {d.latestReading ? (
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
-                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">CWPM</div>
-                      <div className="text-[22px] font-extrabold text-navy leading-none">{Math.round(d.latestReading.cwpm)}</div>
+                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Words Per Minute</div>
+                      <div className="text-[22px] font-extrabold text-navy leading-none">{d.latestReading.cwpm != null ? Math.round(d.latestReading.cwpm) : '—'}</div>
                     </div>
                     <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
-                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Accuracy</div>
-                      <div className={`text-[22px] font-extrabold leading-none ${d.latestReading.accuracy_rate >= 95 ? 'text-green-600' : d.latestReading.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-500'}`}>
-                        {d.latestReading.accuracy_rate?.toFixed(1)}%
+                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Reading Accuracy</div>
+                      <div className={`text-[22px] font-extrabold leading-none ${d.latestReading.accuracy_rate != null ? (d.latestReading.accuracy_rate >= 95 ? 'text-green-600' : d.latestReading.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-500') : 'text-[#94a3b8]'}`}>
+                        {d.latestReading.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '—'}
                       </div>
                     </div>
                     <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
-                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Level</div>
+                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Reading Level</div>
                       <div className="text-[18px] font-bold text-[#475569]">{d.latestReading.reading_level || d.latestReading.passage_level || '—'}</div>
                     </div>
                     <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
-                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">NAEP Fluency</div>
-                      <div className="text-[18px] font-bold text-[#475569]">{d.latestReading.naep_fluency ? `Level ${d.latestReading.naep_fluency}` : '—'}</div>
+                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Fluency Rating</div>
+                      <div className="text-[18px] font-bold text-[#475569]">{d.latestReading.naep_fluency ? `${d.latestReading.naep_fluency} of 4` : '—'}</div>
                     </div>
                   </div>
                 ) : (
