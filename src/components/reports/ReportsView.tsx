@@ -69,6 +69,13 @@ interface ReportData {
   teacherName: string
   teacherPhotoUrl: string | null
   semesterName: string
+  latestReading: any | null
+  behaviorCount: number
+  behaviorGrade: string | null
+  totalAtt: number
+  attCounts: { present: number; absent: number; tardy: number }
+  scaffolds: any[]
+  goals: any[]
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
@@ -377,39 +384,49 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     let prevOverall: number | null = null
     let prevSemesterName: string | null = null
 
-    // Sort semesters chronologically by type for comparison
+    // Sort semesters chronologically by name/date for comparison
+    // Parse year from semester name (e.g. "Fall 2025", "Spring Mid 2026") and use type for sub-ordering
     const typeOrder: Record<string, number> = { archive: 0, fall_mid: 1, fall_final: 2, fall: 2, spring_mid: 3, spring_final: 4, spring: 4 }
-    const sortedSems = [...allSemesters].sort((a: any, b: any) => (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0))
+    const getYearFromSem = (s: any) => {
+      const m = s.name?.match(/\d{4}/)
+      return m ? parseInt(m[0]) : 2025
+    }
+    const sortedSems = [...allSemesters].sort((a: any, b: any) => {
+      const yearDiff = getYearFromSem(a) - getYearFromSem(b)
+      if (yearDiff !== 0) return yearDiff
+      return (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0)
+    })
     const semesterIdx = sortedSems.findIndex((s: any) => s.id === semesterId)
     const prevSemester = semesterIdx > 0 ? sortedSems[semesterIdx - 1] : null
     if (prevSemester) {
-      const { data: prevAssessments } = await supabase.from('assessments').select('*')
-        .eq('semester_id', prevSemester.id).eq('grade', student.grade).eq('english_class', selectedClass)
-      const { data: prevGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
-
-      if (prevAssessments && prevAssessments.length > 0) {
+      // First try: check semester_grades (works for both historical imports and calculated)
+      const { data: prevSemGrades } = await supabase.from('semester_grades').select('*').eq('student_id', studentId).eq('semester_id', prevSemester.id)
+      if (prevSemGrades && prevSemGrades.length > 0) {
         prevDomainGrades = {}
         DOMAINS.forEach((domain) => {
-          const domAssessments = (prevAssessments || []).filter((a: any) => a.domain === domain)
-          const scores = domAssessments.map((a: any) => {
-            const g = (prevGrades || []).find((gr: any) => gr.assessment_id === a.id)
-            if (!g || g.score == null || g.is_exempt) return null
-            return (g.score / a.max_score) * 100
-          }).filter((x: any) => x !== null) as number[]
-          prevDomainGrades![domain] = scores.length > 0 ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10 : null
+          const sg = prevSemGrades.find((g: any) => g.domain === domain)
+          prevDomainGrades![domain] = sg ? (sg.final_grade ?? sg.calculated_grade ?? null) : null
         })
         const prevScored = DOMAINS.filter((d) => prevDomainGrades![d] != null)
         prevOverall = prevScored.length > 0 ? Math.round(prevScored.reduce((a: number, d) => a + (prevDomainGrades![d] as number), 0) / prevScored.length * 10) / 10 : null
         prevSemesterName = prevSemester.name
         if (prevScored.length === 0) { prevDomainGrades = null; prevOverall = null; prevSemesterName = null }
       } else {
-        // Fallback: check semester_grades for historical data
-        const { data: prevSemGrades } = await supabase.from('semester_grades').select('*').eq('student_id', studentId).eq('semester_id', prevSemester.id)
-        if (prevSemGrades && prevSemGrades.length > 0) {
+        // Fallback: calculate from assessments
+        const { data: prevAssessments } = await supabase.from('assessments').select('*')
+          .eq('semester_id', prevSemester.id).eq('grade', student.grade).eq('english_class', selectedClass)
+        const { data: prevGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
+
+        if (prevAssessments && prevAssessments.length > 0) {
           prevDomainGrades = {}
           DOMAINS.forEach((domain) => {
-            const sg = prevSemGrades.find((g: any) => g.domain === domain)
-            prevDomainGrades![domain] = sg ? (sg.final_grade ?? sg.calculated_grade ?? null) : null
+            const domAssessments = (prevAssessments || []).filter((a: any) => a.domain === domain)
+            const scores = domAssessments.map((a: any) => {
+              const g = (prevGrades || []).find((gr: any) => gr.assessment_id === a.id)
+              if (!g || g.score == null || g.is_exempt) return null
+              return (g.score / a.max_score) * 100
+            }).filter((x: any) => x !== null) as number[]
+            prevDomainGrades![domain] = scores.length > 0 ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10 : null
           })
           const prevScored = DOMAINS.filter((d) => prevDomainGrades![d] != null)
           prevOverall = prevScored.length > 0 ? Math.round(prevScored.reduce((a: number, d) => a + (prevDomainGrades![d] as number), 0) / prevScored.length * 10) / 10 : null
@@ -425,6 +442,19 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     // 5. Teacher info
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
+    // 6. Reading fluency, attendance, behavior, scaffolds, goals
+    const [readingRes, attRes, behaviorRes, scaffoldRes, goalsRes, semGradeRes] = await Promise.all([
+      supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(5),
+      supabase.from('attendance').select('status').eq('student_id', studentId),
+      supabase.from('behavior_logs').select('id, log_type, created_at', { count: 'exact' }).eq('student_id', studentId),
+      supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', studentId).eq('is_active', true),
+      supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', studentId).eq('is_active', true),
+      supabase.from('semester_grades').select('behavior_grade').eq('student_id', studentId).eq('semester_id', semesterId).eq('domain', 'overall').limit(1).single(),
+    ])
+    const attRecords = attRes.data || []
+    const attCounts = { present: 0, absent: 0, tardy: 0 }
+    attRecords.forEach((r: any) => { if (r.status === 'present') attCounts.present++; else if (r.status === 'absent') attCounts.absent++; else if (r.status === 'tardy') attCounts.tardy++ })
+
     setData({
       student, domainGrades, overallGrade, overallLetter, classAverages,
       classOverall: null,
@@ -433,6 +463,13 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       teacherName: teacher?.name || currentTeacher?.name || '',
       teacherPhotoUrl: teacher?.photo_url || null,
       semesterName: semester.name,
+      latestReading: readingRes.data?.[0] || null,
+      behaviorCount: behaviorRes.count || 0,
+      behaviorGrade: semGradeRes.data?.behavior_grade || null,
+      totalAtt: attRecords.length,
+      attCounts,
+      scaffolds: scaffoldRes.data || [],
+      goals: goalsRes.data || [],
     })
     setComment(commentData?.text || '')
     setLoading(false)
@@ -812,9 +849,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                     `  CWPM: ${d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : 'N/A'}`,
                     `  Lexile: ${d.latestReading?.reading_level || d.latestReading?.passage_level || 'N/A'}`,
                     `  Accuracy: ${d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : 'N/A'}`,
+                    `  NAEP Fluency: ${d.latestReading?.naep_fluency ? `Level ${d.latestReading.naep_fluency}` : 'N/A'}`,
                     '',
                     `ATTENDANCE: ${d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}% (${d.attCounts.present}P/${d.attCounts.absent}A/${d.attCounts.tardy}T)` : 'N/A'}`,
                     `BEHAVIOR LOGS: ${d.behaviorCount} entries`,
+                    ...(d.scaffolds?.length ? ['', 'SCAFFOLDS:', ...d.scaffolds.map((sc: any) => `  [${sc.domain}] ${sc.scaffold_text}${sc.effectiveness ? ` (${sc.effectiveness})` : ''}`)] : []),
+                    ...(d.goals?.length ? ['', 'GOALS:', ...d.goals.map((g: any) => `  ${g.completed_at ? '✅' : '⬜'} [${g.goal_type}] ${g.goal_text}`)] : []),
                   ]
                   navigator.clipboard.writeText(lines.join('\n'))
                   showToast('Copied to clipboard')
@@ -849,6 +889,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                       <div><p className="text-[9px] text-[#94a3b8]">CWPM</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : '--'}</p></div>
                       <div><p className="text-[9px] text-[#94a3b8]">Lexile</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.reading_level || d.latestReading?.passage_level || '--'}</p></div>
                       <div><p className="text-[9px] text-[#94a3b8]">Acc.</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '--'}</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">NAEP</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.naep_fluency ? `L${d.latestReading.naep_fluency}` : '--'}</p></div>
                     </div>
                   </div>
                   <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
@@ -861,6 +902,36 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 </div>
               </div>
 
+              {/* Scaffolds */}
+              {d.scaffolds && d.scaffolds.length > 0 && (
+                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3 mb-2">
+                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Active Scaffolds ({d.scaffolds.length})</p>
+                  <div className="flex flex-wrap gap-1">
+                    {d.scaffolds.map((sc: any, i: number) => (
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-[10px] text-blue-800">
+                        <span className="font-bold uppercase text-[8px]">{sc.domain}</span> {sc.scaffold_text}
+                        {sc.effectiveness === 'working' && <span className="text-green-600">✓</span>}
+                        {sc.effectiveness === 'not_working' && <span className="text-red-600">✗</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Goals */}
+              {d.goals && d.goals.length > 0 && (
+                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Student Goals ({d.goals.length})</p>
+                  <div className="space-y-0.5">
+                    {d.goals.map((g: any, i: number) => (
+                      <div key={i} className="flex items-center gap-1.5 text-[10px]">
+                        <span>{g.completed_at ? '✅' : g.goal_type === 'stretch' ? '🚀' : g.goal_type === 'behavioral' ? '🎯' : '📚'}</span>
+                        <span className={g.completed_at ? 'line-through text-text-tertiary' : 'text-[#475569]'}>{g.goal_text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
