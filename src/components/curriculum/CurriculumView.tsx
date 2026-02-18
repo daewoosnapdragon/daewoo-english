@@ -171,8 +171,6 @@ export function WIDAProfiles() {
           </div>
         )}
       </div>
-        )}
-      </div>
 
       {/* WIDA Level definitions with scaffolding strategies */}
       <div className="grid grid-cols-3 gap-2 mb-5">
