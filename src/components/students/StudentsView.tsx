@@ -615,22 +615,20 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
   useState(() => {
     (async () => {
       // 1. Load semester_grades history
-      const { data: semGrades } = await supabase.from('semester_grades').select('*, semesters(name, created_at)').eq('student_id', studentId)
+      const { data: semGrades } = await supabase.from('semester_grades').select('*, semesters(name)').eq('student_id', studentId)
       if (semGrades && semGrades.length > 0) {
-        const bySem: Record<string, { name: string; createdAt: string; grades: Record<string, number | null>; behavior: string | null }> = {}
+        const bySem: Record<string, { name: string; grades: Record<string, number | null>; behavior: string | null }> = {}
         semGrades.forEach((sg: any) => {
           const semName = sg.semesters?.name || 'Unknown'
           const semId = sg.semester_id
-          if (!bySem[semId]) bySem[semId] = { name: semName, createdAt: sg.semesters?.created_at || '', grades: {}, behavior: null }
+          if (!bySem[semId]) bySem[semId] = { name: semName, grades: {}, behavior: null }
           if (sg.domain === 'overall') {
             bySem[semId].behavior = sg.behavior_grade
           } else {
             bySem[semId].grades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
           }
         })
-        const history = Object.values(bySem)
-          .filter(s => DOMAINS.some(d => s.grades[d] != null))
-          .sort((a, b) => (a.createdAt || a.name).localeCompare(b.createdAt || b.name))
+        const history = Object.values(bySem).filter(s => DOMAINS.some(d => s.grades[d] != null))
         setSemesterHistory(history)
       }
 
@@ -662,7 +660,7 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
         assessments: items.map(item => ({
           ...item,
           classAvg: avgMap[item.assessmentId] != null && item.max > 0 ? (avgMap[item.assessmentId] / item.max) * 100 : null
-        })).sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+        }))
       }))
       setData(result); setLoading(false)
     })()
@@ -1240,78 +1238,52 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
 
   return (
     <div>
-      {/* Summary bar */}
-      <div className="mb-4">
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-[12px] font-semibold text-navy">{standardsData.length} Standards Tracked</span>
-          <span className="text-[10px] text-text-tertiary">from {standardsData.reduce((s, d) => s + d.assessments.length, 0)} assessments</span>
+      {/* Summary */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+          <span className="text-[11px] font-semibold text-green-700">{mastered} mastered</span>
         </div>
-        <div className="flex h-6 rounded-lg overflow-hidden border border-border">
-          {mastered > 0 && <div className="bg-green-400 flex items-center justify-center" style={{ width: `${(mastered / standardsData.length) * 100}%` }}><span className="text-[9px] font-bold text-white">{mastered}</span></div>}
-          {approaching > 0 && <div className="bg-amber-400 flex items-center justify-center" style={{ width: `${(approaching / standardsData.length) * 100}%` }}><span className="text-[9px] font-bold text-white">{approaching}</span></div>}
-          {below > 0 && <div className="bg-red-400 flex items-center justify-center" style={{ width: `${(below / standardsData.length) * 100}%` }}><span className="text-[9px] font-bold text-white">{below}</span></div>}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+          <span className="text-[11px] font-semibold text-amber-700">{approaching} approaching</span>
         </div>
-        <div className="flex items-center gap-4 mt-1.5">
-          <span className="flex items-center gap-1 text-[10px] text-green-700"><span className="w-2 h-2 rounded-full bg-green-400" />Mastered ({mastered})</span>
-          <span className="flex items-center gap-1 text-[10px] text-amber-700"><span className="w-2 h-2 rounded-full bg-amber-400" />Approaching ({approaching})</span>
-          <span className="flex items-center gap-1 text-[10px] text-red-700"><span className="w-2 h-2 rounded-full bg-red-400" />Below ({below})</span>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <span className="text-[11px] font-semibold text-red-700">{below} below</span>
         </div>
+        <span className="text-[10px] text-text-tertiary ml-2">{standardsData.length} standards across {standardsData.reduce((s, d) => s + d.assessments.length, 0)} assessments</span>
       </div>
 
-      {/* Standards grouped by domain */}
-      {Object.entries(
-        standardsData.reduce((acc, std) => {
-          if (!acc[std.domain]) acc[std.domain] = []
-          acc[std.domain].push(std)
-          return acc
-        }, {} as Record<string, typeof standardsData>)
-      ).map(([domain, stds]) => {
-        const domMastered = stds.filter(s => s.avgPct >= 80).length
-        const domColor = DOMAIN_COLORS[domain] || '#6b7280'
-        return (
-          <div key={domain} className="mb-3">
-            <div className="flex items-center gap-2 mb-1.5 px-1">
-              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: domColor }}>{domain}</span>
-              <span className="text-[10px] text-text-tertiary">{domMastered}/{stds.length} mastered</span>
+      {/* Standards list */}
+      <div className="space-y-1.5">
+        {standardsData.map(std => {
+          const pctColor = std.avgPct >= 80 ? 'text-green-600' : std.avgPct >= 60 ? 'text-amber-600' : 'text-red-600'
+          const barColor = std.avgPct >= 80 ? 'bg-green-400' : std.avgPct >= 60 ? 'bg-amber-400' : 'bg-red-400'
+          return (
+            <div key={std.code} className="bg-surface border border-border rounded-lg px-4 py-2.5 flex items-center gap-3">
+              <div className="w-10 text-center">
+                <p className={`text-[14px] font-bold ${pctColor}`}>{Math.round(std.avgPct)}%</p>
+              </div>
+              <div className={`w-1.5 h-8 rounded-full ${barColor}`} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-navy">{std.code}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[8px] font-semibold text-white" style={{ backgroundColor: DOMAIN_COLORS[std.domain] || '#6b7280' }}>
+                    {std.domain}
+                  </span>
+                  <span className="text-[9px] text-text-tertiary">{std.assessments.length} assessment{std.assessments.length !== 1 ? 's' : ''}</span>
+                </div>
+                <p className="text-[10px] text-text-secondary mt-0.5 truncate">{std.description}</p>
+              </div>
+              {/* Mini progress bar */}
+              <div className="w-24 h-2 bg-surface-alt rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(100, std.avgPct)}%` }} />
+              </div>
             </div>
-            <div className="space-y-1">
-              {stds.sort((a, b) => b.avgPct - a.avgPct).map(std => {
-                const pctColor = std.avgPct >= 80 ? 'text-green-600' : std.avgPct >= 60 ? 'text-amber-600' : 'text-red-600'
-                const barColor = std.avgPct >= 80 ? 'bg-green-400' : std.avgPct >= 60 ? 'bg-amber-400' : 'bg-red-400'
-                return (
-                  <div key={std.code} className="bg-surface border border-border rounded-lg px-3 py-2 flex items-center gap-3">
-                    <div className="w-10 text-center flex-shrink-0">
-                      <p className={`text-[13px] font-bold ${pctColor}`}>{Math.round(std.avgPct)}%</p>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-bold text-navy">{std.code}</span>
-                        <span className="text-[9px] text-text-tertiary">{std.assessments.length} assess.</span>
-                      </div>
-                      <p className="text-[10px] text-text-secondary mt-0.5 line-clamp-1">{std.description}</p>
-                    </div>
-                    <div className="w-20 flex-shrink-0">
-                      <div className="h-2 bg-surface-alt rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(100, std.avgPct)}%` }} />
-                      </div>
-                      {/* Mini sparkline of assessment scores */}
-                      {std.assessments.length > 1 && (
-                        <div className="flex items-end gap-px mt-1 h-3">
-                          {std.assessments.map((a: any, i: number) => (
-                            <div key={i} className={`flex-1 rounded-sm ${a.pct >= 80 ? 'bg-green-400' : a.pct >= 60 ? 'bg-amber-400' : 'bg-red-400'}`}
-                              style={{ height: `${Math.max(15, Math.min(100, a.pct))}%` }}
-                              title={`${a.name}: ${Math.round(a.pct)}%`} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }

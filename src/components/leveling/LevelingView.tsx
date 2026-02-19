@@ -8,7 +8,7 @@ import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
-import Grade1ScoreEntry, { calculateG1Composite, WRITTEN_SECTIONS as G1_WRITTEN_SECTIONS } from '@/components/leveling/Grade1ScoreEntry'
+import Grade1ScoreEntry from '@/components/leveling/Grade1ScoreEntry'
 import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
 import { exportToCSV } from '@/lib/export'
 
@@ -88,23 +88,16 @@ export default function LevelingView() {
       <div className="px-10 py-3 bg-surface-alt border-b border-border flex items-center gap-1">
         <button onClick={() => setSelectedTest(null)} className="text-[12px] text-text-tertiary hover:text-navy mr-3"><ChevronLeft size={14} className="inline" /> All Tests</button>
         <span className="text-[14px] font-semibold text-navy mr-4">{selectedTest.name}</span>
-        {/* Grade 1: skip Teacher Ratings phase (use oral test impression instead) */}
-        {(String(selectedTest.grade) === '1'
-          ? (['scores', 'results', 'meeting'] as Phase[])
-          : (['scores', 'anecdotal', 'results', 'meeting'] as Phase[])
-        ).map(p => (
+        {(['scores', 'anecdotal', 'results', 'meeting'] as Phase[]).map(p => (
           <button key={p} onClick={() => setPhase(p)} className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${phase === p ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface'}`}>
             {p === 'scores' ? 'Test Scores' : p === 'anecdotal' ? 'Teacher Ratings' : p === 'results' ? 'Results' : 'Leveling Meeting'}
           </button>
         ))}
         <span className={`ml-auto text-[10px] font-bold px-2 py-1 rounded-full ${selectedTest.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{selectedTest.status.toUpperCase()}</span>
       </div>
-      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} onContinue={() => setPhase(String(selectedTest.grade) === '1' ? 'results' : 'anecdotal')} />}
-      {phase === 'anecdotal' && String(selectedTest.grade) !== '1' && <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />}
-      {phase === 'results' && (String(selectedTest.grade) === '1'
-        ? <Grade1ResultsPhase levelTest={selectedTest} />
-        : <ResultsPhase levelTest={selectedTest} />
-      )}
+      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} onContinue={() => setPhase('anecdotal')} />}
+      {phase === 'anecdotal' && <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />}
+      {phase === 'results' && <ResultsPhase levelTest={selectedTest} />}
       {phase === 'meeting' && <MeetingPhase levelTest={selectedTest} onFinalize={() => {
         setSelectedTest({ ...selectedTest, status: 'finalized' }); setLevelTests(prev => prev.map(t => t.id === selectedTest.id ? { ...t, status: 'finalized' } : t))
       }} />}
@@ -256,15 +249,14 @@ function ClassTabs({ active, onSelect, counts, available }: { active: EnglishCla
 // ─── Score Entry Phase ──────────────────────────────────────────────
 
 function ScoreEntryPhase({ levelTest, teacherClass, isAdmin, onContinue }: { levelTest: LevelTest; teacherClass: EnglishClass | null; isAdmin: boolean; onContinue: () => void }) {
-  // Grade-specific scoring modules
-  // Grade 1: Full two-part test (Written + Oral + Results/Placement)
-  if (String(levelTest.grade) === '1') {
+  // Grade 1 uses the comprehensive two-part test entry (Written + Oral + Results)
+  if (levelTest.grade === 1 || levelTest.grade === '1' as any) {
     return (
       <div>
         <Grade1ScoreEntry levelTest={levelTest} isAdmin={isAdmin} />
         <div className="px-10 pb-6 flex justify-end">
-          <button onClick={onContinue} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-gold text-navy-dark hover:bg-gold-light shadow-sm">
-            Done with Scores? View Results &rarr;
+          <button onClick={onContinue} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light">
+            Done with Scores? Continue to Teacher Ratings →
           </button>
         </div>
       </div>
@@ -647,284 +639,6 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-// ─── Grade 1 Results Phase ──────────────────────────────────────────
-
-function Grade1ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
-  const [students, setStudents] = useState<Student[]>([])
-  const [scores, setScores] = useState<Record<string, any>>({})
-  const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState<string>('composite')
-  const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>('all')
-  const [dossierStudent, setDossierStudent] = useState<string | null>(null)
-
-  useEffect(() => {
-    (async () => {
-      const [{ data: studs }, { data: sd }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial').order('english_name'),
-        supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
-      ])
-      if (studs) setStudents(studs)
-      const sm: Record<string, any> = {}; sd?.forEach((s: any) => { sm[s.student_id] = s }); setScores(sm)
-      setLoading(false)
-    })()
-  }, [levelTest.id, levelTest.grade])
-
-  const rows = useMemo(() => {
-    return students.map(s => {
-      const raw = scores[s.id]?.raw_scores || {}
-      const metrics = calculateG1Composite(raw)
-      const writtenRaw = G1_WRITTEN_SECTIONS.map(sec => raw[sec.key] ?? 0).reduce((a: number, b: number) => a + b, 0)
-      return { student: s, raw, writtenRaw, ...metrics }
-    }).filter(r => r.raw.o_passage_level || r.raw.w_letter_names != null)
-  }, [students, scores])
-
-  const sorted = useMemo(() => {
-    let res = [...rows]
-    if (filterClass !== 'all') res = res.filter(r => r.suggestedClass === filterClass)
-    switch (sortBy) {
-      case 'composite': res.sort((a, b) => b.composite - a.composite); break
-      case 'name': res.sort((a, b) => a.student.english_name.localeCompare(b.student.english_name)); break
-      case 'suggested': {
-        res.sort((a, b) => {
-          const ai = ENGLISH_CLASSES.indexOf(a.suggestedClass)
-          const bi = ENGLISH_CLASSES.indexOf(b.suggestedClass)
-          return ai !== bi ? ai - bi : b.composite - a.composite
-        }); break
-      }
-      case 'passage': res.sort((a, b) => (b.passageLevel || '').localeCompare(a.passageLevel || '')); break
-    }
-    return res
-  }, [rows, sortBy, filterClass])
-
-  const classCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    ENGLISH_CLASSES.forEach(c => counts[c] = 0)
-    rows.forEach(r => counts[r.suggestedClass] = (counts[r.suggestedClass] || 0) + 1)
-    return counts
-  }, [rows])
-
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
-
-  if (rows.length === 0) return (
-    <div className="px-10 py-12 text-center">
-      <p className="text-text-tertiary">No scores entered yet. Complete the Written and Oral tests first.</p>
-    </div>
-  )
-
-  return (
-    <div className="px-10 py-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-display text-lg font-semibold text-navy">Grade 1 Results &amp; Suggested Placement</h3>
-          <p className="text-[12px] text-text-secondary mt-1">{rows.length} students scored. Composite = 50% oral + 35% written + 15% teacher impression (when provided).</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <select value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="px-3 py-2 border border-border rounded-lg text-[12px] bg-surface">
-            <option value="composite">Sort: Composite</option>
-            <option value="name">Sort: Name</option>
-            <option value="suggested">Sort: Suggested Class</option>
-            <option value="passage">Sort: Passage Level</option>
-          </select>
-          <button onClick={() => {
-            exportToCSV(`leveling-G1-spring`,
-              ['Student', 'Korean Name', 'Passage Lvl', 'Written /30', 'CWPM', 'Comp', 'Oral Score', 'Composite', 'Teacher Pick', 'Suggested', 'Standards Met'],
-              sorted.map(r => [r.student.english_name, r.student.korean_name, r.passageLevel,
-                r.writtenRaw, r.cwpm ?? '', r.compTotal != null ? `${r.compTotal}/${r.compMax}` : '',
-                Math.round(r.oralScore), Math.round(r.composite),
-                r.raw.teacher_impression || '', r.suggestedClass,
-                r.standardsBaseline.filter((s: any) => s.met).length + '/' + r.standardsBaseline.length]))
-          }} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
-            <Download size={12} /> CSV
-          </button>
-        </div>
-      </div>
-
-      {/* Class Distribution Bar */}
-      <div className="bg-surface border border-border rounded-xl p-4 mb-4">
-        <p className="text-[11px] font-semibold text-text-secondary mb-2 uppercase tracking-wider">Suggested Class Distribution</p>
-        <div className="flex gap-2">
-          {ENGLISH_CLASSES.map(cls => (
-            <button key={cls} onClick={() => setFilterClass(filterClass === cls ? 'all' : cls)}
-              className={`flex-1 text-center py-2 rounded-lg transition-all ${filterClass === cls ? 'ring-2 ring-navy' : ''}`}>
-              <div className="text-[18px] font-bold" style={{ color: classToColor(cls) }}>{classCounts[cls]}</div>
-              <div className="text-[10px] font-medium px-2 py-0.5 rounded-full inline-block"
-                style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>
-                {cls}
-              </div>
-            </button>
-          ))}
-        </div>
-        {filterClass !== 'all' && <button onClick={() => setFilterClass('all')} className="text-[10px] text-navy mt-2 hover:underline">Show all classes</button>}
-      </div>
-
-      {/* Results Table */}
-      <div className="bg-surface border border-border rounded-xl overflow-x-auto shadow-sm">
-        <table className="w-full text-[11px]">
-          <thead>
-            <tr className="bg-surface-alt">
-              <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">#</th>
-              <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[180px]">Student</th>
-              <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Passage</th>
-              <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Written<br/>/30</th>
-              <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
-              <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
-              <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Oral</th>
-              <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-navy font-bold">Composite</th>
-              <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Teacher</th>
-              <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Suggested</th>
-              <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Standards</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((row, idx) => {
-              const metCount = row.standardsBaseline.filter((s: any) => s.met).length
-              const teacherPick = row.raw.teacher_impression
-              const teacherIsClass = teacherPick && teacherPick !== 'Unsure' && ENGLISH_CLASSES.includes(teacherPick)
-              return (
-                <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${idx % 2 ? 'bg-surface-alt/20' : ''}`}>
-                  <td className="px-3 py-2 text-text-tertiary">{idx + 1}</td>
-                  <td className="px-3 py-2 cursor-pointer" onClick={() => setDossierStudent(dossierStudent === row.student.id ? null : row.student.id)}>
-                    <span className="font-medium text-navy hover:underline">{row.student.english_name}</span>
-                    <span className="text-text-tertiary ml-1.5 text-[10px]">{row.student.korean_name}</span>
-                  </td>
-                  <td className="text-center px-2 py-2"><span className="font-bold text-navy text-[12px]">{row.passageLevel}</span></td>
-                  <td className="text-center px-2 py-2">{row.writtenRaw}</td>
-                  <td className="text-center px-2 py-2">{row.cwpm ?? '--'}</td>
-                  <td className="text-center px-2 py-2">{row.compTotal != null ? `${row.compTotal}/${row.compMax}` : '--'}</td>
-                  <td className="text-center px-2 py-2">{Math.round(row.oralScore)}</td>
-                  <td className="text-center px-2 py-2"><span className={`text-[12px] font-bold ${row.composite >= 70 ? 'text-green-600' : row.composite >= 40 ? 'text-amber-600' : 'text-red-600'}`}>{Math.round(row.composite)}</span></td>
-                  <td className="text-center px-2 py-2">{teacherIsClass
-                    ? <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(teacherPick as EnglishClass) + '40', color: classToTextColor(teacherPick as EnglishClass) }}>{teacherPick}</span>
-                    : <span className="text-text-tertiary text-[10px]">{teacherPick === 'Unsure' ? 'Unsure' : '--'}</span>
-                  }</td>
-                  <td className="text-center px-2 py-2"><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(row.suggestedClass) + '40', color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span></td>
-                  <td className="text-center px-2 py-2 relative group">
-                    <span className={`text-[10px] font-medium cursor-help ${metCount >= 8 ? 'text-green-600' : metCount >= 5 ? 'text-amber-600' : 'text-red-600'}`}>
-                      {metCount}/{row.standardsBaseline.length}
-                    </span>
-                    {/* Standards hover card */}
-                    <div className="hidden group-hover:block absolute right-0 top-full mt-1 z-50 w-64 bg-white border border-border rounded-xl shadow-lg p-3">
-                      <p className="text-[10px] font-bold text-navy mb-2">Standards Baseline</p>
-                      <div className="space-y-1">
-                        {row.standardsBaseline.map((s: any) => (
-                          <div key={s.code} className={`flex items-center gap-1.5 text-[10px] ${s.met ? 'text-green-700' : 'text-red-600'}`}>
-                            <span>{s.met ? '\u2705' : '\u274C'}</span>
-                            <span className="font-semibold">{s.code}</span>
-                            <span className="text-text-tertiary">({s.score}/{s.threshold})</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Leveling Dossier -- detailed view for selected student */}
-      {dossierStudent && (() => {
-        const row = sorted.find(r => r.student.id === dossierStudent)
-        if (!row) return null
-        const metStds = row.standardsBaseline.filter((s: any) => s.met)
-        const missedStds = row.standardsBaseline.filter((s: any) => !s.met)
-        return (
-          <div className="mt-4 bg-surface border-2 border-navy/20 rounded-xl p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h4 className="font-display text-lg font-semibold text-navy">{row.student.english_name} <span className="text-text-tertiary font-normal text-[14px]">{row.student.korean_name}</span></h4>
-                <p className="text-[12px] text-text-secondary mt-0.5">Leveling Dossier -- Detailed Test Results</p>
-              </div>
-              <button onClick={() => setDossierStudent(null)} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary"><X size={18} /></button>
-            </div>
-            <div className="grid grid-cols-4 gap-3 mb-4">
-              <div className="bg-navy/5 rounded-xl p-3 text-center">
-                <p className="text-[9px] text-text-tertiary uppercase tracking-wider mb-1">Passage Level</p>
-                <p className="text-[24px] font-bold text-navy">{row.passageLevel}</p>
-              </div>
-              <div className="bg-navy/5 rounded-xl p-3 text-center">
-                <p className="text-[9px] text-text-tertiary uppercase tracking-wider mb-1">Composite</p>
-                <p className={`text-[24px] font-bold ${row.composite >= 70 ? 'text-green-600' : row.composite >= 40 ? 'text-amber-600' : 'text-red-600'}`}>{Math.round(row.composite)}</p>
-              </div>
-              <div className="bg-navy/5 rounded-xl p-3 text-center">
-                <p className="text-[9px] text-text-tertiary uppercase tracking-wider mb-1">Suggested</p>
-                <span className="inline-block mt-1 px-3 py-1 rounded-full text-[12px] font-bold" style={{ backgroundColor: classToColor(row.suggestedClass), color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span>
-              </div>
-              <div className="bg-navy/5 rounded-xl p-3 text-center">
-                <p className="text-[9px] text-text-tertiary uppercase tracking-wider mb-1">Teacher Pick</p>
-                <p className="text-[14px] font-bold text-navy mt-1">{row.raw.teacher_impression || '--'}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-surface-alt rounded-lg p-3">
-                <p className="text-[10px] font-semibold text-text-secondary mb-2">Written ({row.writtenRaw}/30)</p>
-                <p className="text-[11px]">Written %: <span className="font-bold text-navy">{Math.round(row.writtenPct)}%</span></p>
-              </div>
-              <div className="bg-surface-alt rounded-lg p-3">
-                <p className="text-[10px] font-semibold text-text-secondary mb-2">Oral Score</p>
-                <p className="text-[11px]">CWPM: <span className="font-bold text-navy">{row.cwpm ?? '--'}</span></p>
-                <p className="text-[11px]">Comprehension: <span className="font-bold text-navy">{row.compTotal != null ? `${row.compTotal}/${row.compMax}` : '--'}</span></p>
-                <p className="text-[11px]">Oral composite: <span className="font-bold text-navy">{Math.round(row.oralScore)}</span></p>
-              </div>
-              <div className="bg-surface-alt rounded-lg p-3">
-                <p className="text-[10px] font-semibold text-text-secondary mb-2">Weight Breakdown</p>
-                <p className="text-[11px]">Oral: <span className="font-bold">{Math.round(row.oralScore)} x {row.raw.teacher_impression && row.raw.teacher_impression !== 'Unsure' ? '50%' : '59%'}</span></p>
-                <p className="text-[11px]">Written: <span className="font-bold">{Math.round(row.writtenPct)} x {row.raw.teacher_impression && row.raw.teacher_impression !== 'Unsure' ? '35%' : '41%'}</span></p>
-                <p className="text-[11px]">Teacher: <span className="font-bold">{row.raw.teacher_impression && row.raw.teacher_impression !== 'Unsure' ? `${row.raw.teacher_impression} x 15%` : 'N/A'}</span></p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-[10px] font-semibold text-green-700 mb-1.5">Standards Met ({metStds.length})</p>
-                <div className="flex flex-wrap gap-1">{metStds.map((s: any) => (
-                  <span key={s.code} className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-medium">{s.code}</span>
-                ))}</div>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold text-red-600 mb-1.5">Standards Not Yet Met ({missedStds.length})</p>
-                <div className="flex flex-wrap gap-1">{missedStds.map((s: any) => (
-                  <span key={s.code} className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-medium">{s.code} ({s.score}/{s.threshold})</span>
-                ))}</div>
-              </div>
-            </div>
-            {row.raw.teacher_notes && (
-              <div className="mt-3 pt-3 border-t border-border">
-                <p className="text-[10px] font-semibold text-text-secondary mb-1">Teacher Notes</p>
-                <p className="text-[12px] text-text-primary">{row.raw.teacher_notes}</p>
-              </div>
-            )}
-          </div>
-        )
-      })()}
-
-      {/* Placement Bands Legend */}
-      <div className="mt-6 bg-surface border border-border rounded-xl p-5">
-        <h4 className="text-[12px] font-semibold text-navy mb-3">Placement Band Descriptions</h4>
-        <div className="grid grid-cols-3 gap-3">
-          {([
-            ['Lily', 'Pre-reader / minimal English. Passage A. Building letter recognition.'],
-            ['Camellia', 'Emerging letter knowledge, some sight words. Passage A-B.'],
-            ['Daisy', 'Solid letter knowledge, beginning reader. Passage B-C.'],
-            ['Sunflower', 'Reading simple connected text. Passage C-D.'],
-            ['Marigold', 'Reading with developing fluency. Passage D-E. CWPM 15-35.'],
-            ['Snapdragon', 'Fluent reader, strong comprehension. Passage E-F. CWPM 30+.'],
-          ] as [EnglishClass, string][]).map(([cls, desc]) => (
-            <div key={cls} className="flex items-start gap-2 text-[11px]">
-              <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0 mt-0.5"
-                style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>
-                {cls}
-              </span>
-              <span className="text-text-secondary">{desc}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

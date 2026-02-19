@@ -72,8 +72,9 @@ export default function DashboardView() {
       </div>
       <div className="px-10 py-6">
         <TodayAtGlance />
-        <div className="mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <TodaysPlanPreview />
+          <RecentNotesPreview />
         </div>
         <QuickActions />
         <StudentAlerts />
@@ -122,6 +123,72 @@ function TodaysPlanPreview() {
           <div className="text-[11px] text-text-primary leading-relaxed whitespace-pre-wrap">{plan}</div>
         ) : (
           <p className="text-[11px] text-text-tertiary">No plan for today. Head to Teacher Plans to add one.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Recent Notes Preview ─────────────────────────────────────────
+function RecentNotesPreview() {
+  const { currentTeacher } = useApp()
+  const isTeacher = currentTeacher?.role === 'teacher'
+  const [notes, setNotes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const yesterday = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+        let query = supabase.from('student_notes')
+          .select('*, teachers(name), students!inner(english_name, english_class)')
+          .gte('created_at', yesterday)
+          .order('created_at', { ascending: false })
+          .limit(6)
+        if (isTeacher && currentTeacher?.english_class) {
+          query = query.eq('students.english_class', currentTeacher.english_class)
+        }
+        const { data, error } = await query
+        if (!error && data) setNotes(data)
+      } catch {}
+      setLoading(false)
+    })()
+  }, [currentTeacher, isTeacher])
+
+  const NOTE_CATS: Record<string, string> = {
+    general: 'bg-gray-100 text-gray-600',
+    academic: 'bg-blue-100 text-blue-600',
+    behavior: 'bg-amber-100 text-amber-600',
+    social: 'bg-purple-100 text-purple-600',
+    parent: 'bg-green-100 text-green-600',
+    followup: 'bg-red-100 text-red-600',
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
+        <p className="text-[11px] font-bold text-navy">Recent Student Notes <span className="font-normal text-text-tertiary">(last 48h)</span></p>
+      </div>
+      <div className="px-4 py-3 min-h-[100px] max-h-[160px] overflow-y-auto">
+        {loading ? (
+          <Loader2 size={14} className="animate-spin text-text-tertiary" />
+        ) : notes.length === 0 ? (
+          <p className="text-[11px] text-text-tertiary">No recent notes. Open a student profile to add quick notes.</p>
+        ) : (
+          <div className="space-y-2">
+            {notes.map((n: any) => (
+              <div key={n.id} className="flex items-start gap-1.5">
+                <span className={`px-1 py-0.5 rounded text-[7px] font-bold flex-shrink-0 mt-0.5 ${NOTE_CATS[n.category] || NOTE_CATS.general}`}>
+                  {n.category?.toUpperCase()?.slice(0, 3)}
+                </span>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold text-navy">{n.students?.english_name}</span>
+                  <span className="text-[9px] text-text-tertiary ml-1">by {n.teachers?.name || '?'}</span>
+                  <p className="text-[10px] text-text-secondary leading-snug truncate">{n.note}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -354,69 +421,54 @@ function StudentAlerts() {
       const { data: sem } = await supabase.from('semesters').select('id').eq('is_active', true).single()
       if (!sem) { setLoading(false); return }
 
-      // Load assessments and all grades once (shared scope)
+      // 1. GRADE DECLINE: compare last 3 assessments per domain per student
       const { data: assessments } = await supabase.from('assessments').select('id, domain, name, english_class, grade, max_score')
         .eq('semester_id', sem.id)
-      let allGrades: any[] = []
       if (assessments && assessments.length > 0) {
-        const { data: gd } = await supabase.from('grades').select('student_id, assessment_id, score')
+        const { data: allGrades } = await supabase.from('grades').select('student_id, assessment_id, score')
           .in('assessment_id', assessments.map(a => a.id)).not('score', 'is', null)
-        allGrades = gd || []
 
-        // 1. GRADE DECLINE: compare last 3 assessments per domain per student
-        for (const student of students) {
-          const studentAssessments = assessments.filter(a => a.english_class === student.english_class && a.grade === student.grade)
-          const domains = Array.from(new Set(studentAssessments.map(a => a.domain)))
-          for (const domain of domains) {
-            const domAssessments = studentAssessments.filter(a => a.domain === domain)
-            const scores = domAssessments.map(a => {
-              const g = allGrades.find(gr => gr.student_id === student.id && gr.assessment_id === a.id)
-              return g?.score != null && a.max_score > 0 ? (g.score / a.max_score) * 100 : null
-            }).filter((s): s is number => s != null)
+        if (allGrades) {
+          for (const student of students) {
+            const studentAssessments = assessments.filter(a => a.english_class === student.english_class && a.grade === student.grade)
+            const domains = Array.from(new Set(studentAssessments.map(a => a.domain)))
+            for (const domain of domains) {
+              const domAssessments = studentAssessments.filter(a => a.domain === domain)
+              const scores = domAssessments.map(a => {
+                const g = allGrades.find(gr => gr.student_id === student.id && gr.assessment_id === a.id)
+                return g?.score != null && a.max_score > 0 ? (g.score / a.max_score) * 100 : null
+              }).filter((s): s is number => s != null)
 
-            if (scores.length >= 3) {
-              const recent = scores.slice(-3)
-              const firstAvg = (recent[0] + recent[1]) / 2
-              const last = recent[2]
-              if (firstAvg - last >= 15) {
-                newAlerts.push({
-                  id: `gd-${student.id}-${domain}`,
-                  type: 'grade_decline',
-                  studentName: student.english_name,
-                  studentClass: student.english_class,
-                  message: `${domain.charAt(0).toUpperCase() + domain.slice(1)} average dropped from ${firstAvg.toFixed(0)}% to ${last.toFixed(0)}%`
-                })
+              if (scores.length >= 3) {
+                const recent = scores.slice(-3)
+                const firstAvg = (recent[0] + recent[1]) / 2
+                const last = recent[2]
+                if (firstAvg - last >= 15) {
+                  newAlerts.push({
+                    id: `gd-${student.id}-${domain}`,
+                    type: 'grade_decline',
+                    studentName: student.english_name,
+                    studentClass: student.english_class,
+                    message: `${domain.charAt(0).toUpperCase() + domain.slice(1)} average dropped from ${firstAvg.toFixed(0)}% to ${last.toFixed(0)}%`
+                  })
+                }
               }
             }
-          }
-        }
 
-        // 3. MISSING GRADES: consolidated per-class reminder instead of per-assessment flood
-        const classAssessments = classFilter
-          ? assessments.filter(a => a.english_class === classFilter)
-          : assessments
-        // Group by class
-        const byClass: Record<string, { total: number; names: string[] }> = {}
-        for (const a of classAssessments) {
-          const classStudents = students.filter(s => s.english_class === a.english_class && String(s.grade) === String(a.grade))
-          if (classStudents.length === 0) continue
-          const gradedIds = new Set(allGrades.filter(g => g.assessment_id === a.id && g.score != null).map(g => g.student_id))
-          const missing = classStudents.filter(s => !gradedIds.has(s.id)).length
-          if (missing > 0 && missing >= classStudents.length * 0.3) {
-            if (!byClass[a.english_class]) byClass[a.english_class] = { total: 0, names: [] }
-            byClass[a.english_class].total++
-            byClass[a.english_class].names.push(a.name)
+            // 3. MISSING GRADES: students with 0 scores for assessments that exist
+            const studentAssessmentsAll = assessments.filter(a => a.english_class === student.english_class && a.grade === student.grade)
+            const studentGrades = allGrades.filter(g => g.student_id === student.id)
+            const missing = studentAssessmentsAll.filter(a => !studentGrades.some(g => g.assessment_id === a.id))
+            if (missing.length >= 3 && studentAssessmentsAll.length >= 3) {
+              newAlerts.push({
+                id: `mg-${student.id}`,
+                type: 'missing_grades',
+                studentName: student.english_name,
+                studentClass: student.english_class,
+                message: `Missing scores for ${missing.length} of ${studentAssessmentsAll.length} assessments`
+              })
+            }
           }
-        }
-        for (const [cls, info] of Object.entries(byClass)) {
-          const nameList = info.names.length <= 3 ? info.names.join(', ') : `${info.names.slice(0, 2).join(', ')} + ${info.names.length - 2} more`
-          newAlerts.push({
-            id: `mg-${cls}`,
-            type: 'missing_grades',
-            studentName: cls,
-            studentClass: cls,
-            message: `${info.total} assessment${info.total > 1 ? 's' : ''} need grading: ${nameList}`
-          })
         }
       }
 
@@ -468,11 +520,9 @@ function StudentAlerts() {
             <div key={alert.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${c.bg} ${c.border}`}>
               <Icon size={16} className={c.icon} />
               <div className="flex-1 min-w-0">
-                {alert.type === 'missing_grades' ? (
-                  <><span className="text-[12px] font-semibold text-navy">Finish grading for {alert.studentClass}</span><p className={`text-[11px] ${c.text}`}>{alert.message}</p></>
-                ) : (
-                  <><span className="text-[12px] font-semibold text-navy">{alert.studentName}</span><span className="text-[10px] text-text-tertiary ml-2">{alert.studentClass}</span><p className={`text-[11px] ${c.text}`}>{alert.message}</p></>
-                )}
+                <span className="text-[12px] font-semibold text-navy">{alert.studentName}</span>
+                <span className="text-[10px] text-text-tertiary ml-2">{alert.studentClass}</span>
+                <p className={`text-[11px] ${c.text}`}>{alert.message}</p>
               </div>
               <button onClick={() => dismiss(alert.id)} className="p-1 rounded-lg hover:bg-white/50 text-text-tertiary hover:text-text-primary" title="Dismiss">
                 <X size={14} />
