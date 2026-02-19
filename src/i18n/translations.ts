@@ -21,6 +21,7 @@ export const translations = {
       lessonPlans: 'Lesson Plans',
       teacherGuides: 'Teacher Guides',
       adminDashboard: 'Program Overview',
+      teacherGuides: 'Teacher Guides',
     },
     // Common
     common: {
@@ -180,6 +181,7 @@ export const translations = {
       lessonPlans: '수업 계획',
       teacherGuides: '교사 가이드',
       adminDashboard: '프로그램 개요',
+      teacherGuides: '교사 가이드',
     },
     common: {
       save: '저장',
