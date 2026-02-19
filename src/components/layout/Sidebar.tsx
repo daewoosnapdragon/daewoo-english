@@ -18,7 +18,6 @@ const NAV_ITEMS = [
   { id: 'attendance', icon: CalendarCheck },
   { id: 'lessonPlans', icon: CalendarDays },
   { section: 'MANAGE' },
-  { id: 'teacherGuides', icon: BookMarked },
   { id: 'students', icon: Users },
   { id: 'readingLevels', icon: BookOpen },
   { id: 'reports', icon: FileText },
