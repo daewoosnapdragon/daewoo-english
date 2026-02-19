@@ -18,6 +18,7 @@ import CurriculumView from '@/components/curriculum/CurriculumView'
 import TeacherGuidesView from '@/components/curriculum/TeacherGuidesView'
 import LessonPlanView from '@/components/lessons/LessonPlanView'
 import AdminDashboard from '@/components/admin/AdminDashboard'
+import TeacherGuidesView from '@/components/guides/TeacherGuidesView'
 import { Loader2 } from 'lucide-react'
 
 export default function Home() {
@@ -78,6 +79,7 @@ export default function Home() {
       case 'lessonPlans': return <LessonPlanView />
       case 'adminDashboard': return <AdminDashboard />
       case 'settings': return <SettingsView />
+      case 'teacherGuides': return <TeacherGuidesView />
       default: return <DashboardView />
     }
   }
