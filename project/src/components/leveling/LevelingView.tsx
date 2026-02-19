@@ -249,15 +249,14 @@ function ClassTabs({ active, onSelect, counts, available }: { active: EnglishCla
 // ─── Score Entry Phase ──────────────────────────────────────────────
 
 function ScoreEntryPhase({ levelTest, teacherClass, isAdmin, onContinue }: { levelTest: LevelTest; teacherClass: EnglishClass | null; isAdmin: boolean; onContinue: () => void }) {
-  // Grade-specific scoring modules
-  // Grade 1: Full two-part test (Written + Oral + Results/Placement)
-  if (String(levelTest.grade) === '1') {
+  // Grade 1 uses the comprehensive two-part test entry (Written + Oral + Results)
+  if (levelTest.grade === 1 || levelTest.grade === '1' as any) {
     return (
       <div>
         <Grade1ScoreEntry levelTest={levelTest} isAdmin={isAdmin} />
         <div className="px-10 pb-6 flex justify-end">
           <button onClick={onContinue} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light">
-            Done with Scores? Continue to Teacher Ratings &rarr;
+            Done with Scores? Continue to Teacher Ratings →
           </button>
         </div>
       </div>
