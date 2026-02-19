@@ -226,6 +226,17 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
     setSlots(prev => [...prev, data])
   }
   const removeSlot = async (id: string) => { await supabase.from('lesson_plan_slots').delete().eq('id', id); setSlots(prev => prev.filter(s => s.id !== id)) }
+  const renameSlot = async (id: string, newLabel: string) => {
+    const { error } = await supabase.from('lesson_plan_slots').update({ slot_label: newLabel }).eq('id', id)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setSlots(prev => prev.map(s => s.id === id ? { ...s, slot_label: newLabel } : s))
+  }
+  const moveSlot = async (id: string, newDay: number) => {
+    const maxOrder = slots.filter(s => s.day_of_week === newDay).reduce((max, s) => Math.max(max, s.sort_order), 0)
+    const { error } = await supabase.from('lesson_plan_slots').update({ day_of_week: newDay, sort_order: maxOrder + 1 }).eq('id', id)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setSlots(prev => prev.map(s => s.id === id ? { ...s, day_of_week: newDay, sort_order: maxOrder + 1 } : s))
+  }
 
   const weekCompletion = (week: (typeof days[number])[]) => {
     let filled = 0; let total = 0
@@ -437,7 +448,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
           )}
         </div>
 
-        {showSetup && canEdit && <DaySetupPanel selectedClass={selectedClass} selectedGrade={selectedGrade} slots={slots} onAdd={addSlot} onRemove={removeSlot} onClose={() => setShowSetup(false)} />}
+        {showSetup && canEdit && <DaySetupPanel selectedClass={selectedClass} selectedGrade={selectedGrade} slots={slots} onAdd={addSlot} onRemove={removeSlot} onRename={renameSlot} onMove={moveSlot} onClose={() => setShowSetup(false)} />}
 
         {(viewMode === 'week' ? [weeks[Math.min(currentWeekIdx, weeks.length - 1)]].filter(Boolean) : weeks).map((week, wi) => {
           const fw: (typeof days[0] | null)[] = [null, null, null, null, null]
@@ -574,33 +585,58 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
   )
 }
 
-function DaySetupPanel({ selectedClass, selectedGrade, slots, onAdd, onRemove, onClose }: {
-  selectedClass: EnglishClass; selectedGrade: Grade; slots: SlotTemplate[]; onAdd: (dow: number, label: string) => void; onRemove: (id: string) => void; onClose: () => void
+function DaySetupPanel({ selectedClass, selectedGrade, slots, onAdd, onRemove, onRename, onMove, onClose }: {
+  selectedClass: EnglishClass; selectedGrade: Grade; slots: SlotTemplate[]; onAdd: (dow: number, label: string) => void; onRemove: (id: string) => void; onRename: (id: string, newLabel: string) => void; onMove: (id: string, newDay: number) => void; onClose: () => void
 }) {
   const [addingDay, setAddingDay] = useState<number | null>(null)
   const [newLabel, setNewLabel] = useState('')
+  const [editingSlot, setEditingSlot] = useState<string | null>(null)
+  const [editLabel, setEditLabel] = useState('')
+  const [dragSlotId, setDragSlotId] = useState<string | null>(null)
+  const [dragOverDay, setDragOverDay] = useState<number | null>(null)
   return (
     <div className="mb-6 bg-surface border border-border rounded-2xl p-5 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <div>
           <h4 className="text-[14px] font-semibold text-navy">Weekly Schedule for {selectedClass} — Grade {selectedGrade}</h4>
-          <p className="text-[11px] text-text-tertiary mt-0.5">Define what content appears on each day for this class and grade.</p>
+          <p className="text-[11px] text-text-tertiary mt-0.5">Add, rename, drag to move, or remove class slots. Click a slot name to rename it.</p>
         </div>
         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
       </div>
       <div className="grid grid-cols-5 gap-3">
         {DAY_NAMES.map((dayName, di) => {
-          const daySlots = slots.filter(s => s.day_of_week === di + 1)
+          const daySlots = slots.filter(s => s.day_of_week === di + 1).sort((a, b) => a.sort_order - b.sort_order)
+          const isDragOver = dragOverDay === di + 1 && dragSlotId != null
           return (
-            <div key={di} className="bg-surface-alt rounded-xl p-3">
+            <div key={di} className={`bg-surface-alt rounded-xl p-3 transition-all ${isDragOver ? 'ring-2 ring-navy bg-navy/5' : ''}`}
+              onDragOver={e => { e.preventDefault(); setDragOverDay(di + 1) }}
+              onDragLeave={() => setDragOverDay(null)}
+              onDrop={e => { e.preventDefault(); if (dragSlotId) { onMove(dragSlotId, di + 1); setDragSlotId(null); setDragOverDay(null) } }}>
               <div className="text-[12px] font-bold text-navy mb-2.5">{dayName}</div>
               <div className="space-y-1.5">
                 {daySlots.map(slot => {
                   const sc = getSlotColor(slot.slot_label)
+                  const isEditing = editingSlot === slot.id
+                  const isDragging = dragSlotId === slot.id
                   return (
-                    <div key={slot.id} className="flex items-center justify-between bg-white rounded-lg px-2.5 py-1.5 border border-border">
-                      <span className={`text-[10px] font-medium ${sc.text}`}>{slot.slot_label}</span>
-                      <button onClick={() => onRemove(slot.id)} className="p-0.5 text-text-tertiary hover:text-red-500"><X size={11} /></button>
+                    <div key={slot.id}
+                      draggable={!isEditing}
+                      onDragStart={() => setDragSlotId(slot.id)}
+                      onDragEnd={() => { setDragSlotId(null); setDragOverDay(null) }}
+                      className={`flex items-center justify-between bg-white rounded-lg px-2.5 py-1.5 border border-border group cursor-grab active:cursor-grabbing transition-opacity ${isDragging ? 'opacity-40' : ''}`}>
+                      {isEditing ? (
+                        <input value={editLabel} onChange={e => setEditLabel(e.target.value)}
+                          className="flex-1 min-w-0 text-[10px] font-medium outline-none bg-transparent border-b border-navy"
+                          autoFocus
+                          onKeyDown={e => { if (e.key === 'Enter' && editLabel.trim()) { onRename(slot.id, editLabel.trim()); setEditingSlot(null) }; if (e.key === 'Escape') setEditingSlot(null) }}
+                          onBlur={() => { if (editLabel.trim() && editLabel.trim() !== slot.slot_label) onRename(slot.id, editLabel.trim()); setEditingSlot(null) }} />
+                      ) : (
+                        <span className={`text-[10px] font-medium cursor-pointer hover:underline ${sc.text}`}
+                          onClick={() => { setEditingSlot(slot.id); setEditLabel(slot.slot_label) }}
+                          title="Click to rename">{slot.slot_label}</span>
+                      )}
+                      <button onClick={() => { if (confirm(`Remove "${slot.slot_label}" from ${dayName}?`)) onRemove(slot.id) }}
+                        className="p-0.5 text-text-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><X size={11} /></button>
                     </div>
                   )
                 })}

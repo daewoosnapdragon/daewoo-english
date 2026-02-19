@@ -47,6 +47,7 @@ export default function GradesView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
   const [subView, setSubView] = useState<SubView>('entry')
+  const [refreshKey, setRefreshKey] = useState(0)
   const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
@@ -287,9 +288,9 @@ export default function GradesView() {
         </div>
 
         {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateModal(true)} createLabel={t.grades.createAssessment} />}
-        {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
-        {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
-        {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
+        {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} onSaved={() => setRefreshKey(k => k + 1)} />}
+        {subView === 'overview' && <DomainOverview key={refreshKey} allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
+        {subView === 'student' && <StudentDrillDown key={refreshKey} allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
       </div>
 
       {(showCreateModal || editingAssessment) && <AssessmentModal grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} editing={editingAssessment} semesterId={selectedSemester} onClose={() => { setShowCreateModal(false); setEditingAssessment(null) }} onSaved={(a: Assessment) => { setShowCreateModal(false); setEditingAssessment(null); loadAssessments().then(() => setSelectedAssessment(a)); loadAllAssessments() }} />}
@@ -654,28 +655,41 @@ function StatsBar({ scores, maxScore, lang }: { scores: Record<string, number | 
 
 // ─── Batch Grid View ──────────────────────────────────────────────
 
-function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, students, selectedClass, selectedGrade, lang }: {
-  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; allAssessments: Assessment[]; students: StudentRow[]; selectedClass: EnglishClass; selectedGrade: Grade; lang: LangKey
+function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, students, selectedClass, selectedGrade, lang, onSaved }: {
+  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; allAssessments: Assessment[]; students: StudentRow[]; selectedClass: EnglishClass; selectedGrade: Grade; lang: LangKey; onSaved?: () => void
 }) {
   const { showToast } = useApp()
   const [scores, setScores] = useState<any>({})
+  const [sectionScores, setSectionScores] = useState<Record<string, Record<string, Record<string, number | null>>>>({}) // studentId -> assessmentId -> sectionIdx -> score
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [expandedAssessments, setExpandedAssessments] = useState<Set<string>>(new Set())
 
   const domainAssessments = allAssessments.filter(a => a.domain === selectedDomain)
+
+  const toggleExpand = (aId: string) => setExpandedAssessments(prev => {
+    const next = new Set(Array.from(prev))
+    next.has(aId) ? next.delete(aId) : next.add(aId)
+    return next
+  })
 
   useEffect(() => {
     if (domainAssessments.length === 0 || students.length === 0) { setLoading(false); return }
     ;(async () => {
       setLoading(true)
-      const { data } = await supabase.from('grades').select('student_id, assessment_id, score')
+      const { data } = await supabase.from('grades').select('student_id, assessment_id, score, section_scores')
         .in('assessment_id', domainAssessments.map(a => a.id))
         .in('student_id', students.map(s => s.id))
       const map: any = {}
-      students.forEach(s => { map[s.id] = {} })
-      data?.forEach((g: any) => { if (map[g.student_id]) map[g.student_id][g.assessment_id] = g.score })
+      const secMap: Record<string, Record<string, Record<string, number | null>>> = {}
+      students.forEach(s => { map[s.id] = {}; secMap[s.id] = {} })
+      data?.forEach((g: any) => {
+        if (map[g.student_id]) map[g.student_id][g.assessment_id] = g.score
+        if (g.section_scores && secMap[g.student_id]) secMap[g.student_id][g.assessment_id] = g.section_scores
+      })
       setScores(map)
+      setSectionScores(secMap)
       setLoading(false)
       setHasChanges(false)
     })()
@@ -689,25 +703,44 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
     setHasChanges(true)
   }
 
+  const handleSectionChange = (studentId: string, assessmentId: string, sectionIdx: string, value: string, assessment: any) => {
+    const newVal = value === '' ? null : Number(value)
+    setSectionScores(prev => {
+      const updated = { ...prev }
+      if (!updated[studentId]) updated[studentId] = {}
+      if (!updated[studentId][assessmentId]) updated[studentId][assessmentId] = {}
+      updated[studentId][assessmentId] = { ...updated[studentId][assessmentId], [sectionIdx]: newVal }
+      // Auto-calculate total from sections
+      const sections = assessment.sections || []
+      const total = sections.reduce((sum: number, _: any, i: number) => sum + (Number(updated[studentId][assessmentId][String(i)]) || 0), 0)
+      setScores((p: any) => ({ ...p, [studentId]: { ...(p[studentId] || {}), [assessmentId]: total } }))
+      return updated
+    })
+    setHasChanges(true)
+  }
+
   const handleSaveAll = async () => {
     setSaving(true)
-    let errors = 0
-    const rows: any[] = []
+    let saved = 0, errors = 0
     for (const s of students) {
       for (const a of domainAssessments) {
         const score = scores[s.id]?.[a.id]
         if (score != null) {
-          rows.push({ student_id: s.id, assessment_id: a.id, score, max_score: a.max_score })
+          const secScores = sectionScores[s.id]?.[a.id]
+          const payload: any = { student_id: s.id, assessment_id: a.id, score }
+          if (secScores && Object.keys(secScores).length > 0) payload.section_scores = secScores
+          const { error } = await supabase.from('grades').upsert(
+            payload,
+            { onConflict: 'student_id,assessment_id' }
+          )
+          if (error) errors++; else saved++
         }
       }
     }
-    if (rows.length > 0) {
-      const { error } = await supabase.from('grades').upsert(rows, { onConflict: 'student_id,assessment_id' })
-      if (error) errors++
-    }
     setSaving(false)
     setHasChanges(false)
-    showToast(errors > 0 ? 'Saved with errors' : 'Saved ' + rows.length + ' scores')
+    if (onSaved) onSaved()
+    showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved ${saved} scores`)
   }
 
   return (
@@ -734,12 +767,26 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
             <table className="w-full text-[12px]">
               <thead><tr className="bg-surface-alt">
                 <th className="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
-                {domainAssessments.map(a => (
-                  <th key={a.id} className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[80px]" title={a.name}>
-                    <div className="truncate max-w-[80px]">{a.name}</div>
-                    <div className="text-[8px] text-text-tertiary font-normal">/{a.max_score}</div>
-                  </th>
-                ))}
+                {domainAssessments.map(a => {
+                  const hasSections = a.sections && a.sections.length > 0
+                  const isExpanded = expandedAssessments.has(a.id)
+                  return [
+                    <th key={a.id} className={`text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[80px] ${hasSections ? 'cursor-pointer hover:bg-navy/5' : ''}`}
+                      onClick={() => hasSections && toggleExpand(a.id)} title={a.name}>
+                      <div className="flex items-center justify-center gap-1">
+                        {hasSections && <span className="text-[8px]">{isExpanded ? '\u25BC' : '\u25B6'}</span>}
+                        <span className="truncate max-w-[80px]">{a.name}</span>
+                      </div>
+                      <div className="text-[8px] text-text-tertiary font-normal">/{a.max_score}{hasSections ? ` (${a.sections!.length} parts)` : ''}</div>
+                    </th>,
+                    ...(isExpanded && a.sections ? a.sections.map((sec, si) => (
+                      <th key={`${a.id}-sec-${si}`} className="text-center px-1 py-2.5 text-[8px] uppercase tracking-wider text-text-tertiary font-medium min-w-[60px] bg-blue-50/50 border-l border-blue-100">
+                        <div className="truncate max-w-[60px]">{sec.label}</div>
+                        <div className="text-[7px] text-text-tertiary font-normal">/{sec.max_points}</div>
+                      </th>
+                    )) : [])
+                  ]
+                })}
                 <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Avg%</th>
               </tr></thead>
               <tbody>
@@ -752,15 +799,25 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                   return (
                     <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
                       <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="text-text-tertiary font-normal text-[10px]">{s.korean_name}</span></td>
-                      {domainAssessments.map((a, ai) => {
+                      {domainAssessments.map(a => {
                         const sc = scores[s.id]?.[a.id]
                         const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
-                        return (
+                        const isExpanded = expandedAssessments.has(a.id)
+                        return [
                           <td key={a.id} className="px-1 py-1.5 text-center">
                             <input type="number" step="0.5" value={sc ?? ''} onChange={e => handleChange(s.id, a.id, e.target.value)}
                               max={a.max_score} className={`batch-input w-16 px-2 py-1.5 border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${pct != null && pct < 60 ? 'border-red-300 bg-red-50' : 'border-border'}`} />
-                          </td>
-                        )
+                          </td>,
+                          ...(isExpanded && a.sections ? a.sections.map((sec, si) => (
+                            <td key={`${a.id}-sec-${si}`} className="px-1 py-1.5 text-center bg-blue-50/20 border-l border-blue-100">
+                              <input type="number" step="0.5"
+                                value={sectionScores[s.id]?.[a.id]?.[String(si)] ?? ''}
+                                onChange={e => handleSectionChange(s.id, a.id, String(si), e.target.value, a)}
+                                max={sec.max_points}
+                                className="w-14 px-1 py-1 border border-blue-200 rounded text-center text-[11px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-white" />
+                            </td>
+                          )) : [])
+                        ]
                       })}
                       <td className={`px-3 py-2 text-center font-bold text-[12px] ${avg != null ? (avg >= 80 ? 'text-green-600' : avg >= 60 ? 'text-amber-600' : 'text-red-600') : 'text-text-tertiary'}`}>{avg != null ? avg.toFixed(0) + '%' : '\u2014'}</td>
                     </tr>
@@ -1060,10 +1117,12 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
     import('../curriculum/ccss-standards').then(m => { if (m.CCSS_STANDARDS) setCcssStandards(m.CCSS_STANDARDS) }).catch(() => {})
   }, [])
 
-  const filteredStds = stdSearch.length >= 2 ? ccssStandards.filter(s =>
-    (s.code.toLowerCase().includes(stdSearch.toLowerCase()) || s.text?.toLowerCase().includes(stdSearch.toLowerCase()))
-    && !standards.includes(s.code)
-  ).slice(0, 8) : []
+  const filteredStds = stdSearch.length >= 2 ? ccssStandards.filter(s => {
+    const q = stdSearch.toLowerCase().replace(/\./g, '')
+    const code = s.code.toLowerCase().replace(/\./g, '')
+    return (code.includes(q) || s.code.toLowerCase().includes(stdSearch.toLowerCase()) || s.text?.toLowerCase().includes(stdSearch.toLowerCase()))
+      && !standards.includes(s.code)
+  }).slice(0, 8) : []
 
   const otherClasses = ENGLISH_CLASSES.filter((c: any) => c !== englishClass)
 
@@ -1291,7 +1350,8 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
               </div>
             )}
             <div className="relative">
-              <input value={stdSearch} onChange={e => setStdSearch(e.target.value)} placeholder={lang === 'ko' ? 'CCSS 코드 검색...' : 'Search CCSS code (e.g. RL.3.1)'}
+              <input value={stdSearch} onChange={e => setStdSearch(e.target.value)} placeholder={lang === 'ko' ? 'CCSS 코드 검색...' : 'Search CCSS code (e.g. RL.3.1 or rl31)'}
+                onKeyDown={e => { if (e.key === 'Enter' && filteredStds.length > 0) { setStandards(prev => [...prev, filteredStds[0].code]); setStdSearch('') } }}
                 className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
               {filteredStds.length > 0 && (
                 <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-border rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">

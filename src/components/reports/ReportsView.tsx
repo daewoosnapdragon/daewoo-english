@@ -207,12 +207,12 @@ function RadarChart({ studentGrades, classAverages }: {
   studentGrades: Record<string, number | null>
   classAverages: Record<string, number | null>
 }) {
-  const size = 260
+  const size = 280
   const cx = size / 2, cy = size / 2 + 6 // shift center down slightly so top label fits
   const maxR = 75
   const levels = [20, 40, 60, 80, 100]
   const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
-  const labels = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
+  const labels = ['Read', 'Phon', 'Write', 'Speak', 'Lang']
   const angles = domains.map((_, i) => (Math.PI * 2 * i) / domains.length - Math.PI / 2)
 
   const toXY = (angle: number, pct: number) => ({
@@ -253,7 +253,7 @@ function RadarChart({ studentGrades, classAverages }: {
       {hasClass && (
         <polygon
           points={makePolygon(classValues)}
-          fill="rgba(148,163,184,0.08)" stroke="#cbd5e1" strokeWidth={1.5}
+          fill="rgba(148,163,184,0.15)" stroke="#94a3b8" strokeWidth={2}
           strokeDasharray="4,3"
         />
       )}
@@ -262,7 +262,7 @@ function RadarChart({ studentGrades, classAverages }: {
       {filledCount >= 3 && (
         <polygon
           points={makePolygon(studentValues)}
-          fill="rgba(30,58,95,0.15)" stroke="#1e3a5f" strokeWidth={2}
+          fill="rgba(30,58,95,0.3)" stroke="#1e3a5f" strokeWidth={2.5}
         />
       )}
 
@@ -626,11 +626,11 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       `<polygon points="${rAngles.map(a => { const p = toXY(a, lvl); return `${p.x},${p.y}` }).join(' ')}" fill="none" stroke="#e8e0d8" stroke-width="0.5" ${lvl < 100 ? 'stroke-dasharray="2,2"' : ''}/>`
     ).join('')
     const axisLines = rAngles.map(a => { const e = toXY(a, 100); return `<line x1="${rcx}" y1="${rcy}" x2="${e.x}" y2="${e.y}" stroke="#e8e0d8" stroke-width="0.5"/>` }).join('')
-    const classPoly = cVals.some(v => v != null) ? `<polygon points="${makePoly(cVals)}" fill="rgba(148,163,184,0.08)" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,3"/>` : ''
-    const studentPoly = sFilledCount >= 3 ? `<polygon points="${makePoly(sVals)}" fill="rgba(30,58,95,0.15)" stroke="#1e3a5f" stroke-width="2"/>` : ''
+    const classPoly = cVals.some(v => v != null) ? `<polygon points="${makePoly(cVals)}" fill="rgba(148,163,184,0.15)" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,3"/>` : ''
+    const studentPoly = sFilledCount >= 3 ? `<polygon points="${makePoly(sVals)}" fill="rgba(30,58,95,0.3)" stroke="#1e3a5f" stroke-width="2.5"/>` : ''
     const dots = sVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="#1e3a5f" stroke="white" stroke-width="1.5"/>` }).join('')
     const radarLabels = rAngles.map((a, i) => {
-      const pt = toXY(a, ((maxR + 26) / maxR) * 100)
+      const pt = toXY(a, ((maxR + 32) / maxR) * 100)
       const sv = sVals[i]
       const anchor = pt.x < rcx - 10 ? 'end' : pt.x > rcx + 10 ? 'start' : 'middle'
       return `<text x="${pt.x}" y="${pt.y - 4}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:9px;font-weight:700;fill:#475569">${rLabels[i]}</text>
@@ -669,9 +669,10 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     if (!pw) return
     pw.document.write(`<html><head><title>Report Card \u2014 ${s.english_name}</title>
     <style>
-      body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb}
-      @media print{body{padding:0}.card{margin:0;box-shadow:none;border-radius:0}}
+      body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:11px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb;page-break-after:always;page-break-inside:avoid}
+      @page{size:A4;margin:6mm}
+      @media print{body{padding:0;font-size:9px;line-height:1.3}.card{margin:0;box-shadow:none;border-radius:0;max-width:100%;max-height:277mm;overflow:hidden}}
     </style></head>
     <body><div class="card">
     <!-- Header -->
@@ -708,6 +709,10 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #e8e0d8">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid #e8e0d8;display:flex;align-items:center;gap:10px">
+        <span style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;font-weight:600">Behavior</span>
+        <span style="font-size:18px;font-weight:800;color:#1e3a5f">${d.behaviorGrade || '--'}</span>
+      </div>
     </div>
     <!-- Student Snapshot: Radar + Reading + Goals -->
     <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #e8e0d8">
@@ -848,7 +853,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             )}
           </div>
           {editingGrades ? (
-            <div className="grid grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-5 gap-2.5 mb-3">
               {DOMAINS.map((dom) => (
                 <div key={dom} className="rounded-xl border-[1.5px] border-border p-3.5 text-center">
                   <div className="text-[11px] text-[#64748b] font-semibold mb-2">{DOMAIN_SHORT[dom]}</div>
@@ -861,7 +866,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               ))}
             </div>
           ) : (
-          <div className="grid grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-5 gap-2.5 mb-3">
             {DOMAINS.map((dom) => {
               const v = d.domainGrades[dom]
               if (v == null) return <div key={dom} className="rounded-xl border border-border p-3.5 text-center text-text-tertiary text-[12px]">--</div>
@@ -876,6 +881,22 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             })}
           </div>
           )}
+          {/* Behavior Grade */}
+          <div className="flex items-center gap-3 pt-2 border-t border-border">
+            <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">Behavior</span>
+            {editingGrades ? (
+              <div className="flex gap-1.5">
+                {['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'E'].map(g => (
+                  <button key={g} onClick={() => setEditGradeValues(prev => ({ ...prev, behavior: prev.behavior === g ? '' : g }))}
+                    className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${editGradeValues.behavior === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                    {g}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span className={`text-[18px] font-extrabold ${d.behaviorGrade ? 'text-navy' : 'text-text-tertiary'}`}>{d.behaviorGrade || '--'}</span>
+            )}
+          </div>
         </div>
         {/* ─── Student Snapshot: Radar + Reading + Goals ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #e8e0d8' }}>
@@ -1125,7 +1146,8 @@ function printProgressReport(student: any, data: any) {
   pw.document.write(`<html><head><title>Progress Report - ${student.english_name}</title>
   <style>body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f5f0eb}
   .card{max-width:680px;margin:20px auto;overflow:hidden;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
-  @media print{body{background:white}.card{margin:0;box-shadow:none;border-radius:0;page-break-after:always}}</style></head>
+  @page{size:A4;margin:6mm}
+  @media print{body{background:white;font-size:9px}.card{margin:0;box-shadow:none;border-radius:0;page-break-after:always;page-break-inside:avoid;max-height:277mm;overflow:hidden}}</style></head>
   <body><div class="card">
   <div style="background:#1e3a5f;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
     <div><p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;opacity:0.6">Progress Report</p>
@@ -1143,7 +1165,11 @@ function printProgressReport(student: any, data: any) {
       <p style="font-size:14px;font-weight:700;color:#1e3a5f">${data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}</p></div>
     </div>
     <p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:8px">Domain Scores</p>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px">${ds}</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">${ds}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;padding-top:8px;border-top:1px solid #e8e0d8">
+      <span style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;font-weight:600">Behavior</span>
+      <span style="font-size:18px;font-weight:800;color:#1e3a5f">${data.behaviorGrade || '--'}</span>
+    </div>
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin-bottom:20px">
       <p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:8px">Reading Fluency</p>
       <div style="display:flex;gap:24px">
@@ -1272,6 +1298,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
   const [data, setData] = useState<any>(null)
   const [comment, setComment] = useState('')
   const [savingComment, setSavingComment] = useState(false)
+  const [behaviorGrade, setBehaviorGrade] = useState<string>('')
 
   useEffect(() => {
     if (!student) { setLoading(false); return }
@@ -1300,6 +1327,10 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       // Get teacher comment
       const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
 
+      // Get behavior grade from semester_grades
+      const { data: behaviorSG } = await supabase.from('semester_grades').select('behavior_grade')
+        .eq('student_id', studentId).eq('semester_id', semesterId).eq('domain', 'overall').limit(1).single()
+
       // Teacher name
       const { data: teacherData } = await supabase.from('teachers').select('name').eq('english_class', student.english_class).limit(1).single()
 
@@ -1308,10 +1339,12 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
         overallLetter: overallGrade != null ? getLetterGrade(overallGrade) : '--',
         latestReading: reading?.[0] || null,
         comment: commentData?.text || '',
+        behaviorGrade: behaviorSG?.behavior_grade || null,
         teacherName: teacherData?.name || '',
         semesterName: semester?.name || '',
       })
       setComment(commentData?.text || '')
+      setBehaviorGrade(behaviorSG?.behavior_grade || '')
       setLoading(false)
     })()
   }, [studentId, semesterId])
@@ -1377,6 +1410,27 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                   </div>
                 )
               })}
+            </div>
+          </div>
+
+          {/* Behavior Grade */}
+          <div className="flex items-center gap-3 pt-2 border-t border-border">
+            <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">Behavior</span>
+            <div className="flex gap-1.5">
+              {['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'E'].map(g => (
+                <button key={g} onClick={async () => {
+                  const newVal = behaviorGrade === g ? '' : g
+                  setBehaviorGrade(newVal)
+                  await supabase.from('semester_grades').upsert({
+                    student_id: studentId, semester_id: semesterId, domain: 'overall', behavior_grade: newVal || null,
+                    english_class: student.english_class, grade: student.grade,
+                  }, { onConflict: 'student_id,semester_id,domain' })
+                  setData((prev: any) => ({ ...prev, behaviorGrade: newVal || null }))
+                }}
+                  className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${behaviorGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                  {g}
+                </button>
+              ))}
             </div>
           </div>
 
