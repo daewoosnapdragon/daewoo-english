@@ -1212,7 +1212,7 @@ function ResultsView({ students, scores, levelTest }: {
               const metCount = row.standardsBaseline.filter(s => s.met).length
               const expanded = expandedStudent === row.student.id
 
-              return (
+              return (<>
                 <tr key={row.student.id}
                   onClick={() => setExpandedStudent(expanded ? null : row.student.id)}
                   className={`border-t border-border cursor-pointer transition-colors ${idx % 2 === 0 ? '' : 'bg-surface-alt/30'} hover:bg-blue-50/50`}>
@@ -1245,13 +1245,85 @@ function ResultsView({ students, scores, levelTest }: {
                       {row.suggestedClass}
                     </span>
                   </td>
-                  <td className="text-center px-3 py-2.5">
-                    <span className={`text-[11px] font-medium ${metCount >= 8 ? 'text-green-600' : metCount >= 5 ? 'text-amber-600' : 'text-red-600'}`}>
+                  <td className="text-center px-3 py-2.5 relative group">
+                    <span className={`text-[11px] font-medium cursor-help ${metCount >= 8 ? 'text-green-600' : metCount >= 5 ? 'text-amber-600' : 'text-red-600'}`}>
                       {metCount}/{row.standardsBaseline.length}
                     </span>
+                    <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-white border border-border rounded-xl shadow-xl p-3 z-50 text-left">
+                      <p className="text-[10px] font-bold text-navy mb-1.5">Standards Baseline</p>
+                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                        {row.standardsBaseline.map((std: any) => (
+                          <div key={std.code} className="flex items-center gap-1.5 text-[9px]">
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${std.met ? 'bg-green-500' : 'bg-red-400'}`} />
+                            <span className={`font-semibold ${std.met ? 'text-green-700' : 'text-red-600'}`}>{std.code}</span>
+                            <span className="text-text-tertiary">{std.score}/{std.threshold}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </td>
                 </tr>
-              )
+                {expanded && (
+                  <tr>
+                    <td colSpan={11} className="px-4 py-4 bg-blue-50/50 border-t border-blue-200">
+                      <div className="max-w-4xl">
+                        <div className="flex items-center gap-2 mb-3">
+                          <h4 className="text-[13px] font-bold text-navy">Leveling Dossier: {row.student.english_name}</h4>
+                          <span className="text-[10px] text-text-tertiary">{row.student.korean_name}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                            style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass), color: classToTextColor(row.student.english_class as EnglishClass) }}>
+                            Current: {row.student.english_class}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold ml-1"
+                            style={{ backgroundColor: classToColor(row.suggestedClass), color: classToTextColor(row.suggestedClass) }}>
+                            Suggested: {row.suggestedClass}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          {/* Written Test Breakdown */}
+                          <div className="bg-white rounded-lg border border-border p-3">
+                            <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Written Test</p>
+                            {WRITTEN_SECTIONS.map(sec => {
+                              const val = (row.scores as any)[sec.key] ?? 0
+                              const pct = sec.max > 0 ? (val / sec.max) * 100 : 0
+                              return (
+                                <div key={sec.key} className="flex items-center justify-between text-[10px] py-0.5">
+                                  <span className="text-text-secondary">{sec.label}</span>
+                                  <span className={`font-bold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-500'}`}>{val}/{sec.max}</span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                          {/* Oral / Reading */}
+                          <div className="bg-white rounded-lg border border-border p-3">
+                            <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Oral / Reading</p>
+                            <div className="space-y-1 text-[10px]">
+                              <div className="flex justify-between"><span className="text-text-secondary">Passage Level</span><span className="font-bold text-navy">{row.passageLevel}</span></div>
+                              <div className="flex justify-between"><span className="text-text-secondary">CWPM</span><span className="font-bold">{row.cwpm ?? '--'}</span></div>
+                              <div className="flex justify-between"><span className="text-text-secondary">Comprehension</span><span className="font-bold">{row.compTotal != null ? `${row.compTotal}/${row.compMax}` : '--'}</span></div>
+                              <div className="flex justify-between"><span className="text-text-secondary">Oral Score</span><span className="font-bold">{Math.round(row.oralScore)}</span></div>
+                              <div className="flex justify-between border-t border-border pt-1 mt-1"><span className="text-text-secondary font-semibold">Composite</span><span className={`font-extrabold text-[12px] ${row.composite >= 70 ? 'text-green-600' : row.composite >= 40 ? 'text-amber-600' : 'text-red-600'}`}>{Math.round(row.composite)}</span></div>
+                            </div>
+                          </div>
+                          {/* Standards Met/Missing */}
+                          <div className="bg-white rounded-lg border border-border p-3">
+                            <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Standards ({metCount}/{row.standardsBaseline.length} met)</p>
+                            <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                              {row.standardsBaseline.map((std: any) => (
+                                <div key={std.code} className="flex items-center gap-1.5 text-[9px]">
+                                  <span className={`text-[10px] ${std.met ? 'text-green-600' : 'text-red-500'}`}>{std.met ? 'Met' : 'X'}</span>
+                                  <span className="font-semibold text-navy">{std.code}</span>
+                                  <span className="text-text-tertiary ml-auto">{std.score}/{std.threshold}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>)
             })}
           </tbody>
         </table>

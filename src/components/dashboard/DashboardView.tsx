@@ -72,10 +72,7 @@ export default function DashboardView() {
       </div>
       <div className="px-10 py-6">
         <TodayAtGlance />
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <TodaysPlanPreview />
-          <RecentNotesPreview />
-        </div>
+        <TodaysPlanPreview />
         <QuickActions />
         <StudentAlerts />
         {isAdmin && <AdminAlertPanel />}
@@ -130,71 +127,6 @@ function TodaysPlanPreview() {
 }
 
 // ─── Recent Notes Preview ─────────────────────────────────────────
-function RecentNotesPreview() {
-  const { currentTeacher } = useApp()
-  const isTeacher = currentTeacher?.role === 'teacher'
-  const [notes, setNotes] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const yesterday = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
-        let query = supabase.from('student_notes')
-          .select('*, teachers(name), students!inner(english_name, english_class)')
-          .gte('created_at', yesterday)
-          .order('created_at', { ascending: false })
-          .limit(6)
-        if (isTeacher && currentTeacher?.english_class) {
-          query = query.eq('students.english_class', currentTeacher.english_class)
-        }
-        const { data, error } = await query
-        if (!error && data) setNotes(data)
-      } catch {}
-      setLoading(false)
-    })()
-  }, [currentTeacher, isTeacher])
-
-  const NOTE_CATS: Record<string, string> = {
-    general: 'bg-gray-100 text-gray-600',
-    academic: 'bg-blue-100 text-blue-600',
-    behavior: 'bg-amber-100 text-amber-600',
-    social: 'bg-purple-100 text-purple-600',
-    parent: 'bg-green-100 text-green-600',
-    followup: 'bg-red-100 text-red-600',
-  }
-
-  return (
-    <div className="bg-surface border border-border rounded-xl overflow-hidden">
-      <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
-        <p className="text-[11px] font-bold text-navy">Recent Student Notes <span className="font-normal text-text-tertiary">(last 48h)</span></p>
-      </div>
-      <div className="px-4 py-3 min-h-[100px] max-h-[160px] overflow-y-auto">
-        {loading ? (
-          <Loader2 size={14} className="animate-spin text-text-tertiary" />
-        ) : notes.length === 0 ? (
-          <p className="text-[11px] text-text-tertiary">No recent notes. Open a student profile to add quick notes.</p>
-        ) : (
-          <div className="space-y-2">
-            {notes.map((n: any) => (
-              <div key={n.id} className="flex items-start gap-1.5">
-                <span className={`px-1 py-0.5 rounded text-[7px] font-bold flex-shrink-0 mt-0.5 ${NOTE_CATS[n.category] || NOTE_CATS.general}`}>
-                  {n.category?.toUpperCase()?.slice(0, 3)}
-                </span>
-                <div className="min-w-0">
-                  <span className="text-[10px] font-semibold text-navy">{n.students?.english_name}</span>
-                  <span className="text-[9px] text-text-tertiary ml-1">by {n.teachers?.name || '?'}</span>
-                  <p className="text-[10px] text-text-secondary leading-snug truncate">{n.note}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ─── Today at a Glance ──────────────────────────────────────────────
 function TodayAtGlance() {
   const { currentTeacher, language } = useApp()
@@ -454,20 +386,30 @@ function StudentAlerts() {
                 }
               }
             }
+          }
 
-            // 3. MISSING GRADES: students with 0 scores for assessments that exist
-            const studentAssessmentsAll = assessments.filter(a => a.english_class === student.english_class && a.grade === student.grade)
-            const studentGrades = allGrades.filter(g => g.student_id === student.id)
-            const missing = studentAssessmentsAll.filter(a => !studentGrades.some(g => g.assessment_id === a.id))
-            if (missing.length >= 3 && studentAssessmentsAll.length >= 3) {
-              newAlerts.push({
-                id: `mg-${student.id}`,
-                type: 'missing_grades',
-                studentName: student.english_name,
-                studentClass: student.english_class,
-                message: `Missing scores for ${missing.length} of ${studentAssessmentsAll.length} assessments`
-              })
+          // MISSING GRADES: consolidated per assessment (class-level reminders)
+          const assessmentsByKey: Record<string, { assessment: any; studentIds: string[]; gradedIds: Set<string> }> = {}
+          for (const a of assessments) {
+            const key = a.id
+            const classStudents = students.filter(s => s.english_class === a.english_class && s.grade === a.grade)
+            if (classStudents.length === 0) continue
+            const gradedSet = new Set(allGrades.filter(g => g.assessment_id === a.id).map(g => g.student_id))
+            const ungradedCount = classStudents.filter(s => !gradedSet.has(s.id)).length
+            if (ungradedCount > 0 && ungradedCount < classStudents.length) {
+              // Partially graded -- remind to finish
+              assessmentsByKey[key] = { assessment: a, studentIds: classStudents.map(s => s.id), gradedIds: gradedSet }
             }
+          }
+          for (const [key, info] of Object.entries(assessmentsByKey)) {
+            const ungraded = info.studentIds.length - info.gradedIds.size
+            newAlerts.push({
+              id: `mg-${key}`,
+              type: 'missing_grades',
+              studentName: '',
+              studentClass: info.assessment.english_class,
+              message: `Finish grading "${info.assessment.name}" for ${info.assessment.english_class} -- ${ungraded} of ${info.studentIds.length} students remaining`
+            })
           }
         }
       }
@@ -511,7 +453,7 @@ function StudentAlerts() {
 
   return (
     <div className="mb-6">
-      <h3 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Student Alerts ({visible.length})</h3>
+      <h3 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Alerts ({visible.length})</h3>
       <div className="space-y-2">
         {visible.slice(0, 8).map(alert => {
           const Icon = icons[alert.type]
@@ -520,8 +462,7 @@ function StudentAlerts() {
             <div key={alert.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${c.bg} ${c.border}`}>
               <Icon size={16} className={c.icon} />
               <div className="flex-1 min-w-0">
-                <span className="text-[12px] font-semibold text-navy">{alert.studentName}</span>
-                <span className="text-[10px] text-text-tertiary ml-2">{alert.studentClass}</span>
+                {alert.studentName && <><span className="text-[12px] font-semibold text-navy">{alert.studentName}</span><span className="text-[10px] text-text-tertiary ml-2">{alert.studentClass}</span></>}
                 <p className={`text-[11px] ${c.text}`}>{alert.message}</p>
               </div>
               <button onClick={() => dismiss(alert.id)} className="p-1 rounded-lg hover:bg-white/50 text-text-tertiary hover:text-text-primary" title="Dismiss">

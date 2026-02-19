@@ -212,7 +212,7 @@ function RadarChart({ studentGrades, classAverages }: {
   const maxR = 75
   const levels = [20, 40, 60, 80, 100]
   const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
-  const labels = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
+  const labels = ['Read', 'Phon', 'Write', 'Speak', 'Lang']
   const angles = domains.map((_, i) => (Math.PI * 2 * i) / domains.length - Math.PI / 2)
 
   const toXY = (angle: number, pct: number) => ({
@@ -253,7 +253,7 @@ function RadarChart({ studentGrades, classAverages }: {
       {hasClass && (
         <polygon
           points={makePolygon(classValues)}
-          fill="rgba(148,163,184,0.08)" stroke="#cbd5e1" strokeWidth={1.5}
+          fill="rgba(148,163,184,0.18)" stroke="#94a3b8" strokeWidth={1.5}
           strokeDasharray="4,3"
         />
       )}
@@ -262,7 +262,7 @@ function RadarChart({ studentGrades, classAverages }: {
       {filledCount >= 3 && (
         <polygon
           points={makePolygon(studentValues)}
-          fill="rgba(30,58,95,0.15)" stroke="#1e3a5f" strokeWidth={2}
+          fill="rgba(30,58,95,0.3)" stroke="#1e3a5f" strokeWidth={2.5}
         />
       )}
 
@@ -671,7 +671,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     <style>
       body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
       .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb}
-      @media print{body{padding:0}.card{margin:0;box-shadow:none;border-radius:0}}
+      @media print{@page{size:A4;margin:8mm}body{padding:0}.card{margin:0;box-shadow:none;border-radius:0;max-height:277mm;overflow:hidden}}
     </style></head>
     <body><div class="card">
     <!-- Header -->
@@ -1037,7 +1037,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                     <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Attendance / Behavior</p>
                     <div className="flex gap-4">
                       <div><p className="text-[9px] text-[#94a3b8]">Attendance</p><p className="text-[12px] font-bold text-navy">{d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}%` : '--'}</p></div>
-                      <div><p className="text-[9px] text-[#94a3b8]">Behavior</p><p className="text-[12px] font-bold text-navy">{d.behaviorCount} logs</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">Behavior</p><p className="text-[14px] font-bold text-navy">{d.behaviorGrade || '--'}</p></div>
                     </div>
                   </div>
                 </div>
@@ -1125,7 +1125,7 @@ function printProgressReport(student: any, data: any) {
   pw.document.write(`<html><head><title>Progress Report - ${student.english_name}</title>
   <style>body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f5f0eb}
   .card{max-width:680px;margin:20px auto;overflow:hidden;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
-  @media print{body{background:white}.card{margin:0;box-shadow:none;border-radius:0;page-break-after:always}}</style></head>
+  @media print{@page{size:A4;margin:8mm}body{background:white}.card{margin:0;box-shadow:none;border-radius:0;page-break-after:always;max-height:277mm;overflow:hidden;transform-origin:top left}}</style></head>
   <body><div class="card">
   <div style="background:#1e3a5f;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
     <div><p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;opacity:0.6">Progress Report</p>
@@ -1174,7 +1174,7 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
     <style>body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:white}
     .card{max-width:680px;margin:0 auto;overflow:hidden;page-break-after:always}
     .card:last-child{page-break-after:auto}
-    @media print{.card{margin:0;box-shadow:none}}</style></head><body>`)
+    @media print{@page{size:A4;margin:8mm}.card{margin:0;box-shadow:none;max-height:277mm;overflow:hidden}}</style></head><body>`)
 
     for (const student of students) {
       // Load data for each student

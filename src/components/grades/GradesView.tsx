@@ -11,6 +11,20 @@ import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
 
+// Normalize CCSS input: "rl21" -> "RL.2.1", "rf13a" -> "RF.1.3a", "sl42" -> "SL.4.2"
+function normalizeCCSS(input: string): string {
+  const s = input.trim().toUpperCase()
+  // Already has dots? return as-is
+  if (s.includes('.')) return s
+  // Match patterns like RL21, RF13A, SL42, W31, L52A
+  const match = s.match(/^(RL|RI|RF|W|SL|L)(\d)(\d+)([A-Z]?)$/i)
+  if (match) {
+    const [, domain, grade, standard, sub] = match
+    return `${domain.toUpperCase()}.${grade}.${standard}${sub ? sub.toLowerCase() : ''}`
+  }
+  return input
+}
+
 const ASSESSMENT_CATEGORIES = [
   { value: 'quiz', label: 'Quiz', labelKo: '퀴즈' },
   { value: 'project', label: 'Project', labelKo: '프로젝트' },
@@ -659,9 +673,11 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
 }) {
   const { showToast } = useApp()
   const [scores, setScores] = useState<any>({})
+  const [sectionScores, setSectionScores] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [expandedAssessment, setExpandedAssessment] = useState<string | null>(null)
 
   const domainAssessments = allAssessments.filter(a => a.domain === selectedDomain)
 
@@ -669,13 +685,20 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
     if (domainAssessments.length === 0 || students.length === 0) { setLoading(false); return }
     ;(async () => {
       setLoading(true)
-      const { data } = await supabase.from('grades').select('student_id, assessment_id, score')
+      const { data } = await supabase.from('grades').select('student_id, assessment_id, score, section_scores')
         .in('assessment_id', domainAssessments.map(a => a.id))
         .in('student_id', students.map(s => s.id))
       const map: any = {}
-      students.forEach(s => { map[s.id] = {} })
-      data?.forEach((g: any) => { if (map[g.student_id]) map[g.student_id][g.assessment_id] = g.score })
+      const secMap: any = {}
+      students.forEach(s => { map[s.id] = {}; secMap[s.id] = {} })
+      data?.forEach((g: any) => {
+        if (map[g.student_id]) {
+          map[g.student_id][g.assessment_id] = g.score
+          if (g.section_scores) secMap[g.student_id][g.assessment_id] = g.section_scores
+        }
+      })
       setScores(map)
+      setSectionScores(secMap)
       setLoading(false)
       setHasChanges(false)
     })()
@@ -689,6 +712,20 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
     setHasChanges(true)
   }
 
+  const handleSectionChange = (studentId: string, assessmentId: string, sectionIdx: number, value: string, sections: any[]) => {
+    setSectionScores((prev: any) => {
+      const studentSec = { ...(prev[studentId]?.[assessmentId] || {}) }
+      studentSec[String(sectionIdx)] = value === '' ? null : Number(value)
+      // Auto-compute total
+      const total = sections.reduce((sum, _, i) => sum + (Number(studentSec[String(i)]) || 0), 0)
+      const newPrev = { ...prev, [studentId]: { ...(prev[studentId] || {}), [assessmentId]: studentSec } }
+      // Also update the total score
+      setScores((sp: any) => ({ ...sp, [studentId]: { ...(sp[studentId] || {}), [assessmentId]: total } }))
+      return newPrev
+    })
+    setHasChanges(true)
+  }
+
   const handleSaveAll = async () => {
     setSaving(true)
     let errors = 0
@@ -697,7 +734,9 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
       for (const a of domainAssessments) {
         const score = scores[s.id]?.[a.id]
         if (score != null) {
-          rows.push({ student_id: s.id, assessment_id: a.id, score, max_score: a.max_score })
+          const row: any = { student_id: s.id, assessment_id: a.id, score }
+          if (sectionScores[s.id]?.[a.id]) row.section_scores = sectionScores[s.id][a.id]
+          rows.push(row)
         }
       }
     }
@@ -709,6 +748,23 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
     setHasChanges(false)
     showToast(errors > 0 ? 'Saved with errors' : 'Saved ' + rows.length + ' scores')
   }
+
+  // Build column list: for each assessment, show total + optional expanded sections
+  const buildColumns = () => {
+    const cols: { type: 'total' | 'section'; assessment: any; sectionIdx?: number; sectionLabel?: string }[] = []
+    for (const a of domainAssessments) {
+      const hasSections = a.sections && a.sections.length > 0
+      if (hasSections && expandedAssessment === a.id) {
+        a.sections.forEach((sec: any, i: number) => {
+          cols.push({ type: 'section', assessment: a, sectionIdx: i, sectionLabel: sec.label || `S${i + 1}` })
+        })
+      }
+      cols.push({ type: 'total', assessment: a })
+    }
+    return cols
+  }
+
+  const columns = loading ? [] : buildColumns()
 
   return (
     <>
@@ -726,7 +782,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
         <div>
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
           <p className="text-[12px] text-blue-800 leading-relaxed">
-            <strong>Batch Grid</strong> lets you view and edit scores for all students across all assessments in one spreadsheet view. Click any cell to enter or change a score. Changes are saved when you click "Save Changes."
+            <strong>Batch Grid</strong> lets you view and edit scores for all students across all assessments. {domainAssessments.some(a => a.sections?.length > 0) ? 'Click an assessment header to expand/collapse its sections.' : ''} Changes are saved when you click "Save All."
           </p>
         </div>
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
@@ -734,12 +790,29 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
             <table className="w-full text-[12px]">
               <thead><tr className="bg-surface-alt">
                 <th className="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
-                {domainAssessments.map(a => (
-                  <th key={a.id} className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[80px]" title={a.name}>
-                    <div className="truncate max-w-[80px]">{a.name}</div>
-                    <div className="text-[8px] text-text-tertiary font-normal">/{a.max_score}</div>
-                  </th>
-                ))}
+                {columns.map((col, ci) => {
+                  if (col.type === 'section') {
+                    return (
+                      <th key={`sec-${col.assessment.id}-${col.sectionIdx}`} className="text-center px-1 py-2.5 text-[8px] uppercase tracking-wider text-purple-600 font-semibold min-w-[60px] bg-purple-50/50">
+                        <div className="truncate max-w-[60px]">{col.sectionLabel}</div>
+                        <div className="text-[7px] text-purple-400 font-normal">/{col.assessment.sections[col.sectionIdx!].max_score || '?'}</div>
+                      </th>
+                    )
+                  }
+                  const a = col.assessment
+                  const hasSections = a.sections && a.sections.length > 0
+                  const isExpanded = expandedAssessment === a.id
+                  return (
+                    <th key={a.id} className={`text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[80px] ${hasSections ? 'cursor-pointer hover:bg-navy/5' : ''}`}
+                      onClick={() => hasSections && setExpandedAssessment(isExpanded ? null : a.id)} title={hasSections ? `Click to ${isExpanded ? 'collapse' : 'expand'} sections` : a.name}>
+                      <div className="truncate max-w-[80px] flex items-center justify-center gap-0.5">
+                        {a.name}
+                        {hasSections && <ChevronDown size={10} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />}
+                      </div>
+                      <div className="text-[8px] text-text-tertiary font-normal">/{a.max_score}{hasSections ? ` (${a.sections.length} sec)` : ''}</div>
+                    </th>
+                  )
+                })}
                 <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Avg%</th>
               </tr></thead>
               <tbody>
@@ -752,13 +825,25 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                   return (
                     <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
                       <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="text-text-tertiary font-normal text-[10px]">{s.korean_name}</span></td>
-                      {domainAssessments.map((a, ai) => {
+                      {columns.map((col, ci) => {
+                        if (col.type === 'section') {
+                          const secVal = sectionScores[s.id]?.[col.assessment.id]?.[String(col.sectionIdx)] ?? ''
+                          return (
+                            <td key={`sec-${col.assessment.id}-${col.sectionIdx}-${s.id}`} className="px-1 py-1.5 text-center bg-purple-50/20">
+                              <input type="number" step="0.5" value={secVal ?? ''} onChange={e => handleSectionChange(s.id, col.assessment.id, col.sectionIdx!, e.target.value, col.assessment.sections)}
+                                className="batch-input w-14 px-1 py-1.5 border rounded-lg text-center text-[11px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 border-purple-200" />
+                            </td>
+                          )
+                        }
+                        const a = col.assessment
                         const sc = scores[s.id]?.[a.id]
                         const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
+                        const hasSections = a.sections && a.sections.length > 0 && expandedAssessment === a.id
                         return (
-                          <td key={a.id} className="px-1 py-1.5 text-center">
+                          <td key={`total-${a.id}-${s.id}`} className="px-1 py-1.5 text-center">
                             <input type="number" step="0.5" value={sc ?? ''} onChange={e => handleChange(s.id, a.id, e.target.value)}
-                              max={a.max_score} className={`batch-input w-16 px-2 py-1.5 border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${pct != null && pct < 60 ? 'border-red-300 bg-red-50' : 'border-border'}`} />
+                              max={a.max_score} readOnly={hasSections}
+                              className={`batch-input w-16 px-2 py-1.5 border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${hasSections ? 'bg-gray-50 text-text-tertiary' : ''} ${pct != null && pct < 60 ? 'border-red-300 bg-red-50' : 'border-border'}`} />
                           </td>
                         )
                       })}
@@ -1329,10 +1414,11 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                       <input value={sec.standard}
                         onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], standard: e.target.value }; setSections(ns); setFocusedSection(si) }}
                         onFocus={() => setFocusedSection(si)}
-                        onBlur={() => setTimeout(() => setFocusedSection(null), 150)}
-                        placeholder="Standard (e.g. RL.2.1)" className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy" />
+                        onBlur={() => { const ns = [...sections]; ns[si] = { ...ns[si], standard: normalizeCCSS(ns[si].standard) }; setSections(ns); setTimeout(() => setFocusedSection(null), 150) }}
+                        placeholder="Standard (e.g. RL.2.1 or rl21)" className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy" />
                       {focusedSection === si && sec.standard.length >= 2 && (() => {
-                        const matches = ccssStandards.filter(s => s.code.toLowerCase().includes(sec.standard.toLowerCase()) && s.code !== sec.standard).slice(0, 4)
+                        const normalized = normalizeCCSS(sec.standard)
+                        const matches = ccssStandards.filter(s => s.code.toLowerCase().includes(normalized.toLowerCase()) || s.code.toLowerCase().includes(sec.standard.toLowerCase())).filter(s => s.code !== sec.standard).slice(0, 4)
                         if (matches.length === 0) return null
                         return (
                           <div className="absolute left-0 right-0 top-full mt-0.5 bg-surface border border-border rounded-lg shadow-lg z-50 max-h-32 overflow-y-auto">

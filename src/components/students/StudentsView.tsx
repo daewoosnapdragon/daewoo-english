@@ -660,7 +660,13 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
         assessments: items.map(item => ({
           ...item,
           classAvg: avgMap[item.assessmentId] != null && item.max > 0 ? (avgMap[item.assessmentId] / item.max) * 100 : null
-        }))
+        })).sort((a, b) => {
+          // Sort oldest first (ascending by date)
+          if (a.date && b.date) return a.date.localeCompare(b.date)
+          if (a.date) return -1
+          if (b.date) return 1
+          return 0
+        })
       }))
       setData(result); setLoading(false)
     })()
@@ -1238,6 +1244,23 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
 
   return (
     <div>
+      {/* Visual grid overview */}
+      <div className="mb-4 p-3 bg-surface-alt rounded-xl">
+        <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Standards Mastery Overview</p>
+        <div className="flex flex-wrap gap-1">
+          {standardsData.map(std => (
+            <div key={std.code} className={`w-6 h-6 rounded flex items-center justify-center text-[7px] font-bold cursor-help ${std.avgPct >= 80 ? 'bg-green-500 text-white' : std.avgPct >= 60 ? 'bg-amber-400 text-white' : 'bg-red-400 text-white'}`}
+              title={`${std.code}: ${Math.round(std.avgPct)}% (${std.assessments.length} assessments)`}>
+              {std.code.split('.').pop()}
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 mt-2 text-[9px] text-text-tertiary">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" /> 80%+ mastered</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-400" /> 60-79% approaching</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> &lt;60% below</span>
+        </div>
+      </div>
       {/* Summary */}
       <div className="flex items-center gap-3 mb-4">
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200">

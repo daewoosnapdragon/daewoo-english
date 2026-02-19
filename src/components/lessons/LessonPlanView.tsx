@@ -579,12 +579,23 @@ function DaySetupPanel({ selectedClass, selectedGrade, slots, onAdd, onRemove, o
 }) {
   const [addingDay, setAddingDay] = useState<number | null>(null)
   const [newLabel, setNewLabel] = useState('')
+  const [editingSlot, setEditingSlot] = useState<string | null>(null)
+  const [editLabel, setEditLabel] = useState('')
+
+  const handleRename = async (slotId: string, newName: string) => {
+    if (!newName.trim()) return
+    await supabase.from('lesson_plan_slots').update({ slot_label: newName.trim() }).eq('id', slotId)
+    // Update local state by removing and re-adding won't work, so force parent refresh
+    setEditingSlot(null)
+    window.location.reload() // Simple refresh to pick up the rename
+  }
+
   return (
     <div className="mb-6 bg-surface border border-border rounded-2xl p-5 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h4 className="text-[14px] font-semibold text-navy">Weekly Schedule for {selectedClass} — Grade {selectedGrade}</h4>
-          <p className="text-[11px] text-text-tertiary mt-0.5">Define what content appears on each day for this class and grade.</p>
+          <h4 className="text-[14px] font-semibold text-navy">Weekly Schedule for {selectedClass} -- Grade {selectedGrade}</h4>
+          <p className="text-[11px] text-text-tertiary mt-0.5">Add, rename, or remove class slots for each day. Click a slot name to rename it.</p>
         </div>
         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
       </div>
@@ -597,10 +608,20 @@ function DaySetupPanel({ selectedClass, selectedGrade, slots, onAdd, onRemove, o
               <div className="space-y-1.5">
                 {daySlots.map(slot => {
                   const sc = getSlotColor(slot.slot_label)
+                  const isEditing = editingSlot === slot.id
                   return (
                     <div key={slot.id} className="flex items-center justify-between bg-white rounded-lg px-2.5 py-1.5 border border-border">
-                      <span className={`text-[10px] font-medium ${sc.text}`}>{slot.slot_label}</span>
-                      <button onClick={() => onRemove(slot.id)} className="p-0.5 text-text-tertiary hover:text-red-500"><X size={11} /></button>
+                      {isEditing ? (
+                        <input value={editLabel} onChange={e => setEditLabel(e.target.value)} autoFocus
+                          onKeyDown={e => { if (e.key === 'Enter') handleRename(slot.id, editLabel); if (e.key === 'Escape') setEditingSlot(null) }}
+                          onBlur={() => { if (editLabel.trim() && editLabel !== slot.slot_label) handleRename(slot.id, editLabel); else setEditingSlot(null) }}
+                          className="flex-1 min-w-0 px-1 py-0.5 text-[10px] font-medium border border-navy rounded outline-none" />
+                      ) : (
+                        <span className={`text-[10px] font-medium ${sc.text} cursor-pointer hover:underline`}
+                          onClick={() => { setEditingSlot(slot.id); setEditLabel(slot.slot_label) }}
+                          title="Click to rename">{slot.slot_label}</span>
+                      )}
+                      <button onClick={() => onRemove(slot.id)} className="p-0.5 text-text-tertiary hover:text-red-500 ml-1"><X size={11} /></button>
                     </div>
                   )
                 })}
