@@ -11,6 +11,7 @@ import StudentsView from '@/components/students/StudentsView'
 import GradesView from '@/components/grades/GradesView'
 import AttendanceView from '@/components/attendance/AttendanceView'
 import ReadingLevelsView from '@/components/reading/ReadingLevelsView'
+import GroupsView from '@/components/groups/GroupsView'
 import ReportsView from '@/components/reports/ReportsView'
 import SettingsView from '@/components/settings/SettingsView'
 import LevelingView from '@/components/leveling/LevelingView'
@@ -75,6 +76,7 @@ export default function Home() {
       case 'leveling': return <LevelingView />
       case 'attendance': return <AttendanceView />
       case 'readingLevels': return <ReadingLevelsView />
+      case 'groups': return <GroupsView />
       case 'curriculum': return <CurriculumView />
       case 'teacherGuides': return <TeacherGuidesView />
       case 'lessonPlans': return <LessonPlanView />

@@ -10,6 +10,7 @@ import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, 
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
+import { SCORING_RUBRICS } from '@/components/curriculum/scoring-rubrics'
 
 // Normalize CCSS input: "rl21" -> "RL.2.1", "rf13a" -> "RF.1.3a", "sl42" -> "SL.4.2"
 function normalizeCCSS(input: string): string {
@@ -52,7 +53,7 @@ interface Assessment {
 }
 
 interface StudentRow { id: string; english_name: string; korean_name: string; photo_url?: string }
-type SubView = 'entry' | 'overview' | 'student' | 'batch' | 'calendar' | 'rubrics' | 'itemAnalysis' | 'quickCheck'
+type SubView = 'entry' | 'overview' | 'student' | 'batch' | 'calendar' | 'itemAnalysis' | 'quickCheck'
 type LangKey = 'en' | 'ko'
 
 interface Semester { id: string; name: string; name_ko: string; type: string; is_active: boolean }
@@ -270,7 +271,6 @@ export default function GradesView() {
             { id: 'overview' as SubView, icon: BarChart3, label: lang === 'ko' ? '도메인 개요' : 'Domain Overview' },
             { id: 'student' as SubView, icon: User, label: lang === 'ko' ? '학생별 보기' : 'Student View' },
             { id: 'calendar' as SubView, icon: CalendarDays, label: lang === 'ko' ? '평가 일정' : 'Calendar' },
-            { id: 'rubrics' as SubView, icon: ClipboardEdit, label: lang === 'ko' ? '루브릭' : 'Rubrics' },
             { id: 'itemAnalysis' as SubView, icon: BarChart3, label: lang === 'ko' ? '문항 분석' : 'Item Analysis' },
             { id: 'quickCheck' as SubView, icon: Zap, label: lang === 'ko' ? '빠른 점검' : 'Quick Check' },
           ]).map(tab => (
@@ -320,7 +320,6 @@ export default function GradesView() {
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
         {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
         {subView === 'calendar' && <AssessmentCalendarView allAssessments={allAssessments} lang={lang} />}
-        {subView === 'rubrics' && <RubricLibraryView />}
         {subView === 'itemAnalysis' && <ItemAnalysisView allAssessments={allAssessments} students={students} />}
         {subView === 'quickCheck' && <QuickCheckView students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} />}
       </div>
@@ -346,6 +345,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
           existingScores={scores}
           maxScore={selectedAssessment.max_score}
           domain={selectedDomain}
+          grade={selectedGrade}
           onApplyScores={(newScores) => { Object.entries(newScores).forEach(([sid, total]) => { handleScoreChange(sid, String(total)); commitScore(sid) }) }}
           onClose={() => setRubricOpen(false)}
         />
@@ -1726,48 +1726,6 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
 // ─── Rubric Scoring Modal (Bulk) ──────────────────────────────────
 // Full-class rubric scoring: student sidebar + rubric grid + auto-fill scores
 
-const SCORING_RUBRICS: { name: string; domain: string; maxScore: number; criteria: { label: string; levels: string[] }[] }[] = [
-  { name: 'Opinion Writing', domain: 'writing', maxScore: 20,
-    criteria: [
-      { label: 'Opinion Statement', levels: ['No clear opinion', 'Opinion vague or unclear', 'Clear opinion stated', 'Strong opinion with context'] },
-      { label: 'Reasons & Evidence', levels: ['No reasons given', 'One reason, no details', 'Two+ reasons with details', 'Multiple reasons with specific evidence'] },
-      { label: 'Organization', levels: ['No logical order', 'Some organization attempted', 'Logical order with transitions', 'Strong intro, organized body, conclusion'] },
-      { label: 'Language & Voice', levels: ['Basic/repetitive words', 'Some variety', 'Good variety, some persuasive', 'Engaging with persuasive techniques'] },
-      { label: 'Conventions', levels: ['Many errors, hard to read', 'Frequent errors but readable', 'Few errors, doesn\'t interfere', 'Nearly error-free'] },
-    ] },
-  { name: 'Narrative Writing', domain: 'writing', maxScore: 20,
-    criteria: [
-      { label: 'Story Structure', levels: ['No beginning/middle/end', 'Has beginning OR end', 'Has beginning, middle, end', 'Strong opening, developed middle, satisfying end'] },
-      { label: 'Character & Setting', levels: ['No character/setting', 'Names character or place', 'Describes with some detail', 'Vivid with sensory details'] },
-      { label: 'Sequencing & Flow', levels: ['Events random', 'Some events in order', 'Logical sequence with transitions', 'Smooth flow with varied transitions'] },
-      { label: 'Word Choice', levels: ['Very basic words', 'Some descriptive words', 'Good variety, some vivid', 'Strong descriptive language'] },
-      { label: 'Conventions', levels: ['Many errors, hard to read', 'Frequent errors but readable', 'Few errors, doesn\'t interfere', 'Nearly error-free'] },
-    ] },
-  { name: 'Informational Writing', domain: 'writing', maxScore: 20,
-    criteria: [
-      { label: 'Topic Introduction', levels: ['No topic identified', 'Topic mentioned but unclear', 'Clear topic sentence', 'Engaging introduction with focus'] },
-      { label: 'Facts & Details', levels: ['No facts or details', 'One or two basic facts', 'Several relevant facts', 'Rich details with examples'] },
-      { label: 'Organization', levels: ['No structure', 'Some grouping of ideas', 'Clear paragraphs', 'Logical structure with headings/transitions'] },
-      { label: 'Domain Vocabulary', levels: ['No topic words', 'One or two topic words', 'Several content-specific terms', 'Precise vocabulary integrated'] },
-      { label: 'Conventions', levels: ['Many errors, hard to read', 'Frequent errors but readable', 'Few errors, doesn\'t interfere', 'Nearly error-free'] },
-    ] },
-  { name: 'Reading Response', domain: 'reading', maxScore: 20,
-    criteria: [
-      { label: 'Text Evidence', levels: ['No reference to text', 'Vague reference', 'Includes relevant detail', 'Cites specific evidence'] },
-      { label: 'Comprehension', levels: ['Does not answer question', 'Partially answers', 'Answers accurately', 'Thorough with deeper understanding'] },
-      { label: 'Connection', levels: ['No connection', 'Vague connection attempted', 'Relevant connection', 'Insightful connection that deepens meaning'] },
-      { label: 'Completeness', levels: ['One word or blank', 'Incomplete thought', 'Complete sentences', 'Detailed response'] },
-      { label: 'Vocabulary Use', levels: ['No text vocabulary used', 'One word attempted', 'Uses vocabulary correctly', 'Integrates vocabulary naturally'] },
-    ] },
-  { name: 'Oral Presentation', domain: 'speaking', maxScore: 20,
-    criteria: [
-      { label: 'Content', levels: ['Off-topic/no content', 'Minimal content', 'Clear with supporting details', 'Rich, well-developed ideas'] },
-      { label: 'Volume & Clarity', levels: ['Cannot be heard', 'Sometimes hard to hear', 'Clear most of the time', 'Clear, confident throughout'] },
-      { label: 'Eye Contact', levels: ['Reads from paper', 'Occasional glances', 'Looks at audience often', 'Natural eye contact'] },
-      { label: 'Organization', levels: ['No structure', 'Some organization', 'Clear beginning/middle/end', 'Smooth, logical flow'] },
-      { label: 'Language Use', levels: ['Single words/L1 only', 'Simple phrases, many errors', 'Complete sentences, some errors', 'Varied sentences, minimal errors'] },
-    ] },
-]
 
 const LEVEL_COLORS = [
   'bg-red-100 text-red-700 border-red-300 ring-red-300',
@@ -1777,11 +1735,12 @@ const LEVEL_COLORS = [
 ]
 const LEVEL_LABELS = ['Emerging', 'Developing', 'Meets', 'Exceeds']
 
-function RubricScoringModal({ students, existingScores, maxScore, domain, onApplyScores, onClose }: {
+function RubricScoringModal({ students, existingScores, maxScore, domain, grade, onApplyScores, onClose }: {
   students: { id: string; english_name: string; korean_name: string }[]
   existingScores: Record<string, number | null>
   maxScore: number
   domain: string
+  grade: number
   onApplyScores: (scores: Record<string, number>) => void
   onClose: () => void
 }) {
@@ -1791,7 +1750,8 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, onAppl
   const [allScores, setAllScores] = useState<Record<string, number[]>>({})
 
   const rubric = selectedRubric != null ? SCORING_RUBRICS[selectedRubric] : null
-  const filteredRubrics = SCORING_RUBRICS.filter(r => r.domain === domain || domain === 'all')
+  const filteredRubrics = SCORING_RUBRICS.filter(r => r.domain === domain && r.grade === grade)
+  const allDomainRubrics = SCORING_RUBRICS.filter(r => r.domain === domain && r.grade !== grade)
   const activeStudent = students[activeStudentIdx]
   const studentScores = activeStudent ? (allScores[activeStudent.id] || []) : []
   const studentTotal = studentScores.reduce((s, v) => s + v, 0)
@@ -1850,20 +1810,38 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, onAppl
         {!rubric ? (
           /* Rubric Selection */
           <div className="p-6 overflow-y-auto">
-            <p className="text-[12px] text-text-secondary mb-4">Choose a rubric to score all students:</p>
+            <p className="text-[12px] text-text-secondary mb-3">Grade {grade} · {domain} rubrics:</p>
+            {filteredRubrics.length === 0 && <p className="text-[11px] text-text-tertiary italic mb-3">No rubrics for this exact grade/domain. See other grades below.</p>}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {filteredRubrics.map((r, i) => {
+              {filteredRubrics.map((r) => {
                 const realIdx = SCORING_RUBRICS.indexOf(r)
                 return (
                   <button key={realIdx} onClick={() => setSelectedRubric(realIdx)}
                     className="text-left bg-surface border border-border rounded-xl px-4 py-3 hover:shadow-sm hover:border-navy/30 transition-all">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{r.domain}</span>
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{r.type.replace('_', ' ')}</span>
                     <h3 className="text-[14px] font-semibold text-navy mt-1.5">{r.name}</h3>
                     <p className="text-[10px] text-text-tertiary mt-0.5">{r.criteria.length} criteria · {r.criteria.map(c => c.label).join(', ')}</p>
                   </button>
                 )
               })}
             </div>
+            {allDomainRubrics.length > 0 && (
+              <>
+                <p className="text-[11px] text-text-tertiary mt-5 mb-2">Other grades:</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {allDomainRubrics.map((r) => {
+                    const realIdx = SCORING_RUBRICS.indexOf(r)
+                    return (
+                      <button key={realIdx} onClick={() => setSelectedRubric(realIdx)}
+                        className="text-left bg-surface border border-border/60 rounded-lg px-3 py-2 hover:shadow-sm hover:border-navy/20 transition-all opacity-70 hover:opacity-100">
+                        <span className="text-[8px] font-bold text-text-tertiary uppercase">Gr {r.grade} · {r.type.replace('_', ' ')}</span>
+                        <h3 className="text-[12px] font-medium text-navy">{r.name}</h3>
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </div>
         ) : (
           /* Scoring Interface: Sidebar + Rubric Grid */
@@ -1961,177 +1939,6 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, onAppl
 }
 
 
-function RubricLibraryView() {
-  const [selected, setSelected] = useState<any>(null)
-  const [filterDomain, setFilterDomain] = useState<string>('all')
-
-  const LEVEL_LABELS = ['Beginning (1)', 'Developing (2)', 'Proficient (3)', 'Advanced (4)']
-  const LEVEL_COLORS = ['bg-red-50 border-red-200', 'bg-amber-50 border-amber-200', 'bg-green-50 border-green-200', 'bg-blue-50 border-blue-200']
-
-  // Pre-built rubric library: 5 criteria x 4 levels = 20 points each
-  const RUBRIC_LIBRARY: { name: string; domain: string; difficulty: string; criteria: { label: string; levels: string[] }[] }[] = [
-    // ─── WRITING ───
-    { name: 'Simple Sentence Writing', domain: 'writing', difficulty: 'easy',
-      criteria: [
-        { label: 'Capitalization', levels: ['No capitals used', 'Some capitals, inconsistent', 'Capitals at start of most sentences', 'Correct capitals throughout'] },
-        { label: 'Punctuation', levels: ['No end punctuation', 'Some periods, inconsistent', 'End punctuation on most sentences', 'Correct punctuation throughout'] },
-        { label: 'Spelling', levels: ['Most words misspelled', 'Some sight words spelled correctly', 'Most sight/CVC words correct', 'Nearly all words spelled correctly'] },
-        { label: 'Completeness', levels: ['Incomplete thought', 'Partial sentence', 'Complete sentence with subject + verb', 'Complete, detailed sentence'] },
-        { label: 'Handwriting', levels: ['Illegible', 'Some letters formed correctly', 'Most letters legible, on line', 'Neat, consistent letter formation'] },
-      ] },
-    { name: 'Narrative Writing', domain: 'writing', difficulty: 'medium',
-      criteria: [
-        { label: 'Story Structure', levels: ['No clear beginning/middle/end', 'Has beginning OR end, not both', 'Has beginning, middle, and end', 'Strong opening, developed middle, satisfying conclusion'] },
-        { label: 'Character/Setting', levels: ['No characters or setting described', 'Names a character or place', 'Describes character and setting with some detail', 'Vivid character and setting with sensory details'] },
-        { label: 'Sequencing', levels: ['Events are random/unconnected', 'Some events in order', 'Events in logical sequence with transitions', 'Smooth flow with varied transitions (first, then, suddenly)'] },
-        { label: 'Word Choice', levels: ['Very basic/repetitive words', 'Some descriptive words', 'Good variety of words, some vivid', 'Strong word choice with descriptive language'] },
-        { label: 'Conventions', levels: ['Many errors interfere with reading', 'Frequent errors but readable', 'Few errors, does not interfere', 'Nearly error-free'] },
-      ] },
-    { name: 'Opinion/Persuasive Writing', domain: 'writing', difficulty: 'medium',
-      criteria: [
-        { label: 'Opinion Statement', levels: ['No clear opinion stated', 'Opinion is vague or unclear', 'Clear opinion stated', 'Strong, engaging opinion with context'] },
-        { label: 'Reasons/Evidence', levels: ['No reasons given', 'One reason, no details', 'Two or more reasons with some details', 'Multiple reasons with specific evidence/examples'] },
-        { label: 'Organization', levels: ['No logical order', 'Some organization attempted', 'Reasons grouped logically with transitions', 'Strong introduction, organized body, restated conclusion'] },
-        { label: 'Audience Awareness', levels: ['No awareness of reader', 'Some attempt to address reader', 'Considers reader, uses some persuasive language', 'Engages reader with persuasive techniques'] },
-        { label: 'Conventions', levels: ['Many errors interfere with reading', 'Frequent errors but readable', 'Few errors, does not interfere', 'Nearly error-free'] },
-      ] },
-    { name: 'Informational Writing', domain: 'writing', difficulty: 'hard',
-      criteria: [
-        { label: 'Topic Introduction', levels: ['No topic identified', 'Topic mentioned but unclear', 'Clear topic sentence/introduction', 'Engaging introduction with clear focus'] },
-        { label: 'Facts/Details', levels: ['No facts or details', 'One or two basic facts', 'Several relevant facts with explanation', 'Rich details with examples, definitions, or comparisons'] },
-        { label: 'Organization', levels: ['No structure', 'Some grouping of ideas', 'Clear paragraphs with topic sentences', 'Logical structure with headings, transitions, conclusion'] },
-        { label: 'Domain Vocabulary', levels: ['No topic-specific words', 'One or two topic words', 'Uses several content-specific terms', 'Precise vocabulary naturally integrated'] },
-        { label: 'Conventions', levels: ['Many errors interfere with reading', 'Frequent errors but readable', 'Few errors, does not interfere', 'Nearly error-free'] },
-      ] },
-    // ─── READING ───
-    { name: 'Reading Response', domain: 'reading', difficulty: 'easy',
-      criteria: [
-        { label: 'Text Evidence', levels: ['No reference to text', 'Vague reference to text', 'Includes relevant detail from text', 'Cites specific evidence with page/detail'] },
-        { label: 'Comprehension', levels: ['Does not answer the question', 'Partially answers question', 'Answers question accurately', 'Thorough answer with deeper understanding'] },
-        { label: 'Connection', levels: ['No personal connection', 'Vague connection attempted', 'Makes relevant connection to self/world/text', 'Insightful connection that deepens meaning'] },
-        { label: 'Completeness', levels: ['One word or blank', 'Incomplete thought', 'Complete sentences answering prompt', 'Detailed response exceeding expectations'] },
-        { label: 'Vocabulary Use', levels: ['No story/reading vocabulary used', 'One vocabulary word attempted', 'Uses vocabulary from text correctly', 'Integrates vocabulary naturally in response'] },
-      ] },
-    { name: 'Oral Reading Fluency', domain: 'reading', difficulty: 'easy',
-      criteria: [
-        { label: 'Accuracy', levels: ['Below 85% accuracy', '85-89% accuracy', '90-95% accuracy', '96%+ accuracy'] },
-        { label: 'Rate', levels: ['Very slow, labored', 'Slow but steady', 'Appropriate pace for grade', 'Smooth, natural pace'] },
-        { label: 'Expression', levels: ['Monotone throughout', 'Some expression on familiar words', 'Appropriate expression for dialogue/punctuation', 'Natural, varied expression throughout'] },
-        { label: 'Phrasing', levels: ['Word-by-word reading', 'Two-word phrases', 'Three-four word meaningful phrases', 'Reads in natural, meaningful phrases'] },
-        { label: 'Self-Correction', levels: ['Does not notice errors', 'Notices some errors, no fix', 'Self-corrects some errors', 'Monitors and self-corrects consistently'] },
-      ] },
-    { name: 'Book Report/Summary', domain: 'reading', difficulty: 'hard',
-      criteria: [
-        { label: 'Summary', levels: ['Cannot retell story', 'Retells one part', 'Includes main events in order', 'Concise summary with key events and resolution'] },
-        { label: 'Character Analysis', levels: ['No character discussion', 'Names characters only', 'Describes character traits', 'Analyzes character growth/motivation'] },
-        { label: 'Theme/Message', levels: ['No theme identified', 'Vague theme mentioned', 'Identifies theme with text support', 'Explains theme with multiple text examples'] },
-        { label: 'Opinion/Recommendation', levels: ['No opinion given', 'Says liked/disliked only', 'States opinion with reason', 'Convincing recommendation with specific reasons'] },
-        { label: 'Presentation', levels: ['Incomplete or off-topic', 'Mostly on topic', 'Well-organized response', 'Polished, engaging presentation'] },
-      ] },
-    // ─── SPEAKING ───
-    { name: 'Oral Presentation', domain: 'speaking', difficulty: 'medium',
-      criteria: [
-        { label: 'Content', levels: ['Off-topic or no content', 'Minimal content, lacks detail', 'Clear content with supporting details', 'Rich content, well-developed ideas'] },
-        { label: 'Volume/Clarity', levels: ['Cannot be heard/understood', 'Sometimes hard to hear', 'Speaks clearly most of the time', 'Clear, confident voice throughout'] },
-        { label: 'Eye Contact', levels: ['Reads from paper/no eye contact', 'Occasional glances at audience', 'Looks at audience frequently', 'Maintains natural eye contact'] },
-        { label: 'Organization', levels: ['No clear structure', 'Some organization attempted', 'Clear beginning, middle, end', 'Smooth, logical flow with transitions'] },
-        { label: 'Language Use', levels: ['Single words or L1 only', 'Simple phrases with many errors', 'Complete sentences with some errors', 'Varied sentences, minimal errors'] },
-      ] },
-    { name: 'Partner Discussion', domain: 'speaking', difficulty: 'easy',
-      criteria: [
-        { label: 'Participation', levels: ['Does not speak', 'Speaks only when prompted', 'Contributes without prompting', 'Actively contributes and extends discussion'] },
-        { label: 'Listening', levels: ['Does not attend to partner', 'Sometimes listens', 'Listens and responds to partner', 'Builds on partner ideas with follow-up'] },
-        { label: 'Sentence Structure', levels: ['Single words or gestures', 'Phrases or fragments', 'Complete sentences', 'Varied, complex sentences'] },
-        { label: 'Topic Relevance', levels: ['Off-topic responses', 'Sometimes relevant', 'Stays on topic', 'Deepens topic with new ideas/questions'] },
-        { label: 'Politeness', levels: ['Interrupts/ignores partner', 'Sometimes takes turns', 'Takes turns appropriately', 'Uses discussion norms (I agree, I think, because)'] },
-      ] },
-    // ─── PHONICS ───
-    { name: 'Phonics Decoding Check', domain: 'phonics', difficulty: 'easy',
-      criteria: [
-        { label: 'CVC Words', levels: ['Cannot blend CVC', 'Blends some CVC with support', 'Blends most CVC independently', 'Blends all CVC quickly and accurately'] },
-        { label: 'Digraphs/Blends', levels: ['Does not recognize', 'Recognizes some with support', 'Reads most blends/digraphs', 'Reads all blends/digraphs fluently'] },
-        { label: 'Long Vowel Patterns', levels: ['Cannot identify patterns', 'Recognizes some CVCe', 'Reads CVCe and common teams', 'Reads all long vowel patterns accurately'] },
-        { label: 'Multisyllabic Words', levels: ['Cannot attempt', 'Attempts but cannot decode', 'Decodes with some success', 'Decodes multisyllabic words accurately'] },
-        { label: 'Application in Text', levels: ['Cannot apply skills in reading', 'Applies skills inconsistently', 'Usually applies skills when reading', 'Consistently applies all skills in context'] },
-      ] },
-    // ─── LANGUAGE ───
-    { name: 'Grammar & Usage', domain: 'language', difficulty: 'medium',
-      criteria: [
-        { label: 'Subject-Verb Agreement', levels: ['No agreement attempted', 'Inconsistent agreement', 'Mostly correct agreement', 'Consistent, correct agreement'] },
-        { label: 'Verb Tense', levels: ['Random tense shifts', 'Some tense consistency', 'Mostly consistent tense', 'Correct and consistent tense use'] },
-        { label: 'Sentence Variety', levels: ['Only simple sentences', 'Attempts compound sentences', 'Uses simple and compound sentences', 'Varied sentence types (simple, compound, complex)'] },
-        { label: 'Word Order', levels: ['L1 word order throughout', 'Frequent word order errors', 'Mostly correct English word order', 'Natural English word order consistently'] },
-        { label: 'Academic Language', levels: ['Only conversational language', 'Some academic words attempted', 'Uses grade-level academic vocabulary', 'Precise academic language in context'] },
-      ] },
-  ]
-
-  const domains = ['all', 'writing', 'reading', 'speaking', 'phonics', 'language']
-  const filtered = filterDomain === 'all' ? RUBRIC_LIBRARY : RUBRIC_LIBRARY.filter(r => r.domain === filterDomain)
-  const diffOrder: Record<string, number> = { easy: 0, medium: 1, hard: 2 }
-  const sorted = [...filtered].sort((a, b) => (diffOrder[a.difficulty] || 0) - (diffOrder[b.difficulty] || 0))
-
-  if (selected) {
-    return (
-      <div className="px-10 py-6">
-        <button onClick={() => setSelected(null)} className="text-[12px] text-text-tertiary hover:text-navy mb-3 flex items-center gap-1"><X size={14} /> Back to Library</button>
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-[16px] font-bold text-navy">{selected.name}</h2>
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{selected.domain}</span>
-            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${selected.difficulty === 'easy' ? 'bg-green-100 text-green-700' : selected.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{selected.difficulty}</span>
-            <span className="text-[10px] text-text-tertiary ml-auto">20 points total (5 criteria x 4 levels)</span>
-          </div>
-          <table className="w-full text-[11px] border-collapse">
-            <thead>
-              <tr>
-                <th className="text-left px-3 py-2 bg-surface-alt border border-border font-semibold w-32">Criteria</th>
-                {LEVEL_LABELS.map((l, i) => <th key={i} className={`text-center px-3 py-2 border border-border font-semibold ${LEVEL_COLORS[i]}`}>{l}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {selected.criteria.map((c: any, i: number) => (
-                <tr key={i}>
-                  <td className="px-3 py-2.5 border border-border font-semibold text-navy">{c.label}</td>
-                  {c.levels.map((desc: string, j: number) => (
-                    <td key={j} className={`px-3 py-2.5 border border-border text-[10px] leading-snug ${LEVEL_COLORS[j]}`}>{desc}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="px-10 py-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-[11px] text-blue-800">
-        Pre-built 20-point rubrics (5 criteria x 4 levels). Organized by domain from easiest to most challenging. Click any rubric to view the full scoring guide.
-      </div>
-      <div className="flex gap-1 mb-4">
-        {domains.map(d => (
-          <button key={d} onClick={() => setFilterDomain(d)}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterDomain === d ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border'}`}>
-            {d === 'all' ? 'All' : d.charAt(0).toUpperCase() + d.slice(1)}
-          </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {sorted.map((r, i) => (
-          <button key={i} onClick={() => setSelected(r)} className="text-left bg-surface border border-border rounded-xl px-4 py-3 hover:shadow-sm transition-all">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{r.domain}</span>
-              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${r.difficulty === 'easy' ? 'bg-green-100 text-green-700' : r.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{r.difficulty}</span>
-            </div>
-            <h3 className="text-[13px] font-semibold text-navy">{r.name}</h3>
-            <span className="text-[10px] text-text-tertiary">{r.criteria.length} criteria, 20 pts</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 // ─── #46 Assessment Item Analysis ─────────────────────────────────────
 

@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { section: 'MANAGE' },
   { id: 'students', icon: Users },
   { id: 'readingLevels', icon: BookOpen },
+  { id: 'groups', icon: Users },
   { id: 'reports', icon: FileText },
   { id: 'leveling', icon: Layers },
   { id: 'curriculum', icon: Map },
