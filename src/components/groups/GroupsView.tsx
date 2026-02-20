@@ -57,29 +57,40 @@ export default function GroupsView() {
   useEffect(() => {
     (async () => {
       setLoading(true)
-      const [{ data: studs }, { data: grps }, { data: excl }, { data: scoreData }] = await Promise.all([
-        supabase.from('students').select('id, english_name, korean_name, english_class, grade, photo_url').eq('english_class', selectedClass).eq('is_active', true).order('english_name'),
-        supabase.from('student_groups').select('*').eq('english_class', selectedClass).order('created_at', { ascending: false }),
-        supabase.from('student_exclusions').select('*').eq('english_class', selectedClass).catch(() => ({ data: [] })),
-        supabase.from('grades').select('student_id, score, assessments!inner(domain, max_score)').eq('assessments.english_class', selectedClass).not('score', 'is', null),
-      ])
+      // Load students
+      const { data: studs } = await supabase.from('students').select('id, english_name, korean_name, english_class, grade, photo_url').eq('english_class', selectedClass).eq('is_active', true).order('english_name')
       setStudents(studs || [])
-      setGroups((grps || []).map((g: any) => ({ ...g, students: g.student_ids || [], tasks: g.tasks || [] })))
-      setExclusions((excl as any)?.data || excl || [])
-      const scoreMap: Record<string, Record<string, { total: number; count: number }>> = {}
-      scoreData?.forEach((s: any) => {
-        const sid = s.student_id; const domain = s.assessments?.domain
-        const pct = s.assessments?.max_score > 0 ? (s.score / s.assessments.max_score) * 100 : 0
-        if (!scoreMap[sid]) scoreMap[sid] = {}
-        if (!scoreMap[sid][domain]) scoreMap[sid][domain] = { total: 0, count: 0 }
-        scoreMap[sid][domain].total += pct; scoreMap[sid][domain].count += 1
-      })
-      const avgMap: Record<string, Record<string, number>> = {}
-      Object.entries(scoreMap).forEach(([sid, domains]) => {
-        avgMap[sid] = {}
-        Object.entries(domains).forEach(([d, v]) => { avgMap[sid][d] = Math.round(v.total / v.count) })
-      })
-      setStudentScores(avgMap)
+
+      // Load groups (handle missing columns gracefully)
+      const { data: grps, error: grpsErr } = await supabase.from('student_groups').select('*').eq('english_class', selectedClass).order('created_at', { ascending: false })
+      if (!grpsErr) setGroups((grps || []).map((g: any) => ({ ...g, students: g.student_ids || [], tasks: g.tasks || [] })))
+
+      // Load exclusions (table might not exist if migration not run)
+      try {
+        const { data: excl, error: exclErr } = await supabase.from('student_exclusions').select('*').eq('english_class', selectedClass)
+        if (!exclErr && excl) setExclusions(excl)
+      } catch { /* table doesn't exist yet */ }
+
+      // Load scores for auto-suggest
+      try {
+        const { data: scoreData } = await supabase.from('grades').select('student_id, score, assessments!inner(domain, max_score)').eq('assessments.english_class', selectedClass).not('score', 'is', null)
+        const scoreMap: Record<string, Record<string, { total: number; count: number }>> = {}
+        ;(scoreData || []).forEach((s: any) => {
+          const sid = s.student_id; const domain = s.assessments?.domain
+          if (!sid || !domain) return
+          const pct = s.assessments?.max_score > 0 ? (s.score / s.assessments.max_score) * 100 : 0
+          if (!scoreMap[sid]) scoreMap[sid] = {}
+          if (!scoreMap[sid][domain]) scoreMap[sid][domain] = { total: 0, count: 0 }
+          scoreMap[sid][domain].total += pct; scoreMap[sid][domain].count += 1
+        })
+        const avgMap: Record<string, Record<string, number>> = {}
+        Object.entries(scoreMap).forEach(([sid, domains]) => {
+          avgMap[sid] = {}
+          Object.entries(domains).forEach(([d, v]) => { avgMap[sid][d] = Math.round(v.total / v.count) })
+        })
+        setStudentScores(avgMap)
+      } catch { /* grades join might fail */ }
+
       setLoading(false)
     })()
   }, [selectedClass])

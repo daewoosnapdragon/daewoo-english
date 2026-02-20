@@ -6,7 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
-import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter } from 'lucide-react'
+import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
@@ -69,9 +69,13 @@ export default function GradesView() {
     }
     return (currentTeacher?.grade || 3) as Grade
   })
-  const [selectedClass, setSelectedClass] = useState<EnglishClass>(
-    (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
-  )
+  const [selectedClass, setSelectedClass] = useState<EnglishClass>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('daewoo_grade_tab_class')
+      if (saved) return saved as EnglishClass
+    }
+    return (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
+  })
   const [selectedDomain, setSelectedDomain] = useState<Domain>('reading')
   const [assessments, setAssessments] = useState<Assessment[]>([])
   const [allAssessments, setAllAssessments] = useState<Assessment[]>([])
@@ -309,7 +313,7 @@ export default function GradesView() {
           {availableClasses.length > 1 ? (
             <div className="flex gap-1">
               {availableClasses.map(cls => (
-                <button key={cls} onClick={() => { setSelectedClass(cls); setSelectedAssessment(null) }}
+                <button key={cls} onClick={() => { setSelectedClass(cls); setSelectedAssessment(null); localStorage.setItem('daewoo_grade_tab_class', cls) }}
                   className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
                   style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>
                   {cls}
@@ -1735,6 +1739,122 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
 
 // Uses LEVEL_COLORS and LEVEL_LABELS from scoring-rubrics.ts
 
+// ─── Rubric Picker ──────────────────────────────────────────────────
+function RubricPicker({ grade, domain, onSelect }: { grade: number; domain: string; onSelect: (idx: number) => void }) {
+  const [search, setSearch] = useState('')
+  const [filterCat, setFilterCat] = useState<string>('all')
+  const [previewIdx, setPreviewIdx] = useState<number | null>(null)
+
+  const filtered = SCORING_RUBRICS.map((r, i) => ({ ...r, idx: i })).filter(r => {
+    if (filterCat !== 'all' && r.category !== filterCat) return false
+    if (search) {
+      const q = search.toLowerCase()
+      return r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q) || r.criteria.some(c => c.label.toLowerCase().includes(q))
+    }
+    return true
+  })
+
+  // Sort: grade match first, then alphabetical
+  filtered.sort((a, b) => {
+    const aMatch = a.grades.includes(grade) ? 0 : 1
+    const bMatch = b.grades.includes(grade) ? 0 : 1
+    if (aMatch !== bMatch) return aMatch - bMatch
+    return a.name.localeCompare(b.name)
+  })
+
+  const previewRubric = previewIdx != null ? SCORING_RUBRICS[previewIdx] : null
+
+  return (
+    <div className="flex flex-1 overflow-hidden">
+      {/* Left: Search + List */}
+      <div className={`${previewRubric ? 'w-1/2' : 'w-full'} flex flex-col border-r border-border`}>
+        <div className="p-4 border-b border-border space-y-2 shrink-0">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search rubrics by name or topic..."
+              className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
+          </div>
+          <div className="flex gap-1 flex-wrap">
+            <button onClick={() => setFilterCat('all')}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${filterCat === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+              All ({SCORING_RUBRICS.length})
+            </button>
+            {RUBRIC_CATEGORIES.map(cat => {
+              const count = SCORING_RUBRICS.filter(r => r.category === cat).length
+              return (
+                <button key={cat} onClick={() => setFilterCat(filterCat === cat ? 'all' : cat)}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${filterCat === cat ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                  {cat} ({count})
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <div className="overflow-y-auto flex-1 p-2 space-y-1">
+          {filtered.length === 0 && <p className="text-center text-text-tertiary text-[12px] py-8">No rubrics match your search.</p>}
+          {filtered.map(r => {
+            const isGradeMatch = r.grades.includes(grade)
+            const isPreviewing = previewIdx === r.idx
+            return (
+              <div key={r.idx}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl cursor-pointer transition-all border ${
+                  isPreviewing ? 'bg-purple-50 border-purple-200' : isGradeMatch ? 'bg-surface border-border hover:border-navy/30 hover:bg-surface-alt/50' : 'bg-surface/60 border-border/50 hover:border-border hover:bg-surface-alt/30 opacity-70 hover:opacity-100'
+                }`}>
+                <div className="flex-1 min-w-0" onClick={() => setPreviewIdx(isPreviewing ? null : r.idx)}>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${isGradeMatch ? 'bg-navy/10 text-navy' : 'bg-gray-100 text-gray-500'}`}>
+                      Gr {r.grades.join(',')}
+                    </span>
+                    <span className="text-[8px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full">{r.category}</span>
+                    <span className="text-[8px] text-text-tertiary">{r.criteria.length} criteria</span>
+                  </div>
+                  <h4 className="text-[12px] font-semibold text-navy leading-tight truncate">{r.name}</h4>
+                  <p className="text-[9px] text-text-tertiary mt-0.5 truncate">{r.criteria.map(c => c.label).join(' · ')}</p>
+                </div>
+                <button onClick={() => onSelect(r.idx)}
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-navy text-white hover:bg-navy-dark shrink-0">
+                  Use
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Right: Preview panel */}
+      {previewRubric && (
+        <div className="w-1/2 overflow-y-auto p-5 bg-surface-alt/30">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-[15px] font-bold text-navy">{previewRubric.name}</h3>
+              <p className="text-[10px] text-text-tertiary">{previewRubric.category} · Grades {previewRubric.grades.join(', ')} · {previewRubric.criteria.length} criteria</p>
+            </div>
+            <button onClick={() => { if (previewIdx != null) onSelect(previewIdx) }}
+              className="px-4 py-2 rounded-xl text-[11px] font-semibold bg-navy text-white hover:bg-navy-dark">
+              Use This Rubric
+            </button>
+          </div>
+          <div className="space-y-3">
+            {previewRubric.criteria.map((c, ci) => (
+              <div key={ci} className="bg-surface border border-border rounded-xl p-4">
+                <h4 className="text-[12px] font-bold text-navy mb-2">{ci + 1}. {c.label}</h4>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {LEVEL_LABELS.map((lvl, li) => (
+                    <div key={li} className={`rounded-lg p-2 border ${LEVEL_COLORS[li] || 'border-border bg-surface-alt'}`}>
+                      <p className="text-[9px] font-bold mb-1">{lvl} ({li + 1})</p>
+                      <p className="text-[8px] leading-relaxed text-text-secondary">{c.levels[li] || '—'}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function RubricScoringModal({ students, existingScores, maxScore, domain, grade, onApplyScores, onClose }: {
   students: { id: string; english_name: string; korean_name: string }[]
   existingScores: Record<string, number | null>
@@ -1807,48 +1927,8 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
         </div>
 
         {!rubric ? (
-          /* Rubric Selection - grouped by category */
-          <div className="p-6 overflow-y-auto">
-            <p className="text-[12px] text-text-secondary mb-1">Pick a rubric for this {domain} assessment · Grade {grade}</p>
-            <p className="text-[10px] text-text-tertiary mb-4">Rubrics matching your grade are highlighted. You can use any rubric.</p>
-            {RUBRIC_CATEGORIES.filter(cat => {
-              const catRubrics = SCORING_RUBRICS.filter(r => r.category === cat && r.domain === domain)
-              return catRubrics.length > 0
-            }).map(cat => {
-              const catRubrics = SCORING_RUBRICS.filter(r => r.category === cat && r.domain === domain)
-              return (
-                <div key={cat} className="mb-5">
-                  <h3 className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-navy/40" />{cat}
-                    <span className="text-[9px] font-normal text-text-tertiary normal-case">({catRubrics.length})</span>
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {catRubrics.map((r) => {
-                      const realIdx = SCORING_RUBRICS.indexOf(r)
-                      const isGradeMatch = r.grades.includes(grade)
-                      return (
-                        <button key={realIdx} onClick={() => setSelectedRubric(realIdx)}
-                          className={`text-left rounded-xl px-4 py-3 hover:shadow-sm transition-all border ${
-                            isGradeMatch
-                              ? 'bg-surface border-navy/20 hover:border-navy/40'
-                              : 'bg-surface/60 border-border/50 opacity-60 hover:opacity-100 hover:border-navy/20'
-                          }`}>
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${isGradeMatch ? 'bg-navy/10 text-navy' : 'bg-gray-100 text-gray-500'}`}>
-                              Gr {r.grades.join(', ')}
-                            </span>
-                            <span className="text-[8px] text-text-tertiary">{r.criteria.length} criteria</span>
-                          </div>
-                          <h4 className="text-[13px] font-semibold text-navy leading-tight">{r.name}</h4>
-                          <p className="text-[9px] text-text-tertiary mt-1 line-clamp-2">{r.criteria.map(c => c.label).join(' · ')}</p>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          /* Rubric Selection - searchable with category filter and preview */
+          <RubricPicker grade={grade} domain={domain} onSelect={setSelectedRubric} />
         ) : (
           /* Scoring Interface: Sidebar + Rubric Grid */
           <div className="flex flex-1 overflow-hidden">

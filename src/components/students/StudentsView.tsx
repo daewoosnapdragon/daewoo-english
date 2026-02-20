@@ -1438,7 +1438,6 @@ function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: str
 function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
   const [loading, setLoading] = useState(true)
   const [standardsData, setStandardsData] = useState<{ code: string; description: string; domain: string; assessments: { name: string; pct: number }[]; avgPct: number }[]>([])
-  const [studentClass, setStudentClass] = useState<string>('')
 
   // 4-tier mastery bands (universal across all classes)
   const BANDS = { above: 86, on: 71, approaching: 61 } // below = 0-60
@@ -1446,7 +1445,6 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
   useEffect(() => {
     (async () => {
       const { data: studentData } = await supabase.from('students').select('english_class').eq('id', studentId).single()
-      if (studentData) setStudentClass(studentData.english_class || '')
       // Get all assessments that have standards tagged
       const { data: assessments } = await supabase.from('assessments').select('*')
       // Get all grades for this student
@@ -1840,8 +1838,17 @@ function StudentGroupsTab({ studentId, studentName }: { studentId: string; stude
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('student_groups').select('*').contains('student_ids', [studentId]).eq('is_archived', false).order('type')
-      setGroups(data || [])
+      // Try with is_archived filter, fall back without it if column doesn't exist yet
+      let groupsData: any[] = []
+      const { data, error } = await supabase.from('student_groups').select('*').contains('student_ids', [studentId]).eq('is_archived', false).order('type')
+      if (error) {
+        // Column might not exist yet — try without the filter
+        const { data: fallback } = await supabase.from('student_groups').select('*').contains('student_ids', [studentId]).order('type')
+        groupsData = fallback || []
+      } else {
+        groupsData = data || []
+      }
+      setGroups(groupsData)
       setLoading(false)
     })()
   }, [studentId])

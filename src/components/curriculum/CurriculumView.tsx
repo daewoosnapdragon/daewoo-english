@@ -511,29 +511,58 @@ function QuickCheckTool() {
 }
 
 // #28: Teaching tips for common CCSS standards
+// #28: Teaching tips — evidence-based, ELL-specific, grade-aware
 function getTeachingTip(code: string): string | null {
-  const prefix = code.replace(/\.\d+$/, '') // e.g., RL.1.1 -> RL.1
   const tips: Record<string, string> = {
-    'RL.1.1': 'Use "point to the answer" strategy with picture walks. For ELLs: accept pointing, single-word, or L1 responses initially. Build to "The answer is ___ because ___" frames.',
-    'RL.1.2': 'Retelling with story maps (beginning/middle/end). Use picture sequence cards. For ELLs: allow drawing first, then labeling, then sentences.',
-    'RL.1.3': 'Character trait sorts with picture support. Use T-charts for comparing characters. For ELLs: provide emotion vocabulary with images.',
-    'RL.2.1': 'Model "find it, underline it, say it" with think-alouds. For ELLs: use sentence frames like "The text says ___" for evidence-based answers.',
-    'RL.3.1': 'Teach explicit vs implicit questions. Use "right there" vs "think and search" categories. For ELLs: provide question stems in both languages.',
-    'RF.1.2': 'Use Elkonin boxes for phoneme segmentation. Clap/tap syllables physically. For ELLs: contrast English sounds with Korean phonology.',
-    'RF.1.3': 'Systematic phonics with decodable readers. Use word-building with magnetic letters. For ELLs: focus on English sounds not in Korean (th, v, f, r/l contrast).',
-    'RF.2.3': 'Long vowel pattern sorts (CVCe, vowel teams). Use "does it look right, sound right?" self-check. For ELLs: explicit vowel sound comparisons with Korean vowels.',
-    'W.1.3': 'Use temporal word cards (first, then, next, last). Draw-then-write approach. For ELLs: allow bilingual planning, English final draft.',
-    'W.2.1': 'Opinion writing with sentence starters: "I think ___ because ___." Use T-chart (reasons for/against). For ELLs: provide opinion word bank.',
-    'W.3.1': 'Introduce OREO structure (Opinion, Reason, Example, Opinion restated). Model with shared writing. For ELLs: use graphic organizers with sentence frames.',
-    'SL.1.1': 'Use talking chips (must use chip to speak). Provide discussion sentence starters. For ELLs: allow think time and partner rehearsal before whole-group sharing.',
-    'SL.2.1': 'Active listening with "I heard you say ___" responses. Use fishbowl discussions. For ELLs: pair with bilingual buddy for comprehension support.',
-    'L.1.1': 'Grammar through mentor sentences (notice/label/practice/apply). For ELLs: explicit grammar instruction comparing English and Korean sentence structure (SOV vs SVO).',
-    'L.2.2': 'Sentence combining activities. Use "kernel sentence + expansion" technique. For ELLs: start with simple SV patterns, gradually add adjectives and prepositional phrases.',
+    'RL.K.1': 'Read aloud daily, pause to ask who/what questions with picture support. Accept pointing or single-word answers. Model: I do, We do, You do.',
+    'RL.1.1': 'Teach students to put their finger on the answer before responding. Use the frame: "The text says ___." Practice with predictable books where answers are explicit.',
+    'RL.1.2': 'Three-box story maps (beginning/middle/end) with pictures. Students draw first, retell orally, then write. Keep retellings to 3 sentences max.',
+    'RL.1.3': 'Create a feelings chart with faces. After reading, ask: "How does [character] feel? Why?" Frame: "[Character] feels ___ because ___."',
+    'RL.2.1': 'Teach "right there" (answer in one sentence) vs. "think about it" questions. Model underlining evidence with a document camera. For ELLs: pre-teach key vocabulary before reading.',
+    'RL.2.2': 'After fables, students identify the lesson: "This story teaches us ___." Keep a class chart of morals from different stories to compare across texts.',
+    'RL.2.3': 'Problem-solution graphic organizer. Ask: "What is the problem? What does [character] do? Does it work?" For lower levels, give events on cards to sequence.',
+    'RL.3.1': 'Two-column notes: Evidence (text says) and Inference (I think). Model with think-alouds. For ELLs: "The text says ___, so I think ___ because ___."',
+    'RL.3.2': 'Topic vs. theme: topic is one word (friendship), theme is a sentence (true friends help even when it is hard). Practice distinguishing the two with familiar stories.',
+    'RL.3.3': 'Character change map: beginning, middle, end. Track what the character wants, what happens, how they respond. Compare characters across two texts.',
+    'RL.4.1': 'Require page citations: "On page ___, it says ___." For inference: "The text says ___, so I think ___." Build evidence-based argument skills.',
+    'RL.4.2': 'Theme identification across multiple texts. Students compare: "Both stories teach us that ___." Use theme vocabulary: courage, perseverance, kindness.',
+    'RL.5.1': 'Quote sandwich: introduce the quote, provide it with page number, explain its significance. Students practice with short passages before applying to longer texts.',
+    'RF.K.1': 'Shared reading with big books. Point to each word (concept of word). Teach left-to-right tracking through daily morning messages on chart paper.',
+    'RF.K.2': 'Heggerty phonemic awareness routine (5 min/day). Clap syllables in student names. For Korean speakers: focus on final consonant sounds not present in Korean.',
+    'RF.K.3': 'One letter-sound per week, multisensory: see, say, trace, write in sand. Use Orton-Gillingham keyword cards. For Korean speakers: /f/, /v/, /th/ need explicit teaching.',
+    'RF.1.2': 'Daily Elkonin box work (3 min). Push one counter per sound. Korean speakers need extra practice with /r/ vs /l/, /f/ vs /p/, and /v/ vs /b/ contrasts.',
+    'RF.1.3': 'Decodable readers matched to taught patterns. Sequence: CVC, blends, digraphs, CVCe. For Korean speakers: teach th, sh, ch as single sounds explicitly.',
+    'RF.2.3': 'Vowel team sorting (ai/ay, ee/ea, oa/ow). Self-check: "Does it look right AND sound right?" For Korean speakers: short vs. long vowel distinction needs explicit work.',
+    'RF.3.3': 'Prefix/suffix instruction (un-, re-, pre-, -ful, -less, -tion). Word-building with root + affix cards. Students predict meaning, then verify in context.',
+    'RF.3.4': 'Repeated reading of same passage 3x builds fluency. Partner reading: "Read it like you are talking to a friend." Track CWPM weekly with 1-minute reads.',
+    'RF.4.3': 'Greek/Latin roots (tele-, micro-, -graph, -port). Class roots wall where students add new words as they encounter them. This unlocks hundreds of academic words.',
+    'W.K.3': 'Draw, tell a friend, write the words. Accept invented spelling at this stage. The goal is getting ideas on paper, not correct spelling.',
+    'W.1.3': 'Temporal words wall (first, then, next, finally). 4-box storyboards. For ELLs: draw + label before writing full sentences. Bilingual planning allowed.',
+    'W.2.1': 'Simplified OREO: I think ___. One reason is ___. Another reason is ___. That is why ___. Provide opinion word banks (believe, feel, prefer, best).',
+    'W.2.3': 'Five senses descriptive writing. Create sensory detail chart for a shared class experience. For ELLs: adjective word banks organized by sense.',
+    'W.3.1': 'OREO with mentor texts. Identify opinion structures in read-alouds before students write. Model: "The author thinks ___ because ___."',
+    'W.3.2': 'Informative: topic sentence + 3 facts + closing. "Expert Books" where students write about something they know. For ELLs: allow bilingual research notes.',
+    'W.4.1': 'Address counter-arguments: "Some people think ___, but I disagree because ___." Hold a class debate before writing so students hear opposing views.',
+    'SL.K.1': 'Talking sticks or turn-taking tokens. Practice in groups of 3 before whole class. Teach: eyes on the speaker, wait for your turn, respond to what was said.',
+    'SL.1.1': 'Discussion frames: "I agree because ___." "I have a different idea: ___." Pairs first, then share with class. Allow 10 seconds of think time for ELLs.',
+    'SL.2.1': 'After read-alouds, partner retelling with "First... Then... Finally..." frames. Picture cards for sequencing support. Accept shortened retellings from lower-level ELLs.',
+    'SL.3.1': 'Accountable Talk moves posted on class chart: "Can you say more?" "I agree/disagree because ___." "Can you give an example?" Practice one move per week.',
+    'SL.3.4': 'Expert Presentation: 3 facts on index cards, present to a small group. For ELLs: note cards allowed, practice with partner first. Focus on volume and eye contact.',
+    'SL.4.1': 'Structured protocols: Think-Pair-Share, Numbered Heads, Inside-Outside Circle. Assign discussion roles (questioner, summarizer, connector).',
+    'L.K.1': 'Morning message to model capitals and punctuation. Students "fix" daily sentences on whiteboards. One grammar skill per week maximum at this level.',
+    'L.1.1': 'Mentor sentences from read-alouds: Notice, Label, Practice, Apply. For Korean speakers: explicitly teach SVO word order (Korean uses SOV).',
+    'L.2.1': 'High-frequency irregular past tense (went, said, came, got) first since students use these daily. "Tricky verbs" wall. Practice through daily oral sentences.',
+    'L.2.2': 'Apostrophe sorting: contractions (it is = it\'s) vs. possessives (the dog\'s bone). Korean has no apostrophes, so explicit instruction with many examples is essential.',
+    'L.3.1': 'Sentence combining: two simple sentences + conjunction (and, but, so, because). This builds grammar and writing fluency at the same time.',
+    'L.4.1': 'Sentence expansion: start with a kernel sentence, add who, when, where, how. Students physically manipulate sentence strips to build complex sentences.',
   }
-  // Try exact match first, then prefix match
   if (tips[code]) return tips[code]
-  // Try removing last segment for broader match
-  if (tips[prefix]) return tips[prefix]
+  // Try one grade below for coverage
+  const parts = code.match(/^([A-Z]+)\.(\d+)\.(\d+)$/)
+  if (parts) {
+    const lower = parts[1] + '.' + Math.max(0, Number(parts[2]) - 1) + '.' + parts[3]
+    if (tips[lower]) return tips[lower]
+  }
   return null
 }
 
@@ -550,9 +579,9 @@ function ClusterTracker() {
 
   // Default mastery thresholds per class tier
   const DEFAULT_THRESHOLDS: Record<string, { mastered: number; approaching: number }> = {
-    Lily: { mastered: 70, approaching: 45 }, Camellia: { mastered: 70, approaching: 45 },
-    Daisy: { mastered: 75, approaching: 50 }, Sunflower: { mastered: 75, approaching: 50 },
-    Marigold: { mastered: 85, approaching: 60 }, Snapdragon: { mastered: 90, approaching: 65 },
+    Lily: { mastered: 71, approaching: 61 }, Camellia: { mastered: 71, approaching: 61 },
+    Daisy: { mastered: 71, approaching: 61 }, Sunflower: { mastered: 71, approaching: 61 },
+    Marigold: { mastered: 71, approaching: 61 }, Snapdragon: { mastered: 71, approaching: 61 },
   }
   const [thresholds, setThresholds] = useState(DEFAULT_THRESHOLDS)
 
@@ -980,10 +1009,10 @@ function ClusterTracker() {
                                   </div>
                                 )}
                                 <p className="text-[10px] text-text-secondary">
-                                  {nsCount > 0 && ipCount === 0 ? 'Next step: Begin introducing these standards in upcoming lessons.' :
-                                   ipCount > 0 && nsCount > 0 ? 'Continue current instruction, then introduce remaining standards.' :
-                                   ipCount > 0 && nsCount === 0 ? 'All standards introduced -- focus on moving in-progress to mastery.' :
-                                   'Cluster complete -- maintain through spiral review.'}
+                                  {nsCount > 0 && ipCount === 0 ? `Next step: Use the teaching tips above to introduce ${nsCount === 1 ? 'this standard' : 'these standards'}. Start with the lowest-numbered standard first.` :
+                                   ipCount > 0 && nsCount > 0 ? `${ipCount} standard${ipCount > 1 ? 's' : ''} in progress — use Quick Check to track which students have it. Then introduce the ${nsCount} remaining.` :
+                                   ipCount > 0 && nsCount === 0 ? `All introduced — review Quick Check data to identify students below 70% and provide targeted small-group reteaching.` :
+                                   'All standards on track — maintain through weekly spiral review activities.'}
                                 </p>
                               </div>
                             )
