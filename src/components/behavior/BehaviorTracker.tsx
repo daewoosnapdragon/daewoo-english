@@ -36,12 +36,12 @@ const CONSEQUENCE_CATEGORIES = [
 ]
 
 const LOG_TYPES = [
-  { value: 'positive', label: 'Positive', labelKo: '긍정적', icon: '⭐', color: 'bg-green-50 border-green-200 text-green-800' },
-  { value: 'concern', label: 'Concern', labelKo: '우려', icon: '⚠️', color: 'bg-yellow-50 border-yellow-200 text-yellow-800' },
+  { value: 'positive', label: 'Positive', labelKo: '긍정적', icon: '', color: 'bg-green-50 border-green-200 text-green-800' },
+  { value: 'concern', label: 'Concern', labelKo: '우려', icon: '', color: 'bg-yellow-50 border-yellow-200 text-yellow-800' },
   { value: 'negative', label: 'Negative', labelKo: '부정 행동', icon: '🔴', color: 'bg-red-50 border-red-200 text-red-800' },
   { value: 'parent_contact', label: 'Parent Contact', labelKo: '학부모 연락', icon: '📞', color: 'bg-purple-50 border-purple-200 text-purple-800' },
   { value: 'intervention', label: 'Intervention', labelKo: '개입', icon: '🛡️', color: 'bg-orange-50 border-orange-200 text-orange-800' },
-  { value: 'note', label: 'Note', labelKo: '메모', icon: '📝', color: 'bg-gray-50 border-gray-200 text-gray-800' },
+  { value: 'note', label: 'Note', labelKo: '메모', icon: '', color: 'bg-gray-50 border-gray-200 text-gray-800' },
 ] as const
 
 type LangKey = 'en' | 'ko'
@@ -100,7 +100,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
         <td style="padding:6px;border:1px solid #ddd">${typeInfo?.label || log.type}</td>
         <td style="padding:6px;border:1px solid #ddd">${log.note || ''}${(log.behaviors?.length || 0) > 0 ? '<br><small>Behaviors: ' + log.behaviors.join(', ') + '</small>' : ''}${(log.antecedents?.length || 0) > 0 ? '<br><small>Antecedent: ' + log.antecedents.join(', ') + '</small>' : ''}${(log.consequences?.length || 0) > 0 ? '<br><small>Consequence: ' + log.consequences.join(', ') + '</small>' : ''}</td>
         <td style="padding:6px;border:1px solid #ddd">${log.teacher_name || ''}</td>
-        <td style="padding:6px;border:1px solid #ddd">${log.is_flagged ? '⚠️' : ''}</td>
+        <td style="padding:6px;border:1px solid #ddd">${log.is_flagged ? '' : ''}</td>
       </tr>`
     }).join('')
     printWin.document.write(`<html><head><title>Behavior Log — ${studentName}</title><style>body{font-family:sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:12px}th{background:#f0f0f0;padding:8px;border:1px solid #ddd;text-align:left}h2{margin-bottom:4px}p{color:#666;margin-top:0}</style></head><body>
@@ -236,7 +236,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
 
       {/* Filter tabs */}
       <div className="flex gap-1 border-b border-border overflow-x-auto">
-        {[{ id: 'all', label: 'All', count: logs.length }, ...LOG_TYPES.map(t => ({ id: t.value, label: lang === 'ko' ? t.labelKo : t.label, count: logs.filter((l: any) => l.type === t.value || (t.value === 'negative' && l.type === 'abc')).length })), { id: 'flagged', label: '🔔 Flagged', count: flaggedCount }].map((tab: any) => (
+        {[{ id: 'all', label: 'All', count: logs.length }, ...LOG_TYPES.map(t => ({ id: t.value, label: lang === 'ko' ? t.labelKo : t.label, count: logs.filter((l: any) => l.type === t.value || (t.value === 'negative' && l.type === 'abc')).length })), { id: 'flagged', label: ' Flagged', count: flaggedCount }].map((tab: any) => (
           <button key={tab.id} onClick={() => setFilterType(tab.id)}
             className={`px-3 py-2 text-[11px] font-medium whitespace-nowrap transition-all border-b-2 -mb-px ${filterType === tab.id ? 'border-navy text-navy' : 'border-transparent text-text-tertiary hover:text-text-secondary'}`}>
             {tab.label} {tab.count > 0 && <span className="ml-1 text-[9px] bg-surface-alt px-1.5 py-0.5 rounded-full">{tab.count}</span>}
@@ -259,7 +259,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
             return (
               <div key={log.id} className={`border rounded-lg overflow-hidden transition-all ${typeInfo?.color || 'bg-surface border-border'}`}>
                 <div className="px-4 py-2.5 flex items-start gap-2 cursor-pointer" onClick={() => setExpandedLog(isExpanded ? null : log.id)}>
-                  <span className="text-[14px] mt-0.5">{typeInfo?.icon || '📋'}</span>
+                  <span className="text-[14px] mt-0.5">{typeInfo?.icon || ''}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                       <span className="text-[11px] font-semibold">{lang === 'ko' ? typeInfo?.labelKo : typeInfo?.label}</span>
@@ -380,7 +380,7 @@ function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: str
 
         {/* Auto date/time */}
         <div className="flex items-center gap-3 px-3 py-2 bg-surface-alt rounded-lg">
-          <span className="text-[11px]">📅</span>
+          <span className="text-[11px]"></span>
           <span className="text-[12px] font-medium">{new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
           <span className="text-text-tertiary">·</span>
           <span className="text-[12px] font-medium">{time}</span>
@@ -399,7 +399,7 @@ function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: str
             <div className="flex items-center gap-2">
               {showAbc ? <ChevronDown size={14} className="text-blue-600" /> : <ChevronRight size={14} className="text-text-tertiary" />}
               <span className={`text-[12px] font-semibold ${showAbc || hasAbcData ? 'text-blue-700' : 'text-text-secondary'}`}>
-                📋 ABC Data <span className="font-normal text-[10px]">(optional — for detailed behavior tracking)</span>
+                 ABC Data <span className="font-normal text-[10px]">(optional — for detailed behavior tracking)</span>
               </span>
             </div>
             {hasAbcData && (

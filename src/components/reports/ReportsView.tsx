@@ -684,7 +684,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     // Goals HTML
     const goalsHtml = d.goals?.length ? d.goals.slice(0, 5).map((g: any) =>
       `<div style="display:flex;align-items:start;gap:6px;font-size:11px;margin-bottom:4px">
-        <span style="flex-shrink:0">${g.completed_at ? '✅' : g.goal_type === 'stretch' ? '🚀' : g.goal_type === 'behavioral' ? '🎯' : '📚'}</span>
+        <span style="flex-shrink:0">${g.completed_at ? '[done]' : g.goal_type === 'stretch' ? '' : g.goal_type === 'behavioral' ? '' : ''}</span>
         <span style="${g.completed_at ? 'text-decoration:line-through;color:#94a3b8' : 'color:#475569;line-height:1.5'}">${g.goal_text}</span>
       </div>`
     ).join('') : '<div style="background:#f8f5f1;border:1px solid #e8e0d8;border-radius:8px;padding:10px;text-align:center;font-size:11px;color:#94a3b8">No goals set yet.</div>'
@@ -983,7 +983,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   <div className="space-y-1.5">
                     {d.goals.slice(0, 5).map((g: any, i: number) => (
                       <div key={i} className="flex items-start gap-2 text-[11px]">
-                        <span className="flex-shrink-0 mt-0.5">{g.completed_at ? '✅' : g.goal_type === 'stretch' ? '🚀' : g.goal_type === 'behavioral' ? '🎯' : '📚'}</span>
+                        <span className="flex-shrink-0 mt-0.5">{g.completed_at ? '[done]' : g.goal_type === 'stretch' ? '' : g.goal_type === 'behavioral' ? '' : ''}</span>
                         <span className={g.completed_at ? 'line-through text-[#94a3b8]' : 'text-[#475569] leading-relaxed'}>{g.goal_text}</span>
                       </div>
                     ))}
@@ -1050,7 +1050,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                     `ATTENDANCE: ${d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}% (${d.attCounts.present}P/${d.attCounts.absent}A/${d.attCounts.tardy}T)` : 'N/A'}`,
                     `BEHAVIOR LOGS: ${d.behaviorCount} entries`,
                     ...(d.scaffolds?.length ? ['', 'SCAFFOLDS:', ...d.scaffolds.map((sc: any) => `  [${sc.domain}] ${sc.scaffold_text}${sc.effectiveness ? ` (${sc.effectiveness})` : ''}`)] : []),
-                    ...(d.goals?.length ? ['', 'GOALS:', ...d.goals.map((g: any) => `  ${g.completed_at ? '✅' : '⬜'} [${g.goal_type}] ${g.goal_text}`)] : []),
+                    ...(d.goals?.length ? ['', 'GOALS:', ...d.goals.map((g: any) => `  ${g.completed_at ? '[done]' : '[ ]'} [${g.goal_type}] ${g.goal_text}`)] : []),
                   ]
                   navigator.clipboard.writeText(lines.join('\n'))
                   showToast('Copied to clipboard')
@@ -1121,7 +1121,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   <div className="space-y-0.5">
                     {d.goals.map((g: any, i: number) => (
                       <div key={i} className="flex items-center gap-1.5 text-[10px]">
-                        <span>{g.completed_at ? '✅' : g.goal_type === 'stretch' ? '🚀' : g.goal_type === 'behavioral' ? '🎯' : '📚'}</span>
+                        <span>{g.completed_at ? '[done]' : g.goal_type === 'stretch' ? '' : g.goal_type === 'behavioral' ? '' : ''}</span>
                         <span className={g.completed_at ? 'line-through text-text-tertiary' : 'text-[#475569]'}>{g.goal_text}</span>
                       </div>
                     ))}

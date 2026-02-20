@@ -572,7 +572,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
               <div className={`mt-1.5 px-3 py-2 rounded-lg ${hw?.homework_text ? 'bg-amber-50 border border-amber-200' : 'bg-surface-alt/50 border border-dashed border-border'}`}>
                 {editingHomework === ws ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-amber-700 font-semibold whitespace-nowrap">📝 Homework:</span>
+                    <span className="text-[11px] text-amber-700 font-semibold whitespace-nowrap"> Homework:</span>
                     <input value={editHwText} onChange={e => setEditHwText(e.target.value)} className="flex-1 px-2 py-1 text-[11px] border border-amber-300 rounded-lg outline-none focus:border-navy bg-white"
                       onKeyDown={e => { if (e.key === 'Enter') saveHomework(ws); if (e.key === 'Escape') setEditingHomework(null) }} autoFocus />
                     <button onClick={() => saveHomework(ws)} className="px-2 py-1 rounded-lg bg-navy text-white text-[10px] font-medium">Save</button>
@@ -581,7 +581,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
                 ) : (
                   <div onClick={() => { if (canEdit && ws) { setEditingHomework(ws); setEditHwText(hw?.homework_text || '') } }}
                     className={`text-[11px] ${hw?.homework_text ? 'text-amber-800 font-medium' : 'text-text-tertiary'} ${canEdit ? 'cursor-pointer hover:text-amber-900' : ''}`}>
-                    {hw?.homework_text ? `📝 Homework: ${hw.homework_text}` : (canEdit ? '+ Click to add homework note for this week' : 'No homework assigned')}
+                    {hw?.homework_text ? ` Homework: ${hw.homework_text}` : (canEdit ? '+ Click to add homework note for this week' : 'No homework assigned')}
                   </div>
                 )}
               </div>

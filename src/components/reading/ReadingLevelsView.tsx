@@ -94,8 +94,6 @@ export default function ReadingLevelsView() {
             { id: 'class', icon: BookOpen, label: 'Class Overview' },
             { id: 'student', icon: User, label: 'Student Detail' },
             { id: 'correlation', icon: BarChart3, label: 'CWPM vs Grades' },
-            { id: 'flexgroups', icon: Users, label: 'Grouping Tool' },
-            { id: 'groups', icon: Users, label: 'Fluency Groups' },
           ] as const).map((tab) => (
             <button key={tab.id} onClick={() => setSubView(tab.id)}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${subView === tab.id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
@@ -128,9 +126,7 @@ export default function ReadingLevelsView() {
 
         {subView === 'class' && <ClassOverview key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} onSelectStudent={(sid: string) => { setSelectedStudentId(sid); setSubView('student') }} />}
         {subView === 'student' && <StudentReadingView key={refreshKey} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} grade={selectedGrade} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} />}
-        {subView === 'groups' && <FluencyGroups key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} />}
         {subView === 'correlation' && <CorrelationView students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} />}
-        {subView === 'flexgroups' && <FlexGroupingView students={students} loading={loadingStudents} lang={lang} />}
       </div>
 
       {showAddModal && <AddReadingModal studentId={addForStudentId} students={students} lang={lang} onClose={() => setShowAddModal(false)} onSaved={() => { setShowAddModal(false); setRefreshKey((k: number) => k + 1) }} />}
@@ -530,11 +526,6 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Level</label>
-              <select value={form.passage_level} onChange={e => set('passage_level', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface">
-                <option value="">-- Select --</option>
-                {PASSAGE_LEVELS.map(l => <option key={l.id} value={l.id}>{l.label} ({l.weight}x)</option>)}
-              </select></div>
           </div>
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
             <input value={form.passage_title} onChange={e => set('passage_title', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>

@@ -11,7 +11,7 @@ import { CCSS_STANDARDS, CCSS_DOMAINS, type CCSSDomain } from './ccss-standards'
 import {
   BookOpen, Globe2, Layers, ChevronDown, ChevronRight, Info, Search,
   Plus, X, Check, Loader2, User, ArrowLeftRight, Lightbulb, GraduationCap,
-  Bookmark, BookMarked, ListChecks, Printer
+  Bookmark, BookMarked, ListChecks, Printer, FileText
 } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════
@@ -363,7 +363,7 @@ const DOMAIN_ICONS: Record<string, string> = {
 // MAIN GUIDE COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 
-type GuideSection = 'overview' | 'comparison' | 'scaffolds' | 'assign'
+type GuideSection = 'overview' | 'comparison' | 'scaffolds' | 'assign' | 'lessonplanning'
 
 export default function WIDAGuide() {
   const [section, setSection] = useState<GuideSection>('overview')
@@ -373,6 +373,7 @@ export default function WIDAGuide() {
     { id: 'comparison', label: 'WIDA vs CCSS', icon: ArrowLeftRight },
     { id: 'scaffolds', label: 'Scaffold Index', icon: Lightbulb },
     { id: 'assign', label: 'Assign to Students', icon: BookMarked },
+    { id: 'lessonplanning', label: 'Lesson Planning with CCSS', icon: FileText },
   ]
 
   return (
@@ -392,6 +393,7 @@ export default function WIDAGuide() {
       {section === 'comparison' && <WIDAvsCCSS />}
       {section === 'scaffolds' && <ScaffoldIndex />}
       {section === 'assign' && <AssignScaffolds />}
+      {section === 'lessonplanning' && <LessonPlanningWithCCSS />}
     </div>
   )
 }
@@ -1558,6 +1560,160 @@ function AssignScaffolds() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── SECTION 5: Lesson Planning with CCSS Standards ───────────────
+function LessonPlanningWithCCSS() {
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  const sections = [
+    {
+      id: 'why',
+      title: 'Why Connect Standards to Your Textbook?',
+      content: `Your textbook (Come On Everyone, Thumbs Up, or Into Reading) provides the activities and content. CCSS standards tell you WHAT SKILL students are actually practicing. When you know the standard, you can assess the right thing, differentiate more effectively, and track student progress across the year — not just "we did Unit 3" but "75% of students can now ask and answer questions about key details (SL.2.1)."
+
+This does not mean creating extra work. It means labeling what you are already doing so you can measure growth.`
+    },
+    {
+      id: 'howto',
+      title: 'How to Identify Standards in Your Lesson',
+      content: `Step 1: Look at the activity type. Is the student listening, speaking, reading, or writing?
+
+Step 2: Look at what the student must DO. Are they answering questions? Retelling? Describing? Identifying words?
+
+Step 3: Match that to a standard code. Use the chart below or the Standards Checklist in this app.
+
+You do not need to tag every activity. Focus on the MAIN skill of each lesson — usually 1-2 standards per class period.`
+    },
+    {
+      id: 'comeon',
+      title: 'Example: Come On Everyone / Thumbs Up — Unit 1 "Special Days"',
+      content: `Here is how each lesson in a typical unit maps to CCSS standards. This example uses a Grade 3-4 level class.
+
+LESSON 1 — "My Favorite Day" (Vocabulary + Ask and Answer)
+Activity A: Listen, point, and say → SL.3.1 (Engage in collaborative discussions)
+Activity C: "What's your favorite day?" / "My favorite day is..." → SL.3.6 (Speak in complete sentences when appropriate)
+Activity D: "What's his/her favorite day?" → L.3.1 (Demonstrate command of English grammar — pronouns his/her)
+Main standard to assess: SL.3.6 — Can the student produce a complete sentence answer?
+
+LESSON 2 — Listen and Read
+Activity A: Listen to the dialogue → SL.3.2 (Determine main ideas from audio)
+Activity B: Read along → RF.3.4 (Read with sufficient accuracy and fluency)
+Main standard to assess: SL.3.2 — Can the student identify the main topic after listening?
+
+LESSON 3 — Story (Comic strip dialogue)
+Activity A: Listen and act it out → SL.3.1b (Follow agreed-upon rules for discussion, take turns)
+Activity B: Choose the correct answers → RL.3.1 (Ask and answer questions about key details)
+Activity C: Ask the question → SL.3.3 (Ask and answer questions about what a speaker says)
+Main standard to assess: RL.3.1 — Can the student answer comprehension questions about the story?
+
+LESSON 4 — Speaking Booster
+Activity A: Write, circle, and stick (story retell) → SL.3.4 (Report on a topic with appropriate facts)
+Activity C: Listen and say, then act it out → SL.3.6 (Speak in complete sentences)
+Activity D: Practice with your friend → SL.3.1 (Engage in collaborative discussions)
+Main standard to assess: SL.3.4 — Can the student retell/report using the target language?
+
+LESSON 5 — Wrap Up + Presentation
+Activity A: Look and write → W.3.3 (Write narratives — short descriptions)
+Presentation: "Favorite Day Poster" → SL.3.4 (Report on a topic, tell a story with appropriate facts and details)
+Main standard to assess: SL.3.4 and W.3.3 — Can the student present and write about the topic?`
+    },
+    {
+      id: 'intoreading',
+      title: 'Example: Into Reading — Module Alignment',
+      content: `Into Reading is already CCSS-aligned. Each module lists target standards. Here is how to use those in your ESL classroom.
+
+The key difference: Into Reading assumes native English speakers. Your students need WIDA-level scaffolding to access the same standards.
+
+HOW TO ADAPT:
+1. Find the module's target standard (listed on the first page of each module)
+2. Keep that same standard as your lesson objective
+3. Adjust the ACTIVITY based on your class level:
+   — Lily/Camellia: Heavy scaffolding, accept L1 responses, use picture support
+   — Daisy/Sunflower: Sentence frames, word banks, partner work
+   — Marigold/Snapdragon: Near-independent, focus on academic vocabulary
+
+EXAMPLE — Module on "Key Details" (RL.2.1: Ask and answer who, what, where, when, why, how)
+All classes work on RL.2.1. The standard is the same.
+
+Lily approach: Teacher reads aloud, students point to pictures. "WHO is in the story?" Students say the character name. Accept one-word answers.
+
+Daisy approach: Students read with partner support. Use a graphic organizer: Who? What? Where? Students write short phrases.
+
+Marigold approach: Students read independently, write complete sentence answers. "The main character is ___ and she wants to ___."
+
+The standard never changes. The language support does.`
+    },
+    {
+      id: 'quickref',
+      title: 'Quick Reference: Common ESL Activities → Standards',
+      content: `SPEAKING ACTIVITIES:
+"Ask and answer" pair work → SL.x.1 (Collaborative discussions)
+Presentations / show and tell → SL.x.4 (Report on a topic)
+Sentence pattern drills → SL.x.6 (Speak in complete sentences)
+Story retelling → SL.x.2 (Recount key ideas)
+
+LISTENING ACTIVITIES:
+Listen and circle / choose → SL.x.2 (Determine main ideas from audio)
+Listen and act it out → SL.x.1b (Follow rules for discussion)
+Listen and repeat → SL.x.6 (Produce complete sentences)
+
+READING ACTIVITIES:
+Read the story / comic → RL.x.1 (Key details) or RI.x.1 (Informational key details)
+Comprehension questions → RL.x.1 (Ask and answer questions)
+Phonics / word recognition → RF.x.3 (Know and apply phonics)
+Read aloud → RF.x.4 (Read with fluency)
+
+WRITING ACTIVITIES:
+Fill in the blank → L.x.1 (Grammar conventions)
+Write sentences → W.x.3 (Write narratives) or W.x.2 (Write informative)
+Poster / project → W.x.2 + SL.x.4 (Write and present)
+Vocabulary exercises → L.x.4 (Determine meaning of unknown words)
+
+Replace "x" with the grade number. For lower-level classes (Lily/Camellia), use the grade level that is 2 below their actual grade. For Daisy/Sunflower, 1 below. For Marigold/Snapdragon, use their actual grade.`
+    },
+    {
+      id: 'tips',
+      title: 'Practical Tips',
+      content: `START SMALL: Pick ONE standard per lesson. Write it on the board. At the end of class, check: "Did most students do this?" That is your formative data.
+
+USE THE QUICK CHECK TOOL: After identifying your standard, use the Quick Check feature in this app. It takes 30 seconds: mark each student as "Got it / Almost / Not yet" for that standard. Over time, this builds a mastery picture automatically.
+
+DO NOT OVERTHINK IT: If students are speaking in pairs, it is probably SL.x.1. If they are answering comprehension questions, it is probably RL.x.1. If they are writing sentences, it is probably W.x.2 or W.x.3. You do not need to be perfect — you need to be consistent.
+
+TAG YOUR ASSESSMENTS: When creating assessments in the Grades tab, add the standard code. This automatically feeds into the Standards Mastery tracker on each student's profile.
+
+TALK TO EACH OTHER: If all teachers tag the same standards consistently, you can compare across classes. "Lily students are at 45% on SL.3.1 while Marigold is at 82%" tells you something useful about program-wide progress.`
+    }
+  ]
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-surface-alt rounded-xl p-5 mb-4">
+        <h2 className="text-[16px] font-bold text-navy mb-2">Lesson Planning with CCSS Standards</h2>
+        <p className="text-[12px] text-text-secondary leading-relaxed">
+          A practical guide to connecting your daily textbook lessons to Common Core State Standards. Includes examples from Come On Everyone / Thumbs Up and Into Reading, plus a quick-reference chart for common ESL activity types.
+        </p>
+      </div>
+
+      {sections.map(s => (
+        <div key={s.id} className="bg-surface border border-border rounded-xl overflow-hidden">
+          <button onClick={() => setExpanded(expanded === s.id ? null : s.id)}
+            className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-surface-alt/50 transition-colors">
+            <span className="text-[13px] font-semibold text-navy">{s.title}</span>
+            {expanded === s.id ? <ChevronDown size={16} className="text-text-tertiary" /> : <ChevronRight size={16} className="text-text-tertiary" />}
+          </button>
+          {expanded === s.id && (
+            <div className="px-5 pb-4 border-t border-border/50">
+              <div className="mt-3 text-[12px] text-text-secondary leading-relaxed whitespace-pre-line">
+                {s.content}
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

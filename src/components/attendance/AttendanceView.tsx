@@ -271,8 +271,8 @@ export default function AttendanceView() {
           <h3 className="font-display text-lg font-semibold text-navy">
             {new Date(selectedDate + 'T00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           </h3>
-          {isWeekend && <p className="text-[12px] text-amber-600 font-medium mt-0.5">⚠️ This is a weekend</p>}
-          {(() => { const dow = new Date(selectedDate + 'T12:00:00').getDay(); return dow === 1 && selectedGrade === 5 ? <p className="text-[12px] text-amber-600 font-medium mt-0.5">⚠️ Grade 5 does not attend English on Mondays</p> : null })()}
+          {isWeekend && <p className="text-[12px] text-amber-600 font-medium mt-0.5"> This is a weekend</p>}
+          {(() => { const dow = new Date(selectedDate + 'T12:00:00').getDay(); return dow === 1 && selectedGrade === 5 ? <p className="text-[12px] text-amber-600 font-medium mt-0.5"> Grade 5 does not attend English on Mondays</p> : null })()}
           {isToday && <p className="text-[12px] text-green-600 font-medium mt-0.5">Today</p>}
           <p className="text-[10px] text-text-tertiary mt-1">Tip: Click a row, then use <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">P</kbd> <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">A</kbd> <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">T</kbd> keys and <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">↑</kbd><kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">↓</kbd> to navigate</p>
         </div>

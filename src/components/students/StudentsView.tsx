@@ -1440,12 +1440,8 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
   const [standardsData, setStandardsData] = useState<{ code: string; description: string; domain: string; assessments: { name: string; pct: number }[]; avgPct: number }[]>([])
   const [studentClass, setStudentClass] = useState<string>('')
 
-  const CLASS_THRESHOLDS: Record<string, { mastered: number; approaching: number }> = {
-    Lily: { mastered: 70, approaching: 50 }, Camellia: { mastered: 75, approaching: 55 },
-    Daisy: { mastered: 80, approaching: 60 }, Sunflower: { mastered: 85, approaching: 65 },
-    Marigold: { mastered: 90, approaching: 70 }, Snapdragon: { mastered: 90, approaching: 70 },
-  }
-  const th = CLASS_THRESHOLDS[studentClass] || { mastered: 80, approaching: 60 }
+  // 4-tier mastery bands (universal across all classes)
+  const BANDS = { above: 86, on: 71, approaching: 61 } // below = 0-60
 
   useEffect(() => {
     (async () => {
@@ -1497,9 +1493,10 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
     )
   }
 
-  const mastered = standardsData.filter(s => s.avgPct >= th.mastered).length
-  const approaching = standardsData.filter(s => s.avgPct >= th.approaching && s.avgPct < th.mastered).length
-  const below = standardsData.filter(s => s.avgPct < th.approaching).length
+  const above = standardsData.filter(s => s.avgPct >= BANDS.above).length
+  const onStd = standardsData.filter(s => s.avgPct >= BANDS.on && s.avgPct < BANDS.above).length
+  const approaching = standardsData.filter(s => s.avgPct >= BANDS.approaching && s.avgPct < BANDS.on).length
+  const below = standardsData.filter(s => s.avgPct < BANDS.approaching).length
 
   const DOMAIN_COLORS: Record<string, string> = {
     reading: '#3b82f6', phonics: '#8b5cf6', writing: '#f59e0b', speaking: '#10b981', language: '#ec4899',
@@ -1518,7 +1515,7 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
               <p className="text-[8px] uppercase font-semibold text-text-tertiary mb-1">{domain}</p>
               <div className="flex flex-wrap gap-1">
                 {stds.map(std => (
-                  <div key={std.code} className={`px-2 py-1 rounded text-[8px] font-semibold cursor-help ${std.avgPct >= th.mastered ? 'bg-green-500 text-white' : std.avgPct >= th.approaching ? 'bg-amber-400 text-white' : 'bg-red-400 text-white'}`}
+                  <div key={std.code} className={`px-2 py-1 rounded text-[8px] font-semibold cursor-help ${std.avgPct >= BANDS.above ? 'bg-blue-500 text-white' : std.avgPct >= BANDS.on ? 'bg-green-500 text-white' : std.avgPct >= BANDS.approaching ? 'bg-amber-400 text-white' : 'bg-red-400 text-white'}`}
                     title={`${std.code}: ${std.description}\n${Math.round(std.avgPct)}% (${std.assessments.length} assessment${std.assessments.length !== 1 ? 's' : ''})`}>
                     {std.code}
                   </div>
@@ -1528,16 +1525,21 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
           ))
         })()}
         <div className="flex items-center gap-3 mt-2 text-[9px] text-text-tertiary">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" /> {th.mastered}%+ mastered</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-400" /> {th.approaching}-{th.mastered - 1}% approaching</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> &lt;{th.approaching}% below</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-500" /> 86%+ Above Standard</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" /> 71-85% On Standard</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-400" /> 61-70% Approaching</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> 0-60% Below Standard</span>
         </div>
       </div>
       {/* Summary */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200">
+          <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+          <span className="text-[11px] font-semibold text-blue-700">{above} above standard</span>
+        </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200">
           <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-          <span className="text-[11px] font-semibold text-green-700">{mastered} mastered</span>
+          <span className="text-[11px] font-semibold text-green-700">{onStd} on standard</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
           <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
@@ -1545,16 +1547,16 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-          <span className="text-[11px] font-semibold text-red-700">{below} below</span>
+          <span className="text-[11px] font-semibold text-red-700">{below} below standard</span>
         </div>
-        <span className="text-[10px] text-text-tertiary ml-2">{standardsData.length} standards across {standardsData.reduce((s, d) => s + d.assessments.length, 0)} assessments</span>
+        <span className="text-[10px] text-text-tertiary ml-2">{standardsData.length} standards</span>
       </div>
 
       {/* Standards list */}
       <div className="space-y-1.5">
         {standardsData.map(std => {
-          const pctColor = std.avgPct >= th.mastered ? 'text-green-600' : std.avgPct >= th.approaching ? 'text-amber-600' : 'text-red-600'
-          const barColor = std.avgPct >= th.mastered ? 'bg-green-400' : std.avgPct >= th.approaching ? 'bg-amber-400' : 'bg-red-400'
+          const pctColor = std.avgPct >= BANDS.above ? 'text-blue-600' : std.avgPct >= BANDS.on ? 'text-green-600' : std.avgPct >= BANDS.approaching ? 'text-amber-600' : 'text-red-600'
+          const barColor = std.avgPct >= BANDS.above ? 'bg-blue-400' : std.avgPct >= BANDS.on ? 'bg-green-400' : std.avgPct >= BANDS.approaching ? 'bg-amber-400' : 'bg-red-400'
           return (
             <div key={std.code} className="bg-surface border border-border rounded-lg px-4 py-2.5 flex items-center gap-3">
               <div className="w-10 text-center">
@@ -1808,7 +1810,7 @@ ${scaffolds.length > 0 ? `<h2>Active Scaffolds (${scaffolds.length})</h2>
 </div>` : ''}
 
 ${goals.length > 0 ? `<h2>Student Goals (${goals.length})</h2>
-<div>${goals.map((g: any) => `<div class="note">${g.completed_at ? '✅' : g.goal_type === 'stretch' ? '🚀' : g.goal_type === 'behavioral' ? '🎯' : '📚'} <span style="${g.completed_at ? 'text-decoration:line-through;color:#94a3b8' : ''}">${g.goal_text}</span>${g.completed_at ? ` <span style="color:#059669;font-size:9px">Done ${new Date(g.completed_at).toLocaleDateString()}</span>` : ''}</div>`).join('')}
+<div>${goals.map((g: any) => `<div class="note">${g.completed_at ? '[done]' : g.goal_type === 'stretch' ? '' : g.goal_type === 'behavioral' ? '' : ''} <span style="${g.completed_at ? 'text-decoration:line-through;color:#94a3b8' : ''}">${g.goal_text}</span>${g.completed_at ? ` <span style="color:#059669;font-size:9px">Done ${new Date(g.completed_at).toLocaleDateString()}</span>` : ''}</div>`).join('')}
 </div>` : ''}
 
 <h2>Behavior Log (last 50)</h2>
@@ -1862,10 +1864,10 @@ function StudentGroupsTab({ studentId, studentName }: { studentId: string; stude
               <span className="text-[10px] text-text-tertiary ml-auto">{(g.student_ids || []).length} students</span>
             </div>
             {g.focus && <p className="text-[10px] text-text-secondary">{g.focus}</p>}
-            {g.book && <p className="text-[10px] text-purple-600">📖 {g.book}</p>}
+            {g.book && <p className="text-[10px] text-purple-600"> {g.book}</p>}
             {g.roles && g.roles[studentId] && <p className="text-[10px] text-purple-700">Role: {g.roles[studentId]}</p>}
             {g.notes && <p className="text-[10px] text-text-tertiary italic mt-1">{g.notes}</p>}
-            {g.active_from && <p className="text-[9px] text-text-tertiary">📅 {g.active_from}{g.active_until ? ` → ${g.active_until}` : ''}</p>}
+            {g.active_from && <p className="text-[9px] text-text-tertiary"> {g.active_from}{g.active_until ? ` → ${g.active_until}` : ''}</p>}
           </div>
         ))
       )}

@@ -22,12 +22,12 @@ interface Group {
 interface Exclusion { id: string; student_a: string; student_b: string; english_class: string; reason?: string }
 
 const LIT_CIRCLE_ROLES = [
-  { name: 'Discussion Director', emoji: '🎯', description: 'Creates discussion questions for the group. Keeps the conversation going and makes sure everyone participates.' },
-  { name: 'Summarizer', emoji: '📝', description: 'Summarizes the key events, main ideas, or important parts of the reading. Gives a brief recap to start the discussion.' },
-  { name: 'Word Wizard', emoji: '✨', description: 'Finds interesting, important, or unfamiliar words from the reading. Shares definitions and discusses why the author chose those words.' },
-  { name: 'Connector', emoji: '🔗', description: 'Makes connections between the reading and real life, other books, or things happening in the world. Shares "This reminds me of..."' },
-  { name: 'Illustrator', emoji: '🎨', description: 'Draws a picture, diagram, or comic related to the reading. Uses the illustration to explain a key scene or idea to the group.' },
-  { name: 'Passage Picker', emoji: '📖', description: 'Chooses important, interesting, or confusing passages to read aloud. Explains why each passage was chosen and leads discussion about it.' },
+  { name: 'Discussion Director', emoji: '', description: 'Creates discussion questions for the group. Keeps the conversation going and makes sure everyone participates.' },
+  { name: 'Summarizer', emoji: '', description: 'Summarizes the key events, main ideas, or important parts of the reading. Gives a brief recap to start the discussion.' },
+  { name: 'Word Wizard', emoji: '', description: 'Finds interesting, important, or unfamiliar words from the reading. Shares definitions and discusses why the author chose those words.' },
+  { name: 'Connector', emoji: '', description: 'Makes connections between the reading and real life, other books, or things happening in the world. Shares "This reminds me of..."' },
+  { name: 'Illustrator', emoji: '', description: 'Draws a picture, diagram, or comic related to the reading. Uses the illustration to explain a key scene or idea to the group.' },
+  { name: 'Passage Picker', emoji: '', description: 'Chooses important, interesting, or confusing passages to read aloud. Explains why each passage was chosen and leads discussion about it.' },
 ]
 
 
@@ -310,7 +310,7 @@ function OverviewTab({ students, groups, selectedGrade, onNavigate }: { students
                   <span className="text-[12px] font-semibold text-navy">{g.name}</span>
                 </div>
                 {g.focus && <p className="text-[10px] text-text-secondary">{g.focus}</p>}
-                <p className="text-[10px] text-text-tertiary mt-1">{g.students.length} students{g.book ? ` · 📖 ${g.book}` : ''}</p>
+                <p className="text-[10px] text-text-tertiary mt-1">{g.students.length} students{g.book ? ` · ${g.book}` : ''}</p>
               </div>
             ))}
           </div>
@@ -351,8 +351,8 @@ function GroupManager({ type, students, groups, studentScores, exclusions, setGr
         <h2 className="text-[16px] font-bold text-navy">{typeLabel}{selectedGrade ? ` · Grade ${selectedGrade}` : ''}</h2>
         <div className="flex gap-2">{!showArchived && <><button onClick={onRefresh} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface border border-border hover:bg-surface-alt text-text-secondary"><RefreshCw size={13} /> Refresh</button><button onClick={onAutoSuggest} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100"><Zap size={13} /> Auto-Suggest</button><button onClick={addGroup} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark"><Plus size={13} /> New Group</button></>}</div>
       </div>
-      {!showArchived && type === 'skill' && <p className="text-[11px] text-text-secondary bg-blue-50 border border-blue-200 rounded-lg p-3">💡 <strong>Auto-Suggest</strong> groups students by weakest domain. <strong>Refresh</strong> archives current and re-generates.</p>}
-      {!showArchived && type === 'fluency' && <p className="text-[11px] text-text-secondary bg-green-50 border border-green-200 rounded-lg p-3">📚 <strong>Auto-Suggest</strong> creates groups by performance tier. <strong>Refresh</strong> archives current and re-generates.</p>}
+      {!showArchived && type === 'skill' && <p className="text-[11px] text-text-secondary bg-blue-50 border border-blue-200 rounded-lg p-3"><strong>Auto-Suggest</strong> groups students by weakest domain. <strong>Refresh</strong> archives current and re-generates.</p>}
+      {!showArchived && type === 'fluency' && <p className="text-[11px] text-text-secondary bg-green-50 border border-green-200 rounded-lg p-3"><strong>Auto-Suggest</strong> creates groups by performance tier. <strong>Refresh</strong> archives current and re-generates.</p>}
       {groups.length === 0 && <div className="text-center py-12 bg-surface border border-border rounded-2xl"><p className="text-[13px] text-text-secondary">{showArchived ? 'No archived groups' : 'No groups yet — use Auto-Suggest or create manually'}</p></div>}
       {groups.map(group => {
         const isEditing = editingId === group.id; const warnings = getWarnings(group); const isArchived = group.is_archived
@@ -366,14 +366,14 @@ function GroupManager({ type, students, groups, studentScores, exclusions, setGr
           </div>
           {warnings.length > 0 && <div className="px-5 py-2 bg-red-50 border-b border-red-200"><div className="flex items-center gap-1.5 text-[10px] text-red-700 font-medium"><Ban size={12} /> Conflict: {warnings.join('; ')}</div></div>}
           {isEditing && !isArchived && <div className="px-5 py-2 border-b border-border space-y-2"><div className="flex gap-3"><input value={group.focus || ''} onChange={e => updateGroup(group.id, { focus: e.target.value })} placeholder="Focus (e.g. RL.2.1 Key Ideas)" className="flex-1 px-2 py-1 text-[11px] border border-border rounded-lg outline-none" /><input value={group.notes || ''} onChange={e => updateGroup(group.id, { notes: e.target.value })} placeholder="Notes" className="flex-1 px-2 py-1 text-[11px] border border-border rounded-lg outline-none" /></div><div className="flex items-center gap-3"><label className="text-[10px] text-text-tertiary">Active period:</label><input type="date" value={group.active_from || ''} onChange={e => updateGroup(group.id, { active_from: e.target.value })} className="px-2 py-1 text-[10px] border border-border rounded-lg outline-none" /><span className="text-[10px] text-text-tertiary">to</span><input type="date" value={group.active_until || ''} onChange={e => updateGroup(group.id, { active_until: e.target.value })} className="px-2 py-1 text-[10px] border border-border rounded-lg outline-none" /></div></div>}
-          {!isEditing && (group.focus || group.active_from) && <div className="px-5 py-1.5 text-[10px] text-text-secondary border-b border-border/50 flex items-center gap-3">{group.focus && <span>Focus: {group.focus}</span>}{group.active_from && <span className="text-text-tertiary">📅 {group.active_from}{group.active_until ? ` → ${group.active_until}` : ''}</span>}</div>}
+          {!isEditing && (group.focus || group.active_from) && <div className="px-5 py-1.5 text-[10px] text-text-secondary border-b border-border/50 flex items-center gap-3">{group.focus && <span>Focus: {group.focus}</span>}{group.active_from && <span className="text-text-tertiary">{group.active_from}{group.active_until ? ` → ${group.active_until}` : ''}</span>}</div>}
           <div className="p-4">{isEditing && !isArchived ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">{students.map(s => { const inGroup = group.students.includes(s.id); const scores = studentScores[s.id]; return (<button key={s.id} onClick={() => toggleStudent(group.id, s.id)} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] text-left transition-all ${inGroup ? 'bg-navy/10 text-navy border border-navy/20' : 'bg-surface-alt/50 text-text-secondary hover:bg-surface-alt border border-transparent'}`}><span className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${inGroup ? 'bg-navy text-white' : 'border border-border'}`}>{inGroup && <Check size={10} />}</span><span className="truncate font-medium">{s.english_name}</span>{scores && <span className="text-[8px] text-text-tertiary ml-auto shrink-0">{Object.entries(scores).slice(0, 3).map(([d, v]) => `${d[0].toUpperCase()}${v}`).join(' ')}</span>}</button>) })}</div>
           ) : (
             <div className="flex flex-wrap gap-1.5">{group.students.map(sid => { const s = students.find(st => st.id === sid); if (!s) return null; const scores = studentScores[sid]; const avg = scores ? Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length) : null; return (<span key={sid} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium ${avg != null ? (avg >= 80 ? 'bg-green-50 text-green-700' : avg >= 60 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700') : 'bg-surface-alt text-text-primary'}`}>{s.english_name}{avg != null && <span className="text-[8px] opacity-60">{avg}%</span>}</span>) })}{group.students.length === 0 && <span className="text-[10px] text-text-tertiary italic">No students</span>}</div>
           )}</div>
           {(isEditing || (group.tasks && group.tasks.length > 0)) && !isArchived && <div className="px-5 pb-4 border-t border-border/50 pt-3"><div className="flex items-center justify-between mb-2"><h4 className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider flex items-center gap-1"><ListChecks size={12} /> Tasks / Activities</h4>{isEditing && <button onClick={() => addTask(group.id)} className="text-[10px] text-navy font-medium hover:underline">+ Add Task</button>}</div><div className="space-y-1">{(group.tasks || []).map((task, ti) => (<div key={ti} className="flex items-center gap-2"><button onClick={() => { if (isEditing) updateTask(group.id, ti, { done: !task.done }) }} className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${task.done ? 'bg-green-500 border-green-500 text-white' : 'border-border'}`}>{task.done && <Check size={10} />}</button>{isEditing ? <><input value={task.text} onChange={e => updateTask(group.id, ti, { text: e.target.value })} placeholder="Describe task..." className={`flex-1 text-[11px] bg-transparent outline-none border-b border-border/50 py-0.5 ${task.done ? 'line-through text-text-tertiary' : ''}`} /><button onClick={() => deleteTask(group.id, ti)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500"><X size={12} /></button></> : <span className={`text-[11px] ${task.done ? 'line-through text-text-tertiary' : ''}`}>{task.text || '(empty)'}</span>}</div>))}</div></div>}
-          {!isEditing && group.notes && <div className="px-5 pb-3 text-[10px] text-text-tertiary italic">📝 {group.notes}</div>}
+          {!isEditing && group.notes && <div className="px-5 pb-3 text-[10px] text-text-tertiary italic">{group.notes}</div>}
         </div>)
       })}
     </div>
@@ -406,7 +406,7 @@ function LitCircleManager({ students, groups, setGroups, onSave, onDelete, onArc
         <div key={group.id} className={`bg-surface border rounded-2xl overflow-hidden ${isArchived ? 'border-amber-200 opacity-75' : 'border-purple-200'}`}>
           <div className={`px-5 py-3 flex items-center gap-3 ${isArchived ? 'bg-amber-50/50' : 'bg-purple-50/50'}`}>
             {isEditing ? <input value={group.name} onChange={e => updateGroup(group.id, { name: e.target.value })} className="text-[14px] font-bold text-navy bg-transparent border-b border-navy/30 outline-none" placeholder="Circle name" /> : <h3 className="text-[14px] font-bold text-navy">{group.name}</h3>}
-            {isEditing ? <input value={group.book || ''} onChange={e => updateGroup(group.id, { book: e.target.value })} className="text-[11px] bg-white border border-border rounded-lg px-2 py-1 outline-none flex-1" placeholder="Book title" /> : group.book ? <span className="text-[11px] text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">📖 {group.book}</span> : null}
+            {isEditing ? <input value={group.book || ''} onChange={e => updateGroup(group.id, { book: e.target.value })} className="text-[11px] bg-white border border-border rounded-lg px-2 py-1 outline-none flex-1" placeholder="Book title" /> : group.book ? <span className="text-[11px] text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">{group.book}</span> : null}
             <span className="text-[10px] text-text-tertiary ml-auto">{group.students.length}</span>
             {isArchived ? <button onClick={() => onRestore(group.id)} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-amber-100 text-amber-700"><RotateCcw size={11} /> Restore</button>
             : isEditing ? <div className="flex gap-1"><button onClick={() => handleSave(group)} disabled={saving} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-navy text-white"><Save size={11} /> Save</button><button onClick={() => { if (group.id.startsWith('new-')) onDelete(group.id); setEditingId(null) }} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={14} /></button></div>
@@ -418,7 +418,7 @@ function LitCircleManager({ students, groups, setGroups, onSave, onDelete, onArc
           ) : (
             <div className="space-y-1">{group.students.map(sid => { const s = students.find(st => st.id === sid); const role = (group.roles || {})[sid]; const rd = LIT_CIRCLE_ROLES.find(r => r.name === role); return s ? <div key={sid} className="flex items-center gap-2 text-[11px]"><span className="font-medium text-navy">{s.english_name}</span>{rd && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">{rd.emoji} {rd.name}</span>}</div> : null })}{group.students.length === 0 && <span className="text-[10px] text-text-tertiary italic">No students</span>}</div>
           )}</div>
-          {!isEditing && group.notes && <div className="px-5 pb-3 text-[10px] text-text-tertiary italic">📝 {group.notes}</div>}
+          {!isEditing && group.notes && <div className="px-5 pb-3 text-[10px] text-text-tertiary italic">{group.notes}</div>}
         </div>) })}
     </div>
   )
