@@ -506,18 +506,11 @@ function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
-  const [goals, setGoals] = useState<any[]>([])
-  const [newGoal, setNewGoal] = useState('')
-  const [goalType, setGoalType] = useState<'academic' | 'stretch' | 'behavioral'>('academic')
 
   useState(() => {
     (async () => {
-      const [{ data }, { data: goalsData }] = await Promise.all([
-        supabase.from('students').select('notes').eq('id', studentId).single(),
-        supabase.from('student_goals').select('*').eq('student_id', studentId).eq('is_active', true).order('created_at', { ascending: false })
-      ])
+      const { data } = await supabase.from('students').select('notes').eq('id', studentId).single()
       if (data) setNotes(data.notes || '')
-      setGoals(goalsData || [])
       setLoading(false)
     })()
   })
@@ -552,76 +545,6 @@ function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' })
 
       {/* WIDA-to-Performance Insight */}
       <WIDAPerformanceInsight studentId={studentId} lang={lang} />
-
-      {/* Student Goals */}
-      <div>
-        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-2">
-          {lang === 'ko' ? '학습 목표' : 'Student Goals'}
-        </label>
-        <div className="flex gap-2 mb-3">
-          <select value={goalType} onChange={e => setGoalType(e.target.value as any)}
-            className="px-2 py-1.5 border border-border rounded-lg text-[11px] bg-surface outline-none">
-            <option value="academic">📚 Academic</option>
-            <option value="stretch">🚀 Stretch</option>
-            <option value="behavioral">🎯 Behavioral</option>
-          </select>
-          <input value={newGoal} onChange={e => setNewGoal(e.target.value)} placeholder="Add a goal..."
-            onKeyDown={async e => {
-              if (e.key === 'Enter' && newGoal.trim()) {
-                const { data, error } = await supabase.from('student_goals').insert({
-                  student_id: studentId, goal_text: newGoal.trim(), goal_type: goalType,
-                  created_by: currentTeacher?.id, is_active: true
-                }).select().single()
-                if (error) showToast(`Error: ${error.message}`)
-                else { setGoals(prev => [data, ...prev]); setNewGoal(''); showToast('Goal added') }
-              }
-            }}
-            className="flex-1 px-3 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
-        </div>
-        {goals.length === 0 ? (
-          <p className="text-[11px] text-text-tertiary italic">No goals set. Add academic, stretch, or behavioral goals above.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {goals.map(g => {
-              const typeConfig: Record<string, { emoji: string; bg: string; text: string }> = {
-                academic: { emoji: '📚', bg: 'bg-blue-50 border-blue-200', text: 'text-blue-800' },
-                stretch: { emoji: '🚀', bg: 'bg-purple-50 border-purple-200', text: 'text-purple-800' },
-                behavioral: { emoji: '🎯', bg: 'bg-amber-50 border-amber-200', text: 'text-amber-800' },
-              }
-              const tc = typeConfig[g.goal_type] || typeConfig.academic
-              return (
-                <div key={g.id} className={`flex items-start gap-2 p-2.5 rounded-lg border ${g.completed_at ? 'bg-green-50/50 border-green-200' : tc.bg} group`}>
-                  <button onClick={async () => {
-                    const completed = g.completed_at ? null : new Date().toISOString()
-                    await supabase.from('student_goals').update({ completed_at: completed }).eq('id', g.id)
-                    setGoals(prev => prev.map(x => x.id === g.id ? { ...x, completed_at: completed } : x))
-                  }} className="mt-0.5 flex-shrink-0">
-                    {g.completed_at
-                      ? <CheckCircle2 size={16} className="text-green-500" />
-                      : <Circle size={16} className="text-text-tertiary" />
-                    }
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[12px] leading-relaxed ${g.completed_at ? 'line-through text-text-tertiary' : tc.text}`}>
-                      <span className="mr-1">{tc.emoji}</span>{g.goal_text}
-                    </p>
-                    <p className="text-[9px] text-text-tertiary mt-0.5">
-                      {new Date(g.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      {g.completed_at && <span className="ml-2 text-green-600">✓ {new Date(g.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                    </p>
-                  </div>
-                  <button onClick={async () => {
-                    await supabase.from('student_goals').update({ is_active: false }).eq('id', g.id)
-                    setGoals(prev => prev.filter(x => x.id !== g.id))
-                  }} className="opacity-0 group-hover:opacity-100 p-1 rounded text-text-tertiary hover:text-red-500">
-                    <X size={12} />
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
 
       {/* #35: Class Transfer History */}
       <ClassTransferHistory studentId={studentId} />
@@ -824,7 +747,7 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
           if (sg.domain === 'overall') {
             bySem[semId].behavior = sg.behavior_grade
           } else {
-            bySem[semId].grades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+            bySem[semId].grades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? sg.score ?? null
           }
         })
         const history = Object.values(bySem)
@@ -1585,18 +1508,27 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
       {/* Visual grid overview */}
       <div className="mb-4 p-3 bg-surface-alt rounded-xl">
         <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Standards Mastery Overview</p>
-        <div className="flex flex-wrap gap-1">
-          {standardsData.map(std => (
-            <div key={std.code} className={`w-6 h-6 rounded flex items-center justify-center text-[7px] font-bold cursor-help ${std.avgPct >= th.mastered ? 'bg-green-500 text-white' : std.avgPct >= th.approaching ? 'bg-amber-400 text-white' : 'bg-red-400 text-white'}`}
-              title={`${std.code}: ${Math.round(std.avgPct)}% (${std.assessments.length} assessments)`}>
-              {std.code.split('.').pop()}
+        {(() => {
+          const byDomain: Record<string, typeof standardsData> = {}
+          standardsData.forEach(s => { const d = s.domain || 'other'; if (!byDomain[d]) byDomain[d] = []; byDomain[d].push(s) })
+          return Object.entries(byDomain).map(([domain, stds]) => (
+            <div key={domain} className="mb-2 last:mb-0">
+              <p className="text-[8px] uppercase font-semibold text-text-tertiary mb-1">{domain}</p>
+              <div className="flex flex-wrap gap-1">
+                {stds.map(std => (
+                  <div key={std.code} className={`px-2 py-1 rounded text-[8px] font-semibold cursor-help ${std.avgPct >= th.mastered ? 'bg-green-500 text-white' : std.avgPct >= th.approaching ? 'bg-amber-400 text-white' : 'bg-red-400 text-white'}`}
+                    title={`${std.code}: ${std.description}\n${Math.round(std.avgPct)}% (${std.assessments.length} assessment${std.assessments.length !== 1 ? 's' : ''})`}>
+                    {std.code}
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+          ))
+        })()}
         <div className="flex items-center gap-3 mt-2 text-[9px] text-text-tertiary">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" /> {th.mastered}%+ mastered</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-400" /> 60-79% approaching</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> &lt;60% below</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-400" /> {th.approaching}-{th.mastered - 1}% approaching</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> &lt;{th.approaching}% below</span>
         </div>
       </div>
       {/* Summary */}

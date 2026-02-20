@@ -10,7 +10,7 @@ import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, 
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
-import { SCORING_RUBRICS } from '@/components/curriculum/scoring-rubrics'
+import { SCORING_RUBRICS, LEVEL_LABELS, LEVEL_COLORS } from '@/components/curriculum/scoring-rubrics'
 
 // Normalize CCSS input: "rl21" -> "RL.2.1", "rf13a" -> "RF.1.3a", "sl42" -> "SL.4.2"
 function normalizeCCSS(input: string): string {
@@ -1727,13 +1727,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
 // Full-class rubric scoring: student sidebar + rubric grid + auto-fill scores
 
 
-const LEVEL_COLORS = [
-  'bg-red-100 text-red-700 border-red-300 ring-red-300',
-  'bg-amber-100 text-amber-700 border-amber-300 ring-amber-300',
-  'bg-green-100 text-green-700 border-green-300 ring-green-300',
-  'bg-blue-100 text-blue-700 border-blue-300 ring-blue-300',
-]
-const LEVEL_LABELS = ['Emerging', 'Developing', 'Meets', 'Exceeds']
+// Uses LEVEL_COLORS and LEVEL_LABELS from scoring-rubrics.ts
 
 function RubricScoringModal({ students, existingScores, maxScore, domain, grade, onApplyScores, onClose }: {
   students: { id: string; english_name: string; korean_name: string }[]
@@ -1750,8 +1744,8 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
   const [allScores, setAllScores] = useState<Record<string, number[]>>({})
 
   const rubric = selectedRubric != null ? SCORING_RUBRICS[selectedRubric] : null
-  const filteredRubrics = SCORING_RUBRICS.filter(r => r.domain === domain && r.grade === grade)
-  const allDomainRubrics = SCORING_RUBRICS.filter(r => r.domain === domain && r.grade !== grade)
+  const filteredRubrics = SCORING_RUBRICS.filter(r => r.domain === domain && r.grades.includes(grade))
+  const allDomainRubrics = SCORING_RUBRICS.filter(r => r.domain === domain && !r.grades.includes(grade))
   const activeStudent = students[activeStudentIdx]
   const studentScores = activeStudent ? (allScores[activeStudent.id] || []) : []
   const studentTotal = studentScores.reduce((s, v) => s + v, 0)
