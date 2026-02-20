@@ -642,7 +642,7 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
           saving={saving}
         />
       )}
-      {activeTab === 'oral' && (
+      {activeTab === 'oral' && activeWave === 1 && (
         <OralTestEntry
           students={students}
           scores={scores}
@@ -652,6 +652,12 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
           selectedIdx={selectedStudentIdx}
           onSelectIdx={setSelectedStudentIdx}
           activeWave={activeWave}
+        />
+      )}
+      {activeTab === 'oral' && activeWave === 2 && (
+        <G1TeacherRatings
+          students={students}
+          levelTestId={levelTest.id}
         />
       )}
       {activeTab === 'results' && (
@@ -1564,8 +1570,261 @@ function ResultsView({ students, scores, levelTest }: {
 }
 
 // ============================================================================
+// ─── G1 Wave 2 Teacher Ratings (same as G2-5 anecdotal) ───────────────────
+
+const RATING_DIMENSIONS = [
+  { key: 'receptive_language', label: 'Receptive Language', description: 'Listening comprehension, following directions, understanding stories' },
+  { key: 'productive_language', label: 'Productive Language', description: 'Speaking in sentences, vocabulary use, oral expression' },
+  { key: 'engagement_pace', label: 'Engagement & Learning Pace', description: 'Participation, task completion, ability to keep up with instruction' },
+  { key: 'placement_recommendation', label: 'Overall Placement', description: 'Where would this student best fit based on your observations?' },
+]
+const RATING_LEVELS = [
+  { value: 1, label: 'Well Below', color: 'bg-red-100 text-red-700 border-red-300' },
+  { value: 2, label: 'Approaching', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+  { value: 3, label: 'On Level', color: 'bg-green-100 text-green-700 border-green-300' },
+  { value: 4, label: 'Above', color: 'bg-blue-100 text-blue-700 border-blue-300' },
+]
+
+function G1TeacherRatings({ students, levelTestId }: { students: any[]; levelTestId: string }) {
+  const { currentTeacher, showToast } = useApp()
+  const [ratings, setRatings] = useState<Record<string, any>>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState<string | null>(null)
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTestId)
+      const map: Record<string, any> = {}
+      data?.forEach((r: any) => { map[r.student_id] = r })
+      students.forEach(s => { if (!map[s.id]) map[s.id] = {} })
+      setRatings(map)
+      setLoading(false)
+    })()
+  }, [levelTestId, students])
+
+  const updateRating = (studentId: string, key: string, value: any) => {
+    setRatings(prev => ({ ...prev, [studentId]: { ...prev[studentId], [key]: value } }))
+  }
+
+  const saveOne = async (studentId: string) => {
+    setSaving(studentId)
+    const r = ratings[studentId] || {}
+    const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({
+      level_test_id: levelTestId, student_id: studentId, teacher_id: currentTeacher?.id || null,
+      receptive_language: r.receptive_language || null, productive_language: r.productive_language || null,
+      engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null,
+      notes: r.notes || '', is_watchlist: r.is_watchlist || false,
+    }, { onConflict: 'level_test_id,student_id' })
+    setSaving(null)
+    if (error) showToast(`Error: ${error.message}`); else showToast('Saved')
+  }
+
+  const saveAll = async () => {
+    setSaving('all'); let errors = 0
+    for (const s of students) {
+      const r = ratings[s.id] || {}
+      const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({
+        level_test_id: levelTestId, student_id: s.id, teacher_id: currentTeacher?.id || null,
+        receptive_language: r.receptive_language || null, productive_language: r.productive_language || null,
+        engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null,
+        notes: r.notes || '', is_watchlist: r.is_watchlist || false,
+      }, { onConflict: 'level_test_id,student_id' })
+      if (error) errors++
+    }
+    setSaving(null); showToast(errors > 0 ? `Saved with ${errors} error(s)` : `All ratings saved`)
+  }
+
+  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+
+  return (
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h3 className="text-[16px] font-bold text-navy">Teacher Ratings (Wave 2)</h3>
+          <p className="text-[11px] text-text-secondary">Rate each student on 4 dimensions based on your classroom observations. These count toward 40% of the placement composite.</p>
+        </div>
+        <button onClick={saveAll} disabled={saving === 'all'}
+          className="px-5 py-2.5 rounded-xl text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+          {saving === 'all' ? 'Saving...' : 'Save All Ratings'}
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {students.map(student => {
+          const r = ratings[student.id] || {}
+          const filled = RATING_DIMENSIONS.filter(d => r[d.key] != null).length
+          return (
+            <div key={student.id} className="bg-surface border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-[14px] font-semibold text-navy">{student.english_name}</span>
+                  <span className="text-[11px] text-text-tertiary">{student.korean_name}</span>
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-surface-alt text-text-secondary">{student.english_class}</span>
+                  <span className="text-[9px] text-text-tertiary">{filled}/4 rated</span>
+                </div>
+                <button onClick={() => saveOne(student.id)} disabled={saving === student.id}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
+                  {saving === student.id ? '...' : 'Save'}
+                </button>
+              </div>
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                {RATING_DIMENSIONS.map(dim => (
+                  <div key={dim.key}>
+                    <p className="text-[9px] font-semibold text-text-secondary uppercase mb-1">{dim.label}</p>
+                    <div className="flex gap-1">
+                      {RATING_LEVELS.map(level => (
+                        <button key={level.value} onClick={() => updateRating(student.id, dim.key, level.value)}
+                          className={`flex-1 py-1.5 rounded text-[10px] font-bold border transition-all ${r[dim.key] === level.value ? level.color + ' border-2' : 'bg-surface-alt text-text-tertiary border-border hover:bg-surface'}`}>
+                          {level.value}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[7px] text-text-tertiary mt-0.5 text-center">
+                      {RATING_LEVELS.map(l => l.label).join(' / ')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-3">
+                <input value={r.notes || ''} onChange={e => updateRating(student.id, 'notes', e.target.value)}
+                  placeholder="Notes (optional)" className="flex-1 px-3 py-1.5 text-[11px] border border-border rounded-lg bg-surface outline-none" />
+                <label className="flex items-center gap-1 text-[10px] text-text-secondary cursor-pointer">
+                  <input type="checkbox" checked={r.is_watchlist || false} onChange={e => updateRating(student.id, 'is_watchlist', e.target.checked)} className="rounded" />
+                  Watchlist
+                </label>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // EXPORTS for use in LevelingView
 // ============================================================================
 
 export { calculateG1Composite, suggestG1Class, WRITTEN_SECTIONS, PASSAGE_CONFIGS, STANDARDS_BASELINE, NAEP_MULTIPLIERS }
 export type { G1Scores, PassageLevel }
+
+// ─── Wave 2: G1 Teacher Ratings ───────────────────────────────────
+// Same 4-dimension ratings as G2-5 AnecdotalPhase but embedded in G1 score entry
+
+const RATING_DIMS = [
+  { key: 'receptive_language', label: 'Receptive Language', desc: 'Listening comprehension, following directions, understanding stories' },
+  { key: 'productive_language', label: 'Productive Language', desc: 'Speaking ability, sentence formation, vocabulary use' },
+  { key: 'engagement_pace', label: 'Engagement & Pace', desc: 'Participation, focus, learning speed, work completion' },
+  { key: 'placement_recommendation', label: 'Placement Recommendation', desc: 'Overall recommendation considering all factors' },
+]
+const RATING_LABELS = ['', 'Well Below', 'Below', 'On Level', 'Above']
+
+function G1TeacherRatings({ students, levelTestId }: { students: any[]; levelTestId: string }) {
+  const { showToast, currentTeacher } = useApp()
+  const [ratings, setRatings] = useState<Record<string, Record<string, any>>>({})
+  const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTestId)
+      const map: Record<string, Record<string, any>> = {}
+      data?.forEach((r: any) => { map[r.student_id] = r })
+      students.forEach(s => { if (!map[s.id]) map[s.id] = {} })
+      setRatings(map)
+      setLoading(false)
+    })()
+  }, [levelTestId, students])
+
+  const updateRating = (sid: string, key: string, val: number) => {
+    setRatings(prev => ({ ...prev, [sid]: { ...prev[sid], [key]: val } }))
+  }
+
+  const saveAll = async () => {
+    setSaving(true)
+    let errors = 0
+    for (const s of students) {
+      const r = ratings[s.id] || {}
+      const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({
+        level_test_id: levelTestId, student_id: s.id, teacher_id: currentTeacher?.id || null,
+        receptive_language: r.receptive_language || null, productive_language: r.productive_language || null,
+        engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null,
+        notes: r.notes || '', is_watchlist: r.is_watchlist || false,
+      }, { onConflict: 'level_test_id,student_id' })
+      if (error) errors++
+    }
+    setSaving(false)
+    showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved ratings for ${students.length} students`)
+  }
+
+  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+
+  return (
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-[15px] font-semibold text-navy">Teacher Ratings (Wave 2)</h3>
+          <p className="text-[11px] text-text-secondary">Rate each student on 4 dimensions (1-4 scale). These contribute 40% to the final composite.</p>
+        </div>
+        <button onClick={saveAll} disabled={saving}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save All Ratings
+        </button>
+      </div>
+
+      <div className="bg-surface border border-border rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="bg-surface-alt">
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[150px]">Student</th>
+                {RATING_DIMS.map(d => (
+                  <th key={d.key} className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-secondary font-semibold min-w-[120px]">
+                    <div>{d.label}</div>
+                    <div className="text-[8px] text-text-tertiary font-normal normal-case">{d.desc}</div>
+                  </th>
+                ))}
+                <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-secondary font-semibold min-w-[100px]">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((s, si) => {
+                const r = ratings[s.id] || {}
+                const filled = RATING_DIMS.filter(d => r[d.key] != null).length
+                return (
+                  <tr key={s.id} className={`border-t border-border ${si % 2 === 0 ? '' : 'bg-surface-alt/30'}`}>
+                    <td className="px-4 py-2.5 font-medium text-navy sticky left-0 bg-surface">
+                      <div>{s.english_name}</div>
+                      <div className="text-[9px] text-text-tertiary">{s.korean_name} -- {s.english_class}</div>
+                    </td>
+                    {RATING_DIMS.map(d => (
+                      <td key={d.key} className="px-2 py-2 text-center">
+                        <div className="flex gap-1 justify-center">
+                          {[1, 2, 3, 4].map(v => (
+                            <button key={v} onClick={() => updateRating(s.id, d.key, v)}
+                              className={`w-9 h-9 rounded-lg border text-[12px] font-bold transition-all ${
+                                r[d.key] === v
+                                  ? v <= 1 ? 'bg-red-100 text-red-700 border-red-300'
+                                    : v === 2 ? 'bg-amber-100 text-amber-700 border-amber-300'
+                                    : v === 3 ? 'bg-green-100 text-green-700 border-green-300'
+                                    : 'bg-blue-100 text-blue-700 border-blue-300'
+                                  : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'
+                              }`}>{v}</button>
+                          ))}
+                        </div>
+                        <div className="text-[8px] text-text-tertiary mt-0.5">{r[d.key] ? RATING_LABELS[r[d.key]] : ''}</div>
+                      </td>
+                    ))}
+                    <td className="px-2 py-2">
+                      <input value={r.notes || ''} onChange={e => setRatings(prev => ({ ...prev, [s.id]: { ...prev[s.id], notes: e.target.value } }))}
+                        className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] bg-surface outline-none focus:border-navy" placeholder="Notes..." />
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}

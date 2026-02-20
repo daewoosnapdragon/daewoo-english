@@ -1161,9 +1161,9 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       {/* BIGGER MODAL: max-w-5xl */}
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="px-8 py-6 border-b border-border flex items-start justify-between">
           <div className="flex items-center gap-5">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
@@ -338,13 +338,15 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   return (
     <>
-      <div className="flex gap-1 mb-5 border-b border-border">
-        {DOMAINS.map(d => (
-          <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[13px] font-medium transition-all border-b-2 -mb-px ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
-            {DOMAIN_LABELS[d][lang]}
+      <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
+        {DOMAINS.map(d => {
+          const SHORT: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
+          return (
+          <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[12px] font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
+            {SHORT[d] || DOMAIN_LABELS[d][lang]}
             {assessments.filter(a => a.domain === d).length > 0 && <span className="ml-1.5 text-[10px] bg-accent-light text-navy px-1.5 py-0.5 rounded-full font-bold">{assessments.filter(a => a.domain === d).length}</span>}
           </button>
-        ))}
+        )})}
       </div>
 
       {assessments.length > 0 && (
@@ -805,13 +807,13 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
   const buildColumns = () => {
     const cols: { type: 'total' | 'section'; assessment: any; sectionIdx?: number; sectionLabel?: string }[] = []
     for (const a of domainAssessments) {
+      cols.push({ type: 'total', assessment: a })
       const hasSections = a.sections && a.sections.length > 0
       if (hasSections && expandedAssessment === a.id) {
         a.sections.forEach((sec: any, i: number) => {
           cols.push({ type: 'section', assessment: a, sectionIdx: i, sectionLabel: sec.label || `S${i + 1}` })
         })
       }
-      cols.push({ type: 'total', assessment: a })
     }
     return cols
   }
@@ -820,12 +822,15 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
 
   return (
     <>
-      <div className="flex gap-1 mb-5 border-b border-border">
-        {DOMAINS.map(d => (
-          <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[13px] font-medium transition-all border-b-2 -mb-px ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
-            {DOMAIN_LABELS[d][lang]}
+      <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
+        {DOMAINS.map(d => {
+          const SHORT: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
+          return (
+          <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[12px] font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
+            {SHORT[d] || DOMAIN_LABELS[d][lang]}
           </button>
-        ))}
+        )})}
+      </div>
       </div>
 
       {loading ? <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div> : domainAssessments.length === 0 ? (
@@ -845,8 +850,8 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                 {columns.map((col, ci) => {
                   if (col.type === 'section') {
                     return (
-                      <th key={`sec-${col.assessment.id}-${col.sectionIdx}`} className="text-center px-1 py-2.5 text-[8px] uppercase tracking-wider text-purple-600 font-semibold min-w-[60px] bg-purple-50/50">
-                        <div className="truncate max-w-[60px]">{col.sectionLabel}</div>
+                      <th key={`sec-${col.assessment.id}-${col.sectionIdx}`} className="text-center px-1 py-2.5 text-[8px] uppercase tracking-wider text-purple-600 font-semibold min-w-[100px] bg-purple-50/50">
+                        <div className="whitespace-nowrap">{col.sectionLabel}</div>
                         <div className="text-[7px] text-purple-400 font-normal">/{col.assessment.sections[col.sectionIdx!].max_score || '?'}</div>
                       </th>
                     )
@@ -855,11 +860,11 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                   const hasSections = a.sections && a.sections.length > 0
                   const isExpanded = expandedAssessment === a.id
                   return (
-                    <th key={a.id} className={`text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[80px] ${hasSections ? 'cursor-pointer hover:bg-navy/5' : ''}`}
+                    <th key={a.id} className={`text-center px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[130px] ${hasSections ? 'cursor-pointer hover:bg-navy/5' : ''}`}
                       onClick={() => hasSections && setExpandedAssessment(isExpanded ? null : a.id)} title={hasSections ? `Click to ${isExpanded ? 'collapse' : 'expand'} sections` : a.name}>
-                      <div className="truncate max-w-[80px] flex items-center justify-center gap-0.5">
+                      <div className="flex items-center justify-center gap-0.5 leading-tight">
                         {a.name}
-                        {hasSections && <ChevronDown size={10} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />}
+                        {hasSections && <ChevronDown size={10} className={`flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />}
                       </div>
                       <div className="text-[8px] text-text-tertiary font-normal">/{a.max_score}{hasSections ? ` (${a.sections.length} sec)` : ''}</div>
                     </th>
@@ -2112,19 +2117,16 @@ function getAdjustedGradeQC(studentGrade: number, englishClass: string): number 
   return Math.max(1, Math.min(5, studentGrade + (CLASS_OFFSETS[englishClass] || 0)))
 }
 
-function getClustersQC(domain: string, grade: number) {
-  try {
-    const { CCSS_STANDARDS } = require('../curriculum/ccss-standards')
-    if (!CCSS_STANDARDS) return []
-    const domainStds = CCSS_STANDARDS.filter((s: any) => s.domain === domain && s.grade === grade)
-    const clusters: Record<string, any[]> = {}
-    domainStds.forEach((s: any) => {
-      const cl = s.cluster || 'General'
-      if (!clusters[cl]) clusters[cl] = []
-      clusters[cl].push(s)
-    })
-    return Object.entries(clusters).map(([name, standards]) => ({ name, standards }))
-  } catch { return [] }
+function getClustersQC(domain: string, grade: number, ccssData: any[]) {
+  if (!ccssData || ccssData.length === 0) return []
+  const domainStds = ccssData.filter((s: any) => s.domain === domain && s.grade === grade)
+  const clusters: Record<string, any[]> = {}
+  domainStds.forEach((s: any) => {
+    const cl = s.cluster || 'General'
+    if (!clusters[cl]) clusters[cl] = []
+    clusters[cl].push(s)
+  })
+  return Object.entries(clusters).map(([name, standards]) => ({ name, standards }))
 }
 
 const QC_OPTIONS_G = [
@@ -2133,132 +2135,3 @@ const QC_OPTIONS_G = [
   { value: 'not_yet', emoji: '✗', label: 'Not yet', bg: 'bg-red-100', color: 'text-red-700' },
 ]
 
-function QuickCheckView({ students, selectedClass, selectedGrade }: { students: any[]; selectedClass: string; selectedGrade: number }) {
-  const { currentTeacher, showToast } = useApp()
-  const [selectedStd, setSelectedStd] = useState<string | null>(null)
-  const [marks, setMarks] = useState<Record<string, string>>({})
-  const [saving, setSaving] = useState(false)
-  const [history, setHistory] = useState<any[]>([])
-
-  const adj = getAdjustedGradeQC(selectedGrade, selectedClass)
-  const allStandards = useMemo(() => {
-    const CCSS_DOMAINS = [
-      { key: 'reading', label: 'Reading' }, { key: 'phonics', label: 'Phonics' },
-      { key: 'writing', label: 'Writing' }, { key: 'speaking', label: 'Speaking' },
-      { key: 'language', label: 'Language' },
-    ]
-    return CCSS_DOMAINS.flatMap(d => getClustersQC(d.key, adj).flatMap(c => c.standards))
-  }, [adj])
-
-  useEffect(() => {
-    if (!selectedStd) return
-    ;(async () => {
-      const { data } = await supabase.from('quick_checks').select('*').eq('standard_code', selectedStd).eq('english_class', selectedClass).eq('student_grade', selectedGrade).order('created_at', { ascending: false }).limit(20)
-      setHistory(data || [])
-    })()
-  }, [selectedStd, selectedClass, selectedGrade])
-
-  const saveQuickCheck = async () => {
-    if (!selectedStd || Object.keys(marks).length === 0) return
-    setSaving(true)
-    const rows = Object.entries(marks).map(([studentId, mark]) => ({
-      student_id: studentId, standard_code: selectedStd, english_class: selectedClass, student_grade: selectedGrade, mark, created_by: currentTeacher?.id,
-    }))
-    const { error } = await supabase.from('quick_checks').insert(rows)
-    if (error) { showToast(`Error: ${error.message}`); setSaving(false); return }
-    showToast(`Quick check saved for ${Object.keys(marks).length} students`)
-    setMarks({}); setSaving(false)
-    const { data } = await supabase.from('quick_checks').select('*').eq('standard_code', selectedStd).eq('english_class', selectedClass).eq('student_grade', selectedGrade).order('created_at', { ascending: false }).limit(20)
-    setHistory(data || [])
-  }
-
-  return (
-    <div className="px-2 py-4">
-      <div className="grid grid-cols-3 gap-5">
-        <div className="bg-surface border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
-            <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Select a Standard</p>
-          </div>
-          <div className="max-h-[500px] overflow-y-auto divide-y divide-border">
-            {allStandards.map(std => (
-              <button key={std.code} onClick={() => { setSelectedStd(std.code); setMarks({}) }}
-                className={`w-full text-left px-4 py-2.5 hover:bg-surface-alt/50 transition-colors ${selectedStd === std.code ? 'bg-navy/5 border-l-2 border-navy' : ''}`}>
-                <span className="text-[11px] font-bold text-navy">{std.code}</span>
-                <p className="text-[10px] text-text-secondary leading-snug truncate">{std.text}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="col-span-2">
-          {!selectedStd ? (
-            <div className="bg-surface border border-border rounded-xl p-12 text-center">
-              <Zap size={24} className="mx-auto text-text-tertiary mb-2" />
-              <p className="text-[13px] text-text-tertiary">Select a standard to begin a quick check.</p>
-              <p className="text-[11px] text-text-tertiary mt-1">3 taps per student, ~90 seconds for 16 students.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="bg-surface border border-border rounded-xl overflow-hidden">
-                <div className="px-5 py-3 bg-navy/5 border-b border-border flex items-center justify-between">
-                  <div>
-                    <p className="text-[13px] font-semibold text-navy">{selectedStd}</p>
-                    <p className="text-[11px] text-text-secondary">{allStandards.find(s => s.code === selectedStd)?.text}</p>
-                  </div>
-                  <button onClick={saveQuickCheck} disabled={saving || Object.keys(marks).length === 0}
-                    className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
-                    {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save ({Object.keys(marks).length})
-                  </button>
-                </div>
-                <div className="p-3 grid grid-cols-2 gap-2">
-                  {students.map(s => {
-                    const m = marks[s.id]
-                    return (
-                      <div key={s.id} className="flex items-center gap-2 bg-surface-alt/30 rounded-lg px-3 py-2">
-                        <span className="text-[12px] font-medium text-navy flex-1 truncate">{s.english_name}</span>
-                        <div className="flex gap-1">
-                          {QC_OPTIONS_G.map(opt => (
-                            <button key={opt.value} onClick={() => setMarks(p => ({ ...p, [s.id]: opt.value }))}
-                              className={`w-8 h-8 rounded-lg border text-[13px] font-bold transition-all ${m === opt.value ? `${opt.bg} ${opt.color} border-2` : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'}`}
-                              title={opt.label}>{opt.emoji}</button>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-                <div className="px-4 py-2 border-t border-border bg-amber-50/40 text-[10px] text-amber-700">
-                  Quick checks are formative evidence only -- they do NOT affect grades or the gradebook.
-                </div>
-              </div>
-              {history.length > 0 && (
-                <div className="bg-surface border border-border rounded-xl overflow-hidden">
-                  <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
-                    <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Recent Quick Checks for {selectedStd}</p>
-                  </div>
-                  <div className="px-4 py-3 max-h-[180px] overflow-y-auto">
-                    {(() => {
-                      const byDate: Record<string, Record<string, number>> = {}
-                      history.forEach((h: any) => {
-                        const d = new Date(h.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                        if (!byDate[d]) byDate[d] = { got_it: 0, almost: 0, not_yet: 0 }
-                        byDate[d][h.mark as string] = (byDate[d][h.mark as string] || 0) + 1
-                      })
-                      return Object.entries(byDate).map(([date, counts]) => (
-                        <div key={date} className="flex items-center gap-3 py-1.5">
-                          <span className="text-[11px] text-text-tertiary w-16">{date}</span>
-                          <span className="text-[10px] text-green-600 font-medium">{counts.got_it || 0} got it</span>
-                          <span className="text-[10px] text-amber-600 font-medium">{counts.almost || 0} almost</span>
-                          <span className="text-[10px] text-red-600 font-medium">{counts.not_yet || 0} not yet</span>
-                        </div>
-                      ))
-                    })()}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
