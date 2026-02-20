@@ -9,7 +9,7 @@ import { classToColor, classToTextColor } from '@/lib/utils'
 import { WIDA_LEVELS, WIDA_DOMAINS } from './CurriculumView'
 import { CCSS_STANDARDS, CCSS_DOMAINS, type CCSSDomain } from './ccss-standards'
 import {
-  BookOpen, Globe2, Layers, ChevronDown, ChevronRight, Info, Search,
+  BookOpen, Globe2, Layers, ChevronDown, ChevronUp, ChevronRight, Info, Search,
   Plus, X, Check, Loader2, User, ArrowLeftRight, Lightbulb, GraduationCap,
   Bookmark, BookMarked, ListChecks, Printer, FileText
 } from 'lucide-react'
@@ -363,17 +363,17 @@ const DOMAIN_ICONS: Record<string, string> = {
 // MAIN GUIDE COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 
-type GuideSection = 'overview' | 'comparison' | 'scaffolds' | 'assign' | 'lessonplanning'
+type GuideSection = 'overview' | 'ccssoverview' | 'comparison' | 'scaffolds' | 'assign'
 
 export default function WIDAGuide() {
   const [section, setSection] = useState<GuideSection>('overview')
 
   const tabs: { id: GuideSection; label: string; icon: typeof BookOpen }[] = [
     { id: 'overview', label: 'WIDA Overview', icon: GraduationCap },
+    { id: 'ccssoverview', label: 'CCSS Overview', icon: FileText },
     { id: 'comparison', label: 'WIDA vs CCSS', icon: ArrowLeftRight },
     { id: 'scaffolds', label: 'Scaffold Index', icon: Lightbulb },
     { id: 'assign', label: 'Assign to Students', icon: BookMarked },
-    { id: 'lessonplanning', label: 'Lesson Planning with CCSS', icon: FileText },
   ]
 
   return (
@@ -390,10 +390,209 @@ export default function WIDAGuide() {
       </div>
 
       {section === 'overview' && <WIDAOverview />}
+      {section === 'ccssoverview' && <CCSSOverview />}
       {section === 'comparison' && <WIDAvsCCSS />}
       {section === 'scaffolds' && <ScaffoldIndex />}
       {section === 'assign' && <AssignScaffolds />}
-      {section === 'lessonplanning' && <LessonPlanningWithCCSS />}
+    </div>
+  )
+}
+
+// ─── SECTION: CCSS Overview ────────────────────────────────────────
+
+function CCSSOverview() {
+  const [expandedStrand, setExpandedStrand] = useState<string | null>(null)
+
+  return (
+    <div className="max-w-4xl">
+      <div className="bg-navy/5 border border-navy/10 rounded-xl p-5 mb-6">
+        <h3 className="text-[15px] font-bold text-navy mb-2">What is CCSS?</h3>
+        <p className="text-[13px] text-text-secondary leading-relaxed mb-3">
+          The Common Core State Standards (CCSS) for English Language Arts describe WHAT students should know and be able to do at each grade level. They cover reading, writing, speaking/listening, and language. At Daewoo, we use CCSS to define learning objectives and measure academic progress — they tell us what skills to teach and assess.
+        </p>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
+          <p className="text-[12px] text-amber-800 font-medium">
+            Key distinction: CCSS tells you WHAT to teach (the skill or knowledge target). WIDA tells you HOW to teach it (the scaffolding). A student working on RL.2.1 (asking questions about a text) who is WIDA Level 2 needs sentence frames and picture support. A WIDA Level 5 student working on the same standard can do it independently. Same standard, different delivery.
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-surface border border-border rounded-xl p-5 mb-6">
+        <h3 className="text-[14px] font-bold text-navy mb-1">How to Read a CCSS Code</h3>
+        <p className="text-[11px] text-text-tertiary mb-4">Every standard has a code that tells you the strand, the grade, and the specific skill. Once you can read the code, navigating standards becomes fast.</p>
+        <div className="bg-navy/5 rounded-xl p-5 mb-4 text-center">
+          <div className="inline-flex items-center gap-2 text-[18px] font-mono font-bold text-navy">
+            <span className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg">RL</span>
+            <span className="text-text-tertiary">.</span>
+            <span className="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg">2</span>
+            <span className="text-text-tertiary">.</span>
+            <span className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg">1</span>
+          </div>
+          <div className="flex justify-center gap-6 mt-3 text-[11px]">
+            <div className="text-center"><span className="font-bold text-blue-700">Strand</span><br /><span className="text-text-tertiary">Reading Literature</span></div>
+            <div className="text-center"><span className="font-bold text-green-700">Grade</span><br /><span className="text-text-tertiary">Grade 2</span></div>
+            <div className="text-center"><span className="font-bold text-amber-700">Standard</span><br /><span className="text-text-tertiary">Standard #1</span></div>
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-lg border border-border">
+          <table className="w-full text-[11px]">
+            <thead>
+              <tr className="bg-surface-alt">
+                <th className="text-left px-4 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold w-[80px]">Code</th>
+                <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Strand</th>
+                <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">What It Covers</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {[
+                { code: 'RL', strand: 'Reading: Literature', desc: 'Comprehension of stories, poems, and drama. Key ideas, craft, structure, and integration of knowledge.' },
+                { code: 'RI', strand: 'Reading: Informational', desc: 'Comprehension of nonfiction. Main idea, text structure, author purpose, and using evidence.' },
+                { code: 'RF', strand: 'Reading: Foundational Skills', desc: 'Phonics, phonemic awareness, fluency, and print concepts. The mechanics of reading (Grades K-5 only).' },
+                { code: 'W', strand: 'Writing', desc: 'Opinion/argumentative, informative/explanatory, narrative writing. Also research and revision skills.' },
+                { code: 'SL', strand: 'Speaking & Listening', desc: 'Participating in discussions, presenting information, evaluating speakers. Collaborative conversation skills.' },
+                { code: 'L', strand: 'Language', desc: 'Grammar, conventions, vocabulary acquisition, and the mechanics of written English.' },
+              ].map(row => (
+                <tr key={row.code}>
+                  <td className="px-4 py-3 align-top"><span className="inline-flex px-2.5 py-1 rounded-lg bg-navy text-white text-[11px] font-bold">{row.code}</span></td>
+                  <td className="px-3 py-3 align-top font-semibold text-navy">{row.strand}</td>
+                  <td className="px-3 py-3 align-top text-[10px] text-text-secondary leading-relaxed">{row.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-surface border border-border rounded-xl p-5 mb-6">
+        <h3 className="text-[14px] font-bold text-navy mb-1">Standards by Strand (Grades 1-5)</h3>
+        <p className="text-[11px] text-text-tertiary mb-4">Click any strand to see its standards at each grade level. The standard number stays the same across grades — only the complexity increases. RL.x.1 is always about asking/answering questions, whether in Grade 1 or Grade 5.</p>
+        <div className="space-y-2">
+          {[
+            { code: 'RL', name: 'Reading: Literature', color: 'bg-blue-50 border-blue-200 text-blue-800', standards: [
+              { num: 1, grades: { 1: 'Ask and answer questions about key details.', 2: 'Ask and answer who, what, where, when, why, how questions.', 3: 'Ask and answer questions; refer explicitly to the text.', 4: 'Refer to details and examples when explaining and drawing inferences.', 5: 'Quote accurately when explaining and drawing inferences.' } },
+              { num: 2, grades: { 1: 'Retell stories and demonstrate understanding of the central message or lesson.', 2: 'Recount stories and determine central message, lesson, or moral.', 3: 'Recount stories and determine central message, lesson, or moral; explain how it is conveyed.', 4: 'Determine a theme from details in a text; summarize.', 5: 'Determine a theme from details; summarize the text.' } },
+              { num: 3, grades: { 1: 'Describe characters, settings, and major events using key details.', 2: 'Describe how characters respond to major events and challenges.', 3: 'Describe characters and explain how their actions contribute to events.', 4: 'Describe a character, setting, or event using specific details from the text.', 5: 'Compare and contrast characters, settings, or events using specific details.' } },
+            ]},
+            { code: 'RF', name: 'Reading: Foundational Skills', color: 'bg-purple-50 border-purple-200 text-purple-800', standards: [
+              { num: 2, grades: { 1: 'Demonstrate understanding of spoken words, syllables, and sounds (phonemes).', 2: 'Demonstrate understanding of spoken words, syllables, and sounds (phonemes).', 3: 'Know and apply grade-level phonics and word analysis.', 4: 'Know and apply grade-level phonics and word analysis.', 5: 'Know and apply grade-level phonics and word analysis.' } },
+              { num: 3, grades: { 1: 'Know and apply grade-level phonics: consonant digraphs, vowels, syllable types.', 2: 'Know and apply grade-level phonics: long vowels, prefixes, suffixes.', 3: 'Decode multisyllable words; read grade-appropriate irregularly spelled words.', 4: 'Use combined knowledge of letter-sound correspondences and morphology to read unfamiliar words.', 5: 'Use combined knowledge of letter-sound correspondences and morphology to read unfamiliar words.' } },
+              { num: 4, grades: { 1: 'Read with sufficient accuracy and fluency to support comprehension.', 2: 'Read with sufficient accuracy and fluency to support comprehension.', 3: 'Read with sufficient accuracy and fluency to support comprehension.', 4: 'Read with sufficient accuracy and fluency to support comprehension.', 5: 'Read with sufficient accuracy and fluency to support comprehension.' } },
+            ]},
+            { code: 'W', name: 'Writing', color: 'bg-amber-50 border-amber-200 text-amber-800', standards: [
+              { num: 1, grades: { 1: 'Write opinion pieces introducing the topic, stating an opinion, and giving a reason.', 2: 'Write opinion pieces introducing the topic, stating an opinion, and supplying reasons.', 3: 'Write opinion pieces supporting a point of view with reasons.', 4: 'Write opinion pieces supporting a point of view with reasons and information.', 5: 'Write opinion pieces supporting a point of view with logically ordered reasons and information.' } },
+              { num: 2, grades: { 1: 'Write informative/explanatory texts naming a topic and supplying facts.', 2: 'Write informative/explanatory texts introducing a topic and using facts and definitions.', 3: 'Write informative/explanatory texts examining a topic and conveying ideas clearly.', 4: 'Write informative/explanatory texts examining a topic and conveying ideas and information clearly.', 5: 'Write informative/explanatory texts examining a topic and conveying ideas and information clearly.' } },
+              { num: 3, grades: { 1: 'Write narratives recounting two or more sequenced events with details and closure.', 2: 'Write narratives recounting a well-elaborated event or sequence of events.', 3: 'Write narratives developing real or imagined experiences using effective technique.', 4: 'Write narratives developing real or imagined experiences with descriptive details and clear event sequences.', 5: 'Write narratives developing real or imagined experiences with effective technique, descriptive details, and clear event sequences.' } },
+            ]},
+            { code: 'SL', name: 'Speaking & Listening', color: 'bg-green-50 border-green-200 text-green-800', standards: [
+              { num: 1, grades: { 1: 'Participate in collaborative conversations following agreed-upon rules.', 2: 'Participate in collaborative conversations building on others\' ideas.', 3: 'Engage in collaborative discussions; come prepared and follow rules.', 4: 'Engage in collaborative discussions; come prepared, follow rules, carry out assigned roles.', 5: 'Engage in collaborative discussions; come prepared, follow rules, pose and respond to questions.' } },
+              { num: 4, grades: { 1: 'Describe familiar people, places, things, and events with relevant details.', 2: 'Tell a story or recount an experience with relevant facts and details.', 3: 'Report on a topic or text with appropriate facts and relevant details.', 4: 'Report on a topic or text, tell a story, or recount an experience in an organized manner.', 5: 'Report on a topic or text, sequencing ideas logically and using appropriate facts and relevant details.' } },
+              { num: 6, grades: { 1: 'Produce complete sentences when appropriate to task and situation.', 2: 'Produce complete sentences when appropriate to task and situation.', 3: 'Speak in complete sentences; distinguish formal from informal English.', 4: 'Differentiate between contexts that call for formal vs. informal English.', 5: 'Adapt speech to a variety of contexts and tasks using formal English when appropriate.' } },
+            ]},
+            { code: 'L', name: 'Language', color: 'bg-rose-50 border-rose-200 text-rose-800', standards: [
+              { num: 1, grades: { 1: 'Demonstrate command of grammar: nouns, verbs, adjectives, pronouns, conjunctions.', 2: 'Demonstrate command of grammar: collective nouns, irregular verbs, adjectives, adverbs.', 3: 'Demonstrate command of grammar: abstract nouns, regular/irregular verbs, comparative adjectives.', 4: 'Demonstrate command of grammar: relative pronouns, progressive verb tenses, prepositional phrases.', 5: 'Demonstrate command of grammar: conjunctions, prepositions, interjections, verb tenses.' } },
+              { num: 2, grades: { 1: 'Demonstrate command of capitalization, punctuation, and spelling.', 2: 'Demonstrate command of capitalization, punctuation, and spelling.', 3: 'Demonstrate command of capitalization, punctuation, and spelling; possessives and suffixes.', 4: 'Demonstrate command of capitalization, punctuation, and spelling; commas and quotation marks.', 5: 'Demonstrate command of capitalization, punctuation, and spelling; commas, titles, and correlative conjunctions.' } },
+              { num: 4, grades: { 1: 'Determine or clarify the meaning of unknown words using context and affixes.', 2: 'Determine or clarify the meaning of unknown words using context, prefixes, and root words.', 3: 'Determine or clarify the meaning of unknown words using context clues, affixes, and root words.', 4: 'Determine or clarify the meaning of unknown words using context clues, Greek and Latin affixes and roots.', 5: 'Determine or clarify the meaning of unknown words using context clues, Greek and Latin affixes and roots.' } },
+            ]},
+          ].map(strand => {
+            const isOpen = expandedStrand === strand.code
+            return (
+              <div key={strand.code} className={'border rounded-xl overflow-hidden transition-all ' + strand.color}>
+                <button onClick={() => setExpandedStrand(isOpen ? null : strand.code)} className="w-full px-4 py-3 flex items-center gap-3 text-left">
+                  <span className="text-[13px] font-bold">{strand.code}</span>
+                  <span className="text-[12px] font-medium flex-1">{strand.name}</span>
+                  <span className="text-[10px] opacity-60">{strand.standards.length} key standards shown</span>
+                  {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+                {isOpen && (
+                  <div className="px-4 pb-4">
+                    <div className="overflow-hidden rounded-lg border border-border bg-white">
+                      <table className="w-full text-[10px]">
+                        <thead>
+                          <tr className="bg-surface-alt">
+                            <th className="text-left px-3 py-2 text-[8px] uppercase tracking-wider text-text-secondary font-semibold w-[50px]">Std</th>
+                            {[1, 2, 3, 4, 5].map(g => (
+                              <th key={g} className="text-left px-2 py-2 text-[8px] uppercase tracking-wider text-text-secondary font-semibold">Grade {g}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {strand.standards.map(std => (
+                            <tr key={std.num}>
+                              <td className="px-3 py-2 align-top font-bold text-navy">{strand.code}.x.{std.num}</td>
+                              {[1, 2, 3, 4, 5].map(g => (
+                                <td key={g} className="px-2 py-2 align-top text-text-secondary leading-relaxed">{(std.grades as any)[g] || '—'}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="bg-surface border border-border rounded-xl p-5 mb-6">
+        <h3 className="text-[14px] font-bold text-navy mb-1">Common ESL Activities and Their Standards</h3>
+        <p className="text-[11px] text-text-tertiary mb-4">When you do these classroom activities, you are teaching these standards. Use this to label your lesson plans and tag assessments in the app.</p>
+        <div className="overflow-hidden rounded-lg border border-border">
+          <table className="w-full text-[11px]">
+            <thead>
+              <tr className="bg-surface-alt">
+                <th className="text-left px-4 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Classroom Activity</th>
+                <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold w-[120px]">Standard(s)</th>
+                <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Why This Standard</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {[
+                { activity: 'Read-aloud with comprehension questions', std: 'RL.x.1, RL.x.2', why: 'Students answer questions about text and identify central message' },
+                { activity: 'Partner discussion / Think-Pair-Share', std: 'SL.x.1', why: 'Collaborative conversation following agreed-upon rules' },
+                { activity: 'Vocabulary instruction (new words from text)', std: 'L.x.4, L.x.6', why: 'Determining meaning of unknown words; acquiring vocabulary' },
+                { activity: 'Phonics lesson / word work', std: 'RF.x.2, RF.x.3', why: 'Phonemic awareness and applying phonics to decode words' },
+                { activity: 'Guided reading (small group)', std: 'RF.x.4, RL.x.1', why: 'Reading with fluency and answering questions about text' },
+                { activity: 'Writing workshop — opinion piece', std: 'W.x.1', why: 'Writing opinion pieces with reasons' },
+                { activity: 'Writing workshop — personal narrative', std: 'W.x.3', why: 'Writing narratives with sequenced events and details' },
+                { activity: 'Writing workshop — informative', std: 'W.x.2', why: 'Writing to convey information with facts and definitions' },
+                { activity: 'Student presentations / show-and-tell', std: 'SL.x.4, SL.x.6', why: 'Reporting on a topic with details; using complete sentences' },
+                { activity: 'Grammar mini-lesson', std: 'L.x.1, L.x.2', why: 'Grammar conventions, capitalization, punctuation, spelling' },
+                { activity: 'Oral reading fluency practice', std: 'RF.x.4', why: 'Reading with accuracy, rate, and expression' },
+                { activity: 'Story retelling / summarizing', std: 'RL.x.2, SL.x.4', why: 'Determining central message and reporting key details' },
+                { activity: 'Reading response journal', std: 'RL.x.1, W.x.1', why: 'Answering text questions and writing opinions about reading' },
+              ].map((row, i) => (
+                <tr key={i}>
+                  <td className="px-4 py-2.5 font-medium text-text-primary">{row.activity}</td>
+                  <td className="px-3 py-2.5"><span className="font-mono text-[10px] font-bold text-navy">{row.std}</span></td>
+                  <td className="px-3 py-2.5 text-[10px] text-text-secondary">{row.why}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-surface border border-border rounded-xl p-5 mb-6">
+        <h3 className="text-[14px] font-bold text-navy mb-1">Practical Tips for Using CCSS at Daewoo</h3>
+        <p className="text-[11px] text-text-tertiary mb-4">You do not need to memorize standard codes. You just need to understand the general categories so you can label your work and track student growth.</p>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { title: 'Start with 2-3 standards per unit', desc: 'You do not need to cover every standard every week. Pick the 2-3 that match your textbook unit and focus on those. Use the Standards Checklist in the Curriculum tab to track what has been covered.' },
+            { title: 'Same standard, different scaffolding', desc: 'All classes can work on the same standard (like RL.x.1 — asking questions about text). Lily uses picture books with sentence frames. Snapdragon uses chapter books with open-ended responses. The standard stays the same.' },
+            { title: 'Tag your assessments', desc: 'When you create an assessment in the Grades tab, tag it with the standard(s) it measures. This lets the app show you which standards each student has mastered and which need more work.' },
+            { title: 'Use Quick Check for formative data', desc: 'The Quick Check tool in the Grades tab is perfect for quick standard checks. Ask one question tied to a standard, record who got it, and you have instant data without a formal test.' },
+            { title: 'The "x" is the grade level', desc: 'When you see RL.x.1, replace x with your grade. If you teach Grade 2, it becomes RL.2.1. The skill is the same across grades — only the complexity changes as the grade number goes up.' },
+            { title: 'RF standards are K-5 only', desc: 'Foundational reading skills (phonics, fluency, phonemic awareness) have standards only for Grades K through 5. All other strands continue through Grade 12, but we only use K-5 at Daewoo.' },
+          ].map((tip, i) => (
+            <div key={i} className="bg-surface-alt/50 border border-border rounded-lg p-4">
+              <h4 className="text-[12px] font-bold text-navy mb-1">{tip.title}</h4>
+              <p className="text-[10px] text-text-secondary leading-relaxed">{tip.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -1565,155 +1764,3 @@ function AssignScaffolds() {
 }
 
 // ─── SECTION 5: Lesson Planning with CCSS Standards ───────────────
-function LessonPlanningWithCCSS() {
-  const [expanded, setExpanded] = useState<string | null>(null)
-
-  const sections = [
-    {
-      id: 'why',
-      title: 'Why Connect Standards to Your Textbook?',
-      content: `Your textbook (Come On Everyone, Thumbs Up, or Into Reading) provides the activities and content. CCSS standards tell you WHAT SKILL students are actually practicing. When you know the standard, you can assess the right thing, differentiate more effectively, and track student progress across the year — not just "we did Unit 3" but "75% of students can now ask and answer questions about key details (SL.2.1)."
-
-This does not mean creating extra work. It means labeling what you are already doing so you can measure growth.`
-    },
-    {
-      id: 'howto',
-      title: 'How to Identify Standards in Your Lesson',
-      content: `Step 1: Look at the activity type. Is the student listening, speaking, reading, or writing?
-
-Step 2: Look at what the student must DO. Are they answering questions? Retelling? Describing? Identifying words?
-
-Step 3: Match that to a standard code. Use the chart below or the Standards Checklist in this app.
-
-You do not need to tag every activity. Focus on the MAIN skill of each lesson — usually 1-2 standards per class period.`
-    },
-    {
-      id: 'comeon',
-      title: 'Example: Come On Everyone / Thumbs Up — Unit 1 "Special Days"',
-      content: `Here is how each lesson in a typical unit maps to CCSS standards. This example uses a Grade 3-4 level class.
-
-LESSON 1 — "My Favorite Day" (Vocabulary + Ask and Answer)
-Activity A: Listen, point, and say → SL.3.1 (Engage in collaborative discussions)
-Activity C: "What's your favorite day?" / "My favorite day is..." → SL.3.6 (Speak in complete sentences when appropriate)
-Activity D: "What's his/her favorite day?" → L.3.1 (Demonstrate command of English grammar — pronouns his/her)
-Main standard to assess: SL.3.6 — Can the student produce a complete sentence answer?
-
-LESSON 2 — Listen and Read
-Activity A: Listen to the dialogue → SL.3.2 (Determine main ideas from audio)
-Activity B: Read along → RF.3.4 (Read with sufficient accuracy and fluency)
-Main standard to assess: SL.3.2 — Can the student identify the main topic after listening?
-
-LESSON 3 — Story (Comic strip dialogue)
-Activity A: Listen and act it out → SL.3.1b (Follow agreed-upon rules for discussion, take turns)
-Activity B: Choose the correct answers → RL.3.1 (Ask and answer questions about key details)
-Activity C: Ask the question → SL.3.3 (Ask and answer questions about what a speaker says)
-Main standard to assess: RL.3.1 — Can the student answer comprehension questions about the story?
-
-LESSON 4 — Speaking Booster
-Activity A: Write, circle, and stick (story retell) → SL.3.4 (Report on a topic with appropriate facts)
-Activity C: Listen and say, then act it out → SL.3.6 (Speak in complete sentences)
-Activity D: Practice with your friend → SL.3.1 (Engage in collaborative discussions)
-Main standard to assess: SL.3.4 — Can the student retell/report using the target language?
-
-LESSON 5 — Wrap Up + Presentation
-Activity A: Look and write → W.3.3 (Write narratives — short descriptions)
-Presentation: "Favorite Day Poster" → SL.3.4 (Report on a topic, tell a story with appropriate facts and details)
-Main standard to assess: SL.3.4 and W.3.3 — Can the student present and write about the topic?`
-    },
-    {
-      id: 'intoreading',
-      title: 'Example: Into Reading — Module Alignment',
-      content: `Into Reading is already CCSS-aligned. Each module lists target standards. Here is how to use those in your ESL classroom.
-
-The key difference: Into Reading assumes native English speakers. Your students need WIDA-level scaffolding to access the same standards.
-
-HOW TO ADAPT:
-1. Find the module's target standard (listed on the first page of each module)
-2. Keep that same standard as your lesson objective
-3. Adjust the ACTIVITY based on your class level:
-   — Lily/Camellia: Heavy scaffolding, accept L1 responses, use picture support
-   — Daisy/Sunflower: Sentence frames, word banks, partner work
-   — Marigold/Snapdragon: Near-independent, focus on academic vocabulary
-
-EXAMPLE — Module on "Key Details" (RL.2.1: Ask and answer who, what, where, when, why, how)
-All classes work on RL.2.1. The standard is the same.
-
-Lily approach: Teacher reads aloud, students point to pictures. "WHO is in the story?" Students say the character name. Accept one-word answers.
-
-Daisy approach: Students read with partner support. Use a graphic organizer: Who? What? Where? Students write short phrases.
-
-Marigold approach: Students read independently, write complete sentence answers. "The main character is ___ and she wants to ___."
-
-The standard never changes. The language support does.`
-    },
-    {
-      id: 'quickref',
-      title: 'Quick Reference: Common ESL Activities → Standards',
-      content: `SPEAKING ACTIVITIES:
-"Ask and answer" pair work → SL.x.1 (Collaborative discussions)
-Presentations / show and tell → SL.x.4 (Report on a topic)
-Sentence pattern drills → SL.x.6 (Speak in complete sentences)
-Story retelling → SL.x.2 (Recount key ideas)
-
-LISTENING ACTIVITIES:
-Listen and circle / choose → SL.x.2 (Determine main ideas from audio)
-Listen and act it out → SL.x.1b (Follow rules for discussion)
-Listen and repeat → SL.x.6 (Produce complete sentences)
-
-READING ACTIVITIES:
-Read the story / comic → RL.x.1 (Key details) or RI.x.1 (Informational key details)
-Comprehension questions → RL.x.1 (Ask and answer questions)
-Phonics / word recognition → RF.x.3 (Know and apply phonics)
-Read aloud → RF.x.4 (Read with fluency)
-
-WRITING ACTIVITIES:
-Fill in the blank → L.x.1 (Grammar conventions)
-Write sentences → W.x.3 (Write narratives) or W.x.2 (Write informative)
-Poster / project → W.x.2 + SL.x.4 (Write and present)
-Vocabulary exercises → L.x.4 (Determine meaning of unknown words)
-
-Replace "x" with the grade number. For lower-level classes (Lily/Camellia), use the grade level that is 2 below their actual grade. For Daisy/Sunflower, 1 below. For Marigold/Snapdragon, use their actual grade.`
-    },
-    {
-      id: 'tips',
-      title: 'Practical Tips',
-      content: `START SMALL: Pick ONE standard per lesson. Write it on the board. At the end of class, check: "Did most students do this?" That is your formative data.
-
-USE THE QUICK CHECK TOOL: After identifying your standard, use the Quick Check feature in this app. It takes 30 seconds: mark each student as "Got it / Almost / Not yet" for that standard. Over time, this builds a mastery picture automatically.
-
-DO NOT OVERTHINK IT: If students are speaking in pairs, it is probably SL.x.1. If they are answering comprehension questions, it is probably RL.x.1. If they are writing sentences, it is probably W.x.2 or W.x.3. You do not need to be perfect — you need to be consistent.
-
-TAG YOUR ASSESSMENTS: When creating assessments in the Grades tab, add the standard code. This automatically feeds into the Standards Mastery tracker on each student's profile.
-
-TALK TO EACH OTHER: If all teachers tag the same standards consistently, you can compare across classes. "Lily students are at 45% on SL.3.1 while Marigold is at 82%" tells you something useful about program-wide progress.`
-    }
-  ]
-
-  return (
-    <div className="space-y-3">
-      <div className="bg-surface-alt rounded-xl p-5 mb-4">
-        <h2 className="text-[16px] font-bold text-navy mb-2">Lesson Planning with CCSS Standards</h2>
-        <p className="text-[12px] text-text-secondary leading-relaxed">
-          A practical guide to connecting your daily textbook lessons to Common Core State Standards. Includes examples from Come On Everyone / Thumbs Up and Into Reading, plus a quick-reference chart for common ESL activity types.
-        </p>
-      </div>
-
-      {sections.map(s => (
-        <div key={s.id} className="bg-surface border border-border rounded-xl overflow-hidden">
-          <button onClick={() => setExpanded(expanded === s.id ? null : s.id)}
-            className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-surface-alt/50 transition-colors">
-            <span className="text-[13px] font-semibold text-navy">{s.title}</span>
-            {expanded === s.id ? <ChevronDown size={16} className="text-text-tertiary" /> : <ChevronRight size={16} className="text-text-tertiary" />}
-          </button>
-          {expanded === s.id && (
-            <div className="px-5 pb-4 border-t border-border/50">
-              <div className="mt-3 text-[12px] text-text-secondary leading-relaxed whitespace-pre-line">
-                {s.content}
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}

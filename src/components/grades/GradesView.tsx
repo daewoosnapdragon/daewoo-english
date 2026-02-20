@@ -1643,33 +1643,53 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
   const DOMAIN_COLORS: Record<string, string> = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' }
   const DOMAIN_LABELS: Record<string, string> = { reading: 'Reading', phonics: 'Phonics', writing: 'Writing', speaking: 'Speaking', language: 'Language' }
 
-  // Group by month
-  const byMonth: Record<string, Assessment[]> = {}
-  const sortedAssessments = [...allAssessments].filter(a => a.date).sort((a, b) => a.date!.localeCompare(b.date!))
-  sortedAssessments.forEach(a => {
-    const m = a.date!.slice(0, 7)
-    if (!byMonth[m]) byMonth[m] = []
-    byMonth[m].push(a)
+  const [month, setMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
+  const year = Number(month.split('-')[0])
+  const mon = Number(month.split('-')[1]) - 1
+  const firstDay = new Date(year, mon, 1).getDay() // 0=Sun
+  const daysInMonth = new Date(year, mon + 1, 0).getDate()
+  const monthLabel = new Date(year, mon, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+
+  const prevMonth = () => { const d = new Date(year, mon - 1, 1); setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); setSelectedDate(null) }
+  const nextMonth = () => { const d = new Date(year, mon + 1, 1); setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); setSelectedDate(null) }
+
+  // Map assessments by date
+  const byDate: Record<string, Assessment[]> = {}
+  allAssessments.filter(a => a.date).forEach(a => {
+    if (!byDate[a.date!]) byDate[a.date!] = []
+    byDate[a.date!].push(a)
   })
 
   // Domain coverage gaps
   const domainDates: Record<string, string> = {}
-  sortedAssessments.forEach(a => { domainDates[a.domain] = a.date! })
+  allAssessments.filter(a => a.date).sort((a, b) => a.date!.localeCompare(b.date!)).forEach(a => { domainDates[a.domain] = a.date! })
   const now = new Date()
   const gaps = DOMAINS.filter(d => {
     const last = domainDates[d]
     if (!last) return true
-    const diff = (now.getTime() - new Date(last).getTime()) / (1000 * 60 * 60 * 24)
-    return diff > 42
+    return (now.getTime() - new Date(last).getTime()) / (1000 * 60 * 60 * 24) > 42
   })
 
-  // Domain distribution
+  // Domain counts for distribution
   const domainCounts: Record<string, number> = {}
   DOMAINS.forEach(d => { domainCounts[d] = allAssessments.filter(a => a.domain === d).length })
   const totalAssessments = allAssessments.length || 1
 
+  // Selected date details
+  const selectedAssessments = selectedDate ? (byDate[selectedDate] || []) : []
+
+  const calendarDays: (number | null)[] = []
+  for (let i = 0; i < firstDay; i++) calendarDays.push(null)
+  for (let d = 1; d <= daysInMonth; d++) calendarDays.push(d)
+  while (calendarDays.length % 7 !== 0) calendarDays.push(null)
+
   return (
-    <div className="px-10 py-6 space-y-5">
+    <div className="px-10 py-6 space-y-4">
       {/* Domain distribution bar */}
       <div className="bg-surface border border-border rounded-xl p-4">
         <h3 className="text-[12px] font-semibold text-navy mb-3">Assessment Distribution by Domain</h3>
@@ -1689,7 +1709,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
         </div>
       </div>
 
-      {/* Coverage gaps alert */}
+      {/* Coverage gaps */}
       {gaps.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[11px] text-amber-800">
           <span className="font-bold">Coverage gap: </span>
@@ -1697,36 +1717,83 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
         </div>
       )}
 
-      {/* Timeline */}
+      {/* Calendar Grid */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
-        <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
-          <h3 className="text-[12px] font-semibold text-navy">Assessment Timeline</h3>
+        <div className="px-4 py-3 bg-surface-alt border-b border-border flex items-center justify-between">
+          <button onClick={prevMonth} className="px-2 py-1 rounded hover:bg-border text-text-secondary text-[13px]">&larr;</button>
+          <h3 className="text-[14px] font-bold text-navy">{monthLabel}</h3>
+          <button onClick={nextMonth} className="px-2 py-1 rounded hover:bg-border text-text-secondary text-[13px]">&rarr;</button>
         </div>
-        {Object.keys(byMonth).length === 0 ? (
-          <p className="px-4 py-8 text-center text-text-tertiary text-[12px]">No assessments with dates found.</p>
-        ) : (
-          <div className="divide-y divide-border">
-            {Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0])).map(([month, assessments]) => (
-              <div key={month} className="px-4 py-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[11px] font-bold text-navy uppercase">{new Date(month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-                  <span className="text-[9px] text-text-tertiary">{assessments.length} assessment{assessments.length !== 1 ? 's' : ''}</span>
-                </div>
-                <div className="space-y-1">
-                  {assessments.map(a => (
-                    <div key={a.id} className="flex items-center gap-2 text-[11px]">
-                      <span className="w-16 text-text-tertiary text-[10px]">{new Date(a.date!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: DOMAIN_COLORS[a.domain] }} />
-                      <span className="font-medium text-text-primary">{a.name}</span>
-                      <span className="text-[9px] text-text-tertiary">({DOMAIN_LABELS[a.domain]}, {a.type || 'formative'}, /{a.max_score})</span>
+        <div className="grid grid-cols-7">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+            <div key={d} className="py-1.5 text-center text-[9px] font-semibold text-text-tertiary uppercase border-b border-border bg-surface-alt/50">{d}</div>
+          ))}
+          {calendarDays.map((day, i) => {
+            if (day === null) return <div key={`e${i}`} className="min-h-[72px] border-b border-r border-border/30 bg-surface-alt/20" />
+            const dateStr = `${year}-${String(mon + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+            const dayAssessments = byDate[dateStr] || []
+            const isToday = dateStr === new Date().toISOString().split('T')[0]
+            const isSelected = dateStr === selectedDate
+            const isWeekend = i % 7 === 0 || i % 7 === 6
+            return (
+              <div key={dateStr} onClick={() => dayAssessments.length > 0 ? setSelectedDate(isSelected ? null : dateStr) : null}
+                className={`min-h-[72px] border-b border-r border-border/30 p-1 transition-all ${
+                  isSelected ? 'bg-navy/5 ring-1 ring-navy/30' : dayAssessments.length > 0 ? 'cursor-pointer hover:bg-surface-alt' : ''
+                } ${isWeekend ? 'bg-surface-alt/30' : ''}`}>
+                <span className={`text-[10px] font-medium ${isToday ? 'bg-navy text-white px-1.5 py-0.5 rounded-full' : 'text-text-secondary'}`}>{day}</span>
+                <div className="mt-0.5 space-y-0.5">
+                  {dayAssessments.slice(0, 3).map(a => (
+                    <div key={a.id} className="flex items-center gap-1 rounded px-1 py-0.5" style={{ backgroundColor: `${DOMAIN_COLORS[a.domain]}10` }}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: DOMAIN_COLORS[a.domain] }} />
+                      <span className="text-[8px] font-medium text-text-primary truncate leading-tight">{a.name}</span>
                     </div>
                   ))}
+                  {dayAssessments.length > 3 && <span className="text-[8px] text-text-tertiary px-1">+{dayAssessments.length - 3} more</span>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Selected date detail panel */}
+      {selectedDate && selectedAssessments.length > 0 && (
+        <div className="bg-surface border border-border rounded-xl p-4">
+          <h4 className="text-[12px] font-bold text-navy mb-2">{new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</h4>
+          <div className="space-y-2">
+            {selectedAssessments.map(a => (
+              <div key={a.id} className="flex items-center gap-3 bg-surface-alt/50 rounded-lg px-3 py-2">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: DOMAIN_COLORS[a.domain] }} />
+                <div className="flex-1 min-w-0">
+                  <span className="text-[12px] font-semibold text-text-primary">{a.name}</span>
+                  <span className="text-[10px] text-text-tertiary ml-2">{DOMAIN_LABELS[a.domain]} · {a.type || 'formative'} · /{a.max_score}</span>
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Month summary */}
+      {(() => {
+        const monthAssessments = allAssessments.filter(a => a.date?.startsWith(month))
+        if (monthAssessments.length === 0) return <p className="text-center text-text-tertiary text-[12px] py-4">No assessments this month.</p>
+        const byDom: Record<string, number> = {}
+        monthAssessments.forEach(a => { byDom[a.domain] = (byDom[a.domain] || 0) + 1 })
+        return (
+          <div className="bg-surface border border-border rounded-xl p-4">
+            <h4 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-2">This Month: {monthAssessments.length} assessments</h4>
+            <div className="flex gap-3 flex-wrap">
+              {DOMAINS.filter(d => byDom[d]).map(d => (
+                <span key={d} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium" style={{ backgroundColor: `${DOMAIN_COLORS[d]}15`, color: DOMAIN_COLORS[d] }}>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: DOMAIN_COLORS[d] }} />
+                  {DOMAIN_LABELS[d]}: {byDom[d]}
+                </span>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -1834,20 +1901,26 @@ function RubricPicker({ grade, domain, onSelect }: { grade: number; domain: stri
               Use This Rubric
             </button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {previewRubric.criteria.map((c, ci) => (
-              <div key={ci} className="bg-surface border border-border rounded-xl p-4">
-                <h4 className="text-[12px] font-bold text-navy mb-2">{ci + 1}. {c.label}</h4>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {LEVEL_LABELS.map((lvl, li) => (
-                    <div key={li} className={`rounded-lg p-2 border ${LEVEL_COLORS[li] || 'border-border bg-surface-alt'}`}>
-                      <p className="text-[9px] font-bold mb-1">{lvl} ({li + 1})</p>
-                      <p className="text-[8px] leading-relaxed text-text-secondary">{c.levels[li] || '—'}</p>
-                    </div>
-                  ))}
+              <div key={ci} className="bg-surface border border-border rounded-xl p-3">
+                <div className="flex items-start gap-2">
+                  <span className="text-[11px] font-bold text-navy shrink-0">{ci + 1}.</span>
+                  <div>
+                    <h4 className="text-[12px] font-bold text-navy">{c.label}</h4>
+                    {c.description && <p className="text-[10px] text-text-secondary mt-0.5 leading-relaxed">{c.description}</p>}
+                  </div>
                 </div>
               </div>
             ))}
+            <div className="mt-3 p-3 bg-surface-alt rounded-lg">
+              <p className="text-[10px] text-text-secondary">Each criterion is scored 1–4:</p>
+              <div className="flex gap-2 mt-1.5">
+                {LEVEL_LABELS.map((lvl, i) => (
+                  <span key={i} className={`px-2 py-0.5 rounded text-[9px] font-medium border ${LEVEL_COLORS[i]}`}>{i + 1} = {lvl}</span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -2115,6 +2188,30 @@ function ItemAnalysisView({ allAssessments, students }: { allAssessments: Assess
                 ))}
               </div>
             </div>
+
+            {/* Students needing reteach (below 60%) */}
+            {(() => {
+              const needsReteach = scores.filter(s => (s.score / max) * 100 < 61)
+              const approaching = scores.filter(s => { const p = (s.score / max) * 100; return p >= 61 && p < 71 })
+              if (needsReteach.length === 0 && approaching.length === 0) return null
+              return (
+                <div className="bg-surface border border-border rounded-xl p-4">
+                  <h3 className="text-[12px] font-semibold text-navy mb-3">Action Items</h3>
+                  {needsReteach.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-[10px] font-bold text-red-600 uppercase mb-1">Below Standard (0-60%) — Needs Reteaching ({needsReteach.length})</p>
+                      <p className="text-[11px] text-text-secondary">{needsReteach.map(s => `${s.student} (${s.score}/${max})`).join(', ')}</p>
+                    </div>
+                  )}
+                  {approaching.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Approaching Standard (61-70%) — Monitor ({approaching.length})</p>
+                      <p className="text-[11px] text-text-secondary">{approaching.map(s => `${s.student} (${s.score}/${max})`).join(', ')}</p>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Student scores ranked */}
             <div className="bg-surface border border-border rounded-xl overflow-hidden">

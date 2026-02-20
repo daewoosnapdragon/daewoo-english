@@ -737,71 +737,75 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
     setSemesterHistory([])
     setData([]);
     (async () => {
-      // 1. Load semester_grades history
-      const { data: semGrades } = await supabase.from('semester_grades').select('*, semesters(name, start_date)').eq('student_id', studentId)
-      if (semGrades && semGrades.length > 0) {
-        const bySem: Record<string, { name: string; startDate: string; grades: Record<string, number | null>; behavior: string | null }> = {}
-        semGrades.forEach((sg: any) => {
-          const semName = sg.semesters?.name || 'Unknown'
-          const startDate = sg.semesters?.start_date || '9999-12-31'
-          const semId = sg.semester_id
-          if (!bySem[semId]) bySem[semId] = { name: semName, startDate, grades: {}, behavior: null }
-          if (sg.domain === 'overall') {
-            bySem[semId].behavior = sg.behavior_grade
-          } else {
-            bySem[semId].grades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? sg.score ?? null
-          }
-        })
-        const history = Object.values(bySem)
-          .filter(s => DOMAINS.some(d => s.grades[d] != null))
-          .sort((a, b) => {
-            // Force Fall before Spring regardless of start_date
-            const aIsFall = a.name.toLowerCase().includes('fall')
-            const bIsFall = b.name.toLowerCase().includes('fall')
-            if (aIsFall && !bIsFall) return -1
-            if (!aIsFall && bIsFall) return 1
-            return a.startDate.localeCompare(b.startDate)
+      try {
+        // 1. Load semester_grades history
+        const { data: semGrades } = await supabase.from('semester_grades').select('*, semesters(name, start_date)').eq('student_id', studentId)
+        if (semGrades && semGrades.length > 0) {
+          const bySem: Record<string, { name: string; startDate: string; grades: Record<string, number | null>; behavior: string | null }> = {}
+          semGrades.forEach((sg: any) => {
+            const semName = sg.semesters?.name || 'Unknown'
+            const startDate = sg.semesters?.start_date || '9999-12-31'
+            const semId = sg.semester_id
+            if (!bySem[semId]) bySem[semId] = { name: semName, startDate, grades: {}, behavior: null }
+            if (sg.domain === 'overall') {
+              bySem[semId].behavior = sg.behavior_grade
+            } else {
+              bySem[semId].grades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? sg.score ?? null
+            }
           })
-        setSemesterHistory(history.map(({ startDate, ...rest }) => rest))
-      }
-
-      // 2. Load individual assessment grades (existing logic)
-      const { data: grades } = await supabase.from('grades').select('score, assessment_id, assessments(name, domain, max_score, date)').eq('student_id', studentId).not('score', 'is', null)
-      if (!grades || grades.length === 0) { setLoading(false); return }
-
-      const byDomain: Record<string, { name: string; score: number; max: number; pct: number; date: string | null; assessmentId: string }[]> = {}
-      for (const g of grades) {
-        const a = (g as any).assessments
-        if (!a) continue
-        if (!byDomain[a.domain]) byDomain[a.domain] = []
-        byDomain[a.domain].push({ name: a.name, score: g.score, max: a.max_score, pct: a.max_score > 0 ? (g.score / a.max_score) * 100 : 0, date: a.date, assessmentId: g.assessment_id })
-      }
-
-      const allIds = grades.map(g => g.assessment_id)
-      const { data: allGrades } = await supabase.from('grades').select('assessment_id, score').in('assessment_id', allIds).not('score', 'is', null)
-      const avgMap: Record<string, number> = {}
-      if (allGrades) {
-        const grouped: Record<string, number[]> = {}
-        allGrades.forEach(g => { if (!grouped[g.assessment_id]) grouped[g.assessment_id] = []; grouped[g.assessment_id].push(g.score) })
-        for (const [id, scores] of Object.entries(grouped)) {
-          avgMap[id] = scores.reduce((a, b) => a + b, 0) / scores.length
+          const history = Object.values(bySem)
+            .filter(s => DOMAINS.some(d => s.grades[d] != null))
+            .sort((a, b) => {
+              const aIsFall = a.name.toLowerCase().includes('fall')
+              const bIsFall = b.name.toLowerCase().includes('fall')
+              if (aIsFall && !bIsFall) return -1
+              if (!aIsFall && bIsFall) return 1
+              return a.startDate.localeCompare(b.startDate)
+            })
+          setSemesterHistory(history.map(({ startDate, ...rest }) => rest))
         }
-      }
 
-      const result = Object.entries(byDomain).map(([domain, items]) => ({
-        domain,
-        assessments: items.map(item => ({
-          ...item,
-          classAvg: avgMap[item.assessmentId] != null && item.max > 0 ? (avgMap[item.assessmentId] / item.max) * 100 : null
-        })).sort((a, b) => {
-          // Sort oldest first (ascending by date)
-          if (a.date && b.date) return a.date.localeCompare(b.date)
-          if (a.date) return -1
-          if (b.date) return 1
-          return 0
-        })
-      }))
-      setData(result); setLoading(false)
+        // 2. Load individual assessment grades
+        const { data: grades } = await supabase.from('grades').select('score, assessment_id, assessments(name, domain, max_score, date)').eq('student_id', studentId).not('score', 'is', null)
+        if (!grades || grades.length === 0) return
+
+        const byDomain: Record<string, { name: string; score: number; max: number; pct: number; date: string | null; assessmentId: string }[]> = {}
+        for (const g of grades) {
+          const a = (g as any).assessments
+          if (!a) continue
+          if (!byDomain[a.domain]) byDomain[a.domain] = []
+          byDomain[a.domain].push({ name: a.name, score: g.score, max: a.max_score, pct: a.max_score > 0 ? (g.score / a.max_score) * 100 : 0, date: a.date, assessmentId: g.assessment_id })
+        }
+
+        const allIds = grades.map(g => g.assessment_id)
+        const { data: allGrades } = await supabase.from('grades').select('assessment_id, score').in('assessment_id', allIds).not('score', 'is', null)
+        const avgMap: Record<string, number> = {}
+        if (allGrades) {
+          const grouped: Record<string, number[]> = {}
+          allGrades.forEach(g => { if (!grouped[g.assessment_id]) grouped[g.assessment_id] = []; grouped[g.assessment_id].push(g.score) })
+          for (const [id, scores] of Object.entries(grouped)) {
+            avgMap[id] = scores.reduce((a, b) => a + b, 0) / scores.length
+          }
+        }
+
+        const result = Object.entries(byDomain).map(([domain, items]) => ({
+          domain,
+          assessments: items.map(item => ({
+            ...item,
+            classAvg: avgMap[item.assessmentId] != null && item.max > 0 ? (avgMap[item.assessmentId] / item.max) * 100 : null
+          })).sort((a, b) => {
+            if (a.date && b.date) return a.date.localeCompare(b.date)
+            if (a.date) return -1
+            if (b.date) return 1
+            return 0
+          })
+        }))
+        setData(result)
+      } catch (err) {
+        console.error('Academic history load error:', err)
+      } finally {
+        setLoading(false)
+      }
     })()
   }, [studentId])
 
@@ -1855,8 +1859,8 @@ function StudentGroupsTab({ studentId, studentName }: { studentId: string; stude
 
   if (loading) return <div className="flex justify-center py-8"><Loader2 size={16} className="animate-spin text-navy" /></div>
 
-  const typeColors: Record<string, string> = { skill: 'bg-blue-100 text-blue-700', fluency: 'bg-green-100 text-green-700', litCircle: 'bg-purple-100 text-purple-700', partner: 'bg-amber-100 text-amber-700', custom: 'bg-gray-100 text-gray-700' }
-  const typeLabels: Record<string, string> = { skill: 'Skill Group', fluency: 'Reading Group', litCircle: 'Lit Circle', partner: 'Partner Pair', custom: 'Custom' }
+  const typeColors: Record<string, string> = { reading: 'bg-blue-100 text-blue-700', writing: 'bg-amber-100 text-amber-700', skill: 'bg-green-100 text-green-700', custom: 'bg-purple-100 text-purple-700', fluency: 'bg-blue-100 text-blue-700', litCircle: 'bg-purple-100 text-purple-700', partner: 'bg-purple-100 text-purple-700' }
+  const typeLabels: Record<string, string> = { reading: 'Reading', writing: 'Writing', skill: 'Skill', custom: 'Custom', fluency: 'Reading', litCircle: 'Custom', partner: 'Custom' }
 
   return (
     <div className="space-y-3">

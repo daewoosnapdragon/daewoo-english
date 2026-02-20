@@ -5,10 +5,10 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Users, Target, BookOpen, UserPlus, Plus, X, Trash2, Printer, ChevronDown, ChevronRight, AlertTriangle, Check, Loader2, RefreshCw, Pencil, Save, Archive, RotateCcw, Ban, ClipboardList, Zap, Calendar, Filter, Eye, EyeOff, GripVertical, ListChecks, Star } from 'lucide-react'
+import { Users, Target, BookOpen, Plus, X, Trash2, Printer, AlertTriangle, Check, Loader2, RefreshCw, Pencil, Save, Archive, RotateCcw, Ban, Zap, Eye, EyeOff, PenTool, Layers } from 'lucide-react'
 
-type GroupType = 'skill' | 'fluency' | 'litCircle' | 'partner' | 'custom'
-type SubView = 'overview' | 'skill' | 'fluency' | 'litCircle' | 'partner' | 'exclusions'
+type GroupType = 'reading' | 'writing' | 'skill' | 'custom'
+type SubView = 'overview' | 'reading' | 'writing' | 'skill' | 'custom' | 'exclusions'
 
 interface StudentBasic { id: string; english_name: string; korean_name: string; english_class: string; grade: number; photo_url?: string }
 interface Group {
@@ -21,15 +21,14 @@ interface Group {
 }
 interface Exclusion { id: string; student_a: string; student_b: string; english_class: string; reason?: string }
 
-const LIT_CIRCLE_ROLES = [
-  { name: 'Discussion Director', emoji: '', description: 'Creates discussion questions for the group. Keeps the conversation going and makes sure everyone participates.' },
-  { name: 'Summarizer', emoji: '', description: 'Summarizes the key events, main ideas, or important parts of the reading. Gives a brief recap to start the discussion.' },
-  { name: 'Word Wizard', emoji: '', description: 'Finds interesting, important, or unfamiliar words from the reading. Shares definitions and discusses why the author chose those words.' },
-  { name: 'Connector', emoji: '', description: 'Makes connections between the reading and real life, other books, or things happening in the world. Shares "This reminds me of..."' },
-  { name: 'Illustrator', emoji: '', description: 'Draws a picture, diagram, or comic related to the reading. Uses the illustration to explain a key scene or idea to the group.' },
-  { name: 'Passage Picker', emoji: '', description: 'Chooses important, interesting, or confusing passages to read aloud. Explains why each passage was chosen and leads discussion about it.' },
-]
-
+// CWPM benchmarks by grade (NAEP-aligned, mid-year)
+const CWPM_BENCHMARKS: Record<number, { wellBelow: number; below: number; at: number }> = {
+  1: { wellBelow: 20, below: 40, at: 60 },
+  2: { wellBelow: 50, below: 70, at: 90 },
+  3: { wellBelow: 70, below: 90, at: 110 },
+  4: { wellBelow: 90, below: 110, at: 130 },
+  5: { wellBelow: 100, below: 120, at: 140 },
+}
 
 export default function GroupsView() {
   const { currentTeacher, lang, showToast } = useApp()
@@ -44,6 +43,8 @@ export default function GroupsView() {
   const [loading, setLoading] = useState(true)
   const [showArchived, setShowArchived] = useState(false)
   const [studentScores, setStudentScores] = useState<Record<string, Record<string, number>>>({})
+  const [studentCWPM, setStudentCWPM] = useState<Record<string, { cwpm: number; accuracy: number; date: string }>>({})
+  const [studentWIDA, setStudentWIDA] = useState<Record<string, number>>({})
 
   const availableGrades = useMemo(() => Array.from(new Set(students.map(s => s.grade))).sort(), [students])
 
@@ -57,21 +58,28 @@ export default function GroupsView() {
   useEffect(() => {
     (async () => {
       setLoading(true)
-      // Load students
       const { data: studs } = await supabase.from('students').select('id, english_name, korean_name, english_class, grade, photo_url').eq('english_class', selectedClass).eq('is_active', true).order('english_name')
       setStudents(studs || [])
 
-      // Load groups (handle missing columns gracefully)
+      // Groups — handle old type values by mapping them
       const { data: grps, error: grpsErr } = await supabase.from('student_groups').select('*').eq('english_class', selectedClass).order('created_at', { ascending: false })
-      if (!grpsErr) setGroups((grps || []).map((g: any) => ({ ...g, students: g.student_ids || [], tasks: g.tasks || [] })))
+      if (!grpsErr) {
+        const typeMap: Record<string, GroupType> = { fluency: 'reading', litCircle: 'custom', partner: 'custom' }
+        setGroups((grps || []).map((g: any) => ({
+          ...g,
+          type: typeMap[g.type] || g.type,
+          students: g.student_ids || [],
+          tasks: g.tasks || [],
+        })))
+      }
 
-      // Load exclusions (table might not exist if migration not run)
+      // Exclusions
       try {
         const { data: excl, error: exclErr } = await supabase.from('student_exclusions').select('*').eq('english_class', selectedClass)
         if (!exclErr && excl) setExclusions(excl)
-      } catch { /* table doesn't exist yet */ }
+      } catch { /* table might not exist */ }
 
-      // Load scores for auto-suggest
+      // Domain scores for skill + writing groups
       try {
         const { data: scoreData } = await supabase.from('grades').select('student_id, score, assessments!inner(domain, max_score)').eq('assessments.english_class', selectedClass).not('score', 'is', null)
         const scoreMap: Record<string, Record<string, { total: number; count: number }>> = {}
@@ -89,7 +97,27 @@ export default function GroupsView() {
           Object.entries(domains).forEach(([d, v]) => { avgMap[sid][d] = Math.round(v.total / v.count) })
         })
         setStudentScores(avgMap)
-      } catch { /* grades join might fail */ }
+      } catch { }
+
+      // CWPM data for reading groups — latest per student
+      try {
+        const { data: readingData } = await supabase.from('reading_assessments').select('student_id, cwpm, accuracy_rate, date').order('date', { ascending: false })
+        const cwpmMap: Record<string, { cwpm: number; accuracy: number; date: string }> = {}
+        ;(readingData || []).forEach((r: any) => {
+          if (!cwpmMap[r.student_id] && r.cwpm != null) {
+            cwpmMap[r.student_id] = { cwpm: r.cwpm, accuracy: r.accuracy_rate || 0, date: r.date }
+          }
+        })
+        setStudentCWPM(cwpmMap)
+      } catch { }
+
+      // WIDA levels
+      try {
+        const { data: widaData } = await supabase.from('wida_profiles').select('student_id, overall_level')
+        const widaMap: Record<string, number> = {}
+        ;(widaData || []).forEach((w: any) => { if (w.overall_level > 0) widaMap[w.student_id] = w.overall_level })
+        setStudentWIDA(widaMap)
+      } catch { }
 
       setLoading(false)
     })()
@@ -114,13 +142,14 @@ export default function GroupsView() {
 
   const TABS: { id: SubView; icon: any; label: string; count?: number }[] = [
     { id: 'overview', icon: Users, label: 'Overview' },
-    { id: 'skill', icon: Target, label: 'Skill Groups', count: classCounts.skill || 0 },
-    { id: 'fluency', icon: BookOpen, label: 'Reading Groups', count: classCounts.fluency || 0 },
-    { id: 'litCircle', icon: Star, label: 'Lit Circles', count: classCounts.litCircle || 0 },
-    { id: 'partner', icon: UserPlus, label: 'Partners', count: classCounts.partner || 0 },
+    { id: 'reading', icon: BookOpen, label: 'Reading', count: classCounts.reading || 0 },
+    { id: 'writing', icon: PenTool, label: 'Writing', count: classCounts.writing || 0 },
+    { id: 'skill', icon: Target, label: 'Skill', count: classCounts.skill || 0 },
+    { id: 'custom', icon: Layers, label: 'Custom', count: classCounts.custom || 0 },
     { id: 'exclusions', icon: Ban, label: 'Exclusions', count: exclusions.length },
   ]
 
+  // ─── CRUD ───────────────────────────────────────────────────────
   const saveGroup = async (group: Group) => {
     const payload = {
       name: group.name, type: group.type, english_class: selectedClass, grade: selectedGrade,
@@ -133,11 +162,11 @@ export default function GroupsView() {
     }
     if (group.id.startsWith('new-')) {
       const { data, error } = await supabase.from('student_groups').insert(payload).select().single()
-      if (error) { showToast(`Error: ${error.message}`); return null }
+      if (error) { showToast('Error: ' + error.message); return null }
       return { ...data, students: data.student_ids || [], tasks: data.tasks || [] }
     } else {
       const { data, error } = await supabase.from('student_groups').update(payload).eq('id', group.id).select().single()
-      if (error) { showToast(`Error: ${error.message}`); return null }
+      if (error) { showToast('Error: ' + error.message); return null }
       return { ...data, students: data.student_ids || [], tasks: data.tasks || [] }
     }
   }
@@ -161,333 +190,516 @@ export default function GroupsView() {
     showToast('Group restored')
   }
 
-  const autoSuggestGroups = useCallback((type: 'skill' | 'fluency') => {
-    const gStudents = gradeStudents
-    if (gStudents.length === 0) return
-    if (type === 'skill') {
-      const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
-      const byWeakest: Record<string, StudentBasic[]> = {}
-      gStudents.forEach(s => {
-        const scores = studentScores[s.id]
-        if (!scores || Object.keys(scores).length === 0) { if (!byWeakest['unassessed']) byWeakest['unassessed'] = []; byWeakest['unassessed'].push(s); return }
-        let weakest = ''; let lowest = 101
-        domains.forEach(d => { if (scores[d] != null && scores[d] < lowest) { lowest = scores[d]; weakest = d } })
-        if (weakest) { if (!byWeakest[weakest]) byWeakest[weakest] = []; byWeakest[weakest].push(s) }
-      })
-      const labels: Record<string, string> = { reading: 'Reading Support', phonics: 'Phonics Support', writing: 'Writing Support', speaking: 'Speaking Support', language: 'Language Support' }
-      const newGroups: Group[] = []
-      Object.entries(byWeakest).forEach(([domain, studs]) => {
-        if (studs.length === 0) return
-        newGroups.push({ id: `new-${Date.now()}-${domain}`, name: domain === 'unassessed' ? 'Needs Assessment' : labels[domain] || `${domain} Group`, type: 'skill', english_class: selectedClass, grade: selectedGrade || undefined, focus: domain === 'unassessed' ? 'Students without enough data' : `Weakest domain: ${domain}`, students: studs.map(s => s.id), suggested_by: 'auto', tasks: [] })
-      })
-      setGroups(prev => [...newGroups, ...prev]); showToast(`${newGroups.length} skill groups suggested`)
-    } else {
-      const tiers: Record<string, StudentBasic[]> = { high: [], mid: [], low: [], unassessed: [] }
-      gStudents.forEach(s => {
-        const scores = studentScores[s.id]
-        if (!scores || Object.keys(scores).length === 0) { tiers.unassessed.push(s); return }
-        const avg = (Object.values(scores) as number[]).reduce((a: number, b: number) => a + b, 0) / Object.values(scores).length
-        if (avg >= 80) tiers.high.push(s); else if (avg >= 60) tiers.mid.push(s); else tiers.low.push(s)
-      })
-      const tierLabels: Record<string, { name: string; focus: string }> = {
-        high: { name: 'Above Grade Level', focus: 'Enrichment and extension activities' },
-        mid: { name: 'On Grade Level', focus: 'Core instruction with grade-level materials' },
-        low: { name: 'Approaching Grade Level', focus: 'Additional support and scaffolded instruction' },
-        unassessed: { name: 'Needs Assessment', focus: 'Students without enough data' },
-      }
-      const newGroups: Group[] = []
-      Object.entries(tiers).forEach(([tier, studs]) => {
-        if (studs.length === 0) return
-        newGroups.push({ id: `new-${Date.now()}-${tier}`, name: tierLabels[tier].name, type: 'fluency', english_class: selectedClass, grade: selectedGrade || undefined, focus: tierLabels[tier].focus, students: studs.map(s => s.id), suggested_by: 'auto', tasks: [] })
-      })
-      setGroups(prev => [...newGroups, ...prev]); showToast(`${newGroups.length} reading groups suggested`)
+  // ─── AUTO-SUGGEST ──────────────────────────────────────────────
+  const autoSuggestReading = useCallback(() => {
+    const gs = gradeStudents
+    if (gs.length === 0) return
+    const grade = selectedGrade || 3
+    const bench = CWPM_BENCHMARKS[grade] || CWPM_BENCHMARKS[3]
+    const tiers: Record<string, StudentBasic[]> = { above: [], at: [], below: [], wellBelow: [], noData: [] }
+    gs.forEach(s => {
+      const data = studentCWPM[s.id]
+      if (!data) { tiers.noData.push(s); return }
+      if (data.cwpm >= bench.at) tiers.above.push(s)
+      else if (data.cwpm >= bench.below) tiers.at.push(s)
+      else if (data.cwpm >= bench.wellBelow) tiers.below.push(s)
+      else tiers.wellBelow.push(s)
+    })
+    const tierInfo: Record<string, { name: string; focus: string }> = {
+      above: { name: 'Above Benchmark', focus: 'CWPM >=' + bench.at + ' — Enrichment, complex texts, deeper comprehension' },
+      at: { name: 'At Benchmark', focus: 'CWPM ' + bench.below + '-' + (bench.at - 1) + ' — Grade-level guided reading' },
+      below: { name: 'Below Benchmark', focus: 'CWPM ' + bench.wellBelow + '-' + (bench.below - 1) + ' — Targeted fluency practice, repeated reading' },
+      wellBelow: { name: 'Well Below Benchmark', focus: 'CWPM <' + bench.wellBelow + ' — Intensive intervention, decodable texts' },
+      noData: { name: 'Needs ORF Assessment', focus: 'No fluency data — administer a 1-minute oral reading fluency check' },
     }
-  }, [gradeStudents, studentScores, selectedClass, selectedGrade, showToast])
+    const newGroups: Group[] = []
+    Object.entries(tiers).forEach(([tier, studs]) => {
+      if (studs.length === 0) return
+      newGroups.push({ id: 'new-' + Date.now() + '-' + tier, name: tierInfo[tier].name, type: 'reading', english_class: selectedClass, grade: selectedGrade || undefined, focus: tierInfo[tier].focus, students: studs.map(s => s.id), suggested_by: 'auto', tasks: [] })
+    })
+    setGroups(prev => [...newGroups, ...prev])
+    showToast(newGroups.length + ' reading groups suggested from CWPM data')
+  }, [gradeStudents, selectedClass, selectedGrade, studentCWPM])
 
-  const refreshGroups = async (type: 'skill' | 'fluency') => {
-    const existing = filteredGroups.filter(g => g.type === type && !g.is_archived)
-    if (existing.length > 0 && !confirm(`Archive ${existing.length} current ${type} group(s) and re-suggest from latest data?`)) return
-    for (const g of existing) { if (!g.id.startsWith('new-')) await archiveGroup(g.id) }
+  const autoSuggestWriting = useCallback(() => {
+    const gs = gradeStudents
+    if (gs.length === 0) return
+    const tiers: Record<string, StudentBasic[]> = { above: [], on: [], approaching: [], below: [], noData: [] }
+    gs.forEach(s => {
+      const scores = studentScores[s.id]
+      const writingPct = scores?.writing
+      if (writingPct == null) { tiers.noData.push(s); return }
+      if (writingPct >= 86) tiers.above.push(s)
+      else if (writingPct >= 71) tiers.on.push(s)
+      else if (writingPct >= 61) tiers.approaching.push(s)
+      else tiers.below.push(s)
+    })
+    const tierInfo: Record<string, { name: string; focus: string }> = {
+      above: { name: 'Advanced Writers', focus: 'Above Standard (86%+) — Voice, revision, mentor text analysis' },
+      on: { name: 'On-Level Writers', focus: 'On Standard (71-85%) — Organization, elaboration, conventions' },
+      approaching: { name: 'Developing Writers', focus: 'Approaching (61-70%) — Sentence structure, paragraph building' },
+      below: { name: 'Beginning Writers', focus: 'Below Standard (0-60%) — Sentence formation, spelling patterns, idea generation' },
+      noData: { name: 'Needs Writing Assessment', focus: 'No writing scores — assign a writing task to assess' },
+    }
+    const newGroups: Group[] = []
+    Object.entries(tiers).forEach(([tier, studs]) => {
+      if (studs.length === 0) return
+      newGroups.push({ id: 'new-' + Date.now() + '-' + tier, name: tierInfo[tier].name, type: 'writing', english_class: selectedClass, grade: selectedGrade || undefined, focus: tierInfo[tier].focus, students: studs.map(s => s.id), suggested_by: 'auto', tasks: [] })
+    })
+    setGroups(prev => [...newGroups, ...prev])
+    showToast(newGroups.length + ' writing groups suggested')
+  }, [gradeStudents, selectedClass, selectedGrade, studentScores])
+
+  const autoSuggestSkill = useCallback(() => {
+    const gs = gradeStudents
+    if (gs.length === 0) return
+    const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
+    const byWeakest: Record<string, StudentBasic[]> = {}
+    gs.forEach(s => {
+      const scores = studentScores[s.id]
+      if (!scores || Object.keys(scores).length === 0) { if (!byWeakest['unassessed']) byWeakest['unassessed'] = []; byWeakest['unassessed'].push(s); return }
+      let weakest = ''; let lowest = 101
+      domains.forEach(d => { if (scores[d] != null && scores[d] < lowest) { lowest = scores[d]; weakest = d } })
+      if (weakest) { if (!byWeakest[weakest]) byWeakest[weakest] = []; byWeakest[weakest].push(s) }
+    })
+    const labels: Record<string, string> = { reading: 'Reading Support', phonics: 'Phonics Support', writing: 'Writing Support', speaking: 'Speaking Support', language: 'Language Support' }
+    const newGroups: Group[] = []
+    Object.entries(byWeakest).forEach(([domain, studs]) => {
+      if (studs.length === 0) return
+      newGroups.push({ id: 'new-' + Date.now() + '-' + domain, name: domain === 'unassessed' ? 'Needs Assessment' : labels[domain] || domain + ' Group', type: 'skill', english_class: selectedClass, grade: selectedGrade || undefined, focus: domain === 'unassessed' ? 'No assessment data yet' : 'Weakest domain: ' + domain, students: studs.map(s => s.id), suggested_by: 'auto', tasks: [] })
+    })
+    setGroups(prev => [...newGroups, ...prev])
+    showToast(newGroups.length + ' skill groups suggested')
+  }, [gradeStudents, selectedClass, selectedGrade, studentScores])
+
+  const refreshGroups = async (type: GroupType) => {
+    const toArchive = groups.filter(g => g.type === type && !g.is_archived && !g.id.startsWith('new-'))
+    if (toArchive.length > 0 && !confirm('Archive ' + toArchive.length + ' existing ' + type + ' group(s) and regenerate?')) return
+    for (const g of toArchive) await archiveGroup(g.id)
     setGroups(prev => prev.filter(g => !(g.type === type && g.id.startsWith('new-'))))
-    setTimeout(() => autoSuggestGroups(type), 300)
+    if (type === 'reading') autoSuggestReading()
+    else if (type === 'writing') autoSuggestWriting()
+    else if (type === 'skill') autoSuggestSkill()
   }
 
-  return (
-    <div className="flex-1 overflow-y-auto bg-background">
-      <div className="px-10 pt-8 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-[22px] font-bold text-navy">Student Groups</h1>
-            <p className="text-[12px] text-text-secondary mt-0.5">Organize students for targeted instruction, literature circles, and partner work</p>
-          </div>
-          <button onClick={() => setShowArchived(!showArchived)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${showArchived ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
-            <Archive size={13} /> {showArchived ? 'Viewing Archived' : 'Show Archived'}
-          </button>
+  // ─── WIDA Badge ───────────────────────────────────────────────
+  const WidaBadge = ({ studentId }: { studentId: string }) => {
+    const level = studentWIDA[studentId]
+    if (!level) return null
+    const colors = ['', 'bg-red-100 text-red-700', 'bg-orange-100 text-orange-700', 'bg-amber-100 text-amber-700', 'bg-green-100 text-green-700', 'bg-blue-100 text-blue-700', 'bg-purple-100 text-purple-700']
+    return <span className={`text-[7px] font-bold px-1 py-0.5 rounded ${colors[level] || 'bg-gray-100'}`} title={'WIDA Level ' + level}>W{level}</span>
+  }
+
+  // ─── SHARED GROUP MANAGER ─────────────────────────────────────
+  function GroupManager({ type, autoSuggest, infoText, extraStudentInfo }: {
+    type: GroupType; autoSuggest?: () => void; infoText: string
+    extraStudentInfo?: (sid: string) => string
+  }) {
+    const typeGroups = filteredGroups.filter(g => g.type === type)
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [saving, setSaving] = useState(false)
+
+    const toggleStudent = (gid: string, sid: string) => setGroups(prev => prev.map(g => g.id !== gid ? g : { ...g, students: g.students.includes(sid) ? g.students.filter(s => s !== sid) : [...g.students, sid] }))
+
+    const getWarnings = (group: Group) => {
+      const w: string[] = []
+      exclusions.forEach(ex => {
+        if (group.students.includes(ex.student_a) && group.students.includes(ex.student_b)) {
+          const a = students.find(s => s.id === ex.student_a)
+          const b = students.find(s => s.id === ex.student_b)
+          if (a && b) w.push(a.english_name + ' & ' + b.english_name)
+        }
+      })
+      return w
+    }
+
+    const handleSave = async (group: Group) => {
+      setSaving(true)
+      const saved = await saveGroup(group)
+      if (saved) {
+        setGroups(prev => prev.map(g => g.id === group.id ? saved : g))
+        setEditingId(null)
+        showToast('Group saved')
+      }
+      setSaving(false)
+    }
+
+    const handlePrint = (group: Group) => {
+      const members = group.students.map(sid => students.find(s => s.id === sid)).filter(Boolean)
+      const w = window.open('', '_blank')
+      if (!w) return
+      w.document.write('<html><head><title>' + group.name + '</title><style>body{font-family:sans-serif;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px;text-align:left;font-size:13px}th{background:#f5f5f5}h2{margin:0 0 4px}p{margin:0 0 12px;color:#666;font-size:12px}</style></head><body>')
+      w.document.write('<h2>' + group.name + '</h2><p>' + (group.focus || '') + '</p>')
+      if (group.notes) w.document.write('<p><em>' + group.notes + '</em></p>')
+      w.document.write('<table><tr><th>#</th><th>English Name</th><th>Korean Name</th><th>WIDA</th>')
+      if (type === 'reading') w.document.write('<th>CWPM</th>')
+      if (type === 'writing') w.document.write('<th>Writing %</th>')
+      w.document.write('</tr>')
+      members.forEach((s: any, i) => {
+        const wida = studentWIDA[s.id]
+        let extra = ''
+        if (type === 'reading') { const d = studentCWPM[s.id]; extra = '<td>' + (d ? d.cwpm + ' wpm' : '--') + '</td>' }
+        if (type === 'writing') { const sc = studentScores[s.id]; extra = '<td>' + (sc?.writing != null ? sc.writing + '%' : '--') + '</td>' }
+        w.document.write('<tr><td>' + (i + 1) + '</td><td>' + s.english_name + '</td><td>' + s.korean_name + '</td><td>' + (wida ? 'Level ' + wida : '--') + '</td>' + extra + '</tr>')
+      })
+      w.document.write('</table></body></html>')
+      w.document.close()
+      w.print()
+    }
+
+    return (
+      <div className="space-y-3">
+        {/* Header buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {!showArchived && autoSuggest && (
+            <>
+              <button onClick={() => autoSuggest()} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100">
+                <Zap size={12} /> Auto-Suggest
+              </button>
+              <button onClick={() => refreshGroups(type)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+                <RefreshCw size={12} /> Refresh
+              </button>
+            </>
+          )}
+          {!showArchived && (
+            <button onClick={() => {
+              const newG: Group = { id: 'new-' + Date.now(), name: '', type, english_class: selectedClass, grade: selectedGrade || undefined, students: [], tasks: [] }
+              setGroups(prev => [newG, ...prev])
+              setEditingId(newG.id)
+            }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+              <Plus size={12} /> New Group
+            </button>
+          )}
         </div>
 
-        {isAdmin && (
-          <div className="flex items-center gap-1 mb-3">
-            <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mr-2">Class</span>
-            {ENGLISH_CLASSES.map(c => (
-              <button key={c} onClick={() => { setSelectedClass(c); setSelectedGrade(null) }}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${selectedClass === c ? `${classToColor(c)} ${classToTextColor(c)} shadow-sm` : 'text-text-secondary hover:bg-surface-alt'}`}>
-                {c}
-              </button>
-            ))}
+        {/* Info */}
+        <div className="bg-surface-alt/50 border border-border/50 rounded-lg px-3 py-2 text-[10px] text-text-tertiary">{infoText}</div>
+
+        {/* Groups list */}
+        {typeGroups.length === 0 && <p className="text-center text-text-tertiary text-[12px] py-8">No {type} groups yet. {autoSuggest ? 'Click Auto-Suggest to generate from data.' : 'Click New Group to create one.'}</p>}
+
+        {typeGroups.map(group => {
+          const isEditing = editingId === group.id
+          const warnings = getWarnings(group)
+          const isNew = group.id.startsWith('new-')
+          const isArchived = group.is_archived
+
+          return (
+            <div key={group.id} className={'bg-surface border rounded-xl overflow-hidden transition-all ' + (isArchived ? 'border-amber-200 bg-amber-50/30' : warnings.length > 0 ? 'border-red-200' : 'border-border')}>
+              {/* Header */}
+              <div className="px-4 py-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  {isEditing ? (
+                    <input value={group.name} onChange={e => setGroups(prev => prev.map(g => g.id === group.id ? { ...g, name: e.target.value } : g))}
+                      className="text-[13px] font-bold text-navy border-b border-navy/30 outline-none bg-transparent w-full" placeholder="Group name..." autoFocus />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[13px] font-bold text-navy truncate">{group.name || 'Untitled'}</h3>
+                      {group.suggested_by === 'auto' && <span className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full bg-cyan-100 text-cyan-700">AUTO</span>}
+                      {isArchived && <span className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">ARCHIVED</span>}
+                    </div>
+                  )}
+                  {group.focus && !isEditing && <p className="text-[10px] text-text-tertiary mt-0.5 truncate">{group.focus}</p>}
+                </div>
+                <span className="text-[10px] text-text-tertiary">{group.students.length} students</span>
+                <div className="flex items-center gap-1">
+                  {!isArchived && !isEditing && <button onClick={() => setEditingId(group.id)} className="p-1.5 rounded-lg hover:bg-surface-alt" title="Edit"><Pencil size={13} className="text-text-tertiary" /></button>}
+                  {!isArchived && <button onClick={() => handlePrint(group)} className="p-1.5 rounded-lg hover:bg-surface-alt" title="Print"><Printer size={13} className="text-text-tertiary" /></button>}
+                  {!isArchived && !isNew && <button onClick={() => archiveGroup(group.id)} className="p-1.5 rounded-lg hover:bg-surface-alt" title="Archive"><Archive size={13} className="text-text-tertiary" /></button>}
+                  {isArchived && <button onClick={() => restoreGroup(group.id)} className="p-1.5 rounded-lg hover:bg-green-50" title="Restore"><RotateCcw size={13} className="text-green-600" /></button>}
+                  {(isNew || isArchived) && <button onClick={() => deleteGroup(group.id)} className="p-1.5 rounded-lg hover:bg-red-50" title="Delete"><Trash2 size={13} className="text-red-400" /></button>}
+                  {isEditing && (
+                    <>
+                      <button onClick={() => { if (isNew) deleteGroup(group.id); setEditingId(null) }} className="p-1.5 rounded-lg hover:bg-surface-alt" title="Cancel"><X size={13} className="text-text-tertiary" /></button>
+                      <button onClick={() => handleSave(group)} disabled={saving} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-navy text-white hover:opacity-90 disabled:opacity-50">
+                        <Save size={12} className="inline mr-1" />{saving ? '...' : 'Save'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Exclusion warnings */}
+              {warnings.length > 0 && (
+                <div className="px-4 py-1.5 bg-red-50 border-t border-red-200 text-[10px] text-red-700 flex items-center gap-1.5">
+                  <Ban size={11} /> Exclusion conflict: {warnings.join(', ')}
+                </div>
+              )}
+
+              {/* Edit panel */}
+              {isEditing && (
+                <div className="px-4 py-3 border-t border-border space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-[9px] uppercase text-text-tertiary font-semibold">Focus</label>
+                      <input value={group.focus || ''} onChange={e => setGroups(prev => prev.map(g => g.id === group.id ? { ...g, focus: e.target.value } : g))}
+                        className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none" placeholder="Group purpose..." /></div>
+                    <div><label className="text-[9px] uppercase text-text-tertiary font-semibold">Book / Material</label>
+                      <input value={group.book || ''} onChange={e => setGroups(prev => prev.map(g => g.id === group.id ? { ...g, book: e.target.value } : g))}
+                        className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none" placeholder="Optional..." /></div>
+                  </div>
+                  <div><label className="text-[9px] uppercase text-text-tertiary font-semibold">Notes</label>
+                    <textarea value={group.notes || ''} onChange={e => setGroups(prev => prev.map(g => g.id === group.id ? { ...g, notes: e.target.value } : g))}
+                      className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none h-16 resize-none" placeholder="Teaching notes..." /></textarea></div>
+
+                  <div><label className="text-[9px] uppercase text-text-tertiary font-semibold mb-1 block">Select Students</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                      {gradeStudents.map(s => {
+                        const inGroup = group.students.includes(s.id)
+                        const extra = extraStudentInfo?.(s.id) || ''
+                        return (
+                          <button key={s.id} onClick={() => toggleStudent(group.id, s.id)}
+                            className={'flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] text-left transition-all border ' + (inGroup ? 'bg-navy/10 text-navy border-navy/20' : 'bg-surface-alt/50 text-text-secondary hover:bg-surface-alt border-transparent')}>
+                            <span className={'w-4 h-4 rounded flex items-center justify-center shrink-0 ' + (inGroup ? 'bg-navy text-white' : 'border border-border')}>{inGroup && <Check size={10} />}</span>
+                            <span className="truncate font-medium">{s.english_name}</span>
+                            <WidaBadge studentId={s.id} />
+                            {extra && <span className="text-[8px] text-text-tertiary ml-auto shrink-0">{extra}</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Tasks */}
+                  <div>
+                    <label className="text-[9px] uppercase text-text-tertiary font-semibold mb-1 block">Tasks</label>
+                    {(group.tasks || []).map((t, i) => (
+                      <div key={i} className="flex items-center gap-2 mb-1">
+                        <button onClick={() => setGroups(prev => prev.map(g => g.id !== group.id ? g : { ...g, tasks: g.tasks?.map((tt, j) => j === i ? { ...tt, done: !tt.done } : tt) }))}
+                          className={'w-4 h-4 rounded flex items-center justify-center shrink-0 ' + (t.done ? 'bg-green-500 text-white' : 'border border-border')}>{t.done && <Check size={10} />}</button>
+                        <span className={'text-[11px] flex-1 ' + (t.done ? 'line-through text-text-tertiary' : '')}>{t.text}</span>
+                        <button onClick={() => setGroups(prev => prev.map(g => g.id !== group.id ? g : { ...g, tasks: g.tasks?.filter((_, j) => j !== i) }))}
+                          className="p-0.5 rounded hover:bg-red-50"><X size={10} className="text-text-tertiary" /></button>
+                      </div>
+                    ))}
+                    <button onClick={() => {
+                      const text = prompt('Task:')
+                      if (text?.trim()) setGroups(prev => prev.map(g => g.id !== group.id ? g : { ...g, tasks: [...(g.tasks || []), { text: text.trim(), done: false, created_at: new Date().toISOString() }] }))
+                    }} className="text-[10px] text-navy hover:underline">+ Add task</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Read-only student pills */}
+              {!isEditing && group.students.length > 0 && (
+                <div className="px-4 py-2.5 border-t border-border/50 flex flex-wrap gap-1.5">
+                  {group.students.map(sid => students.find(st => st.id === sid)).filter(Boolean)
+                    .sort((a: any, b: any) => a.english_name.localeCompare(b.english_name))
+                    .map((s: any) => {
+                      const extra = extraStudentInfo?.(s.id) || ''
+                      return (
+                        <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium bg-surface-alt text-text-primary">
+                          {s.english_name} <WidaBadge studentId={s.id} />
+                          {extra && <span className="text-[8px] text-text-tertiary">{extra}</span>}
+                        </span>
+                      )
+                    })}
+                </div>
+              )}
+              {!isEditing && group.students.length === 0 && (
+                <div className="px-4 py-2 border-t border-border/50 text-[10px] text-text-tertiary italic">No students assigned</div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // ─── EXCLUSIONS MANAGER ───────────────────────────────────────
+  function ExclusionsManager() {
+    const [studentA, setStudentA] = useState('')
+    const [studentB, setStudentB] = useState('')
+    const [reason, setReason] = useState('')
+
+    const addExclusion = async () => {
+      if (!studentA || !studentB || studentA === studentB) return
+      const { data, error } = await supabase.from('student_exclusions').insert({ student_a: studentA, student_b: studentB, english_class: selectedClass, reason: reason || null }).select().single()
+      if (error) { showToast('Error: ' + error.message); return }
+      setExclusions(prev => [...prev, data])
+      setStudentA(''); setStudentB(''); setReason('')
+      showToast('Exclusion added')
+    }
+
+    const removeExclusion = async (id: string) => {
+      await supabase.from('student_exclusions').delete().eq('id', id)
+      setExclusions(prev => prev.filter(e => e.id !== id))
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
+          <h3 className="text-[12px] font-semibold text-navy">Add Exclusion</h3>
+          <p className="text-[10px] text-text-tertiary">Students who should not be placed in the same group. Warnings appear across all group types when conflicts are detected.</p>
+          <div className="grid grid-cols-3 gap-2">
+            <select value={studentA} onChange={e => setStudentA(e.target.value)} className="px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none">
+              <option value="">Student A...</option>
+              {students.map(s => <option key={s.id} value={s.id}>{s.english_name}</option>)}
+            </select>
+            <select value={studentB} onChange={e => setStudentB(e.target.value)} className="px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none">
+              <option value="">Student B...</option>
+              {students.filter(s => s.id !== studentA).map(s => <option key={s.id} value={s.id}>{s.english_name}</option>)}
+            </select>
+            <div className="flex gap-1">
+              <input value={reason} onChange={e => setReason(e.target.value)} placeholder="Reason (optional)" className="flex-1 px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none" />
+              <button onClick={addExclusion} disabled={!studentA || !studentB} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-navy text-white disabled:opacity-40">Add</button>
+            </div>
+          </div>
+        </div>
+        {exclusions.length === 0 && <p className="text-center text-text-tertiary text-[12px] py-6">No exclusions set.</p>}
+        {exclusions.length > 0 && (
+          <div className="space-y-1">
+            {exclusions.map(ex => {
+              const a = students.find(s => s.id === ex.student_a)
+              const b = students.find(s => s.id === ex.student_b)
+              return (
+                <div key={ex.id} className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  <Ban size={12} className="text-red-400 shrink-0" />
+                  <span className="text-[11px] font-medium text-red-800">{a?.english_name || '?'} & {b?.english_name || '?'}</span>
+                  {ex.reason && <span className="text-[10px] text-red-600 truncate">— {ex.reason}</span>}
+                  <button onClick={() => removeExclusion(ex.id)} className="ml-auto p-1 rounded hover:bg-red-100"><X size={12} className="text-red-400" /></button>
+                </div>
+              )
+            })}
           </div>
         )}
+      </div>
+    )
+  }
 
-        {availableGrades.length > 1 && (
-          <div className="flex items-center gap-1 mb-3">
-            <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mr-2">Grade</span>
-            {availableGrades.map(g => (
-              <button key={g} onClick={() => setSelectedGrade(g)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${selectedGrade === g ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'}`}>
-                Grade {g}
-              </button>
-            ))}
-          </div>
-        )}
+  // ─── OVERVIEW TAB ─────────────────────────────────────────────
+  function OverviewTab({ onNavigate }: { onNavigate: (v: SubView) => void }) {
+    const active = filteredGroups.filter(g => !g.is_archived)
+    const cards = [
+      { type: 'reading' as SubView, icon: BookOpen, label: 'Reading Groups', desc: 'CWPM fluency benchmarks', count: active.filter(g => g.type === 'reading').length, color: 'bg-blue-50 border-blue-200 text-blue-700' },
+      { type: 'writing' as SubView, icon: PenTool, label: 'Writing Groups', desc: 'Writing workshop levels', count: active.filter(g => g.type === 'writing').length, color: 'bg-amber-50 border-amber-200 text-amber-700' },
+      { type: 'skill' as SubView, icon: Target, label: 'Skill Groups', desc: 'Domain weakness targeting', count: active.filter(g => g.type === 'skill').length, color: 'bg-green-50 border-green-200 text-green-700' },
+      { type: 'custom' as SubView, icon: Layers, label: 'Custom Groups', desc: 'Centers, projects, pairs', count: active.filter(g => g.type === 'custom').length, color: 'bg-purple-50 border-purple-200 text-purple-700' },
+    ]
+    const ungrouped = gradeStudents.filter(s => !active.some(g => g.students.includes(s.id)))
 
-        <div className="flex items-center gap-1 border-b border-border pb-0">
-          {TABS.map(tab => (
-            <button key={tab.id} onClick={() => setSubView(tab.id)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-t-xl text-[12px] font-medium transition-all border-b-2 ${
-                subView === tab.id ? 'border-navy text-navy bg-surface' : 'border-transparent text-text-secondary hover:text-navy hover:bg-surface-alt/50'
-              }`}>
-              <tab.icon size={14} />
-              {tab.label}
-              {tab.count != null && tab.count > 0 && <span className="text-[9px] bg-navy/10 text-navy px-1.5 py-0.5 rounded-full ml-1">{tab.count}</span>}
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {cards.map(c => (
+            <button key={c.type} onClick={() => onNavigate(c.type)} className={'text-left border rounded-xl p-4 transition-all hover:shadow-sm ' + c.color}>
+              <c.icon size={20} className="mb-2 opacity-60" />
+              <p className="text-[13px] font-bold">{c.count}</p>
+              <p className="text-[11px] font-semibold">{c.label}</p>
+              <p className="text-[9px] opacity-70 mt-0.5">{c.desc}</p>
             </button>
           ))}
         </div>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 size={20} className="animate-spin text-navy" /></div>
-      ) : (
-        <div className="px-10 pb-10">
-          {subView === 'overview' && <OverviewTab students={gradeStudents} groups={filteredGroups} selectedGrade={selectedGrade} onNavigate={setSubView} />}
-          {(subView === 'skill' || subView === 'fluency') && <GroupManager type={subView as 'skill' | 'fluency'} students={gradeStudents} groups={filteredGroups.filter(g => g.type === subView)} studentScores={studentScores} exclusions={exclusions} setGroups={setGroups} onSave={saveGroup} onDelete={deleteGroup} onArchive={archiveGroup} onRestore={restoreGroup} selectedClass={selectedClass} selectedGrade={selectedGrade} showArchived={showArchived} onAutoSuggest={() => autoSuggestGroups(subView as any)} onRefresh={() => refreshGroups(subView as any)} allStudents={students} />}
-          {subView === 'litCircle' && <LitCircleManager students={gradeStudents} groups={filteredGroups.filter(g => g.type === 'litCircle')} setGroups={setGroups} onSave={saveGroup} onDelete={deleteGroup} onArchive={archiveGroup} onRestore={restoreGroup} showArchived={showArchived} />}
-          {subView === 'partner' && <PartnerManager students={gradeStudents} groups={filteredGroups.filter(g => g.type === 'partner')} exclusions={exclusions} setGroups={setGroups} onSave={saveGroup} onDelete={deleteGroup} />}
-          {subView === 'exclusions' && <ExclusionsManager students={gradeStudents} exclusions={exclusions} setExclusions={setExclusions} selectedClass={selectedClass} />}
-        </div>
-      )}
-    </div>
-  )
-}
-
-
-// ─── Overview Tab ───────────────────────────────────────────────────
-function OverviewTab({ students, groups, selectedGrade, onNavigate }: { students: StudentBasic[]; groups: Group[]; selectedGrade: number | null; onNavigate: (v: SubView) => void }) {
-  const active = groups.filter(g => !g.is_archived)
-  const allGroupedIds = new Set(active.flatMap(g => g.students))
-  const ungrouped = students.filter(s => !allGroupedIds.has(s.id))
-  const cards = [
-    { type: 'skill' as SubView, icon: Target, label: 'Skill Groups', desc: 'Data-driven by domain weakness', count: active.filter(g => g.type === 'skill').length, color: 'bg-blue-50 border-blue-200 text-blue-700' },
-    { type: 'fluency' as SubView, icon: BookOpen, label: 'Reading Groups', desc: 'By overall performance tier', count: active.filter(g => g.type === 'fluency').length, color: 'bg-green-50 border-green-200 text-green-700' },
-    { type: 'litCircle' as SubView, icon: Star, label: 'Lit Circles', desc: 'Book clubs with roles', count: active.filter(g => g.type === 'litCircle').length, color: 'bg-purple-50 border-purple-200 text-purple-700' },
-    { type: 'partner' as SubView, icon: UserPlus, label: 'Partners', desc: 'Mixed-ability pairs', count: active.filter(g => g.type === 'partner').length, color: 'bg-amber-50 border-amber-200 text-amber-700' },
-  ]
-  return (
-    <div className="space-y-6 mt-4">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {cards.map(c => (
-          <button key={c.type} onClick={() => onNavigate(c.type)} className={`text-left border rounded-xl p-4 transition-all hover:shadow-sm ${c.color}`}>
-            <c.icon size={20} className="mb-2" /><h3 className="text-[14px] font-bold">{c.label}</h3>
-            <p className="text-[10px] opacity-70 mt-0.5">{c.desc}</p>
-            <p className="text-[20px] font-bold mt-2">{c.count} <span className="text-[11px] font-normal">group{c.count !== 1 ? 's' : ''}</span></p>
-          </button>
-        ))}
-      </div>
-      {ungrouped.length > 0 && (
-        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
-          <AlertTriangle size={14} className="text-amber-600 mt-0.5 shrink-0" />
-          <div><p className="text-[11px] font-semibold text-amber-800">{ungrouped.length} student{ungrouped.length !== 1 ? 's' : ''} not in any group</p>
-          <p className="text-[10px] text-amber-700 mt-0.5">{ungrouped.map(s => s.english_name).join(', ')}</p></div>
-        </div>
-      )}
-      {active.length > 0 ? (
-        <div>
-          <h3 className="text-[13px] font-semibold text-navy mb-2">Active Groups ({active.length}){selectedGrade ? ` · Grade ${selectedGrade}` : ''}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {ungrouped.length > 0 && (
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[11px] font-semibold text-amber-800">{ungrouped.length} student{ungrouped.length !== 1 ? 's' : ''} not in any active group</p>
+              <p className="text-[10px] text-amber-700 mt-0.5">{ungrouped.map(s => s.english_name).join(', ')}</p>
+            </div>
+          </div>
+        )}
+        {active.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {active.map(g => (
-              <div key={g.id} className="bg-surface border border-border rounded-xl p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase ${g.type === 'skill' ? 'bg-blue-100 text-blue-700' : g.type === 'fluency' ? 'bg-green-100 text-green-700' : g.type === 'litCircle' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>{g.type === 'litCircle' ? 'Lit Circle' : g.type}</span>
-                  {g.suggested_by === 'auto' && <span className="text-[7px] px-1 py-0.5 rounded bg-cyan-50 text-cyan-700 font-medium">AUTO</span>}
-                  <span className="text-[12px] font-semibold text-navy">{g.name}</span>
+              <div key={g.id} className="bg-surface border border-border rounded-xl p-3 cursor-pointer hover:shadow-sm" onClick={() => onNavigate(g.type as SubView)}>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className={'text-[8px] font-bold px-1.5 py-0.5 rounded-full ' + (g.type === 'reading' ? 'bg-blue-100 text-blue-700' : g.type === 'writing' ? 'bg-amber-100 text-amber-700' : g.type === 'skill' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700')}>{g.type}</span>
+                  {g.suggested_by === 'auto' && <span className="text-[7px] font-semibold px-1 py-0.5 rounded-full bg-cyan-100 text-cyan-700">AUTO</span>}
                 </div>
-                {g.focus && <p className="text-[10px] text-text-secondary">{g.focus}</p>}
-                <p className="text-[10px] text-text-tertiary mt-1">{g.students.length} students{g.book ? ` · ${g.book}` : ''}</p>
+                <h4 className="text-[12px] font-semibold text-navy truncate">{g.name}</h4>
+                <p className="text-[10px] text-text-tertiary mt-1">{g.students.length} students{g.book ? ' · ' + g.book : ''}</p>
               </div>
             ))}
           </div>
-        </div>
-      ) : (
-        <div className="text-center py-12 bg-surface border border-border rounded-2xl">
-          <Users size={32} className="text-text-tertiary mx-auto mb-3" />
-          <p className="text-[14px] font-semibold text-text-secondary">No groups yet{selectedGrade ? ` for Grade ${selectedGrade}` : ''}</p>
-          <p className="text-[11px] text-text-tertiary mt-1">Click a group type above or use Auto-Suggest</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Group Manager (Skill & Fluency) ──────────────────────────────
-function GroupManager({ type, students, groups, studentScores, exclusions, setGroups, onSave, onDelete, onArchive, onRestore, selectedClass, selectedGrade, showArchived, onAutoSuggest, onRefresh, allStudents }: {
-  type: GroupType; students: StudentBasic[]; groups: Group[]; studentScores: Record<string, Record<string, number>>; exclusions: Exclusion[]
-  setGroups: React.Dispatch<React.SetStateAction<Group[]>>; onSave: (g: Group) => Promise<any>; onDelete: (id: string) => void
-  onArchive: (id: string) => void; onRestore: (id: string) => void; selectedClass: string; selectedGrade: number | null
-  showArchived: boolean; onAutoSuggest: () => void; onRefresh: () => void; allStudents: StudentBasic[]
-}) {
-  const { showToast } = useApp()
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-  const addGroup = () => { const g: Group = { id: `new-${Date.now()}`, name: type === 'skill' ? 'New Skill Group' : 'New Reading Group', type, english_class: selectedClass, grade: selectedGrade || undefined, students: [], focus: '', notes: '', tasks: [] }; setGroups(prev => [g, ...prev]); setEditingId(g.id) }
-  const updateGroup = (id: string, u: Partial<Group>) => setGroups(prev => prev.map(g => g.id === id ? { ...g, ...u } : g))
-  const toggleStudent = (gid: string, sid: string) => setGroups(prev => prev.map(g => g.id !== gid ? g : { ...g, students: g.students.includes(sid) ? g.students.filter(s => s !== sid) : [...g.students, sid] }))
-  const getWarnings = (group: Group) => { const w: string[] = []; exclusions.forEach(ex => { if (group.students.includes(ex.student_a) && group.students.includes(ex.student_b)) { const a = allStudents.find(s => s.id === ex.student_a); const b = allStudents.find(s => s.id === ex.student_b); if (a && b) w.push(`${a.english_name} & ${b.english_name}`) } }); return w }
-  const handleSave = async (group: Group) => { setSaving(true); const saved = await onSave(group); setSaving(false); if (saved) { setGroups(prev => prev.map(g => g.id === group.id ? saved : g)); setEditingId(null); showToast('Group saved') } }
-  const addTask = (gid: string) => setGroups(prev => prev.map(g => g.id !== gid ? g : { ...g, tasks: [...(g.tasks || []), { text: '', done: false, created_at: new Date().toISOString() }] }))
-  const updateTask = (gid: string, idx: number, u: Partial<{ text: string; done: boolean }>) => setGroups(prev => prev.map(g => g.id !== gid ? g : { ...g, tasks: (g.tasks || []).map((t, i) => i === idx ? { ...t, ...u } : t) }))
-  const deleteTask = (gid: string, idx: number) => setGroups(prev => prev.map(g => g.id !== gid ? g : { ...g, tasks: (g.tasks || []).filter((_, i) => i !== idx) }))
-  const typeLabel = type === 'skill' ? 'Skill Groups' : 'Reading Groups'
-  return (
-    <div className="mt-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[16px] font-bold text-navy">{typeLabel}{selectedGrade ? ` · Grade ${selectedGrade}` : ''}</h2>
-        <div className="flex gap-2">{!showArchived && <><button onClick={onRefresh} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface border border-border hover:bg-surface-alt text-text-secondary"><RefreshCw size={13} /> Refresh</button><button onClick={onAutoSuggest} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100"><Zap size={13} /> Auto-Suggest</button><button onClick={addGroup} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark"><Plus size={13} /> New Group</button></>}</div>
-      </div>
-      {!showArchived && type === 'skill' && <p className="text-[11px] text-text-secondary bg-blue-50 border border-blue-200 rounded-lg p-3"><strong>Auto-Suggest</strong> groups students by weakest domain. <strong>Refresh</strong> archives current and re-generates.</p>}
-      {!showArchived && type === 'fluency' && <p className="text-[11px] text-text-secondary bg-green-50 border border-green-200 rounded-lg p-3"><strong>Auto-Suggest</strong> creates groups by performance tier. <strong>Refresh</strong> archives current and re-generates.</p>}
-      {groups.length === 0 && <div className="text-center py-12 bg-surface border border-border rounded-2xl"><p className="text-[13px] text-text-secondary">{showArchived ? 'No archived groups' : 'No groups yet — use Auto-Suggest or create manually'}</p></div>}
-      {groups.map(group => {
-        const isEditing = editingId === group.id; const warnings = getWarnings(group); const isArchived = group.is_archived
-        return (<div key={group.id} className={`bg-surface border rounded-2xl overflow-hidden ${isArchived ? 'border-amber-200 opacity-75' : 'border-border'}`}>
-          <div className={`px-5 py-3 flex items-center gap-3 ${isArchived ? 'bg-amber-50/50' : 'bg-surface-alt/50'}`}>
-            {isEditing ? <input value={group.name} onChange={e => updateGroup(group.id, { name: e.target.value })} className="text-[14px] font-bold text-navy bg-transparent border-b border-navy/30 outline-none flex-1" /> : <h3 className="text-[14px] font-bold text-navy flex-1">{group.name}{group.suggested_by === 'auto' ? <span className="ml-2 text-[8px] font-medium text-cyan-600 bg-cyan-50 px-1.5 py-0.5 rounded-full">AUTO</span> : ''}{isArchived ? <span className="ml-2 text-[8px] text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">ARCHIVED</span> : ''}</h3>}
-            <span className="text-[10px] text-text-tertiary">{group.students.length} students</span>
-            {isArchived ? <button onClick={() => onRestore(group.id)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-amber-100 text-amber-700 hover:bg-amber-200"><RotateCcw size={11} /> Restore</button>
-            : isEditing ? <div className="flex items-center gap-1"><button onClick={() => handleSave(group)} disabled={saving} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-navy text-white disabled:opacity-50"><Save size={11} /> {saving ? '...' : 'Save'}</button><button onClick={() => { if (group.id.startsWith('new-')) onDelete(group.id); setEditingId(null) }} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary"><X size={14} /></button></div>
-            : <div className="flex items-center gap-1"><button onClick={() => setEditingId(group.id)} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary"><Pencil size={13} /></button><button onClick={() => onArchive(group.id)} className="p-1.5 rounded-lg hover:bg-amber-50 text-text-tertiary hover:text-amber-600"><Archive size={13} /></button><button onClick={() => { if (confirm('Delete permanently?')) onDelete(group.id) }} className="p-1.5 rounded-lg hover:bg-red-50 text-text-tertiary hover:text-red-500"><Trash2 size={13} /></button></div>}
+        )}
+        {active.length === 0 && (
+          <div className="text-center py-12 bg-surface border border-border rounded-2xl">
+            <Users size={32} className="mx-auto text-text-tertiary mb-2" />
+            <p className="text-[13px] font-medium text-text-secondary">No groups created yet</p>
+            <p className="text-[11px] text-text-tertiary mt-1">Select a tab above to create or auto-suggest groups</p>
           </div>
-          {warnings.length > 0 && <div className="px-5 py-2 bg-red-50 border-b border-red-200"><div className="flex items-center gap-1.5 text-[10px] text-red-700 font-medium"><Ban size={12} /> Conflict: {warnings.join('; ')}</div></div>}
-          {isEditing && !isArchived && <div className="px-5 py-2 border-b border-border space-y-2"><div className="flex gap-3"><input value={group.focus || ''} onChange={e => updateGroup(group.id, { focus: e.target.value })} placeholder="Focus (e.g. RL.2.1 Key Ideas)" className="flex-1 px-2 py-1 text-[11px] border border-border rounded-lg outline-none" /><input value={group.notes || ''} onChange={e => updateGroup(group.id, { notes: e.target.value })} placeholder="Notes" className="flex-1 px-2 py-1 text-[11px] border border-border rounded-lg outline-none" /></div><div className="flex items-center gap-3"><label className="text-[10px] text-text-tertiary">Active period:</label><input type="date" value={group.active_from || ''} onChange={e => updateGroup(group.id, { active_from: e.target.value })} className="px-2 py-1 text-[10px] border border-border rounded-lg outline-none" /><span className="text-[10px] text-text-tertiary">to</span><input type="date" value={group.active_until || ''} onChange={e => updateGroup(group.id, { active_until: e.target.value })} className="px-2 py-1 text-[10px] border border-border rounded-lg outline-none" /></div></div>}
-          {!isEditing && (group.focus || group.active_from) && <div className="px-5 py-1.5 text-[10px] text-text-secondary border-b border-border/50 flex items-center gap-3">{group.focus && <span>Focus: {group.focus}</span>}{group.active_from && <span className="text-text-tertiary">{group.active_from}{group.active_until ? ` → ${group.active_until}` : ''}</span>}</div>}
-          <div className="p-4">{isEditing && !isArchived ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">{students.map(s => { const inGroup = group.students.includes(s.id); const scores = studentScores[s.id]; return (<button key={s.id} onClick={() => toggleStudent(group.id, s.id)} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] text-left transition-all ${inGroup ? 'bg-navy/10 text-navy border border-navy/20' : 'bg-surface-alt/50 text-text-secondary hover:bg-surface-alt border border-transparent'}`}><span className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${inGroup ? 'bg-navy text-white' : 'border border-border'}`}>{inGroup && <Check size={10} />}</span><span className="truncate font-medium">{s.english_name}</span>{scores && <span className="text-[8px] text-text-tertiary ml-auto shrink-0">{Object.entries(scores).slice(0, 3).map(([d, v]) => `${d[0].toUpperCase()}${v}`).join(' ')}</span>}</button>) })}</div>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">{group.students.map(sid => { const s = students.find(st => st.id === sid); if (!s) return null; const scores = studentScores[sid]; const avg = scores ? Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length) : null; return (<span key={sid} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium ${avg != null ? (avg >= 80 ? 'bg-green-50 text-green-700' : avg >= 60 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700') : 'bg-surface-alt text-text-primary'}`}>{s.english_name}{avg != null && <span className="text-[8px] opacity-60">{avg}%</span>}</span>) })}{group.students.length === 0 && <span className="text-[10px] text-text-tertiary italic">No students</span>}</div>
-          )}</div>
-          {(isEditing || (group.tasks && group.tasks.length > 0)) && !isArchived && <div className="px-5 pb-4 border-t border-border/50 pt-3"><div className="flex items-center justify-between mb-2"><h4 className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider flex items-center gap-1"><ListChecks size={12} /> Tasks / Activities</h4>{isEditing && <button onClick={() => addTask(group.id)} className="text-[10px] text-navy font-medium hover:underline">+ Add Task</button>}</div><div className="space-y-1">{(group.tasks || []).map((task, ti) => (<div key={ti} className="flex items-center gap-2"><button onClick={() => { if (isEditing) updateTask(group.id, ti, { done: !task.done }) }} className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${task.done ? 'bg-green-500 border-green-500 text-white' : 'border-border'}`}>{task.done && <Check size={10} />}</button>{isEditing ? <><input value={task.text} onChange={e => updateTask(group.id, ti, { text: e.target.value })} placeholder="Describe task..." className={`flex-1 text-[11px] bg-transparent outline-none border-b border-border/50 py-0.5 ${task.done ? 'line-through text-text-tertiary' : ''}`} /><button onClick={() => deleteTask(group.id, ti)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500"><X size={12} /></button></> : <span className={`text-[11px] ${task.done ? 'line-through text-text-tertiary' : ''}`}>{task.text || '(empty)'}</span>}</div>))}</div></div>}
-          {!isEditing && group.notes && <div className="px-5 pb-3 text-[10px] text-text-tertiary italic">{group.notes}</div>}
-        </div>)
-      })}
-    </div>
-  )
-}
-
-// ─── Literature Circles ─────────────────────────────────────────────
-function LitCircleManager({ students, groups, setGroups, onSave, onDelete, onArchive, onRestore, showArchived }: { students: StudentBasic[]; groups: Group[]; setGroups: React.Dispatch<React.SetStateAction<Group[]>>; onSave: (g: Group) => Promise<any>; onDelete: (id: string) => void; onArchive: (id: string) => void; onRestore: (id: string) => void; showArchived: boolean }) {
-  const { showToast } = useApp()
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [showRoleRef, setShowRoleRef] = useState(false)
-  const addCircle = () => { const g: Group = { id: `new-${Date.now()}`, name: 'New Literature Circle', type: 'litCircle', english_class: '', students: [], roles: {}, book: '', tasks: [] }; setGroups(prev => [g, ...prev]); setEditingId(g.id) }
-  const updateGroup = (id: string, u: Partial<Group>) => setGroups(prev => prev.map(g => g.id === id ? { ...g, ...u } : g))
-  const toggleStudent = (gid: string, sid: string) => setGroups(prev => prev.map(g => g.id !== gid ? g : { ...g, students: g.students.includes(sid) ? g.students.filter(s => s !== sid) : [...g.students, sid] }))
-  const setRole = (gid: string, sid: string, role: string) => setGroups(prev => prev.map(g => g.id !== gid ? g : { ...g, roles: { ...(g.roles || {}), [sid]: role } }))
-  const handleSave = async (group: Group) => { setSaving(true); const saved = await onSave(group); setSaving(false); if (saved) { setGroups(prev => prev.map(g => g.id === group.id ? saved : g)); setEditingId(null); showToast('Saved') } }
-  return (
-    <div className="mt-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[16px] font-bold text-navy">Literature Circles</h2>
-        <div className="flex gap-2">
-          <button onClick={() => setShowRoleRef(!showRoleRef)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"><BookOpen size={13} /> {showRoleRef ? 'Hide' : 'View'} Role Guide</button>
-          {!showArchived && <button onClick={addCircle} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark"><Plus size={13} /> New Circle</button>}
-        </div>
+        )}
       </div>
-      {showRoleRef && <div className="bg-purple-50 border border-purple-200 rounded-xl p-4"><h3 className="text-[13px] font-bold text-purple-800 mb-3">Literature Circle Roles</h3><div className="grid grid-cols-2 lg:grid-cols-3 gap-3">{LIT_CIRCLE_ROLES.map(role => (<div key={role.name} className="bg-white rounded-lg p-3 border border-purple-100"><div className="flex items-center gap-2 mb-1"><span className="text-[16px]">{role.emoji}</span><h4 className="text-[12px] font-bold text-purple-800">{role.name}</h4></div><p className="text-[10px] text-text-secondary leading-relaxed">{role.description}</p></div>))}</div></div>}
-      {groups.length === 0 && <div className="text-center py-12 bg-surface border border-border rounded-2xl"><p className="text-[13px] text-text-secondary">No literature circles yet</p></div>}
-      {groups.map(group => { const isEditing = editingId === group.id; const isArchived = group.is_archived; return (
-        <div key={group.id} className={`bg-surface border rounded-2xl overflow-hidden ${isArchived ? 'border-amber-200 opacity-75' : 'border-purple-200'}`}>
-          <div className={`px-5 py-3 flex items-center gap-3 ${isArchived ? 'bg-amber-50/50' : 'bg-purple-50/50'}`}>
-            {isEditing ? <input value={group.name} onChange={e => updateGroup(group.id, { name: e.target.value })} className="text-[14px] font-bold text-navy bg-transparent border-b border-navy/30 outline-none" placeholder="Circle name" /> : <h3 className="text-[14px] font-bold text-navy">{group.name}</h3>}
-            {isEditing ? <input value={group.book || ''} onChange={e => updateGroup(group.id, { book: e.target.value })} className="text-[11px] bg-white border border-border rounded-lg px-2 py-1 outline-none flex-1" placeholder="Book title" /> : group.book ? <span className="text-[11px] text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">{group.book}</span> : null}
-            <span className="text-[10px] text-text-tertiary ml-auto">{group.students.length}</span>
-            {isArchived ? <button onClick={() => onRestore(group.id)} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-amber-100 text-amber-700"><RotateCcw size={11} /> Restore</button>
-            : isEditing ? <div className="flex gap-1"><button onClick={() => handleSave(group)} disabled={saving} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-navy text-white"><Save size={11} /> Save</button><button onClick={() => { if (group.id.startsWith('new-')) onDelete(group.id); setEditingId(null) }} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={14} /></button></div>
-            : <div className="flex gap-1"><button onClick={() => setEditingId(group.id)} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary"><Pencil size={13} /></button><button onClick={() => onArchive(group.id)} className="p-1.5 rounded-lg hover:bg-amber-50 text-text-tertiary"><Archive size={13} /></button><button onClick={() => { if (confirm('Delete?')) onDelete(group.id) }} className="p-1.5 rounded-lg hover:bg-red-50 text-text-tertiary hover:text-red-500"><Trash2 size={13} /></button></div>}
-          </div>
-          {isEditing && <div className="px-5 py-2 border-b border-border"><input value={group.notes || ''} onChange={e => updateGroup(group.id, { notes: e.target.value })} placeholder="Notes (discussion schedule, chapters, etc.)" className="w-full px-2 py-1 text-[11px] border border-border rounded-lg outline-none" /></div>}
-          <div className="p-4">{isEditing ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">{students.map(s => { const inGroup = group.students.includes(s.id); return (<div key={s.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg ${inGroup ? 'bg-purple-50 border border-purple-200' : 'bg-surface-alt/30'}`}><button onClick={() => toggleStudent(group.id, s.id)} className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${inGroup ? 'bg-purple-600 text-white' : 'border border-border'}`}>{inGroup && <Check size={10} />}</button><span className="text-[11px] font-medium truncate">{s.english_name}</span>{inGroup && <select value={(group.roles || {})[s.id] || ''} onChange={e => setRole(group.id, s.id, e.target.value)} className="ml-auto text-[9px] bg-white border border-border rounded px-1 py-0.5 outline-none"><option value="">-- Role --</option>{LIT_CIRCLE_ROLES.map(r => <option key={r.name} value={r.name}>{r.emoji} {r.name}</option>)}</select>}</div>) })}</div>
-          ) : (
-            <div className="space-y-1">{group.students.map(sid => { const s = students.find(st => st.id === sid); const role = (group.roles || {})[sid]; const rd = LIT_CIRCLE_ROLES.find(r => r.name === role); return s ? <div key={sid} className="flex items-center gap-2 text-[11px]"><span className="font-medium text-navy">{s.english_name}</span>{rd && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">{rd.emoji} {rd.name}</span>}</div> : null })}{group.students.length === 0 && <span className="text-[10px] text-text-tertiary italic">No students</span>}</div>
-          )}</div>
-          {!isEditing && group.notes && <div className="px-5 pb-3 text-[10px] text-text-tertiary italic">{group.notes}</div>}
-        </div>) })}
-    </div>
-  )
-}
-
-// ─── Partner Pairs ──────────────────────────────────────────────────
-function PartnerManager({ students, groups, exclusions, setGroups, onSave, onDelete }: { students: StudentBasic[]; groups: Group[]; exclusions: Exclusion[]; setGroups: React.Dispatch<React.SetStateAction<Group[]>>; onSave: (g: Group) => Promise<any>; onDelete: (id: string) => void }) {
-  const { showToast } = useApp()
-  const [saving, setSaving] = useState(false)
-  const addPair = () => { setGroups(prev => [{ id: `new-${Date.now()}`, name: `Pair ${groups.length + 1}`, type: 'partner', english_class: '', students: [] }, ...prev]) }
-  const updatePair = (id: string, idx: 0 | 1, sid: string) => setGroups(prev => prev.map(g => { if (g.id !== id) return g; const ns = [...g.students]; ns[idx] = sid; return { ...g, students: ns.filter(Boolean) } }))
-  const saveAll = async () => { setSaving(true); for (const g of groups) { if (g.students.length >= 2) { const saved = await onSave(g); if (saved) setGroups(prev => prev.map(p => p.id === g.id ? saved : p)) } }; setSaving(false); showToast('Pairs saved') }
-  const isExcluded = (a: string, b: string) => exclusions.some(ex => (ex.student_a === a && ex.student_b === b) || (ex.student_a === b && ex.student_b === a))
-  return (
-    <div className="mt-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[16px] font-bold text-navy">Partner Pairs</h2>
-        <div className="flex gap-2"><button onClick={saveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white disabled:opacity-50"><Save size={13} /> Save All</button><button onClick={addPair} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface border border-border hover:bg-surface-alt"><Plus size={13} /> Add Pair</button></div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{groups.map((g, i) => { const bad = g.students.length >= 2 && isExcluded(g.students[0], g.students[1]); return (
-        <div key={g.id} className={`bg-surface border rounded-xl p-3 ${bad ? 'border-red-300 bg-red-50/30' : 'border-border'}`}>
-          <div className="flex items-center justify-between mb-2"><span className="text-[12px] font-semibold text-navy">Pair {i + 1}</span>{bad && <span className="text-[9px] text-red-600 font-medium"><Ban size={10} className="inline" /> Conflict</span>}<button onClick={() => { if (confirm('Remove?')) onDelete(g.id) }} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500"><Trash2 size={12} /></button></div>
-          <div className="space-y-1.5">{[0, 1].map(idx => (<select key={idx} value={g.students[idx] || ''} onChange={e => updatePair(g.id, idx as 0 | 1, e.target.value)} className="w-full px-2 py-1.5 text-[11px] border border-border rounded-lg bg-surface outline-none"><option value="">-- Select --</option>{students.map(s => <option key={s.id} value={s.id} disabled={g.students.includes(s.id) && g.students[idx] !== s.id}>{s.english_name} {s.korean_name}</option>)}</select>))}</div>
-        </div>) })}</div>
-      {groups.length === 0 && <div className="text-center py-12 bg-surface border border-border rounded-2xl"><p className="text-[13px] text-text-secondary">No partner pairs yet</p></div>}
-    </div>
-  )
-}
-
-// ─── Exclusions Manager ─────────────────────────────────────────────
-function ExclusionsManager({ students, exclusions, setExclusions, selectedClass }: { students: StudentBasic[]; exclusions: Exclusion[]; setExclusions: React.Dispatch<React.SetStateAction<Exclusion[]>>; selectedClass: string }) {
-  const { showToast, currentTeacher } = useApp()
-  const [studentA, setStudentA] = useState(''); const [studentB, setStudentB] = useState(''); const [reason, setReason] = useState('')
-  const add = async () => {
-    if (!studentA || !studentB || studentA === studentB) { showToast('Select two different students'); return }
-    const [a, b] = [studentA, studentB].sort()
-    const { data, error } = await supabase.from('student_exclusions').insert({ student_a: a, student_b: b, english_class: selectedClass, reason: reason || null, created_by: currentTeacher?.id }).select().single()
-    if (error) { showToast(error.message.includes('unique') ? 'Already exists' : `Error: ${error.message}`); return }
-    setExclusions(prev => [...prev, data]); setStudentA(''); setStudentB(''); setReason(''); showToast('Exclusion added')
+    )
   }
-  const remove = async (id: string) => { await supabase.from('student_exclusions').delete().eq('id', id); setExclusions(prev => prev.filter(e => e.id !== id)); showToast('Removed') }
+
+  // ─── MAIN RENDER ──────────────────────────────────────────────
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 size={24} className="animate-spin text-navy" /></div>
+
   return (
-    <div className="mt-4 space-y-4">
-      <div><h2 className="text-[16px] font-bold text-navy">Student Exclusions</h2><p className="text-[11px] text-text-secondary mt-1">Mark students who should not be in the same group. Conflicts will be flagged.</p></div>
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-[12px] font-semibold text-navy mb-3">Add Exclusion Pair</h3>
-        <div className="flex items-end gap-3">
-          <div className="flex-1"><label className="text-[10px] text-text-tertiary mb-1 block">Student A</label><select value={studentA} onChange={e => setStudentA(e.target.value)} className="w-full px-2 py-1.5 text-[11px] border border-border rounded-lg outline-none"><option value="">-- Select --</option>{students.map(s => <option key={s.id} value={s.id}>{s.english_name}</option>)}</select></div>
-          <div className="flex-1"><label className="text-[10px] text-text-tertiary mb-1 block">Student B</label><select value={studentB} onChange={e => setStudentB(e.target.value)} className="w-full px-2 py-1.5 text-[11px] border border-border rounded-lg outline-none"><option value="">-- Select --</option>{students.filter(s => s.id !== studentA).map(s => <option key={s.id} value={s.id}>{s.english_name}</option>)}</select></div>
-          <div className="flex-1"><label className="text-[10px] text-text-tertiary mb-1 block">Reason</label><input value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Off-task together" className="w-full px-2 py-1.5 text-[11px] border border-border rounded-lg outline-none" /></div>
-          <button onClick={add} disabled={!studentA || !studentB} className="px-4 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white disabled:opacity-40 shrink-0"><Ban size={13} className="inline mr-1" /> Add</button>
-        </div>
+    <div className="px-6 py-4 max-w-6xl mx-auto">
+      {/* Class + Grade selectors */}
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        {(isAdmin ? ENGLISH_CLASSES : [teacherClass || 'Snapdragon']).map(cls => (
+          <button key={cls} onClick={() => setSelectedClass(cls as EnglishClass)}
+            className={'px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ' + (selectedClass === cls ? 'text-white shadow-sm' : 'bg-surface-alt text-text-secondary hover:bg-border')}
+            style={selectedClass === cls ? { backgroundColor: classToColor(cls as EnglishClass), color: classToTextColor(cls as EnglishClass) } : {}}>
+            {cls}
+          </button>
+        ))}
+        <span className="w-px h-5 bg-border mx-1" />
+        {availableGrades.map(g => (
+          <button key={g} onClick={() => setSelectedGrade(g)}
+            className={'px-3 py-1.5 rounded-lg text-[11px] font-medium ' + (selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border')}>
+            Grade {g}
+          </button>
+        ))}
+        <span className="w-px h-5 bg-border mx-1" />
+        <button onClick={() => setShowArchived(!showArchived)}
+          className={'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ' + (showArchived ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-surface-alt text-text-secondary hover:bg-border')}>
+          {showArchived ? <Eye size={12} /> : <EyeOff size={12} />} {showArchived ? 'Showing Archived' : 'Show Archived'}
+        </button>
       </div>
-      {exclusions.length > 0 ? <div className="space-y-2">{exclusions.map(ex => { const a = students.find(s => s.id === ex.student_a); const b = students.find(s => s.id === ex.student_b); return (
-        <div key={ex.id} className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
-          <Ban size={14} className="text-red-400 shrink-0" /><span className="text-[12px] font-medium text-red-800">{a?.english_name || '?'}</span><span className="text-[10px] text-red-400">✕</span><span className="text-[12px] font-medium text-red-800">{b?.english_name || '?'}</span>{ex.reason && <span className="text-[10px] text-red-600 ml-2">({ex.reason})</span>}<button onClick={() => remove(ex.id)} className="ml-auto p-1 rounded hover:bg-red-100 text-red-400"><Trash2 size={13} /></button>
-        </div>) })}</div>
-      : <div className="text-center py-8 bg-surface border border-border rounded-xl"><p className="text-[12px] text-text-tertiary">No exclusions set.</p></div>}
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-border pb-0 mb-4 overflow-x-auto">
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setSubView(tab.id)}
+            className={'inline-flex items-center gap-1.5 px-4 py-2.5 rounded-t-xl text-[12px] font-medium transition-all border-b-2 whitespace-nowrap ' +
+              (subView === tab.id ? 'border-navy text-navy bg-surface' : 'border-transparent text-text-secondary hover:text-navy hover:bg-surface-alt/50')}>
+            <tab.icon size={14} /> {tab.label}
+            {tab.count != null && tab.count > 0 && <span className="text-[9px] bg-navy/10 text-navy px-1.5 py-0.5 rounded-full">{tab.count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      {subView === 'overview' && <OverviewTab onNavigate={setSubView} />}
+
+      {subView === 'reading' && (
+        <GroupManager type="reading" autoSuggest={autoSuggestReading}
+          infoText="Reading groups are based on oral reading fluency (CWPM) from the Reading tab. Students are grouped by NAEP benchmark tiers for their grade level. WIDA levels shown as badges for scaffolding decisions."
+          extraStudentInfo={sid => {
+            const d = studentCWPM[sid]
+            return d ? d.cwpm + 'wpm' : 'no ORF'
+          }} />
+      )}
+
+      {subView === 'writing' && (
+        <GroupManager type="writing" autoSuggest={autoSuggestWriting}
+          infoText="Writing groups are based on writing domain assessment scores. Pull small groups during writing workshop by skill level. WIDA badges help you choose the right scaffolding for each student."
+          extraStudentInfo={sid => {
+            const scores = studentScores[sid]
+            return scores?.writing != null ? scores.writing + '%' : 'no data'
+          }} />
+      )}
+
+      {subView === 'skill' && (
+        <GroupManager type="skill" autoSuggest={autoSuggestSkill}
+          infoText="Skill groups target each student's weakest domain (reading, phonics, writing, speaking, language). Use for targeted small-group intervention during differentiated instruction."
+          extraStudentInfo={sid => {
+            const scores = studentScores[sid]
+            if (!scores || Object.keys(scores).length === 0) return ''
+            return Object.entries(scores).slice(0, 3).map(([d, v]) => d[0].toUpperCase() + v).join(' ')
+          }} />
+      )}
+
+      {subView === 'custom' && (
+        <GroupManager type="custom"
+          infoText="Custom groups for any purpose: centers rotation, literature circles, partner pairs, project teams, or anything else. No auto-suggest — full flexibility." />
+      )}
+
+      {subView === 'exclusions' && <ExclusionsManager />}
     </div>
   )
 }
