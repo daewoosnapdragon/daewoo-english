@@ -439,7 +439,7 @@ export default function GroupsView() {
                   </div>
                   <div><label className="text-[9px] uppercase text-text-tertiary font-semibold">Notes</label>
                     <textarea value={group.notes || ''} onChange={e => setGroups(prev => prev.map(g => g.id === group.id ? { ...g, notes: e.target.value } : g))}
-                      className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none h-16 resize-none" placeholder="Teaching notes..." /></textarea></div>
+                      className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none h-16 resize-none" placeholder="Teaching notes..." /></div>
 
                   <div><label className="text-[9px] uppercase text-text-tertiary font-semibold mb-1 block">Select Students</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
