@@ -139,7 +139,7 @@ function BlockRenderer({ block, catColor }: { block: ContentBlock; catColor: str
             </p>
             <div className="space-y-1.5">
               {block.doItems.map((item, i) => (
-                <p key={i} className="text-[11px] text-green-800 leading-relaxed pl-3 relative before:content-['\\2713'] before:absolute before:left-0 before:text-green-500 before:text-[10px]">{item}</p>
+                <p key={i} className="text-[11px] text-green-800 leading-relaxed pl-5 relative"><span className="absolute left-0 text-green-600 font-bold">✓</span>{item}</p>
               ))}
             </div>
           </div>
@@ -149,7 +149,7 @@ function BlockRenderer({ block, catColor }: { block: ContentBlock; catColor: str
             </p>
             <div className="space-y-1.5">
               {block.dontItems.map((item, i) => (
-                <p key={i} className="text-[11px] text-red-800 leading-relaxed pl-3 relative before:content-['\\2717'] before:absolute before:left-0 before:text-red-400 before:text-[10px]">{item}</p>
+                <p key={i} className="text-[11px] text-red-800 leading-relaxed pl-5 relative"><span className="absolute left-0 text-red-500 font-bold">✗</span>{item}</p>
               ))}
             </div>
           </div>

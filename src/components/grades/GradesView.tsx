@@ -336,8 +336,17 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
   selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; absentMap: Record<string, boolean>; exemptMap: Record<string, boolean>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onToggleAbsent: (sid: string) => void; onToggleExempt: (sid: string) => void
 }) {
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const [rubricStudent, setRubricStudent] = useState<{ id: string; name: string } | null>(null)
+  const isRubricDomain = selectedDomain === 'writing' || selectedDomain === 'reading' || selectedDomain === 'speaking'
   return (
     <>
+      {rubricStudent && (
+        <RubricScoringModal
+          studentName={rubricStudent.name}
+          onScore={(total) => { handleScoreChange(rubricStudent.id, String(total)); commitScore(rubricStudent.id) }}
+          onClose={() => setRubricStudent(null)}
+        />
+      )}
       <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
         {DOMAINS.map(d => {
           const SHORT: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
@@ -434,7 +443,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                           )}
                         </td>
                         <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
-                        <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />}</td>
+                        <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <span className="inline-flex items-center gap-1"><input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />{isRubricDomain && <button onClick={() => setRubricStudent({ id: s.id, name: s.english_name })} className="p-1 rounded hover:bg-navy/10 text-text-tertiary hover:text-navy" title="Score with rubric"><ClipboardEdit size={13} /></button>}</span>}</td>
                         <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{isAbsent || isExempt ? '—' : pct ? `${pct}%` : '—'}</td>
                         <td className="px-4 py-2.5 text-center">
                           <div className="inline-flex gap-1">
@@ -1710,6 +1719,154 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
 
 // ─── #36 Rubric Builder and Library ───────────────────────────────────
 
+// ─── Rubric Scoring Modal ─────────────────────────────────────────
+// Pop-up rubric for scoring a student. Teacher taps 1-4 per criterion, total auto-computes.
+
+const SCORING_RUBRICS: { name: string; domain: string; maxScore: number; criteria: { label: string; levels: string[] }[] }[] = [
+  { name: 'Opinion Writing', domain: 'writing', maxScore: 20,
+    criteria: [
+      { label: 'Opinion Statement', levels: ['No clear opinion', 'Opinion vague or unclear', 'Clear opinion stated', 'Strong opinion with context'] },
+      { label: 'Reasons & Evidence', levels: ['No reasons given', 'One reason, no details', 'Two+ reasons with details', 'Multiple reasons with specific evidence'] },
+      { label: 'Organization', levels: ['No logical order', 'Some organization attempted', 'Logical order with transitions', 'Strong intro, organized body, conclusion'] },
+      { label: 'Language & Voice', levels: ['Basic/repetitive words', 'Some variety', 'Good variety, some persuasive', 'Engaging with persuasive techniques'] },
+      { label: 'Conventions', levels: ['Many errors, hard to read', 'Frequent errors but readable', 'Few errors, doesn\'t interfere', 'Nearly error-free'] },
+    ] },
+  { name: 'Narrative Writing', domain: 'writing', maxScore: 20,
+    criteria: [
+      { label: 'Story Structure', levels: ['No beginning/middle/end', 'Has beginning OR end', 'Has beginning, middle, end', 'Strong opening, developed middle, satisfying end'] },
+      { label: 'Character & Setting', levels: ['No character/setting', 'Names character or place', 'Describes with some detail', 'Vivid with sensory details'] },
+      { label: 'Sequencing & Flow', levels: ['Events random', 'Some events in order', 'Logical sequence with transitions', 'Smooth flow with varied transitions'] },
+      { label: 'Word Choice', levels: ['Very basic words', 'Some descriptive words', 'Good variety, some vivid', 'Strong descriptive language'] },
+      { label: 'Conventions', levels: ['Many errors, hard to read', 'Frequent errors but readable', 'Few errors, doesn\'t interfere', 'Nearly error-free'] },
+    ] },
+  { name: 'Informational Writing', domain: 'writing', maxScore: 20,
+    criteria: [
+      { label: 'Topic Introduction', levels: ['No topic identified', 'Topic mentioned but unclear', 'Clear topic sentence', 'Engaging introduction with focus'] },
+      { label: 'Facts & Details', levels: ['No facts or details', 'One or two basic facts', 'Several relevant facts', 'Rich details with examples'] },
+      { label: 'Organization', levels: ['No structure', 'Some grouping of ideas', 'Clear paragraphs', 'Logical structure with headings/transitions'] },
+      { label: 'Domain Vocabulary', levels: ['No topic words', 'One or two topic words', 'Several content-specific terms', 'Precise vocabulary integrated'] },
+      { label: 'Conventions', levels: ['Many errors, hard to read', 'Frequent errors but readable', 'Few errors, doesn\'t interfere', 'Nearly error-free'] },
+    ] },
+  { name: 'Reading Response', domain: 'reading', maxScore: 20,
+    criteria: [
+      { label: 'Text Evidence', levels: ['No reference to text', 'Vague reference', 'Includes relevant detail', 'Cites specific evidence'] },
+      { label: 'Comprehension', levels: ['Does not answer question', 'Partially answers', 'Answers accurately', 'Thorough with deeper understanding'] },
+      { label: 'Connection', levels: ['No connection', 'Vague connection attempted', 'Relevant connection', 'Insightful connection that deepens meaning'] },
+      { label: 'Completeness', levels: ['One word or blank', 'Incomplete thought', 'Complete sentences', 'Detailed response'] },
+      { label: 'Vocabulary Use', levels: ['No text vocabulary used', 'One word attempted', 'Uses vocabulary correctly', 'Integrates vocabulary naturally'] },
+    ] },
+  { name: 'Oral Presentation', domain: 'speaking', maxScore: 20,
+    criteria: [
+      { label: 'Content', levels: ['Off-topic/no content', 'Minimal content', 'Clear with supporting details', 'Rich, well-developed ideas'] },
+      { label: 'Volume & Clarity', levels: ['Cannot be heard', 'Sometimes hard to hear', 'Clear most of the time', 'Clear, confident throughout'] },
+      { label: 'Eye Contact', levels: ['Reads from paper', 'Occasional glances', 'Looks at audience often', 'Natural eye contact'] },
+      { label: 'Organization', levels: ['No structure', 'Some organization', 'Clear beginning/middle/end', 'Smooth, logical flow'] },
+      { label: 'Language Use', levels: ['Single words/L1 only', 'Simple phrases, many errors', 'Complete sentences, some errors', 'Varied sentences, minimal errors'] },
+    ] },
+]
+
+function RubricScoringModal({ studentName, onScore, onClose }: {
+  studentName: string
+  onScore: (total: number) => void
+  onClose: () => void
+}) {
+  const [selectedRubric, setSelectedRubric] = useState<number | null>(null)
+  const [scores, setScores] = useState<number[]>([])
+
+  const rubric = selectedRubric != null ? SCORING_RUBRICS[selectedRubric] : null
+  const total = scores.reduce((s, v) => s + v, 0)
+  const maxTotal = rubric ? rubric.criteria.length * 4 : 0
+
+  const handleSelect = (rubricIdx: number) => {
+    setSelectedRubric(rubricIdx)
+    setScores(new Array(SCORING_RUBRICS[rubricIdx].criteria.length).fill(0))
+  }
+
+  const LEVEL_COLORS = [
+    'bg-red-100 text-red-700 border-red-300',
+    'bg-amber-100 text-amber-700 border-amber-300',
+    'bg-green-100 text-green-700 border-green-300',
+    'bg-blue-100 text-blue-700 border-blue-300',
+  ]
+  const LEVEL_LABELS = ['Emerging', 'Developing', 'Meets', 'Exceeds']
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div>
+            <h2 className="text-[16px] font-bold text-navy">Score with Rubric</h2>
+            <p className="text-[11px] text-text-secondary">{studentName}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+        </div>
+
+        {!rubric ? (
+          <div className="p-6">
+            <p className="text-[12px] text-text-secondary mb-4">Choose a rubric:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {SCORING_RUBRICS.map((r, i) => (
+                <button key={i} onClick={() => handleSelect(i)}
+                  className="text-left bg-surface border border-border rounded-xl px-4 py-3 hover:shadow-sm hover:border-navy/30 transition-all">
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{r.domain}</span>
+                  <h3 className="text-[13px] font-semibold text-navy mt-1">{r.name}</h3>
+                  <span className="text-[10px] text-text-tertiary">{r.criteria.length} criteria · /{r.maxScore}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <button onClick={() => { setSelectedRubric(null); setScores([]) }} className="text-[11px] text-text-tertiary hover:text-navy mb-1">← Change rubric</button>
+                <h3 className="text-[15px] font-bold text-navy">{rubric.name}</h3>
+              </div>
+              <div className="text-right">
+                <div className="text-[24px] font-bold text-navy">{total}<span className="text-[14px] text-text-tertiary">/{maxTotal}</span></div>
+                <div className="text-[11px] text-text-secondary">{maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(0) : 0}%</div>
+              </div>
+            </div>
+
+            <div className="flex gap-1 mb-3 text-[8px] text-text-tertiary">
+              {LEVEL_LABELS.map((l, i) => (
+                <span key={i} className="flex-1 text-center">{i + 1} = {l}</span>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              {rubric.criteria.map((c, ci) => (
+                <div key={ci} className="bg-surface-alt/50 border border-border rounded-xl p-3">
+                  <p className="text-[11px] font-semibold text-navy mb-2">{c.label}</p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[1, 2, 3, 4].map(v => (
+                      <button key={v} onClick={() => { const ns = [...scores]; ns[ci] = v; setScores(ns) }}
+                        className={`py-2.5 rounded-lg border-2 text-center transition-all ${
+                          scores[ci] === v ? LEVEL_COLORS[v - 1] + ' border-2 shadow-sm scale-[1.02]' : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'
+                        }`}>
+                        <div className="text-[16px] font-bold">{v}</div>
+                        <div className="text-[8px] leading-tight px-1 mt-0.5">{c.levels[v - 1]}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 flex justify-between items-center">
+              <p className="text-[10px] text-text-tertiary">Total: {total}/{maxTotal} ({maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(0) : 0}%)</p>
+              <button onClick={() => { onScore(total); onClose() }} disabled={scores.some(s => s === 0)}
+                className="px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                Apply Score ({total})
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function RubricLibraryView() {
   const [selected, setSelected] = useState<any>(null)
   const [filterDomain, setFilterDomain] = useState<string>('all')
@@ -2118,7 +2275,12 @@ function getAdjustedGradeQC(studentGrade: number, englishClass: string): number 
 
 function getClustersQC(domain: string, grade: number, ccssData: any[]) {
   if (!ccssData || ccssData.length === 0) return []
-  const domainStds = ccssData.filter((s: any) => s.domain === domain && s.grade === grade)
+  // Map domain key to CCSS domain codes
+  const DOMAIN_MAP: Record<string, string[]> = {
+    reading: ['RL', 'RI'], phonics: ['RF'], writing: ['W'], speaking: ['SL'], language: ['L'],
+  }
+  const codes = DOMAIN_MAP[domain] || []
+  const domainStds = ccssData.filter((s: any) => codes.includes(s.domain) && s.grade === grade)
   const clusters: Record<string, any[]> = {}
   domainStds.forEach((s: any) => {
     const cl = s.cluster || 'General'

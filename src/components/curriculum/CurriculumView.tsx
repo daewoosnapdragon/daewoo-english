@@ -43,9 +43,9 @@ export type WIDADomainKey = typeof WIDA_DOMAINS[number]
 type StdStatus = 'not_started' | 'in_progress' | 'mastered'
 type InterventionStatus = 'none' | 'not_yet_taught' | 'taught_needs_reteach' | 'reteaching' | 'reassessing'
 const STATUS_CFG = {
-  not_started: { label: 'Not Started', icon: Circle, color: 'text-gray-400', bg: 'bg-gray-100' },
-  in_progress: { label: 'In Progress', icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
-  mastered: { label: 'Mastered', icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
+  not_started: { label: 'Not Started', icon: Circle, color: 'text-gray-700', bg: 'bg-gray-200' },
+  in_progress: { label: 'Approaching', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+  mastered: { label: 'On Standard', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
 }
 const INTERVENTION_OPTIONS: { value: InterventionStatus; label: string; color: string }[] = [
   { value: 'none', label: '--', color: '' },
