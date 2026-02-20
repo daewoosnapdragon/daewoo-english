@@ -148,9 +148,10 @@ export default function GradesView() {
   useEffect(() => { loadAssessments() }, [loadAssessments])
   useEffect(() => { loadAllAssessments() }, [loadAllAssessments])
 
+  const selectedAssessmentId = selectedAssessment?.id
   useEffect(() => {
-    if (!selectedAssessment) { setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); return }
-    const aid = selectedAssessment.id
+    if (!selectedAssessmentId) { setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); return }
+    const aid = selectedAssessmentId
     async function loadScores() {
       const { data } = await supabase.from('grades').select('student_id, score, is_absent, is_exempt').eq('assessment_id', aid)
       const map: Record<string, number | null> = {}
@@ -160,7 +161,7 @@ export default function GradesView() {
       setScores(map); setAbsentMap(abs); setExemptMap(exm); setRawInputs({}); setHasChanges(false)
     }
     loadScores()
-  }, [selectedAssessment])
+  }, [selectedAssessmentId])
 
   useEffect(() => {
     if (currentTeacher?.role === 'teacher' && currentTeacher.english_class !== 'Admin')
@@ -2354,13 +2355,15 @@ function AssessmentBlueprintView() {
 // ─── Quick Check (moved from Curriculum) ──────────────────────────────
 
 function getAdjustedGradeQC(studentGrade: number, englishClass: string): number {
-  const CLASS_OFFSETS: Record<string, number> = { Lily: -2, Camellia: -1, Daisy: 0, Sunflower: 0, Marigold: 1, Snapdragon: 1 }
-  return Math.max(1, Math.min(5, studentGrade + (CLASS_OFFSETS[englishClass] || 0)))
+  // Must match CurriculumView's getAdjustedGrade exactly
+  if (['Lily', 'Camellia'].includes(englishClass)) return Math.max(0, studentGrade - 2)
+  if (['Daisy', 'Sunflower'].includes(englishClass)) return Math.max(0, studentGrade - 1)
+  return studentGrade // Marigold, Snapdragon = on level
 }
 
 function getClustersQC(domain: string, grade: number, ccssData: any[]) {
   if (!ccssData || ccssData.length === 0) return []
-  // Map domain key to CCSS domain codes
+  // Map app domain keys to CCSS domain codes
   const DOMAIN_MAP: Record<string, string[]> = {
     reading: ['RL', 'RI'], phonics: ['RF'], writing: ['W'], speaking: ['SL'], language: ['L'],
   }
