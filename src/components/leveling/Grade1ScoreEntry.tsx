@@ -577,7 +577,6 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
             { key: 'oral' as const, icon: Mic, label: 'Oral Test', sub: `${completionStats.oralDone}/${completionStats.total}` },
             { key: 'written' as const, icon: PenTool, label: 'Written Test', sub: `${completionStats.writtenDone}/${completionStats.total}` },
             { key: 'ratings' as const, icon: Users, label: 'Teacher Ratings', sub: '' },
-            { key: 'results' as const, icon: BarChart3, label: 'Results', sub: '' },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
@@ -617,13 +616,6 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
         <G1TeacherRatings
           students={students}
           levelTestId={levelTest.id}
-        />
-      )}
-      {activeTab === 'results' && (
-        <ResultsView
-          students={students}
-          scores={scores}
-          levelTest={levelTest}
         />
       )}
     </div>
@@ -1327,7 +1319,7 @@ function ResultsView({ students, scores, levelTest }: {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-display text-lg font-semibold text-navy">Results & Suggested Placement</h3>
-          <p className="text-[12px] text-text-secondary mt-1">{rows.length} students scored. Wave 1 = 70% oral + 30% teacher impression. Wave 2 = 45% written + 30% oral + 25% teacher ratings.</p>
+          <p className="text-[12px] text-text-secondary mt-1">{rows.length} students scored. Wave 1 = 50% oral + 50% teacher impression. Wave 2 = 30% oral + 30% written + 40% teacher ratings.</p>
         </div>
         <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
           className="px-3 py-2 border border-border rounded-lg text-[12px] bg-surface">
@@ -1676,6 +1668,6 @@ function G1TeacherRatings({ students, levelTestId }: { students: any[]; levelTes
 // EXPORTS for use in LevelingView
 // ============================================================================
 
-export { calculateG1Composite, suggestG1Class, WRITTEN_SECTIONS, PASSAGE_CONFIGS, STANDARDS_BASELINE, NAEP_MULTIPLIERS }
+export { calculateG1Composite, suggestG1Class, ResultsView as G1ResultsView, WRITTEN_SECTIONS, PASSAGE_CONFIGS, STANDARDS_BASELINE, NAEP_MULTIPLIERS }
 export type { G1Scores, PassageLevel }
 

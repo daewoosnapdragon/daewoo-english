@@ -8,7 +8,7 @@ import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
-import Grade1ScoreEntry from '@/components/leveling/Grade1ScoreEntry'
+import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
 import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
 import { exportToCSV } from '@/lib/export'
 
@@ -645,9 +645,37 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
   )
 }
 
+// ─── G1 Results Wrapper (loads data for G1ResultsView) ─────────────
+function G1ResultsWrapper({ levelTest }: { levelTest: LevelTest }) {
+  const [students, setStudents] = useState<Student[]>([])
+  const [scores, setScores] = useState<Record<string, any>>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: studs }, { data: testScores }] = await Promise.all([
+        supabase.from('students').select('*').eq('grade', 1).eq('is_active', true).order('english_name'),
+        supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
+      ])
+      setStudents(studs || [])
+      const sm: Record<string, any> = {}
+      testScores?.forEach((ts: any) => { sm[ts.student_id] = ts.raw_scores || {} })
+      setScores(sm)
+      setLoading(false)
+    })()
+  }, [levelTest.id])
+
+  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+
+  return <G1ResultsView students={students} scores={scores} levelTest={levelTest} />
+}
+
 // ─── Results Phase ──────────────────────────────────────────────────
 
 function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
+  // Grade 1 uses its own ResultsView
+  if (String(levelTest.grade) === '1') return <G1ResultsWrapper levelTest={levelTest} />
+
   const [students, setStudents] = useState<Student[]>([])
   const [scores, setScores] = useState<Record<string, any>>({})
   const [anecdotals, setAnecdotals] = useState<Record<string, any>>({})

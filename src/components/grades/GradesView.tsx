@@ -336,15 +336,18 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
   selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; absentMap: Record<string, boolean>; exemptMap: Record<string, boolean>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onToggleAbsent: (sid: string) => void; onToggleExempt: (sid: string) => void
 }) {
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
-  const [rubricStudent, setRubricStudent] = useState<{ id: string; name: string } | null>(null)
+  const [rubricOpen, setRubricOpen] = useState(false)
   const isRubricDomain = selectedDomain === 'writing' || selectedDomain === 'reading' || selectedDomain === 'speaking'
   return (
     <>
-      {rubricStudent && (
+      {rubricOpen && selectedAssessment && (
         <RubricScoringModal
-          studentName={rubricStudent.name}
-          onScore={(total) => { handleScoreChange(rubricStudent.id, String(total)); commitScore(rubricStudent.id) }}
-          onClose={() => setRubricStudent(null)}
+          students={students}
+          existingScores={scores}
+          maxScore={selectedAssessment.max_score}
+          domain={selectedDomain}
+          onApplyScores={(newScores) => { Object.entries(newScores).forEach(([sid, total]) => { handleScoreChange(sid, String(total)); commitScore(sid) }) }}
+          onClose={() => setRubricOpen(false)}
         />
       )}
       <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
@@ -411,6 +414,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                 <div className="flex items-center gap-3">
                   <span className="text-[12px] text-text-secondary">{enteredCount}/{students.length} entered</span>
                   <div className="w-24 h-1.5 bg-navy/10 rounded-full overflow-hidden"><div className="h-full bg-navy rounded-full transition-all" style={{ width: `${students.length > 0 ? (enteredCount / students.length) * 100 : 0}%` }} /></div>
+                  {isRubricDomain && <button onClick={() => setRubricOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-all"><ClipboardEdit size={13} />Score with Rubric</button>}
                   <CrossClassCompare assessmentName={selectedAssessment.name} domain={selectedAssessment.domain} maxScore={selectedAssessment.max_score} currentClass={selectedClass} grade={selectedGrade} semesterId={selectedSemester || ''} />
                 </div>
               </div>
@@ -443,7 +447,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                           )}
                         </td>
                         <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
-                        <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <span className="inline-flex items-center gap-1"><input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />{isRubricDomain && <button onClick={() => setRubricStudent({ id: s.id, name: s.english_name })} className="p-1 rounded hover:bg-navy/10 text-text-tertiary hover:text-navy" title="Score with rubric"><ClipboardEdit size={13} /></button>}</span>}</td>
+                        <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />}</td>
                         <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{isAbsent || isExempt ? '—' : pct ? `${pct}%` : '—'}</td>
                         <td className="px-4 py-2.5 text-center">
                           <div className="inline-flex gap-1">
@@ -1719,8 +1723,8 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
 
 // ─── #36 Rubric Builder and Library ───────────────────────────────────
 
-// ─── Rubric Scoring Modal ─────────────────────────────────────────
-// Pop-up rubric for scoring a student. Teacher taps 1-4 per criterion, total auto-computes.
+// ─── Rubric Scoring Modal (Bulk) ──────────────────────────────────
+// Full-class rubric scoring: student sidebar + rubric grid + auto-fill scores
 
 const SCORING_RUBRICS: { name: string; domain: string; maxScore: number; criteria: { label: string; levels: string[] }[] }[] = [
   { name: 'Opinion Writing', domain: 'writing', maxScore: 20,
@@ -1765,100 +1769,189 @@ const SCORING_RUBRICS: { name: string; domain: string; maxScore: number; criteri
     ] },
 ]
 
-function RubricScoringModal({ studentName, onScore, onClose }: {
-  studentName: string
-  onScore: (total: number) => void
+const LEVEL_COLORS = [
+  'bg-red-100 text-red-700 border-red-300 ring-red-300',
+  'bg-amber-100 text-amber-700 border-amber-300 ring-amber-300',
+  'bg-green-100 text-green-700 border-green-300 ring-green-300',
+  'bg-blue-100 text-blue-700 border-blue-300 ring-blue-300',
+]
+const LEVEL_LABELS = ['Emerging', 'Developing', 'Meets', 'Exceeds']
+
+function RubricScoringModal({ students, existingScores, maxScore, domain, onApplyScores, onClose }: {
+  students: { id: string; english_name: string; korean_name: string }[]
+  existingScores: Record<string, number | null>
+  maxScore: number
+  domain: string
+  onApplyScores: (scores: Record<string, number>) => void
   onClose: () => void
 }) {
   const [selectedRubric, setSelectedRubric] = useState<number | null>(null)
-  const [scores, setScores] = useState<number[]>([])
+  const [activeStudentIdx, setActiveStudentIdx] = useState(0)
+  // Per-student scores: { studentId: number[] (one per criterion) }
+  const [allScores, setAllScores] = useState<Record<string, number[]>>({})
 
   const rubric = selectedRubric != null ? SCORING_RUBRICS[selectedRubric] : null
-  const total = scores.reduce((s, v) => s + v, 0)
+  const filteredRubrics = SCORING_RUBRICS.filter(r => r.domain === domain || domain === 'all')
+  const activeStudent = students[activeStudentIdx]
+  const studentScores = activeStudent ? (allScores[activeStudent.id] || []) : []
+  const studentTotal = studentScores.reduce((s, v) => s + v, 0)
   const maxTotal = rubric ? rubric.criteria.length * 4 : 0
 
-  const handleSelect = (rubricIdx: number) => {
-    setSelectedRubric(rubricIdx)
-    setScores(new Array(SCORING_RUBRICS[rubricIdx].criteria.length).fill(0))
+  const setStudentScore = (criterionIdx: number, value: number) => {
+    if (!activeStudent || !rubric) return
+    const current = allScores[activeStudent.id] || new Array(rubric.criteria.length).fill(0)
+    const updated = [...current]
+    updated[criterionIdx] = value
+    setAllScores(prev => ({ ...prev, [activeStudent.id]: updated }))
   }
 
-  const LEVEL_COLORS = [
-    'bg-red-100 text-red-700 border-red-300',
-    'bg-amber-100 text-amber-700 border-amber-300',
-    'bg-green-100 text-green-700 border-green-300',
-    'bg-blue-100 text-blue-700 border-blue-300',
-  ]
-  const LEVEL_LABELS = ['Emerging', 'Developing', 'Meets', 'Exceeds']
+  const getStudentTotal = (sid: string) => {
+    const sc = allScores[sid]
+    return sc ? sc.reduce((s, v) => s + v, 0) : null
+  }
+
+  const scoredCount = Object.keys(allScores).filter(sid => {
+    const sc = allScores[sid]
+    return sc && sc.length > 0 && sc.every(v => v > 0)
+  }).length
+
+  const handleApply = () => {
+    const result: Record<string, number> = {}
+    Object.entries(allScores).forEach(([sid, sc]) => {
+      if (sc && sc.length > 0 && sc.every(v => v > 0)) {
+        result[sid] = sc.reduce((s, v) => s + v, 0)
+      }
+    })
+    onApplyScores(result)
+    onClose()
+  }
+
+  const goNext = () => { if (activeStudentIdx < students.length - 1) setActiveStudentIdx(activeStudentIdx + 1) }
+  const goPrev = () => { if (activeStudentIdx > 0) setActiveStudentIdx(activeStudentIdx - 1) }
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-5xl max-h-[92vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-3 border-b border-border shrink-0">
           <div>
             <h2 className="text-[16px] font-bold text-navy">Score with Rubric</h2>
-            <p className="text-[11px] text-text-secondary">{studentName}</p>
+            <p className="text-[11px] text-text-secondary">{scoredCount}/{students.length} students scored{rubric ? ` · ${rubric.name}` : ''}</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+          <div className="flex items-center gap-2">
+            {rubric && <button onClick={handleApply} disabled={scoredCount === 0}
+              className="px-4 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+              Apply {scoredCount} Score{scoredCount !== 1 ? 's' : ''}
+            </button>}
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+          </div>
         </div>
 
         {!rubric ? (
-          <div className="p-6">
-            <p className="text-[12px] text-text-secondary mb-4">Choose a rubric:</p>
-            <div className="grid grid-cols-2 gap-2">
-              {SCORING_RUBRICS.map((r, i) => (
-                <button key={i} onClick={() => handleSelect(i)}
-                  className="text-left bg-surface border border-border rounded-xl px-4 py-3 hover:shadow-sm hover:border-navy/30 transition-all">
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{r.domain}</span>
-                  <h3 className="text-[13px] font-semibold text-navy mt-1">{r.name}</h3>
-                  <span className="text-[10px] text-text-tertiary">{r.criteria.length} criteria · /{r.maxScore}</span>
-                </button>
-              ))}
+          /* Rubric Selection */
+          <div className="p-6 overflow-y-auto">
+            <p className="text-[12px] text-text-secondary mb-4">Choose a rubric to score all students:</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filteredRubrics.map((r, i) => {
+                const realIdx = SCORING_RUBRICS.indexOf(r)
+                return (
+                  <button key={realIdx} onClick={() => setSelectedRubric(realIdx)}
+                    className="text-left bg-surface border border-border rounded-xl px-4 py-3 hover:shadow-sm hover:border-navy/30 transition-all">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{r.domain}</span>
+                    <h3 className="text-[14px] font-semibold text-navy mt-1.5">{r.name}</h3>
+                    <p className="text-[10px] text-text-tertiary mt-0.5">{r.criteria.length} criteria · {r.criteria.map(c => c.label).join(', ')}</p>
+                  </button>
+                )
+              })}
             </div>
           </div>
         ) : (
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <button onClick={() => { setSelectedRubric(null); setScores([]) }} className="text-[11px] text-text-tertiary hover:text-navy mb-1">← Change rubric</button>
-                <h3 className="text-[15px] font-bold text-navy">{rubric.name}</h3>
-              </div>
-              <div className="text-right">
-                <div className="text-[24px] font-bold text-navy">{total}<span className="text-[14px] text-text-tertiary">/{maxTotal}</span></div>
-                <div className="text-[11px] text-text-secondary">{maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(0) : 0}%</div>
+          /* Scoring Interface: Sidebar + Rubric Grid */
+          <div className="flex flex-1 overflow-hidden">
+            {/* Student Sidebar */}
+            <div className="w-52 shrink-0 border-r border-border overflow-y-auto bg-surface-alt/30">
+              <div className="p-2 space-y-0.5">
+                {students.map((s, i) => {
+                  const total = getStudentTotal(s.id)
+                  const isComplete = total != null && allScores[s.id]?.every(v => v > 0)
+                  const isActive = i === activeStudentIdx
+                  return (
+                    <button key={s.id} onClick={() => setActiveStudentIdx(i)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-[11px] transition-all flex items-center gap-2 ${
+                        isActive ? 'bg-navy text-white' : 'hover:bg-surface-alt text-text-primary'
+                      }`}>
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
+                        isComplete ? (isActive ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700') :
+                        total != null ? (isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700') :
+                        (isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400')
+                      }`}>
+                        {isComplete ? '✓' : total != null ? '~' : (i + 1)}
+                      </span>
+                      <span className="truncate font-medium">{s.english_name}</span>
+                      {total != null && <span className={`ml-auto text-[10px] shrink-0 ${isActive ? 'text-white/70' : 'text-text-tertiary'}`}>{total}</span>}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
-            <div className="flex gap-1 mb-3 text-[8px] text-text-tertiary">
-              {LEVEL_LABELS.map((l, i) => (
-                <span key={i} className="flex-1 text-center">{i + 1} = {l}</span>
-              ))}
-            </div>
+            {/* Main Scoring Area */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {activeStudent && (
+                <>
+                  {/* Student header + nav */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <button onClick={goPrev} disabled={activeStudentIdx === 0} className="p-1.5 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={14} className="rotate-90" /></button>
+                      <div>
+                        <h3 className="text-[15px] font-bold text-navy">{activeStudent.english_name} <span className="text-text-tertiary font-normal">{activeStudent.korean_name}</span></h3>
+                        <p className="text-[10px] text-text-tertiary">Student {activeStudentIdx + 1} of {students.length}</p>
+                      </div>
+                      <button onClick={goNext} disabled={activeStudentIdx === students.length - 1} className="p-1.5 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={14} className="-rotate-90" /></button>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[28px] font-bold text-navy">{studentTotal}<span className="text-[15px] text-text-tertiary">/{maxTotal}</span></div>
+                      <div className="text-[11px] text-text-secondary">{maxTotal > 0 ? Math.round((studentTotal / maxTotal) * 100) : 0}%</div>
+                    </div>
+                  </div>
 
-            <div className="space-y-3">
-              {rubric.criteria.map((c, ci) => (
-                <div key={ci} className="bg-surface-alt/50 border border-border rounded-xl p-3">
-                  <p className="text-[11px] font-semibold text-navy mb-2">{c.label}</p>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[1, 2, 3, 4].map(v => (
-                      <button key={v} onClick={() => { const ns = [...scores]; ns[ci] = v; setScores(ns) }}
-                        className={`py-2.5 rounded-lg border-2 text-center transition-all ${
-                          scores[ci] === v ? LEVEL_COLORS[v - 1] + ' border-2 shadow-sm scale-[1.02]' : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'
-                        }`}>
-                        <div className="text-[16px] font-bold">{v}</div>
-                        <div className="text-[8px] leading-tight px-1 mt-0.5">{c.levels[v - 1]}</div>
-                      </button>
+                  {/* Level legend */}
+                  <div className="flex gap-2 mb-3">
+                    {LEVEL_LABELS.map((l, i) => (
+                      <span key={i} className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${LEVEL_COLORS[i].split(' ').slice(0, 2).join(' ')}`}>{i + 1} = {l}</span>
                     ))}
                   </div>
-                </div>
-              ))}
-            </div>
 
-            <div className="mt-5 flex justify-between items-center">
-              <p className="text-[10px] text-text-tertiary">Total: {total}/{maxTotal} ({maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(0) : 0}%)</p>
-              <button onClick={() => { onScore(total); onClose() }} disabled={scores.some(s => s === 0)}
-                className="px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-                Apply Score ({total})
-              </button>
+                  {/* Criteria Grid */}
+                  <div className="space-y-2.5">
+                    {rubric.criteria.map((c, ci) => (
+                      <div key={ci} className="bg-surface-alt/40 border border-border rounded-xl p-3">
+                        <p className="text-[11px] font-semibold text-navy mb-2">{c.label}</p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[1, 2, 3, 4].map(v => (
+                            <button key={v} onClick={() => setStudentScore(ci, v)}
+                              className={`py-2 px-1 rounded-lg border-2 text-center transition-all ${
+                                studentScores[ci] === v ? LEVEL_COLORS[v - 1] + ' ring-2 shadow-sm' : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'
+                              }`}>
+                              <div className="text-[15px] font-bold">{v}</div>
+                              <div className="text-[8px] leading-tight mt-0.5">{c.levels[v - 1]}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Auto-advance to next unscored */}
+                  {studentScores.length === rubric.criteria.length && studentScores.every(v => v > 0) && activeStudentIdx < students.length - 1 && (
+                    <div className="mt-4 flex justify-end">
+                      <button onClick={goNext} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-gold text-navy-dark hover:bg-gold-light">
+                        Next Student →
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         )}
@@ -1866,6 +1959,7 @@ function RubricScoringModal({ studentName, onScore, onClose }: {
     </div>
   )
 }
+
 
 function RubricLibraryView() {
   const [selected, setSelected] = useState<any>(null)
