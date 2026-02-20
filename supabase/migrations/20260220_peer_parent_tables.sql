@@ -108,3 +108,17 @@ CREATE TABLE IF NOT EXISTS sub_plans (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_sub_plans_class ON sub_plans(english_class);
+
+-- Quick Checks (formative spot-checks per standard)
+CREATE TABLE IF NOT EXISTS quick_checks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  standard_code TEXT NOT NULL,
+  english_class TEXT NOT NULL,
+  student_grade INTEGER NOT NULL,
+  mark TEXT NOT NULL CHECK (mark IN ('got_it', 'almost', 'not_yet')),
+  created_by UUID REFERENCES teachers(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_quick_checks_std ON quick_checks(standard_code, english_class, student_grade);
+CREATE INDEX IF NOT EXISTS idx_quick_checks_student ON quick_checks(student_id);

@@ -831,7 +831,6 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
           </button>
         )})}
       </div>
-      </div>
 
       {loading ? <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div> : domainAssessments.length === 0 ? (
         <div className="p-12 text-center text-text-tertiary">No assessments in {DOMAIN_LABELS[selectedDomain][lang]}</div>
@@ -2135,3 +2134,206 @@ const QC_OPTIONS_G = [
   { value: 'not_yet', emoji: '✗', label: 'Not yet', bg: 'bg-red-100', color: 'text-red-700' },
 ]
 
+function QuickCheckView({ students, selectedClass, selectedGrade }: { students: any[]; selectedClass: string; selectedGrade: number }) {
+  const { currentTeacher, showToast } = useApp()
+  const [selectedStd, setSelectedStd] = useState<string | null>(null)
+  const [marks, setMarks] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState(false)
+  const [history, setHistory] = useState<any[]>([])
+  const [ccssData, setCcssData] = useState<any[]>([])
+  const [showArchive, setShowArchive] = useState(false)
+  const [archiveData, setArchiveData] = useState<any[]>([])
+
+  // Load CCSS standards data
+  useEffect(() => {
+    import('../curriculum/ccss-standards').then(m => {
+      if (m.CCSS_STANDARDS) setCcssData(m.CCSS_STANDARDS)
+    }).catch(() => {})
+  }, [])
+
+  const adj = getAdjustedGradeQC(selectedGrade, selectedClass)
+  const allStandards = useMemo(() => {
+    if (ccssData.length === 0) return []
+    const CCSS_DOMAINS = [
+      { key: 'reading', label: 'Reading' }, { key: 'phonics', label: 'Phonics' },
+      { key: 'writing', label: 'Writing' }, { key: 'speaking', label: 'Speaking' },
+      { key: 'language', label: 'Language' },
+    ]
+    return CCSS_DOMAINS.flatMap(d => getClustersQC(d.key, adj, ccssData).flatMap(c => c.standards))
+  }, [adj, ccssData])
+
+  useEffect(() => {
+    if (!selectedStd) return
+    ;(async () => {
+      const { data } = await supabase.from('quick_checks').select('*').eq('standard_code', selectedStd).eq('english_class', selectedClass).eq('student_grade', selectedGrade).order('created_at', { ascending: false }).limit(50)
+      setHistory(data || [])
+    })()
+  }, [selectedStd, selectedClass, selectedGrade])
+
+  // Load archive (all quick checks for this class/grade)
+  useEffect(() => {
+    if (!showArchive) return
+    ;(async () => {
+      const { data } = await supabase.from('quick_checks').select('*').eq('english_class', selectedClass).eq('student_grade', selectedGrade).order('created_at', { ascending: false }).limit(200)
+      setArchiveData(data || [])
+    })()
+  }, [showArchive, selectedClass, selectedGrade])
+
+  const saveQuickCheck = async () => {
+    if (!selectedStd || Object.keys(marks).length === 0) return
+    setSaving(true)
+    const rows = Object.entries(marks).map(([studentId, mark]) => ({
+      student_id: studentId, standard_code: selectedStd, english_class: selectedClass, student_grade: selectedGrade, mark, created_by: currentTeacher?.id,
+    }))
+    const { error } = await supabase.from('quick_checks').insert(rows)
+    if (error) { showToast(`Error: ${error.message}`); setSaving(false); return }
+    showToast(`Quick check saved for ${Object.keys(marks).length} students`)
+    setMarks({}); setSaving(false)
+    const { data } = await supabase.from('quick_checks').select('*').eq('standard_code', selectedStd).eq('english_class', selectedClass).eq('student_grade', selectedGrade).order('created_at', { ascending: false }).limit(50)
+    setHistory(data || [])
+  }
+
+  if (showArchive) {
+    // Group archive by standard, then by date
+    const byStd: Record<string, Record<string, Record<string, number>>> = {}
+    archiveData.forEach((r: any) => {
+      const std = r.standard_code
+      const d = new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      if (!byStd[std]) byStd[std] = {}
+      if (!byStd[std][d]) byStd[std][d] = { got_it: 0, almost: 0, not_yet: 0 }
+      byStd[std][d][r.mark] = (byStd[std][d][r.mark] || 0) + 1
+    })
+
+    return (
+      <div className="px-2 py-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[15px] font-bold text-navy">Quick Check Archive</h3>
+          <button onClick={() => setShowArchive(false)} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">Back to Quick Check</button>
+        </div>
+        {Object.keys(byStd).length === 0 ? (
+          <p className="text-center text-text-tertiary py-8 text-[12px]">No quick checks recorded yet for {selectedClass} Grade {selectedGrade}.</p>
+        ) : (
+          <div className="space-y-3">
+            {Object.entries(byStd).sort(([a], [b]) => a.localeCompare(b)).map(([std, dates]) => (
+              <div key={std} className="bg-surface border border-border rounded-xl p-4">
+                <h4 className="text-[12px] font-bold text-navy mb-2">{std}</h4>
+                <div className="space-y-1">
+                  {Object.entries(dates).map(([date, counts]) => {
+                    const total = counts.got_it + counts.almost + counts.not_yet
+                    return (
+                      <div key={date} className="flex items-center gap-3">
+                        <span className="text-[11px] text-text-tertiary w-16">{date}</span>
+                        <div className="flex-1 flex h-4 rounded-full overflow-hidden bg-surface-alt">
+                          {counts.got_it > 0 && <div className="bg-green-400 h-full" style={{ width: `${(counts.got_it / total) * 100}%` }} />}
+                          {counts.almost > 0 && <div className="bg-amber-400 h-full" style={{ width: `${(counts.almost / total) * 100}%` }} />}
+                          {counts.not_yet > 0 && <div className="bg-red-400 h-full" style={{ width: `${(counts.not_yet / total) * 100}%` }} />}
+                        </div>
+                        <span className="text-[9px] text-green-600 font-medium w-8">{counts.got_it}</span>
+                        <span className="text-[9px] text-amber-600 font-medium w-8">{counts.almost}</span>
+                        <span className="text-[9px] text-red-600 font-medium w-8">{counts.not_yet}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-2 py-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-[10px] text-amber-700">
+          Quick checks are formative evidence only -- they do NOT affect grades.
+        </div>
+        <button onClick={() => setShowArchive(true)} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">View Archive</button>
+      </div>
+      <div className="grid grid-cols-3 gap-5">
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
+            <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Select a Standard</p>
+          </div>
+          <div className="max-h-[500px] overflow-y-auto divide-y divide-border">
+            {allStandards.length === 0 && <p className="p-4 text-[11px] text-text-tertiary">Loading standards...</p>}
+            {allStandards.map(std => (
+              <button key={std.code} onClick={() => { setSelectedStd(std.code); setMarks({}) }}
+                className={`w-full text-left px-4 py-2.5 hover:bg-surface-alt/50 transition-colors ${selectedStd === std.code ? 'bg-navy/5 border-l-2 border-navy' : ''}`}>
+                <span className="text-[11px] font-bold text-navy">{std.code}</span>
+                <p className="text-[10px] text-text-secondary leading-snug truncate">{std.text}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="col-span-2">
+          {!selectedStd ? (
+            <div className="bg-surface border border-border rounded-xl p-12 text-center">
+              <Zap size={24} className="mx-auto text-text-tertiary mb-2" />
+              <p className="text-[13px] text-text-tertiary">Select a standard to begin a quick check.</p>
+              <p className="text-[11px] text-text-tertiary mt-1">3 taps per student, ~90 seconds for 16 students.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-surface border border-border rounded-xl overflow-hidden">
+                <div className="px-5 py-3 bg-navy/5 border-b border-border flex items-center justify-between">
+                  <div>
+                    <p className="text-[13px] font-semibold text-navy">{selectedStd}</p>
+                    <p className="text-[11px] text-text-secondary">{allStandards.find(s => s.code === selectedStd)?.text}</p>
+                  </div>
+                  <button onClick={saveQuickCheck} disabled={saving || Object.keys(marks).length === 0}
+                    className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
+                    {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save ({Object.keys(marks).length})
+                  </button>
+                </div>
+                <div className="p-3 grid grid-cols-2 gap-2">
+                  {students.map(s => {
+                    const m = marks[s.id]
+                    return (
+                      <div key={s.id} className="flex items-center gap-2 bg-surface-alt/30 rounded-lg px-3 py-2">
+                        <span className="text-[12px] font-medium text-navy flex-1 truncate">{s.english_name}</span>
+                        <div className="flex gap-1">
+                          {QC_OPTIONS_G.map(opt => (
+                            <button key={opt.value} onClick={() => setMarks(p => ({ ...p, [s.id]: opt.value }))}
+                              className={`w-8 h-8 rounded-lg border text-[13px] font-bold transition-all ${m === opt.value ? `${opt.bg} ${opt.color} border-2` : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'}`}
+                              title={opt.label}>{opt.emoji}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              {history.length > 0 && (
+                <div className="bg-surface border border-border rounded-xl overflow-hidden">
+                  <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
+                    <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Recent Quick Checks for {selectedStd}</p>
+                  </div>
+                  <div className="px-4 py-3 max-h-[180px] overflow-y-auto">
+                    {(() => {
+                      const byDate: Record<string, Record<string, number>> = {}
+                      history.forEach((h: any) => {
+                        const d = new Date(h.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        if (!byDate[d]) byDate[d] = { got_it: 0, almost: 0, not_yet: 0 }
+                        byDate[d][h.mark as string] = (byDate[d][h.mark as string] || 0) + 1
+                      })
+                      return Object.entries(byDate).map(([date, counts]) => (
+                        <div key={date} className="flex items-center gap-3 py-1.5">
+                          <span className="text-[11px] text-text-tertiary w-16">{date}</span>
+                          <span className="text-[10px] text-green-600 font-medium">{counts.got_it || 0} got it</span>
+                          <span className="text-[10px] text-amber-600 font-medium">{counts.almost || 0} almost</span>
+                          <span className="text-[10px] text-red-600 font-medium">{counts.not_yet || 0} not yet</span>
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
