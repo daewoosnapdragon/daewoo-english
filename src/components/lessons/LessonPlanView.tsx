@@ -288,9 +288,9 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
 
     pw.document.write(`<!DOCTYPE html><html><head><title>${selectedClass} Grade ${selectedGrade} - ${mn} ${year}</title>
 <style>
-  @page { size: ${orientation}; margin: 12mm 14mm; }
+  @page { size: ${orientation}; margin: ${orientation === 'portrait' ? '8mm 10mm' : '12mm 14mm'}; }
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; ${orientation === 'portrait' ? 'font-size: 85%;' : ''} }
 
   /* ── HEADER ── */
   .header {
@@ -404,7 +404,10 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
               <button onClick={() => setViewMode('week')} className={`px-3 py-1.5 text-[11px] font-medium ${viewMode === 'week' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-gray-100'}`}>Week</button>
             </div>
             {canEdit && <button onClick={() => setShowSetup(!showSetup)} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium border transition-all ${showSetup ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border'}`}><Settings size={14} /> Day Setup</button>}
-            <button onClick={() => handlePrint('landscape')} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print</button>
+            <div className="flex gap-1">
+              <button onClick={() => handlePrint('landscape')} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print Landscape</button>
+              <button onClick={() => handlePrint('portrait')} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium bg-surface-alt text-text-secondary hover:bg-border"><Printer size={14} /> Print Portrait</button>
+            </div>
           </div>
         </div>
         {tabBar}

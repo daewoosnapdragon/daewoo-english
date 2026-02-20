@@ -6,7 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
-import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays } from 'lucide-react'
+import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
@@ -52,7 +52,7 @@ interface Assessment {
 }
 
 interface StudentRow { id: string; english_name: string; korean_name: string; photo_url?: string }
-type SubView = 'entry' | 'overview' | 'student' | 'batch' | 'calendar' | 'rubrics' | 'itemAnalysis' | 'blueprint'
+type SubView = 'entry' | 'overview' | 'student' | 'batch' | 'calendar' | 'rubrics' | 'itemAnalysis' | 'quickCheck'
 type LangKey = 'en' | 'ko'
 
 interface Semester { id: string; name: string; name_ko: string; type: string; is_active: boolean }
@@ -263,20 +263,20 @@ export default function GradesView() {
             )}
           </div>
         </div>
-        <div className="flex gap-1 mt-4">
+        <div className="flex gap-px bg-border/50 rounded-xl p-1 mt-4 overflow-x-auto">
           {([
             { id: 'entry' as SubView, icon: FileText, label: lang === 'ko' ? '점수 입력' : 'Score Entry' },
             { id: 'batch' as SubView, icon: ClipboardEdit, label: lang === 'ko' ? '일괄 입력' : 'Batch Grid' },
             { id: 'overview' as SubView, icon: BarChart3, label: lang === 'ko' ? '도메인 개요' : 'Domain Overview' },
             { id: 'student' as SubView, icon: User, label: lang === 'ko' ? '학생별 보기' : 'Student View' },
-            { id: 'calendar' as SubView, icon: CalendarDays, label: lang === 'ko' ? '평가 일정' : 'Assessment Calendar' },
-            { id: 'rubrics' as SubView, icon: ClipboardEdit, label: lang === 'ko' ? '루브릭' : 'Rubric Library' },
+            { id: 'calendar' as SubView, icon: CalendarDays, label: lang === 'ko' ? '평가 일정' : 'Calendar' },
+            { id: 'rubrics' as SubView, icon: ClipboardEdit, label: lang === 'ko' ? '루브릭' : 'Rubrics' },
             { id: 'itemAnalysis' as SubView, icon: BarChart3, label: lang === 'ko' ? '문항 분석' : 'Item Analysis' },
-            { id: 'blueprint' as SubView, icon: FileText, label: lang === 'ko' ? '평가 설계' : 'Assessment Blueprint' },
+            { id: 'quickCheck' as SubView, icon: Zap, label: lang === 'ko' ? '빠른 점검' : 'Quick Check' },
           ]).map(tab => (
             <button key={tab.id} onClick={() => setSubView(tab.id)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${subView === tab.id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
-              <tab.icon size={14} /> {tab.label}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap ${subView === tab.id ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt hover:text-navy'}`}>
+              <tab.icon size={13} /> {tab.label}
             </button>
           ))}
         </div>
@@ -322,7 +322,7 @@ export default function GradesView() {
         {subView === 'calendar' && <AssessmentCalendarView allAssessments={allAssessments} lang={lang} />}
         {subView === 'rubrics' && <RubricLibraryView />}
         {subView === 'itemAnalysis' && <ItemAnalysisView allAssessments={allAssessments} students={students} />}
-        {subView === 'blueprint' && <AssessmentBlueprintView />}
+        {subView === 'quickCheck' && <QuickCheckView students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} />}
       </div>
 
       {(showCreateModal || editingAssessment) && <AssessmentModal grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} editing={editingAssessment} semesterId={selectedSemester} onClose={() => { setShowCreateModal(false); setEditingAssessment(null) }} onSaved={(a: Assessment) => { setShowCreateModal(false); setEditingAssessment(null); loadAssessments().then(() => setSelectedAssessment(a)); loadAllAssessments() }} />}
@@ -1707,77 +1707,143 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
 // ─── #36 Rubric Builder and Library ───────────────────────────────────
 
 function RubricLibraryView() {
-  const { currentTeacher, showToast } = useApp()
-  const [rubrics, setRubrics] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', domain: 'writing', criteria: [{ label: '', levels: ['', '', '', ''] }] as { label: string; levels: string[] }[] })
   const [selected, setSelected] = useState<any>(null)
+  const [filterDomain, setFilterDomain] = useState<string>('all')
 
   const LEVEL_LABELS = ['Beginning (1)', 'Developing (2)', 'Proficient (3)', 'Advanced (4)']
   const LEVEL_COLORS = ['bg-red-50 border-red-200', 'bg-amber-50 border-amber-200', 'bg-green-50 border-green-200', 'bg-blue-50 border-blue-200']
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('rubrics').select('*').order('created_at', { ascending: false })
-      setRubrics(data || [])
-      setLoading(false)
-    })()
-  }, [])
+  // Pre-built rubric library: 5 criteria x 4 levels = 20 points each
+  const RUBRIC_LIBRARY: { name: string; domain: string; difficulty: string; criteria: { label: string; levels: string[] }[] }[] = [
+    // ─── WRITING ───
+    { name: 'Simple Sentence Writing', domain: 'writing', difficulty: 'easy',
+      criteria: [
+        { label: 'Capitalization', levels: ['No capitals used', 'Some capitals, inconsistent', 'Capitals at start of most sentences', 'Correct capitals throughout'] },
+        { label: 'Punctuation', levels: ['No end punctuation', 'Some periods, inconsistent', 'End punctuation on most sentences', 'Correct punctuation throughout'] },
+        { label: 'Spelling', levels: ['Most words misspelled', 'Some sight words spelled correctly', 'Most sight/CVC words correct', 'Nearly all words spelled correctly'] },
+        { label: 'Completeness', levels: ['Incomplete thought', 'Partial sentence', 'Complete sentence with subject + verb', 'Complete, detailed sentence'] },
+        { label: 'Handwriting', levels: ['Illegible', 'Some letters formed correctly', 'Most letters legible, on line', 'Neat, consistent letter formation'] },
+      ] },
+    { name: 'Narrative Writing', domain: 'writing', difficulty: 'medium',
+      criteria: [
+        { label: 'Story Structure', levels: ['No clear beginning/middle/end', 'Has beginning OR end, not both', 'Has beginning, middle, and end', 'Strong opening, developed middle, satisfying conclusion'] },
+        { label: 'Character/Setting', levels: ['No characters or setting described', 'Names a character or place', 'Describes character and setting with some detail', 'Vivid character and setting with sensory details'] },
+        { label: 'Sequencing', levels: ['Events are random/unconnected', 'Some events in order', 'Events in logical sequence with transitions', 'Smooth flow with varied transitions (first, then, suddenly)'] },
+        { label: 'Word Choice', levels: ['Very basic/repetitive words', 'Some descriptive words', 'Good variety of words, some vivid', 'Strong word choice with descriptive language'] },
+        { label: 'Conventions', levels: ['Many errors interfere with reading', 'Frequent errors but readable', 'Few errors, does not interfere', 'Nearly error-free'] },
+      ] },
+    { name: 'Opinion/Persuasive Writing', domain: 'writing', difficulty: 'medium',
+      criteria: [
+        { label: 'Opinion Statement', levels: ['No clear opinion stated', 'Opinion is vague or unclear', 'Clear opinion stated', 'Strong, engaging opinion with context'] },
+        { label: 'Reasons/Evidence', levels: ['No reasons given', 'One reason, no details', 'Two or more reasons with some details', 'Multiple reasons with specific evidence/examples'] },
+        { label: 'Organization', levels: ['No logical order', 'Some organization attempted', 'Reasons grouped logically with transitions', 'Strong introduction, organized body, restated conclusion'] },
+        { label: 'Audience Awareness', levels: ['No awareness of reader', 'Some attempt to address reader', 'Considers reader, uses some persuasive language', 'Engages reader with persuasive techniques'] },
+        { label: 'Conventions', levels: ['Many errors interfere with reading', 'Frequent errors but readable', 'Few errors, does not interfere', 'Nearly error-free'] },
+      ] },
+    { name: 'Informational Writing', domain: 'writing', difficulty: 'hard',
+      criteria: [
+        { label: 'Topic Introduction', levels: ['No topic identified', 'Topic mentioned but unclear', 'Clear topic sentence/introduction', 'Engaging introduction with clear focus'] },
+        { label: 'Facts/Details', levels: ['No facts or details', 'One or two basic facts', 'Several relevant facts with explanation', 'Rich details with examples, definitions, or comparisons'] },
+        { label: 'Organization', levels: ['No structure', 'Some grouping of ideas', 'Clear paragraphs with topic sentences', 'Logical structure with headings, transitions, conclusion'] },
+        { label: 'Domain Vocabulary', levels: ['No topic-specific words', 'One or two topic words', 'Uses several content-specific terms', 'Precise vocabulary naturally integrated'] },
+        { label: 'Conventions', levels: ['Many errors interfere with reading', 'Frequent errors but readable', 'Few errors, does not interfere', 'Nearly error-free'] },
+      ] },
+    // ─── READING ───
+    { name: 'Reading Response', domain: 'reading', difficulty: 'easy',
+      criteria: [
+        { label: 'Text Evidence', levels: ['No reference to text', 'Vague reference to text', 'Includes relevant detail from text', 'Cites specific evidence with page/detail'] },
+        { label: 'Comprehension', levels: ['Does not answer the question', 'Partially answers question', 'Answers question accurately', 'Thorough answer with deeper understanding'] },
+        { label: 'Connection', levels: ['No personal connection', 'Vague connection attempted', 'Makes relevant connection to self/world/text', 'Insightful connection that deepens meaning'] },
+        { label: 'Completeness', levels: ['One word or blank', 'Incomplete thought', 'Complete sentences answering prompt', 'Detailed response exceeding expectations'] },
+        { label: 'Vocabulary Use', levels: ['No story/reading vocabulary used', 'One vocabulary word attempted', 'Uses vocabulary from text correctly', 'Integrates vocabulary naturally in response'] },
+      ] },
+    { name: 'Oral Reading Fluency', domain: 'reading', difficulty: 'easy',
+      criteria: [
+        { label: 'Accuracy', levels: ['Below 85% accuracy', '85-89% accuracy', '90-95% accuracy', '96%+ accuracy'] },
+        { label: 'Rate', levels: ['Very slow, labored', 'Slow but steady', 'Appropriate pace for grade', 'Smooth, natural pace'] },
+        { label: 'Expression', levels: ['Monotone throughout', 'Some expression on familiar words', 'Appropriate expression for dialogue/punctuation', 'Natural, varied expression throughout'] },
+        { label: 'Phrasing', levels: ['Word-by-word reading', 'Two-word phrases', 'Three-four word meaningful phrases', 'Reads in natural, meaningful phrases'] },
+        { label: 'Self-Correction', levels: ['Does not notice errors', 'Notices some errors, no fix', 'Self-corrects some errors', 'Monitors and self-corrects consistently'] },
+      ] },
+    { name: 'Book Report/Summary', domain: 'reading', difficulty: 'hard',
+      criteria: [
+        { label: 'Summary', levels: ['Cannot retell story', 'Retells one part', 'Includes main events in order', 'Concise summary with key events and resolution'] },
+        { label: 'Character Analysis', levels: ['No character discussion', 'Names characters only', 'Describes character traits', 'Analyzes character growth/motivation'] },
+        { label: 'Theme/Message', levels: ['No theme identified', 'Vague theme mentioned', 'Identifies theme with text support', 'Explains theme with multiple text examples'] },
+        { label: 'Opinion/Recommendation', levels: ['No opinion given', 'Says liked/disliked only', 'States opinion with reason', 'Convincing recommendation with specific reasons'] },
+        { label: 'Presentation', levels: ['Incomplete or off-topic', 'Mostly on topic', 'Well-organized response', 'Polished, engaging presentation'] },
+      ] },
+    // ─── SPEAKING ───
+    { name: 'Oral Presentation', domain: 'speaking', difficulty: 'medium',
+      criteria: [
+        { label: 'Content', levels: ['Off-topic or no content', 'Minimal content, lacks detail', 'Clear content with supporting details', 'Rich content, well-developed ideas'] },
+        { label: 'Volume/Clarity', levels: ['Cannot be heard/understood', 'Sometimes hard to hear', 'Speaks clearly most of the time', 'Clear, confident voice throughout'] },
+        { label: 'Eye Contact', levels: ['Reads from paper/no eye contact', 'Occasional glances at audience', 'Looks at audience frequently', 'Maintains natural eye contact'] },
+        { label: 'Organization', levels: ['No clear structure', 'Some organization attempted', 'Clear beginning, middle, end', 'Smooth, logical flow with transitions'] },
+        { label: 'Language Use', levels: ['Single words or L1 only', 'Simple phrases with many errors', 'Complete sentences with some errors', 'Varied sentences, minimal errors'] },
+      ] },
+    { name: 'Partner Discussion', domain: 'speaking', difficulty: 'easy',
+      criteria: [
+        { label: 'Participation', levels: ['Does not speak', 'Speaks only when prompted', 'Contributes without prompting', 'Actively contributes and extends discussion'] },
+        { label: 'Listening', levels: ['Does not attend to partner', 'Sometimes listens', 'Listens and responds to partner', 'Builds on partner ideas with follow-up'] },
+        { label: 'Sentence Structure', levels: ['Single words or gestures', 'Phrases or fragments', 'Complete sentences', 'Varied, complex sentences'] },
+        { label: 'Topic Relevance', levels: ['Off-topic responses', 'Sometimes relevant', 'Stays on topic', 'Deepens topic with new ideas/questions'] },
+        { label: 'Politeness', levels: ['Interrupts/ignores partner', 'Sometimes takes turns', 'Takes turns appropriately', 'Uses discussion norms (I agree, I think, because)'] },
+      ] },
+    // ─── PHONICS ───
+    { name: 'Phonics Decoding Check', domain: 'phonics', difficulty: 'easy',
+      criteria: [
+        { label: 'CVC Words', levels: ['Cannot blend CVC', 'Blends some CVC with support', 'Blends most CVC independently', 'Blends all CVC quickly and accurately'] },
+        { label: 'Digraphs/Blends', levels: ['Does not recognize', 'Recognizes some with support', 'Reads most blends/digraphs', 'Reads all blends/digraphs fluently'] },
+        { label: 'Long Vowel Patterns', levels: ['Cannot identify patterns', 'Recognizes some CVCe', 'Reads CVCe and common teams', 'Reads all long vowel patterns accurately'] },
+        { label: 'Multisyllabic Words', levels: ['Cannot attempt', 'Attempts but cannot decode', 'Decodes with some success', 'Decodes multisyllabic words accurately'] },
+        { label: 'Application in Text', levels: ['Cannot apply skills in reading', 'Applies skills inconsistently', 'Usually applies skills when reading', 'Consistently applies all skills in context'] },
+      ] },
+    // ─── LANGUAGE ───
+    { name: 'Grammar & Usage', domain: 'language', difficulty: 'medium',
+      criteria: [
+        { label: 'Subject-Verb Agreement', levels: ['No agreement attempted', 'Inconsistent agreement', 'Mostly correct agreement', 'Consistent, correct agreement'] },
+        { label: 'Verb Tense', levels: ['Random tense shifts', 'Some tense consistency', 'Mostly consistent tense', 'Correct and consistent tense use'] },
+        { label: 'Sentence Variety', levels: ['Only simple sentences', 'Attempts compound sentences', 'Uses simple and compound sentences', 'Varied sentence types (simple, compound, complex)'] },
+        { label: 'Word Order', levels: ['L1 word order throughout', 'Frequent word order errors', 'Mostly correct English word order', 'Natural English word order consistently'] },
+        { label: 'Academic Language', levels: ['Only conversational language', 'Some academic words attempted', 'Uses grade-level academic vocabulary', 'Precise academic language in context'] },
+      ] },
+  ]
 
-  const handleAdd = async () => {
-    if (!form.name.trim() || !currentTeacher) return
-    const { data, error } = await supabase.from('rubrics').insert({
-      name: form.name.trim(), domain: form.domain,
-      criteria: form.criteria.filter(c => c.label.trim()),
-      created_by: currentTeacher.id,
-    }).select().single()
-    if (error) { showToast('Error saving rubric'); return }
-    if (data) setRubrics(prev => [data, ...prev])
-    setForm({ name: '', domain: 'writing', criteria: [{ label: '', levels: ['', '', '', ''] }] })
-    setShowForm(false)
-    showToast('Rubric saved')
-  }
-
-  const addCriterion = () => setForm(f => ({ ...f, criteria: [...f.criteria, { label: '', levels: ['', '', '', ''] }] }))
-  const updateCriterion = (i: number, field: string, value: string, levelIdx?: number) => {
-    setForm(f => {
-      const c = [...f.criteria]
-      if (field === 'label') c[i] = { ...c[i], label: value }
-      else if (field === 'level' && levelIdx != null) { const l = [...c[i].levels]; l[levelIdx] = value; c[i] = { ...c[i], levels: l } }
-      return { ...f, criteria: c }
-    })
-  }
-
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  const domains = ['all', 'writing', 'reading', 'speaking', 'phonics', 'language']
+  const filtered = filterDomain === 'all' ? RUBRIC_LIBRARY : RUBRIC_LIBRARY.filter(r => r.domain === filterDomain)
+  const diffOrder: Record<string, number> = { easy: 0, medium: 1, hard: 2 }
+  const sorted = [...filtered].sort((a, b) => (diffOrder[a.difficulty] || 0) - (diffOrder[b.difficulty] || 0))
 
   if (selected) {
     return (
       <div className="px-10 py-6">
-        <button onClick={() => setSelected(null)} className="text-[12px] text-text-tertiary hover:text-navy mb-3 flex items-center gap-1"><X size={14} /> Back</button>
+        <button onClick={() => setSelected(null)} className="text-[12px] text-text-tertiary hover:text-navy mb-3 flex items-center gap-1"><X size={14} /> Back to Library</button>
         <div className="bg-surface border border-border rounded-xl p-5">
-          <h2 className="text-[16px] font-bold text-navy mb-1">{selected.name}</h2>
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{selected.domain}</span>
-          {selected.criteria?.length > 0 && (
-            <table className="w-full mt-4 text-[11px] border-collapse">
-              <thead>
-                <tr>
-                  <th className="text-left px-3 py-2 bg-surface-alt border border-border font-semibold w-28">Criteria</th>
-                  {LEVEL_LABELS.map((l, i) => <th key={i} className={`text-center px-3 py-2 border border-border font-semibold ${LEVEL_COLORS[i]}`}>{l}</th>)}
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-[16px] font-bold text-navy">{selected.name}</h2>
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{selected.domain}</span>
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${selected.difficulty === 'easy' ? 'bg-green-100 text-green-700' : selected.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{selected.difficulty}</span>
+            <span className="text-[10px] text-text-tertiary ml-auto">20 points total (5 criteria x 4 levels)</span>
+          </div>
+          <table className="w-full text-[11px] border-collapse">
+            <thead>
+              <tr>
+                <th className="text-left px-3 py-2 bg-surface-alt border border-border font-semibold w-32">Criteria</th>
+                {LEVEL_LABELS.map((l, i) => <th key={i} className={`text-center px-3 py-2 border border-border font-semibold ${LEVEL_COLORS[i]}`}>{l}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {selected.criteria.map((c: any, i: number) => (
+                <tr key={i}>
+                  <td className="px-3 py-2.5 border border-border font-semibold text-navy">{c.label}</td>
+                  {c.levels.map((desc: string, j: number) => (
+                    <td key={j} className={`px-3 py-2.5 border border-border text-[10px] leading-snug ${LEVEL_COLORS[j]}`}>{desc}</td>
+                  ))}
                 </tr>
-              </thead>
-              <tbody>
-                {selected.criteria.map((c: any, i: number) => (
-                  <tr key={i}>
-                    <td className="px-3 py-2.5 border border-border font-semibold text-navy">{c.label}</td>
-                    {(c.levels || []).map((desc: string, j: number) => (
-                      <td key={j} className={`px-3 py-2.5 border border-border text-[10px] ${LEVEL_COLORS[j]}`}>{desc || '--'}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     )
@@ -1785,50 +1851,28 @@ function RubricLibraryView() {
 
   return (
     <div className="px-10 py-6">
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-[12px] text-text-secondary">{rubrics.length} rubric{rubrics.length !== 1 ? 's' : ''} saved</p>
-        <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">{showForm ? 'Cancel' : '+ Create Rubric'}</button>
+      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-[11px] text-blue-800">
+        Pre-built 20-point rubrics (5 criteria x 4 levels). Organized by domain from easiest to most challenging. Click any rubric to view the full scoring guide.
       </div>
-
-      {showForm && (
-        <div className="bg-surface border border-border rounded-xl p-5 mb-5 space-y-3">
-          <div className="flex gap-3">
-            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Rubric name"
-              className="flex-1 px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface" />
-            <select value={form.domain} onChange={e => setForm(f => ({ ...f, domain: e.target.value }))}
-              className="px-3 py-2 border border-border rounded-lg text-[11px] bg-surface outline-none">
-              {['reading', 'phonics', 'writing', 'speaking', 'language'].map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </div>
-          {form.criteria.map((c, i) => (
-            <div key={i} className="border border-border rounded-lg p-3 space-y-2">
-              <input value={c.label} onChange={e => updateCriterion(i, 'label', e.target.value)} placeholder={`Criterion ${i + 1} (e.g., Organization, Voice, Conventions)`}
-                className="w-full px-3 py-1.5 border border-border rounded text-[11px] outline-none focus:border-navy bg-surface font-medium" />
-              <div className="grid grid-cols-4 gap-2">
-                {LEVEL_LABELS.map((l, j) => (
-                  <div key={j}>
-                    <label className={`text-[8px] font-bold block mb-0.5 ${['text-red-600', 'text-amber-600', 'text-green-600', 'text-blue-600'][j]}`}>{l}</label>
-                    <textarea value={c.levels[j]} onChange={e => updateCriterion(i, 'level', e.target.value, j)}
-                      placeholder="Description..." className="w-full px-2 py-1 border border-border rounded text-[9px] outline-none resize-none h-12 bg-surface" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          <button onClick={addCriterion} className="text-[11px] text-navy font-medium hover:underline">+ Add criterion</button>
-          <div><button onClick={handleAdd} disabled={!form.name.trim()} className="px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white disabled:opacity-40">Save Rubric</button></div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        {rubrics.map(r => (
-          <button key={r.id} onClick={() => setSelected(r)} className="text-left bg-surface border border-border rounded-xl px-4 py-3 hover:shadow-sm transition-all">
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{r.domain}</span>
-            <h3 className="text-[13px] font-semibold text-navy mt-1">{r.name}</h3>
-            <span className="text-[10px] text-text-tertiary">{(r.criteria || []).length} criteria, 4 levels</span>
+      <div className="flex gap-1 mb-4">
+        {domains.map(d => (
+          <button key={d} onClick={() => setFilterDomain(d)}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterDomain === d ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border'}`}>
+            {d === 'all' ? 'All' : d.charAt(0).toUpperCase() + d.slice(1)}
           </button>
         ))}
-        {rubrics.length === 0 && <p className="col-span-2 text-center text-text-tertiary py-8 text-[12px]">No rubrics yet. Create one to get started.</p>}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {sorted.map((r, i) => (
+          <button key={i} onClick={() => setSelected(r)} className="text-left bg-surface border border-border rounded-xl px-4 py-3 hover:shadow-sm transition-all">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{r.domain}</span>
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${r.difficulty === 'easy' ? 'bg-green-100 text-green-700' : r.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{r.difficulty}</span>
+            </div>
+            <h3 className="text-[13px] font-semibold text-navy">{r.name}</h3>
+            <span className="text-[10px] text-text-tertiary">{r.criteria.length} criteria, 20 pts</span>
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -2056,6 +2100,164 @@ function AssessmentBlueprintView() {
           </div>
         ))}
         {blueprints.length === 0 && <p className="text-center text-text-tertiary py-8 text-[12px]">No blueprints yet.</p>}
+      </div>
+    </div>
+  )
+}
+
+// ─── Quick Check (moved from Curriculum) ──────────────────────────────
+
+function getAdjustedGradeQC(studentGrade: number, englishClass: string): number {
+  const CLASS_OFFSETS: Record<string, number> = { Lily: -2, Camellia: -1, Daisy: 0, Sunflower: 0, Marigold: 1, Snapdragon: 1 }
+  return Math.max(1, Math.min(5, studentGrade + (CLASS_OFFSETS[englishClass] || 0)))
+}
+
+function getClustersQC(domain: string, grade: number) {
+  try {
+    const { CCSS_STANDARDS } = require('../curriculum/ccss-standards')
+    if (!CCSS_STANDARDS) return []
+    const domainStds = CCSS_STANDARDS.filter((s: any) => s.domain === domain && s.grade === grade)
+    const clusters: Record<string, any[]> = {}
+    domainStds.forEach((s: any) => {
+      const cl = s.cluster || 'General'
+      if (!clusters[cl]) clusters[cl] = []
+      clusters[cl].push(s)
+    })
+    return Object.entries(clusters).map(([name, standards]) => ({ name, standards }))
+  } catch { return [] }
+}
+
+const QC_OPTIONS_G = [
+  { value: 'got_it', emoji: '✓', label: 'Got it', bg: 'bg-green-100', color: 'text-green-700' },
+  { value: 'almost', emoji: '~', label: 'Almost', bg: 'bg-amber-100', color: 'text-amber-700' },
+  { value: 'not_yet', emoji: '✗', label: 'Not yet', bg: 'bg-red-100', color: 'text-red-700' },
+]
+
+function QuickCheckView({ students, selectedClass, selectedGrade }: { students: any[]; selectedClass: string; selectedGrade: number }) {
+  const { currentTeacher, showToast } = useApp()
+  const [selectedStd, setSelectedStd] = useState<string | null>(null)
+  const [marks, setMarks] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState(false)
+  const [history, setHistory] = useState<any[]>([])
+
+  const adj = getAdjustedGradeQC(selectedGrade, selectedClass)
+  const allStandards = useMemo(() => {
+    const CCSS_DOMAINS = [
+      { key: 'reading', label: 'Reading' }, { key: 'phonics', label: 'Phonics' },
+      { key: 'writing', label: 'Writing' }, { key: 'speaking', label: 'Speaking' },
+      { key: 'language', label: 'Language' },
+    ]
+    return CCSS_DOMAINS.flatMap(d => getClustersQC(d.key, adj).flatMap(c => c.standards))
+  }, [adj])
+
+  useEffect(() => {
+    if (!selectedStd) return
+    ;(async () => {
+      const { data } = await supabase.from('quick_checks').select('*').eq('standard_code', selectedStd).eq('english_class', selectedClass).eq('student_grade', selectedGrade).order('created_at', { ascending: false }).limit(20)
+      setHistory(data || [])
+    })()
+  }, [selectedStd, selectedClass, selectedGrade])
+
+  const saveQuickCheck = async () => {
+    if (!selectedStd || Object.keys(marks).length === 0) return
+    setSaving(true)
+    const rows = Object.entries(marks).map(([studentId, mark]) => ({
+      student_id: studentId, standard_code: selectedStd, english_class: selectedClass, student_grade: selectedGrade, mark, created_by: currentTeacher?.id,
+    }))
+    const { error } = await supabase.from('quick_checks').insert(rows)
+    if (error) { showToast(`Error: ${error.message}`); setSaving(false); return }
+    showToast(`Quick check saved for ${Object.keys(marks).length} students`)
+    setMarks({}); setSaving(false)
+    const { data } = await supabase.from('quick_checks').select('*').eq('standard_code', selectedStd).eq('english_class', selectedClass).eq('student_grade', selectedGrade).order('created_at', { ascending: false }).limit(20)
+    setHistory(data || [])
+  }
+
+  return (
+    <div className="px-2 py-4">
+      <div className="grid grid-cols-3 gap-5">
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
+            <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Select a Standard</p>
+          </div>
+          <div className="max-h-[500px] overflow-y-auto divide-y divide-border">
+            {allStandards.map(std => (
+              <button key={std.code} onClick={() => { setSelectedStd(std.code); setMarks({}) }}
+                className={`w-full text-left px-4 py-2.5 hover:bg-surface-alt/50 transition-colors ${selectedStd === std.code ? 'bg-navy/5 border-l-2 border-navy' : ''}`}>
+                <span className="text-[11px] font-bold text-navy">{std.code}</span>
+                <p className="text-[10px] text-text-secondary leading-snug truncate">{std.text}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="col-span-2">
+          {!selectedStd ? (
+            <div className="bg-surface border border-border rounded-xl p-12 text-center">
+              <Zap size={24} className="mx-auto text-text-tertiary mb-2" />
+              <p className="text-[13px] text-text-tertiary">Select a standard to begin a quick check.</p>
+              <p className="text-[11px] text-text-tertiary mt-1">3 taps per student, ~90 seconds for 16 students.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-surface border border-border rounded-xl overflow-hidden">
+                <div className="px-5 py-3 bg-navy/5 border-b border-border flex items-center justify-between">
+                  <div>
+                    <p className="text-[13px] font-semibold text-navy">{selectedStd}</p>
+                    <p className="text-[11px] text-text-secondary">{allStandards.find(s => s.code === selectedStd)?.text}</p>
+                  </div>
+                  <button onClick={saveQuickCheck} disabled={saving || Object.keys(marks).length === 0}
+                    className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
+                    {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save ({Object.keys(marks).length})
+                  </button>
+                </div>
+                <div className="p-3 grid grid-cols-2 gap-2">
+                  {students.map(s => {
+                    const m = marks[s.id]
+                    return (
+                      <div key={s.id} className="flex items-center gap-2 bg-surface-alt/30 rounded-lg px-3 py-2">
+                        <span className="text-[12px] font-medium text-navy flex-1 truncate">{s.english_name}</span>
+                        <div className="flex gap-1">
+                          {QC_OPTIONS_G.map(opt => (
+                            <button key={opt.value} onClick={() => setMarks(p => ({ ...p, [s.id]: opt.value }))}
+                              className={`w-8 h-8 rounded-lg border text-[13px] font-bold transition-all ${m === opt.value ? `${opt.bg} ${opt.color} border-2` : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'}`}
+                              title={opt.label}>{opt.emoji}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="px-4 py-2 border-t border-border bg-amber-50/40 text-[10px] text-amber-700">
+                  Quick checks are formative evidence only -- they do NOT affect grades or the gradebook.
+                </div>
+              </div>
+              {history.length > 0 && (
+                <div className="bg-surface border border-border rounded-xl overflow-hidden">
+                  <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
+                    <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Recent Quick Checks for {selectedStd}</p>
+                  </div>
+                  <div className="px-4 py-3 max-h-[180px] overflow-y-auto">
+                    {(() => {
+                      const byDate: Record<string, Record<string, number>> = {}
+                      history.forEach((h: any) => {
+                        const d = new Date(h.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        if (!byDate[d]) byDate[d] = { got_it: 0, almost: 0, not_yet: 0 }
+                        byDate[d][h.mark as string] = (byDate[d][h.mark as string] || 0) + 1
+                      })
+                      return Object.entries(byDate).map(([date, counts]) => (
+                        <div key={date} className="flex items-center gap-3 py-1.5">
+                          <span className="text-[11px] text-text-tertiary w-16">{date}</span>
+                          <span className="text-[10px] text-green-600 font-medium">{counts.got_it || 0} got it</span>
+                          <span className="text-[10px] text-amber-600 font-medium">{counts.almost || 0} almost</span>
+                          <span className="text-[10px] text-red-600 font-medium">{counts.not_yet || 0} not yet</span>
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -353,22 +353,25 @@ function calculateG1Composite(scores: G1Scores): {
   let wave: 1 | 2
 
   if (!hasWrittenData) {
-    // Wave 1: Oral only
-    // If teacher picked a class, use 70% oral + 30% class impression
-    // If Unsure or no impression, use 100% oral
-    const hasTeacherWeight = hasClassImpression
-    if (hasTeacherWeight) {
-      composite = oralScore * 0.70 + teacherPct * 0.30
+    // Wave 1: Oral only + teacher impression
+    // oral 30%, teacher impression 30% (of eventual full composite)
+    // But since we only have 2 of 3 components, normalize to available
+    if (hasClassImpression) {
+      composite = oralScore * 0.50 + teacherPct * 0.50
     } else {
       composite = oralScore
     }
     wave = 1
   } else {
-    // Wave 2: Both available -- 45% written + 30% oral + 25% placeholder for teacher ratings
-    // Teacher ratings come from the anecdotal phase (separate DB table), not raw_scores.
-    // For the score preview, use 45/30/25 split with teacher impression standing in
-    // until real anecdotal ratings are factored in during the meeting phase.
-    composite = writtenPct * 0.45 + oralScore * 0.30 + teacherPct * 0.25
+    // Wave 2: All three components available
+    // Grade 1 weights: oral 30% + written 30% + teacher rating 40%
+    if (hasOralData && hasClassImpression) {
+      composite = oralScore * 0.30 + writtenPct * 0.30 + teacherPct * 0.40
+    } else if (hasOralData) {
+      composite = oralScore * 0.50 + writtenPct * 0.50
+    } else {
+      composite = writtenPct
+    }
     wave = 2
   }
 
@@ -605,11 +608,11 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
               </div>
             </>
           ) : (
-            // Wave 2 tabs: Written Test + Oral (carry over) + Results
+            // Wave 2 tabs: Written Test + Teacher Ratings + Results (oral from wave 1 carries over)
             <>
               {[
                 { key: 'written' as const, icon: PenTool, label: 'Written Test', sub: `${completionStats.writtenDone}/${completionStats.total}` },
-                { key: 'oral' as const, icon: Mic, label: 'Oral Test', sub: `${completionStats.oralDone}/${completionStats.total}` },
+                { key: 'oral' as const, icon: Mic, label: 'Teacher Ratings', sub: '' },
                 { key: 'results' as const, icon: BarChart3, label: 'Combined Results', sub: '' },
               ].map(tab => (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
@@ -622,7 +625,7 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
                 </button>
               ))}
               <div className="ml-auto text-[10px] text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
-                Wave 2 uses full teacher ratings (in Teacher Ratings phase)
+                Wave 2: Written test + teacher ratings. Oral scores carry over from Wave 1.
               </div>
             </>
           )}
@@ -1251,7 +1254,7 @@ function StudentScorePreview({ scores, student }: { scores: G1Scores; student: S
       <h4 className="text-[13px] font-semibold text-navy mb-3 flex items-center gap-2">
         <Eye size={14} /> Live Score Preview
         <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${metrics.wave === 1 ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-          {metrics.wave === 1 ? 'Wave 1: 70% oral + 30% impression' : 'Wave 2: 45% written + 30% oral + 25% ratings'}
+          {metrics.wave === 1 ? 'Wave 1: Oral + Teacher Impression' : 'Wave 2: 30% oral + 30% written + 40% teacher'}
         </span>
       </h4>
       <div className="grid grid-cols-4 gap-3 mb-4">

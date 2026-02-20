@@ -70,7 +70,10 @@ export default function DashboardView() {
           )}
         </div>
       </div>
-      <div className="px-10 py-6">
+      <div className="px-10 py-6 space-y-5">
+        {/* ─── Calendar First (Full Width) ─── */}
+        <SharedCalendar />
+        {/* ─── Two Column Layout Below ─── */}
         <div className="grid grid-cols-3 gap-6">
           {/* ─── Main Column (2/3) ─── */}
           <div className="col-span-2 space-y-5">
@@ -83,7 +86,6 @@ export default function DashboardView() {
           {/* ─── Sidebar (1/3) ─── */}
           <div className="space-y-5">
             <ActionableSummary />
-            <SharedCalendar />
             {isAdmin && <ClassOverviewTable />}
           </div>
         </div>

@@ -356,9 +356,6 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
     { id: 'standards', label: lang === 'ko' ? '표준 숙달' : 'Standards' },
     { id: 'scaffolds', label: lang === 'ko' ? '스캐폴드' : 'Scaffolds' },
     { id: 'goals', label: lang === 'ko' ? '목표' : 'Goals' },
-    { id: 'peer_notes', label: lang === 'ko' ? '동료 관찰' : 'Peer Notes' },
-    { id: 'parent_log', label: lang === 'ko' ? '학부모 소통' : 'Parent Log' },
-    { id: 'vocabulary', label: lang === 'ko' ? '어휘' : 'Vocabulary' },
   ]
 
   return (
@@ -379,9 +376,6 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
       {activeTab === 'standards' && <StandardsMasteryTab studentId={studentId} lang={lang} />}
       {activeTab === 'scaffolds' && <ScaffoldsTab studentId={studentId} />}
       {activeTab === 'goals' && <GoalsTab studentId={studentId} studentName={studentName} />}
-      {activeTab === 'peer_notes' && <PeerNotesTab studentId={studentId} studentName={studentName} />}
-      {activeTab === 'parent_log' && <ParentLogTab studentId={studentId} studentName={studentName} />}
-      {activeTab === 'vocabulary' && <VocabularyTab studentId={studentId} studentName={studentName} />}
     </div>
   )
 }
@@ -835,7 +829,14 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
         })
         const history = Object.values(bySem)
           .filter(s => DOMAINS.some(d => s.grades[d] != null))
-          .sort((a, b) => a.startDate.localeCompare(b.startDate))
+          .sort((a, b) => {
+            // Force Fall before Spring regardless of start_date
+            const aIsFall = a.name.toLowerCase().includes('fall')
+            const bIsFall = b.name.toLowerCase().includes('fall')
+            if (aIsFall && !bIsFall) return -1
+            if (!aIsFall && bIsFall) return 1
+            return a.startDate.localeCompare(b.startDate)
+          })
         setSemesterHistory(history.map(({ startDate, ...rest }) => rest))
       }
 
@@ -1161,8 +1162,8 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
-      {/* BIGGER MODAL: max-w-4xl */}
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      {/* BIGGER MODAL: max-w-5xl */}
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="px-8 py-6 border-b border-border flex items-start justify-between">
           <div className="flex items-center gap-5">
@@ -1512,9 +1513,19 @@ function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: str
 function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
   const [loading, setLoading] = useState(true)
   const [standardsData, setStandardsData] = useState<{ code: string; description: string; domain: string; assessments: { name: string; pct: number }[]; avgPct: number }[]>([])
+  const [studentClass, setStudentClass] = useState<string>('')
+
+  const CLASS_THRESHOLDS: Record<string, { mastered: number; approaching: number }> = {
+    Lily: { mastered: 70, approaching: 50 }, Camellia: { mastered: 75, approaching: 55 },
+    Daisy: { mastered: 80, approaching: 60 }, Sunflower: { mastered: 85, approaching: 65 },
+    Marigold: { mastered: 90, approaching: 70 }, Snapdragon: { mastered: 90, approaching: 70 },
+  }
+  const th = CLASS_THRESHOLDS[studentClass] || { mastered: 80, approaching: 60 }
 
   useEffect(() => {
     (async () => {
+      const { data: studentData } = await supabase.from('students').select('english_class').eq('id', studentId).single()
+      if (studentData) setStudentClass(studentData.english_class || '')
       // Get all assessments that have standards tagged
       const { data: assessments } = await supabase.from('assessments').select('*')
       // Get all grades for this student
@@ -1561,9 +1572,9 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
     )
   }
 
-  const mastered = standardsData.filter(s => s.avgPct >= 80).length
-  const approaching = standardsData.filter(s => s.avgPct >= 60 && s.avgPct < 80).length
-  const below = standardsData.filter(s => s.avgPct < 60).length
+  const mastered = standardsData.filter(s => s.avgPct >= th.mastered).length
+  const approaching = standardsData.filter(s => s.avgPct >= th.approaching && s.avgPct < th.mastered).length
+  const below = standardsData.filter(s => s.avgPct < th.approaching).length
 
   const DOMAIN_COLORS: Record<string, string> = {
     reading: '#3b82f6', phonics: '#8b5cf6', writing: '#f59e0b', speaking: '#10b981', language: '#ec4899',
@@ -1576,14 +1587,14 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
         <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Standards Mastery Overview</p>
         <div className="flex flex-wrap gap-1">
           {standardsData.map(std => (
-            <div key={std.code} className={`w-6 h-6 rounded flex items-center justify-center text-[7px] font-bold cursor-help ${std.avgPct >= 80 ? 'bg-green-500 text-white' : std.avgPct >= 60 ? 'bg-amber-400 text-white' : 'bg-red-400 text-white'}`}
+            <div key={std.code} className={`w-6 h-6 rounded flex items-center justify-center text-[7px] font-bold cursor-help ${std.avgPct >= th.mastered ? 'bg-green-500 text-white' : std.avgPct >= th.approaching ? 'bg-amber-400 text-white' : 'bg-red-400 text-white'}`}
               title={`${std.code}: ${Math.round(std.avgPct)}% (${std.assessments.length} assessments)`}>
               {std.code.split('.').pop()}
             </div>
           ))}
         </div>
         <div className="flex items-center gap-3 mt-2 text-[9px] text-text-tertiary">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" /> 80%+ mastered</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" /> {th.mastered}%+ mastered</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-400" /> 60-79% approaching</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> &lt;60% below</span>
         </div>
@@ -1608,8 +1619,8 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
       {/* Standards list */}
       <div className="space-y-1.5">
         {standardsData.map(std => {
-          const pctColor = std.avgPct >= 80 ? 'text-green-600' : std.avgPct >= 60 ? 'text-amber-600' : 'text-red-600'
-          const barColor = std.avgPct >= 80 ? 'bg-green-400' : std.avgPct >= 60 ? 'bg-amber-400' : 'bg-red-400'
+          const pctColor = std.avgPct >= th.mastered ? 'text-green-600' : std.avgPct >= th.approaching ? 'text-amber-600' : 'text-red-600'
+          const barColor = std.avgPct >= th.mastered ? 'bg-green-400' : std.avgPct >= th.approaching ? 'bg-amber-400' : 'bg-red-400'
           return (
             <div key={std.code} className="bg-surface border border-border rounded-lg px-4 py-2.5 flex items-center gap-3">
               <div className="w-10 text-center">
@@ -2009,7 +2020,7 @@ function GoalsTab({ studentId, studentName }: { studentId: string; studentName: 
                     <p className="text-[13px] font-medium text-navy leading-snug">{goal.goal_text}</p>
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${statusColors[goal.status] || statusColors.active}`}>
-                        {goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}
+                        {(goal.status || 'active').charAt(0).toUpperCase() + (goal.status || 'active').slice(1)}
                       </span>
                       {goal.target_metric && goal.target_metric !== 'custom' && (
                         <span className="text-[10px] text-text-tertiary">{metricLabels[goal.target_metric] || goal.target_metric}</span>

@@ -94,3 +94,17 @@ CREATE TABLE IF NOT EXISTS assessment_blueprints (
   created_by UUID REFERENCES teachers(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- #34: Sub Plans (teacher uploads)
+CREATE TABLE IF NOT EXISTS sub_plans (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  english_class TEXT NOT NULL,
+  grade INTEGER NOT NULL DEFAULT 3,
+  description TEXT,
+  how_to TEXT,
+  drive_link TEXT,
+  created_by UUID REFERENCES teachers(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_sub_plans_class ON sub_plans(english_class);

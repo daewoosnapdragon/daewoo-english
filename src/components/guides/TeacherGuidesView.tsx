@@ -532,16 +532,6 @@ export default function TeacherGuidesView() {
             <h3 className="font-display text-[13.5px] font-semibold text-navy group-hover:text-gold transition-colors leading-tight">Phonics & Foundational Skills</h3>
             <p className="text-[10.5px] text-text-secondary leading-relaxed mt-1.5">Systematic phonics scope & sequence, teaching strategies, assessment literacy, and reading fluency guidance</p>
           </button>
-          {/* #41: PD Log card */}
-          <button onClick={() => setView({ page: 'pdlog' })}
-            className="text-left bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group"
-            style={{ borderTopWidth: 3, borderTopColor: '#6366F1' }}>
-            <div className="flex items-start justify-between mb-3">
-              <div style={{ color: '#6366F1' }}><BookMarked size={20} /></div>
-            </div>
-            <h3 className="font-display text-[13.5px] font-semibold text-navy group-hover:text-gold transition-colors leading-tight">PD Log</h3>
-            <p className="text-[10.5px] text-text-secondary leading-relaxed mt-1.5">Track your professional development: workshops, readings, peer observations, and teaching goals</p>
-          </button>
           {/* #34: Sub Plans card */}
           <button onClick={() => setView({ page: 'subplans' })}
             className="text-left bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group"
@@ -686,55 +676,128 @@ function PDLogContent() {
 
 // ─── #34 Sub Plans / Emergency Activity Library ───────────────────────
 
-const EMERGENCY_ACTIVITIES = [
-  { grade: 'All', title: 'Silent Sustained Reading', time: '15-20 min', materials: 'Class library books', description: 'Students choose a book from the class library and read silently. After reading, they draw their favorite scene and write 1-3 sentences about it.' },
-  { grade: 'All', title: 'Word Bingo', time: '15 min', materials: 'Paper, pencils', description: 'Students create a 4x4 grid. Teacher/sub calls out vocabulary words. Students write the word and draw a quick picture. First to complete a row wins.' },
-  { grade: 'All', title: 'Letter/Word Art', time: '20 min', materials: 'Paper, colored pencils', description: 'Students pick a vocabulary word and create art using the letters. Each letter can be decorated to represent what the word means.' },
-  { grade: '1-2', title: 'Alphabet Scavenger Hunt', time: '15 min', materials: 'Paper', description: 'Students fold paper into sections for each letter A-Z. They look around the room and write/draw one thing they see that starts with each letter.' },
-  { grade: '1-2', title: 'Color and Label', time: '20 min', materials: 'Drawing paper, crayons', description: 'Students draw a picture of their family, classroom, or favorite place. They label at least 5 things in English with the teacher helper providing words on the board.' },
-  { grade: '3-4', title: 'Story Chain Writing', time: '20 min', materials: 'Paper', description: 'First student writes 2 sentences to start a story, folds paper to show only the last sentence, passes to next student. Continue until paper is full. Read aloud at end.' },
-  { grade: '3-4', title: 'Interview a Classmate', time: '15 min', materials: 'Paper', description: 'Students pair up and interview each other using provided question stems: "What is your favorite...?", "Do you like...?", "Can you...?". Write answers in complete sentences.' },
-  { grade: '5', title: 'Opinion Writing Quick-Write', time: '20 min', materials: 'Paper', description: 'Write prompt on board (e.g., "Should students have more recess?"). Students write their opinion with 2-3 reasons. Share with a partner, then revise adding one more detail.' },
-  { grade: '5', title: 'English News Report', time: '20 min', materials: 'Paper', description: 'Students create a short "news report" about something that happened at school this week. Include: headline, who/what/when/where/why, and an illustration.' },
-  { grade: 'All', title: 'Phonics Pattern Sort', time: '15 min', materials: 'Paper', description: 'Write 15-20 words on the board. Students sort them into groups based on spelling patterns (e.g., short a vs long a, consonant blends). Compare answers with a partner.' },
-  { grade: 'All', title: 'Vocabulary Pictionary', time: '15 min', materials: 'Whiteboard/paper', description: 'One student draws a vocabulary word while others guess. Rotate drawer every 1-2 minutes. Keep score if desired. Great for kinesthetic learners.' },
-  { grade: 'All', title: 'Read-Aloud Response', time: '25 min', materials: 'Class read-aloud book', description: 'Sub reads a picture book or chapter aloud. Students respond by: (1) drawing their favorite part, (2) writing 3 new words they heard, (3) writing one question about the story.' },
-]
-
 function SubPlansContent() {
-  const [filter, setFilter] = useState<string>('All')
-  const grades = ['All', '1-2', '3-4', '5']
-  const filtered = EMERGENCY_ACTIVITIES.filter(a => filter === 'All' || a.grade === 'All' || a.grade === filter)
+  const { currentTeacher, showToast } = useApp()
+  const [plans, setPlans] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filterClass, setFilterClass] = useState<string>('all')
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ title: '', english_class: currentTeacher?.english_class || 'Lily', grade: 3, description: '', how_to: '', drive_link: '' })
+
+  const CLASSES = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('sub_plans').select('*, teachers(english_name)').order('english_class').order('created_at', { ascending: false })
+      setPlans(data || [])
+      setLoading(false)
+    })()
+  }, [])
+
+  const handleAdd = async () => {
+    if (!form.title.trim() || !currentTeacher) return
+    const { data, error } = await supabase.from('sub_plans').insert({
+      title: form.title.trim(), english_class: form.english_class, grade: form.grade,
+      description: form.description.trim() || null, how_to: form.how_to.trim() || null,
+      drive_link: form.drive_link.trim() || null, created_by: currentTeacher.id,
+    }).select('*, teachers(english_name)').single()
+    if (error) { showToast(`Error: ${error.message}`); return }
+    if (data) setPlans(prev => [data, ...prev])
+    setForm({ title: '', english_class: currentTeacher?.english_class || 'Lily', grade: 3, description: '', how_to: '', drive_link: '' })
+    setShowForm(false)
+    showToast('Sub plan added')
+  }
+
+  const handleDelete = async (id: string) => {
+    await supabase.from('sub_plans').delete().eq('id', id)
+    setPlans(prev => prev.filter(p => p.id !== id))
+    showToast('Deleted')
+  }
+
+  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+
+  const filtered = filterClass === 'all' ? plans : plans.filter(p => p.english_class === filterClass)
+  const grouped: Record<string, any[]> = {}
+  filtered.forEach(p => {
+    const key = `${p.english_class} (Grade ${p.grade})`
+    if (!grouped[key]) grouped[key] = []
+    grouped[key].push(p)
+  })
 
   return (
-    <div className="px-8 py-6 max-w-[750px]">
+    <div className="px-8 py-6 max-w-[900px]">
       <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5 text-[11px] text-red-800">
-        <span className="font-bold">For substitutes/coverage: </span>
-        These activities require no preparation and minimal materials. Each can be done independently. Print this page for your sub folder.
+        Each teacher uploads sub plans for their class. Include lesson descriptions, how to administer, and optionally link to Google Drive materials.
       </div>
 
-      <div className="flex gap-2 mb-5">
-        {grades.map(g => (
-          <button key={g} onClick={() => setFilter(g)}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filter === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border'}`}>
-            {g === 'All' ? 'All Grades' : `Grade ${g}`}
-          </button>
-        ))}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-1">
+          <button onClick={() => setFilterClass('all')}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border'}`}>All Classes</button>
+          {CLASSES.map(c => (
+            <button key={c} onClick={() => setFilterClass(c)}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === c ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border'}`}>{c}</button>
+          ))}
+        </div>
+        <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white">{showForm ? 'Cancel' : '+ Add Sub Plan'}</button>
       </div>
 
-      <div className="space-y-3">
-        {filtered.map((activity, i) => (
-          <div key={i} className="bg-surface border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-[14px] font-semibold text-navy">{activity.title}</h3>
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-navy/10 text-navy font-bold">{activity.grade === 'All' ? 'All grades' : `Grade ${activity.grade}`}</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold ml-auto">{activity.time}</span>
-            </div>
-            <p className="text-[12px] text-text-primary leading-relaxed">{activity.description}</p>
-            <p className="text-[10px] text-text-tertiary mt-2"><span className="font-semibold">Materials: </span>{activity.materials}</p>
+      {showForm && (
+        <div className="bg-surface border border-border rounded-xl p-5 mb-5 space-y-3">
+          <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Lesson title"
+            className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface" />
+          <div className="flex gap-3">
+            <select value={form.english_class} onChange={e => setForm(f => ({ ...f, english_class: e.target.value }))}
+              className="px-3 py-2 border border-border rounded-lg text-[11px] bg-surface outline-none">
+              {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select value={form.grade} onChange={e => setForm(f => ({ ...f, grade: +e.target.value }))}
+              className="px-3 py-2 border border-border rounded-lg text-[11px] bg-surface outline-none">
+              {[1,2,3,4,5].map(g => <option key={g} value={g}>Grade {g}</option>)}
+            </select>
           </div>
-        ))}
-      </div>
+          <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Description of the lesson (what students will do)"
+            className="w-full px-3 py-2 border border-border rounded-lg text-[11px] bg-surface outline-none resize-none h-16" />
+          <textarea value={form.how_to} onChange={e => setForm(f => ({ ...f, how_to: e.target.value }))} placeholder="How to administer (step-by-step for the substitute)"
+            className="w-full px-3 py-2 border border-border rounded-lg text-[11px] bg-surface outline-none resize-none h-16" />
+          <input value={form.drive_link} onChange={e => setForm(f => ({ ...f, drive_link: e.target.value }))} placeholder="Google Drive link (optional)"
+            className="w-full px-3 py-2 border border-border rounded-lg text-[11px] bg-surface outline-none" />
+          <button onClick={handleAdd} disabled={!form.title.trim()} className="px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white disabled:opacity-40">Save Sub Plan</button>
+        </div>
+      )}
+
+      {Object.keys(grouped).length === 0 && <p className="text-center text-text-tertiary py-8 text-[12px]">No sub plans yet. Add one for your class.</p>}
+
+      {Object.entries(grouped).map(([key, items]) => (
+        <div key={key} className="mb-5">
+          <h3 className="text-[13px] font-bold text-navy mb-2">{key}</h3>
+          <div className="space-y-2">
+            {items.map(p => (
+              <div key={p.id} className="bg-surface border border-border rounded-xl p-4">
+                <div className="flex items-start justify-between">
+                  <h4 className="text-[13px] font-semibold text-navy">{p.title}</h4>
+                  <div className="flex items-center gap-2">
+                    {p.drive_link && (
+                      <a href={p.drive_link} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 hover:underline font-medium">Google Drive</a>
+                    )}
+                    {currentTeacher?.id === p.created_by && (
+                      <button onClick={() => handleDelete(p.id)} className="text-[10px] text-red-400 hover:text-red-600">Delete</button>
+                    )}
+                  </div>
+                </div>
+                {p.description && <p className="text-[11px] text-text-primary leading-relaxed mt-1">{p.description}</p>}
+                {p.how_to && (
+                  <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    <p className="text-[9px] font-bold text-amber-700 uppercase mb-0.5">How to Administer:</p>
+                    <p className="text-[10px] text-amber-800 leading-relaxed whitespace-pre-line">{p.how_to}</p>
+                  </div>
+                )}
+                <p className="text-[9px] text-text-tertiary mt-2">Added by {p.teachers?.english_name || 'Unknown'} on {new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
