@@ -40,12 +40,13 @@ export const WIDA_LEVELS = [
 export const WIDA_DOMAINS = ['listening', 'speaking', 'reading', 'writing'] as const
 export type WIDADomainKey = typeof WIDA_DOMAINS[number]
 
-type StdStatus = 'not_started' | 'in_progress' | 'mastered'
+type StdStatus = 'below' | 'approaching' | 'on' | 'above'
 type InterventionStatus = 'none' | 'not_yet_taught' | 'taught_needs_reteach' | 'reteaching' | 'reassessing'
 const STATUS_CFG = {
-  not_started: { label: 'Not Started', icon: Circle, color: 'text-gray-700', bg: 'bg-gray-200' },
-  in_progress: { label: 'Approaching', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-  mastered: { label: 'On Standard', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+  below: { label: 'Below Standard', icon: Circle, color: 'text-red-500', bg: 'bg-red-50' },
+  approaching: { label: 'Approaching', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+  on: { label: 'On Standard', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+  above: { label: 'Above Standard', icon: CheckCircle2, color: 'text-blue-600', bg: 'bg-blue-50' },
 }
 const INTERVENTION_OPTIONS: { value: InterventionStatus; label: string; color: string }[] = [
   { value: 'none', label: '--', color: '' },
@@ -577,11 +578,11 @@ function ClusterTracker() {
   const [interventions, setInterventions] = useState<Record<string, InterventionStatus>>({})
   const [showThresholdEdit, setShowThresholdEdit] = useState(false)
 
-  // Default mastery thresholds per class tier
-  const DEFAULT_THRESHOLDS: Record<string, { mastered: number; approaching: number }> = {
-    Lily: { mastered: 71, approaching: 61 }, Camellia: { mastered: 71, approaching: 61 },
-    Daisy: { mastered: 71, approaching: 61 }, Sunflower: { mastered: 71, approaching: 61 },
-    Marigold: { mastered: 71, approaching: 61 }, Snapdragon: { mastered: 71, approaching: 61 },
+  // Default mastery thresholds per class (4-tier: Below 0-60, Approaching 61-70, On 71-85, Above 86-100)
+  const DEFAULT_THRESHOLDS: Record<string, { above: number; on: number; approaching: number }> = {
+    Lily: { above: 86, on: 71, approaching: 61 }, Camellia: { above: 86, on: 71, approaching: 61 },
+    Daisy: { above: 86, on: 71, approaching: 61 }, Sunflower: { above: 86, on: 71, approaching: 61 },
+    Marigold: { above: 86, on: 71, approaching: 61 }, Snapdragon: { above: 86, on: 71, approaching: 61 },
   }
   const [thresholds, setThresholds] = useState(DEFAULT_THRESHOLDS)
 
@@ -590,7 +591,16 @@ function ClusterTracker() {
     (async () => {
       const { data } = await supabase.from('app_settings').select('value').eq('key', 'mastery_thresholds').single()
       if (data?.value) {
-        try { setThresholds(prev => ({ ...prev, ...JSON.parse(data.value) })) } catch {}
+        try {
+          const saved = JSON.parse(data.value)
+          // Migrate old 2-value format {mastered, approaching} to new 3-value {above, on, approaching}
+          const migrated: Record<string, { above: number; on: number; approaching: number }> = {}
+          Object.entries(saved).forEach(([cls, val]: [string, any]) => {
+            if (val.above != null) { migrated[cls] = val } // already new format
+            else if (val.mastered != null) { migrated[cls] = { above: Math.min(val.mastered + 15, 100), on: val.mastered, approaching: val.approaching } }
+          })
+          setThresholds(prev => ({ ...prev, ...migrated }))
+        } catch {}
       }
     })()
   }, [])
@@ -601,7 +611,7 @@ function ClusterTracker() {
     setShowThresholdEdit(false)
   }
 
-  const t = thresholds[cls] || DEFAULT_THRESHOLDS[cls] || { mastered: 80, approaching: 50 }
+  const t = thresholds[cls] || DEFAULT_THRESHOLDS[cls] || { above: 86, on: 71, approaching: 61 }
 
   const adj = getAdjustedGrade(gr, cls)
   const tier = ['Lily', 'Camellia'].includes(cls) ? '2 below' : ['Daisy', 'Sunflower'].includes(cls) ? '1 below' : 'On level'
@@ -617,22 +627,24 @@ function ClusterTracker() {
       const { data } = await supabase.from('class_standard_status').select('*').eq('english_class', cls).eq('student_grade', gr)
       const m: Record<string, StdStatus> = {}
       const iv: Record<string, InterventionStatus> = {}
-      if (data) data.forEach((r: any) => { m[r.standard_code] = r.status; if (r.intervention_status) iv[r.standard_code] = r.intervention_status })
+      // Map old status values to new 4-tier system
+      const statusMap: Record<string, StdStatus> = { not_started: 'below', in_progress: 'approaching', mastered: 'on' }
+      if (data) data.forEach((r: any) => { m[r.standard_code] = statusMap[r.status] || r.status; if (r.intervention_status) iv[r.standard_code] = r.intervention_status })
       setStatuses(m); setInterventions(iv); setLoading(false)
     })()
   }, [cls, gr])
 
-  // Cluster status = worst status of its children (all mastered -> mastered, any in_progress -> in_progress, else not_started)
+  // Cluster status = worst status of its children
   const getClusterStatus = (codes: string[]): StdStatus => {
-    const st = codes.map(c => statuses[c] || 'not_started')
-    if (st.every(s => s === 'mastered')) return 'mastered'
-    if (st.some(s => s === 'mastered' || s === 'in_progress')) return 'in_progress'
-    return 'not_started'
+    const st = codes.map(c => statuses[c] || 'below')
+    const rank = (s: StdStatus) => s === 'above' ? 3 : s === 'on' ? 2 : s === 'approaching' ? 1 : 0
+    if (st.every(s => s === 'below')) return 'below'
+    return (['below', 'approaching', 'on', 'above'] as StdStatus[])[Math.min(...st.map(rank))]
   }
 
   const cycleCluster = async (codes: string[]) => {
     const cur = getClusterStatus(codes)
-    const nxt: StdStatus = cur === 'not_started' ? 'in_progress' : cur === 'in_progress' ? 'mastered' : 'not_started'
+    const nxt: StdStatus = cur === 'below' ? 'approaching' : cur === 'approaching' ? 'on' : cur === 'on' ? 'above' : 'below'
     const newStatuses = { ...statuses }
     codes.forEach(c => { newStatuses[c] = nxt })
     setStatuses(newStatuses)
@@ -692,12 +704,12 @@ function ClusterTracker() {
   const [autoSuggested, setAutoSuggested] = useState(false)
   useEffect(() => {
     if (loading || autoSuggested || Object.keys(stdAverages).length === 0) return
-    const th = thresholds[cls] || { mastered: 80, approaching: 50 }
+    const th = thresholds[cls] || { above: 86, on: 71, approaching: 61 }
     const newStatuses = { ...statuses }
     let changed = 0
     Object.entries(stdAverages).forEach(([code, avg]) => {
-      const current = statuses[code] || 'not_started'
-      const suggest: StdStatus = avg >= th.mastered ? 'mastered' : avg >= th.approaching ? 'in_progress' : 'not_started'
+      const current = statuses[code] || 'below'
+      const suggest: StdStatus = avg >= th.above ? 'above' : avg >= th.on ? 'on' : avg >= th.approaching ? 'approaching' : 'below'
       if (suggest !== current) { newStatuses[code] = suggest; changed++ }
     })
     if (changed > 0) {
@@ -718,8 +730,10 @@ function ClusterTracker() {
   useEffect(() => { setAutoSuggested(false) }, [cls, gr])
 
   const total = allClusters.length
-  const mastered = allClusters.filter(c => getClusterStatus(c.codes) === 'mastered').length
-  const inProg = allClusters.filter(c => getClusterStatus(c.codes) === 'in_progress').length
+  const aboveCount = allClusters.filter(c => getClusterStatus(c.codes) === 'above').length
+  const onCount = allClusters.filter(c => getClusterStatus(c.codes) === 'on').length
+  const approachCount = allClusters.filter(c => getClusterStatus(c.codes) === 'approaching').length
+  const belowCount = allClusters.filter(c => getClusterStatus(c.codes) === 'below').length
 
   // Group clusters by domain
   const grouped = useMemo(() => {
@@ -755,9 +769,10 @@ function ClusterTracker() {
           <p className="text-[12px] text-blue-700"><span className="font-semibold">{cls}</span> Grade {gr} → <span className="font-semibold">{gradeLabel(adj)} CCSS</span> ({tier})</p>
         </div>
         <div className="flex items-center gap-3 text-[11px]">
-          <span className="text-green-600 font-semibold">{mastered} done</span>
-          <span className="text-blue-600 font-semibold">{inProg} started</span>
-          <span className="text-text-tertiary">{total - mastered - inProg} not started</span>
+          <span className="text-blue-600 font-semibold">{aboveCount} above</span>
+          <span className="text-green-600 font-semibold">{onCount} on</span>
+          <span className="text-amber-600 font-semibold">{approachCount} approaching</span>
+          <span className="text-text-tertiary">{belowCount} below</span>
           <button onClick={async () => {
             // Auto-suggest from assessment section scores
             const { data: sem } = await supabase.from('semesters').select('id').eq('is_active', true).single()
@@ -787,8 +802,8 @@ function ClusterTracker() {
               const newStatuses = { ...statuses }
               Object.entries(stdAvgs).forEach(([code, { total, count }]) => {
                 const avg = total / count
-                const current = statuses[code] || 'not_started'
-                const suggest: StdStatus = avg >= t.mastered ? 'mastered' : avg >= t.approaching ? 'in_progress' : 'not_started'
+                const current = statuses[code] || 'below'
+                const suggest: StdStatus = avg >= t.above ? 'above' : avg >= t.on ? 'on' : avg >= t.approaching ? 'approaching' : 'below'
                 if (suggest !== current) {
                   newStatuses[code] = suggest; suggested++
                 }
@@ -824,8 +839,8 @@ function ClusterTracker() {
             const newStatuses = { ...statuses }
             Object.entries(stdAvgs).forEach(([code, { total, count }]) => {
               const avg = total / count
-              const current = statuses[code] || 'not_started'
-              const suggest: StdStatus = avg >= t.mastered ? 'mastered' : avg >= t.approaching ? 'in_progress' : 'not_started'
+              const current = statuses[code] || 'below'
+              const suggest: StdStatus = avg >= t.above ? 'above' : avg >= t.on ? 'on' : avg >= t.approaching ? 'approaching' : 'below'
               if (suggest !== current) {
                 newStatuses[code] = suggest; suggested++
               }
@@ -850,39 +865,54 @@ function ClusterTracker() {
 
       {/* Threshold Editor */}
       {showThresholdEdit && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
-          <p className="text-[12px] font-semibold text-amber-800 mb-3">Mastery Thresholds by Class</p>
-          <div className="grid grid-cols-3 gap-3">
-            {ENGLISH_CLASSES.map(c => (
-              <div key={c} className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold w-20" style={{ color: classToColor(c) }}>{c}</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-[9px] text-amber-700">Mastered:</span>
-                  <input type="number" min={0} max={100} value={thresholds[c]?.mastered ?? 80}
-                    onChange={e => setThresholds(prev => ({ ...prev, [c]: { ...(prev[c] || { mastered: 80, approaching: 50 }), mastered: Number(e.target.value) } }))}
-                    className="w-12 px-1 py-0.5 border border-amber-300 rounded text-[11px] text-center bg-white" />
-                  <span className="text-[9px] text-amber-600">%</span>
+        <div className="bg-surface border border-border rounded-xl p-4 mb-4">
+          <p className="text-[13px] font-bold text-navy mb-1">Standards Mastery Thresholds</p>
+          <p className="text-[10px] text-text-tertiary mb-4">Set the percentage cutoffs for each class. These determine how student scores map to mastery levels across the app.</p>
+          <div className="space-y-3">
+            {ENGLISH_CLASSES.map(c => {
+              const th = thresholds[c] || { above: 86, on: 71, approaching: 61 }
+              const updateTh = (field: 'above' | 'on' | 'approaching', val: number) =>
+                setThresholds(prev => ({ ...prev, [c]: { ...(prev[c] || { above: 86, on: 71, approaching: 61 }), [field]: val } }))
+              return (
+                <div key={c} className="flex items-center gap-3 bg-surface-alt/50 rounded-lg px-3 py-2.5">
+                  <span className="text-[11px] font-bold w-20 shrink-0" style={{ color: classToColor(c) }}>{c}</span>
+                  <div className="flex items-center gap-1.5 flex-1 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-[10px]">
+                      <span className="w-2 h-2 rounded bg-blue-500" />Above:
+                      <input type="number" min={0} max={100} value={th.above}
+                        onChange={e => updateTh('above', Number(e.target.value))}
+                        className="w-10 px-1 py-0.5 border border-border rounded text-[10px] text-center bg-white" />%+
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px]">
+                      <span className="w-2 h-2 rounded bg-green-500" />On:
+                      <input type="number" min={0} max={100} value={th.on}
+                        onChange={e => updateTh('on', Number(e.target.value))}
+                        className="w-10 px-1 py-0.5 border border-border rounded text-[10px] text-center bg-white" />–{th.above - 1}%
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px]">
+                      <span className="w-2 h-2 rounded bg-amber-400" />Approaching:
+                      <input type="number" min={0} max={100} value={th.approaching}
+                        onChange={e => updateTh('approaching', Number(e.target.value))}
+                        className="w-10 px-1 py-0.5 border border-border rounded text-[10px] text-center bg-white" />–{th.on - 1}%
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] text-text-tertiary">
+                      <span className="w-2 h-2 rounded bg-red-400" />Below: 0–{th.approaching - 1}%
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[9px] text-amber-700">Approaching:</span>
-                  <input type="number" min={0} max={100} value={thresholds[c]?.approaching ?? 50}
-                    onChange={e => setThresholds(prev => ({ ...prev, [c]: { ...(prev[c] || { mastered: 80, approaching: 50 }), approaching: Number(e.target.value) } }))}
-                    className="w-12 px-1 py-0.5 border border-amber-300 rounded text-[11px] text-center bg-white" />
-                  <span className="text-[9px] text-amber-600">%</span>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
-          <div className="flex justify-end gap-2 mt-3">
-            <button onClick={() => setShowThresholdEdit(false)} className="px-3 py-1 rounded text-[11px] text-amber-700 hover:bg-amber-100">Cancel</button>
-            <button onClick={saveThresholds} className="px-3 py-1 rounded text-[11px] bg-amber-600 text-white hover:bg-amber-700">Save Thresholds</button>
+          <div className="flex justify-end gap-2 mt-4">
+            <button onClick={() => setShowThresholdEdit(false)} className="px-3 py-1.5 rounded-lg text-[11px] text-text-secondary hover:bg-surface-alt">Cancel</button>
+            <button onClick={saveThresholds} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-navy text-white hover:opacity-90">Save Thresholds</button>
           </div>
         </div>
       )}
 
       <div className="flex items-center gap-2 mb-4">
         <p className="text-[11px] text-text-tertiary">Click status icon to cycle clusters. Expand to see individual standards.</p>
-        <span className="text-[9px] text-text-tertiary ml-auto">Mastered ≥{t.mastered}% | Approaching ≥{t.approaching}%</span>
+        <span className="text-[9px] text-text-tertiary ml-auto">Above ≥{t.above}% | On ≥{t.on}% | Approaching ≥{t.approaching}%</span>
       </div>
 
       {loading ? <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div> :
@@ -902,7 +932,7 @@ function ClusterTracker() {
                     <div key={`${domKey}::${cluster.name}`} className="bg-surface border border-border rounded-xl overflow-hidden">
                       <div className="flex items-center gap-3 px-4 py-3">
                         <button onClick={() => cycleCluster(cluster.codes)} className="flex-shrink-0" title={`${cfg.label} - click to change`}>
-                          <Icon size={20} className={cfg.color} fill={st === 'mastered' ? '#22c55e' : st === 'in_progress' ? '#3b82f6' : 'none'} />
+                          <Icon size={20} className={cfg.color} fill={st === 'above' ? '#3b82f6' : st === 'on' ? '#22c55e' : st === 'approaching' ? '#f59e0b' : 'none'} />
                         </button>
                         <div className="flex-1 min-w-0">
                           <span className="text-[13px] font-semibold text-navy">{cluster.name}</span>
@@ -916,31 +946,31 @@ function ClusterTracker() {
                       {isExp && (
                         <div className="border-t border-border bg-surface-alt/30 px-4 py-2 space-y-1">
                           {cluster.standards.map(std => {
-                            const ss = statuses[std.code] || 'not_started'
+                            const ss = statuses[std.code] || 'below'
                             const sc = STATUS_CFG[ss]
                             const SI = sc.icon
                             return (
                               <div key={std.code} className="flex items-start gap-2.5 py-1.5">
                                 <button onClick={async () => {
-                                  const nx: StdStatus = ss === 'not_started' ? 'in_progress' : ss === 'in_progress' ? 'mastered' : 'not_started'
+                                  const nx: StdStatus = ss === 'below' ? 'approaching' : ss === 'approaching' ? 'on' : ss === 'on' ? 'above' : 'below'
                                   setStatuses(p => ({ ...p, [std.code]: nx }))
                                   await supabase.from('class_standard_status').upsert({
                                     english_class: cls, student_grade: gr, standard_code: std.code, status: nx,
                                     updated_by: currentTeacher?.id, updated_at: new Date().toISOString()
                                   }, { onConflict: 'english_class,student_grade,standard_code' })
                                 }} className="mt-0.5 flex-shrink-0">
-                                  <SI size={16} className={sc.color} fill={ss === 'mastered' ? '#22c55e' : ss === 'in_progress' ? '#3b82f6' : 'none'} />
+                                  <SI size={16} className={sc.color} fill={ss === 'above' ? '#3b82f6' : ss === 'on' ? '#22c55e' : ss === 'approaching' ? '#f59e0b' : 'none'} />
                                 </button>
                                   <div>
                                     <div className="flex items-center gap-2">
                                       <span className="text-[11px] font-bold text-text-secondary">{std.code}</span>
                                       {stdAverages[std.code] != null && (
-                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${stdAverages[std.code] >= t.mastered ? 'bg-green-100 text-green-700' : stdAverages[std.code] >= t.approaching ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${stdAverages[std.code] >= t.above ? 'bg-blue-100 text-blue-700' : stdAverages[std.code] >= t.on ? 'bg-green-100 text-green-700' : stdAverages[std.code] >= t.approaching ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                                           avg {Math.round(stdAverages[std.code])}%
                                         </span>
                                       )}
                                       {/* Intervention status for low-mastery standards */}
-                                      {ss !== 'mastered' && (
+                                      {ss !== 'above' && ss !== 'on' && (
                                         <select
                                           value={interventions[std.code] || 'none'}
                                           onChange={async (e) => {
@@ -980,9 +1010,9 @@ function ClusterTracker() {
                           })}
                           {/* #30: Next Steps Panel */}
                           {(() => {
-                            const masteredCount = cluster.codes.filter(c => (statuses[c] || 'not_started') === 'mastered').length
-                            const ipCount = cluster.codes.filter(c => (statuses[c] || 'not_started') === 'in_progress').length
-                            const nsCount = cluster.codes.filter(c => (statuses[c] || 'not_started') === 'not_started').length
+                            const masteredCount = cluster.codes.filter(c => { const s = statuses[c] || 'below'; return s === 'above' || s === 'on' }).length
+                            const ipCount = cluster.codes.filter(c => (statuses[c] || 'below') === 'approaching').length
+                            const nsCount = cluster.codes.filter(c => (statuses[c] || 'below') === 'below').length
                             const total = cluster.codes.length
                             const pct = total > 0 ? Math.round((masteredCount / total) * 100) : 0
                             const avgs = cluster.codes.map(c => stdAverages[c]).filter(v => v != null) as number[]

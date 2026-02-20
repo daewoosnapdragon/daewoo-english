@@ -1443,12 +1443,27 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
   const [loading, setLoading] = useState(true)
   const [standardsData, setStandardsData] = useState<{ code: string; description: string; domain: string; assessments: { name: string; pct: number }[]; avgPct: number }[]>([])
 
-  // 4-tier mastery bands (universal across all classes)
-  const BANDS = { above: 86, on: 71, approaching: 61 } // below = 0-60
+  // 4-tier mastery bands — load from saved thresholds
+  const [BANDS, setBANDS] = useState({ above: 86, on: 71, approaching: 61 })
 
   useEffect(() => {
     (async () => {
       const { data: studentData } = await supabase.from('students').select('english_class').eq('id', studentId).single()
+
+      // Load class-specific thresholds
+      try {
+        const { data: settingsData } = await supabase.from('app_settings').select('value').eq('key', 'mastery_thresholds').single()
+        if (settingsData?.value && studentData?.english_class) {
+          const saved = JSON.parse(settingsData.value)
+          const cls = studentData.english_class
+          if (saved[cls]) {
+            // Handle both old format {mastered, approaching} and new {above, on, approaching}
+            if (saved[cls].above != null) setBANDS(saved[cls])
+            else if (saved[cls].mastered != null) setBANDS({ above: Math.min(saved[cls].mastered + 15, 100), on: saved[cls].mastered, approaching: saved[cls].approaching })
+          }
+        }
+      } catch {}
+
       // Get all assessments that have standards tagged
       const { data: assessments } = await supabase.from('assessments').select('*')
       // Get all grades for this student

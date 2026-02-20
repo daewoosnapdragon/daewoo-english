@@ -4,677 +4,461 @@ import { useState, useMemo, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import {
-  Search, ChevronLeft, ChevronRight, ExternalLink,
-  Layers, BookOpen, PenTool, MessageSquare, ClipboardList, Heart,
-  Layout, Star, Globe, BookMarked, Check, X, Lightbulb, ArrowRight,
-  Link2, Loader2
+  Search, ChevronDown, ChevronUp, BookOpen, PenTool, MessageSquare,
+  Lightbulb, Loader2, BookMarked, FileText, Layers, Type, Languages
 } from 'lucide-react'
-import { CATEGORIES, GUIDES, type Guide, type Category, type ContentBlock, type GuideSection } from './teacher-guides-data'
-import { PhonicsSequence, PhonicsStrategies, AssessmentLiteracy, ReadingFluencyGuide } from '@/components/curriculum/TeacherReferences'
+import { PhonicsSequence, PhonicsStrategies } from '@/components/curriculum/TeacherReferences'
 
-// ─── Icon Map ───────────────────────────────────────────────────
-
-const ICON_MAP: Record<string, any> = {
-  'layers': Layers, 'book-open': BookOpen, 'pen-tool': PenTool,
-  'message-square': MessageSquare, 'clipboard': ClipboardList, 'heart': Heart,
-  'layout': Layout, 'star': Star, 'globe': Globe,
-}
-
-function guideCountByCategory(catId: string): number {
-  return GUIDES.filter(g => g.category === catId).length
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// BLOCK RENDERER — each block type gets its own visual treatment
-// ═══════════════════════════════════════════════════════════════════
-
-function BlockRenderer({ block, catColor }: { block: ContentBlock; catColor: string }) {
-  switch (block.type) {
-    case 'text':
-      return <p className="text-[12.5px] text-text-secondary leading-relaxed">{block.value}</p>
-
-    case 'callout':
-      return (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5">
-          <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">{block.label}</p>
-          <p className="text-[12px] text-amber-800 font-medium leading-relaxed">{block.value}</p>
-        </div>
-      )
-
-    case 'tip':
-      return (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3.5 flex gap-2.5">
-          <Lightbulb size={14} className="text-blue-500 shrink-0 mt-0.5" />
-          <p className="text-[12px] text-blue-800 leading-relaxed">{block.value}</p>
-        </div>
-      )
-
-    case 'example':
-      return (
-        <div className="bg-surface-alt/70 border border-border rounded-lg p-4">
-          {block.label && <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider mb-1.5">{block.label}</p>}
-          <p className="text-[12px] text-text-primary leading-relaxed italic">{block.value}</p>
-        </div>
-      )
-
-    case 'list':
-      return (
-        <div>
-          {block.label && <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">{block.label}</p>}
-          <div className="space-y-1.5">
-            {block.items.map((item, i) => (
-              <div key={i} className="flex gap-2 pl-1">
-                <span className="text-[11px] mt-0.5 shrink-0" style={{ color: catColor }}>&#8226;</span>
-                <p className="text-[12px] text-text-secondary leading-relaxed">
-                  {item.bold && <span className="font-semibold text-navy">{item.bold}: </span>}
-                  {item.text}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-
-    case 'steps':
-      return (
-        <div>
-          {block.label && <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-2.5">{block.label}</p>}
-          <div className="space-y-2">
-            {block.items.map((item, i) => (
-              <div key={i} className="flex gap-3">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5"
-                  style={{ backgroundColor: catColor }}>
-                  {i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12.5px] font-semibold text-navy">{item.title}</p>
-                  <p className="text-[11.5px] text-text-secondary leading-relaxed mt-0.5">{item.text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-
-    case 'levels':
-      return (
-        <div>
-          {block.label && <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-2.5">{block.label}</p>}
-          <div className="space-y-1.5">
-            {block.items.map((item, i) => (
-              <div key={i} className="flex gap-3 items-start bg-surface-alt/50 border border-border rounded-lg p-3">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap"
-                  style={{ backgroundColor: `${item.color}15`, color: item.color }}>
-                  {item.level}
-                </span>
-                <p className="text-[12px] text-text-secondary leading-relaxed">{item.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-
-    case 'grid':
-      return (
-        <div>
-          {block.label && <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-2.5">{block.label}</p>}
-          <div className={`grid gap-3 ${block.items.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-            {block.items.map((item, i) => (
-              <div key={i} className="bg-surface-alt/50 border border-border rounded-lg p-4"
-                style={item.color ? { borderTopWidth: 3, borderTopColor: item.color } : {}}>
-                <h4 className="text-[12.5px] font-bold text-navy mb-1.5">{item.title}</h4>
-                <p className="text-[11px] text-text-secondary leading-relaxed">{item.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-
-    case 'do-dont':
-      return (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-green-50/70 border border-green-200 rounded-lg p-3.5">
-            <p className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Check size={12} /> Do this
-            </p>
-            <div className="space-y-1.5">
-              {block.doItems.map((item, i) => (
-                <p key={i} className="text-[11px] text-green-800 leading-relaxed pl-5 relative"><span className="absolute left-0 text-green-600 font-bold">✓</span>{item}</p>
-              ))}
-            </div>
-          </div>
-          <div className="bg-red-50/70 border border-red-200 rounded-lg p-3.5">
-            <p className="text-[10px] font-bold text-red-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <X size={12} /> Avoid this
-            </p>
-            <div className="space-y-1.5">
-              {block.dontItems.map((item, i) => (
-                <p key={i} className="text-[11px] text-red-800 leading-relaxed pl-5 relative"><span className="absolute left-0 text-red-500 font-bold">✗</span>{item}</p>
-              ))}
-            </div>
-          </div>
-        </div>
-      )
-
-    case 'table':
-      return (
-        <div className="overflow-hidden rounded-lg border border-border">
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="bg-surface-alt">
-                {block.headers.map((h, i) => (
-                  <th key={i} className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {block.rows.map((row, i) => (
-                <tr key={i}>
-                  {row.map((cell, j) => (
-                    <td key={j} className="px-3 py-2.5 text-[11px] text-text-secondary leading-relaxed">{cell}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )
-
-    default:
-      return null
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════
-
-type ViewState =
-  | { page: 'home' }
-  | { page: 'category'; categoryId: string }
-  | { page: 'guide'; guideId: string; tab: 'guide' | 'research' }
-  | { page: 'phonics'; section: 'sequence' | 'strategies' | 'assessment' | 'fluency' }
-  | { page: 'pdlog' }
-  | { page: 'subplans' }
+type ResourceSection = 'home' | 'skills' | 'grammar' | 'patterns' | 'phonics' | 'subplans'
 
 export default function TeacherGuidesView() {
-  const { language } = useApp()
-  const ko = language === 'ko'
-  const [view, setView] = useState<ViewState>({ page: 'home' })
-  const [searchQuery, setSearchQuery] = useState('')
+  const { lang } = useApp()
+  const ko = lang === 'ko'
+  const [section, setSection] = useState<ResourceSection>('home')
+  const [phonicsTab, setPhonicsTab] = useState<'sequence' | 'strategies'>('sequence')
 
-  // Search
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return null
-    const q = searchQuery.toLowerCase()
-    return GUIDES.filter(g =>
-      g.title.toLowerCase().includes(q) ||
-      g.summary.toLowerCase().includes(q) ||
-      g.tags.some(t => t.toLowerCase().includes(q))
-    )
-  }, [searchQuery])
+  const NAV: { id: ResourceSection; icon: any; label: string; desc: string }[] = [
+    { id: 'skills', icon: BookOpen, label: 'Key ELA/ESL Skills', desc: 'Main idea, inference, context clues, and more' },
+    { id: 'grammar', icon: Type, label: 'Grammar Index', desc: 'Parts of speech, tenses, common patterns' },
+    { id: 'patterns', icon: Languages, label: 'Sentence Patterns', desc: 'Frames, structures, and models by level' },
+    { id: 'phonics', icon: Lightbulb, label: 'Phonics & Fluency', desc: 'Scope & sequence, strategies' },
+    { id: 'subplans', icon: FileText, label: 'Sub Plans', desc: 'Substitute teacher lesson plans' },
+  ]
 
-  const currentGuide = view.page === 'guide' ? GUIDES.find(g => g.id === view.guideId) : null
-  const currentCategory = view.page === 'category' ? CATEGORIES.find(c => c.id === view.categoryId) : null
-  const categoryGuides = view.page === 'category' ? GUIDES.filter(g => g.category === view.categoryId) : []
-
-  // ── Phonics & References (re-linked from TeacherReferences) ──────
-
-  if (view.page === 'phonics') {
-    const PHONICS_TABS = [
-      { id: 'sequence' as const, label: ko ? '파닉스 순서' : 'Phonics Scope & Sequence', icon: Layers },
-      { id: 'strategies' as const, label: ko ? '교수 전략' : 'Teaching Strategies', icon: BookOpen },
-      { id: 'assessment' as const, label: ko ? '평가 문해력' : 'Assessment Literacy', icon: ClipboardList },
-      { id: 'fluency' as const, label: ko ? '읽기 유창성' : 'Reading Fluency', icon: BookMarked },
-    ]
+  if (section === 'home') {
     return (
-      <div className="animate-fade-in">
-        <div className="bg-surface border-b border-border px-8 py-5">
-          <button onClick={() => setView({ page: 'home' })}
-            className="inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-navy transition-colors mb-2">
-            <ChevronLeft size={13} /> {ko ? '전체 카테고리' : 'All Categories'}
-          </button>
-          <h2 className="font-display text-xl font-bold text-navy">{ko ? '파닉스 & 기초 기술' : 'Phonics & Foundational Skills'}</h2>
-          <p className="text-[12px] text-text-secondary mt-1">{ko ? '과학적 읽기 연구 기반 체계적 파닉스 참고 자료' : 'Science of Reading research-backed phonics reference, teaching strategies, and assessment guidance'}</p>
-          <div className="flex gap-1 mt-4">
-            {PHONICS_TABS.map(({ id, label, icon: Icon }) => (
-              <button key={id} onClick={() => setView({ page: 'phonics', section: id })}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${
-                  view.section === id ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'
-                }`}>
-                <Icon size={14} /> {label}
+      <div className="px-8 py-6 max-w-[1000px] mx-auto">
+        <h2 className="font-display text-2xl font-bold text-navy mb-1">{ko ? '교사 자료실' : 'Teacher Resources'}</h2>
+        <p className="text-[12px] text-text-tertiary mb-6">Quick-reference guides for daily instruction. Not training — just the things you need to look up fast.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {NAV.map(n => (
+            <button key={n.id} onClick={() => setSection(n.id)} className="text-left bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:border-navy/20 transition-all group">
+              <n.icon size={24} className="text-navy mb-3 group-hover:scale-110 transition-transform" />
+              <h3 className="text-[14px] font-bold text-navy mb-1">{n.label}</h3>
+              <p className="text-[11px] text-text-tertiary leading-relaxed">{n.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Back button + section header
+  const navItem = NAV.find(n => n.id === section)
+  return (
+    <div className="px-8 py-6 max-w-[1000px] mx-auto">
+      <button onClick={() => setSection('home')} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-text-tertiary hover:text-navy mb-4">
+        ← Back to Resources
+      </button>
+      <h2 className="font-display text-xl font-bold text-navy mb-1">{navItem?.label}</h2>
+      <p className="text-[12px] text-text-tertiary mb-6">{navItem?.desc}</p>
+
+      {section === 'skills' && <ELASkillsReference />}
+      {section === 'grammar' && <GrammarIndex />}
+      {section === 'patterns' && <SentencePatterns />}
+      {section === 'phonics' && (
+        <>
+          <div className="flex gap-1 mb-5">
+            {(['sequence', 'strategies'] as const).map(t => (
+              <button key={t} onClick={() => setPhonicsTab(t)} className={`px-4 py-2 rounded-lg text-[12px] font-medium ${phonicsTab === t ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                {t === 'sequence' ? 'Scope & Sequence' : 'Teaching Strategies'}
               </button>
             ))}
           </div>
-        </div>
-        <div className="px-8 py-6 max-w-5xl">
-          {view.section === 'sequence' && <PhonicsSequence />}
-          {view.section === 'strategies' && <PhonicsStrategies />}
-          {view.section === 'assessment' && <AssessmentLiteracy />}
-          {view.section === 'fluency' && <ReadingFluencyGuide />}
-        </div>
+          {phonicsTab === 'sequence' && <PhonicsSequence />}
+          {phonicsTab === 'strategies' && <PhonicsStrategies />}
+        </>
+      )}
+      {section === 'subplans' && <SubPlansContent />}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ELA/ESL SKILLS REFERENCE
+// ═══════════════════════════════════════════════════════════════════
+
+const ELA_SKILLS = [
+  {
+    name: 'Main Idea', domain: 'Reading', ccss: 'RI.x.2',
+    what: 'Identifying the most important point the author is making in a text. Not a detail — the big takeaway.',
+    example: 'After reading a passage about recycling, a student says: "This is about how recycling helps the Earth by reducing trash." That is the main idea. "Plastic takes 500 years to decompose" is a supporting detail.',
+    howToTeach: [
+      'Read aloud a short paragraph. Cover the text. Ask: "What was that mostly about?" Accept answers in L1 if needed.',
+      'Teach the "umbrella" strategy: the main idea is the umbrella, details are the raindrops underneath it.',
+      'Give students 3 sentences from a paragraph. Ask them to sort which is the main idea and which are details.',
+      'Use the headline test: "If this were a news article, what would the headline be?"',
+    ],
+    koreanNote: 'Korean students often confuse 주제 (topic) with 중심 생각 (main idea). The topic is one word ("recycling"). The main idea is a full sentence about the topic.',
+  },
+  {
+    name: 'Inference', domain: 'Reading', ccss: 'RL.x.1, RI.x.1',
+    what: 'Using clues from the text plus what you already know to figure out something the author did not say directly.',
+    example: '"Sarah grabbed her umbrella and raincoat before leaving." We can infer it is raining, even though the text never says "it is raining."',
+    howToTeach: [
+      'Model with pictures first: show an image and ask "What do you think is happening? What clues tell you?"',
+      'Use the formula: Text Clue + What I Already Know = Inference. Write it on the board.',
+      'Read a short passage and stop before the ending. Ask students to predict what happens next and explain WHY.',
+      'Sentence frame: "I think ___ because the text says ___ and I know that ___."',
+    ],
+    koreanNote: 'Inferencing is a higher-order skill that requires strong vocabulary. For WIDA 1-2, use picture-based inference before text-based.',
+  },
+  {
+    name: 'Context Clues', domain: 'Reading/Vocabulary', ccss: 'L.x.4',
+    what: 'Figuring out the meaning of an unknown word by looking at the words and sentences around it.',
+    example: '"The arid desert had no water for miles." A student can figure out "arid" means dry because deserts have no water.',
+    howToTeach: [
+      'Teach the PAVE strategy: Predict meaning → Actually look it up → Verify → Elaborate with your own sentence.',
+      'Highlight unknown words in a passage. Read the sentence before and after. Ask: "What word could replace this?"',
+      'Teach 4 types of clues: definition clue (means/is), example clue (such as/like), contrast clue (but/however), logic clue (makes sense because).',
+      'Practice with cloze sentences: "The ___ dog barked loudly and scared the mailman." (Missing word: aggressive/big/angry)',
+    ],
+    koreanNote: 'Korean students may skip unknown words entirely. Train them to stop, look around the word, and make a guess before moving on.',
+  },
+  {
+    name: 'Summarizing', domain: 'Reading', ccss: 'RL.x.2, RI.x.2',
+    what: 'Retelling the most important parts of a text in your own words, in order, leaving out small details.',
+    example: 'A 3-sentence summary of a chapter book: "First, the character found a map. Then, she followed it to a cave. Finally, she discovered the treasure was friendship."',
+    howToTeach: [
+      'Teach "Somebody-Wanted-But-So-Then" for narratives: Who wanted what? What was the problem? What happened?',
+      'For informational text, teach "What? So What?": What is the topic? Why does it matter?',
+      'Give students a paragraph and 10 words. They must summarize using only those 10 words.',
+      'Use a 3-2-1 exit ticket: 3 things you learned, 2 things that were interesting, 1 question you still have.',
+    ],
+    koreanNote: 'Many ELLs retell instead of summarize — they include every detail. Explicitly teach the difference: retelling = everything; summary = only the important parts.',
+  },
+  {
+    name: 'Compare & Contrast', domain: 'Reading', ccss: 'RL.x.9, RI.x.9',
+    what: 'Identifying how two or more things are similar (compare) and how they are different (contrast).',
+    example: 'Dogs and cats are both pets (compare), but dogs need walks while cats do not (contrast).',
+    howToTeach: [
+      'Start with objects students can see and touch: "How are a pencil and a pen the same? Different?"',
+      'Venn diagrams work, but also try T-charts (one column per item) for lower-level students.',
+      'Teach signal words: Same/both/also/too = compare. But/however/while/unlike = contrast.',
+      'Sentence frames: "___ and ___ are similar because ___." / "___ is different from ___ because ___."',
+    ],
+    koreanNote: 'Korean uses different particles for comparison (보다, 처럼). Point out that English uses separate words (like, unlike, than) rather than word endings.',
+  },
+  {
+    name: 'Author\'s Purpose', domain: 'Reading', ccss: 'RI.x.6, RL.x.6',
+    what: 'Understanding WHY the author wrote the text. The three main purposes: to inform, to persuade, or to entertain.',
+    example: 'A science article about volcanoes → inform. An ad for a toy → persuade. A funny story about a talking dog → entertain.',
+    howToTeach: [
+      'Use PIE: Persuade, Inform, Entertain. Give students short texts and have them sort into PIE categories.',
+      'Ask: "After reading this, does the author want me to learn something, buy something, or laugh/feel something?"',
+      'Show real-world examples: menus (inform), commercials (persuade), comics (entertain).',
+      'For advanced students, introduce a fourth purpose: to explain (how-to texts, recipes, instructions).',
+    ],
+    koreanNote: 'The concept of "author\'s purpose" may be unfamiliar — Korean reading instruction often focuses more on comprehension than critical analysis of the author.',
+  },
+  {
+    name: 'Text Structure', domain: 'Reading', ccss: 'RI.x.5',
+    what: 'How the information in a text is organized. Five main structures: sequence, cause/effect, problem/solution, compare/contrast, description.',
+    example: 'A recipe is sequence structure. An article about pollution causing health problems is cause/effect.',
+    howToTeach: [
+      'Teach one structure at a time over several weeks. Use graphic organizers matched to each structure.',
+      'Teach signal words for each: First/then/next (sequence), because/so/therefore (cause-effect), the problem is/one solution (problem-solution).',
+      'Give students a short paragraph and 5 structure cards. They hold up the card that matches.',
+      'Cut up a text into pieces. Students reassemble it using signal words as clues.',
+    ],
+    koreanNote: 'Korean text structure is often topic → background → details → conclusion. English academic text tends to be thesis-first. Make this difference explicit.',
+  },
+  {
+    name: 'Cause & Effect', domain: 'Reading', ccss: 'RI.x.3, RL.x.3',
+    what: 'Understanding why something happened (cause) and what happened as a result (effect).',
+    example: '"Because it rained all day (cause), the soccer game was cancelled (effect)."',
+    howToTeach: [
+      'Use a simple chain: domino visuals. One event pushes the next. What started it? What happened because of it?',
+      'Teach signal words: because, so, therefore, as a result, since, due to, led to.',
+      'Ask two questions about every event: "Why did this happen?" (cause) and "What happened next?" (effect).',
+      'Sentence frame: "___ happened because ___." or "Because ___, then ___."',
+    ],
+    koreanNote: 'Korean word order puts the cause before the effect naturally (비가 와서 = because rain came). English can put either first. Practice both orders.',
+  },
+  {
+    name: 'Text Evidence', domain: 'Reading', ccss: 'RL.x.1, RI.x.1',
+    what: 'Pointing to specific words, sentences, or passages in the text that support your answer.',
+    example: 'Q: "How does the character feel?" A: "She feels nervous because the text says her hands were shaking."',
+    howToTeach: [
+      'Train the habit: "Go back to the text." Every time a student answers, ask "Where does it say that? Show me."',
+      'Teach ACE: Answer the question, Cite evidence from the text, Explain how the evidence supports your answer.',
+      'Use highlighters: students physically highlight the sentence that proves their answer.',
+      'Sentence starters: "According to the text..." / "The author states..." / "On page ___, it says..."',
+    ],
+    koreanNote: 'Korean students may answer from memory or opinion. Build the reflex of going back to the text by making it a classroom routine, not just a test skill.',
+  },
+  {
+    name: 'Vocabulary in Context', domain: 'Vocabulary', ccss: 'L.x.4, L.x.5, L.x.6',
+    what: 'Understanding that words can mean different things in different sentences. Going beyond dictionary definitions.',
+    example: '"Run" means something different in "run a race," "run a business," and "a run in her stockings."',
+    howToTeach: [
+      'Teach Tier 2 words (academic vocabulary that appears across subjects): analyze, compare, establish, significant.',
+      'Use word maps: the word in the center, surrounded by definition, synonym, antonym, picture, and a sentence.',
+      'Play "word of the day" — introduce one high-utility word each day. Students use it in conversation and writing.',
+      'Sort vocabulary into categories: words I know well / words I have seen / words I have never seen.',
+    ],
+    koreanNote: 'Many Tier 2 English words have Sino-Korean equivalents (analyze = 분석, establish = 설립). Making this connection accelerates vocabulary acquisition for higher-level learners.',
+  },
+]
+
+function ELASkillsReference() {
+  const [search, setSearch] = useState('')
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return ELA_SKILLS
+    const q = search.toLowerCase()
+    return ELA_SKILLS.filter(s => s.name.toLowerCase().includes(q) || s.domain.toLowerCase().includes(q) || s.what.toLowerCase().includes(q))
+  }, [search])
+
+  return (
+    <div>
+      <div className="relative mb-4">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search skills..." className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
       </div>
-    )
-  }
-
-  // ── Guide Detail ──────────────────────────────────────────────
-
-  if (view.page === 'subplans') {
-    return (
-      <div className="animate-fade-in">
-        <div className="bg-surface border-b border-border px-8 py-5">
-          <button onClick={() => setView({ page: 'home' })} className="inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-navy transition-colors mb-2">
-            <ChevronLeft size={13} /> {ko ? '전체 카테고리' : 'All Categories'}
-          </button>
-          <h2 className="font-display text-xl font-bold text-navy">{ko ? '대체 교사 활동' : 'Sub Plans & Emergency Activities'}</h2>
-          <p className="text-[12px] text-text-secondary mt-1">{ko ? '대체 교사를 위한 준비된 활동' : 'Ready-to-go activities for substitute teachers or emergency coverage.'}</p>
-        </div>
-        <SubPlansContent />
-      </div>
-    )
-  }
-
-  if (view.page === 'pdlog') {
-    return (
-      <div className="animate-fade-in">
-        <div className="bg-surface border-b border-border px-8 py-5">
-          <button onClick={() => setView({ page: 'home' })} className="inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-navy transition-colors mb-2">
-            <ChevronLeft size={13} /> {ko ? '전체 카테고리' : 'All Categories'}
-          </button>
-          <h2 className="font-display text-xl font-bold text-navy">{ko ? '전문성 개발 일지' : 'Professional Development Log'}</h2>
-          <p className="text-[12px] text-text-secondary mt-1">{ko ? '워크숍, 독서, 동료 관찰, 개인 교수 목표 기록' : 'Track workshops, readings, peer observations, and personal teaching goals.'}</p>
-        </div>
-        <PDLogContent />
-      </div>
-    )
-  }
-
-  if (view.page === 'guide' && currentGuide) {
-    const cat = CATEGORIES.find(c => c.id === currentGuide.category)!
-    const tab = view.tab
-
-    return (
-      <div className="animate-fade-in">
-        <div className="bg-surface border-b border-border px-8 py-5">
-          <button onClick={() => setView({ page: 'category', categoryId: currentGuide.category })}
-            className="inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-navy transition-colors mb-2">
-            <ChevronLeft size={13} /> {cat.label}
-          </button>
-          <h2 className="font-display text-xl font-bold text-navy leading-tight">{currentGuide.title}</h2>
-          <div className="flex items-center gap-3 mt-1.5">
-            <span className="text-[11px] font-semibold" style={{ color: cat.color }}>{currentGuide.source}</span>
-            {currentGuide.sourceUrl && (
-              <a href={currentGuide.sourceUrl} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[10px] text-text-muted hover:text-navy transition-colors">
-                <ExternalLink size={10} /> Original
-              </a>
-            )}
-          </div>
-          <div className="flex gap-1 mt-4">
-            {([
-              ['guide', ko ? '가이드' : 'Guide', BookOpen],
-              ['research', ko ? '연구 & 연결' : 'Research & Connections', Link2],
-            ] as const).map(([id, label, Icon]) => (
-              <button key={id} onClick={() => setView({ ...view, tab: id as any })}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${
-                  tab === id ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'
-                }`}>
-                <Icon size={14} /> {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="px-8 py-6 max-w-4xl">
-          {tab === 'guide' && (
-            <>
-              {/* Summary + When to Use */}
-              <div className="bg-navy/5 border border-navy/10 rounded-xl p-5 mb-6">
-                <p className="text-[13px] text-text-secondary leading-relaxed">{currentGuide.summary}</p>
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
-                  <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-0.5">
-                    {ko ? '활용 시기' : 'When to use this'}
-                  </p>
-                  <p className="text-[12px] text-amber-800 font-medium leading-relaxed">{currentGuide.whenToUse}</p>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div className="flex flex-wrap gap-1.5 mb-6">
-                {currentGuide.tags.map(tag => (
-                  <span key={tag} className="text-[9px] px-2.5 py-0.5 rounded-full bg-surface-alt text-text-secondary font-medium uppercase tracking-wide border border-border">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* Sections */}
-              {currentGuide.sections.map((section, si) => (
-                <div key={si} className="bg-surface border border-border rounded-xl p-5 mb-4">
-                  <h3 className="text-[14px] font-bold text-navy mb-3">{section.title}</h3>
-                  <div className="space-y-4">
-                    {section.blocks.map((block, bi) => (
-                      <BlockRenderer key={bi} block={block} catColor={cat.color} />
-                    ))}
+      <div className="space-y-2">
+        {filtered.map(skill => {
+          const isOpen = expanded === skill.name
+          return (
+            <div key={skill.name} className="border border-border rounded-xl overflow-hidden bg-surface">
+              <button onClick={() => setExpanded(isOpen ? null : skill.name)} className="w-full px-5 py-3.5 flex items-center gap-3 text-left hover:bg-surface-alt/30 transition-all">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[13px] font-bold text-navy">{skill.name}</h3>
+                    <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-navy/10 text-navy">{skill.domain}</span>
+                    <span className="text-[9px] font-mono text-text-tertiary">{skill.ccss}</span>
                   </div>
+                  <p className="text-[11px] text-text-secondary mt-0.5 truncate">{skill.what}</p>
                 </div>
-              ))}
-            </>
-          )}
+                {isOpen ? <ChevronUp size={16} className="text-text-tertiary shrink-0" /> : <ChevronDown size={16} className="text-text-tertiary shrink-0" />}
+              </button>
+              {isOpen && (
+                <div className="px-5 pb-4 space-y-3 border-t border-border/50">
+                  <div className="mt-3">
+                    <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider mb-1">What It Is</p>
+                    <p className="text-[12px] text-text-secondary leading-relaxed">{skill.what}</p>
+                  </div>
+                  <div className="bg-surface-alt/50 border border-border rounded-lg p-3.5">
+                    <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider mb-1">Example</p>
+                    <p className="text-[12px] text-text-primary leading-relaxed italic">{skill.example}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider mb-2">How to Teach It</p>
+                    <div className="space-y-2">
+                      {skill.howToTeach.map((tip, i) => (
+                        <div key={i} className="flex gap-2.5">
+                          <span className="w-5 h-5 rounded-full bg-navy/10 text-navy text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                          <p className="text-[11px] text-text-secondary leading-relaxed">{tip}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {skill.koreanNote && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Korean L1 Note</p>
+                      <p className="text-[11px] text-amber-800 leading-relaxed">{skill.koreanNote}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
-          {tab === 'research' && (
-            <>
-              {/* Related Research */}
-              <div className="bg-surface border border-border rounded-xl p-5 mb-6">
-                <h3 className="text-[14px] font-bold text-navy mb-1">{ko ? '관련 연구' : 'Research Foundations'}</h3>
-                <p className="text-[11px] text-text-tertiary mb-4">Theories and frameworks that support the strategies in this guide</p>
-                <div className="space-y-2.5">
-                  {currentGuide.relatedResearch.map((ref, i) => (
-                    <div key={i} className="bg-surface-alt/50 border border-border rounded-lg p-4">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[12.5px] font-bold text-navy">{ref.concept}</span>
-                        <span className="text-[10px] text-text-tertiary">({ref.author})</span>
+// ═══════════════════════════════════════════════════════════════════
+// GRAMMAR INDEX
+// ═══════════════════════════════════════════════════════════════════
+
+const GRAMMAR_DATA = [
+  { category: 'Parts of Speech', items: [
+    { term: 'Noun', definition: 'A person, place, thing, or idea.', examples: 'dog, school, happiness, Korea', teachTip: 'Start with concrete nouns students can see/touch. Label classroom objects. Progress to abstract nouns (feelings, ideas) later.', koreanNote: 'Korean nouns don\'t have articles (a/the) or plural -s. These must be explicitly taught and practiced constantly.' },
+    { term: 'Verb', definition: 'An action word or state of being.', examples: 'run, eat, is, have, think', teachTip: 'TPR (Total Physical Response): say the verb, students act it out. Build a verb wall organized by tense.', koreanNote: 'Korean verbs come at the end of the sentence (SOV). English puts them in the middle (SVO). This is the #1 word order challenge.' },
+    { term: 'Adjective', definition: 'A word that describes a noun.', examples: 'big, red, happy, three, Korean', teachTip: 'Play "describe the mystery object" — one student describes, others guess. Teach adjective order (opinion-size-age-shape-color-origin-material-purpose).', koreanNote: 'Korean adjectives often function as verbs (예쁘다 = to be pretty). In English, adjectives need a linking verb: "She is pretty."' },
+    { term: 'Adverb', definition: 'A word that describes a verb, adjective, or other adverb. Often ends in -ly.', examples: 'quickly, very, always, never, well', teachTip: 'Teach adverbs by modifying known verbs: "He runs" → "He runs quickly/slowly/always." Show position flexibility in English.', koreanNote: 'Korean adverbs often come before verbs naturally. In English, adverb placement is more flexible but also more confusing.' },
+    { term: 'Pronoun', definition: 'A word that replaces a noun.', examples: 'he, she, it, they, we, them', teachTip: 'Practice with picture stories: replace character names with pronouns. Create a pronoun reference chart: I/me/my/mine.', koreanNote: 'Korean often drops pronouns entirely. Students may write "Is happy" instead of "She is happy." Reinforce that English requires the pronoun.' },
+    { term: 'Preposition', definition: 'A word that shows relationship between a noun and other words (location, time, direction).', examples: 'in, on, at, under, between, during', teachTip: 'Use a box and a small object. Physically place the object in, on, under, beside, behind the box while saying the preposition.', koreanNote: 'Korean uses particles (에, 에서, 위에) instead of separate preposition words. Students may omit prepositions: "I go school" instead of "I go to school."' },
+    { term: 'Conjunction', definition: 'A word that connects words, phrases, or sentences.', examples: 'and, but, or, so, because, although', teachTip: 'Start with FANBOYS (for, and, nor, but, or, yet, so). Use them to combine short sentences into longer ones during writing.', koreanNote: 'Korean conjunctions often come as word endings (-고, -지만). English uses separate words between clauses.' },
+  ]},
+  { category: 'Verb Tenses', items: [
+    { term: 'Simple Present', definition: 'Habitual actions or facts. Used for routines and general truths.', examples: 'I eat breakfast. She likes dogs. Water boils at 100°C.', teachTip: 'Practice with daily routines: "I wake up, I brush my teeth, I eat breakfast." Focus on the third-person -s: he/she/it walks.', koreanNote: 'Korean doesn\'t change verb forms for person. "I eat" and "she eat" feel the same. The third-person -s is a persistent error.' },
+    { term: 'Present Progressive', definition: 'Action happening right now. Formed with am/is/are + -ing.', examples: 'I am reading. They are playing. She is sleeping.', teachTip: 'Point to what\'s happening in the moment: "I am writing on the board. You are listening." Have students describe what classmates are doing.', koreanNote: 'Korean uses -고 있다 for progressive, but much less frequently than English. Students may use simple present when progressive is needed.' },
+    { term: 'Simple Past', definition: 'Completed action in the past. Regular verbs add -ed; irregular verbs change form.', examples: 'I walked to school. She ate lunch. They went home.', teachTip: 'Sort verbs into regular (-ed) and irregular (went, saw, ate). Irregular verbs need memorization — use flashcards, songs, and daily practice.', koreanNote: 'Korean past tense is consistent (-았/었). English irregular past tense (go→went, eat→ate) must be memorized individually.' },
+    { term: 'Future (will / going to)', definition: 'Actions that will happen later.', examples: 'I will study tonight. She is going to travel next week.', teachTip: 'Practice with weekend plans: "What will you do this weekend?" Teach both "will" (spontaneous decisions) and "going to" (planned events).', koreanNote: 'Korean uses -ㄹ 것이다 for future. English has two common forms. Start with "will" for simplicity, add "going to" later.' },
+  ]},
+  { category: 'Common Challenges for ELLs', items: [
+    { term: 'Subject-Verb Agreement', definition: 'The verb form must match the subject in number.', examples: 'He walks (not walk). They walk (not walks). She has (not have).', teachTip: 'Daily oral drill: point to a student → "She runs." Point to two students → "They run." Make it physical and fast-paced.', koreanNote: 'Korean verbs never change for subject. This agreement rule simply does not exist in Korean and requires constant reinforcement.' },
+    { term: 'Articles (a, an, the)', definition: 'Small words before nouns. "A/an" = any one. "The" = a specific one.', examples: 'I saw a dog. The dog was big. An apple fell from the tree.', teachTip: 'Teach the "pointing test": if you can point to a specific thing, use "the." If you mean any one, use "a/an." Practice with classroom objects.', koreanNote: 'Korean has NO articles. This is the single most common grammar error for Korean ELLs and may never fully resolve at lower levels. Be patient.' },
+    { term: 'Word Order', definition: 'English uses Subject-Verb-Object order. Questions invert the subject and auxiliary verb.', examples: 'Statement: She likes cats. Question: Does she like cats?', teachTip: 'Use sentence strips that students physically rearrange. Color-code: red = subject, blue = verb, green = object. Practice daily.', koreanNote: 'Korean is SOV (subject-object-verb): "She cats likes." The verb-in-middle pattern needs constant practice.' },
+    { term: 'Possessives', definition: 'Showing ownership with apostrophe-s or possessive pronouns.', examples: 'The dog\'s bone. Maria\'s book. This is her pen. That is theirs.', teachTip: 'Practice with classroom objects: "Whose pencil is this? It is Min-jun\'s pencil." Use a possessives chart: my/your/his/her/its/our/their.', koreanNote: 'Korean uses the particle 의 for possession. Apostrophes do not exist in Korean. Students will write "Maria book" without the \'s.' },
+    { term: 'Plural -s and -es', definition: 'Adding -s or -es to make nouns plural. Some nouns are irregular.', examples: 'cats, dogs, boxes, children, teeth, fish', teachTip: 'Sort nouns: add -s, add -es, or irregular. Teach the -es rule (sh, ch, x, s, z → -es). Make an irregular plurals poster.', koreanNote: 'Korean doesn\'t add plural endings — plurality is shown by context or numbers. Students consistently drop the -s. Overcorrect early.' },
+  ]},
+]
+
+function GrammarIndex() {
+  const [search, setSearch] = useState('')
+  const [expandedCat, setExpandedCat] = useState<string>('Parts of Speech')
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return GRAMMAR_DATA
+    const q = search.toLowerCase()
+    return GRAMMAR_DATA.map(cat => ({
+      ...cat,
+      items: cat.items.filter(i => i.term.toLowerCase().includes(q) || i.definition.toLowerCase().includes(q) || i.examples.toLowerCase().includes(q))
+    })).filter(cat => cat.items.length > 0)
+  }, [search])
+
+  return (
+    <div>
+      <div className="relative mb-4">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search grammar..." className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
+      </div>
+      <div className="space-y-3">
+        {filtered.map(cat => {
+          const isOpen = expandedCat === cat.category || search.trim().length > 0
+          return (
+            <div key={cat.category} className="border border-border rounded-xl overflow-hidden bg-surface">
+              <button onClick={() => setExpandedCat(isOpen && !search ? '' : cat.category)} className="w-full px-5 py-3.5 flex items-center gap-3 text-left hover:bg-surface-alt/30">
+                <h3 className="text-[14px] font-bold text-navy flex-1">{cat.category}</h3>
+                <span className="text-[10px] text-text-tertiary">{cat.items.length} items</span>
+                {isOpen ? <ChevronUp size={16} className="text-text-tertiary" /> : <ChevronDown size={16} className="text-text-tertiary" />}
+              </button>
+              {isOpen && (
+                <div className="border-t border-border/50 divide-y divide-border/50">
+                  {cat.items.map(item => (
+                    <div key={item.term} className="px-5 py-3.5">
+                      <div className="flex items-start gap-3 mb-2">
+                        <h4 className="text-[13px] font-bold text-navy w-36 shrink-0">{item.term}</h4>
+                        <p className="text-[11px] text-text-secondary leading-relaxed">{item.definition}</p>
                       </div>
-                      <p className="text-[11.5px] text-text-secondary leading-relaxed mt-1">{ref.connection}</p>
+                      <div className="ml-0 pl-[9.75rem] space-y-2">
+                        <p className="text-[11px] text-text-tertiary"><span className="font-semibold text-text-secondary">Examples:</span> {item.examples}</p>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5">
+                          <p className="text-[10px] font-semibold text-blue-700 mb-0.5">How to Teach</p>
+                          <p className="text-[10px] text-blue-800 leading-relaxed">{item.teachTip}</p>
+                        </div>
+                        {item.koreanNote && (
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                            <p className="text-[10px] font-semibold text-amber-700 mb-0.5">Korean L1 Note</p>
+                            <p className="text-[10px] text-amber-800 leading-relaxed">{item.koreanNote}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Related Guides */}
-              {currentGuide.relatedGuides.length > 0 && (
-                <div className="bg-surface border border-border rounded-xl p-5 mb-6">
-                  <h3 className="text-[14px] font-bold text-navy mb-1">{ko ? '관련 가이드' : 'Related Guides'}</h3>
-                  <p className="text-[11px] text-text-tertiary mb-4">Other guides in this library that connect to this topic</p>
-                  <div className="space-y-1.5">
-                    {currentGuide.relatedGuides.map(id => {
-                      const related = GUIDES.find(g => g.id === id)
-                      if (!related) return null
-                      const relCat = CATEGORIES.find(c => c.id === related.category)
-                      return (
-                        <button key={id} onClick={() => setView({ page: 'guide', guideId: id, tab: 'guide' })}
-                          className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-alt/50 border border-border hover:shadow-sm transition-all group">
-                          <ArrowRight size={13} className="text-text-muted group-hover:text-navy transition-colors shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12.5px] font-semibold text-navy group-hover:text-gold transition-colors truncate">{related.title}</p>
-                            <p className="text-[10px] font-medium mt-0.5" style={{ color: relCat?.color }}>{relCat?.label}</p>
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
               )}
-            </>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ── Search Results ────────────────────────────────────────────
-
-  if (searchResults) {
-    return (
-      <div className="animate-fade-in">
-        <div className="bg-surface border-b border-border px-8 py-5">
-          <h2 className="font-display text-2xl font-bold text-navy">{ko ? '교사 가이드' : 'Teacher Guides'}</h2>
-          <p className="text-[12px] text-text-secondary mt-1">{ko ? '연구 기반 교실 전략 참고 자료' : 'Research-backed classroom strategy reference'}</p>
-          <div className="mt-4 relative max-w-md">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-              placeholder={ko ? '가이드 검색...' : 'Search guides...'}
-              className="w-full pl-9 pr-3 py-2 text-[13px] bg-surface-alt border border-border rounded-lg outline-none focus:border-navy/30" />
-          </div>
-        </div>
-        <div className="px-8 py-6 max-w-3xl">
-          <p className="text-[11px] text-text-secondary mb-4">{searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"</p>
-          {searchResults.length === 0 ? (
-            <p className="text-[13px] text-text-muted py-8 text-center">No guides match your search.</p>
-          ) : (
-            <div className="space-y-2">
-              {searchResults.map(guide => {
-                const cat = CATEGORIES.find(c => c.id === guide.category)
-                return (
-                  <button key={guide.id} onClick={() => { setView({ page: 'guide', guideId: guide.id, tab: 'guide' }); setSearchQuery('') }}
-                    className="w-full text-left bg-surface border border-border rounded-xl px-5 py-4 hover:shadow-sm transition-all group"
-                    style={{ borderLeftWidth: 3, borderLeftColor: cat?.color }}>
-                    <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: cat?.color }}>{cat?.label}</span>
-                    <h3 className="font-display text-[13.5px] font-semibold text-navy mt-0.5 group-hover:text-gold transition-colors">{guide.title}</h3>
-                    <p className="text-[11.5px] text-text-secondary leading-relaxed mt-1">{guide.summary}</p>
-                  </button>
-                )
-              })}
             </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ── Guide List (category) ─────────────────────────────────────
-
-  if (view.page === 'category' && currentCategory) {
-    const CatIcon = ICON_MAP[currentCategory.icon] || BookMarked
-    return (
-      <div className="animate-fade-in">
-        <div className="bg-surface border-b border-border px-8 py-5">
-          <button onClick={() => setView({ page: 'home' })}
-            className="inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-navy transition-colors mb-2">
-            <ChevronLeft size={13} /> {ko ? '전체 카테고리' : 'All Categories'}
-          </button>
-          <div className="flex items-center gap-2.5">
-            <div style={{ color: currentCategory.color }}><CatIcon size={20} /></div>
-            <h2 className="font-display text-xl font-bold text-navy">{currentCategory.label}</h2>
-          </div>
-          <p className="text-[12px] text-text-secondary mt-1">{currentCategory.description}</p>
-        </div>
-        <div className="px-8 py-6 max-w-3xl">
-          <div className="space-y-2">
-            {categoryGuides.map(guide => (
-              <button key={guide.id} onClick={() => setView({ page: 'guide', guideId: guide.id, tab: 'guide' })}
-                className="w-full text-left bg-surface border border-border rounded-xl px-5 py-4 hover:shadow-sm transition-all group">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-display text-[13.5px] font-semibold text-navy group-hover:text-gold transition-colors">{guide.title}</h3>
-                    <p className="text-[11px] font-medium mt-0.5" style={{ color: currentCategory.color }}>{guide.source}</p>
-                  </div>
-                  <ChevronRight size={16} className="text-border mt-0.5 shrink-0" />
-                </div>
-                <p className="text-[11.5px] text-text-secondary leading-relaxed mt-2">{guide.summary}</p>
-                <div className="flex flex-wrap gap-1 mt-2.5">
-                  {guide.tags.map(tag => (
-                    <span key={tag} className="text-[9px] px-2 py-0.5 rounded-full bg-surface-alt text-text-muted font-medium">{tag}</span>
-                  ))}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Home: Category Grid ───────────────────────────────────────
-
-  return (
-    <div className="animate-fade-in">
-      <div className="bg-surface border-b border-border px-8 py-5">
-        <h2 className="font-display text-2xl font-bold text-navy">{ko ? '교사 가이드' : 'Teacher Guides'}</h2>
-        <p className="text-[12px] text-text-secondary mt-1">
-          {ko ? '연구 기반 교실 전략 참고 자료' : 'Research-backed classroom strategy reference. Browse by topic or search.'}
-        </p>
-        <div className="mt-4 relative max-w-md">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            placeholder={ko ? '가이드 검색...' : 'Search guides...'}
-            className="w-full pl-9 pr-3 py-2 text-[13px] bg-surface-alt border border-border rounded-lg outline-none focus:border-navy/30" />
-        </div>
-      </div>
-      <div className="px-8 py-6">
-        <div className="flex items-center gap-4 mb-5 text-[11px] text-text-secondary">
-          <span className="font-semibold text-navy">{GUIDES.length + 4} {ko ? '개 가이드' : 'guides'}</span>
-          <span className="text-border">|</span>
-          <span>{CATEGORIES.length + 1} {ko ? '개 카테고리' : 'categories'}</span>
-        </div>
-        <div className="grid grid-cols-3 gap-3 max-w-[900px]">
-          {/* Phonics & Foundational Skills — special card linking to TeacherReferences */}
-          <button onClick={() => setView({ page: 'phonics', section: 'sequence' })}
-            className="text-left bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group"
-            style={{ borderTopWidth: 3, borderTopColor: '#F97316' }}>
-            <div className="flex items-start justify-between mb-3">
-              <div style={{ color: '#F97316' }}><Layers size={20} /></div>
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wide"
-                style={{ color: '#F97316', background: '#F9731612' }}>
-                4
-              </span>
-            </div>
-            <h3 className="font-display text-[13.5px] font-semibold text-navy group-hover:text-gold transition-colors leading-tight">Phonics & Foundational Skills</h3>
-            <p className="text-[10.5px] text-text-secondary leading-relaxed mt-1.5">Systematic phonics scope & sequence, teaching strategies, assessment literacy, and reading fluency guidance</p>
-          </button>
-          {/* #34: Sub Plans card */}
-          <button onClick={() => setView({ page: 'subplans' })}
-            className="text-left bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group"
-            style={{ borderTopWidth: 3, borderTopColor: '#EF4444' }}>
-            <div className="flex items-start justify-between mb-3">
-              <div style={{ color: '#EF4444' }}><Lightbulb size={20} /></div>
-            </div>
-            <h3 className="font-display text-[13.5px] font-semibold text-navy group-hover:text-gold transition-colors leading-tight">Sub Plans</h3>
-            <p className="text-[10.5px] text-text-secondary leading-relaxed mt-1.5">Emergency activities and substitute teacher plans organized by grade and skill level</p>
-          </button>
-          {CATEGORIES.map(cat => {
-            const CatIcon = ICON_MAP[cat.icon] || BookMarked
-            const count = guideCountByCategory(cat.id)
-            return (
-              <button key={cat.id} onClick={() => setView({ page: 'category', categoryId: cat.id })}
-                className="text-left bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group"
-                style={{ borderTopWidth: 3, borderTopColor: cat.color }}>
-                <div className="flex items-start justify-between mb-3">
-                  <div style={{ color: cat.color }}><CatIcon size={20} /></div>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wide"
-                    style={{ color: cat.color, background: `${cat.color}12` }}>
-                    {count || '--'}
-                  </span>
-                </div>
-                <h3 className="font-display text-[13.5px] font-semibold text-navy group-hover:text-gold transition-colors leading-tight">{cat.label}</h3>
-                <p className="text-[10.5px] text-text-secondary leading-relaxed mt-1.5">{cat.description}</p>
-              </button>
-            )
-          })}
-        </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-// ─── #41 Professional Development Log ─────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SENTENCE PATTERNS
+// ═══════════════════════════════════════════════════════════════════
 
-function PDLogContent() {
-  const { currentTeacher, showToast } = useApp()
-  const [entries, setEntries] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ type: 'workshop', title: '', notes: '', tags: '' })
+const PATTERN_DATA = [
+  {
+    level: 'Beginning (WIDA 1-2)',
+    color: 'bg-red-50 border-red-200',
+    intro: 'Students at this level are learning to produce single words and short phrases. Sentence frames are essential — they provide the structure so students can focus on meaning.',
+    patterns: [
+      { pattern: 'This is a ___.', use: 'Labeling and identifying', example: 'This is a pencil. This is a book.', tip: 'Point to objects as you say it. Students repeat and point.' },
+      { pattern: 'I see ___.', use: 'Describing what they observe', example: 'I see a cat. I see three birds.', tip: 'Use during picture walks and science observations.' },
+      { pattern: 'I like ___.', use: 'Expressing preferences', example: 'I like pizza. I like red.', tip: 'Survey activity: students ask each other "Do you like ___?" and record answers.' },
+      { pattern: 'The ___ is ___.', use: 'Simple descriptions', example: 'The dog is big. The sky is blue.', tip: 'Adjective + noun practice. Use real objects or pictures.' },
+      { pattern: '___ can ___.', use: 'Describing abilities', example: 'Fish can swim. I can read.', tip: 'Animal unit: "A bird can fly. A fish can swim. A dog can run."' },
+      { pattern: 'I have ___.', use: 'Possession and counting', example: 'I have a pencil. I have two brothers.', tip: 'Show-and-tell format. Each student brings something and says "I have ___."' },
+    ],
+  },
+  {
+    level: 'Developing (WIDA 2-3)',
+    color: 'bg-amber-50 border-amber-200',
+    intro: 'Students can produce simple sentences and are beginning to add details. Frames should now include space for elaboration — adjectives, prepositional phrases, and reasons.',
+    patterns: [
+      { pattern: 'I think ___ because ___.', use: 'Giving opinions with reasons', example: 'I think dogs are the best pets because they are loyal.', tip: 'Essential for reading responses and class discussions. Practice daily.' },
+      { pattern: 'First, ___. Then, ___. Finally, ___.', use: 'Sequencing events', example: 'First, I wake up. Then, I eat breakfast. Finally, I go to school.', tip: 'Use for retelling stories, describing procedures, and writing narratives.' },
+      { pattern: 'The ___ is ___ because ___.', use: 'Descriptions with reasoning', example: 'The story is interesting because the character is brave.', tip: 'Build from the L1-L2 version by adding "because."' },
+      { pattern: '___ is similar to ___ because ___.', use: 'Comparing', example: 'A cat is similar to a dog because both are pets.', tip: 'Pair with Venn diagrams for reading comprehension.' },
+      { pattern: 'In the story, ___.', use: 'Text evidence', example: 'In the story, the boy finds a magic coin.', tip: 'Teaches students to reference the text before giving an answer.' },
+      { pattern: 'I agree/disagree because ___.', use: 'Academic discussion', example: 'I agree because the text says water is important for plants.', tip: 'Use in partner talk and Accountable Talk protocols.' },
+    ],
+  },
+  {
+    level: 'Expanding (WIDA 3-4)',
+    color: 'bg-green-50 border-green-200',
+    intro: 'Students can write and speak in paragraphs. Focus shifts to complex sentences, transition words, and academic register. Frames become optional scaffolds rather than required templates.',
+    patterns: [
+      { pattern: 'Although ___, ___.', use: 'Showing contrast', example: 'Although it was raining, we still played outside.', tip: 'Teach as an upgrade from "but" — makes writing sound more academic.' },
+      { pattern: 'According to the text, ___.', use: 'Citing evidence formally', example: 'According to the text, the main character moved to a new city.', tip: 'Required for any text-based response. Pair with page numbers.' },
+      { pattern: 'One reason ___ is ___.', use: 'Building arguments', example: 'One reason recycling is important is that it reduces waste.', tip: 'Use in opinion writing as a paragraph starter for body paragraphs.' },
+      { pattern: 'For example, ___.', use: 'Supporting with evidence', example: 'Many animals migrate. For example, whales travel thousands of miles.', tip: 'Teach as the "proof" sentence after a claim.' },
+      { pattern: 'This shows that ___.', use: 'Explaining evidence', example: 'The character cried when she saw the letter. This shows that she was emotional.', tip: 'Completes the ACE (Answer-Cite-Explain) response structure.' },
+      { pattern: 'In contrast, ___.', use: 'Compare and contrast essays', example: 'Dogs need daily walks. In contrast, cats are more independent.', tip: 'Teach alongside "similarly" and "on the other hand."' },
+    ],
+  },
+  {
+    level: 'Bridging (WIDA 4-5+)',
+    color: 'bg-blue-50 border-blue-200',
+    intro: 'Students are approaching grade-level English. The focus is on precision, register, and style. No frames needed — instead, model sophisticated sentence structures and have students practice varying their writing.',
+    patterns: [
+      { pattern: 'Not only ___, but also ___.', use: 'Emphasis and elaboration', example: 'Not only did the experiment fail, but it also damaged the equipment.', tip: 'Teach as a way to make writing more persuasive and detailed.' },
+      { pattern: 'Despite ___, ___.', use: 'Concession', example: 'Despite the challenges, the team completed the project on time.', tip: 'More sophisticated than "although." Good for essays and formal writing.' },
+      { pattern: 'The evidence suggests that ___.', use: 'Academic analysis', example: 'The evidence suggests that the author supports conservation.', tip: 'For literary analysis and research writing. Models tentative, evidence-based claims.' },
+      { pattern: 'While it is true that ___, it is also important to consider ___.', use: 'Balanced argumentation', example: 'While it is true that homework builds skills, it is also important to consider student wellbeing.', tip: 'Advanced persuasive writing. Shows ability to consider multiple perspectives.' },
+      { pattern: 'As a result of ___, ___.', use: 'Cause and effect', example: 'As a result of the new policy, attendance improved significantly.', tip: 'Upgrade from "because" and "so." More formal register.' },
+    ],
+  },
+]
 
-  const PD_TYPES = [
-    { value: 'workshop', label: 'Workshop/Training' },
-    { value: 'book', label: 'Book/Article' },
-    { value: 'peer_observation', label: 'Peer Observation' },
-    { value: 'conference', label: 'Conference' },
-    { value: 'online_course', label: 'Online Course' },
-    { value: 'personal_goal', label: 'Teaching Goal' },
-    { value: 'reflection', label: 'Reflection' },
-  ]
-
-  useEffect(() => {
-    (async () => {
-      if (!currentTeacher) { setLoading(false); return }
-      const { data } = await supabase.from('pd_log').select('*').eq('teacher_id', currentTeacher.id).order('created_at', { ascending: false })
-      setEntries(data || [])
-      setLoading(false)
-    })()
-  }, [currentTeacher?.id])
-
-  const handleAdd = async () => {
-    if (!form.title.trim() || !currentTeacher) return
-    const { data, error } = await supabase.from('pd_log').insert({
-      teacher_id: currentTeacher.id, pd_type: form.type, title: form.title.trim(),
-      notes: form.notes.trim() || null,
-      tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-    }).select().single()
-    if (error) { showToast('Error saving'); return }
-    if (data) setEntries(prev => [data, ...prev])
-    setForm({ type: 'workshop', title: '', notes: '', tags: '' })
-    setShowForm(false)
-    showToast('PD entry added')
-  }
-
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
-
-  const typeLabel = (t: string) => PD_TYPES.find(p => p.value === t)?.label || t
-  const typeColor = (t: string) => {
-    const colors: Record<string, string> = { workshop: 'bg-blue-100 text-blue-700', book: 'bg-purple-100 text-purple-700', peer_observation: 'bg-green-100 text-green-700', conference: 'bg-amber-100 text-amber-700', online_course: 'bg-cyan-100 text-cyan-700', personal_goal: 'bg-red-100 text-red-700', reflection: 'bg-indigo-100 text-indigo-700' }
-    return colors[t] || 'bg-gray-100 text-gray-700'
-  }
-
+function SentencePatterns() {
   return (
-    <div className="px-8 py-6 max-w-[700px]">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-[12px] text-text-secondary">{entries.length} entries</span>
-        <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
-          {showForm ? 'Cancel' : '+ Add Entry'}
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="bg-surface border border-border rounded-xl p-5 mb-4 space-y-3">
-          <div>
-            <label className="text-[10px] font-semibold text-text-secondary uppercase block mb-1">Type</label>
-            <div className="flex gap-1 flex-wrap">
-              {PD_TYPES.map(pt => (
-                <button key={pt.value} onClick={() => setForm(f => ({ ...f, type: pt.value }))}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-medium ${form.type === pt.value ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border'}`}>
-                  {pt.label}
-                </button>
-              ))}
-            </div>
+    <div className="space-y-5">
+      {PATTERN_DATA.map(level => (
+        <div key={level.level} className={'border rounded-xl overflow-hidden ' + level.color}>
+          <div className="px-5 py-3.5">
+            <h3 className="text-[14px] font-bold text-navy mb-1">{level.level}</h3>
+            <p className="text-[11px] text-text-secondary leading-relaxed">{level.intro}</p>
           </div>
-          <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Title (e.g., 'Orton-Gillingham Level 1 Training')"
-            className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface" />
-          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Key takeaways or notes (optional)"
-            className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface resize-none h-20" />
-          <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="Tags (comma-separated: phonics, assessment, ELL)"
-            className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface" />
-          <button onClick={handleAdd} disabled={!form.title.trim()} className="px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white disabled:opacity-40">Save Entry</button>
+          <div className="border-t border-border/30">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="bg-white/50">
+                  <th className="text-left px-5 py-2 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold w-[220px]">Pattern</th>
+                  <th className="text-left px-3 py-2 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold w-[140px]">Use</th>
+                  <th className="text-left px-3 py-2 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold">Example</th>
+                  <th className="text-left px-3 py-2 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold w-[200px]">Teaching Tip</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {level.patterns.map(p => (
+                  <tr key={p.pattern}>
+                    <td className="px-5 py-2.5 font-mono font-bold text-navy align-top">{p.pattern}</td>
+                    <td className="px-3 py-2.5 text-text-secondary align-top">{p.use}</td>
+                    <td className="px-3 py-2.5 text-text-primary italic align-top">{p.example}</td>
+                    <td className="px-3 py-2.5 text-text-tertiary align-top">{p.tip}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      )}
-
-      {entries.length === 0 ? (
-        <div className="py-12 text-center text-text-tertiary text-[13px]">No PD entries yet. Start tracking your professional growth!</div>
-      ) : (
-        <div className="space-y-2">
-          {entries.map(e => (
-            <div key={e.id} className="bg-surface border border-border rounded-xl px-4 py-3">
-              <div className="flex items-center gap-2 mb-1">
-                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${typeColor(e.pd_type)}`}>{typeLabel(e.pd_type)}</span>
-                <span className="text-[10px] text-text-tertiary ml-auto">{new Date(e.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-              </div>
-              <h4 className="text-[13px] font-semibold text-navy">{e.title}</h4>
-              {e.notes && <p className="text-[11px] text-text-secondary mt-1 leading-relaxed">{e.notes}</p>}
-              {e.tags?.length > 0 && (
-                <div className="flex gap-1 mt-2">
-                  {e.tags.map((tag: string) => <span key={tag} className="text-[8px] font-medium px-1.5 py-0.5 rounded bg-surface-alt text-text-tertiary">#{tag}</span>)}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      ))}
     </div>
   )
 }
 
-// ─── #34 Sub Plans / Emergency Activity Library ───────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SUB PLANS (preserved from original)
+// ═══════════════════════════════════════════════════════════════════
 
 function SubPlansContent() {
   const { currentTeacher, showToast } = useApp()
@@ -701,7 +485,7 @@ function SubPlansContent() {
       description: form.description.trim() || null, how_to: form.how_to.trim() || null,
       drive_link: form.drive_link.trim() || null, created_by: currentTeacher.id,
     }).select('*, teachers(english_name)').single()
-    if (error) { showToast(`Error: ${error.message}`); return }
+    if (error) { showToast('Error: ' + error.message); return }
     if (data) setPlans(prev => [data, ...prev])
     setForm({ title: '', english_class: currentTeacher?.english_class || 'Lily', grade: 3, description: '', how_to: '', drive_link: '' })
     setShowForm(false)
@@ -719,13 +503,13 @@ function SubPlansContent() {
   const filtered = filterClass === 'all' ? plans : plans.filter(p => p.english_class === filterClass)
   const grouped: Record<string, any[]> = {}
   filtered.forEach(p => {
-    const key = `${p.english_class} (Grade ${p.grade})`
+    const key = p.english_class + ' (Grade ' + p.grade + ')'
     if (!grouped[key]) grouped[key] = []
     grouped[key].push(p)
   })
 
   return (
-    <div className="px-8 py-6 max-w-[900px]">
+    <div>
       <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5 text-[11px] text-red-800">
         Each teacher uploads sub plans for their class. Include lesson descriptions, how to administer, and optionally link to Google Drive materials.
       </div>
@@ -733,10 +517,10 @@ function SubPlansContent() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex gap-1">
           <button onClick={() => setFilterClass('all')}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border'}`}>All Classes</button>
+            className={'px-3 py-1.5 rounded-lg text-[11px] font-medium ' + (filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border')}>All</button>
           {CLASSES.map(c => (
             <button key={c} onClick={() => setFilterClass(c)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === c ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border'}`}>{c}</button>
+              className={'px-3 py-1.5 rounded-lg text-[11px] font-medium ' + (filterClass === c ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border')}>{c}</button>
           ))}
         </div>
         <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white">{showForm ? 'Cancel' : '+ Add Sub Plan'}</button>
@@ -772,17 +556,13 @@ function SubPlansContent() {
         <div key={key} className="mb-5">
           <h3 className="text-[13px] font-bold text-navy mb-2">{key}</h3>
           <div className="space-y-2">
-            {items.map(p => (
+            {items.map((p: any) => (
               <div key={p.id} className="bg-surface border border-border rounded-xl p-4">
                 <div className="flex items-start justify-between">
                   <h4 className="text-[13px] font-semibold text-navy">{p.title}</h4>
                   <div className="flex items-center gap-2">
-                    {p.drive_link && (
-                      <a href={p.drive_link} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 hover:underline font-medium">Google Drive</a>
-                    )}
-                    {currentTeacher?.id === p.created_by && (
-                      <button onClick={() => handleDelete(p.id)} className="text-[10px] text-red-400 hover:text-red-600">Delete</button>
-                    )}
+                    {p.drive_link && <a href={p.drive_link} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 hover:underline font-medium">Google Drive</a>}
+                    {currentTeacher?.id === p.created_by && <button onClick={() => handleDelete(p.id)} className="text-[10px] text-red-400 hover:text-red-600">Delete</button>}
                   </div>
                 </div>
                 {p.description && <p className="text-[11px] text-text-primary leading-relaxed mt-1">{p.description}</p>}
