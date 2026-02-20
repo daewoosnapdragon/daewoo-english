@@ -18,6 +18,7 @@ interface WIDADistribution {
 
 export default function LessonScaffoldBanner({ englishClass, grade }: Props) {
   const [expanded, setExpanded] = useState(false)
+  const [showAllScaffolds, setShowAllScaffolds] = useState(false)
   const [distribution, setDistribution] = useState<WIDADistribution[]>([])
   const [commonScaffolds, setCommonScaffolds] = useState<{ domain: string; text: string; count: number }[]>([])
   const [studentCount, setStudentCount] = useState(0)
@@ -73,7 +74,6 @@ export default function LessonScaffoldBanner({ englishClass, grade }: Props) {
       setCommonScaffolds(
         Object.values(scaffoldCounts)
           .sort((a, b) => b.count - a.count)
-          .slice(0, 6)
       )
 
       setLoaded(true)
@@ -149,13 +149,19 @@ export default function LessonScaffoldBanner({ englishClass, grade }: Props) {
                 <p className="text-[10px] text-blue-600 italic">No scaffolds assigned yet. Visit Curriculum {'>'} WIDA/CCSS Guide {'>'} Assign to Students.</p>
               ) : (
                 <div className="space-y-1">
-                  {commonScaffolds.map((s, i) => (
+                  {(showAllScaffolds ? commonScaffolds : commonScaffolds.slice(0, 5)).map((s, i) => (
                     <div key={i} className="flex items-start gap-1.5 px-2 py-1 rounded bg-white border border-blue-100">
                       <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 uppercase flex-shrink-0 mt-px">{s.domain.slice(0, 4)}</span>
                       <p className="text-[9px] text-blue-800 leading-snug flex-1">{s.text}</p>
                       <span className="text-[8px] text-blue-500 flex-shrink-0 mt-px">{s.count}x</span>
                     </div>
                   ))}
+                  {commonScaffolds.length > 5 && (
+                    <button onClick={() => setShowAllScaffolds(!showAllScaffolds)}
+                      className="text-[9px] font-medium text-blue-600 hover:text-blue-800 mt-1">
+                      {showAllScaffolds ? 'Show fewer' : `Show ${commonScaffolds.length - 5} more...`}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

@@ -9,6 +9,7 @@ import {
   Link2
 } from 'lucide-react'
 import { CATEGORIES, GUIDES, type Guide, type Category, type ContentBlock, type GuideSection } from './teacher-guides-data'
+import { PhonicsSequence, PhonicsStrategies, AssessmentLiteracy, ReadingFluencyGuide } from '@/components/curriculum/TeacherReferences'
 
 // ─── Icon Map ───────────────────────────────────────────────────
 
@@ -191,6 +192,7 @@ type ViewState =
   | { page: 'home' }
   | { page: 'category'; categoryId: string }
   | { page: 'guide'; guideId: string; tab: 'guide' | 'research' }
+  | { page: 'phonics'; section: 'sequence' | 'strategies' | 'assessment' | 'fluency' }
 
 export default function TeacherGuidesView() {
   const { language } = useApp()
@@ -212,6 +214,45 @@ export default function TeacherGuidesView() {
   const currentGuide = view.page === 'guide' ? GUIDES.find(g => g.id === view.guideId) : null
   const currentCategory = view.page === 'category' ? CATEGORIES.find(c => c.id === view.categoryId) : null
   const categoryGuides = view.page === 'category' ? GUIDES.filter(g => g.category === view.categoryId) : []
+
+  // ── Phonics & References (re-linked from TeacherReferences) ──────
+
+  if (view.page === 'phonics') {
+    const PHONICS_TABS = [
+      { id: 'sequence' as const, label: ko ? '파닉스 순서' : 'Phonics Scope & Sequence', icon: Layers },
+      { id: 'strategies' as const, label: ko ? '교수 전략' : 'Teaching Strategies', icon: BookOpen },
+      { id: 'assessment' as const, label: ko ? '평가 문해력' : 'Assessment Literacy', icon: ClipboardList },
+      { id: 'fluency' as const, label: ko ? '읽기 유창성' : 'Reading Fluency', icon: BookMarked },
+    ]
+    return (
+      <div className="animate-fade-in">
+        <div className="bg-surface border-b border-border px-8 py-5">
+          <button onClick={() => setView({ page: 'home' })}
+            className="inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-navy transition-colors mb-2">
+            <ChevronLeft size={13} /> {ko ? '전체 카테고리' : 'All Categories'}
+          </button>
+          <h2 className="font-display text-xl font-bold text-navy">{ko ? '파닉스 & 기초 기술' : 'Phonics & Foundational Skills'}</h2>
+          <p className="text-[12px] text-text-secondary mt-1">{ko ? '과학적 읽기 연구 기반 체계적 파닉스 참고 자료' : 'Science of Reading research-backed phonics reference, teaching strategies, and assessment guidance'}</p>
+          <div className="flex gap-1 mt-4">
+            {PHONICS_TABS.map(({ id, label, icon: Icon }) => (
+              <button key={id} onClick={() => setView({ page: 'phonics', section: id })}
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${
+                  view.section === id ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'
+                }`}>
+                <Icon size={14} /> {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="px-8 py-6 max-w-5xl">
+          {view.section === 'sequence' && <PhonicsSequence />}
+          {view.section === 'strategies' && <PhonicsStrategies />}
+          {view.section === 'assessment' && <AssessmentLiteracy />}
+          {view.section === 'fluency' && <ReadingFluencyGuide />}
+        </div>
+      </div>
+    )
+  }
 
   // ── Guide Detail ──────────────────────────────────────────────
 
@@ -439,11 +480,25 @@ export default function TeacherGuidesView() {
       </div>
       <div className="px-8 py-6">
         <div className="flex items-center gap-4 mb-5 text-[11px] text-text-secondary">
-          <span className="font-semibold text-navy">{GUIDES.length} {ko ? '개 가이드' : 'guides'}</span>
+          <span className="font-semibold text-navy">{GUIDES.length + 4} {ko ? '개 가이드' : 'guides'}</span>
           <span className="text-border">|</span>
-          <span>{CATEGORIES.length} {ko ? '개 카테고리' : 'categories'}</span>
+          <span>{CATEGORIES.length + 1} {ko ? '개 카테고리' : 'categories'}</span>
         </div>
         <div className="grid grid-cols-3 gap-3 max-w-[900px]">
+          {/* Phonics & Foundational Skills — special card linking to TeacherReferences */}
+          <button onClick={() => setView({ page: 'phonics', section: 'sequence' })}
+            className="text-left bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group"
+            style={{ borderTopWidth: 3, borderTopColor: '#F97316' }}>
+            <div className="flex items-start justify-between mb-3">
+              <div style={{ color: '#F97316' }}><Layers size={20} /></div>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wide"
+                style={{ color: '#F97316', background: '#F9731612' }}>
+                4
+              </span>
+            </div>
+            <h3 className="font-display text-[13.5px] font-semibold text-navy group-hover:text-gold transition-colors leading-tight">Phonics & Foundational Skills</h3>
+            <p className="text-[10.5px] text-text-secondary leading-relaxed mt-1.5">Systematic phonics scope & sequence, teaching strategies, assessment literacy, and reading fluency guidance</p>
+          </button>
           {CATEGORIES.map(cat => {
             const CatIcon = ICON_MAP[cat.icon] || BookMarked
             const count = guideCountByCategory(cat.id)

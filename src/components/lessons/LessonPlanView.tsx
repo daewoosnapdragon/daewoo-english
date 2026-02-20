@@ -225,7 +225,14 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
     if (error) { showToast(`Error: ${error.message}`); return }
     setSlots(prev => [...prev, data])
   }
-  const removeSlot = async (id: string) => { await supabase.from('lesson_plan_slots').delete().eq('id', id); setSlots(prev => prev.filter(s => s.id !== id)) }
+  const removeSlot = async (id: string) => {
+    const slot = slots.find(s => s.id === id)
+    if (slot) {
+      const daySlotsCount = slots.filter(s => s.day_of_week === slot.day_of_week).length
+      if (daySlotsCount <= 1) { showToast('Cannot delete the last slot for a day'); return }
+    }
+    await supabase.from('lesson_plan_slots').delete().eq('id', id); setSlots(prev => prev.filter(s => s.id !== id))
+  }
 
   const weekCompletion = (week: (typeof days[number])[]) => {
     let filled = 0; let total = 0

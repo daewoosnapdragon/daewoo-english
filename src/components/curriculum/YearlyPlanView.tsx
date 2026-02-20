@@ -113,6 +113,12 @@ export default function YearlyPlanView() {
   const progClasses = progClass === 'all' ? ENGLISH_CLASSES : [progClass]
   const progGrades = progGrade === 'all' ? GRADES : [progGrade]
 
+  // Ensure valid values after any state reset
+  useEffect(() => {
+    if (progGrade !== 'all' && !GRADES.includes(progGrade)) setProgGrade('all')
+    if (progClass !== 'all' && !ENGLISH_CLASSES.includes(progClass)) setProgClass('all')
+  }, [progGrade, progClass])
+
   if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
   return (

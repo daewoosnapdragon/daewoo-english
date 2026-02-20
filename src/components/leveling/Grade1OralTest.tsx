@@ -117,7 +117,7 @@ function ClassTabs({ active, onSelect, counts, available }: {
 }) {
   return (
     <div className="flex flex-wrap gap-1.5 mb-4">
-      {ENGLISH_CLASSES.filter(c => c !== 'Sample' && c !== 'Trial').map(cls => {
+      {ENGLISH_CLASSES.map(cls => {
         const ct = counts[cls] || { total: 0, done: 0 }
         const isAvail = available.includes(cls)
         return (
@@ -415,7 +415,7 @@ export default function Grade1OralTest({ levelTest, teacherClass, isAdmin }: {
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: existing }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial').order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
       ])
       if (studs) setStudents(studs)

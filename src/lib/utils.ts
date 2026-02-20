@@ -38,7 +38,6 @@ export function classToColor(cls: EnglishClass): string {
     Sunflower: '#ABEBC6',
     Marigold: '#AED6F1',
     Snapdragon: '#D2B4DE',
-    Trial: '#90CAF9',
   }
   return colors[cls] || '#E5E7EB'
 }
@@ -51,7 +50,6 @@ export function classToTextColor(cls: EnglishClass): string {
     Sunflower: '#065F46',
     Marigold: '#1E40AF',
     Snapdragon: '#5B21B6',
-    Trial: '#1565C0',
   }
   return colors[cls] || '#374151'
 }
@@ -195,4 +193,70 @@ const DOMAIN_DISPLAY: Record<string, string> = {
 }
 export function domainLabel(d: string): string {
   return DOMAIN_DISPLAY[d] || d.charAt(0).toUpperCase() + d.slice(1)
+}
+
+// ─── Assessment Weighting System ──────────────────────────────────────
+// Grade-level defaults for assessment type weights
+// Keys: formative, summative, performance_task
+
+export type AssessmentType = 'formative' | 'summative' | 'performance_task'
+
+export const DEFAULT_WEIGHTS: Record<number, Record<AssessmentType, number>> = {
+  1: { formative: 40, summative: 25, performance_task: 35 },
+  2: { formative: 35, summative: 35, performance_task: 30 },
+  3: { formative: 30, summative: 40, performance_task: 30 },
+  4: { formative: 30, summative: 40, performance_task: 30 },
+  5: { formative: 30, summative: 40, performance_task: 30 },
+}
+
+export interface WeightedGradeInput {
+  score: number
+  maxScore: number
+  assessmentType: AssessmentType
+}
+
+/**
+ * Calculate weighted average for a set of graded assessments within a single domain.
+ * Groups by assessment type, averages within each group, then applies type weights.
+ * Falls back to unweighted average if only one type exists or weights aren't configured.
+ */
+export function calculateWeightedAverage(
+  items: WeightedGradeInput[],
+  grade: number,
+  customWeights?: Record<AssessmentType, number> | null,
+): number | null {
+  if (items.length === 0) return null
+
+  const weights = customWeights || DEFAULT_WEIGHTS[grade] || DEFAULT_WEIGHTS[3]
+
+  // Group by assessment type
+  const groups: Record<AssessmentType, number[]> = {
+    formative: [], summative: [], performance_task: [],
+  }
+  items.forEach(item => {
+    if (item.maxScore > 0) {
+      const pct = (item.score / item.maxScore) * 100
+      groups[item.assessmentType].push(pct)
+    }
+  })
+
+  // Average within each group
+  const groupAvgs: { type: AssessmentType; avg: number; weight: number }[] = []
+  for (const [type, pcts] of Object.entries(groups) as [AssessmentType, number[]][]) {
+    if (pcts.length > 0) {
+      const avg = pcts.reduce((a, b) => a + b, 0) / pcts.length
+      groupAvgs.push({ type, avg, weight: weights[type] })
+    }
+  }
+
+  if (groupAvgs.length === 0) return null
+
+  // If only one type has data, return its simple average (no weighting needed)
+  if (groupAvgs.length === 1) return groupAvgs[0].avg
+
+  // Weighted average: normalize weights to sum to 100 for present types only
+  const totalWeight = groupAvgs.reduce((s, g) => s + g.weight, 0)
+  if (totalWeight === 0) return groupAvgs.reduce((s, g) => s + g.avg, 0) / groupAvgs.length
+
+  return groupAvgs.reduce((s, g) => s + (g.avg * (g.weight / totalWeight)), 0)
 }

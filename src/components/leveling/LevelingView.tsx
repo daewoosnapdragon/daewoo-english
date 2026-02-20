@@ -301,7 +301,7 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: existing }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial').order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
       ])
       if (studs) setStudents(studs)
@@ -424,7 +424,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: existing }, { data: testScores }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial').order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).order('english_name'),
         supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
       ])
@@ -493,6 +493,14 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
           <strong>How to rate:</strong> Rate each student <strong>relative to your class</strong>. A score of 3 means this student is keeping pace with your class expectations. A 4 means they may be ready for a higher level. A 1-2 means they are struggling relative to where your class is. This is NOT an absolute measure -- it is about fit within your specific class level.
         </p>
       </div>
+
+      {(levelTest.grade === 1 || levelTest.grade === '1' as any) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
+          <p className="text-[12px] text-blue-800 leading-relaxed">
+            <strong>Grade 1 -- Wave 2 Ratings:</strong> These teacher ratings are for the Wave 2 (end of March) assessment. Wave 1 class impressions were captured during the oral test phase. These ratings combined with the written test will produce the final placement recommendation.
+          </p>
+        </div>
+      )}
 
       {/* Student list */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
@@ -720,7 +728,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: sd }, { data: ad }, { data: bd }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial').order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
         supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id),
         supabase.from('class_benchmarks').select('*').eq('grade', levelTest.grade),
@@ -854,7 +862,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: sd }, { data: ad }, { data: bd }, { data: pd }] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial').order('english_name'),
+        supabase.from('students').select('*').eq('grade', levelTest.grade).eq('is_active', true).order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
         supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id),
         supabase.from('class_benchmarks').select('*').eq('grade', levelTest.grade),

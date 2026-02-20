@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
+import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
 import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
@@ -71,6 +71,8 @@ export default function GradesView() {
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null)
   const [scores, setScores] = useState<Record<string, number | null>>({})
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({})
+  const [absentMap, setAbsentMap] = useState<Record<string, boolean>>({})
+  const [exemptMap, setExemptMap] = useState<Record<string, boolean>>({})
   const [saving, setSaving] = useState(false)
   const [loadingAssessments, setLoadingAssessments] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -136,13 +138,15 @@ export default function GradesView() {
   useEffect(() => { loadAllAssessments() }, [loadAllAssessments])
 
   useEffect(() => {
-    if (!selectedAssessment) { setScores({}); setRawInputs({}); return }
+    if (!selectedAssessment) { setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); return }
     const aid = selectedAssessment.id
     async function loadScores() {
-      const { data } = await supabase.from('grades').select('student_id, score').eq('assessment_id', aid)
+      const { data } = await supabase.from('grades').select('student_id, score, is_absent, is_exempt').eq('assessment_id', aid)
       const map: Record<string, number | null> = {}
-      if (data) data.forEach((g: { student_id: string; score: number | null }) => { map[g.student_id] = g.score })
-      setScores(map); setRawInputs({}); setHasChanges(false)
+      const abs: Record<string, boolean> = {}
+      const exm: Record<string, boolean> = {}
+      if (data) data.forEach((g: any) => { map[g.student_id] = g.score; if (g.is_absent) abs[g.student_id] = true; if (g.is_exempt) exm[g.student_id] = true })
+      setScores(map); setAbsentMap(abs); setExemptMap(exm); setRawInputs({}); setHasChanges(false)
     }
     loadScores()
   }, [selectedAssessment])
@@ -196,16 +200,23 @@ export default function GradesView() {
     }
     setScores(finalScores); setRawInputs({})
     setSaving(true)
-    const entries = Object.entries(finalScores).filter(([, s]) => s !== null && s !== undefined)
-      .map(([sid, score]) => ({ assessment_id: selectedAssessment.id, student_id: sid, score }))
-    for (const e of entries) {
+    // Save scores (including absent/exempt students with null scores)
+    const allStudentIds = new Set([
+      ...Object.keys(finalScores).filter(sid => finalScores[sid] !== null && finalScores[sid] !== undefined),
+      ...Object.keys(absentMap).filter(sid => absentMap[sid]),
+      ...Object.keys(exemptMap).filter(sid => exemptMap[sid]),
+    ])
+    for (const sid of allStudentIds) {
+      const isAbsent = absentMap[sid] || false
+      const isExempt = exemptMap[sid] || false
+      const score = isAbsent ? null : (finalScores[sid] ?? null)
       const { error } = await supabase.from('grades').upsert(
-        { assessment_id: selectedAssessment.id, student_id: e.student_id, score: e.score, entered_by: currentTeacher?.id || null },
+        { assessment_id: selectedAssessment.id, student_id: sid, score, is_absent: isAbsent, is_exempt: isExempt, entered_by: currentTeacher?.id || null },
         { onConflict: 'student_id,assessment_id' })
       if (error) { showToast(`Error saving: ${error.message}`); setSaving(false); return }
     }
     setHasChanges(false); setSaving(false)
-    showToast(lang === 'ko' ? '저장 완료!' : `Saved ${entries.length} scores`)
+    showToast(lang === 'ko' ? '저장 완료!' : `Saved ${allStudentIds.size} entries`)
   }
 
   const handleDeleteAssessment = async (a: Assessment) => {
@@ -224,7 +235,7 @@ export default function GradesView() {
     if (e.key === 'ArrowUp') { e.preventDefault(); commitScore(studentId); const inputs = document.querySelectorAll('.score-input') as NodeListOf<HTMLInputElement>; inputs[i - 1]?.focus() }
   }
 
-  const enteredCount = Object.values(scores).filter(s => s !== null && s !== undefined).length
+  const enteredCount = Object.values(scores).filter(s => s !== null && s !== undefined).length + Object.keys(absentMap).filter(sid => absentMap[sid]).length + Object.keys(exemptMap).filter(sid => exemptMap[sid]).length
   const catLabel = (type: string) => { const c = ASSESSMENT_CATEGORIES.find(x => x.value === type); return c ? (lang === 'ko' ? c.labelKo : c.label) : type }
 
   return (
@@ -300,7 +311,7 @@ export default function GradesView() {
           )}
         </div>
 
-        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateModal(true)} createLabel={t.grades.createAssessment} />}
+        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateModal(true)} createLabel={t.grades.createAssessment} onToggleAbsent={(sid: string) => { setAbsentMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setExemptMap(p => { const e = { ...p }; delete e[sid]; return e }) }; return n }); setHasChanges(true) }} onToggleExempt={(sid: string) => { setExemptMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setAbsentMap(p => { const a = { ...p }; delete a[sid]; return a }) }; return n }); setHasChanges(true) }} />}
         {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
         {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
@@ -313,8 +324,8 @@ export default function GradesView() {
 
 // ─── Score Entry ─────────────────────────────────────────────────────
 
-function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, selectedAssessment, setSelectedAssessment, scores, rawInputs, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleScoreChange, handleKeyDown, commitScore, handleSaveAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel }: {
-  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string
+function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, selectedAssessment, setSelectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleScoreChange, handleKeyDown, commitScore, handleSaveAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onToggleAbsent, onToggleExempt }: {
+  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; absentMap: Record<string, boolean>; exemptMap: Record<string, boolean>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onToggleAbsent: (sid: string) => void; onToggleExempt: (sid: string) => void
 }) {
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   return (
@@ -393,14 +404,17 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                   <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Student</th>
                   <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Score /{selectedAssessment.max_score}</th>
                   <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">%</th>
+                  <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Status</th>
                 </tr></thead>
                 <tbody>
                   {students.map((s, i) => {
-                    const score = scores[s.id]
+                    const isAbsent = absentMap[s.id] || false
+                    const isExempt = exemptMap[s.id] || false
+                    const score = isAbsent ? null : scores[s.id]
                     const pct = score != null && selectedAssessment.max_score > 0 ? ((score / selectedAssessment.max_score) * 100).toFixed(1) : null
                     const isLow = pct !== null && parseFloat(pct) < 60
                     return (
-                      <tr key={s.id} className="border-t border-border table-row-hover">
+                      <tr key={s.id} className={`border-t border-border table-row-hover ${isAbsent ? 'opacity-50' : ''} ${isExempt ? 'bg-amber-50/30' : ''}`}>
                         <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
                         <td className="px-4 py-2">
                           {s.photo_url ? (
@@ -410,8 +424,14 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                           )}
                         </td>
                         <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
-                        <td className="px-4 py-2.5 text-center"><input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" /></td>
-                        <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{pct ? `${pct}%` : '—'}</td>
+                        <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />}</td>
+                        <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{isAbsent || isExempt ? '—' : pct ? `${pct}%` : '—'}</td>
+                        <td className="px-4 py-2.5 text-center">
+                          <div className="inline-flex gap-1">
+                            <button onClick={() => onToggleAbsent(s.id)} title="Mark absent" className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${isAbsent ? 'bg-red-100 text-red-600 ring-1 ring-red-300' : 'bg-surface-alt text-text-tertiary hover:bg-red-50 hover:text-red-500'}`}>ABS</button>
+                            <button onClick={() => onToggleExempt(s.id)} title="Mark exempt" className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${isExempt ? 'bg-amber-100 text-amber-600 ring-1 ring-amber-300' : 'bg-surface-alt text-text-tertiary hover:bg-amber-50 hover:text-amber-500'}`}>EXM</button>
+                          </div>
+                        </td>
                       </tr>
                     )
                   })}
@@ -817,11 +837,14 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
               </tr></thead>
               <tbody>
                 {students.map(s => {
-                  const pcts = domainAssessments.map(a => {
+                  const weightedItems: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
+                  domainAssessments.forEach(a => {
                     const sc = scores[s.id]?.[a.id]
-                    return sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
-                  }).filter((v: any): v is number => v != null)
-                  const avg = pcts.length > 0 ? pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length : null
+                    if (sc != null && a.max_score > 0) {
+                      weightedItems.push({ score: sc, maxScore: a.max_score, assessmentType: a.type || 'formative' })
+                    }
+                  })
+                  const avg = calcWeightedAvg(weightedItems, Number(selectedGrade))
                   return (
                     <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
                       <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="text-text-tertiary font-normal text-[10px]">{s.korean_name}</span></td>
@@ -891,9 +914,18 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
         const ids = da.map((a: any) => a.id)
         const { data: grades } = await supabase.from('grades').select('score, assessment_id').in('assessment_id', ids).not('score', 'is', null)
         if (grades && grades.length > 0) {
-          const pcts = grades.map((g: any) => { const a = da.find((x: any) => x.id === g.assessment_id); return a && a.max_score > 0 ? (g.score / a.max_score) * 100 : null }).filter((p: any) => p != null) as number[]
-          result[domain].count = pcts.length
-          result[domain].avg = pcts.length > 0 ? pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length : null
+          // Group grades by student, then weighted-average per student, then average across students
+          const studentScores: Record<string, { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[]> = {}
+          grades.forEach((g: any) => {
+            const a = da.find((x: any) => x.id === g.assessment_id)
+            if (!a || a.max_score <= 0) return
+            // We don't have student_id here -- this is class-level aggregate, so just do overall weighted avg
+            if (!studentScores['_all']) studentScores['_all'] = []
+            studentScores['_all'].push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
+          })
+          const allItems = studentScores['_all'] || []
+          result[domain].count = allItems.length
+          result[domain].avg = calcWeightedAvg(allItems, Number(allAssessments[0]?.grade || 3))
           for (const a of da) {
             const aGrades = grades.filter((g: any) => g.assessment_id === a.id)
             if (aGrades.length > 0 && a.max_score > 0) {

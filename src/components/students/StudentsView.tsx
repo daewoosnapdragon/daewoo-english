@@ -6,7 +6,7 @@ import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber, domainLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle } from 'lucide-react'
+import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WIDABadge from '@/components/shared/WIDABadge'
 import { WIDAProfiles } from '@/components/curriculum/CurriculumView'
@@ -313,14 +313,15 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
     { id: 'attendance', label: lang === 'ko' ? '출석' : 'Attendance' },
     { id: 'standards', label: lang === 'ko' ? '표준 숙달' : 'Standards' },
     { id: 'scaffolds', label: lang === 'ko' ? '스캐폴드' : 'Scaffolds' },
+    { id: 'goals', label: lang === 'ko' ? '목표' : 'Goals' },
   ]
 
   return (
     <div>
-      <div className="flex gap-1 mb-4 border-b border-border">
+      <div className="flex gap-1 mb-4 border-b border-border overflow-x-auto">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-2 text-[12px] font-medium transition-all border-b-2 -mb-px ${activeTab === tab.id ? 'border-navy text-navy' : 'border-transparent text-text-tertiary hover:text-text-secondary'}`}>
+            className={`px-3 py-2 text-[12px] font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${activeTab === tab.id ? 'border-navy text-navy' : 'border-transparent text-text-tertiary hover:text-text-secondary'}`}>
             {tab.label}
           </button>
         ))}
@@ -332,11 +333,130 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
       {activeTab === 'attendance' && <AttendanceTabInModal studentId={studentId} studentName={studentName} lang={lang} />}
       {activeTab === 'standards' && <StandardsMasteryTab studentId={studentId} lang={lang} />}
       {activeTab === 'scaffolds' && <ScaffoldsTab studentId={studentId} />}
+      {activeTab === 'goals' && <GoalsTab studentId={studentId} studentName={studentName} />}
     </div>
   )
 }
 
 // ─── About Tab ──────────────────────────────────────────────────────
+
+// ─── WIDA-to-Performance Insight ──────────────────────────────────
+
+const WIDA_EXPECTED_RANGES: Record<number, { min: number; max: number; label: string }> = {
+  1: { min: 40, max: 55, label: 'Entering' },
+  2: { min: 50, max: 65, label: 'Emerging' },
+  3: { min: 60, max: 75, label: 'Developing' },
+  4: { min: 70, max: 85, label: 'Expanding' },
+  5: { min: 80, max: 95, label: 'Bridging' },
+}
+
+const WIDA_DOMAIN_MAP: Record<string, string[]> = {
+  listening: ['listening'],
+  speaking: ['speaking'],
+  reading: ['reading', 'phonics'],
+  writing: ['writing'],
+}
+
+function WIDAPerformanceInsight({ studentId, lang }: { studentId: string; lang: string }) {
+  const [insights, setInsights] = useState<{ domain: string; widaLevel: number; widaLabel: string; actualPct: number; expected: { min: number; max: number }; status: 'within' | 'above' | 'below'; message: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [missingWida, setMissingWida] = useState(false)
+
+  useEffect(() => {
+    ;(async () => {
+      // Get WIDA levels
+      const { data: widaData } = await supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId)
+      if (!widaData || widaData.length === 0) { setMissingWida(true); setLoading(false); return }
+
+      const widaMap: Record<string, number> = {}
+      widaData.forEach((w: any) => { if (w.wida_level > 0) widaMap[w.domain] = w.wida_level })
+      if (Object.keys(widaMap).length === 0) { setMissingWida(true); setLoading(false); return }
+
+      // Get semester grades
+      const { data: sem } = await supabase.from('semesters').select('id').eq('is_active', true).single()
+      if (!sem) { setLoading(false); return }
+
+      const { data: semGrades } = await supabase.from('semester_grades').select('domain, score').eq('student_id', studentId).eq('semester_id', sem.id)
+      if (!semGrades || semGrades.length === 0) { setLoading(false); return }
+
+      const gradesByDomain: Record<string, number> = {}
+      semGrades.forEach((g: any) => { if (g.score != null) gradesByDomain[g.domain] = g.score })
+
+      // Compare WIDA levels to actual performance
+      const newInsights: typeof insights = []
+      for (const [widaDomain, widaLevel] of Object.entries(widaMap)) {
+        const expected = WIDA_EXPECTED_RANGES[widaLevel]
+        if (!expected) continue
+
+        // Find matching grade domains
+        const gradeDomains = WIDA_DOMAIN_MAP[widaDomain] || [widaDomain]
+        const matchingGrades = gradeDomains.map(d => gradesByDomain[d]).filter(v => v != null)
+        if (matchingGrades.length === 0) continue
+
+        const actualPct = matchingGrades.reduce((s, g) => s + g, 0) / matchingGrades.length
+
+        let status: 'within' | 'above' | 'below' = 'within'
+        let message = ''
+        const name = widaDomain.charAt(0).toUpperCase() + widaDomain.slice(1)
+
+        if (actualPct > expected.max + 5) {
+          status = 'above'
+          message = `WIDA ${widaLevel} (${expected.label}) in ${name} but scoring ${Math.round(actualPct)}% -- outperforming language level, possible reclassification candidate.`
+        } else if (actualPct < expected.min - 5) {
+          status = 'below'
+          message = `WIDA ${widaLevel} (${expected.label}) in ${name} but scoring ${Math.round(actualPct)}% -- underperforming relative to language proficiency, investigate non-language factors.`
+        } else {
+          status = 'within'
+          message = `WIDA ${widaLevel} (${expected.label}) in ${name}, scoring ${Math.round(actualPct)}% -- within expected range, scaffolding is appropriate.`
+        }
+
+        newInsights.push({ domain: widaDomain, widaLevel, widaLabel: expected.label, actualPct, expected, status, message })
+      }
+
+      setInsights(newInsights)
+      setLoading(false)
+    })()
+  }, [studentId])
+
+  if (loading) return null
+  if (missingWida) return (
+    <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3">
+      <p className="text-[11px] text-blue-700">Complete this student's WIDA profile to unlock performance insights.</p>
+    </div>
+  )
+  if (insights.length === 0) return null
+
+  const flagged = insights.filter(i => i.status !== 'within')
+
+  return (
+    <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
+        <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">WIDA-to-Performance Analysis</p>
+      </div>
+      <div className="p-4 space-y-2">
+        {insights.map((ins, i) => {
+          const colors = ins.status === 'above' ? 'bg-green-50 border-green-200 text-green-800'
+            : ins.status === 'below' ? 'bg-red-50 border-red-200 text-red-800'
+            : 'bg-surface-alt border-border text-text-secondary'
+          return (
+            <div key={i} className={`px-3 py-2 rounded-lg border ${colors}`}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[11px] font-semibold capitalize">{ins.domain}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-white/60">WIDA {ins.widaLevel}</span>
+                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-white/60">Actual: {Math.round(ins.actualPct)}%</span>
+                  <span className="text-[9px] text-text-tertiary">Expected: {ins.expected.min}-{ins.expected.max}%</span>
+                </div>
+              </div>
+              <p className="text-[10px] leading-relaxed">{ins.message}</p>
+            </div>
+          )
+        })}
+        {flagged.length === 0 && <p className="text-[10px] text-green-600">All domains are performing within expected ranges for this student's WIDA levels.</p>}
+      </div>
+    </div>
+  )
+}
 
 function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
   const { currentTeacher, showToast } = useApp()
@@ -387,6 +507,9 @@ function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' })
           className="w-full px-3 py-2.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none bg-surface leading-relaxed" />
         <p className="text-[10px] text-text-tertiary mt-1">{lang === 'ko' ? '모든 교사가 볼 수 있습니다' : 'Visible to all teachers in this class'}</p>
       </div>
+
+      {/* WIDA-to-Performance Insight */}
+      <WIDAPerformanceInsight studentId={studentId} lang={lang} />
 
       {/* Student Goals */}
       <div>
@@ -612,24 +735,30 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
   }
   const domainColors: Record<string, string> = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' }
 
-  useState(() => {
+  useEffect(() => {
+    setLoading(true)
+    setSemesterHistory([])
+    setData([]);
     (async () => {
       // 1. Load semester_grades history
-      const { data: semGrades } = await supabase.from('semester_grades').select('*, semesters(name)').eq('student_id', studentId)
+      const { data: semGrades } = await supabase.from('semester_grades').select('*, semesters(name, start_date)').eq('student_id', studentId)
       if (semGrades && semGrades.length > 0) {
-        const bySem: Record<string, { name: string; grades: Record<string, number | null>; behavior: string | null }> = {}
+        const bySem: Record<string, { name: string; startDate: string; grades: Record<string, number | null>; behavior: string | null }> = {}
         semGrades.forEach((sg: any) => {
           const semName = sg.semesters?.name || 'Unknown'
+          const startDate = sg.semesters?.start_date || '9999-12-31'
           const semId = sg.semester_id
-          if (!bySem[semId]) bySem[semId] = { name: semName, grades: {}, behavior: null }
+          if (!bySem[semId]) bySem[semId] = { name: semName, startDate, grades: {}, behavior: null }
           if (sg.domain === 'overall') {
             bySem[semId].behavior = sg.behavior_grade
           } else {
             bySem[semId].grades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
           }
         })
-        const history = Object.values(bySem).filter(s => DOMAINS.some(d => s.grades[d] != null))
-        setSemesterHistory(history)
+        const history = Object.values(bySem)
+          .filter(s => DOMAINS.some(d => s.grades[d] != null))
+          .sort((a, b) => a.startDate.localeCompare(b.startDate))
+        setSemesterHistory(history.map(({ startDate, ...rest }) => rest))
       }
 
       // 2. Load individual assessment grades (existing logic)
@@ -670,7 +799,7 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
       }))
       setData(result); setLoading(false)
     })()
-  })
+  }, [studentId])
 
   if (loading) return <div className="py-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-[12px]">Loading grades...</p></div>
 
@@ -1062,8 +1191,49 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
   if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
   if (records.length === 0) return <div className="py-8 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '읽기 기록이 없습니다.' : 'No reading assessments recorded yet.'}</div>
 
+  // Classify reading levels based on accuracy
+  const classifyLevel = (accuracy: number | null): { label: string; color: string; description: string } => {
+    if (accuracy == null) return { label: '—', color: 'text-text-tertiary', description: '' }
+    if (accuracy >= 96) return { label: 'Independent', color: 'text-green-600', description: 'Student reads fluently with minimal errors. Appropriate for independent reading.' }
+    if (accuracy >= 90) return { label: 'Instructional', color: 'text-blue-600', description: 'Student can read with teacher support. Best level for guided reading.' }
+    return { label: 'Frustration', color: 'text-red-600', description: 'Text is too difficult. Consider moving to a lower passage level.' }
+  }
+
+  // Determine current levels from latest assessment
+  const latest = records[0]
+  const latestLevel = latest ? classifyLevel(latest.accuracy_rate) : null
+
   return (
     <div className="space-y-3">
+      {/* Reading Level Summary */}
+      {latest && latest.accuracy_rate != null && (
+        <div className={`rounded-xl border p-4 ${latestLevel?.label === 'Frustration' ? 'bg-red-50 border-red-200' : latestLevel?.label === 'Independent' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Current Reading Level</p>
+            <span className={`text-[12px] font-bold ${latestLevel?.color}`}>{latestLevel?.label}</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <p className="text-[22px] font-bold text-navy">{Math.round(latest.cwpm || 0)}</p>
+              <p className="text-[9px] text-text-tertiary uppercase">CWPM</p>
+            </div>
+            <div className="text-center">
+              <p className={`text-[22px] font-bold ${latestLevel?.color}`}>{latest.accuracy_rate?.toFixed(1)}%</p>
+              <p className="text-[9px] text-text-tertiary uppercase">Accuracy</p>
+            </div>
+            <div className="flex-1">
+              <p className={`text-[11px] ${latestLevel?.color} leading-snug`}>{latestLevel?.description}</p>
+            </div>
+          </div>
+          {/* Level guide */}
+          <div className="flex gap-2 mt-3 pt-2 border-t border-border/30">
+            <span className="text-[9px] text-red-500 font-medium">Below 90% = Frustration</span>
+            <span className="text-[9px] text-blue-500 font-medium">90-95% = Instructional</span>
+            <span className="text-[9px] text-green-500 font-medium">96%+ = Independent</span>
+          </div>
+        </div>
+      )}
+
       <p className="text-[11px] text-text-tertiary">{records.length} {lang === 'ko' ? '개 기록' : 'assessments recorded'}</p>
       <div className="bg-surface border border-border rounded-lg overflow-hidden">
         <table className="w-full text-[12px]">
@@ -1072,22 +1242,25 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
             <th className="text-left px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Passage</th>
             <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
             <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Acc%</th>
-            <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Lvl</th>
+            <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Reading Level</th>
             <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Lexile</th>
             <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">NAEP</th>
           </tr></thead>
           <tbody>
-            {records.map((r: any) => (
-              <tr key={r.id} className="border-t border-border">
-                <td className="px-3 py-2">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
-                <td className="px-2 py-2 font-medium truncate max-w-[100px]">{r.passage_title || '—'}</td>
-                <td className="px-2 py-2 text-center font-semibold text-navy">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
-                <td className={`px-2 py-2 text-center font-semibold ${(r.accuracy_rate || 0) >= 95 ? 'text-green-600' : (r.accuracy_rate || 0) >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{r.accuracy_rate != null ? `${r.accuracy_rate.toFixed(1)}%` : '—'}</td>
-                <td className="px-2 py-2 text-center text-text-secondary">{r.passage_level || '—'}</td>
-                <td className="px-2 py-2 text-center text-purple-600 font-medium">{r.reading_level || '—'}</td>
-                <td className="px-2 py-2 text-center text-text-secondary">{r.naep_fluency ? `L${r.naep_fluency}` : '—'}</td>
-              </tr>
-            ))}
+            {records.map((r: any) => {
+              const level = classifyLevel(r.accuracy_rate)
+              return (
+                <tr key={r.id} className="border-t border-border">
+                  <td className="px-3 py-2">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                  <td className="px-2 py-2 font-medium truncate max-w-[100px]">{r.passage_title || '—'}</td>
+                  <td className="px-2 py-2 text-center font-semibold text-navy">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
+                  <td className={`px-2 py-2 text-center font-semibold ${(r.accuracy_rate || 0) >= 96 ? 'text-green-600' : (r.accuracy_rate || 0) >= 90 ? 'text-blue-600' : 'text-red-600'}`}>{r.accuracy_rate != null ? `${r.accuracy_rate.toFixed(1)}%` : '—'}</td>
+                  <td className={`px-2 py-2 text-center text-[10px] font-semibold ${level.color}`}>{level.label}</td>
+                  <td className="px-2 py-2 text-center text-purple-600 font-medium">{r.reading_level || '—'}</td>
+                  <td className="px-2 py-2 text-center text-text-secondary">{r.naep_fluency ? `L${r.naep_fluency}` : '—'}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -1100,11 +1273,42 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
 function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: string; studentName: string; lang: 'en' | 'ko' }) {
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [correlation, setCorrelation] = useState<string | null>(null)
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from('attendance').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(100)
       if (data) setRecords(data)
+
+      // Attendance-academic correlation analysis
+      if (data && data.length >= 10) {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+        const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0]
+        const recentAbs = data.filter((r: any) => r.date >= thirtyDaysAgo && r.status === 'absent').length
+        const priorAbs = data.filter((r: any) => r.date >= sixtyDaysAgo && r.date < thirtyDaysAgo && r.status === 'absent').length
+
+        if (recentAbs >= 3) {
+          // Check if grades also declined in that period
+          const { data: grades } = await supabase.from('grades').select('score, assessment_id, assessments!inner(max_score, date)')
+            .eq('student_id', studentId).not('score', 'is', null)
+          if (grades && grades.length >= 4) {
+            const scored = grades.map((g: any) => ({ date: g.assessments?.date || '', pct: (g.score / (g.assessments?.max_score || 100)) * 100 })).sort((a: any, b: any) => a.date.localeCompare(b.date))
+            const recentGrades = scored.filter((g: any) => g.date >= thirtyDaysAgo)
+            const priorGrades = scored.filter((g: any) => g.date >= sixtyDaysAgo && g.date < thirtyDaysAgo)
+            if (recentGrades.length >= 2 && priorGrades.length >= 2) {
+              const recentAvg = recentGrades.reduce((s: number, g: any) => s + g.pct, 0) / recentGrades.length
+              const priorAvg = priorGrades.reduce((s: number, g: any) => s + g.pct, 0) / priorGrades.length
+              if (priorAvg - recentAvg >= 5) {
+                setCorrelation(`${studentName.split(' ')[0]} missed ${recentAbs} sessions in the last 30 days (up from ${priorAbs}) and grades dropped ${Math.round(priorAvg - recentAvg)} points in the same period (${Math.round(priorAvg)}% to ${Math.round(recentAvg)}%).`)
+              }
+            }
+          }
+          if (!correlation && recentAbs > priorAbs) {
+            setCorrelation(`${studentName.split(' ')[0]} has been absent ${recentAbs} times in the last 30 days${priorAbs > 0 ? ` (up from ${priorAbs} in the prior 30 days)` : ''}. Monitor for academic impact.`)
+          }
+        }
+      }
+
       setLoading(false)
     })()
   }, [studentId])
@@ -1147,6 +1351,14 @@ function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: str
           <div className="w-full bg-border rounded-full h-2">
             <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(counts.present / total) * 100}%` }} />
           </div>
+        </div>
+      )}
+
+      {/* Attendance-Academic Correlation */}
+      {correlation && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <p className="text-[10px] uppercase tracking-wider text-amber-500 font-semibold mb-1">Attendance-Academic Insight</p>
+          <p className="text-[12px] text-amber-900 leading-relaxed">{correlation}</p>
         </div>
       )}
 
@@ -1314,14 +1526,33 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
 // ─── Scaffolds Tab ──────────────────────────────────────────────────
 
 function ScaffoldsTab({ studentId }: { studentId: string }) {
-  const { showToast } = useApp()
+  const { showToast, currentTeacher } = useApp()
   const [scaffolds, setScaffolds] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [widaLevels, setWidaLevels] = useState<Record<string, number>>({})
+  const [addingCustom, setAddingCustom] = useState(false)
+  const [customText, setCustomText] = useState('')
+  const [customDomain, setCustomDomain] = useState('general')
+
+  // Suggested scaffolds by WIDA level
+  const SUGGESTED_SCAFFOLDS: Record<number, string[]> = {
+    1: ['Visual supports and picture cues', 'Sentence frames for oral responses', 'Word walls with L1 translations', 'Graphic organizers', 'Total Physical Response (TPR)', 'Bilingual glossaries', 'Manipulatives and realia'],
+    2: ['Sentence starters for writing', 'Vocabulary pre-teaching', 'Think-pair-share structures', 'Cloze activities', 'Leveled texts', 'Anchor charts', 'Word banks for tasks'],
+    3: ['Graphic organizers for extended writing', 'Academic language frames', 'Peer collaboration activities', 'Content-specific vocabulary instruction', 'Text annotation strategies', 'Structured note-taking templates'],
+    4: ['Complex sentence modeling', 'Academic discussion protocols', 'Argumentative writing scaffolds', 'Mentor text analysis', 'Self-monitoring checklists', 'Independent research frameworks'],
+    5: ['Advanced vocabulary enrichment', 'Rhetorical analysis tools', 'Cross-curricular connections', 'Student-led discussions', 'Peer editing with rubrics'],
+  }
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('student_scaffolds').select('*').eq('student_id', studentId).eq('is_active', true).order('assigned_at', { ascending: false })
-      setScaffolds(data || [])
+      const [scaffRes, widaRes] = await Promise.all([
+        supabase.from('student_scaffolds').select('*').eq('student_id', studentId).eq('is_active', true).order('assigned_at', { ascending: false }),
+        supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId),
+      ])
+      setScaffolds(scaffRes.data || [])
+      const wm: Record<string, number> = {}
+      widaRes.data?.forEach((w: any) => { wm[w.domain] = w.wida_level })
+      setWidaLevels(wm)
       setLoading(false)
     })()
   }, [studentId])
@@ -1345,35 +1576,115 @@ function ScaffoldsTab({ studentId }: { studentId: string }) {
     else setScaffolds(prev => prev.filter(s => s.id !== id))
   }
 
-  if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
-
-  if (scaffolds.length === 0) {
-    return (
-      <div className="py-8 text-center">
-        <p className="text-text-tertiary text-[13px]">No scaffolds assigned to this student.</p>
-        <p className="text-text-tertiary text-[11px] mt-1">Assign scaffolds in the WIDA/CCSS Guide tab under Standards.</p>
-      </div>
-    )
+  const addSuggested = async (text: string) => {
+    const { data, error } = await supabase.from('student_scaffolds').insert({
+      student_id: studentId, domain: 'general', scaffold_text: text,
+      is_active: true, assigned_at: new Date().toISOString(), assigned_by: currentTeacher?.id,
+    }).select().single()
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setScaffolds(prev => [data, ...prev])
+    showToast('Scaffold added')
   }
 
+  const addCustom = async () => {
+    if (!customText.trim()) return
+    const { data, error } = await supabase.from('student_scaffolds').insert({
+      student_id: studentId, domain: customDomain, scaffold_text: customText.trim(),
+      is_active: true, assigned_at: new Date().toISOString(), assigned_by: currentTeacher?.id,
+    }).select().single()
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setScaffolds(prev => [data, ...prev])
+    setCustomText(''); setAddingCustom(false)
+    showToast('Custom scaffold added')
+  }
+
+  if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
+
+  // Determine primary WIDA level for suggestions
+  const widaVals = Object.values(widaLevels).filter(v => v > 0)
+  const avgWida = widaVals.length > 0 ? Math.round(widaVals.reduce((a, b) => a + b, 0) / widaVals.length) : null
+  const suggestions = avgWida ? (SUGGESTED_SCAFFOLDS[avgWida] || []) : []
+  const activeTexts = new Set(scaffolds.map(s => s.scaffold_text))
+
   return (
-    <div className="space-y-2">
-      <p className="text-[11px] text-text-tertiary mb-3">{scaffolds.length} active scaffold{scaffolds.length !== 1 ? 's' : ''}. Click effectiveness to toggle.</p>
-      {scaffolds.map(s => (
-        <div key={s.id} className="flex items-start gap-3 p-3 bg-surface border border-border rounded-lg group">
-          <span className={`flex-shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${DOMAIN_COLORS[s.domain] || DOMAIN_COLORS.general}`}>{s.domain}</span>
-          <p className="flex-1 text-[12px] text-text-primary leading-relaxed">{s.scaffold_text}</p>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button onClick={() => toggleEffectiveness(s.id, s.effectiveness)}
-              className={`px-2 py-0.5 rounded text-[9px] font-semibold ${s.effectiveness === 'working' ? 'bg-green-100 text-green-700' : s.effectiveness === 'not_working' ? 'bg-red-100 text-red-700' : 'bg-surface-alt text-text-tertiary'}`}>
-              {s.effectiveness === 'working' ? '✓ Working' : s.effectiveness === 'not_working' ? '✗ Not working' : '? Untested'}
-            </button>
-            <button onClick={() => removeScaffold(s.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded text-text-tertiary hover:text-red-500 hover:bg-red-50">
-              <X size={12} />
-            </button>
+    <div>
+      {/* Currently using */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[11px] text-text-tertiary">{scaffolds.length} active scaffold{scaffolds.length !== 1 ? 's'  : ''}</p>
+        <button onClick={() => setAddingCustom(!addingCustom)}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-navy text-white hover:bg-navy-dark">
+          {addingCustom ? <><X size={10} /> Cancel</> : <><Plus size={10} /> Custom</>}
+        </button>
+      </div>
+
+      {addingCustom && (
+        <div className="bg-surface-alt/50 border border-border rounded-lg p-3 mb-3 flex gap-2">
+          <select value={customDomain} onChange={e => setCustomDomain(e.target.value)}
+            className="px-2 py-1.5 border border-border rounded-lg text-[10px] outline-none">
+            <option value="general">General</option><option value="reading">Reading</option><option value="writing">Writing</option>
+            <option value="speaking">Speaking</option><option value="phonics">Phonics</option><option value="language">Language</option>
+          </select>
+          <input value={customText} onChange={e => setCustomText(e.target.value)} placeholder="Describe the scaffold..."
+            className="flex-1 px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy" />
+          <button onClick={addCustom} disabled={!customText.trim()}
+            className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">Add</button>
+        </div>
+      )}
+
+      {scaffolds.length > 0 && (
+        <div className="space-y-1.5 mb-5">
+          {scaffolds.map(s => (
+            <div key={s.id} className="flex items-start gap-2.5 p-2.5 bg-surface border border-border rounded-lg group">
+              <span className={`flex-shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${DOMAIN_COLORS[s.domain] || DOMAIN_COLORS.general}`}>{s.domain}</span>
+              <p className="flex-1 text-[11px] text-text-primary leading-relaxed">{s.scaffold_text}</p>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => toggleEffectiveness(s.id, s.effectiveness)}
+                  className={`px-1.5 py-0.5 rounded text-[8px] font-semibold ${s.effectiveness === 'working' ? 'bg-green-100 text-green-700' : s.effectiveness === 'not_working' ? 'bg-red-100 text-red-700' : 'bg-surface-alt text-text-tertiary'}`}>
+                  {s.effectiveness === 'working' ? 'Working' : s.effectiveness === 'not_working' ? 'Not working' : 'Untested'}
+                </button>
+                <button onClick={() => removeScaffold(s.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-text-tertiary hover:text-red-500">
+                  <X size={11} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* WIDA-suggested scaffolds */}
+      {avgWida && suggestions.length > 0 && (
+        <div className="border border-blue-200 rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 bg-blue-50 border-b border-blue-200">
+            <p className="text-[11px] font-semibold text-blue-800">Suggested for WIDA Level {avgWida}</p>
+            <p className="text-[9px] text-blue-600 mt-0.5">Click + to add to this student's active scaffolds</p>
+          </div>
+          <div className="divide-y divide-blue-100">
+            {suggestions.map((text, i) => {
+              const alreadyAdded = activeTexts.has(text)
+              return (
+                <div key={i} className={`px-4 py-2 flex items-center gap-3 ${alreadyAdded ? 'bg-green-50/30' : 'hover:bg-blue-50/30'}`}>
+                  <p className={`flex-1 text-[11px] ${alreadyAdded ? 'text-green-700' : 'text-text-primary'}`}>{text}</p>
+                  {alreadyAdded ? (
+                    <span className="text-[9px] text-green-600 font-medium">In use</span>
+                  ) : (
+                    <button onClick={() => addSuggested(text)}
+                      className="p-1 rounded-lg text-blue-500 hover:bg-blue-100 hover:text-blue-700">
+                      <Plus size={14} />
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
-      ))}
+      )}
+
+      {!avgWida && scaffolds.length === 0 && (
+        <div className="py-6 text-center">
+          <p className="text-text-tertiary text-[12px]">No WIDA profile set for this student.</p>
+          <p className="text-text-tertiary text-[10px] mt-1">Complete their WIDA profile to see suggested scaffolds.</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -1458,4 +1769,174 @@ ${comments.length > 0 ? comments.map((c: any) => `<div class="note"><strong>${c.
 
 <script>window.print()</script>
 </body></html>`
+}
+
+// ─── Goals Tab ─────────────────────────────────────────────────────
+
+interface StudentGoal {
+  id: string
+  goal_text: string
+  target_metric: string | null
+  target_value: number | null
+  baseline_value: number | null
+  current_value: number | null
+  status: string
+  created_at: string
+}
+
+function GoalsTab({ studentId, studentName }: { studentId: string; studentName: string }) {
+  const { showToast, currentTeacher } = useApp()
+  const [goals, setGoals] = useState<StudentGoal[]>([])
+  const [loading, setLoading] = useState(true)
+  const [adding, setAdding] = useState(false)
+  const [newGoal, setNewGoal] = useState({ goal_text: '', target_metric: 'custom', target_value: '', baseline_value: '' })
+  const [semId, setSemId] = useState<string | null>(null)
+
+  useEffect(() => {
+    ;(async () => {
+      const { data: sem } = await supabase.from('semesters').select('id').eq('is_active', true).single()
+      if (sem) setSemId(sem.id)
+      const { data } = await supabase.from('student_goals').select('*').eq('student_id', studentId).order('created_at', { ascending: false })
+      if (data) setGoals(data)
+      setLoading(false)
+    })()
+  }, [studentId])
+
+  const addGoal = async () => {
+    if (!newGoal.goal_text.trim() || !semId) return
+    const { data, error } = await supabase.from('student_goals').insert({
+      student_id: studentId, semester_id: semId,
+      goal_text: newGoal.goal_text.trim(),
+      target_metric: newGoal.target_metric || 'custom',
+      target_value: newGoal.target_value ? Number(newGoal.target_value) : null,
+      baseline_value: newGoal.baseline_value ? Number(newGoal.baseline_value) : null,
+      status: 'active', created_by: currentTeacher?.id,
+    }).select().single()
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setGoals(prev => [data, ...prev])
+    setNewGoal({ goal_text: '', target_metric: 'custom', target_value: '', baseline_value: '' })
+    setAdding(false)
+    showToast('Goal added')
+  }
+
+  const updateStatus = async (goalId: string, status: string) => {
+    await supabase.from('student_goals').update({ status, updated_at: new Date().toISOString() }).eq('id', goalId)
+    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, status } : g))
+    showToast(`Goal marked as ${status}`)
+  }
+
+  const deleteGoal = async (goalId: string) => {
+    await supabase.from('student_goals').delete().eq('id', goalId)
+    setGoals(prev => prev.filter(g => g.id !== goalId))
+    showToast('Goal removed')
+  }
+
+  if (loading) return <div className="py-6 text-center"><Loader2 size={16} className="animate-spin text-navy mx-auto" /></div>
+
+  const metricLabels: Record<string, string> = { cwpm: 'CWPM', grade_pct: 'Grade %', writing: 'Writing', custom: 'Custom' }
+  const statusColors: Record<string, string> = { active: 'bg-blue-100 text-blue-700', achieved: 'bg-green-100 text-green-700', revised: 'bg-amber-100 text-amber-700', dropped: 'bg-gray-100 text-gray-500' }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[12px] text-text-secondary">Set 2-3 measurable goals per semester for {studentName.split(' ')[0]}.</p>
+        <button onClick={() => setAdding(!adding)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark">
+          {adding ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Add Goal</>}
+        </button>
+      </div>
+
+      {adding && (
+        <div className="bg-surface-alt/50 border border-border rounded-xl p-4 mb-4 space-y-3">
+          <textarea value={newGoal.goal_text} onChange={e => setNewGoal(p => ({ ...p, goal_text: e.target.value }))}
+            placeholder="e.g., Increase CWPM from 45 to 65 by midterm"
+            className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy resize-none" rows={2} />
+          <div className="flex gap-3">
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Metric</label>
+              <select value={newGoal.target_metric} onChange={e => setNewGoal(p => ({ ...p, target_metric: e.target.value }))}
+                className="px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none">
+                <option value="cwpm">CWPM</option><option value="grade_pct">Grade %</option><option value="writing">Writing</option><option value="custom">Custom</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Baseline</label>
+              <input type="number" value={newGoal.baseline_value} onChange={e => setNewGoal(p => ({ ...p, baseline_value: e.target.value }))}
+                className="w-20 px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none" placeholder="Start" />
+            </div>
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Target</label>
+              <input type="number" value={newGoal.target_value} onChange={e => setNewGoal(p => ({ ...p, target_value: e.target.value }))}
+                className="w-20 px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none" placeholder="Target" />
+            </div>
+          </div>
+          <button onClick={addGoal} disabled={!newGoal.goal_text.trim()}
+            className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
+            <Check size={12} /> Save Goal
+          </button>
+        </div>
+      )}
+
+      {goals.length === 0 ? (
+        <div className="text-center py-8 text-text-tertiary">
+          <Target size={24} className="mx-auto mb-2 text-text-tertiary" />
+          <p className="text-[12px]">No goals set yet. Click "Add Goal" to create one.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {goals.map(goal => {
+            const progress = goal.baseline_value != null && goal.target_value != null && goal.current_value != null
+              ? Math.min(100, Math.max(0, ((goal.current_value - goal.baseline_value) / (goal.target_value - goal.baseline_value)) * 100))
+              : null
+            return (
+              <div key={goal.id} className="bg-surface border border-border rounded-xl p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-[13px] font-medium text-navy leading-snug">{goal.goal_text}</p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${statusColors[goal.status] || statusColors.active}`}>
+                        {goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}
+                      </span>
+                      {goal.target_metric && goal.target_metric !== 'custom' && (
+                        <span className="text-[10px] text-text-tertiary">{metricLabels[goal.target_metric] || goal.target_metric}</span>
+                      )}
+                      {goal.baseline_value != null && goal.target_value != null && (
+                        <span className="text-[10px] text-text-tertiary">{goal.baseline_value} &rarr; {goal.target_value}</span>
+                      )}
+                      <span className="text-[9px] text-text-tertiary">{new Date(goal.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+                    {progress != null && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all ${progress >= 100 ? 'bg-green-500' : progress >= 50 ? 'bg-blue-500' : 'bg-amber-500'}`} style={{ width: `${progress}%` }} />
+                        </div>
+                        <span className="text-[10px] font-medium text-text-secondary">{Math.round(progress)}%</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    {goal.status === 'active' && (
+                      <button onClick={() => updateStatus(goal.id, 'achieved')}
+                        className="p-1.5 rounded-lg text-green-500 hover:bg-green-50" title="Mark achieved">
+                        <CheckCircle2 size={14} />
+                      </button>
+                    )}
+                    {goal.status === 'achieved' && (
+                      <button onClick={() => updateStatus(goal.id, 'active')}
+                        className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50" title="Reactivate">
+                        <RefreshCw size={14} />
+                      </button>
+                    )}
+                    <button onClick={() => deleteGoal(goal.id)}
+                      className="p-1.5 rounded-lg text-text-tertiary hover:text-red-500 hover:bg-red-50" title="Delete">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
 }

@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
-import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle } from 'lucide-react'
+import { classToColor, classToTextColor, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
+import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale } from 'lucide-react'
 
 export default function SettingsView() {
   const { language, showToast, currentTeacher } = useApp()
@@ -26,6 +26,7 @@ export default function SettingsView() {
         <TeacherSection />
         <SemesterSection />
         <ProgramBenchmarksSection />
+        <AssessmentWeightsSection />
         {isAdmin && <ClassManagementSection />}
         <SchoolInfoSection />
       </div>
@@ -467,44 +468,44 @@ function ProgramBenchmarksSection() {
   const defaultBenchmarks: any[] = []
   const defaults: Record<number, Record<string, any>> = {
     1: {
-      Lily:       { cwpm_mid: 5,   cwpm_end: 15,  lexile_min: 0,   lexile_max: 50,  reading_level: 'Pre-A', notes: 'Letter recognition, initial sounds' },
-      Camellia:   { cwpm_mid: 12,  cwpm_end: 25,  lexile_min: 0,   lexile_max: 100, reading_level: 'A to B', notes: 'CVC blending, HFW sets 1-2' },
-      Daisy:      { cwpm_mid: 20,  cwpm_end: 40,  lexile_min: 50,  lexile_max: 200, reading_level: 'B to D', notes: 'Simple decodable readers' },
-      Sunflower:  { cwpm_mid: 30,  cwpm_end: 55,  lexile_min: 100, lexile_max: 300, reading_level: 'D to G', notes: 'Short sentences, basic fluency' },
-      Marigold:   { cwpm_mid: 45,  cwpm_end: 70,  lexile_min: 200, lexile_max: 400, reading_level: 'G to J', notes: 'Paragraph reading, comprehension' },
-      Snapdragon: { cwpm_mid: 60,  cwpm_end: 90,  lexile_min: 300, lexile_max: 550, reading_level: 'J to M', notes: 'Independent reading, inference' },
+      Lily:       { cwpm_mid: 5,   cwpm_end: 15,  lexile_min: 0,   lexile_max: 50,  notes: 'Letter recognition, initial sounds' },
+      Camellia:   { cwpm_mid: 12,  cwpm_end: 25,  lexile_min: 0,   lexile_max: 100, notes: 'CVC blending, HFW sets 1-2' },
+      Daisy:      { cwpm_mid: 20,  cwpm_end: 40,  lexile_min: 50,  lexile_max: 200, notes: 'Simple decodable readers' },
+      Sunflower:  { cwpm_mid: 30,  cwpm_end: 55,  lexile_min: 100, lexile_max: 300, notes: 'Short sentences, basic fluency' },
+      Marigold:   { cwpm_mid: 45,  cwpm_end: 70,  lexile_min: 200, lexile_max: 400, notes: 'Paragraph reading, comprehension' },
+      Snapdragon: { cwpm_mid: 60,  cwpm_end: 90,  lexile_min: 300, lexile_max: 550, notes: 'Independent reading, inference' },
     },
     2: {
-      Lily:       { cwpm_mid: 8,   cwpm_end: 20,  lexile_min: 0,   lexile_max: 75,  reading_level: 'Pre-A to A', notes: 'Letter-sound relationships' },
-      Camellia:   { cwpm_mid: 20,  cwpm_end: 35,  lexile_min: 50,  lexile_max: 150, reading_level: 'B to D', notes: 'CVC mastery, digraphs starting' },
-      Daisy:      { cwpm_mid: 30,  cwpm_end: 50,  lexile_min: 100, lexile_max: 300, reading_level: 'D to G', notes: 'Decodable chapter books' },
-      Sunflower:  { cwpm_mid: 45,  cwpm_end: 70,  lexile_min: 200, lexile_max: 400, reading_level: 'G to J', notes: 'Developing comprehension' },
-      Marigold:   { cwpm_mid: 60,  cwpm_end: 90,  lexile_min: 350, lexile_max: 550, reading_level: 'J to M', notes: 'Chapter books, varied genres' },
-      Snapdragon: { cwpm_mid: 80,  cwpm_end: 110, lexile_min: 500, lexile_max: 700, reading_level: 'M to P', notes: 'Complex texts, analysis' },
+      Lily:       { cwpm_mid: 8,   cwpm_end: 20,  lexile_min: 0,   lexile_max: 75,  notes: 'Letter-sound relationships' },
+      Camellia:   { cwpm_mid: 20,  cwpm_end: 35,  lexile_min: 50,  lexile_max: 150, notes: 'CVC mastery, digraphs starting' },
+      Daisy:      { cwpm_mid: 30,  cwpm_end: 50,  lexile_min: 100, lexile_max: 300, notes: 'Decodable chapter books' },
+      Sunflower:  { cwpm_mid: 45,  cwpm_end: 70,  lexile_min: 200, lexile_max: 400, notes: 'Developing comprehension' },
+      Marigold:   { cwpm_mid: 60,  cwpm_end: 90,  lexile_min: 350, lexile_max: 550, notes: 'Chapter books, varied genres' },
+      Snapdragon: { cwpm_mid: 80,  cwpm_end: 110, lexile_min: 500, lexile_max: 700, notes: 'Complex texts, analysis' },
     },
     3: {
-      Lily:       { cwpm_mid: 10,  cwpm_end: 25,  lexile_min: 0,   lexile_max: 100, reading_level: 'A to B', notes: 'Basic decoding, HFW' },
-      Camellia:   { cwpm_mid: 25,  cwpm_end: 45,  lexile_min: 50,  lexile_max: 200, reading_level: 'C to F', notes: 'Blends, digraphs, short vowels' },
-      Daisy:      { cwpm_mid: 40,  cwpm_end: 65,  lexile_min: 150, lexile_max: 350, reading_level: 'F to I', notes: 'Fluency building, expression' },
-      Sunflower:  { cwpm_mid: 55,  cwpm_end: 80,  lexile_min: 300, lexile_max: 500, reading_level: 'I to L', notes: 'Nonfiction, text features' },
-      Marigold:   { cwpm_mid: 75,  cwpm_end: 105, lexile_min: 450, lexile_max: 650, reading_level: 'L to O', notes: 'Independent chapter books' },
-      Snapdragon: { cwpm_mid: 95,  cwpm_end: 130, lexile_min: 600, lexile_max: 800, reading_level: 'O to R', notes: 'Complex comprehension, writing' },
+      Lily:       { cwpm_mid: 10,  cwpm_end: 25,  lexile_min: 0,   lexile_max: 100, notes: 'Basic decoding, HFW' },
+      Camellia:   { cwpm_mid: 25,  cwpm_end: 45,  lexile_min: 50,  lexile_max: 200, notes: 'Blends, digraphs, short vowels' },
+      Daisy:      { cwpm_mid: 40,  cwpm_end: 65,  lexile_min: 150, lexile_max: 350, notes: 'Fluency building, expression' },
+      Sunflower:  { cwpm_mid: 55,  cwpm_end: 80,  lexile_min: 300, lexile_max: 500, notes: 'Nonfiction, text features' },
+      Marigold:   { cwpm_mid: 75,  cwpm_end: 105, lexile_min: 450, lexile_max: 650, notes: 'Independent chapter books' },
+      Snapdragon: { cwpm_mid: 95,  cwpm_end: 130, lexile_min: 600, lexile_max: 800, notes: 'Complex comprehension, writing' },
     },
     4: {
-      Lily:       { cwpm_mid: 12,  cwpm_end: 28,  lexile_min: 0,   lexile_max: 100, reading_level: 'A to C', notes: 'Phonics foundations, decoding' },
-      Camellia:   { cwpm_mid: 28,  cwpm_end: 50,  lexile_min: 75,  lexile_max: 250, reading_level: 'C to G', notes: 'Multi-syllable words starting' },
-      Daisy:      { cwpm_mid: 45,  cwpm_end: 70,  lexile_min: 200, lexile_max: 400, reading_level: 'G to J', notes: 'Fluency and expression' },
-      Sunflower:  { cwpm_mid: 65,  cwpm_end: 90,  lexile_min: 350, lexile_max: 550, reading_level: 'J to M', notes: 'Content-area reading' },
-      Marigold:   { cwpm_mid: 85,  cwpm_end: 115, lexile_min: 500, lexile_max: 700, reading_level: 'M to P', notes: 'Novel studies, critical thinking' },
-      Snapdragon: { cwpm_mid: 105, cwpm_end: 140, lexile_min: 650, lexile_max: 900, reading_level: 'P to S', notes: 'Advanced comprehension, debate' },
+      Lily:       { cwpm_mid: 12,  cwpm_end: 28,  lexile_min: 0,   lexile_max: 100, notes: 'Phonics foundations, decoding' },
+      Camellia:   { cwpm_mid: 28,  cwpm_end: 50,  lexile_min: 75,  lexile_max: 250, notes: 'Multi-syllable words starting' },
+      Daisy:      { cwpm_mid: 45,  cwpm_end: 70,  lexile_min: 200, lexile_max: 400, notes: 'Fluency and expression' },
+      Sunflower:  { cwpm_mid: 65,  cwpm_end: 90,  lexile_min: 350, lexile_max: 550, notes: 'Content-area reading' },
+      Marigold:   { cwpm_mid: 85,  cwpm_end: 115, lexile_min: 500, lexile_max: 700, notes: 'Novel studies, critical thinking' },
+      Snapdragon: { cwpm_mid: 105, cwpm_end: 140, lexile_min: 650, lexile_max: 900, notes: 'Advanced comprehension, debate' },
     },
     5: {
-      Lily:       { cwpm_mid: 15,  cwpm_end: 30,  lexile_min: 0,   lexile_max: 100, reading_level: 'A to C', notes: 'Still building letter-sound, basic decoding' },
-      Camellia:   { cwpm_mid: 30,  cwpm_end: 55,  lexile_min: 100, lexile_max: 300, reading_level: 'D to G', notes: 'Blends, vowel teams, HFW mastery' },
-      Daisy:      { cwpm_mid: 50,  cwpm_end: 75,  lexile_min: 250, lexile_max: 450, reading_level: 'G to K', notes: 'Paragraph-level fluency' },
-      Sunflower:  { cwpm_mid: 70,  cwpm_end: 100, lexile_min: 400, lexile_max: 600, reading_level: 'K to N', notes: 'Nonfiction, academic vocab' },
-      Marigold:   { cwpm_mid: 90,  cwpm_end: 120, lexile_min: 550, lexile_max: 750, reading_level: 'N to Q', notes: 'Complex texts, essay writing' },
-      Snapdragon: { cwpm_mid: 115, cwpm_end: 150, lexile_min: 700, lexile_max: 950, reading_level: 'Q to T', notes: 'Near grade-level, advanced analysis' },
+      Lily:       { cwpm_mid: 15,  cwpm_end: 30,  lexile_min: 0,   lexile_max: 100, notes: 'Still building letter-sound, basic decoding' },
+      Camellia:   { cwpm_mid: 30,  cwpm_end: 55,  lexile_min: 100, lexile_max: 300, notes: 'Blends, vowel teams, HFW mastery' },
+      Daisy:      { cwpm_mid: 50,  cwpm_end: 75,  lexile_min: 250, lexile_max: 450, notes: 'Paragraph-level fluency' },
+      Sunflower:  { cwpm_mid: 70,  cwpm_end: 100, lexile_min: 400, lexile_max: 600, notes: 'Nonfiction, academic vocab' },
+      Marigold:   { cwpm_mid: 90,  cwpm_end: 120, lexile_min: 550, lexile_max: 750, notes: 'Complex texts, essay writing' },
+      Snapdragon: { cwpm_mid: 115, cwpm_end: 150, lexile_min: 700, lexile_max: 950, notes: 'Near grade-level, advanced analysis' },
     },
   }
 
@@ -519,7 +520,7 @@ function ProgramBenchmarksSection() {
         let order = 0
         for (const g of GRADES) {
           for (const c of CLASSES) {
-            const d = defaults[g]?.[c] || { cwpm_mid: 0, cwpm_end: 0, lexile_min: 0, lexile_max: 0, reading_level: '', notes: '' }
+            const d = defaults[g]?.[c] || { cwpm_mid: 0, cwpm_end: 0, lexile_min: 0, lexile_max: 0, notes: '' }
             all.push({ ...d, grade: g, english_class: c, id: `temp_${order}`, display_order: order })
             order++
           }
@@ -550,7 +551,7 @@ function ProgramBenchmarksSection() {
       cwpm_end: Number(b.cwpm_end) || 0,
       lexile_min: Number(b.lexile_min) || 0,
       lexile_max: Number(b.lexile_max) || 0,
-      reading_level: b.reading_level || '',
+      reading_level: '',
       notes: b.notes || '',
       display_order: i,
     }))
@@ -573,7 +574,7 @@ function ProgramBenchmarksSection() {
           <Target size={20} className="text-navy" />
           <div>
             <h3 className="font-display text-lg font-semibold text-navy">Program Benchmarks</h3>
-            <p className="text-[10px] text-text-tertiary">CWPM, Lexile, and reading level targets per grade and class. Visible to all teachers.</p>
+            <p className="text-[10px] text-text-tertiary">CWPM and Lexile targets per grade and class. Visible to all teachers.</p>
           </div>
         </div>
         {(isAdmin || teacherClass) && (
@@ -675,7 +676,7 @@ function ClassManagementSection() {
       if (data) {
         const counts: Record<string, number> = {}
         data.forEach((s: any) => { counts[s.english_class] = (counts[s.english_class] || 0) + 1 })
-        const all = [...ENGLISH_CLASSES, 'Trial'].map(cls => ({ english_class: cls, count: counts[cls] || 0 }))
+        const all = ENGLISH_CLASSES.map(cls => ({ english_class: cls, count: counts[cls] || 0 }))
         setClasses(all)
       }
       setLoading(false)
@@ -683,7 +684,7 @@ function ClassManagementSection() {
   }, [])
 
   const handleDeleteClass = async (cls: string) => {
-    if (ENGLISH_CLASSES.includes(cls as EnglishClass) && cls !== 'Trial') {
+    if (ENGLISH_CLASSES.includes(cls as EnglishClass)) {
       showToast('Cannot delete core program classes (Lily-Snapdragon)')
       return
     }
@@ -726,7 +727,7 @@ function ClassManagementSection() {
           </thead>
           <tbody>
             {classes.map(cls => {
-              const isCore = ENGLISH_CLASSES.includes(cls.english_class as EnglishClass) && cls.english_class !== 'Trial'
+              const isCore = ENGLISH_CLASSES.includes(cls.english_class as EnglishClass)
               return (
                 <tr key={cls.english_class} className="border-t border-border">
                   <td className="px-4 py-2.5">
@@ -749,6 +750,96 @@ function ClassManagementSection() {
             })}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+function AssessmentWeightsSection() {
+  const { currentTeacher, showToast } = useApp()
+  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
+  const [weights, setWeights] = useState<Record<number, Record<AssessmentType, number>>>(DEFAULT_WEIGHTS)
+  const [saving, setSaving] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    ;(async () => {
+      const { data } = await supabase.from('app_settings').select('value').eq('key', 'assessment_weights').single()
+      if (data?.value) {
+        try { setWeights(JSON.parse(data.value)) } catch {}
+      }
+      setLoaded(true)
+    })()
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    await supabase.from('app_settings').upsert({ key: 'assessment_weights', value: JSON.stringify(weights) }, { onConflict: 'key' })
+    setSaving(false)
+    showToast('Assessment weights saved')
+  }
+
+  const update = (grade: number, type: AssessmentType, val: number) => {
+    setWeights(prev => ({ ...prev, [grade]: { ...prev[grade], [type]: val } }))
+  }
+
+  if (!loaded) return null
+
+  const typeLabels: Record<AssessmentType, string> = {
+    formative: 'Formative',
+    summative: 'Summative',
+    performance_task: 'Performance Task',
+  }
+
+  return (
+    <div className="mb-8">
+      <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <Scale size={16} className="text-indigo-600" />
+          </div>
+          <div>
+            <h3 className="font-display text-lg font-semibold text-navy">Assessment Weights</h3>
+            <p className="text-[12px] text-text-secondary">How formative, summative, and performance task grades are weighted per grade level. Weights must sum to 100%.</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map(grade => {
+            const w = weights[grade] || DEFAULT_WEIGHTS[grade] || { formative: 33, summative: 34, performance_task: 33 }
+            const total = w.formative + w.summative + w.performance_task
+            const isValid = total === 100
+            return (
+              <div key={grade} className={`flex items-center gap-4 px-4 py-3 rounded-lg border ${isValid ? 'border-border bg-surface-alt/30' : 'border-red-300 bg-red-50/30'}`}>
+                <span className="text-[13px] font-bold text-navy w-16">Grade {grade}</span>
+                {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
+                  <div key={type} className="flex items-center gap-1.5">
+                    <label className="text-[10px] text-text-secondary w-20">{typeLabels[type]}</label>
+                    {isAdmin ? (
+                      <input type="number" min={0} max={100} value={w[type]}
+                        onChange={e => update(grade, type, Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                        className="w-14 px-2 py-1 border border-border rounded-lg text-center text-[12px] outline-none focus:border-navy" />
+                    ) : (
+                      <span className="text-[13px] font-semibold text-navy w-14 text-center">{w[type]}%</span>
+                    )}
+                  </div>
+                ))}
+                <span className={`text-[11px] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>
+                  {total}%{!isValid && ' (must be 100)'}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+
+        {isAdmin && (
+          <div className="flex justify-end mt-4">
+            <button onClick={handleSave} disabled={saving}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+              {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Weights
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

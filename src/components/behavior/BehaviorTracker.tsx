@@ -145,6 +145,95 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
         )
       })()}
 
+      {/* ABC Pattern Analysis -- shows after 5+ negative/ABC entries */}
+      {(() => {
+        const abcLogs = logs.filter(l => (l.type === 'negative' || l.type === 'abc') && ((l.antecedents?.length || 0) > 0 || (l.behaviors?.length || 0) > 0 || (l.consequences?.length || 0) > 0))
+        if (abcLogs.length < 5) return null
+
+        // Analyze antecedents
+        const antCounts: Record<string, number> = {}
+        abcLogs.forEach(l => (l.antecedents || []).forEach((a: string) => { antCounts[a] = (antCounts[a] || 0) + 1 }))
+        const topAntecedents = Object.entries(antCounts).sort((a, b) => b[1] - a[1]).slice(0, 3)
+
+        // Analyze behaviors
+        const behCounts: Record<string, number> = {}
+        abcLogs.forEach(l => (l.behaviors || []).forEach((b: string) => { behCounts[b] = (behCounts[b] || 0) + 1 }))
+        const topBehaviors = Object.entries(behCounts).sort((a, b) => b[1] - a[1]).slice(0, 3)
+
+        // Analyze consequences
+        const conCounts: Record<string, number> = {}
+        abcLogs.forEach(l => (l.consequences || []).forEach((c: string) => { conCounts[c] = (conCounts[c] || 0) + 1 }))
+        const topConsequences = Object.entries(conCounts).sort((a, b) => b[1] - a[1]).slice(0, 3)
+
+        // Time patterns
+        const timeCounts: Record<string, number> = {}
+        abcLogs.forEach(l => { if (l.time) { const hour = l.time.split(':')[0]; const period = Number(hour) < 12 ? 'Morning' : Number(hour) < 15 ? 'Early afternoon' : 'Late afternoon'; timeCounts[period] = (timeCounts[period] || 0) + 1 } })
+        const topTime = Object.entries(timeCounts).sort((a, b) => b[1] - a[1])[0]
+
+        // Activity patterns
+        const actCounts: Record<string, number> = {}
+        abcLogs.forEach(l => { if (l.activity) actCounts[l.activity] = (actCounts[l.activity] || 0) + 1 })
+        const topActivity = Object.entries(actCounts).sort((a, b) => b[1] - a[1])[0]
+
+        // Build insight sentence
+        const insights: string[] = []
+        if (topAntecedents.length > 0) {
+          const topAnt = topAntecedents[0]
+          insights.push(`${topAnt[1]} of ${abcLogs.length} incidents involve "${topAnt[0]}" as an antecedent.`)
+        }
+        if (topBehaviors.length > 0) {
+          insights.push(`Most common behavior: "${topBehaviors[0][0]}" (${topBehaviors[0][1]}x).`)
+        }
+        if (topTime) {
+          insights.push(`Incidents cluster in the ${topTime[0].toLowerCase()} (${topTime[1]} of ${abcLogs.length}).`)
+        }
+        if (topActivity) {
+          insights.push(`Most common during: ${topActivity[0]} (${topActivity[1]}x).`)
+        }
+
+        return (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+            <p className="text-[10px] uppercase tracking-wider text-indigo-500 font-semibold mb-1.5">Pattern Analysis ({abcLogs.length} ABC entries)</p>
+            <p className="text-[12px] text-indigo-900 leading-relaxed">{insights.join(' ')}</p>
+            <div className="mt-3 grid grid-cols-3 gap-3">
+              {topAntecedents.length > 0 && (
+                <div>
+                  <p className="text-[8px] uppercase tracking-wider text-indigo-400 font-semibold mb-1">Top Antecedents</p>
+                  {topAntecedents.map(([label, count]) => (
+                    <div key={label} className="flex items-center gap-1.5 py-0.5">
+                      <div className="flex-1 h-1 bg-indigo-200 rounded-full overflow-hidden"><div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(count / abcLogs.length) * 100}%` }} /></div>
+                      <span className="text-[9px] text-indigo-700 whitespace-nowrap">{label} ({count})</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {topBehaviors.length > 0 && (
+                <div>
+                  <p className="text-[8px] uppercase tracking-wider text-indigo-400 font-semibold mb-1">Top Behaviors</p>
+                  {topBehaviors.map(([label, count]) => (
+                    <div key={label} className="flex items-center gap-1.5 py-0.5">
+                      <div className="flex-1 h-1 bg-amber-200 rounded-full overflow-hidden"><div className="h-full bg-amber-500 rounded-full" style={{ width: `${(count / abcLogs.length) * 100}%` }} /></div>
+                      <span className="text-[9px] text-amber-700 whitespace-nowrap">{label} ({count})</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {topConsequences.length > 0 && (
+                <div>
+                  <p className="text-[8px] uppercase tracking-wider text-indigo-400 font-semibold mb-1">Top Consequences</p>
+                  {topConsequences.map(([label, count]) => (
+                    <div key={label} className="flex items-center gap-1.5 py-0.5">
+                      <div className="flex-1 h-1 bg-red-200 rounded-full overflow-hidden"><div className="h-full bg-red-500 rounded-full" style={{ width: `${(count / abcLogs.length) * 100}%` }} /></div>
+                      <span className="text-[9px] text-red-700 whitespace-nowrap">{label} ({count})</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Filter tabs */}
       <div className="flex gap-1 border-b border-border overflow-x-auto">
         {[{ id: 'all', label: 'All', count: logs.length }, ...LOG_TYPES.map(t => ({ id: t.value, label: lang === 'ko' ? t.labelKo : t.label, count: logs.filter((l: any) => l.type === t.value || (t.value === 'negative' && l.type === 'abc')).length })), { id: 'flagged', label: '🔔 Flagged', count: flaggedCount }].map((tab: any) => (

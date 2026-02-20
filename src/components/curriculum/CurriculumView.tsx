@@ -6,7 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { BookOpen, Users2, Loader2, ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Info, Save, Globe2 } from 'lucide-react'
+import { BookOpen, Users2, Loader2, ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Info, Save, Globe2, Zap } from 'lucide-react'
 import { CCSS_STANDARDS, CCSS_DOMAINS, type CCSSDomain } from './ccss-standards'
 import WIDAGuide from './WIDAGuide'
 
@@ -41,11 +41,19 @@ export const WIDA_DOMAINS = ['listening', 'speaking', 'reading', 'writing'] as c
 export type WIDADomainKey = typeof WIDA_DOMAINS[number]
 
 type StdStatus = 'not_started' | 'in_progress' | 'mastered'
+type InterventionStatus = 'none' | 'not_yet_taught' | 'taught_needs_reteach' | 'reteaching' | 'reassessing'
 const STATUS_CFG = {
   not_started: { label: 'Not Started', icon: Circle, color: 'text-gray-400', bg: 'bg-gray-100' },
   in_progress: { label: 'In Progress', icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
   mastered: { label: 'Mastered', icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
 }
+const INTERVENTION_OPTIONS: { value: InterventionStatus; label: string; color: string }[] = [
+  { value: 'none', label: '--', color: '' },
+  { value: 'not_yet_taught', label: 'Not yet taught', color: 'text-gray-500 bg-gray-100' },
+  { value: 'taught_needs_reteach', label: 'Needs reteach', color: 'text-red-700 bg-red-100' },
+  { value: 'reteaching', label: 'Reteaching', color: 'text-amber-700 bg-amber-100' },
+  { value: 'reassessing', label: 'Reassessing', color: 'text-blue-700 bg-blue-100' },
+]
 
 // Build cluster groups from standards
 function getClusters(domain: CCSSDomain, grade: number) {
@@ -63,15 +71,15 @@ function getClusters(domain: CCSSDomain, grade: number) {
 // ═══════════════════════════════════════════════════════════════════
 export default function CurriculumView() {
   const { language } = useApp()
-  const [view, setView] = useState<'standards' | 'guide'>('standards')
+  const [view, setView] = useState<'standards' | 'guide' | 'quickcheck'>('standards')
 
   return (
     <div className="animate-fade-in">
       <div className="bg-surface border-b border-border px-8 py-5">
         <h2 className="font-display text-2xl font-bold text-navy">{language === 'ko' ? '표준' : 'Standards'}</h2>
-        <p className="text-[13px] text-text-secondary mt-1">CCSS standards tracking and WIDA/CCSS reference guide</p>
+        <p className="text-[13px] text-text-secondary mt-1">CCSS standards tracking, quick checks, and WIDA/CCSS reference guide</p>
         <div className="flex gap-1 mt-4">
-          {([['standards', 'Standards Checklist', BookOpen], ['guide', 'WIDA/CCSS Guide', Globe2]] as const).map(([id, label, Icon]) => (
+          {([['standards', 'Standards Checklist', BookOpen], ['quickcheck', 'Quick Check', Zap], ['guide', 'WIDA/CCSS Guide', Globe2]] as const).map(([id, label, Icon]) => (
             <button key={id} onClick={() => setView(id as any)}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium transition-all ${view === id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
               <Icon size={15} /> {label}
@@ -81,6 +89,7 @@ export default function CurriculumView() {
       </div>
       <div className="px-8 py-6">
         {view === 'standards' && <ClusterTracker />}
+        {view === 'quickcheck' && <QuickCheckTool />}
         {view === 'guide' && <WIDAGuide />}
       </div>
     </div>
@@ -98,6 +107,9 @@ export function WIDAProfiles() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [snapshots, setSnapshots] = useState<any[]>([])
+  const [viewingSnapshot, setViewingSnapshot] = useState<string | null>(null)
+  const [snapshotData, setSnapshotData] = useState<Record<string, Record<string, number>> | null>(null)
 
   // Warn on page leave with unsaved changes
   useEffect(() => {
@@ -118,6 +130,61 @@ export function WIDAProfiles() {
   }, [students])
 
   useEffect(() => { loadLevels() }, [loadLevels])
+
+  // Load available snapshots
+  useEffect(() => {
+    ;(async () => {
+      const { data } = await supabase.from('wida_snapshots').select('id, label, english_class, student_grade, created_at')
+        .eq('english_class', cls).eq('student_grade', gr).order('created_at', { ascending: false })
+      setSnapshots(data || [])
+    })()
+  }, [cls, gr])
+
+  const saveSnapshot = async () => {
+    const label = prompt('Snapshot label (e.g. "Midterm Spring 2026"):')
+    if (!label) return
+    const { error } = await supabase.from('wida_snapshots').insert({
+      english_class: cls, student_grade: gr, label,
+      snapshot_data: JSON.stringify(levels), created_by: currentTeacher?.id,
+    })
+    if (error) { showToast(`Error: ${error.message}`); return }
+    showToast('WIDA snapshot saved')
+    const { data } = await supabase.from('wida_snapshots').select('id, label, english_class, student_grade, created_at')
+      .eq('english_class', cls).eq('student_grade', gr).order('created_at', { ascending: false })
+    setSnapshots(data || [])
+  }
+
+  const loadSnapshot = async (id: string) => {
+    if (viewingSnapshot === id) { setViewingSnapshot(null); setSnapshotData(null); return }
+    const { data } = await supabase.from('wida_snapshots').select('snapshot_data').eq('id', id).single()
+    if (data?.snapshot_data) {
+      try { setSnapshotData(JSON.parse(data.snapshot_data)); setViewingSnapshot(id) } catch { showToast('Invalid snapshot data') }
+    }
+  }
+
+  const printOnePager = () => {
+    const win = window.open('', '_blank')
+    if (!win) return
+    const rows = students.map((s: any, i: number) => {
+      const sl = levels[s.id] || {}
+      const overall = getOverall(s.id)
+      const cells = WIDA_DOMAINS.map(d => {
+        const lvl = sl[d] || 0
+        const wl = WIDA_LEVELS.find(w => w.level === lvl)
+        const bg = wl ? wl.bg : '#f8fafc'
+        return `<td style="text-align:center;padding:6px;background:${bg};font-weight:600;font-size:11px">${lvl > 0 ? `L${lvl}` : '--'}</td>`
+      }).join('')
+      return `<tr><td style="padding:6px;font-size:11px">${i + 1}</td><td style="padding:6px;font-size:11px;font-weight:500">${s.english_name}</td>${cells}<td style="text-align:center;padding:6px;font-weight:700;font-size:12px;color:#1e3a5f">${overall?.toFixed(1) || '--'}</td></tr>`
+    }).join('')
+    win.document.write(`<!DOCTYPE html><html><head><title>WIDA Profiles - ${cls} Grade ${gr}</title><style>
+      body { font-family: -apple-system, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+      h1 { font-size: 18px; color: #1e3a5f; margin-bottom: 4px; } .meta { color: #64748b; font-size: 12px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 12px; } th { background: #f1f5f9; padding: 8px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+      td { border-bottom: 1px solid #f1f5f9; } @media print { body { padding: 10px; } } @page { size: A4 landscape; margin: 15mm; }
+    </style></head><body><h1>WIDA Profiles: ${cls} -- Grade ${gr}</h1><p class="meta">Printed ${new Date().toLocaleDateString()} | ${students.length} students</p>
+    <table><thead><tr><th>#</th><th style="text-align:left">Student</th>${WIDA_DOMAINS.map(d => `<th>${d.charAt(0).toUpperCase() + d.slice(1)}</th>`).join('')}<th>Overall</th></tr></thead><tbody>${rows}</tbody></table></body></html>`)
+    win.document.close(); win.print()
+  }
 
   const setLevel = (studentId: string, domain: string, level: number) => {
     setLevels(prev => ({ ...prev, [studentId]: { ...(prev[studentId] || {}), [domain]: level } }))
@@ -177,7 +244,31 @@ export function WIDAProfiles() {
             </button>
           </div>
         )}
+        {!hasChanges && (
+          <div className="ml-auto flex gap-2">
+            <button onClick={printOnePager} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-surface-alt border border-border">
+              Print One-Pager
+            </button>
+            <button onClick={saveSnapshot} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark">
+              Save Snapshot
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Snapshots */}
+      {snapshots.length > 0 && (
+        <div className="mb-4 flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Snapshots:</span>
+          {snapshots.map(snap => (
+            <button key={snap.id} onClick={() => loadSnapshot(snap.id)}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-all ${viewingSnapshot === snap.id ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border hover:border-navy'}`}>
+              {snap.label} ({new Date(snap.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+            </button>
+          ))}
+          {viewingSnapshot && <button onClick={() => { setViewingSnapshot(null); setSnapshotData(null) }} className="text-[10px] text-red-500 hover:text-red-700 font-medium">Clear comparison</button>}
+        </div>
+      )}
 
       {/* WIDA Level definitions with scaffolding strategies */}
       <div className="grid grid-cols-3 gap-2 mb-5">
@@ -216,6 +307,8 @@ export function WIDAProfiles() {
                   {WIDA_DOMAINS.map(dom => {
                     const lvl = sl[dom] || 0
                     const wl = WIDA_LEVELS.find(w => w.level === lvl)
+                    const snapLvl = snapshotData?.[s.id]?.[dom] || 0
+                    const diff = viewingSnapshot && snapLvl > 0 ? lvl - snapLvl : null
                     return (
                       <td key={dom} className="px-3 py-2.5 text-center">
                         <button onClick={() => setLevel(s.id, dom, lvl >= 6 ? 0 : lvl + 1)}
@@ -223,6 +316,14 @@ export function WIDAProfiles() {
                           style={wl ? { backgroundColor: wl.bg, borderColor: wl.color, color: '#1e293b' } : { borderColor: '#e2e8f0' }}>
                           {lvl > 0 ? `L${lvl} ${wl?.name || ''}` : '--'}
                         </button>
+                        {diff != null && diff !== 0 && (
+                          <span className={`text-[9px] font-bold block mt-0.5 ${diff > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {diff > 0 ? `+${diff}` : diff}
+                          </span>
+                        )}
+                        {diff === 0 && viewingSnapshot && snapLvl > 0 && (
+                          <span className="text-[9px] text-text-tertiary block mt-0.5">=</span>
+                        )}
                       </td>
                     )
                   })}
@@ -240,6 +341,175 @@ export function WIDAProfiles() {
 }
 
 // ─── CLUSTER-LEVEL STANDARDS TRACKER ────────────────────────────────
+// ─── Quick Check Tool ────────────────────────────────────────────────
+// Lightweight formative pulse-check: got it / almost / not yet per student per standard
+type QuickCheckMark = 'got_it' | 'almost' | 'not_yet'
+const QC_OPTIONS: { value: QuickCheckMark; label: string; emoji: string; color: string; bg: string }[] = [
+  { value: 'got_it', label: 'Got It', emoji: '\u2713', color: 'text-green-700', bg: 'bg-green-100 border-green-300 hover:bg-green-200' },
+  { value: 'almost', label: 'Almost', emoji: '~', color: 'text-amber-700', bg: 'bg-amber-100 border-amber-300 hover:bg-amber-200' },
+  { value: 'not_yet', label: 'Not Yet', emoji: '\u2717', color: 'text-red-700', bg: 'bg-red-100 border-red-300 hover:bg-red-200' },
+]
+
+function QuickCheckTool() {
+  const { currentTeacher, showToast } = useApp()
+  const isTeacher = currentTeacher?.role === 'teacher'
+  const [cls, setCls] = useState<EnglishClass>((currentTeacher?.english_class as EnglishClass) || 'Lily')
+  const [gr, setGr] = useState<Grade>(3)
+  const { students } = useStudents({ grade: gr, english_class: cls })
+  const [selectedStd, setSelectedStd] = useState<string | null>(null)
+  const [marks, setMarks] = useState<Record<string, QuickCheckMark>>({})
+  const [saving, setSaving] = useState(false)
+  const [history, setHistory] = useState<any[]>([])
+
+  const adj = getAdjustedGrade(gr, cls)
+  const allStandards = useMemo(() => CCSS_DOMAINS.flatMap(d => getClusters(d.key, adj).flatMap(c => c.standards)), [adj])
+
+  // Load history for selected standard
+  useEffect(() => {
+    if (!selectedStd) return
+    ;(async () => {
+      const { data } = await supabase.from('quick_checks').select('*').eq('standard_code', selectedStd).eq('english_class', cls).eq('student_grade', gr).order('created_at', { ascending: false }).limit(20)
+      setHistory(data || [])
+    })()
+  }, [selectedStd, cls, gr])
+
+  const saveQuickCheck = async () => {
+    if (!selectedStd || Object.keys(marks).length === 0) return
+    setSaving(true)
+    const rows = Object.entries(marks).map(([studentId, mark]) => ({
+      student_id: studentId,
+      standard_code: selectedStd,
+      english_class: cls,
+      student_grade: gr,
+      mark,
+      created_by: currentTeacher?.id,
+    }))
+    const { error } = await supabase.from('quick_checks').insert(rows)
+    if (error) { showToast(`Error: ${error.message}`); setSaving(false); return }
+    showToast(`Quick check saved for ${Object.keys(marks).length} students`)
+    setMarks({})
+    setSaving(false)
+    // Reload history
+    const { data } = await supabase.from('quick_checks').select('*').eq('standard_code', selectedStd).eq('english_class', cls).eq('student_grade', gr).order('created_at', { ascending: false }).limit(20)
+    setHistory(data || [])
+  }
+
+  return (
+    <div>
+      {/* Header: class + grade selectors */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        <div className="flex gap-1">
+          {ENGLISH_CLASSES.map(c => (
+            <button key={c} onClick={() => setCls(c)}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${cls === c ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
+              style={{ backgroundColor: cls === c ? classToTextColor(c) : classToColor(c), color: cls === c ? 'white' : classToTextColor(c) }}>{c}</button>
+          ))}
+        </div>
+        <div className="flex gap-1">
+          {GRADES.map(g => (
+            <button key={g} onClick={() => setGr(g)}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${gr === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80'}`}>G{g}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-5">
+        {/* Standard selector (left) */}
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
+            <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Select a Standard</p>
+          </div>
+          <div className="max-h-[500px] overflow-y-auto divide-y divide-border">
+            {allStandards.map(std => (
+              <button key={std.code} onClick={() => { setSelectedStd(std.code); setMarks({}) }}
+                className={`w-full text-left px-4 py-2.5 hover:bg-surface-alt/50 transition-colors ${selectedStd === std.code ? 'bg-navy/5 border-l-2 border-navy' : ''}`}>
+                <span className="text-[11px] font-bold text-navy">{std.code}</span>
+                <p className="text-[10px] text-text-secondary leading-snug truncate">{std.text}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Student marking grid (center) */}
+        <div className="col-span-2">
+          {!selectedStd ? (
+            <div className="bg-surface border border-border rounded-xl p-12 text-center">
+              <Zap size={24} className="mx-auto text-text-tertiary mb-2" />
+              <p className="text-[13px] text-text-tertiary">Select a standard to begin a quick check.</p>
+              <p className="text-[11px] text-text-tertiary mt-1">3 taps per student, ~90 seconds for 16 students.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-surface border border-border rounded-xl overflow-hidden">
+                <div className="px-5 py-3 bg-navy/5 border-b border-border flex items-center justify-between">
+                  <div>
+                    <p className="text-[13px] font-semibold text-navy">{selectedStd}</p>
+                    <p className="text-[11px] text-text-secondary">{allStandards.find(s => s.code === selectedStd)?.text}</p>
+                  </div>
+                  <button onClick={saveQuickCheck} disabled={saving || Object.keys(marks).length === 0}
+                    className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
+                    {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save ({Object.keys(marks).length})
+                  </button>
+                </div>
+                <div className="p-3 grid grid-cols-2 gap-2">
+                  {students.map(s => {
+                    const m = marks[s.id]
+                    return (
+                      <div key={s.id} className="flex items-center gap-2 bg-surface-alt/30 rounded-lg px-3 py-2">
+                        <span className="text-[12px] font-medium text-navy flex-1 truncate">{s.english_name}</span>
+                        <div className="flex gap-1">
+                          {QC_OPTIONS.map(opt => (
+                            <button key={opt.value} onClick={() => setMarks(p => ({ ...p, [s.id]: opt.value }))}
+                              className={`w-8 h-8 rounded-lg border text-[13px] font-bold transition-all ${m === opt.value ? `${opt.bg} ${opt.color} border-2` : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'}`}
+                              title={opt.label}>
+                              {opt.emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="px-4 py-2 border-t border-border bg-amber-50/40 text-[10px] text-amber-700">
+                  <Info size={10} className="inline mr-1" />Quick checks are formative evidence only -- they do NOT affect grades or the gradebook.
+                </div>
+              </div>
+
+              {/* History for this standard */}
+              {history.length > 0 && (
+                <div className="bg-surface border border-border rounded-xl overflow-hidden">
+                  <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
+                    <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Recent Quick Checks for {selectedStd}</p>
+                  </div>
+                  <div className="px-4 py-3 max-h-[180px] overflow-y-auto">
+                    {(() => {
+                      // Group by date
+                      const byDate: Record<string, Record<string, number>> = {}
+                      history.forEach((h: any) => {
+                        const d = new Date(h.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        if (!byDate[d]) byDate[d] = { got_it: 0, almost: 0, not_yet: 0 }
+                        byDate[d][h.mark as string] = (byDate[d][h.mark as string] || 0) + 1
+                      })
+                      return Object.entries(byDate).map(([date, counts]) => (
+                        <div key={date} className="flex items-center gap-3 py-1.5">
+                          <span className="text-[11px] text-text-tertiary w-16">{date}</span>
+                          <span className="text-[10px] text-green-600 font-medium">{counts.got_it || 0} got it</span>
+                          <span className="text-[10px] text-amber-600 font-medium">{counts.almost || 0} almost</span>
+                          <span className="text-[10px] text-red-600 font-medium">{counts.not_yet || 0} not yet</span>
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ClusterTracker() {
   const { currentTeacher, showToast } = useApp()
   const [cls, setCls] = useState<EnglishClass>((currentTeacher?.english_class as EnglishClass) || 'Lily')
@@ -248,6 +518,7 @@ function ClusterTracker() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [stdAverages, setStdAverages] = useState<Record<string, number>>({})
+  const [interventions, setInterventions] = useState<Record<string, InterventionStatus>>({})
   const [showThresholdEdit, setShowThresholdEdit] = useState(false)
 
   // Default mastery thresholds per class tier
@@ -289,8 +560,9 @@ function ClusterTracker() {
     ;(async () => {
       const { data } = await supabase.from('class_standard_status').select('*').eq('english_class', cls).eq('student_grade', gr)
       const m: Record<string, StdStatus> = {}
-      if (data) data.forEach((r: any) => { m[r.standard_code] = r.status })
-      setStatuses(m); setLoading(false)
+      const iv: Record<string, InterventionStatus> = {}
+      if (data) data.forEach((r: any) => { m[r.standard_code] = r.status; if (r.intervention_status) iv[r.standard_code] = r.intervention_status })
+      setStatuses(m); setInterventions(iv); setLoading(false)
     })()
   }, [cls, gr])
 
@@ -359,6 +631,35 @@ function ClusterTracker() {
       setStdAverages(result)
     })()
   }, [cls, gr])
+
+  // Auto-apply mastery suggestions when grade data loads
+  const [autoSuggested, setAutoSuggested] = useState(false)
+  useEffect(() => {
+    if (loading || autoSuggested || Object.keys(stdAverages).length === 0) return
+    const th = thresholds[cls] || { mastered: 80, approaching: 50 }
+    const newStatuses = { ...statuses }
+    let changed = 0
+    Object.entries(stdAverages).forEach(([code, avg]) => {
+      const current = statuses[code] || 'not_started'
+      const suggest: StdStatus = avg >= th.mastered ? 'mastered' : avg >= th.approaching ? 'in_progress' : 'not_started'
+      if (suggest !== current) { newStatuses[code] = suggest; changed++ }
+    })
+    if (changed > 0) {
+      setStatuses(newStatuses)
+      // Persist silently in background
+      const rows = Object.entries(newStatuses)
+        .filter(([c]) => stdAverages[c] != null)
+        .map(([code, status]) => ({
+          english_class: cls, student_grade: gr, standard_code: code, status,
+          updated_by: currentTeacher?.id, updated_at: new Date().toISOString()
+        }))
+      supabase.from('class_standard_status').upsert(rows, { onConflict: 'english_class,student_grade,standard_code' })
+    }
+    setAutoSuggested(true)
+  }, [loading, stdAverages, autoSuggested])
+
+  // Reset auto-suggest flag when class/grade changes
+  useEffect(() => { setAutoSuggested(false) }, [cls, gr])
 
   const total = allClusters.length
   const mastered = allClusters.filter(c => getClusterStatus(c.codes) === 'mastered').length
@@ -432,7 +733,7 @@ function ClusterTracker() {
                 const avg = total / count
                 const current = statuses[code] || 'not_started'
                 const suggest: StdStatus = avg >= t.mastered ? 'mastered' : avg >= t.approaching ? 'in_progress' : 'not_started'
-                if (suggest !== current && (suggest === 'mastered' || (suggest === 'in_progress' && current === 'not_started'))) {
+                if (suggest !== current) {
                   newStatuses[code] = suggest; suggested++
                 }
               })
@@ -469,7 +770,7 @@ function ClusterTracker() {
               const avg = total / count
               const current = statuses[code] || 'not_started'
               const suggest: StdStatus = avg >= t.mastered ? 'mastered' : avg >= t.approaching ? 'in_progress' : 'not_started'
-              if (suggest !== current && (suggest === 'mastered' || (suggest === 'in_progress' && current === 'not_started'))) {
+              if (suggest !== current) {
                 newStatuses[code] = suggest; suggested++
               }
             })
@@ -574,17 +875,39 @@ function ClusterTracker() {
                                 }} className="mt-0.5 flex-shrink-0">
                                   <SI size={16} className={sc.color} fill={ss === 'mastered' ? '#22c55e' : ss === 'in_progress' ? '#3b82f6' : 'none'} />
                                 </button>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-bold text-text-secondary">{std.code}</span>
-                                    {stdAverages[std.code] != null && (
-                                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${stdAverages[std.code] >= t.mastered ? 'bg-green-100 text-green-700' : stdAverages[std.code] >= t.approaching ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
-                                        avg {Math.round(stdAverages[std.code])}%
-                                      </span>
-                                    )}
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[11px] font-bold text-text-secondary">{std.code}</span>
+                                      {stdAverages[std.code] != null && (
+                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${stdAverages[std.code] >= t.mastered ? 'bg-green-100 text-green-700' : stdAverages[std.code] >= t.approaching ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                          avg {Math.round(stdAverages[std.code])}%
+                                        </span>
+                                      )}
+                                      {/* Intervention status for low-mastery standards */}
+                                      {ss !== 'mastered' && (
+                                        <select
+                                          value={interventions[std.code] || 'none'}
+                                          onChange={async (e) => {
+                                            const val = e.target.value as InterventionStatus
+                                            setInterventions(p => ({ ...p, [std.code]: val }))
+                                            await supabase.from('class_standard_status').upsert({
+                                              english_class: cls, student_grade: gr, standard_code: std.code,
+                                              status: ss, intervention_status: val === 'none' ? null : val,
+                                              updated_by: currentTeacher?.id, updated_at: new Date().toISOString()
+                                            }, { onConflict: 'english_class,student_grade,standard_code' })
+                                          }}
+                                          className={`text-[9px] font-medium px-1.5 py-0.5 rounded border-0 outline-none cursor-pointer ${
+                                            INTERVENTION_OPTIONS.find(o => o.value === (interventions[std.code] || 'none'))?.color || 'text-gray-400 bg-transparent'
+                                          }`}
+                                        >
+                                          {INTERVENTION_OPTIONS.map(o => (
+                                            <option key={o.value} value={o.value}>{o.label}</option>
+                                          ))}
+                                        </select>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-text-primary leading-snug">{std.text}</p>
                                   </div>
-                                  <p className="text-[11px] text-text-primary leading-snug">{std.text}</p>
-                                </div>
                               </div>
                             )
                           })}

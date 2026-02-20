@@ -5,8 +5,8 @@ import { useApp } from '@/lib/context'
 import { useStudents, useSemesters } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
-import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, Plus, Camera, BarChart3 } from 'lucide-react'
+import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
+import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
 
@@ -85,7 +85,7 @@ interface ReportData {
 export default function ReportsView() {
   const { t, language, currentTeacher } = useApp()
   const lang = language as LangKey
-  const [mode, setMode] = useState<'individual' | 'progress' | 'class'>('individual')
+  const [mode, setMode] = useState<'individual' | 'progress' | 'class' | 'review'>('individual')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
@@ -120,6 +120,7 @@ export default function ReportsView() {
           <button onClick={() => setMode('individual')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'individual' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><User size={14} /> Report Card</button>
           <button onClick={() => setMode('progress')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'progress' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><BarChart3 size={14} /> Progress Report</button>
           <button onClick={() => setMode('class')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'class' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><Users size={14} /> Class Summary</button>
+          <button onClick={() => setMode('review')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'review' ? 'bg-amber-600 text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><ClipboardCheck size={14} /> Review & Approve</button>
         </div>
       </div>
 
@@ -182,6 +183,9 @@ export default function ReportsView() {
         )}
         {mode === 'class' && selectedSemesterId && selectedSemester && (
           <ClassSummary students={students} semesterId={selectedSemesterId} semester={selectedSemester} lang={lang} selectedClass={selectedClass} selectedGrade={selectedGrade} />
+        )}
+        {mode === 'review' && selectedSemesterId && (
+          <ReviewApproval students={students} semesterId={selectedSemesterId} selectedClass={selectedClass} selectedGrade={selectedGrade} />
         )}
       </div>
     </div>
@@ -328,6 +332,16 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [commentTone, setCommentTone] = useState<'Balanced' | 'Highlight growth' | 'Constructive'>('Balanced')
   const [editingGrades, setEditingGrades] = useState(false)
   const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
+  const [reviewStatus, setReviewStatus] = useState<{ partner_approved: boolean; admin_approved: boolean } | null>(null)
+
+  // Load review status
+  useEffect(() => {
+    ;(async () => {
+      const { data: rev } = await supabase.from('report_card_reviews').select('partner_approved, admin_approved')
+        .eq('student_id', studentId).eq('semester_id', semesterId).single()
+      setReviewStatus(rev || { partner_approved: false, admin_approved: false })
+    })()
+  }, [studentId, semesterId])
 
   const generateTemplateComment = useCallback(async () => {
     if (!data || !studentId) return
@@ -413,6 +427,23 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       }
     }
 
+    // Student goals context
+    const { data: goalsData } = await supabase.from('student_goals').select('goal_text, status, target_metric, target_value, baseline_value, current_value')
+      .eq('student_id', studentId).eq('status', 'active').limit(3)
+    if (goalsData && goalsData.length > 0) {
+      const achieved = goalsData.filter((g: any) => g.status === 'achieved')
+      const active = goalsData.filter((g: any) => g.status === 'active')
+      if (achieved.length > 0) {
+        parts.push(`This semester, ${name} achieved ${achieved.length === 1 ? 'a key learning goal' : `${achieved.length} learning goals`}, including: "${achieved[0].goal_text}."`)
+      }
+      if (active.length > 0) {
+        const goalSummary = active[0].target_value && active[0].baseline_value
+          ? `"${active[0].goal_text}" (from ${active[0].baseline_value} toward ${active[0].target_value})`
+          : `"${active[0].goal_text}"`
+        parts.push(`${name} is currently working toward ${goalSummary}.`)
+      }
+    }
+
     // Closing
     if (commentTone === 'Highlight growth' && d.prevOverall != null && d.overallGrade != null && d.overallGrade > d.prevOverall) {
       parts.push(`Overall, ${name} has improved from ${d.prevOverall.toFixed(1)}% to ${d.overallGrade.toFixed(1)}% since last semester, which reflects real effort and growth.`)
@@ -447,16 +478,17 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         for (const s of students) {
           for (const domain of DOMAINS) {
             const domAssessments = assessments.filter((a: any) => a.domain === domain)
-            const scores = domAssessments.map((a: any) => {
+            const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
+            domAssessments.forEach((a: any) => {
               const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
-              if (!g || g.score == null || g.is_exempt) return null
-              return (g.score / a.max_score) * 100
-            }).filter((x: any) => x !== null) as number[]
-            if (scores.length > 0) {
-              const avg = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10
+              if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
+              items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
+            })
+            const avg = calcWeightedAvg(items, Number(s.grade || 3))
+            if (avg != null) {
               await supabase.from('semester_grades').upsert({
                 student_id: s.id, semester_id: semesterId, domain,
-                calculated_grade: avg, english_class: s.english_class, grade: s.grade,
+                calculated_grade: Math.round(avg * 10) / 10, english_class: s.english_class, grade: s.grade,
               }, { onConflict: 'student_id,semester_id,domain' })
             }
           }
@@ -645,7 +677,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Words Per Minute</div><div style="font-size:20px;font-weight:800;color:#1e3a5f">${r.cwpm != null ? Math.round(r.cwpm) : '—'}</div></div>
         <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Reading Accuracy</div><div style="font-size:20px;font-weight:800;color:${r.accuracy_rate != null ? (r.accuracy_rate >= 95 ? '#16a34a' : r.accuracy_rate >= 90 ? '#d97706' : '#dc2626') : '#94a3b8'}">${r.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '—'}</div></div>
-        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Reading Level</div><div style="font-size:16px;font-weight:700;color:#475569">${r.reading_level || r.passage_level || '—'}</div></div>
+        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Lexile</div><div style="font-size:16px;font-weight:700;color:#475569">${r.reading_level || r.passage_level || '—'}</div></div>
         <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Fluency Rating</div><div style="font-size:16px;font-weight:700;color:#475569">${r.naep_fluency ? r.naep_fluency + ' of 4' : '—'}</div></div>
       </div>` : '<div style="background:#f8f5f1;border:1px solid #e8e0d8;border-radius:8px;padding:14px;text-align:center;font-size:11px;color:#94a3b8">No reading assessments recorded yet.</div>'
 
@@ -756,7 +788,30 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
   return (
     <div className="space-y-5">
-      <div className="flex justify-end"><button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt"><Printer size={15} /> Print Report Card</button></div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {reviewStatus && (
+            <>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium ${reviewStatus.partner_approved ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-text-tertiary'}`}>
+                {reviewStatus.partner_approved ? <CheckCircle2 size={11} /> : <Circle size={11} />} Partner
+              </span>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium ${reviewStatus.admin_approved ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-text-tertiary'}`}>
+                {reviewStatus.admin_approved ? <CheckCircle2 size={11} /> : <Circle size={11} />} Admin
+              </span>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {reviewStatus && !reviewStatus.partner_approved && !reviewStatus.admin_approved && (
+            <span className="text-[10px] text-amber-600">Needs partner + admin approval to print</span>
+          )}
+          <button onClick={handlePrint}
+            disabled={reviewStatus != null && (!reviewStatus.partner_approved || !reviewStatus.admin_approved)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt disabled:opacity-40 disabled:cursor-not-allowed">
+            <Printer size={15} /> Print Report Card
+          </button>
+        </div>
+      </div>
 
       {/* Card container — warm paper bg */}
       <div className="rounded-xl overflow-hidden shadow-sm" style={{ background: '#f5f0eb' }}>
@@ -908,7 +963,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                       </div>
                     </div>
                     <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
-                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Reading Level</div>
+                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Lexile</div>
                       <div className="text-[18px] font-bold text-[#475569]">{d.latestReading.reading_level || d.latestReading.passage_level || '—'}</div>
                     </div>
                     <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
@@ -1184,12 +1239,13 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
       const domainGrades: Record<string, number | null> = {}
       for (const dom of DOMAINS) {
         const da = (assessments || []).filter((a: any) => a.domain === dom)
-        const pcts = da.map((a: any) => {
+        const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
+        da.forEach((a: any) => {
           const g = (grades || []).find((g: any) => g.assessment_id === a.id)
-          if (!g || g.score == null || g.is_exempt) return null
-          return (g.score / a.max_score) * 100
-        }).filter((p: any): p is number => p != null)
-        domainGrades[dom] = pcts.length > 0 ? pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length : null
+          if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
+          items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
+        })
+        domainGrades[dom] = calcWeightedAvg(items, Number(student.grade || 3))
       }
       const validDomains = Object.values(domainGrades).filter((v): v is number => v != null)
       const overallGrade = validDomains.length > 0 ? validDomains.reduce((a, b) => a + b, 0) / validDomains.length : null
@@ -1284,12 +1340,13 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       const domainGrades: Record<string, number | null> = {}
       for (const dom of DOMAINS) {
         const da = (assessments || []).filter((a: any) => a.domain === dom)
-        const pcts = da.map((a: any) => {
+        const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
+        da.forEach((a: any) => {
           const g = (grades || []).find((g: any) => g.assessment_id === a.id)
-          if (!g || g.score == null || g.is_exempt) return null
-          return (g.score / a.max_score) * 100
-        }).filter((p: any): p is number => p != null)
-        domainGrades[dom] = pcts.length > 0 ? pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length : null
+          if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
+          items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
+        })
+        domainGrades[dom] = calcWeightedAvg(items, Number(student.grade || 3))
       }
       const validDomains = Object.values(domainGrades).filter((v): v is number => v != null)
       const overallGrade = validDomains.length > 0 ? validDomains.reduce((a, b) => a + b, 0) / validDomains.length : null
@@ -1434,6 +1491,207 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
   )
 }
 
+// ─── Review & Approval Workflow ─────────────────────────────────────
+
+interface ReviewStatus {
+  student_id: string
+  semester_id: string
+  partner_approved: boolean
+  partner_teacher_id: string | null
+  partner_approved_at: string | null
+  admin_approved: boolean
+  admin_approved_at: string | null
+  notes: string
+}
+
+function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: {
+  students: any[]; semesterId: string; selectedClass: EnglishClass; selectedGrade: Grade
+}) {
+  const { showToast, currentTeacher } = useApp()
+  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
+  const [reviews, setReviews] = useState<Record<string, ReviewStatus>>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState<string | null>(null)
+
+  useEffect(() => {
+    ;(async () => {
+      setLoading(true)
+      const { data } = await supabase.from('report_card_reviews').select('*')
+        .eq('semester_id', semesterId).in('student_id', students.map(s => s.id))
+      const map: Record<string, ReviewStatus> = {}
+      data?.forEach((r: any) => { map[r.student_id] = r })
+      setReviews(map)
+      setLoading(false)
+    })()
+  }, [semesterId, students])
+
+  const toggleApproval = async (studentId: string, field: 'partner_approved' | 'admin_approved') => {
+    if (field === 'admin_approved' && !isAdmin) return
+    setSaving(studentId)
+    const existing = reviews[studentId]
+    const newVal = !(existing?.[field])
+    const row: any = {
+      student_id: studentId, semester_id: semesterId,
+      [field]: newVal,
+      ...(field === 'partner_approved' ? {
+        partner_teacher_id: newVal ? currentTeacher?.id : null,
+        partner_approved_at: newVal ? new Date().toISOString() : null,
+      } : {
+        admin_approved_at: newVal ? new Date().toISOString() : null,
+      }),
+    }
+    const { data, error } = await supabase.from('report_card_reviews').upsert(row, {
+      onConflict: 'student_id,semester_id'
+    }).select().single()
+    if (error) {
+      showToast(`Error: ${error.message}`)
+    } else {
+      setReviews(prev => ({ ...prev, [studentId]: { ...prev[studentId], ...data } }))
+      showToast(newVal ? 'Approved' : 'Approval removed')
+    }
+    setSaving(null)
+  }
+
+  const approveAll = async (field: 'partner_approved' | 'admin_approved') => {
+    if (field === 'admin_approved' && !isAdmin) return
+    setSaving('all')
+    let errors = 0
+    for (const s of students) {
+      const existing = reviews[s.id]
+      if (existing?.[field]) continue // already approved
+      const row: any = {
+        student_id: s.id, semester_id: semesterId,
+        [field]: true,
+        ...(field === 'partner_approved' ? {
+          partner_teacher_id: currentTeacher?.id,
+          partner_approved_at: new Date().toISOString(),
+        } : {
+          admin_approved_at: new Date().toISOString(),
+        }),
+      }
+      const { error } = await supabase.from('report_card_reviews').upsert(row, { onConflict: 'student_id,semester_id' }).select().single()
+      if (!error) {
+        setReviews(prev => ({ ...prev, [s.id]: { ...prev[s.id], ...row } }))
+      } else errors++
+    }
+    setSaving(null)
+    showToast(errors > 0 ? `Approved with ${errors} error(s)` : `All ${students.length} students approved`)
+  }
+
+  if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+
+  const partnerCount = students.filter(s => reviews[s.id]?.partner_approved).length
+  const adminCount = students.filter(s => reviews[s.id]?.admin_approved).length
+  const fullyApproved = students.filter(s => reviews[s.id]?.partner_approved && reviews[s.id]?.admin_approved).length
+
+  return (
+    <div className="space-y-4">
+      {/* Summary bar */}
+      <div className="bg-surface border border-border rounded-xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-display text-lg font-semibold text-navy">Report Card Review</h3>
+            <p className="text-[12px] text-text-secondary">{selectedClass} -- Grade {selectedGrade} -- {students.length} students</p>
+          </div>
+          <div className="flex gap-4 text-center">
+            <div>
+              <p className="text-[22px] font-bold text-blue-600">{partnerCount}/{students.length}</p>
+              <p className="text-[9px] uppercase tracking-wider text-text-tertiary">Partner Reviewed</p>
+            </div>
+            <div>
+              <p className="text-[22px] font-bold text-green-600">{adminCount}/{students.length}</p>
+              <p className="text-[9px] uppercase tracking-wider text-text-tertiary">Admin Approved</p>
+            </div>
+            <div>
+              <p className="text-[22px] font-bold text-navy">{fullyApproved}/{students.length}</p>
+              <p className="text-[9px] uppercase tracking-wider text-text-tertiary">Ready to Print</p>
+            </div>
+          </div>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="h-2 rounded-full bg-green-500 transition-all" style={{ width: `${students.length > 0 ? (fullyApproved / students.length) * 100 : 0}%` }} />
+        </div>
+      </div>
+
+      {/* Bulk approve buttons */}
+      <div className="flex gap-2">
+        <button onClick={() => approveAll('partner_approved')} disabled={saving === 'all'}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40">
+          <CheckCircle2 size={14} /> Approve All as Partner
+        </button>
+        {isAdmin && (
+          <button onClick={() => approveAll('admin_approved')} disabled={saving === 'all'}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
+            <CheckCircle2 size={14} /> Approve All as Admin
+          </button>
+        )}
+      </div>
+
+      {/* Student list */}
+      <div className="bg-surface border border-border rounded-xl overflow-hidden">
+        <div className="px-4 py-2.5 bg-surface-alt border-b border-border grid grid-cols-[1fr,auto,auto,auto] items-center gap-4">
+          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Student</span>
+          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-32 text-center">Partner Review</span>
+          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-32 text-center">Admin Approval</span>
+          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-24 text-center">Status</span>
+        </div>
+        {students.map(student => {
+          const r = reviews[student.id]
+          const partnerOk = r?.partner_approved
+          const adminOk = r?.admin_approved
+          const ready = partnerOk && adminOk
+
+          return (
+            <div key={student.id} className={`px-4 py-3 border-b border-border last:border-0 grid grid-cols-[1fr,auto,auto,auto] items-center gap-4 ${ready ? 'bg-green-50/30' : ''}`}>
+              <div>
+                <span className="text-[13px] font-medium text-navy">{student.english_name}</span>
+                <span className="text-[11px] text-text-tertiary ml-2">{student.korean_name}</span>
+              </div>
+              <div className="w-32 flex justify-center">
+                <button onClick={() => toggleApproval(student.id, 'partner_approved')}
+                  disabled={saving === student.id}
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                    partnerOk
+                      ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                      : 'bg-surface-alt text-text-tertiary border border-border hover:border-blue-300'
+                  }`}>
+                  {partnerOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                  {partnerOk ? 'Reviewed' : 'Review'}
+                </button>
+              </div>
+              <div className="w-32 flex justify-center">
+                {isAdmin ? (
+                  <button onClick={() => toggleApproval(student.id, 'admin_approved')}
+                    disabled={saving === student.id}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                      adminOk
+                        ? 'bg-green-100 text-green-700 border border-green-300'
+                        : 'bg-surface-alt text-text-tertiary border border-border hover:border-green-300'
+                    }`}>
+                    {adminOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                    {adminOk ? 'Approved' : 'Approve'}
+                  </button>
+                ) : (
+                  <span className={`text-[11px] font-medium ${adminOk ? 'text-green-600' : 'text-text-tertiary'}`}>
+                    {adminOk ? 'Approved' : 'Pending'}
+                  </span>
+                )}
+              </div>
+              <div className="w-24 flex justify-center">
+                {ready ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-600"><CheckCircle2 size={13} /> Ready</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-amber-600"><Circle size={13} /> Pending</span>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Class Summary ──────────────────────────────────────────────────
 
 function ClassSummary({ students, semesterId, semester, lang, selectedClass, selectedGrade }: {
@@ -1459,14 +1717,15 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
           let totalSum = 0, totalCount = 0
           DOMAINS.forEach((domain) => {
             const domAssessments = (assessments || []).filter((a: any) => a.domain === domain)
-            const scores = domAssessments.map((a: any) => {
+            const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
+            domAssessments.forEach((a: any) => {
               const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
-              if (!g || g.score == null || g.is_exempt) return null
-              return (g.score / a.max_score) * 100
-            }).filter((x: any) => x !== null) as number[]
-            if (scores.length > 0) {
-              const avg = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length * 10) / 10
-              domainAvgs[domain] = avg; totalSum += avg; totalCount++
+              if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
+              items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
+            })
+            const avg = calcWeightedAvg(items, Number(selectedGrade))
+            if (avg != null) {
+              domainAvgs[domain] = Math.round(avg * 10) / 10; totalSum += domainAvgs[domain]!; totalCount++
             } else { domainAvgs[domain] = null }
           })
           const overall = totalCount > 0 ? Math.round((totalSum / totalCount) * 10) / 10 : null
@@ -1499,16 +1758,37 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
 
   const handlePrint = () => {
     const rows = summaries.map((s: any, i: number) =>
-      `<tr><td style="padding:5px 8px;border:1px solid #bbb">${i + 1}</td>
-       <td style="padding:5px 8px;border:1px solid #bbb">${s.student.english_name} (${s.student.korean_name})</td>
-       ${DOMAINS.map((d) => `<td style="padding:5px 8px;border:1px solid #bbb;text-align:center;font-weight:600">${s.domainAvgs[d] != null ? s.domainAvgs[d].toFixed(1) : '\u2014'}</td>`).join('')}
-       <td style="padding:5px 8px;border:1px solid #bbb;text-align:center;font-weight:700">${s.overall != null ? s.overall.toFixed(1) : '\u2014'}</td>
-       <td style="padding:5px 8px;border:1px solid #bbb;text-align:center;font-weight:700;color:${s.letter !== '\u2014' ? letterColor(s.letter) : '#999'}">${s.letter}</td></tr>`
+      `<tr><td style="padding:6px 10px;color:#94a3b8">${i + 1}</td>
+       <td style="padding:6px 10px;font-weight:500;color:#1e3a5f">${s.student.english_name} <span style="color:#94a3b8;font-size:10px">${s.student.korean_name}</span></td>
+       ${DOMAINS.map((d) => `<td style="padding:6px 10px;text-align:center;font-weight:600;color:${s.domainAvgs[d] != null ? (s.domainAvgs[d] >= 80 ? '#16a34a' : s.domainAvgs[d] >= 60 ? '#1e3a5f' : '#dc2626') : '#94a3b8'}">${s.domainAvgs[d] != null ? s.domainAvgs[d].toFixed(1) : '\u2014'}</td>`).join('')}
+       <td style="padding:6px 10px;text-align:center;font-weight:700;color:#1e3a5f">${s.overall != null ? s.overall.toFixed(1) : '\u2014'}</td>
+       <td style="padding:6px 10px;text-align:center;font-weight:700;color:${s.letter !== '\u2014' ? letterColor(s.letter) : '#999'}">${s.letter}</td></tr>`
     ).join('')
     const pw = window.open('', '_blank'); if (!pw) return
-    pw.document.write(`<html><head><title>Class Summary</title><style>body{font-family:sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:11px}th{background:#f0f0f0;padding:6px 8px;border:1px solid #bbb;font-size:10px}</style></head><body>
-    <h2 style="color:#1e3a5f">${selectedClass} \u2014 Grade ${selectedGrade} \u00b7 Class Summary</h2><p style="color:#666">${summaries.length} students</p>
-    <table><thead><tr><th>#</th><th>Student</th>${DOMAINS.map((d) => `<th>${DOMAIN_PRINT[d]}</th>`).join('')}<th>Overall</th><th>Grade</th></tr></thead><tbody>${rows}</tbody></table></body></html>`)
+    pw.document.write(`<html><head><title>Class Summary</title><style>
+    body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f5f0eb}
+    .page{max-width:900px;margin:20px auto;overflow:hidden;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
+    table{border-collapse:collapse;width:100%;font-size:11px}
+    th{background:#f0eae3;padding:8px 10px;border-bottom:2px solid #d4c8b8;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#1e3a5f}
+    td{padding:6px 10px;border-bottom:1px solid #e8e0d8}
+    tr:nth-child(even) td{background:#faf8f5}
+    @media print{@page{size:A4 landscape;margin:8mm}body{background:white}.page{margin:0;box-shadow:none;border-radius:0}}
+    </style></head><body><div class="page">
+    <div style="background:#1e3a5f;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;opacity:0.6">Class Summary</p>
+        <p style="font-size:20px;font-weight:700;font-family:Georgia,serif;margin-top:4px">${selectedClass} -- Grade ${selectedGrade}</p>
+      </div>
+      <div style="text-align:right">
+        <p style="font-size:12px;opacity:0.7">${summaries.length} students</p>
+        <p style="font-size:11px;opacity:0.5">${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+      </div>
+    </div>
+    <div style="background:white;padding:16px">
+    <table><thead><tr><th style="text-align:left">#</th><th style="text-align:left">Student</th>${DOMAINS.map((d) => `<th style="text-align:center">${DOMAIN_PRINT[d]}</th>`).join('')}<th style="text-align:center">Overall</th><th style="text-align:center">Grade</th></tr></thead><tbody>${rows}</tbody></table>
+    </div>
+    <div style="background:#f8f5f1;padding:10px 24px;text-align:center;border-top:1px solid #e8e0d8;font-size:9px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School \u00b7 English Program</div>
+    </div></body></html>`)
     pw.document.close(); pw.print()
   }
 

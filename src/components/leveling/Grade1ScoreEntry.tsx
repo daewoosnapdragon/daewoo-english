@@ -205,6 +205,8 @@ interface G1Scores {
   // Teacher
   teacher_impression?: number | null
   teacher_notes?: string
+  // Wave 1 class impression (teacher's gut feeling after oral test)
+  wave1_class_impression?: string | null
 }
 
 function calculateG1Composite(scores: G1Scores): {
@@ -212,6 +214,7 @@ function calculateG1Composite(scores: G1Scores): {
   oralScore: number  // 0-100 normalized
   teacherPct: number
   composite: number
+  wave: 1 | 2
   passageLevel: string
   cwpm: number | null
   weightedCwpm: number | null
@@ -306,8 +309,26 @@ function calculateG1Composite(scores: G1Scores): {
   // Teacher impression (1-5 -> 0-100)
   const teacherPct = scores.teacher_impression ? ((scores.teacher_impression - 1) / 4) * 100 : 50
 
-  // Final composite: 50% oral, 35% written, 15% teacher
-  const composite = oralScore * 0.50 + writtenPct * 0.35 + teacherPct * 0.15
+  // Wave-aware composite weighting:
+  // Detect which wave we're in based on available data
+  const hasWrittenData = wScores.length > 0 && writtenRaw > 0
+  const hasOralData = scores.o_passage_level != null
+
+  let composite: number
+  let wave: 1 | 2
+
+  if (!hasWrittenData) {
+    // Wave 1: Oral only -- 70% oral + 30% teacher impression
+    composite = oralScore * 0.70 + teacherPct * 0.30
+    wave = 1
+  } else {
+    // Wave 2: Both available -- 45% written + 30% oral + 25% placeholder for teacher ratings
+    // Teacher ratings come from the anecdotal phase (separate DB table), not raw_scores.
+    // For the score preview, use 45/30/25 split with teacher impression standing in
+    // until real anecdotal ratings are factored in during the meeting phase.
+    composite = writtenPct * 0.45 + oralScore * 0.30 + teacherPct * 0.25
+    wave = 2
+  }
 
   // ── Standards baseline ──
   const standardsBaseline = STANDARDS_BASELINE.map(std => {
@@ -336,7 +357,7 @@ function calculateG1Composite(scores: G1Scores): {
   const suggestedClass = suggestG1Class(passageLevel, composite, writtenRaw, scores, cwpm)
 
   return {
-    writtenPct, oralScore, teacherPct, composite,
+    writtenPct, oralScore, teacherPct, composite, wave,
     passageLevel, cwpm, weightedCwpm,
     compTotal, compMax, standardsBaseline, suggestedClass,
   }
@@ -408,7 +429,8 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
   const [scores, setScores] = useState<Record<string, G1Scores>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<'written' | 'oral' | 'results'>('written')
+  const [activeTab, setActiveTab] = useState<'written' | 'oral' | 'results'>('oral')
+  const [activeWave, setActiveWave] = useState<1 | 2>(1)
   const [selectedStudentIdx, setSelectedStudentIdx] = useState(0)
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'complete'>('all')
 
@@ -418,7 +440,7 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
       const [{ data: studs }, { data: existing }] = await Promise.all([
         supabase.from('students').select('*')
           .eq('grade', levelTest.grade).eq('is_active', true)
-          .neq('english_class', 'Sample').neq('english_class', 'Trial')
+          
           .order('english_name'),
         supabase.from('level_test_scores').select('*')
           .eq('level_test_id', levelTest.id),
@@ -504,25 +526,64 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
 
   return (
     <div className="animate-fade-in">
-      {/* Tab Bar */}
-      <div className="px-10 py-4 bg-surface border-b border-border">
-        <div className="flex items-center gap-2">
-          {[
-            { key: 'written' as const, icon: PenTool, label: 'Written Test', sub: `${completionStats.writtenDone}/${completionStats.total}` },
-            { key: 'oral' as const, icon: Mic, label: 'Oral Test', sub: `${completionStats.oralDone}/${completionStats.total}` },
-            { key: 'results' as const, icon: BarChart3, label: 'Results & Placement', sub: '' },
-          ].map(tab => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
-                activeTab === tab.key
-                  ? 'bg-navy text-white shadow-sm'
-                  : 'text-text-secondary hover:bg-surface-alt'
-              }`}>
-              <tab.icon size={15} />
-              {tab.label}
-              {tab.sub && <span className={`text-[10px] ml-1 ${activeTab === tab.key ? 'opacity-70' : 'text-text-tertiary'}`}>{tab.sub}</span>}
+      {/* Wave Selector */}
+      <div className="px-10 pt-4 bg-surface border-b border-border">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Testing Wave</span>
+          <div className="flex gap-1">
+            <button onClick={() => { setActiveWave(1); setActiveTab('oral') }}
+              className={`px-4 py-1.5 rounded-lg text-[12px] font-medium transition-all ${activeWave === 1 ? 'bg-blue-600 text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+              Wave 1: Oral (First Week)
             </button>
-          ))}
+            <button onClick={() => { setActiveWave(2); setActiveTab('written') }}
+              className={`px-4 py-1.5 rounded-lg text-[12px] font-medium transition-all ${activeWave === 2 ? 'bg-blue-600 text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+              Wave 2: Written (End of March)
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 pb-3">
+          {activeWave === 1 ? (
+            // Wave 1 tabs: Oral Test + Class Impression
+            <>
+              {[
+                { key: 'oral' as const, icon: Mic, label: 'Oral Reading', sub: `${completionStats.oralDone}/${completionStats.total}` },
+                { key: 'results' as const, icon: BarChart3, label: 'Wave 1 Results', sub: '' },
+              ].map(tab => (
+                <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
+                    activeTab === tab.key ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'
+                  }`}>
+                  <tab.icon size={15} />
+                  {tab.label}
+                  {tab.sub && <span className={`text-[10px] ml-1 ${activeTab === tab.key ? 'opacity-70' : 'text-text-tertiary'}`}>{tab.sub}</span>}
+                </button>
+              ))}
+              <div className="ml-auto text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+                Wave 1 uses teacher class impression instead of scored ratings (students are brand new)
+              </div>
+            </>
+          ) : (
+            // Wave 2 tabs: Written Test + Oral (carry over) + Results
+            <>
+              {[
+                { key: 'written' as const, icon: PenTool, label: 'Written Test', sub: `${completionStats.writtenDone}/${completionStats.total}` },
+                { key: 'oral' as const, icon: Mic, label: 'Oral Test', sub: `${completionStats.oralDone}/${completionStats.total}` },
+                { key: 'results' as const, icon: BarChart3, label: 'Combined Results', sub: '' },
+              ].map(tab => (
+                <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
+                    activeTab === tab.key ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'
+                  }`}>
+                  <tab.icon size={15} />
+                  {tab.label}
+                  {tab.sub && <span className={`text-[10px] ml-1 ${activeTab === tab.key ? 'opacity-70' : 'text-text-tertiary'}`}>{tab.sub}</span>}
+                </button>
+              ))}
+              <div className="ml-auto text-[10px] text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
+                Wave 2 uses full teacher ratings (in Teacher Ratings phase)
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -726,6 +787,11 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
     return !!(s.o_passage_level || s.o_alpha_names != null)
   }
 
+  const getClassImpression = (sid: string): string | null => {
+    const s = scores[sid] || {}
+    return s.wave1_class_impression || null
+  }
+
   return (
     <div className="flex h-[calc(100vh-220px)]">
       {/* Student List Sidebar */}
@@ -748,16 +814,23 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
                   ? <CheckCircle2 size={13} className="text-green-500 flex-shrink-0" />
                   : <Circle size={13} className="text-text-tertiary flex-shrink-0" />
                 }
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className={`text-[12px] truncate ${idx === selectedIdx ? 'font-semibold text-navy' : 'text-text-primary'}`}>
                     {s.english_name}
                   </p>
                   <p className="text-[10px] text-text-tertiary truncate">{s.korean_name}</p>
                 </div>
-                <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: classToColor(s.english_class as EnglishClass), color: classToTextColor(s.english_class as EnglishClass) }}>
-                  {s.english_class.slice(0, 3)}
-                </span>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {getClassImpression(s.id) && (
+                    <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200" title="Wave 1 impression">
+                      {getClassImpression(s.id)!.slice(0, 3)}
+                    </span>
+                  )}
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{ backgroundColor: classToColor(s.english_class as EnglishClass), color: classToTextColor(s.english_class as EnglishClass) }}>
+                    {s.english_class.slice(0, 3)}
+                  </span>
+                </div>
               </button>
             )
           })}
@@ -953,7 +1026,15 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
             <h4 className="text-[13px] font-semibold text-navy mb-1">
               Comprehension <span className="text-text-tertiary font-normal">/{config.compMax}</span>
             </h4>
-            <p className="text-[11px] text-text-secondary mb-4">Ask after reading. Passage turned over.</p>
+            <p className="text-[11px] text-text-secondary mb-2">Ask after reading. Passage turned over.</p>
+            <div className="bg-amber-50/50 border border-amber-100 rounded-lg px-3 py-2 mb-3">
+              <p className="text-[9px] text-amber-800 font-semibold mb-1">Scoring Guide</p>
+              <div className="flex gap-4 text-[9px] text-amber-700">
+                <span><span className="font-bold text-red-600">0</span> = No response, wrong, or Korean only</span>
+                <span><span className="font-bold text-amber-600">1</span> = Partial, vague, or incomplete in English</span>
+                <span><span className="font-bold text-green-600">2</span> = Correct and reasonably complete in English</span>
+              </div>
+            </div>
             <div className="space-y-3">
               {COMP_QUESTIONS[passageLevel]?.map((cq, qi) => (
                 <div key={qi} className="flex items-center gap-3">
@@ -967,8 +1048,10 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
                   <div className="flex gap-1 flex-shrink-0">
                     {[0, 1, 2].map(v => {
                       const key = `o_comp_q${qi + 1}` as keyof G1Scores
+                      const titles = ['No response / wrong / Korean only', 'Partial or incomplete answer', 'Correct and complete']
                       return (
                         <button key={v} onClick={() => updateScore(student.id, key, (sc as any)[key] === v ? null : v)}
+                          title={titles[v]}
                           className={`w-9 h-9 rounded-lg text-[12px] font-bold transition-all ${
                             (sc as any)[key] === v
                               ? v === 0 ? 'bg-red-500 text-white' : v === 1 ? 'bg-amber-500 text-white' : 'bg-green-500 text-white'
@@ -988,7 +1071,18 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
         {/* Section 5: Open Response */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[13px] font-semibold text-navy mb-1">Open Response (Picture Description)</h4>
-          <p className="text-[11px] text-text-secondary mb-3">"Look at this picture. Tell me about it. What do you see?"</p>
+          <p className="text-[11px] text-text-secondary mb-2">"Look at this picture. Tell me about it. What do you see?"</p>
+          <div className="bg-blue-50/50 border border-blue-100 rounded-lg px-3 py-2 mb-3">
+            <p className="text-[9px] text-blue-800 font-semibold mb-1">Scoring Guide</p>
+            <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-[9px] text-blue-700">
+              <span><span className="font-bold">0</span> = No response / Korean only</span>
+              <span><span className="font-bold">1</span> = Single English word</span>
+              <span><span className="font-bold">2</span> = 2-3 words or a phrase</span>
+              <span><span className="font-bold">3</span> = Simple sentence</span>
+              <span><span className="font-bold">4</span> = 2+ sentences with detail</span>
+              <span><span className="font-bold">5</span> = Fluent description with variety</span>
+            </div>
+          </div>
           <div className="flex gap-2">
             {[0, 1, 2, 3, 4, 5].map(v => (
               <button key={v} onClick={() => updateScore(student.id, 'o_open_response', sc.o_open_response === v ? null : v)}
@@ -1029,6 +1123,29 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
               )
             })}
           </div>
+
+          {/* Class Impression -- teacher's gut feeling on placement */}
+          <div className="bg-amber-50/50 border border-amber-200/60 rounded-lg p-3 mb-3">
+            <label className="text-[10px] font-semibold text-amber-800 uppercase tracking-wider block mb-1.5">Class Impression (Wave 1)</label>
+            <p className="text-[10px] text-amber-700 mb-2">Which class do you think this student belongs in based on this oral test?</p>
+            <div className="flex gap-1.5">
+              {ENGLISH_CLASSES.map(cls => (
+                <button key={cls} onClick={() => updateScore(student.id, 'wave1_class_impression', sc.wave1_class_impression === cls ? null : cls)}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                    sc.wave1_class_impression === cls
+                      ? 'text-white ring-2 ring-offset-1'
+                      : 'border border-border hover:opacity-80'
+                  }`}
+                  style={sc.wave1_class_impression === cls
+                    ? { backgroundColor: classToTextColor(cls), ringColor: classToTextColor(cls) }
+                    : { backgroundColor: classToColor(cls), color: classToTextColor(cls) }
+                  }>
+                  {cls}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <textarea
             value={sc.teacher_notes || ''}
             onChange={e => updateScore(student.id, 'teacher_notes', e.target.value)}
@@ -1057,6 +1174,9 @@ function StudentScorePreview({ scores, student }: { scores: G1Scores; student: S
     <div className="bg-gradient-to-br from-navy/5 to-navy/10 border border-navy/20 rounded-xl p-5 mb-4">
       <h4 className="text-[13px] font-semibold text-navy mb-3 flex items-center gap-2">
         <Eye size={14} /> Live Score Preview
+        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${metrics.wave === 1 ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+          {metrics.wave === 1 ? 'Wave 1: 70% oral + 30% impression' : 'Wave 2: 45% written + 30% oral + 25% ratings'}
+        </span>
       </h4>
       <div className="grid grid-cols-4 gap-3 mb-4">
         <div className="bg-surface rounded-lg p-3 text-center">
@@ -1152,7 +1272,7 @@ function ResultsView({ students, scores, levelTest }: {
   if (rows.length === 0) {
     return (
       <div className="px-10 py-12 text-center">
-        <p className="text-text-tertiary">No scores entered yet. Complete the Written and Oral tests first.</p>
+        <p className="text-text-tertiary">No scores entered yet. Complete the Oral test (Wave 1) or Written test (Wave 2) first.</p>
       </div>
     )
   }
@@ -1163,7 +1283,7 @@ function ResultsView({ students, scores, levelTest }: {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-display text-lg font-semibold text-navy">Results & Suggested Placement</h3>
-          <p className="text-[12px] text-text-secondary mt-1">{rows.length} students scored. Composite = 50% oral + 35% written + 15% teacher impression.</p>
+          <p className="text-[12px] text-text-secondary mt-1">{rows.length} students scored. Wave 1 = 70% oral + 30% teacher impression. Wave 2 = 45% written + 30% oral + 25% teacher ratings.</p>
         </div>
         <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
           className="px-3 py-2 border border-border rounded-lg text-[12px] bg-surface">
@@ -1203,6 +1323,7 @@ function ResultsView({ students, scores, levelTest }: {
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Oral</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-bold">Composite</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Suggested</th>
+              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-700 font-semibold">W1 Impression</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Standards</th>
             </tr>
           </thead>
@@ -1244,6 +1365,14 @@ function ResultsView({ students, scores, levelTest }: {
                       style={{ backgroundColor: classToColor(row.suggestedClass), color: classToTextColor(row.suggestedClass) }}>
                       {row.suggestedClass}
                     </span>
+                  </td>
+                  <td className="text-center px-3 py-2.5">
+                    {row.scores.wave1_class_impression ? (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border-2 border-amber-300"
+                        style={{ backgroundColor: classToColor(row.scores.wave1_class_impression as EnglishClass), color: classToTextColor(row.scores.wave1_class_impression as EnglishClass) }}>
+                        {row.scores.wave1_class_impression}
+                      </span>
+                    ) : <span className="text-text-tertiary text-[10px]">--</span>}
                   </td>
                   <td className="text-center px-3 py-2.5 relative group">
                     <span className={`text-[11px] font-medium cursor-help ${metCount >= 8 ? 'text-green-600' : metCount >= 5 ? 'text-amber-600' : 'text-red-600'}`}>

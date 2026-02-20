@@ -11,8 +11,7 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState('')
 
-  // Filter out old Sample teacher from login, but keep Trial for demo access
-  const loginTeachers = teachers.filter(t => t.english_class !== 'Sample')
+  const loginTeachers = teachers
 
   useEffect(() => {
     const savedId = sessionStorage.getItem('daewoo_teacher_id')

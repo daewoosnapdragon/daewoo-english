@@ -25,7 +25,7 @@ export default function AdminDashboard() {
       const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
       const [studentsRes, attendanceRes, recentAttRes, allAttRes, behaviorRes, behaviorDetailRes, readingRes, gradesRes, semRes] = await Promise.all([
-        supabase.from('students').select('id, english_name, korean_name, grade, english_class, is_active').eq('is_active', true).neq('english_class', 'Sample').neq('english_class', 'Trial'),
+        supabase.from('students').select('id, english_name, korean_name, grade, english_class, is_active').eq('is_active', true),
         supabase.from('attendance').select('student_id, status, date').eq('date', today),
         supabase.from('attendance').select('student_id, status, date').gte('date', thirtyDaysAgo),
         supabase.from('attendance').select('student_id, status, date').gte('date', ninetyDaysAgo),

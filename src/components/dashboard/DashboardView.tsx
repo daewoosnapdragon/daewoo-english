@@ -6,7 +6,7 @@ import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, Pencil, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX } from 'lucide-react'
+import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, Pencil, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX, Sparkles, Eye, BookOpen, CalendarDays, UserCheck } from 'lucide-react'
 
 const EVENT_TYPES = [
   { value: 'day_off', label: 'Day Off', color: '#22C55E', bg: 'bg-green-100 text-green-800' },
@@ -71,13 +71,22 @@ export default function DashboardView() {
         </div>
       </div>
       <div className="px-10 py-6">
-        <TodayAtGlance />
-        <TodaysPlanPreview />
-        <QuickActions />
-        <StudentAlerts />
-        {isAdmin && <AdminAlertPanel />}
-        <SharedCalendar />
-        {isAdmin && <ClassOverviewTable />}
+        <div className="grid grid-cols-3 gap-6">
+          {/* ─── Main Column (2/3) ─── */}
+          <div className="col-span-2 space-y-5">
+            <WeeklyInsight />
+            <TodaysPlanPreview />
+            <NeedsAttentionWatchlist />
+            <QuickActions />
+            {isAdmin && <AdminAlertPanel />}
+          </div>
+          {/* ─── Sidebar (1/3) ─── */}
+          <div className="space-y-5">
+            <ActionableSummary />
+            <SharedCalendar />
+            {isAdmin && <ClassOverviewTable />}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -109,17 +118,18 @@ function TodaysPlanPreview() {
   if (!isTeacher) return null
 
   return (
-    <div className="bg-surface border border-border rounded-xl overflow-hidden">
-      <div className="px-4 py-2.5 bg-gold/10 border-b border-border">
-        <p className="text-[11px] font-bold text-navy">Today's Plan</p>
+    <div className="bg-surface border border-gold/30 rounded-xl overflow-hidden shadow-sm">
+      <div className="px-5 py-3 bg-gold/10 border-b border-gold/20 flex items-center gap-2">
+        <BookOpen size={14} className="text-navy" />
+        <p className="text-[13px] font-bold text-navy">Today's Plan</p>
       </div>
-      <div className="px-4 py-3 min-h-[100px] max-h-[160px] overflow-y-auto">
+      <div className="px-5 py-4 min-h-[80px] max-h-[200px] overflow-y-auto">
         {loading ? (
           <Loader2 size={14} className="animate-spin text-text-tertiary" />
         ) : plan ? (
-          <div className="text-[11px] text-text-primary leading-relaxed whitespace-pre-wrap">{plan}</div>
+          <div className="text-[12px] text-text-primary leading-relaxed whitespace-pre-wrap">{plan}</div>
         ) : (
-          <p className="text-[11px] text-text-tertiary">No plan for today. Head to Teacher Plans to add one.</p>
+          <p className="text-[12px] text-text-tertiary">No plan for today. Head to Teacher Plans to add one.</p>
         )}
       </div>
     </div>
@@ -127,6 +137,180 @@ function TodaysPlanPreview() {
 }
 
 // ─── Recent Notes Preview ─────────────────────────────────────────
+// ─── Weekly Insight (rotating spotlight) ──────────────────────────
+function WeeklyInsight() {
+  const { currentTeacher } = useApp()
+  const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
+  const isAdmin = currentTeacher?.role === 'admin'
+  const [insight, setInsight] = useState<{ text: string; detail: string; type: string } | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    ;(async () => {
+      const insights: { text: string; detail: string; type: string }[] = []
+      const classFilter = isTeacher ? currentTeacher?.english_class : null
+
+      let studQuery = supabase.from('students').select('id, english_name, english_class, grade').eq('is_active', true)
+      if (classFilter) studQuery = studQuery.eq('english_class', classFilter)
+      const { data: students } = await studQuery
+      if (!students || students.length === 0) { setLoading(false); return }
+
+      // Reading growth: find students whose CWPM improved most
+      const { data: readingData } = await supabase.from('reading_assessments').select('student_id, cwpm, date')
+        .in('student_id', students.map(s => s.id)).order('date', { ascending: true })
+      if (readingData && readingData.length > 0) {
+        const byStudent: Record<string, { name: string; first: number; last: number }> = {}
+        readingData.forEach(r => {
+          const s = students.find(st => st.id === r.student_id)
+          if (!s || r.cwpm == null) return
+          if (!byStudent[r.student_id]) byStudent[r.student_id] = { name: s.english_name, first: r.cwpm, last: r.cwpm }
+          byStudent[r.student_id].last = r.cwpm
+        })
+        const growths = Object.values(byStudent).filter(s => s.last > s.first + 5).sort((a, b) => (b.last - b.first) - (a.last - a.first))
+        if (growths.length > 0) {
+          const top = growths[0]
+          insights.push({ text: `${top.name} improved CWPM from ${top.first} to ${top.last} this semester`, detail: 'Check their reading profile for the full growth trajectory.', type: 'positive' })
+        }
+
+        // Reading concern
+        const declines = Object.values(byStudent).filter(s => s.first > s.last + 10).sort((a, b) => (a.last - a.first) - (b.last - b.first))
+        if (declines.length > 0) {
+          const d = declines[0]
+          insights.push({ text: `${d.name}'s CWPM dropped from ${d.first} to ${d.last} -- check passage level`, detail: 'A drop this large may mean the assigned reading level is too high.', type: 'concern' })
+        }
+      }
+
+      // Attendance pattern
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+      const { data: absences } = await supabase.from('attendance').select('student_id').eq('status', 'absent')
+        .in('student_id', students.map(s => s.id)).gte('date', thirtyDaysAgo)
+      if (absences) {
+        const counts: Record<string, number> = {}
+        absences.forEach(a => { counts[a.student_id] = (counts[a.student_id] || 0) + 1 })
+        const highAbs = Object.entries(counts).filter(([, c]) => c >= 4).sort((a, b) => b[1] - a[1])
+        if (highAbs.length > 0) {
+          const s = students.find(st => st.id === highAbs[0][0])
+          if (s) insights.push({ text: `${s.english_name} has been absent ${highAbs[0][1]} times in the last month`, detail: 'Consider reaching out to parents or checking in with the homeroom teacher.', type: 'concern' })
+        }
+      }
+
+      // Pick a random insight (rotate on each load)
+      if (insights.length > 0) {
+        setInsight(insights[Math.floor(Math.random() * insights.length)])
+      }
+      setLoading(false)
+    })()
+  }, [currentTeacher, isTeacher, isAdmin])
+
+  if (loading || !insight) return null
+
+  const colors = insight.type === 'positive'
+    ? { bg: 'bg-green-50', border: 'border-green-200', icon: 'text-green-500', text: 'text-green-800', detail: 'text-green-600' }
+    : { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-500', text: 'text-amber-800', detail: 'text-amber-600' }
+
+  return (
+    <div className={`rounded-xl border ${colors.border} ${colors.bg} p-5`}>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5"><Sparkles size={18} className={colors.icon} /></div>
+        <div className="flex-1">
+          <p className="text-[9px] uppercase tracking-wider font-semibold text-text-tertiary mb-1">This Week's Insight</p>
+          <p className={`text-[14px] font-semibold ${colors.text} leading-snug`}>{insight.text}</p>
+          <p className={`text-[12px] ${colors.detail} mt-1`}>{insight.detail}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Actionable Summary (sidebar) ────────────────────────────────
+function ActionableSummary() {
+  const { currentTeacher, language } = useApp()
+  const isAdmin = currentTeacher?.role === 'admin'
+  const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class : null
+  const [items, setItems] = useState<{ icon: any; text: string; urgent: boolean }[]>([])
+  const [loading, setLoading] = useState(true)
+  const today = getKSTDateString()
+
+  useEffect(() => {
+    ;(async () => {
+      const newItems: { icon: any; text: string; urgent: boolean }[] = []
+
+      // Unmarked attendance
+      let unmarked = 0
+      if (teacherClass) {
+        const { data: studs } = await supabase.from('students').select('id').eq('english_class', teacherClass).eq('is_active', true)
+        if (studs) {
+          const { data: att } = await supabase.from('attendance').select('student_id').eq('date', today).in('student_id', studs.map((s: any) => s.id))
+          unmarked = studs.length - (att?.length || 0)
+        }
+      } else if (isAdmin) {
+        const { data: studs } = await supabase.from('students').select('id').eq('is_active', true)
+        if (studs) {
+          const { data: att } = await supabase.from('attendance').select('student_id').eq('date', today)
+          unmarked = studs.length - (att?.length || 0)
+        }
+      }
+      if (unmarked > 0) {
+        newItems.push({ icon: UserCheck, text: `${unmarked} students need attendance marked`, urgent: true })
+      } else {
+        newItems.push({ icon: UserCheck, text: 'All attendance recorded today', urgent: false })
+      }
+
+      // Today's events
+      const { data: events } = await supabase.from('calendar_events').select('title, type').eq('date', today)
+      if (events && events.length > 0) {
+        events.forEach((ev: any) => {
+          newItems.push({ icon: CalendarDays, text: ev.title, urgent: ev.type === 'deadline' || ev.type === 'testing' })
+        })
+      }
+
+      // Upcoming deadlines
+      const { data: sem } = await supabase.from('semesters').select('*').eq('is_active', true).single()
+      if (sem) {
+        const daysUntil = (d: string) => Math.ceil((new Date(d).getTime() - new Date(today).getTime()) / 86400000)
+        if (sem.midterm_cutoff_date) {
+          const days = daysUntil(sem.midterm_cutoff_date)
+          if (days >= 0 && days <= 7) newItems.push({ icon: AlertTriangle, text: `Midterm cutoff in ${days} day${days !== 1 ? 's' : ''}`, urgent: days <= 3 })
+        }
+        if (sem.report_card_cutoff_date) {
+          const days = daysUntil(sem.report_card_cutoff_date)
+          if (days >= 0 && days <= 14) newItems.push({ icon: AlertTriangle, text: `Report card cutoff in ${days} day${days !== 1 ? 's' : ''}`, urgent: days <= 5 })
+        }
+      }
+
+      // Behavior logs today
+      const { count: behaviorCount } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('date', today)
+      if (behaviorCount && behaviorCount > 0) {
+        newItems.push({ icon: ClipboardCheck, text: `${behaviorCount} behavior log${behaviorCount > 1 ? 's' : ''} recorded today`, urgent: false })
+      }
+
+      setItems(newItems)
+      setLoading(false)
+    })()
+  }, [teacherClass, isAdmin])
+
+  if (loading) return null
+
+  return (
+    <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      <div className="px-4 py-2.5 bg-navy/5 border-b border-border">
+        <p className="text-[11px] font-bold text-navy uppercase tracking-wider">Today's Status</p>
+      </div>
+      <div className="divide-y divide-border">
+        {items.map((item, i) => {
+          const Icon = item.icon
+          return (
+            <div key={i} className={`px-4 py-2.5 flex items-center gap-2.5 ${item.urgent ? 'bg-amber-50/50' : ''}`}>
+              <Icon size={14} className={item.urgent ? 'text-amber-500' : 'text-text-tertiary'} />
+              <p className={`text-[12px] ${item.urgent ? 'text-amber-800 font-medium' : 'text-text-secondary'}`}>{item.text}</p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Today at a Glance ──────────────────────────────────────────────
 function TodayAtGlance() {
   const { currentTeacher, language } = useApp()
@@ -244,7 +428,7 @@ function TodayAtGlance() {
   ]
 
   return (
-    <div className="mb-6">
+    <div className="">
       <h3 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">{language === 'ko' ? '오늘 한눈에' : 'Today at a Glance'} -- {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
       <div className="grid grid-cols-4 gap-3">
         {cards.map((c, i) => (
@@ -306,7 +490,7 @@ function QuickActions() {
   if (incomplete.length === 0) return null
 
   return (
-    <div className="mb-6">
+    <div className="">
       <h3 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Continue Grading</h3>
       <div className="flex gap-3">
         {incomplete.map(a => (
@@ -326,152 +510,197 @@ function QuickActions() {
   )
 }
 
-// ─── Student Alerts ───────────────────────────────────────────────
-interface StudentAlert { id: string; type: 'grade_decline' | 'behavior_spike' | 'missing_grades'; studentName: string; studentClass: string; message: string }
+// ─── Needs Attention Watchlist ─────────────────────────────────────
+interface WatchlistStudent {
+  id: string
+  name: string
+  class: string
+  concerns: { type: 'grade_decline' | 'behavior_spike' | 'missing_orf' | 'attendance' | 'missing_grades'; text: string }[]
+}
 
-function StudentAlerts() {
+function NeedsAttentionWatchlist() {
   const { currentTeacher } = useApp()
   const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
   const isAdmin = currentTeacher?.role === 'admin'
-  const [alerts, setAlerts] = useState<StudentAlert[]>([])
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const [watchlist, setWatchlist] = useState<WatchlistStudent[]>([])
+  const [classAlerts, setClassAlerts] = useState<{ id: string; text: string }[]>([])
   const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     if (!currentTeacher) return
     ;(async () => {
-      const newAlerts: StudentAlert[] = []
       const classFilter = isTeacher ? currentTeacher.english_class : null
-
-      // Get students
-      let studQuery = supabase.from('students').select('id, english_name, english_class, grade').eq('is_active', true).eq('is_demo', false)
+      let studQuery = supabase.from('students').select('id, english_name, english_class, grade').eq('is_active', true)
       if (classFilter) studQuery = studQuery.eq('english_class', classFilter)
       const { data: students } = await studQuery
       if (!students || students.length === 0) { setLoading(false); return }
 
-      // Get active semester
       const { data: sem } = await supabase.from('semesters').select('id').eq('is_active', true).single()
       if (!sem) { setLoading(false); return }
 
-      // 1. GRADE DECLINE: compare last 3 assessments per domain per student
-      const { data: assessments } = await supabase.from('assessments').select('id, domain, name, english_class, grade, max_score')
-        .eq('semester_id', sem.id)
-      if (assessments && assessments.length > 0) {
-        const { data: allGrades } = await supabase.from('grades').select('student_id, assessment_id, score')
-          .in('assessment_id', assessments.map(a => a.id)).not('score', 'is', null)
+      const studentConcerns: Record<string, WatchlistStudent> = {}
+      const addConcern = (s: any, type: WatchlistStudent['concerns'][0]['type'], text: string) => {
+        if (!studentConcerns[s.id]) studentConcerns[s.id] = { id: s.id, name: s.english_name, class: s.english_class, concerns: [] }
+        studentConcerns[s.id].concerns.push({ type, text })
+      }
 
+      // Grade decline
+      const { data: assessments } = await supabase.from('assessments').select('id, domain, name, english_class, grade, max_score').eq('semester_id', sem.id)
+      if (assessments && assessments.length > 0) {
+        const { data: allGrades } = await supabase.from('grades').select('student_id, assessment_id, score').in('assessment_id', assessments.map(a => a.id)).not('score', 'is', null)
         if (allGrades) {
           for (const student of students) {
-            const studentAssessments = assessments.filter(a => a.english_class === student.english_class && a.grade === student.grade)
-            const domains = Array.from(new Set(studentAssessments.map(a => a.domain)))
+            const sAssessments = assessments.filter(a => a.english_class === student.english_class && a.grade === student.grade)
+            const domains = Array.from(new Set(sAssessments.map(a => a.domain)))
             for (const domain of domains) {
-              const domAssessments = studentAssessments.filter(a => a.domain === domain)
-              const scores = domAssessments.map(a => {
+              const scores = sAssessments.filter(a => a.domain === domain).map(a => {
                 const g = allGrades.find(gr => gr.student_id === student.id && gr.assessment_id === a.id)
                 return g?.score != null && a.max_score > 0 ? (g.score / a.max_score) * 100 : null
               }).filter((s): s is number => s != null)
-
               if (scores.length >= 3) {
                 const recent = scores.slice(-3)
                 const firstAvg = (recent[0] + recent[1]) / 2
                 const last = recent[2]
                 if (firstAvg - last >= 15) {
-                  newAlerts.push({
-                    id: `gd-${student.id}-${domain}`,
-                    type: 'grade_decline',
-                    studentName: student.english_name,
-                    studentClass: student.english_class,
-                    message: `${domain.charAt(0).toUpperCase() + domain.slice(1)} average dropped from ${firstAvg.toFixed(0)}% to ${last.toFixed(0)}%`
-                  })
+                  addConcern(student, 'grade_decline', `${domain.charAt(0).toUpperCase() + domain.slice(1)} dropped ${firstAvg.toFixed(0)}% to ${last.toFixed(0)}%`)
                 }
               }
             }
           }
 
-          // MISSING GRADES: consolidated per assessment (class-level reminders)
-          const assessmentsByKey: Record<string, { assessment: any; studentIds: string[]; gradedIds: Set<string> }> = {}
+          // Class-level: missing grades
+          const cAlerts: { id: string; text: string }[] = []
           for (const a of assessments) {
-            const key = a.id
             const classStudents = students.filter(s => s.english_class === a.english_class && s.grade === a.grade)
             if (classStudents.length === 0) continue
             const gradedSet = new Set(allGrades.filter(g => g.assessment_id === a.id).map(g => g.student_id))
             const ungradedCount = classStudents.filter(s => !gradedSet.has(s.id)).length
             if (ungradedCount > 0 && ungradedCount < classStudents.length) {
-              // Partially graded -- remind to finish
-              assessmentsByKey[key] = { assessment: a, studentIds: classStudents.map(s => s.id), gradedIds: gradedSet }
+              cAlerts.push({ id: `mg-${a.id}`, text: `"${a.name}" (${a.english_class}) -- ${ungradedCount} of ${classStudents.length} students ungraded` })
             }
           }
-          for (const [key, info] of Object.entries(assessmentsByKey)) {
-            const ungraded = info.studentIds.length - info.gradedIds.size
-            newAlerts.push({
-              id: `mg-${key}`,
-              type: 'missing_grades',
-              studentName: '',
-              studentClass: info.assessment.english_class,
-              message: `Finish grading "${info.assessment.name}" for ${info.assessment.english_class} -- ${ungraded} of ${info.studentIds.length} students remaining`
-            })
-          }
+          setClassAlerts(cAlerts)
         }
       }
 
-      // 2. BEHAVIOR SPIKE: compare last 2 weeks vs prior 2 weeks
+      // Behavior spike
       const now = new Date()
       const twoWeeksAgo = new Date(now.getTime() - 14 * 86400000).toISOString().split('T')[0]
       const fourWeeksAgo = new Date(now.getTime() - 28 * 86400000).toISOString().split('T')[0]
-
-      for (const student of students) {
-        const { count: recentCount } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true })
-          .eq('student_id', student.id).gte('date', twoWeeksAgo)
-        const { count: priorCount } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true })
-          .eq('student_id', student.id).gte('date', fourWeeksAgo).lt('date', twoWeeksAgo)
-
-        const recent = recentCount || 0
-        const prior = priorCount || 0
-        if (recent >= 3 && recent >= prior * 2) {
-          newAlerts.push({
-            id: `bs-${student.id}`,
-            type: 'behavior_spike',
-            studentName: student.english_name,
-            studentClass: student.english_class,
-            message: `${recent} behavior logs in last 2 weeks (up from ${prior} in prior 2 weeks)`
-          })
+      const { data: recentBehavior } = await supabase.from('behavior_logs').select('student_id, date')
+        .in('student_id', students.map(s => s.id)).gte('date', fourWeeksAgo)
+      if (recentBehavior) {
+        const recent: Record<string, number> = {}
+        const prior: Record<string, number> = {}
+        recentBehavior.forEach(b => {
+          if (b.date >= twoWeeksAgo) recent[b.student_id] = (recent[b.student_id] || 0) + 1
+          else prior[b.student_id] = (prior[b.student_id] || 0) + 1
+        })
+        for (const [sid, count] of Object.entries(recent)) {
+          if (count >= 3 && count >= (prior[sid] || 0) * 2) {
+            const s = students.find(st => st.id === sid)
+            if (s) addConcern(s, 'behavior_spike', `${count} behavior logs in 2 weeks (was ${prior[sid] || 0})`)
+          }
         }
       }
 
-      setAlerts(newAlerts)
+      // No ORF in 60 days
+      const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0]
+      const { data: recentReading } = await supabase.from('reading_assessments').select('student_id')
+        .in('student_id', students.map(s => s.id)).gte('date', sixtyDaysAgo)
+      const withReading = new Set((recentReading || []).map(r => r.student_id))
+      students.forEach(s => {
+        if (!withReading.has(s.id)) addConcern(s, 'missing_orf', 'No reading assessment in 60+ days')
+      })
+
+      // Attendance pattern
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+      const { data: recentAtt } = await supabase.from('attendance').select('student_id').eq('status', 'absent')
+        .in('student_id', students.map(s => s.id)).gte('date', thirtyDaysAgo)
+      if (recentAtt) {
+        const counts: Record<string, number> = {}
+        recentAtt.forEach(a => { counts[a.student_id] = (counts[a.student_id] || 0) + 1 })
+        Object.entries(counts).forEach(([sid, c]) => {
+          if (c >= 3) {
+            const s = students.find(st => st.id === sid)
+            if (s) addConcern(s, 'attendance', `Absent ${c} times in 30 days`)
+          }
+        })
+      }
+
+      // Sort by number of concerns (most concerning first), exclude "missing_orf only" students
+      const list = Object.values(studentConcerns)
+        .filter(s => s.concerns.some(c => c.type !== 'missing_orf') || s.concerns.length > 1)
+        .sort((a, b) => b.concerns.length - a.concerns.length)
+      setWatchlist(list)
       setLoading(false)
     })()
   }, [currentTeacher, isTeacher, isAdmin])
 
-  const dismiss = (id: string) => setDismissed(prev => { const n = new Set(Array.from(prev)); n.add(id); return n })
+  if (loading) return null
+  if (watchlist.length === 0 && classAlerts.length === 0) return null
 
-  const visible = alerts.filter(a => !dismissed.has(a.id))
-  if (loading || visible.length === 0) return null
-
-  const icons = { grade_decline: TrendingDown, behavior_spike: AlertTriangle, missing_grades: FileX }
-  const colors = { grade_decline: { bg: 'bg-red-50', border: 'border-red-200', icon: 'text-red-500', text: 'text-red-700' }, behavior_spike: { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-500', text: 'text-amber-700' }, missing_grades: { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-500', text: 'text-blue-700' } }
+  const shown = expanded ? watchlist : watchlist.slice(0, 5)
+  const icons: Record<string, any> = { grade_decline: TrendingDown, behavior_spike: AlertTriangle, missing_orf: BookOpen, attendance: CalendarDays, missing_grades: FileX }
+  const tagColors: Record<string, string> = { grade_decline: 'bg-red-100 text-red-700', behavior_spike: 'bg-amber-100 text-amber-700', missing_orf: 'bg-blue-100 text-blue-700', attendance: 'bg-purple-100 text-purple-700' }
 
   return (
-    <div className="mb-6">
-      <h3 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Alerts ({visible.length})</h3>
-      <div className="space-y-2">
-        {visible.slice(0, 8).map(alert => {
-          const Icon = icons[alert.type]
-          const c = colors[alert.type]
-          return (
-            <div key={alert.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${c.bg} ${c.border}`}>
-              <Icon size={16} className={c.icon} />
-              <div className="flex-1 min-w-0">
-                {alert.studentName && <><span className="text-[12px] font-semibold text-navy">{alert.studentName}</span><span className="text-[10px] text-text-tertiary ml-2">{alert.studentClass}</span></>}
-                <p className={`text-[11px] ${c.text}`}>{alert.message}</p>
+    <div>
+      <div className="bg-surface border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-3 bg-amber-50/60 border-b border-amber-200/60 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Eye size={15} className="text-amber-600" />
+            <h3 className="text-[13px] font-semibold text-amber-900">Needs Attention</h3>
+            <span className="text-[10px] bg-amber-200 text-amber-700 px-2 py-0.5 rounded-full font-bold">{watchlist.length}</span>
+          </div>
+        </div>
+
+        {/* Class-level alerts (missing grades) */}
+        {classAlerts.length > 0 && (
+          <div className="px-5 py-2 bg-blue-50/40 border-b border-blue-100">
+            {classAlerts.slice(0, 3).map(a => (
+              <div key={a.id} className="flex items-center gap-2 py-1">
+                <FileX size={12} className="text-blue-500 flex-shrink-0" />
+                <p className="text-[11px] text-blue-700">{a.text}</p>
               </div>
-              <button onClick={() => dismiss(alert.id)} className="p-1 rounded-lg hover:bg-white/50 text-text-tertiary hover:text-text-primary" title="Dismiss">
-                <X size={14} />
-              </button>
+            ))}
+            {classAlerts.length > 3 && <p className="text-[10px] text-blue-500 mt-1">+ {classAlerts.length - 3} more</p>}
+          </div>
+        )}
+
+        {/* Student watchlist */}
+        <div className="divide-y divide-border">
+          {shown.map(student => (
+            <div key={student.id} className="px-5 py-3 hover:bg-surface-alt/30 transition-colors">
+              <div className="flex items-center justify-between mb-1.5">
+                <div>
+                  <span className="text-[13px] font-semibold text-navy">{student.name}</span>
+                  <span className="text-[10px] ml-2 px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: classToColor(student.class as EnglishClass), color: classToTextColor(student.class as EnglishClass) }}>{student.class}</span>
+                </div>
+                <span className="text-[10px] text-text-tertiary">{student.concerns.length} concern{student.concerns.length > 1 ? 's' : ''}</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {student.concerns.map((c, i) => {
+                  const Icon = icons[c.type] || AlertTriangle
+                  return (
+                    <span key={i} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium ${tagColors[c.type] || 'bg-gray-100 text-gray-700'}`}>
+                      <Icon size={10} /> {c.text}
+                    </span>
+                  )
+                })}
+              </div>
             </div>
-          )
-        })}
-        {visible.length > 8 && <p className="text-[11px] text-text-tertiary">+ {visible.length - 8} more alerts</p>}
+          ))}
+        </div>
+
+        {watchlist.length > 5 && (
+          <div className="px-5 py-2.5 border-t border-border">
+            <button onClick={() => setExpanded(!expanded)} className="text-[11px] font-medium text-navy hover:text-navy-dark">
+              {expanded ? 'Show fewer' : `Show all ${watchlist.length} students...`}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -503,7 +732,7 @@ function AdminAlertPanel() {
   if (loading || flagged.length === 0) return null
 
   return (
-    <div className="mb-6 border border-red-200 rounded-xl bg-red-50/50 overflow-hidden">
+    <div className="border border-red-200 rounded-xl bg-red-50/50 overflow-hidden">
       <div className="px-5 py-3 bg-red-100/60 border-b border-red-200 flex items-center gap-2">
         <Bell size={16} className="text-red-600" />
         <h3 className="text-[14px] font-semibold text-red-800">Flagged for Your Review</h3>
@@ -618,7 +847,7 @@ function SharedCalendar() {
   const dayN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden mb-6">
+    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h3 className="font-display text-[16px] font-semibold text-navy">{months[m]} {y}</h3>
