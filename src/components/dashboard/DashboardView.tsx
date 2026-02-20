@@ -757,7 +757,7 @@ function AdminAlertPanel() {
         ))}
       </div>
       {detail && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setDetail(null)}>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
           <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={(ev: any) => ev.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <h3 className="font-display text-[16px] font-semibold text-navy">Flagged — {detail.student_name}</h3>
@@ -990,7 +990,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-sm" onClick={(e: any) => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-[15px] font-semibold text-navy">{isEdit ? 'Edit Event' : 'Add Calendar Event'}</h3>

@@ -258,11 +258,6 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin, onContinue }: { lev
     return (
       <div>
         <Grade1ScoreEntry levelTest={levelTest} isAdmin={isAdmin} />
-        <div className="px-10 pb-6 flex justify-end">
-          <button onClick={onContinue} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light">
-            Done with Scores? Continue to Teacher Ratings →
-          </button>
-        </div>
       </div>
     )
   }
@@ -404,11 +399,6 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
         </table>
       </div>
       <p className="text-[11px] text-text-tertiary mt-3">Entered by: {currentTeacher?.name || 'Unknown'} | Only {activeTab} students saved when you click Save.</p>
-      <div className="mt-4 flex justify-end">
-        <button onClick={onContinue} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light">
-          Done with Scores? Continue to Teacher Ratings →
-        </button>
-      </div>
     </div>
   )
 }
@@ -556,7 +546,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
 
       {/* Rating Modal */}
       {modalStudent && modalIdx !== null && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setModalIdx(null)}>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-surface rounded-2xl shadow-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">

@@ -851,7 +851,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                     return (
                       <th key={`sec-${col.assessment.id}-${col.sectionIdx}`} className="text-center px-1 py-2.5 text-[8px] uppercase tracking-wider text-purple-600 font-semibold min-w-[100px] bg-purple-50/50">
                         <div className="whitespace-nowrap">{col.sectionLabel}</div>
-                        <div className="text-[7px] text-purple-400 font-normal">/{col.assessment.sections[col.sectionIdx!].max_score || '?'}</div>
+                        <div className="text-[7px] text-purple-400 font-normal">/{col.assessment.sections[col.sectionIdx!].max_points || col.assessment.sections[col.sectionIdx!].max_score || '?'}</div>
                       </th>
                     )
                   }
@@ -1296,7 +1296,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center">
       <div className={"bg-surface rounded-xl shadow-lg w-full " + (scorePhase ? "max-w-2xl" : "max-w-lg") + " max-h-[90vh] overflow-y-auto"} onClick={e => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold text-navy">{scorePhase ? `Enter Scores: ${createdAssessment?.name}` : editing ? (lang === 'ko' ? '평가 수정' : 'Edit Assessment') : (lang === 'ko' ? '평가 생성' : 'Create Assessment')}</h3>

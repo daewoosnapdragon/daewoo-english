@@ -520,7 +520,7 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
   const previewAcc = wc > 0 ? ((wc - err) / wc) * 100 : null
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-[15px] font-semibold text-navy">Edit Reading Record</h3>
@@ -954,7 +954,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const batchFilled = Object.values(batchScores).filter(b => b.wc && b.ts).length
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center">
       <div className={`bg-surface rounded-xl shadow-lg w-full ${mode === 'batch' ? 'max-w-3xl max-h-[85vh] overflow-hidden flex flex-col' : 'max-w-lg'}`} onClick={(e: any) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold text-navy">Add ORF Record</h3>

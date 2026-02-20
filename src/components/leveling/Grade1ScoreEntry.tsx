@@ -474,8 +474,7 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
   const [scores, setScores] = useState<Record<string, G1Scores>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<'written' | 'oral' | 'results'>('oral')
-  const [activeWave, setActiveWave] = useState<1 | 2>(1)
+  const [activeTab, setActiveTab] = useState<'written' | 'oral' | 'ratings' | 'results'>('oral')
   const [selectedStudentIdx, setSelectedStudentIdx] = useState(0)
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'complete'>('all')
 
@@ -571,68 +570,40 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
 
   return (
     <div className="animate-fade-in">
-      {/* Wave Selector */}
+      {/* Flat Tab Bar - No Wave Selector */}
       <div className="px-10 pt-4 bg-surface border-b border-border">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Testing Wave</span>
-          <div className="flex gap-1">
-            <button onClick={() => { setActiveWave(1); setActiveTab('oral') }}
-              className={`px-4 py-1.5 rounded-lg text-[12px] font-medium transition-all ${activeWave === 1 ? 'bg-blue-600 text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
-              Wave 1: Oral (First Week)
-            </button>
-            <button onClick={() => { setActiveWave(2); setActiveTab('written') }}
-              className={`px-4 py-1.5 rounded-lg text-[12px] font-medium transition-all ${activeWave === 2 ? 'bg-blue-600 text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
-              Wave 2: Written (End of March)
-            </button>
-          </div>
-        </div>
         <div className="flex items-center gap-2 pb-3">
-          {activeWave === 1 ? (
-            // Wave 1 tabs: Oral Test + Class Impression
-            <>
-              {[
-                { key: 'oral' as const, icon: Mic, label: 'Oral Reading', sub: `${completionStats.oralDone}/${completionStats.total}` },
-                { key: 'results' as const, icon: BarChart3, label: 'Wave 1 Results', sub: '' },
-              ].map(tab => (
-                <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
-                    activeTab === tab.key ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'
-                  }`}>
-                  <tab.icon size={15} />
-                  {tab.label}
-                  {tab.sub && <span className={`text-[10px] ml-1 ${activeTab === tab.key ? 'opacity-70' : 'text-text-tertiary'}`}>{tab.sub}</span>}
-                </button>
-              ))}
-              <div className="ml-auto text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
-                Wave 1 uses teacher class impression instead of scored ratings (students are brand new)
-              </div>
-            </>
-          ) : (
-            // Wave 2 tabs: Written Test + Teacher Ratings + Results (oral from wave 1 carries over)
-            <>
-              {[
-                { key: 'written' as const, icon: PenTool, label: 'Written Test', sub: `${completionStats.writtenDone}/${completionStats.total}` },
-                { key: 'oral' as const, icon: Mic, label: 'Teacher Ratings', sub: '' },
-                { key: 'results' as const, icon: BarChart3, label: 'Combined Results', sub: '' },
-              ].map(tab => (
-                <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
-                    activeTab === tab.key ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'
-                  }`}>
-                  <tab.icon size={15} />
-                  {tab.label}
-                  {tab.sub && <span className={`text-[10px] ml-1 ${activeTab === tab.key ? 'opacity-70' : 'text-text-tertiary'}`}>{tab.sub}</span>}
-                </button>
-              ))}
-              <div className="ml-auto text-[10px] text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
-                Wave 2: Written test + teacher ratings. Oral scores carry over from Wave 1.
-              </div>
-            </>
-          )}
+          {[
+            { key: 'oral' as const, icon: Mic, label: 'Oral Test', sub: `${completionStats.oralDone}/${completionStats.total}` },
+            { key: 'written' as const, icon: PenTool, label: 'Written Test', sub: `${completionStats.writtenDone}/${completionStats.total}` },
+            { key: 'ratings' as const, icon: Users, label: 'Teacher Ratings', sub: '' },
+            { key: 'results' as const, icon: BarChart3, label: 'Results', sub: '' },
+          ].map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
+                activeTab === tab.key ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'
+              }`}>
+              <tab.icon size={15} />
+              {tab.label}
+              {tab.sub && <span className={`text-[10px] ml-1 ${activeTab === tab.key ? 'opacity-70' : 'text-text-tertiary'}`}>{tab.sub}</span>}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Content */}
+      {activeTab === 'oral' && (
+        <OralTestEntry
+          students={students}
+          scores={scores}
+          updateScore={updateScore}
+          onSave={saveScores}
+          saving={saving}
+          selectedIdx={selectedStudentIdx}
+          onSelectIdx={setSelectedStudentIdx}
+          activeWave={1}
+        />
+      )}
       {activeTab === 'written' && (
         <WrittenTestEntry
           students={students}
@@ -642,19 +613,7 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
           saving={saving}
         />
       )}
-      {activeTab === 'oral' && activeWave === 1 && (
-        <OralTestEntry
-          students={students}
-          scores={scores}
-          updateScore={updateScore}
-          onSave={saveScores}
-          saving={saving}
-          selectedIdx={selectedStudentIdx}
-          onSelectIdx={setSelectedStudentIdx}
-          activeWave={activeWave}
-        />
-      )}
-      {activeTab === 'oral' && activeWave === 2 && (
+      {activeTab === 'ratings' && (
         <G1TeacherRatings
           students={students}
           levelTestId={levelTest.id}
@@ -1613,7 +1572,7 @@ function G1TeacherRatings({ students, levelTestId }: { students: any[]; levelTes
       level_test_id: levelTestId, student_id: studentId, teacher_id: currentTeacher?.id || null,
       receptive_language: r.receptive_language || null, productive_language: r.productive_language || null,
       engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null,
-      notes: r.notes || '', is_watchlist: r.is_watchlist || false,
+      notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null,
     }, { onConflict: 'level_test_id,student_id' })
     setSaving(null)
     if (error) showToast(`Error: ${error.message}`); else showToast('Saved')
@@ -1627,7 +1586,7 @@ function G1TeacherRatings({ students, levelTestId }: { students: any[]; levelTes
         level_test_id: levelTestId, student_id: s.id, teacher_id: currentTeacher?.id || null,
         receptive_language: r.receptive_language || null, productive_language: r.productive_language || null,
         engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null,
-        notes: r.notes || '', is_watchlist: r.is_watchlist || false,
+        notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null,
       }, { onConflict: 'level_test_id,student_id' })
       if (error) errors++
     }
@@ -1692,6 +1651,19 @@ function G1TeacherRatings({ students, levelTestId }: { students: any[]; levelTes
                   <input type="checkbox" checked={r.is_watchlist || false} onChange={e => updateRating(student.id, 'is_watchlist', e.target.checked)} className="rounded" />
                   Watchlist
                 </label>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-semibold text-text-secondary uppercase">Place in:</span>
+                  <select value={r.teacher_recommends || ''} onChange={e => updateRating(student.id, 'teacher_recommends', e.target.value || null)}
+                    className="px-2 py-1.5 border border-border rounded-lg text-[11px] bg-surface outline-none focus:border-navy min-w-[100px]">
+                    <option value="">-- Select --</option>
+                    <option value="Lily">Lily</option>
+                    <option value="Camellia">Camellia</option>
+                    <option value="Daisy">Daisy</option>
+                    <option value="Sunflower">Sunflower</option>
+                    <option value="Marigold">Marigold</option>
+                    <option value="Snapdragon">Snapdragon</option>
+                  </select>
+                </div>
               </div>
             </div>
           )
