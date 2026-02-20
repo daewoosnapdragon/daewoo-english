@@ -6,11 +6,11 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
-import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap } from 'lucide-react'
+import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
-import { SCORING_RUBRICS, LEVEL_LABELS, LEVEL_COLORS } from '@/components/curriculum/scoring-rubrics'
+import { SCORING_RUBRICS, LEVEL_LABELS, LEVEL_COLORS, RUBRIC_CATEGORIES } from '@/components/curriculum/scoring-rubrics'
 
 // Normalize CCSS input: "rl21" -> "RL.2.1", "rf13a" -> "RF.1.3a", "sl42" -> "SL.4.2"
 function normalizeCCSS(input: string): string {
@@ -62,7 +62,13 @@ export default function GradesView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
   const [subView, setSubView] = useState<SubView>('entry')
-  const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
+  const [selectedGrade, setSelectedGrade] = useState<Grade>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('daewoo_grade_tab_grade')
+      if (saved) return Number(saved) as Grade
+    }
+    return (currentTeacher?.grade || 3) as Grade
+  })
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
   )
@@ -296,7 +302,7 @@ export default function GradesView() {
             </select>
           )}
           <div className="w-px h-6 bg-border" />
-          <select value={selectedGrade} onChange={e => { setSelectedGrade(Number(e.target.value) as Grade); setSelectedAssessment(null) }}
+          <select value={selectedGrade} onChange={e => { const g = Number(e.target.value) as Grade; setSelectedGrade(g); setSelectedAssessment(null); localStorage.setItem('daewoo_grade_tab_grade', String(g)) }}
             className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
             {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
           </select>
@@ -1744,8 +1750,6 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
   const [allScores, setAllScores] = useState<Record<string, number[]>>({})
 
   const rubric = selectedRubric != null ? SCORING_RUBRICS[selectedRubric] : null
-  const filteredRubrics = SCORING_RUBRICS.filter(r => r.domain === domain && r.grades.includes(grade))
-  const allDomainRubrics = SCORING_RUBRICS.filter(r => r.domain === domain && !r.grades.includes(grade))
   const activeStudent = students[activeStudentIdx]
   const studentScores = activeStudent ? (allScores[activeStudent.id] || []) : []
   const studentTotal = studentScores.reduce((s, v) => s + v, 0)
@@ -1790,9 +1794,10 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
         <div className="flex items-center justify-between px-6 py-3 border-b border-border shrink-0">
           <div>
             <h2 className="text-[16px] font-bold text-navy">Score with Rubric</h2>
-            <p className="text-[11px] text-text-secondary">{scoredCount}/{students.length} students scored{rubric ? ` · ${rubric.name}` : ''}</p>
+            <p className="text-[11px] text-text-secondary">{scoredCount}/{students.length} students scored{rubric ? ` · ${rubric.category} › ${rubric.name}` : ''}</p>
           </div>
           <div className="flex items-center gap-2">
+            {rubric && <button onClick={() => setSelectedRubric(null)} className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-border text-text-secondary hover:bg-surface-alt">Change Rubric</button>}
             {rubric && <button onClick={handleApply} disabled={scoredCount === 0}
               className="px-4 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
               Apply {scoredCount} Score{scoredCount !== 1 ? 's' : ''}
@@ -1802,40 +1807,47 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
         </div>
 
         {!rubric ? (
-          /* Rubric Selection */
+          /* Rubric Selection - grouped by category */
           <div className="p-6 overflow-y-auto">
-            <p className="text-[12px] text-text-secondary mb-3">Grade {grade} · {domain} rubrics:</p>
-            {filteredRubrics.length === 0 && <p className="text-[11px] text-text-tertiary italic mb-3">No rubrics for this exact grade/domain. See other grades below.</p>}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {filteredRubrics.map((r) => {
-                const realIdx = SCORING_RUBRICS.indexOf(r)
-                return (
-                  <button key={realIdx} onClick={() => setSelectedRubric(realIdx)}
-                    className="text-left bg-surface border border-border rounded-xl px-4 py-3 hover:shadow-sm hover:border-navy/30 transition-all">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{r.type.replace('_', ' ')}</span>
-                    <h3 className="text-[14px] font-semibold text-navy mt-1.5">{r.name}</h3>
-                    <p className="text-[10px] text-text-tertiary mt-0.5">{r.criteria.length} criteria · {r.criteria.map(c => c.label).join(', ')}</p>
-                  </button>
-                )
-              })}
-            </div>
-            {allDomainRubrics.length > 0 && (
-              <>
-                <p className="text-[11px] text-text-tertiary mt-5 mb-2">Other grades:</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {allDomainRubrics.map((r) => {
-                    const realIdx = SCORING_RUBRICS.indexOf(r)
-                    return (
-                      <button key={realIdx} onClick={() => setSelectedRubric(realIdx)}
-                        className="text-left bg-surface border border-border/60 rounded-lg px-3 py-2 hover:shadow-sm hover:border-navy/20 transition-all opacity-70 hover:opacity-100">
-                        <span className="text-[8px] font-bold text-text-tertiary uppercase">Gr {r.grade} · {r.type.replace('_', ' ')}</span>
-                        <h3 className="text-[12px] font-medium text-navy">{r.name}</h3>
-                      </button>
-                    )
-                  })}
+            <p className="text-[12px] text-text-secondary mb-1">Pick a rubric for this {domain} assessment · Grade {grade}</p>
+            <p className="text-[10px] text-text-tertiary mb-4">Rubrics matching your grade are highlighted. You can use any rubric.</p>
+            {RUBRIC_CATEGORIES.filter(cat => {
+              const catRubrics = SCORING_RUBRICS.filter(r => r.category === cat && r.domain === domain)
+              return catRubrics.length > 0
+            }).map(cat => {
+              const catRubrics = SCORING_RUBRICS.filter(r => r.category === cat && r.domain === domain)
+              return (
+                <div key={cat} className="mb-5">
+                  <h3 className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-navy/40" />{cat}
+                    <span className="text-[9px] font-normal text-text-tertiary normal-case">({catRubrics.length})</span>
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {catRubrics.map((r) => {
+                      const realIdx = SCORING_RUBRICS.indexOf(r)
+                      const isGradeMatch = r.grades.includes(grade)
+                      return (
+                        <button key={realIdx} onClick={() => setSelectedRubric(realIdx)}
+                          className={`text-left rounded-xl px-4 py-3 hover:shadow-sm transition-all border ${
+                            isGradeMatch
+                              ? 'bg-surface border-navy/20 hover:border-navy/40'
+                              : 'bg-surface/60 border-border/50 opacity-60 hover:opacity-100 hover:border-navy/20'
+                          }`}>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${isGradeMatch ? 'bg-navy/10 text-navy' : 'bg-gray-100 text-gray-500'}`}>
+                              Gr {r.grades.join(', ')}
+                            </span>
+                            <span className="text-[8px] text-text-tertiary">{r.criteria.length} criteria</span>
+                          </div>
+                          <h4 className="text-[13px] font-semibold text-navy leading-tight">{r.name}</h4>
+                          <p className="text-[9px] text-text-tertiary mt-1 line-clamp-2">{r.criteria.map(c => c.label).join(' · ')}</p>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </>
-            )}
+              )
+            })}
           </div>
         ) : (
           /* Scoring Interface: Sidebar + Rubric Grid */
@@ -1898,7 +1910,8 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
                   <div className="space-y-2.5">
                     {rubric.criteria.map((c, ci) => (
                       <div key={ci} className="bg-surface-alt/40 border border-border rounded-xl p-3">
-                        <p className="text-[11px] font-semibold text-navy mb-2">{c.label}</p>
+                        <p className="text-[11px] font-semibold text-navy">{c.label}</p>
+                        <p className="text-[9px] text-text-tertiary mb-2">{c.description}</p>
                         <div className="grid grid-cols-4 gap-1.5">
                           {[1, 2, 3, 4].map(v => (
                             <button key={v} onClick={() => setStudentScore(ci, v)}
@@ -1906,7 +1919,7 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
                                 studentScores[ci] === v ? LEVEL_COLORS[v - 1] + ' ring-2 shadow-sm' : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'
                               }`}>
                               <div className="text-[15px] font-bold">{v}</div>
-                              <div className="text-[8px] leading-tight mt-0.5">{c.levels[v - 1]}</div>
+                              <div className="text-[8px] leading-tight mt-0.5">{LEVEL_LABELS[v - 1]}</div>
                             </button>
                           ))}
                         </div>
@@ -2200,6 +2213,7 @@ function QuickCheckView({ students, selectedClass, selectedGrade }: { students: 
   const [ccssData, setCcssData] = useState<any[]>([])
   const [showArchive, setShowArchive] = useState(false)
   const [archiveData, setArchiveData] = useState<any[]>([])
+  const [filterStd, setFilterStd] = useState('')
 
   // Load CCSS standards data
   useEffect(() => {
@@ -2252,14 +2266,25 @@ function QuickCheckView({ students, selectedClass, selectedGrade }: { students: 
 
   if (showArchive) {
     // Group archive by standard, then by date
-    const byStd: Record<string, Record<string, Record<string, number>>> = {}
+    const byStd: Record<string, Record<string, { got_it: number; almost: number; not_yet: number; ids: string[] }>> = {}
     archiveData.forEach((r: any) => {
       const std = r.standard_code
       const d = new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       if (!byStd[std]) byStd[std] = {}
-      if (!byStd[std][d]) byStd[std][d] = { got_it: 0, almost: 0, not_yet: 0 }
-      byStd[std][d][r.mark] = (byStd[std][d][r.mark] || 0) + 1
+      if (!byStd[std][d]) byStd[std][d] = { got_it: 0, almost: 0, not_yet: 0, ids: [] }
+      byStd[std][d][r.mark as keyof typeof byStd[string][string]] = ((byStd[std][d] as any)[r.mark] || 0) + 1
+      byStd[std][d].ids.push(r.id)
     })
+
+    const allStds = Object.keys(byStd).sort()
+    const filteredByStd = filterStd ? { [filterStd]: byStd[filterStd] } : byStd
+
+    const deleteQuickCheckBatch = async (ids: string[]) => {
+      if (!confirm(`Delete ${ids.length} quick check record(s)?`)) return
+      await supabase.from('quick_checks').delete().in('id', ids)
+      setArchiveData(prev => prev.filter((r: any) => !ids.includes(r.id)))
+      showToast(`Deleted ${ids.length} records`)
+    }
 
     return (
       <div className="px-2 py-4">
@@ -2267,11 +2292,21 @@ function QuickCheckView({ students, selectedClass, selectedGrade }: { students: 
           <h3 className="text-[15px] font-bold text-navy">Quick Check Archive</h3>
           <button onClick={() => setShowArchive(false)} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">Back to Quick Check</button>
         </div>
-        {Object.keys(byStd).length === 0 ? (
-          <p className="text-center text-text-tertiary py-8 text-[12px]">No quick checks recorded yet for {selectedClass} Grade {selectedGrade}.</p>
+        {/* Filters */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-1.5">
+            <Filter size={12} className="text-text-tertiary" />
+            <select value={filterStd} onChange={e => setFilterStd(e.target.value)} className="text-[11px] border border-border rounded-lg px-2 py-1 outline-none">
+              <option value="">All Standards</option>
+              {allStds.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        {Object.keys(filteredByStd).length === 0 ? (
+          <p className="text-center text-text-tertiary py-8 text-[12px]">No quick checks recorded yet.</p>
         ) : (
           <div className="space-y-3">
-            {Object.entries(byStd).sort(([a], [b]) => a.localeCompare(b)).map(([std, dates]) => (
+            {Object.entries(filteredByStd).sort(([a], [b]) => a.localeCompare(b)).map(([std, dates]) => (
               <div key={std} className="bg-surface border border-border rounded-xl p-4">
                 <h4 className="text-[12px] font-bold text-navy mb-2">{std}</h4>
                 <div className="space-y-1">
@@ -2288,6 +2323,7 @@ function QuickCheckView({ students, selectedClass, selectedGrade }: { students: 
                         <span className="text-[9px] text-green-600 font-medium w-8">{counts.got_it}</span>
                         <span className="text-[9px] text-amber-600 font-medium w-8">{counts.almost}</span>
                         <span className="text-[9px] text-red-600 font-medium w-8">{counts.not_yet}</span>
+                        <button onClick={() => deleteQuickCheckBatch(counts.ids)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500" title="Delete this batch"><Trash2 size={11} /></button>
                       </div>
                     )
                   })}

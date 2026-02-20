@@ -355,6 +355,7 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
     { id: 'attendance', label: lang === 'ko' ? '출석' : 'Attendance' },
     { id: 'standards', label: lang === 'ko' ? '표준 숙달' : 'Standards' },
     { id: 'scaffolds', label: lang === 'ko' ? '스캐폴드' : 'Scaffolds' },
+    { id: 'groups', label: lang === 'ko' ? '그룹' : 'Groups' },
     { id: 'goals', label: lang === 'ko' ? '목표' : 'Goals' },
   ]
 
@@ -375,6 +376,7 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
       {activeTab === 'attendance' && <AttendanceTabInModal studentId={studentId} studentName={studentName} lang={lang} />}
       {activeTab === 'standards' && <StandardsMasteryTab studentId={studentId} lang={lang} />}
       {activeTab === 'scaffolds' && <ScaffoldsTab studentId={studentId} />}
+      {activeTab === 'groups' && <StudentGroupsTab studentId={studentId} studentName={studentName} />}
       {activeTab === 'goals' && <GoalsTab studentId={studentId} studentName={studentName} />}
     </div>
   )
@@ -1827,6 +1829,48 @@ ${comments.length > 0 ? comments.map((c: any) => `<div class="note"><strong>${c.
 
 <script>window.print()</script>
 </body></html>`
+}
+
+// ─── Student Groups Tab ─────────────────────────────────────────────
+function StudentGroupsTab({ studentId, studentName }: { studentId: string; studentName: string }) {
+  const [groups, setGroups] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('student_groups').select('*').contains('student_ids', [studentId]).eq('is_archived', false).order('type')
+      setGroups(data || [])
+      setLoading(false)
+    })()
+  }, [studentId])
+
+  if (loading) return <div className="flex justify-center py-8"><Loader2 size={16} className="animate-spin text-navy" /></div>
+
+  const typeColors: Record<string, string> = { skill: 'bg-blue-100 text-blue-700', fluency: 'bg-green-100 text-green-700', litCircle: 'bg-purple-100 text-purple-700', partner: 'bg-amber-100 text-amber-700', custom: 'bg-gray-100 text-gray-700' }
+  const typeLabels: Record<string, string> = { skill: 'Skill Group', fluency: 'Reading Group', litCircle: 'Lit Circle', partner: 'Partner Pair', custom: 'Custom' }
+
+  return (
+    <div className="space-y-3">
+      {groups.length === 0 ? (
+        <p className="text-center text-text-tertiary py-8 text-[12px]">{studentName} is not in any active groups.</p>
+      ) : (
+        groups.map(g => (
+          <div key={g.id} className="bg-surface border border-border rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase ${typeColors[g.type] || typeColors.custom}`}>{typeLabels[g.type] || g.type}</span>
+              <span className="text-[12px] font-semibold text-navy">{g.name}</span>
+              <span className="text-[10px] text-text-tertiary ml-auto">{(g.student_ids || []).length} students</span>
+            </div>
+            {g.focus && <p className="text-[10px] text-text-secondary">{g.focus}</p>}
+            {g.book && <p className="text-[10px] text-purple-600">📖 {g.book}</p>}
+            {g.roles && g.roles[studentId] && <p className="text-[10px] text-purple-700">Role: {g.roles[studentId]}</p>}
+            {g.notes && <p className="text-[10px] text-text-tertiary italic mt-1">{g.notes}</p>}
+            {g.active_from && <p className="text-[9px] text-text-tertiary">📅 {g.active_from}{g.active_until ? ` → ${g.active_until}` : ''}</p>}
+          </div>
+        ))
+      )}
+    </div>
+  )
 }
 
 // ─── Goals Tab ─────────────────────────────────────────────────────
