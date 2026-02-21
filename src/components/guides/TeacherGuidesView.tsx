@@ -8,9 +8,9 @@ import {
   Lightbulb, Loader2, BookMarked, FileText, Layers, Type, Languages,
   Volume2, Puzzle, Gauge, Brain, Sparkles, PencilLine, Mic, Headphones
 } from 'lucide-react'
-import { PhonicsSequence, PhonicsStrategies } from '@/components/curriculum/TeacherReferences'
+import { PhonicsSequence } from '@/components/curriculum/TeacherReferences'
 import ResourceGuideRenderer from './ResourceGuideRenderer'
-import { PHONOLOGICAL_AWARENESS } from './resource-guide-data'
+import { PHONOLOGICAL_AWARENESS, PHONICS, READING_FLUENCY, READING_SKILLS, VOCABULARY, GRAMMAR, WRITING, SPEAKING, LISTENING } from './resource-guide-data'
 
 type ResourceSection = 'home' | 'phonological-awareness' | 'phonics-guide' | 'reading-fluency' | 'reading-skills' | 'vocabulary' | 'grammar' | 'writing' | 'speaking' | 'listening' | 'sor-progression' | 'subplans'
 
@@ -18,7 +18,6 @@ export default function TeacherGuidesView() {
   const { lang } = useApp()
   const ko = lang === 'ko'
   const [section, setSection] = useState<ResourceSection>('home')
-  const [phonicsTab, setPhonicsTab] = useState<'sequence' | 'strategies'>('sequence')
 
   const NAV: { id: ResourceSection; icon: any; label: string; desc: string; category?: string }[] = [
     // Comprehensive resource guides
@@ -47,7 +46,7 @@ export default function TeacherGuidesView() {
             <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider mb-3">{cat}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {NAV.filter(n => n.category === cat).map(n => {
-                const isComingSoon = !['phonological-awareness', 'sor-progression', 'subplans'].includes(n.id)
+                const isComingSoon = false
                 return (
                   <button key={n.id} onClick={() => !isComingSoon && setSection(n.id)} className={`text-left bg-surface border border-border rounded-xl p-4 transition-all group ${isComingSoon ? 'opacity-50 cursor-default' : 'hover:shadow-md hover:border-navy/20'}`}>
                     <div className="flex items-start gap-3">
@@ -81,20 +80,16 @@ export default function TeacherGuidesView() {
       <p className="text-[12px] text-text-tertiary mb-6">{navItem?.desc}</p>
 
       {section === 'phonological-awareness' && <ResourceGuideRenderer guide={PHONOLOGICAL_AWARENESS} />}
+      {section === 'phonics-guide' && <ResourceGuideRenderer guide={PHONICS} />}
+      {section === 'reading-fluency' && <ResourceGuideRenderer guide={READING_FLUENCY} />}
+      {section === 'reading-skills' && <ResourceGuideRenderer guide={READING_SKILLS} />}
+      {section === 'vocabulary' && <ResourceGuideRenderer guide={VOCABULARY} />}
+      {section === 'grammar' && <ResourceGuideRenderer guide={GRAMMAR} />}
+      {section === 'writing' && <ResourceGuideRenderer guide={WRITING} />}
+      {section === 'speaking' && <ResourceGuideRenderer guide={SPEAKING} />}
+      {section === 'listening' && <ResourceGuideRenderer guide={LISTENING} />}
       {/* Coming soon sections will render here as data is added */}
-      {section === 'sor-progression' && (
-        <>
-          <div className="flex gap-1 mb-5">
-            {(['sequence', 'strategies'] as const).map(t => (
-              <button key={t} onClick={() => setPhonicsTab(t)} className={`px-4 py-2 rounded-lg text-[12px] font-medium ${phonicsTab === t ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
-                {t === 'sequence' ? 'Scope & Sequence' : 'Teaching Strategies'}
-              </button>
-            ))}
-          </div>
-          {phonicsTab === 'sequence' && <PhonicsSequence />}
-          {phonicsTab === 'strategies' && <PhonicsStrategies />}
-        </>
-      )}
+      {section === 'sor-progression' && <PhonicsSequence />}
       {section === 'subplans' && <SubPlansContent />}
     </div>
   )
