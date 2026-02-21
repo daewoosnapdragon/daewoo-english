@@ -132,11 +132,13 @@ function OverviewTab({ guide }: { guide: GuideSection }) {
 // PROGRESSION TAB — visual developmental continuum
 // ═══════════════════════════════════════════════════════════════════
 
-const DIFFICULTY_COLORS = {
+const DIFFICULTY_COLORS: Record<string, { bg: string; border: string; text: string; badge: string; bar: string }> = {
+  basic: { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-800', badge: 'bg-sky-100 text-sky-700', bar: 'bg-sky-400' },
   foundational: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', badge: 'bg-emerald-100 text-emerald-700', bar: 'bg-emerald-400' },
   intermediate: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', badge: 'bg-amber-100 text-amber-700', bar: 'bg-amber-400' },
   advanced: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-800', badge: 'bg-rose-100 text-rose-700', bar: 'bg-rose-400' },
 }
+const DEFAULT_DIFFICULTY_COLOR = { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-800', badge: 'bg-gray-100 text-gray-700', bar: 'bg-gray-400' }
 
 function ProgressionTab({ guide }: { guide: GuideSection }) {
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -147,7 +149,8 @@ function ProgressionTab({ guide }: { guide: GuideSection }) {
         <h3 className="text-[14px] font-bold text-navy mb-1">Developmental Progression</h3>
         <p className="text-[12px] text-text-secondary leading-relaxed">
           Skills develop in a predictable sequence from simple to complex. Teach in order — skipping ahead creates gaps.
-          The colored bars indicate difficulty level: <span className="font-semibold text-emerald-700">foundational</span> skills develop first,
+          The colored bars indicate difficulty level: <span className="font-semibold text-sky-700">basic</span> skills come first,
+          then <span className="font-semibold text-emerald-700">foundational</span>,
           then <span className="font-semibold text-amber-700">intermediate</span>,
           then <span className="font-semibold text-rose-700">advanced</span>.
         </p>
@@ -160,7 +163,7 @@ function ProgressionTab({ guide }: { guide: GuideSection }) {
 
         <div className="space-y-3">
           {guide.developmentalProgression.map((skill, idx) => {
-            const colors = DIFFICULTY_COLORS[skill.difficulty]
+            const colors = DIFFICULTY_COLORS[skill.difficulty] || DEFAULT_DIFFICULTY_COLOR
             const isOpen = expanded === skill.name
             return (
               <div key={skill.name} className="relative pl-12">
