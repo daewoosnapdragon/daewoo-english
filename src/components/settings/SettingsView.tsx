@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
-import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale } from 'lucide-react'
+import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown } from 'lucide-react'
 
 export default function SettingsView() {
   const { language, showToast, currentTeacher } = useApp()
@@ -758,9 +758,11 @@ function ClassManagementSection() {
 function AssessmentWeightsSection() {
   const { currentTeacher, showToast } = useApp()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
-  const [weights, setWeights] = useState<Record<number, Record<AssessmentType, number>>>(DEFAULT_WEIGHTS)
+  // Keys are "grade" for global defaults, "grade-Class" for class-specific overrides
+  const [weights, setWeights] = useState<Record<string, Record<AssessmentType, number>>>({})
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [showClassOverrides, setShowClassOverrides] = useState(false)
 
   useEffect(() => {
     ;(async () => {
@@ -768,6 +770,14 @@ function AssessmentWeightsSection() {
       if (data?.value) {
         try { setWeights(JSON.parse(data.value)) } catch {}
       }
+      // Initialize default weights for any missing grades
+      setWeights(prev => {
+        const merged = { ...prev }
+        for (const g of [1, 2, 3, 4, 5]) {
+          if (!merged[String(g)]) merged[String(g)] = DEFAULT_WEIGHTS[g]
+        }
+        return merged
+      })
       setLoaded(true)
     })()
   }, [])
@@ -779,8 +789,12 @@ function AssessmentWeightsSection() {
     showToast('Assessment weights saved')
   }
 
-  const update = (grade: number, type: AssessmentType, val: number) => {
-    setWeights(prev => ({ ...prev, [grade]: { ...prev[grade], [type]: val } }))
+  const getWeight = (key: string): Record<AssessmentType, number> => {
+    return weights[key] || DEFAULT_WEIGHTS[Number(key.split('-')[0])] || { formative: 33, summative: 34, performance_task: 33 }
+  }
+
+  const update = (key: string, type: AssessmentType, val: number) => {
+    setWeights(prev => ({ ...prev, [key]: { ...getWeight(key), [type]: val } }))
   }
 
   if (!loaded) return null
@@ -790,34 +804,54 @@ function AssessmentWeightsSection() {
     summative: 'Summative',
     performance_task: 'Performance Task',
   }
+  const typeDescs: Record<AssessmentType, string> = {
+    formative: 'Quizzes, exit tickets, classwork, homework, participation',
+    summative: 'End-of-unit tests, midterms, finals',
+    performance_task: 'Projects, presentations, portfolios, writing tasks',
+  }
+
+  const classes: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
 
   return (
     <div className="mb-8">
       <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-2">
           <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
             <Scale size={16} className="text-indigo-600" />
           </div>
-          <div>
+          <div className="flex-1">
             <h3 className="font-display text-lg font-semibold text-navy">Assessment Weights</h3>
-            <p className="text-[12px] text-text-secondary">How formative, summative, and performance task grades are weighted per grade level. Weights must sum to 100%.</p>
+            <p className="text-[12px] text-text-secondary">How formative, summative, and performance task grades are weighted. Weights must sum to 100%.</p>
           </div>
         </div>
 
-        <div className="space-y-3">
+        {/* Category descriptions */}
+        <div className="grid grid-cols-3 gap-2 mb-4 mt-3">
+          {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
+            <div key={type} className="bg-surface-alt/50 rounded-lg px-3 py-2">
+              <p className="text-[11px] font-semibold text-navy">{typeLabels[type]}</p>
+              <p className="text-[9px] text-text-tertiary mt-0.5">{typeDescs[type]}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Grade-level defaults */}
+        <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Default Weights by Grade</p>
+        <div className="space-y-2">
           {[1, 2, 3, 4, 5].map(grade => {
-            const w = weights[grade] || DEFAULT_WEIGHTS[grade] || { formative: 33, summative: 34, performance_task: 33 }
+            const key = String(grade)
+            const w = getWeight(key)
             const total = w.formative + w.summative + w.performance_task
             const isValid = total === 100
             return (
-              <div key={grade} className={`flex items-center gap-4 px-4 py-3 rounded-lg border ${isValid ? 'border-border bg-surface-alt/30' : 'border-red-300 bg-red-50/30'}`}>
+              <div key={grade} className={`flex items-center gap-4 px-4 py-2.5 rounded-lg border ${isValid ? 'border-border bg-surface-alt/30' : 'border-red-300 bg-red-50/30'}`}>
                 <span className="text-[13px] font-bold text-navy w-16">Grade {grade}</span>
                 {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
                   <div key={type} className="flex items-center gap-1.5">
                     <label className="text-[10px] text-text-secondary w-20">{typeLabels[type]}</label>
                     {isAdmin ? (
                       <input type="number" min={0} max={100} value={w[type]}
-                        onChange={e => update(grade, type, Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                        onChange={e => update(key, type, Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
                         className="w-14 px-2 py-1 border border-border rounded-lg text-center text-[12px] outline-none focus:border-navy" />
                     ) : (
                       <span className="text-[13px] font-semibold text-navy w-14 text-center">{w[type]}%</span>
@@ -831,6 +865,70 @@ function AssessmentWeightsSection() {
             )
           })}
         </div>
+
+        {/* Class-specific overrides */}
+        <div className="mt-4">
+          <button onClick={() => setShowClassOverrides(!showClassOverrides)}
+            className="text-[11px] font-medium text-navy hover:underline flex items-center gap-1">
+            <ChevronDown size={12} className={`transition-transform ${showClassOverrides ? 'rotate-180' : ''}`} />
+            {showClassOverrides ? 'Hide' : 'Show'} class-specific overrides
+          </button>
+          <p className="text-[9px] text-text-tertiary mt-1">Override weights for specific class+grade combos (e.g. Lily Grade 1 vs Snapdragon Grade 1)</p>
+        </div>
+
+        {showClassOverrides && (
+          <div className="mt-3 space-y-4">
+            {[1, 2, 3, 4, 5].map(grade => (
+              <div key={grade}>
+                <p className="text-[11px] font-semibold text-navy mb-1.5">Grade {grade} — Class Overrides</p>
+                <div className="space-y-1.5">
+                  {classes.map(cls => {
+                    const key = `${grade}-${cls}`
+                    const hasOverride = !!weights[key]
+                    const w = hasOverride ? getWeight(key) : getWeight(String(grade))
+                    const total = w.formative + w.summative + w.performance_task
+                    const isValid = total === 100
+                    return (
+                      <div key={cls} className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${!hasOverride ? 'border-border/50 bg-surface-alt/20 opacity-60' : isValid ? 'border-border bg-surface-alt/30' : 'border-red-300 bg-red-50/30'}`}>
+                        <span className="text-[11px] font-medium w-24" style={{ color: classToTextColor(cls as EnglishClass) }}>{cls}</span>
+                        {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
+                          <div key={type} className="flex items-center gap-1">
+                            <label className="text-[9px] text-text-tertiary w-14">{typeLabels[type]}</label>
+                            {isAdmin ? (
+                              <input type="number" min={0} max={100} value={hasOverride ? w[type] : ''}
+                                placeholder={String(getWeight(String(grade))[type])}
+                                onChange={e => {
+                                  const val = Number(e.target.value)
+                                  if (e.target.value === '' && !weights[key]) return
+                                  if (e.target.value === '') {
+                                    // Clear override
+                                    setWeights(prev => { const n = { ...prev }; delete n[key]; return n })
+                                  } else {
+                                    // Set or create override
+                                    const base = getWeight(String(grade))
+                                    if (!weights[key]) {
+                                      setWeights(prev => ({ ...prev, [key]: { ...base, [type]: Math.max(0, Math.min(100, val || 0)) } }))
+                                    } else {
+                                      update(key, type, Math.max(0, Math.min(100, val || 0)))
+                                    }
+                                  }
+                                }}
+                                className="w-12 px-1.5 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
+                            ) : (
+                              <span className="text-[11px] font-medium w-12 text-center">{hasOverride ? w[type] + '%' : '—'}</span>
+                            )}
+                          </div>
+                        ))}
+                        {hasOverride && <span className={`text-[10px] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>{total}%</span>}
+                        {!hasOverride && <span className="text-[9px] text-text-tertiary ml-auto italic">using default</span>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {isAdmin && (
           <div className="flex justify-end mt-4">

@@ -219,15 +219,28 @@ export interface WeightedGradeInput {
  * Calculate weighted average for a set of graded assessments within a single domain.
  * Groups by assessment type, averages within each group, then applies type weights.
  * Falls back to unweighted average if only one type exists or weights aren't configured.
+ * Supports class-specific override keys like "3-Snapdragon" falling back to grade-level "3".
  */
 export function calculateWeightedAverage(
   items: WeightedGradeInput[],
   grade: number,
   customWeights?: Record<AssessmentType, number> | null,
+  englishClass?: string | null,
+  allWeights?: Record<string, Record<AssessmentType, number>> | null,
 ): number | null {
   if (items.length === 0) return null
 
-  const weights = customWeights || DEFAULT_WEIGHTS[grade] || DEFAULT_WEIGHTS[3]
+  // Priority: customWeights > class-specific override > grade default
+  let weights = customWeights || null
+  if (!weights && allWeights && englishClass) {
+    const classKey = `${grade}-${englishClass}`
+    if (allWeights[classKey]) weights = allWeights[classKey]
+  }
+  if (!weights && allWeights) {
+    const gradeKey = String(grade)
+    if (allWeights[gradeKey]) weights = allWeights[gradeKey]
+  }
+  if (!weights) weights = DEFAULT_WEIGHTS[grade] || DEFAULT_WEIGHTS[3]
 
   // Group by assessment type
   const groups: Record<AssessmentType, number[]> = {

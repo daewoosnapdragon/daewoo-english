@@ -49,6 +49,9 @@ export default function GroupsView() {
   const [prevSemesterScores, setPrevSemesterScores] = useState<Record<string, Record<string, number>>>({})
   const [prevSemesterName, setPrevSemesterName] = useState<string>('')
   const [loadingPrev, setLoadingPrev] = useState(false)
+  // Hoisted editingId so nested GroupManager doesn't lose state on parent re-render
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [savingGroup, setSavingGroup] = useState(false)
 
   const availableGrades = useMemo(() => Array.from(new Set(students.map(s => s.grade))).sort(), [students])
 
@@ -133,8 +136,8 @@ export default function GroupsView() {
     ;(async () => {
       setLoadingPrev(true)
       try {
-        // Find the most recent non-active semester
-        const { data: semesters } = await supabase.from('semesters').select('id, name').eq('is_active', false).order('created_at', { ascending: false }).limit(1)
+        // Find the most recent non-active semester by start_date
+        const { data: semesters } = await supabase.from('semesters').select('id, name').eq('is_active', false).order('start_date', { ascending: false }).limit(1)
         if (semesters && semesters.length > 0) {
           const prevSem = semesters[0]
           setPrevSemesterName(prevSem.name)
@@ -226,7 +229,7 @@ export default function GroupsView() {
   }
 
   // ─── AUTO-SUGGEST ──────────────────────────────────────────────
-  const autoSuggestReading = useCallback(() => {
+  const autoSuggestReading = useCallback(async () => {
     const gs = gradeStudents
     if (gs.length === 0) return
     const grade = selectedGrade || 3
@@ -248,15 +251,21 @@ export default function GroupsView() {
       noData: { name: 'Needs ORF Assessment', focus: 'No fluency data — administer a 1-minute oral reading fluency check' },
     }
     const newGroups: Group[] = []
-    Object.entries(tiers).forEach(([tier, studs]) => {
-      if (studs.length === 0) return
-      newGroups.push({ id: 'new-' + Date.now() + '-' + tier, name: tierInfo[tier].name, type: 'reading', english_class: selectedClass, grade: selectedGrade || undefined, focus: tierInfo[tier].focus, students: studs.map(s => s.id), suggested_by: 'auto', tasks: [] })
-    })
+    for (const [tier, studs] of Object.entries(tiers)) {
+      if (studs.length === 0) continue
+      const payload = {
+        name: tierInfo[tier].name, type: 'reading' as GroupType, english_class: selectedClass, grade: selectedGrade || undefined,
+        focus: tierInfo[tier].focus, student_ids: studs.map(s => s.id), suggested_by: 'auto', tasks: [],
+        created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
+      }
+      const { data } = await supabase.from('student_groups').insert(payload).select().single()
+      if (data) newGroups.push({ ...data, students: data.student_ids || [], tasks: data.tasks || [] })
+    }
     setGroups(prev => [...newGroups, ...prev])
-    showToast(newGroups.length + ' reading groups suggested from CWPM data')
-  }, [gradeStudents, selectedClass, selectedGrade, studentCWPM])
+    showToast(newGroups.length + ' reading groups suggested & saved')
+  }, [gradeStudents, selectedClass, selectedGrade, studentCWPM, currentTeacher])
 
-  const autoSuggestWriting = useCallback(() => {
+  const autoSuggestWriting = useCallback(async () => {
     const gs = gradeStudents
     if (gs.length === 0) return
     const tiers: Record<string, StudentBasic[]> = { above: [], on: [], approaching: [], below: [], noData: [] }
@@ -277,15 +286,21 @@ export default function GroupsView() {
       noData: { name: 'Needs Writing Assessment', focus: 'No writing scores — assign a writing task to assess' },
     }
     const newGroups: Group[] = []
-    Object.entries(tiers).forEach(([tier, studs]) => {
-      if (studs.length === 0) return
-      newGroups.push({ id: 'new-' + Date.now() + '-' + tier, name: tierInfo[tier].name, type: 'writing', english_class: selectedClass, grade: selectedGrade || undefined, focus: tierInfo[tier].focus, students: studs.map(s => s.id), suggested_by: 'auto', tasks: [] })
-    })
+    for (const [tier, studs] of Object.entries(tiers)) {
+      if (studs.length === 0) continue
+      const payload = {
+        name: tierInfo[tier].name, type: 'writing' as GroupType, english_class: selectedClass, grade: selectedGrade || undefined,
+        focus: tierInfo[tier].focus, student_ids: studs.map(s => s.id), suggested_by: 'auto', tasks: [],
+        created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
+      }
+      const { data } = await supabase.from('student_groups').insert(payload).select().single()
+      if (data) newGroups.push({ ...data, students: data.student_ids || [], tasks: data.tasks || [] })
+    }
     setGroups(prev => [...newGroups, ...prev])
-    showToast(newGroups.length + ' writing groups suggested')
-  }, [gradeStudents, selectedClass, selectedGrade, activeScores])
+    showToast(newGroups.length + ' writing groups suggested & saved')
+  }, [gradeStudents, selectedClass, selectedGrade, activeScores, currentTeacher])
 
-  const autoSuggestSkill = useCallback(() => {
+  const autoSuggestSkill = useCallback(async () => {
     const gs = gradeStudents
     if (gs.length === 0) return
     const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
@@ -299,22 +314,30 @@ export default function GroupsView() {
     })
     const labels: Record<string, string> = { reading: 'Reading Support', phonics: 'Phonics Support', writing: 'Writing Support', speaking: 'Speaking Support', language: 'Language Support' }
     const newGroups: Group[] = []
-    Object.entries(byWeakest).forEach(([domain, studs]) => {
-      if (studs.length === 0) return
-      newGroups.push({ id: 'new-' + Date.now() + '-' + domain, name: domain === 'unassessed' ? 'Needs Assessment' : labels[domain] || domain + ' Group', type: 'skill', english_class: selectedClass, grade: selectedGrade || undefined, focus: domain === 'unassessed' ? 'No assessment data yet' : 'Weakest domain: ' + domain, students: studs.map(s => s.id), suggested_by: 'auto', tasks: [] })
-    })
+    for (const [domain, studs] of Object.entries(byWeakest)) {
+      if (studs.length === 0) continue
+      const payload = {
+        name: domain === 'unassessed' ? 'Needs Assessment' : labels[domain] || domain + ' Group',
+        type: 'skill' as GroupType, english_class: selectedClass, grade: selectedGrade || undefined,
+        focus: domain === 'unassessed' ? 'No assessment data yet' : 'Weakest domain: ' + domain,
+        student_ids: studs.map(s => s.id), suggested_by: 'auto', tasks: [],
+        created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
+      }
+      const { data } = await supabase.from('student_groups').insert(payload).select().single()
+      if (data) newGroups.push({ ...data, students: data.student_ids || [], tasks: data.tasks || [] })
+    }
     setGroups(prev => [...newGroups, ...prev])
-    showToast(newGroups.length + ' skill groups suggested')
-  }, [gradeStudents, selectedClass, selectedGrade, activeScores])
+    showToast(newGroups.length + ' skill groups suggested & saved')
+  }, [gradeStudents, selectedClass, selectedGrade, activeScores, currentTeacher])
 
   const refreshGroups = async (type: GroupType) => {
     const toArchive = groups.filter(g => g.type === type && !g.is_archived && !g.id.startsWith('new-'))
     if (toArchive.length > 0 && !confirm('Archive ' + toArchive.length + ' existing ' + type + ' group(s) and regenerate?')) return
     for (const g of toArchive) await archiveGroup(g.id)
     setGroups(prev => prev.filter(g => !(g.type === type && g.id.startsWith('new-'))))
-    if (type === 'reading') autoSuggestReading()
-    else if (type === 'writing') autoSuggestWriting()
-    else if (type === 'skill') autoSuggestSkill()
+    if (type === 'reading') await autoSuggestReading()
+    else if (type === 'writing') await autoSuggestWriting()
+    else if (type === 'skill') await autoSuggestSkill()
   }
 
   // ─── WIDA Badge ───────────────────────────────────────────────
@@ -331,8 +354,6 @@ export default function GroupsView() {
     extraStudentInfo?: (sid: string) => string
   }) {
     const typeGroups = filteredGroups.filter(g => g.type === type)
-    const [editingId, setEditingId] = useState<string | null>(null)
-    const [saving, setSaving] = useState(false)
 
     const toggleStudent = (gid: string, sid: string) => setGroups(prev => prev.map(g => g.id !== gid ? g : { ...g, students: g.students.includes(sid) ? g.students.filter(s => s !== sid) : [...g.students, sid] }))
 
@@ -349,14 +370,14 @@ export default function GroupsView() {
     }
 
     const handleSave = async (group: Group) => {
-      setSaving(true)
+      setSavingGroup(true)
       const saved = await saveGroup(group)
       if (saved) {
         setGroups(prev => prev.map(g => g.id === group.id ? saved : g))
         setEditingId(null)
         showToast('Group saved')
       }
-      setSaving(false)
+      setSavingGroup(false)
     }
 
     const handlePrint = (group: Group) => {
@@ -446,8 +467,8 @@ export default function GroupsView() {
                   {isEditing && (
                     <>
                       <button onClick={() => { if (isNew) deleteGroup(group.id); setEditingId(null) }} className="p-1.5 rounded-lg hover:bg-surface-alt" title="Cancel"><X size={13} className="text-text-tertiary" /></button>
-                      <button onClick={() => handleSave(group)} disabled={saving} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-navy text-white hover:opacity-90 disabled:opacity-50">
-                        <Save size={12} className="inline mr-1" />{saving ? '...' : 'Save'}
+                      <button onClick={() => handleSave(group)} disabled={savingGroup} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-navy text-white hover:opacity-90 disabled:opacity-50">
+                        <Save size={12} className="inline mr-1" />{savingGroup ? '...' : 'Save'}
                       </button>
                     </>
                   )}
@@ -549,18 +570,17 @@ export default function GroupsView() {
     const [searchB, setSearchB] = useState('')
     const [focusA, setFocusA] = useState(false)
     const [focusB, setFocusB] = useState(false)
-    // Load ALL active students across classes for cross-class exclusions
-    const [allStudents, setAllStudents] = useState<StudentBasic[]>([])
-    useEffect(() => {
-      supabase.from('students').select('id, english_name, korean_name, english_class, grade, photo_url').eq('is_active', true).eq('grade', selectedGrade).order('english_class').order('english_name')
-        .then(({ data }) => setAllStudents(data || []))
-    }, [selectedGrade])
+    // Only show students from the currently selected class and grade
+    const classGradeStudents = useMemo(() =>
+      students.filter(s => s.english_class === selectedClass && (!selectedGrade || s.grade === selectedGrade)),
+      [students, selectedClass, selectedGrade]
+    )
 
-    const filteredA = allStudents.filter(s => s.id !== studentB && (searchA.length === 0 || s.english_name.toLowerCase().includes(searchA.toLowerCase()) || s.korean_name.includes(searchA) || s.english_class.toLowerCase().includes(searchA.toLowerCase())))
-    const filteredB = allStudents.filter(s => s.id !== studentA && (searchB.length === 0 || s.english_name.toLowerCase().includes(searchB.toLowerCase()) || s.korean_name.includes(searchB) || s.english_class.toLowerCase().includes(searchB.toLowerCase())))
+    const filteredA = classGradeStudents.filter(s => s.id !== studentB && (searchA.length === 0 || s.english_name.toLowerCase().includes(searchA.toLowerCase()) || s.korean_name.includes(searchA)))
+    const filteredB = classGradeStudents.filter(s => s.id !== studentA && (searchB.length === 0 || s.english_name.toLowerCase().includes(searchB.toLowerCase()) || s.korean_name.includes(searchB)))
 
-    const nameA = allStudents.find(s => s.id === studentA)
-    const nameB = allStudents.find(s => s.id === studentB)
+    const nameA = classGradeStudents.find(s => s.id === studentA)
+    const nameB = classGradeStudents.find(s => s.id === studentB)
 
     const addExclusion = async () => {
       if (!studentA || !studentB || studentA === studentB) return
@@ -579,7 +599,7 @@ export default function GroupsView() {
     const StudentSearchInput = ({ value, search, setSearch, setStudent, filtered, focus, setFocus, placeholder }: any) => (
       <div className="relative">
         <input
-          value={value ? (allStudents.find(s => s.id === value)?.english_name || '') : search}
+          value={value ? (classGradeStudents.find(s => s.id === value)?.english_name || '') : search}
           onChange={e => { setSearch(e.target.value); if (value) setStudent('') }}
           onFocus={() => setFocus(true)}
           onBlur={() => setTimeout(() => setFocus(false), 200)}
@@ -621,8 +641,8 @@ export default function GroupsView() {
         {exclusions.length > 0 && (
           <div className="space-y-1">
             {exclusions.map(ex => {
-              const a = allStudents.find(s => s.id === ex.student_a) || students.find(s => s.id === ex.student_a)
-              const b = allStudents.find(s => s.id === ex.student_b) || students.find(s => s.id === ex.student_b)
+              const a = classGradeStudents.find(s => s.id === ex.student_a) || students.find(s => s.id === ex.student_a)
+              const b = classGradeStudents.find(s => s.id === ex.student_b) || students.find(s => s.id === ex.student_b)
               return (
                 <div key={ex.id} className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                   <Ban size={12} className="text-red-400 shrink-0" />

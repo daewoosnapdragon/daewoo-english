@@ -27,15 +27,10 @@ function normalizeCCSS(input: string): string {
 }
 
 const ASSESSMENT_CATEGORIES = [
-  { value: 'quiz', label: 'Quiz', labelKo: '퀴즈' },
-  { value: 'project', label: 'Project', labelKo: '프로젝트' },
-  { value: 'assignment', label: 'Assignment', labelKo: '과제' },
-  { value: 'homework', label: 'Homework', labelKo: '숙제' },
-  { value: 'participation', label: 'Participation', labelKo: '참여' },
-  { value: 'performance_task', label: 'Performance Task', labelKo: '수행과제' },
-  { value: 'formative', label: 'Formative', labelKo: '형성평가' },
-  { value: 'summative', label: 'Summative', labelKo: '총괄평가' },
-  { value: 'other', label: 'Other', labelKo: '기타' },
+  // === WEIGHTED CATEGORIES (these determine final grades) ===
+  { value: 'formative', label: 'Formative', labelKo: '형성평가', weighted: true, desc: 'Ongoing checks: quizzes, exit tickets, classwork, homework, participation' },
+  { value: 'summative', label: 'Summative', labelKo: '총괄평가', weighted: true, desc: 'End-of-unit tests, midterms, finals, chapter tests' },
+  { value: 'performance_task', label: 'Performance Task', labelKo: '수행과제', weighted: true, desc: 'Projects, presentations, portfolios, writing tasks' },
 ] as const
 
 interface Assessment {
@@ -965,43 +960,51 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
       setLoading(true)
       const result = makeDomainStats()
-      for (const domain of DOMAINS) {
-        const da = allAssessments.filter((a: any) => a.domain === domain)
-        if (!result[domain]) result[domain] = { avg: null, count: 0, assessmentCount: 0, assessments: [] }
-        result[domain].assessmentCount = da.length
-        if (da.length === 0) continue
-        const ids = da.map((a: any) => a.id)
-        const { data: grades } = await supabase.from('grades').select('score, assessment_id').in('assessment_id', ids).not('score', 'is', null)
-        if (grades && grades.length > 0) {
-          // Group grades by student, then weighted-average per student, then average across students
-          const studentScores: Record<string, { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[]> = {}
-          grades.forEach((g: any) => {
-            const a = da.find((x: any) => x.id === g.assessment_id)
-            if (!a || a.max_score <= 0) return
-            // We don't have student_id here -- this is class-level aggregate, so just do overall weighted avg
-            if (!studentScores['_all']) studentScores['_all'] = []
-            studentScores['_all'].push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
-          })
-          const allItems = studentScores['_all'] || []
-          result[domain].count = allItems.length
-          result[domain].avg = calcWeightedAvg(allItems, Number(allAssessments[0]?.grade || 3))
-          for (const a of da) {
-            const aGrades = grades.filter((g: any) => g.assessment_id === a.id)
-            if (aGrades.length > 0 && a.max_score > 0) {
-              const avg = aGrades.reduce((sum: number, g: any) => sum + (g.score / a.max_score) * 100, 0) / aGrades.length
-              result[domain].assessments.push({ name: a.name, avg })
+      try {
+        for (const domain of DOMAINS) {
+          const da = allAssessments.filter((a: any) => a.domain === domain)
+          if (!result[domain]) result[domain] = { avg: null, count: 0, assessmentCount: 0, assessments: [] }
+          result[domain].assessmentCount = da.length
+          if (da.length === 0) continue
+          const ids = da.map((a: any) => a.id)
+          if (ids.length === 0) continue
+          const { data: grades } = await supabase.from('grades').select('score, assessment_id').in('assessment_id', ids).not('score', 'is', null)
+          if (cancelled) return
+          if (grades && grades.length > 0) {
+            const studentScores: Record<string, { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[]> = {}
+            grades.forEach((g: any) => {
+              const a = da.find((x: any) => x.id === g.assessment_id)
+              if (!a || a.max_score <= 0) return
+              if (!studentScores['_all']) studentScores['_all'] = []
+              studentScores['_all'].push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
+            })
+            const allItems = studentScores['_all'] || []
+            result[domain].count = allItems.length
+            result[domain].avg = calcWeightedAvg(allItems, Number(selectedGrade || 3))
+            for (const a of da) {
+              const aGrades = grades.filter((g: any) => g.assessment_id === a.id)
+              if (aGrades.length > 0 && a.max_score > 0) {
+                const avg = aGrades.reduce((sum: number, g: any) => sum + (g.score / a.max_score) * 100, 0) / aGrades.length
+                result[domain].assessments.push({ name: a.name, avg })
+              }
             }
           }
         }
+      } catch (err) {
+        console.error('DomainOverview load error:', err)
       }
-      setStats(result)
-      setLoading(false)
+      if (!cancelled) {
+        setStats(result)
+        setLoading(false)
+      }
     }
     load()
-  }, [allAssessments])
+    return () => { cancelled = true }
+  }, [allAssessments, selectedGrade])
 
   if (loading) {
     return (
@@ -1492,7 +1495,8 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Domain</label>
               <select value={selDomain} onChange={e => setSelDomain(e.target.value as Domain)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">{DOMAINS.map(d => <option key={d} value={d}>{DOMAIN_LABELS[d][lang]}</option>)}</select></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '유형' : 'Category'}</label>
-              <select value={category} onChange={e => setCategory(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">{ASSESSMENT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{lang === 'ko' ? c.labelKo : c.label}</option>)}</select></div>
+              <select value={category} onChange={e => setCategory(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">{ASSESSMENT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{lang === 'ko' ? c.labelKo : c.label}</option>)}</select>
+              <p className="text-[9px] text-text-tertiary mt-1">{ASSESSMENT_CATEGORIES.find(c => c.value === category)?.desc || ''}</p></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '만점' : 'Total Points'}</label>
@@ -1680,7 +1684,7 @@ function CrossClassCompare({ assessmentName, domain, maxScore, currentClass, gra
     matches.forEach(m => { byClass[m.english_class] = [] })
     grades?.forEach((g: any) => {
       const m = matches.find(mm => mm.id === g.assessment_id)
-      if (m) byClass[m.english_class].push((g.score / maxScore) * 100)
+      if (m && byClass[m.english_class]) byClass[m.english_class].push((g.score / maxScore) * 100)
     })
     setData(Object.entries(byClass).map(([cls, scores]) => ({
       cls, avg: scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0, count: scores.length,

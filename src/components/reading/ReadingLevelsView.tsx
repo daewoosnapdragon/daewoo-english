@@ -28,22 +28,13 @@ const CWPM_BENCHMARKS: Record<number, { below: number; approaching: number; prof
   6: { below: 110, approaching: 140, proficient: 170, advanced: 195 },
 }
 
-// Passage difficulty levels A-E with CWPM weight multipliers
-// Harder passages = higher multiplier (rewards reading harder text even at lower raw CWPM)
-const PASSAGE_LEVELS = [
-  { id: 'A', label: 'Level A (Easiest)', weight: 0.70 },
-  { id: 'B', label: 'Level B', weight: 0.85 },
-  { id: 'C', label: 'Level C (Grade Level)', weight: 1.00 },
-  { id: 'D', label: 'Level D', weight: 1.15 },
-  { id: 'E', label: 'Level E (Hardest)', weight: 1.30 },
+// Passage difficulty feedback options (for teacher to note if passage was appropriate)
+const DIFFICULTY_OPTIONS = [
+  { id: '', label: '— Not rated —' },
+  { id: 'too_easy', label: '📗 Too Easy' },
+  { id: 'just_right', label: '📘 Just Right' },
+  { id: 'too_hard', label: '📕 Too Difficult' },
 ]
-const getPassageWeight = (level: string | null | undefined): number => {
-  const found = PASSAGE_LEVELS.find(p => p.id === level)
-  return found?.weight || 1.0
-}
-const calcWeightedCwpm = (rawCwpm: number, level: string | null | undefined): number => {
-  return Math.round(rawCwpm * getPassageWeight(level) * 10) / 10
-}
 
 // Load class benchmarks from DB for the selected class
 function useClassBenchmarks(englishClass: string, grade: number) {
@@ -188,11 +179,11 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
           <span className="px-2 py-0.5 rounded border bg-blue-100 text-blue-700 border-blue-300">Advanced {bench.advanced}+</span>
           <button onClick={() => {
             exportToCSV(`reading-${englishClass}-G${grade}`,
-              ['Student', 'Korean Name', 'CWPM', 'Band', 'Accuracy', 'Passage Level', 'Last Assessed'],
+              ['Student', 'Korean Name', 'CWPM', 'Band', 'Accuracy', 'Lexile', 'Last Assessed'],
               students.map((s: any) => {
                 const r = latestRecords[s.id]
                 const band = r?.cwpm != null ? getBand(r.cwpm) : null
-                return [s.english_name, s.korean_name, r?.cwpm != null ? Math.round(r.cwpm) : '', band?.label || '', r?.accuracy_rate?.toFixed(1) || '', r?.passage_level || '', r?.date || '']
+                return [s.english_name, s.korean_name, r?.cwpm != null ? Math.round(r.cwpm) : '', band?.label || '', r?.accuracy_rate?.toFixed(1) || '', r?.reading_level || '', r?.date || '']
               }))
           }} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
             <Download size={11} /> CSV
@@ -202,7 +193,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
             const rows = students.map((s: any) => {
               const r = latestRecords[s.id]; const b = r?.cwpm != null ? getBand(r.cwpm) : null
               const bColor = b ? (b.label === 'Advanced' ? '#dbeafe' : b.label === 'Proficient' ? '#dcfce7' : b.label === 'Approaching' ? '#fef3c7' : '#fee2e2') : '#f8fafc'
-              return `<tr><td style="padding:6px 12px;border-bottom:1px solid #e2e8f0">${s.english_name}</td><td style="padding:6px;text-align:center;font-weight:700;color:#1e3a5f;border-bottom:1px solid #e2e8f0">${r?.cwpm != null ? Math.round(r.cwpm) : '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0;background:${bColor}">${b?.label || '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0">${r?.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0">${r?.passage_level || '--'}</td></tr>`
+              return `<tr><td style="padding:6px 12px;border-bottom:1px solid #e2e8f0">${s.english_name}</td><td style="padding:6px;text-align:center;font-weight:700;color:#1e3a5f;border-bottom:1px solid #e2e8f0">${r?.cwpm != null ? Math.round(r.cwpm) : '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0;background:${bColor}">${b?.label || '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0">${r?.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0">${r?.reading_level || '--'}</td></tr>`
             }).join('')
             pw.document.write(`<html><head><title>Reading Report - ${englishClass} Gr ${grade}</title><style>body{font-family:'Segoe UI',sans-serif;padding:24px}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#f1f5f9;padding:8px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #cbd5e1}@media print{body{padding:12px}}</style></head><body><h2 style="color:#1e3a5f;font-size:18px;margin:0">${englishClass} Grade ${grade} -- Reading Fluency Report</h2><p style="color:#94a3b8;font-size:11px;margin-top:4px">Benchmarks: Below &lt;${bench.approaching} | Approaching ${bench.approaching}-${bench.proficient - 1} | Proficient ${bench.proficient}-${bench.advanced - 1} | Advanced ${bench.advanced}+</p><table><thead><tr><th style="text-align:left">Student</th><th>CWPM</th><th>Band</th><th>Accuracy</th><th>Lexile</th></tr></thead><tbody>${rows}</tbody></table><p style="color:#94a3b8;font-size:10px;margin-top:16px;text-align:center">Printed ${new Date().toLocaleDateString()}</p></body></html>`)
             pw.document.close(); pw.print()
@@ -220,7 +211,6 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
             <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">CWPM</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Band</th>
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Passage</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Lexile</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Accuracy</th>
             <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-28">Last Assessed</th>
@@ -238,7 +228,6 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
                   <td className="px-4 py-2.5 text-center">
                     {band ? <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${band.color}`}>{band.label}</span> : '—'}
                   </td>
-                  <td className="px-4 py-2.5 text-center text-[12px] text-text-secondary">{rec?.passage_level || '—'}</td>
                   <td className="px-4 py-2.5 text-center text-[12px] text-purple-600 font-medium">{rec?.reading_level || '—'}</td>
                   <td className="px-4 py-2.5 text-center">
                     {rec?.accuracy_rate != null ? (() => {
@@ -495,7 +484,6 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
   const [form, setForm] = useState({
     date: record.date || '',
     passage_title: record.passage_title || '',
-    passage_level: record.passage_level || '',
     word_count: record.word_count || '',
     time_seconds: record.time_seconds || '',
     errors: record.errors ?? '',
@@ -646,9 +634,9 @@ function CwpmLineChart({ records, classBench }: { records: any[]; classBench: an
             {/* CWPM label */}
             <text x={x} y={y - 10} textAnchor="middle" fontSize="9" fontWeight="700" fill="#1e3a5f">{Math.round(r.cwpm || 0)}</text>
             {/* Passage level + Lexile above dot */}
-            {(r.passage_level || r.reading_level) && (
+            {r.reading_level && (
               <text x={x} y={y - 20} textAnchor="middle" fontSize="7" fill="#94a3b8">
-                {r.passage_level ? `Lv${r.passage_level}` : ''}{r.passage_level && r.reading_level ? ' · ' : ''}{r.reading_level || ''}
+                {r.reading_level}
               </text>
             )}
             {/* Date on x-axis */}
@@ -833,7 +821,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
                         {item.rec && (
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-[13px] font-bold text-navy">{Math.round(item.rec.cwpm)} CWPM</span>
-                            {item.rec.passage_level && <span className="text-[9px] bg-surface-alt px-1.5 py-0.5 rounded text-text-tertiary">{item.rec.passage_level}</span>}
+                            {item.rec.reading_level && <span className="text-[9px] bg-surface-alt px-1.5 py-0.5 rounded text-text-tertiary">{item.rec.reading_level}</span>}
                           </div>
                         )}
                         {bandSubgroups.length > 0 && (
@@ -866,7 +854,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const [selStudent, setSelStudent] = useState(studentId || '')
   const [date, setDate] = useState(getKSTDateString())
   const [passageTitle, setPassageTitle] = useState('')
-  const [passageLevel, setPassageLevel] = useState('')
+  const [passageDifficulty, setPassageDifficulty] = useState('')
   const [wordCount, setWordCount] = useState<number | ''>('')
   const [timeSeconds, setTimeSeconds] = useState<number | ''>('')
   const [timeMode, setTimeMode] = useState<'sec' | 'minsec'>('sec')
@@ -879,8 +867,8 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const [naepScore, setNaepScore] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
 
-  // Batch mode state: studentId -> { wordCount, timeSeconds, errors, selfCorrections, notes }
-  const [batchScores, setBatchScores] = useState<Record<string, { wc: string; ts: string; err: string; sc: string; notes: string; pl: string; lex: string; naep: string }>>({})
+  // Batch mode state
+  const [batchScores, setBatchScores] = useState<Record<string, { wc: string; ts: string; err: string; sc: string; notes: string; diff: string; lex: string; naep: string }>>({})
 
   const wc = typeof wordCount === 'number' ? wordCount : 0
   const ts = typeof timeSeconds === 'number' ? timeSeconds : 0
@@ -889,7 +877,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const accuracy = wc > 0 ? ((wc - err) / wc) * 100 : 0
 
   const setBatchField = (sid: string, field: string, value: string) => {
-    setBatchScores(prev => ({ ...prev, [sid]: { ...(prev[sid] || { wc: '', ts: '', err: '0', sc: '0', notes: '', pl: '', lex: '', naep: '' }), [field]: value } }))
+    setBatchScores(prev => ({ ...prev, [sid]: { ...(prev[sid] || { wc: '', ts: '', err: '0', sc: '0', notes: '', diff: '', lex: '', naep: '' }), [field]: value } }))
   }
 
   const calcBatchCwpm = (b: { wc: string; ts: string; err: string }) => {
@@ -906,11 +894,13 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
       if (!selStudent) { showToast('Select a student'); return }
       if (!wordCount || !timeSeconds) { showToast('Enter word count and time'); return }
       setSaving(true)
+      const diffNote = passageDifficulty ? DIFFICULTY_OPTIONS.find(d => d.id === passageDifficulty)?.label || '' : ''
+      const fullNotes = [notes.trim(), diffNote ? `[Passage: ${diffNote}]` : ''].filter(Boolean).join(' ')
       const { error } = await supabase.from('reading_assessments').insert({
-        student_id: selStudent, date, passage_title: passageTitle || null, passage_level: passageLevel || null,
+        student_id: selStudent, date, passage_title: passageTitle || null, passage_level: null,
         word_count: wc, time_seconds: ts, errors: err, self_corrections: typeof selfCorrections === 'number' ? selfCorrections : 0,
         cwpm: Math.round(cwpm * 10) / 10, accuracy_rate: Math.round(accuracy * 10) / 10,
-        reading_level: lexile.trim() || null, notes: notes.trim() || null, assessed_by: currentTeacher?.id || null,
+        reading_level: lexile.trim() || null, notes: fullNotes || null, assessed_by: currentTeacher?.id || null,
         naep_fluency: typeof naepScore === 'number' ? naepScore : null,
       })
       setSaving(false)
@@ -922,11 +912,13 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
         .filter(([_, b]) => b.wc && b.ts)
         .map(([sid, b]) => {
           const w = parseInt(b.wc) || 0; const t = parseInt(b.ts) || 0; const e = parseInt(b.err) || 0; const sc = parseInt(b.sc) || 0
+          const diffNote = b.diff ? DIFFICULTY_OPTIONS.find(d => d.id === b.diff)?.label || '' : ''
+          const fullNotes = [b.notes?.trim(), diffNote ? `[Passage: ${diffNote}]` : ''].filter(Boolean).join(' ')
           return {
-            student_id: sid, date, passage_title: passageTitle || null, passage_level: b.pl || passageLevel || null,
+            student_id: sid, date, passage_title: passageTitle || null, passage_level: null,
             word_count: w, time_seconds: t, errors: e, self_corrections: sc,
             cwpm: calcBatchCwpm(b), accuracy_rate: calcBatchAcc(b),
-            reading_level: b.lex?.trim() || null, notes: b.notes?.trim() || null, assessed_by: currentTeacher?.id || null,
+            reading_level: b.lex?.trim() || null, notes: fullNotes || null, assessed_by: currentTeacher?.id || null,
             naep_fluency: b.naep ? parseInt(b.naep) : null,
           }
         })
@@ -962,11 +954,12 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
               <input type="date" value={date} onChange={(e: any) => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
               <input value={passageTitle} onChange={(e: any) => setPassageTitle(e.target.value)} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Level</label>
-              <select value={passageLevel} onChange={(e: any) => setPassageLevel(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface">
-                <option value="">-- Select A-E --</option>
-                {PASSAGE_LEVELS.map(l => <option key={l.id} value={l.id}>{l.label} ({l.weight}x)</option>)}
-              </select></div>
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Difficulty</label>
+              <select value={passageDifficulty} onChange={(e: any) => setPassageDifficulty(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface">
+                {DIFFICULTY_OPTIONS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+              </select>
+              <p className="text-[8px] text-text-tertiary mt-0.5">Note if passage was appropriate so you can choose better next time</p>
+            </div>
           </div>
         </div>
 
@@ -1074,17 +1067,19 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
               <button onClick={async () => {
                 if (!selStudent || !wordCount || !timeSeconds) { showToast('Enter all required fields'); return }
                 setSaving(true)
+                const diffNote2 = passageDifficulty ? DIFFICULTY_OPTIONS.find(d => d.id === passageDifficulty)?.label || '' : ''
+                const fullNotes2 = [notes.trim(), diffNote2 ? `[Passage: ${diffNote2}]` : ''].filter(Boolean).join(' ')
                 const { error } = await supabase.from('reading_assessments').insert({
-                  student_id: selStudent, date, passage_title: passageTitle || null, passage_level: passageLevel || null,
+                  student_id: selStudent, date, passage_title: passageTitle || null, passage_level: null,
                   word_count: wc, time_seconds: ts, errors: err, self_corrections: typeof selfCorrections === 'number' ? selfCorrections : 0,
                   cwpm: Math.round(cwpm * 10) / 10, accuracy_rate: Math.round(accuracy * 10) / 10,
-                  reading_level: null, notes: notes.trim() || null, assessed_by: currentTeacher?.id || null,
+                  reading_level: null, notes: fullNotes2 || null, assessed_by: currentTeacher?.id || null,
                 })
                 setSaving(false)
                 if (error) { showToast(`Error: ${error.message}`); return }
                 showToast('Saved! Enter next passage.')
                 // Reset passage fields but keep student and date
-                setPassageTitle(''); setPassageLevel(''); setWordCount(''); setTimeSeconds(''); setTimeMin(''); setTimeSec(''); setErrors(0); setSelfCorrections(0); setNotes('')
+                setPassageTitle(''); setPassageDifficulty(''); setWordCount(''); setTimeSeconds(''); setTimeMin(''); setTimeSec(''); setErrors(0); setSelfCorrections(0); setNotes('')
               }} disabled={saving || !selStudent || !wordCount || !timeSeconds}
                 className="px-4 py-2 rounded-lg text-[13px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-40 flex items-center gap-1.5">
                 {saving && <Loader2 size={14} className="animate-spin" />} Save & Add Another
