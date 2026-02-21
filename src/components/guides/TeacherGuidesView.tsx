@@ -6,13 +6,13 @@ import { supabase } from '@/lib/supabase'
 import {
   Search, ChevronDown, ChevronUp, BookOpen, PenTool, MessageSquare,
   Lightbulb, Loader2, BookMarked, FileText, Layers, Type, Languages,
-  Volume2, Puzzle, Gauge, Brain, Sparkles, PencilLine, Mic, Headphones
+  Volume2, Puzzle, Gauge, Brain, Sparkles, PencilLine, Mic, Headphones, Shield
 } from 'lucide-react'
 import { PhonicsSequence } from '@/components/curriculum/TeacherReferences'
 import ResourceGuideRenderer from './ResourceGuideRenderer'
-import { PHONOLOGICAL_AWARENESS, PHONICS, READING_FLUENCY, READING_SKILLS, VOCABULARY, GRAMMAR, WRITING, SPEAKING, LISTENING } from './resource-guide-data'
+import { PHONOLOGICAL_AWARENESS, PHONICS, READING_FLUENCY, READING_SKILLS, VOCABULARY, GRAMMAR, WRITING, SPEAKING, LISTENING, CLASSROOM_MANAGEMENT } from './resource-guide-data'
 
-type ResourceSection = 'home' | 'phonological-awareness' | 'phonics-guide' | 'reading-fluency' | 'reading-skills' | 'vocabulary' | 'grammar' | 'writing' | 'speaking' | 'listening' | 'sor-progression' | 'subplans'
+type ResourceSection = 'home' | 'phonological-awareness' | 'phonics-guide' | 'reading-fluency' | 'reading-skills' | 'vocabulary' | 'grammar' | 'writing' | 'speaking' | 'listening' | 'classroom-management' | 'sor-progression' | 'subplans'
 
 export default function TeacherGuidesView() {
   const { lang } = useApp()
@@ -30,6 +30,8 @@ export default function TeacherGuidesView() {
     { id: 'writing', icon: PencilLine, label: 'Writing', desc: 'Process writing, genres, and sentence development', category: 'ELA/ESL Resource Guides' },
     { id: 'speaking', icon: Mic, label: 'Speaking', desc: 'Oral language, academic discussion, and pronunciation', category: 'ELA/ESL Resource Guides' },
     { id: 'listening', icon: Headphones, label: 'Listening', desc: 'Comprehension, academic listening, and note-taking', category: 'ELA/ESL Resource Guides' },
+    // Classroom management
+    { id: 'classroom-management', icon: Shield, label: 'Classroom Management', desc: 'SEL, behavior systems, TLAC, Fred Jones, and ELL-specific strategies', category: 'Classroom & Culture' },
     // Existing tools
     { id: 'sor-progression', icon: Lightbulb, label: 'Science of Reading Progression', desc: 'Scope & sequence and teaching strategies', category: 'Reference Tools' },
     { id: 'subplans', icon: FileText, label: 'Sub Plans', desc: 'Substitute teacher lesson plans', category: 'Reference Tools' },
@@ -88,7 +90,7 @@ export default function TeacherGuidesView() {
       {section === 'writing' && <ResourceGuideRenderer guide={WRITING} />}
       {section === 'speaking' && <ResourceGuideRenderer guide={SPEAKING} />}
       {section === 'listening' && <ResourceGuideRenderer guide={LISTENING} />}
-      {/* Coming soon sections will render here as data is added */}
+      {section === 'classroom-management' && <ResourceGuideRenderer guide={CLASSROOM_MANAGEMENT} />}
       {section === 'sor-progression' && <PhonicsSequence />}
       {section === 'subplans' && <SubPlansContent />}
     </div>
