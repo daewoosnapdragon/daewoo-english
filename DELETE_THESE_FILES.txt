@@ -1,0 +1,4 @@
+FILES TO DELETE (dead code, never imported):
+- src/components/guides/teacher-guides-data.ts (1877 lines of unused strategy guide data)
+
+This file was never imported by any component. Removing it reduces bundle size.
