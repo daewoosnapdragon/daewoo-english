@@ -1267,7 +1267,7 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
       self_corrections: result.selfCorrections,
       time_seconds: result.timeSeconds,
       passage_title: selectedPassage?.title || pasteTitle || 'Untitled',
-      word_count: result.totalWords,
+      word_count: result.wordsRead,
       assessed_by: currentTeacher?.id,
     })
     if (error) { showToast?.(`Error: ${error.message}`); return }
@@ -2113,8 +2113,8 @@ ${standardsHTML}
 
 <h2>Reading Assessments (${readingRecords.length})</h2>
 ${readingRecords.length > 0 ? `<table>
-  <tr><th>Date</th><th>CWPM</th><th>Accuracy</th><th>Level</th><th>Lexile</th><th>NAEP</th><th>Errors</th></tr>
-  ${readingRecords.map((r: any) => `<tr><td>${r.date}</td><td>${Math.round(r.cwpm || 0)}</td><td>${r.accuracy_rate != null ? r.accuracy_rate + '%' : '—'}</td><td>${r.passage_level || '—'}</td><td>${r.reading_level || '—'}</td><td>${r.naep_fluency ? 'L' + r.naep_fluency : '—'}</td><td>${r.errors || '—'}</td></tr>`).join('')}
+  <tr><th>Date</th><th>CWPM</th><th>Accuracy</th><th>Lexile</th><th>NAEP</th><th>Errors</th></tr>
+  ${readingRecords.map((r: any) => `<tr><td>${r.date}</td><td>${Math.round(r.cwpm || 0)}</td><td>${r.accuracy_rate != null ? r.accuracy_rate + '%' : '—'}</td><td>${r.reading_level || '—'}</td><td>${r.naep_fluency ? 'L' + r.naep_fluency : '—'}</td><td>${r.errors || '—'}</td></tr>`).join('')}
 </table>` : '<p class="empty">No reading assessments recorded.</p>'}
 
 ${scaffolds.length > 0 ? `<h2>Active Scaffolds (${scaffolds.length})</h2>

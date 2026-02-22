@@ -15,6 +15,7 @@ export interface WordData {
 export interface RunningRecordResult {
   words: WordData[]
   totalWords: number
+  wordsRead: number
   errors: number
   selfCorrections: number
   cwpm: number
@@ -37,6 +38,7 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
   const [timing, setTiming] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [finished, setFinished] = useState(false)
+  const [lastWordIdx, setLastWordIdx] = useState<number | null>(null)
   const startRef = useRef<number | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -80,19 +82,22 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
   }, [])
 
   // Computed stats
-  const errors = words.filter(w => w.mark === 'error').length
-  const selfCorrections = words.filter(w => w.mark === 'self_correct').length
   const totalWords = words.length
+  const wordsRead = lastWordIdx !== null ? lastWordIdx + 1 : totalWords
+  const readWords = lastWordIdx !== null ? words.slice(0, lastWordIdx + 1) : words
+  const errors = readWords.filter(w => w.mark === 'error').length
+  const selfCorrections = readWords.filter(w => w.mark === 'self_correct').length
   const timeSeconds = elapsed || 1
-  const correctWords = totalWords - errors
+  const correctWords = wordsRead - errors
   const cwpm = timeSeconds > 0 ? Math.round((correctWords / timeSeconds) * 60) : 0
-  const accuracyRate = totalWords > 0 ? Math.round((correctWords / totalWords) * 1000) / 10 : 0
+  const accuracyRate = wordsRead > 0 ? Math.round((correctWords / wordsRead) * 1000) / 10 : 0
   const scRatio = (errors + selfCorrections) > 0 ? `1:${Math.round((errors + selfCorrections) / Math.max(selfCorrections, 1))}` : '—'
 
   const handleComplete = () => {
     onComplete({
       words,
       totalWords,
+      wordsRead,
       errors,
       selfCorrections,
       cwpm,
@@ -172,35 +177,53 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
         {/* Instructions */}
         <div className="px-6 py-2 bg-accent-light border-b border-border text-[10px] text-navy shrink-0">
           <strong>Tap a word:</strong> 1× = <span className="text-red-600 font-bold">error</span> (red) · 2× = <span className="text-amber-600 font-bold">self-correct</span> (yellow) · 3× = clear
-          <span className="text-text-tertiary ml-3">| Start the timer, then tap words as the student reads.</span>
+          <span className="text-text-tertiary ml-3">| <strong>Right-click (or long-press)</strong> a word = mark as last word read at timer stop</span>
         </div>
 
         {/* Passage words */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
+          {lastWordIdx !== null && (
+            <div className="mb-3 flex items-center justify-between bg-blue-50 rounded-lg px-4 py-2 border border-blue-200">
+              <span className="text-[11px] text-blue-800 font-medium">
+                Last word read: "{words[lastWordIdx]?.word}" — <span className="font-bold">{lastWordIdx + 1}/{totalWords} words</span>
+                {lastWordIdx + 1 < totalWords && <span className="text-blue-600 ml-1">(student didn't finish)</span>}
+              </span>
+              <button onClick={() => setLastWordIdx(null)} className="text-[10px] text-red-500 hover:text-red-700">Clear marker</button>
+            </div>
+          )}
           <div className="leading-[2.8]">
             {lines.map((line, li) => (
               <div key={li} className="flex flex-wrap gap-x-1 mb-1">
                 {/* Line number */}
                 <span className="text-[8px] text-text-tertiary w-6 text-right mr-2 mt-2 shrink-0">{li * 12 + 1}</span>
-                {line.map(w => (
-                  <button
-                    key={w.index}
-                    onClick={() => toggleWord(w.index)}
-                    className={`
-                      px-1.5 py-1 rounded-lg text-[16px] font-medium transition-all select-none
-                      ${w.mark === 'error' 
-                        ? 'bg-red-100 text-red-700 border-2 border-red-400 line-through decoration-2' 
-                        : w.mark === 'self_correct'
-                          ? 'bg-amber-100 text-amber-700 border-2 border-amber-400'
-                          : 'hover:bg-surface-alt border-2 border-transparent text-text-primary'
-                      }
-                    `}
-                    style={{ touchAction: 'manipulation' }} // Prevent double-tap zoom on iPad
-                  >
-                    {w.word}
-                    {w.mark === 'self_correct' && <span className="text-[8px] align-super ml-0.5">SC</span>}
-                  </button>
-                ))}
+                {line.map(w => {
+                  const isPastLast = lastWordIdx !== null && w.index > lastWordIdx
+                  const isLastWord = lastWordIdx === w.index
+                  return (
+                    <button
+                      key={w.index}
+                      onClick={() => !isPastLast && toggleWord(w.index)}
+                      onContextMenu={(e) => { e.preventDefault(); setLastWordIdx(isLastWord ? null : w.index) }}
+                      className={`
+                        px-1.5 py-1 rounded-lg text-[16px] font-medium transition-all select-none
+                        ${isPastLast
+                          ? 'text-gray-300 border-2 border-transparent cursor-default'
+                          : isLastWord
+                            ? 'bg-blue-500 text-white border-2 border-blue-600 ring-2 ring-blue-300'
+                            : w.mark === 'error' 
+                              ? 'bg-red-100 text-red-700 border-2 border-red-400 line-through decoration-2' 
+                              : w.mark === 'self_correct'
+                                ? 'bg-amber-100 text-amber-700 border-2 border-amber-400'
+                                : 'hover:bg-surface-alt border-2 border-transparent text-text-primary'
+                        }
+                      `}
+                      style={{ touchAction: 'manipulation' }}
+                    >
+                      {w.word}
+                      {w.mark === 'self_correct' && !isPastLast && <span className="text-[8px] align-super ml-0.5">SC</span>}
+                    </button>
+                  )
+                })}
               </div>
             ))}
           </div>
@@ -210,7 +233,7 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
         {finished && (
           <div className="px-6 py-4 border-t border-border bg-surface-alt/30 flex items-center justify-between shrink-0">
             <div className="text-[11px] text-text-secondary space-x-4">
-              <span>Words: <strong>{totalWords}</strong></span>
+              <span>Words read: <strong>{wordsRead}/{totalWords}</strong></span>
               <span>Errors: <strong className="text-red-600">{errors}</strong></span>
               <span>Self-corrections: <strong className="text-amber-600">{selfCorrections}</strong></span>
               <span>SC Ratio: <strong>{scRatio}</strong></span>

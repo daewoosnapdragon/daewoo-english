@@ -885,7 +885,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   }, [])
 
   const handleRunningRecordComplete = (result: RunningRecordResult) => {
-    setWordCount(result.totalWords)
+    setWordCount(result.wordsRead)
     setTimeSeconds(result.timeSeconds)
     setErrors(result.errors)
     setSelfCorrections(result.selfCorrections)
@@ -930,26 +930,6 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const handleSave = async () => {
     if (mode === 'single') {
       if (!selStudent) { showToast('Select a student'); return }
-      if (manualCwpm) {
-        if (!directCwpm) { showToast('Enter CWPM'); return }
-        setSaving(true)
-        const { error } = await supabase.from('reading_assessments').insert({
-          student_id: selStudent, date, passage_title: passageTitle || 'Manual Entry',
-          cwpm: typeof directCwpm === 'number' ? directCwpm : 0,
-          accuracy_rate: typeof directAccuracy === 'number' ? directAccuracy : null,
-          errors: typeof errors === 'number' ? errors : null,
-          self_corrections: typeof selfCorrections === 'number' ? selfCorrections : null,
-          word_count: typeof wordCount === 'number' ? wordCount : null,
-          time_seconds: typeof timeSeconds === 'number' ? timeSeconds : null,
-          reading_level: lexile.trim() || null, notes: notes.trim() || null,
-          assessed_by: currentTeacher?.id || null,
-          naep_fluency: typeof naepScore === 'number' ? naepScore : null,
-        })
-        setSaving(false)
-        if (error) showToast(`Error: ${error.message}`)
-        else { showToast('Reading record saved'); onSaved() }
-        return
-      }
       if (!wordCount || !timeSeconds) { showToast('Enter word count and time'); return }
       setSaving(true)
       const diffNote = passageDifficulty ? DIFFICULTY_OPTIONS.find(d => d.id === passageDifficulty)?.label || '' : ''
@@ -1055,33 +1035,11 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
 
         {mode === 'single' ? (
           <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex-1"><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student *</label>
-                <select value={selStudent} onChange={(e: any) => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
-                  <option value="">Select...</option>
-                  {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name}</option>)}
-                </select></div>
-              <button onClick={() => setManualCwpm(!manualCwpm)}
-                className={`ml-3 mt-5 px-3 py-2 rounded-lg text-[11px] font-medium border transition-all ${manualCwpm ? 'bg-amber-50 text-amber-700 border-amber-300' : 'bg-surface-alt text-text-secondary border-border hover:bg-surface'}`}>
-                {manualCwpm ? 'Switch to Words/Time' : 'Enter CWPM Directly'}
-              </button>
-            </div>
-            {manualCwpm ? (
-              <>
-                <div className="grid grid-cols-4 gap-3">
-                  <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">CWPM *</label>
-                    <input type="number" min={0} value={directCwpm} onChange={(e: any) => setDirectCwpm(e.target.value ? parseFloat(e.target.value) : '')} placeholder="e.g. 45" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-                  <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Accuracy %</label>
-                    <input type="number" min={0} max={100} step={0.1} value={directAccuracy} onChange={(e: any) => setDirectAccuracy(e.target.value ? parseFloat(e.target.value) : '')} placeholder="e.g. 94.5" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-                  <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
-                    <input type="number" min={0} value={errors} onChange={(e: any) => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-                  <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
-                    <input type="number" min={0} value={selfCorrections} onChange={(e: any) => setSelfCorrections(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-                </div>
-                <p className="text-[10px] text-text-tertiary">Already did the running record on paper? Just enter the final numbers here.</p>
-              </>
-            ) : (
-              <>
+            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student *</label>
+              <select value={selStudent} onChange={(e: any) => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
+                <option value="">Select...</option>
+                {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name}</option>)}
+              </select></div>
             <div className="grid grid-cols-4 gap-3">
               <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words *</label>
                 <input type="number" min={0} value={wordCount} onChange={(e: any) => setWordCount(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
@@ -1109,8 +1067,6 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                   <p className={`text-2xl font-display font-bold ${accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{accuracy.toFixed(1)}%</p>
                   <p className="text-[9px] text-text-tertiary">{accuracy >= 97 ? 'Easy — move up' : accuracy >= 95 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration — move down'}</p></div>
               </div>
-            )}
-              </>
             )}
             <div className="grid grid-cols-2 gap-3">
               <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile Level</label>
@@ -1297,13 +1253,9 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
 
   if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
-  const LEVEL_COLORS: Record<string, string> = {
-    'Pre-A': 'bg-gray-100 text-gray-600', 'A': 'bg-pink-100 text-pink-700', 'B': 'bg-red-100 text-red-700',
-    'C': 'bg-orange-100 text-orange-700', 'D': 'bg-amber-100 text-amber-700', 'E': 'bg-yellow-100 text-yellow-700',
-    'F': 'bg-lime-100 text-lime-700', 'G': 'bg-green-100 text-green-700', 'H': 'bg-emerald-100 text-emerald-700',
-    'I': 'bg-teal-100 text-teal-700', 'J': 'bg-cyan-100 text-cyan-700', 'K': 'bg-sky-100 text-sky-700',
-    'L': 'bg-blue-100 text-blue-700', 'M': 'bg-indigo-100 text-indigo-700', 'N': 'bg-violet-100 text-violet-700',
-    'O': 'bg-purple-100 text-purple-700', 'P': 'bg-fuchsia-100 text-fuchsia-700',
+  const levelColor = (level: string | null) => {
+    if (!level) return 'bg-gray-100 text-gray-500'
+    return 'bg-indigo-50 text-indigo-600 border border-indigo-200'
   }
 
   return (
@@ -1328,8 +1280,8 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
               <input value={newForm.title} onChange={e => setNewForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Level</label>
-              <input value={newForm.level} onChange={e => setNewForm(f => ({ ...f, level: e.target.value }))} placeholder="e.g. F or 450L" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+              <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Lexile</label>
+              <input value={newForm.level} onChange={e => setNewForm(f => ({ ...f, level: e.target.value }))} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
@@ -1338,7 +1290,7 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
-            <input value={newForm.source} onChange={e => setNewForm(f => ({ ...f, source: e.target.value }))} placeholder="e.g. DIBELS, teacher-created, Fountas & Pinnell" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+            <input value={newForm.source} onChange={e => setNewForm(f => ({ ...f, source: e.target.value }))} placeholder="e.g. DIBELS, teacher-created, Reading A-Z" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Passage Text * <span className="normal-case text-text-tertiary">({newForm.text.trim() ? newForm.text.trim().split(/\s+/).length : 0} words)</span></label>
@@ -1363,7 +1315,7 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
           {passages.map(p => {
             const isExpanded = expandedId === p.id
             const isEditing = editingId === p.id
-            const levelColor = LEVEL_COLORS[p.level] || (p.level?.includes('L') ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-500')
+            const lc = levelColor(p.level)
 
             if (isEditing) {
               return (
@@ -1374,7 +1326,7 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
                       <input value={editForm.title} onChange={e => setEditForm((f: any) => ({ ...f, title: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
                     </div>
                     <div>
-                      <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Level</label>
+                      <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Lexile</label>
                       <input value={editForm.level} onChange={e => setEditForm((f: any) => ({ ...f, level: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
                     </div>
                     <div>
@@ -1405,7 +1357,7 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] font-semibold text-navy">{p.title}</span>
-                      {p.level && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${levelColor}`}>{p.level}</span>}
+                      {p.level && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${lc}`}>{p.level}</span>}
                       {p.grade_range && <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-surface-alt text-text-secondary">G{p.grade_range}</span>}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5">

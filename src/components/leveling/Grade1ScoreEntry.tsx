@@ -139,6 +139,52 @@ const COMP_SCORING_EXAMPLES: Record<string, string[][]> = {
   ],
 }
 
+// ============================================================================
+// LEVEL TEST PASSAGE CONTENT (A-F) — NOT in passage library, test-only
+// ============================================================================
+
+const LEVEL_A_QUESTIONS = [
+  { q: 'What is your name?', prompt: 'Say: "What is your name?"' },
+  { q: 'How old are you?', prompt: 'Say: "How old are you?"' },
+  { q: 'Who is in your family?', prompt: 'Say: "Who is in your family?"' },
+  { q: 'What color do you like?', prompt: 'Say: "What color do you like?"' },
+  { q: 'What animal do you like?', prompt: 'Say: "What animal do you like?"' },
+]
+
+const LEVEL_A_RUBRIC = [
+  { score: 0, label: 'No response', desc: 'No response. Does not attempt English.' },
+  { score: 1, label: 'Korean only', desc: 'Responds in Korean only, or single English word with heavy prompting.' },
+  { score: 2, label: 'Single words', desc: 'Produces single English words independently (e.g., "seven," "blue," "dog").' },
+  { score: 3, label: 'Phrases', desc: 'Produces English phrases or simple sentences (e.g., "I like blue," "my mom, my dad").' },
+  { score: 4, label: 'Full sentences', desc: 'Produces full English sentences with some detail (e.g., "My name is Mina. I am seven years old. I like cats.").' },
+]
+
+const LEVEL_B_WORDS = ['I', 'a', 'the', 'is', 'my', 'see', 'can', 'go', 'it', 'big', 'like', 'and', 'we', 'to', 'you', 'she', 'he', 'was', 'are', 'have']
+
+const LEVEL_C_SENTENCES = [
+  { text: 'I see a cat.', words: ['I', 'see', 'a', 'cat.'] },
+  { text: 'The dog is big.', words: ['The', 'dog', 'is', 'big.'] },
+  { text: 'I can run.', words: ['I', 'can', 'run.'] },
+]
+
+const LEVEL_TEST_PASSAGES: Record<string, { title: string; text: string; wordCount: number }> = {
+  D: {
+    title: 'My Cat',
+    text: 'I have a pet. My pet is a cat. The cat is fat. The cat can sit. The cat can nap. I like my cat.',
+    wordCount: 25,
+  },
+  E: {
+    title: 'Lunch Time',
+    text: 'It is time for lunch. I am hungry. I open my lunch box. I see rice and soup. The rice is white. The soup is hot. I eat my rice. Then I drink my soup. Now I am not hungry. Lunch is my favorite time at school.',
+    wordCount: 47,
+  },
+  F: {
+    title: 'Rainy Day',
+    text: 'Mina woke up and looked out the window. It was raining. The sky was gray. "Oh no," said Mina. "I wanted to play outside." Her mom said, "Let\'s make something fun." They got paper and scissors. They made paper animals. Mina made a cat. Her mom made a dog. "This is fun!" said Mina. "I like rainy days now."',
+    wordCount: 59,
+  },
+}
+
 const WRITING_RUBRIC = [
   { score: 0, level: 'Pre-writer', desc: 'Blank, draws pictures, or writes in Korean only' },
   { score: 1, level: 'Letter level', desc: 'Writes some letters or initial sounds, not recognizable words' },
@@ -769,6 +815,236 @@ function WrittenTestEntry({ students, scores, updateScore, onSave, saving }: {
 // ORAL TEST ENTRY - Per-Student Adaptive Form
 // ============================================================================
 
+// ============================================================================
+// INTERACTIVE ORF SUB-COMPONENTS FOR LEVEL TEST
+// ============================================================================
+
+function LevelBWordGrid({ score, onScore }: { score: number | null | undefined; onScore: (n: number | null) => void }) {
+  const [wordStatus, setWordStatus] = useState<Record<number, boolean>>({})
+  const [initialized, setInitialized] = useState(false)
+
+  // Initialize from saved score if exists
+  useEffect(() => {
+    if (score != null && !initialized) {
+      // Pre-fill: mark first N words as correct
+      const ws: Record<number, boolean> = {}
+      for (let i = 0; i < LEVEL_B_WORDS.length; i++) ws[i] = i < score
+      setWordStatus(ws)
+      setInitialized(true)
+    }
+  }, [score, initialized])
+
+  const toggle = (idx: number) => {
+    setWordStatus(prev => {
+      const next = { ...prev, [idx]: !prev[idx] }
+      const count = Object.values(next).filter(Boolean).length
+      onScore(count)
+      return next
+    })
+    setInitialized(true)
+  }
+
+  const correctCount = Object.values(wordStatus).filter(Boolean).length
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
+        <p className="text-[11px] font-semibold text-blue-800">Say: "Read each word. Try your best."</p>
+        <p className="text-[10px] text-blue-600 mt-0.5">Point to each word. Give 3-5 seconds per word. Tap green for correct, tap again to mark incorrect.</p>
+      </div>
+      <div className="grid grid-cols-5 gap-2">
+        {LEVEL_B_WORDS.map((word, i) => (
+          <button key={i} onClick={() => toggle(i)}
+            className={`px-3 py-3 rounded-xl text-[16px] font-serif font-bold transition-all ${
+              wordStatus[i] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
+              wordStatus[i] === false ? 'bg-red-50 text-red-400 border-2 border-red-200 line-through' :
+              'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
+            }`}>
+            {word}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center justify-between">
+        <span className={`text-[13px] font-bold ${correctCount >= 15 ? 'text-green-600' : correctCount >= 8 ? 'text-amber-600' : 'text-text-secondary'}`}>
+          {correctCount}/20 correct
+        </span>
+        <div className="flex gap-2">
+          <button onClick={() => { const ws: Record<number, boolean> = {}; LEVEL_B_WORDS.forEach((_, i) => { ws[i] = true }); setWordStatus(ws); onScore(20); setInitialized(true) }}
+            className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          <button onClick={() => { setWordStatus({}); onScore(0); setInitialized(true) }}
+            className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
+        </div>
+      </div>
+      {correctCount >= 15 && <p className="text-[10px] text-blue-600 font-medium">Bump-up: Score is 15+. Consider moving to Level C.</p>}
+      {initialized && correctCount === 0 && <p className="text-[10px] text-amber-600 font-medium">Bump-down: Cannot read any words. Consider moving to Level A.</p>}
+    </div>
+  )
+}
+
+function LevelCSentences({ score, onScore }: { score: number | null | undefined; onScore: (n: number | null) => void }) {
+  const allWords = LEVEL_C_SENTENCES.flatMap((s, si) => s.words.map((w, wi) => ({ word: w, sentIdx: si, wordIdx: wi, key: `${si}-${wi}` })))
+  const [wordStatus, setWordStatus] = useState<Record<string, boolean>>({})
+  const [initialized, setInitialized] = useState(false)
+
+  useEffect(() => {
+    if (score != null && !initialized) {
+      const ws: Record<string, boolean> = {}
+      let count = 0
+      allWords.forEach(w => { if (count < score) { ws[w.key] = true; count++ } })
+      setWordStatus(ws)
+      setInitialized(true)
+    }
+  }, [score, initialized])
+
+  const toggle = (key: string) => {
+    setWordStatus(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      const count = Object.values(next).filter(Boolean).length
+      onScore(count)
+      return next
+    })
+    setInitialized(true)
+  }
+
+  const correctCount = Object.values(wordStatus).filter(Boolean).length
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
+        <p className="text-[11px] font-semibold text-blue-800">Say: "Read these sentences out loud. Try your best."</p>
+        <p className="text-[10px] text-blue-600 mt-0.5">1 pt per word read correctly. Self-corrections count as correct. Tap each word.</p>
+      </div>
+      <div className="space-y-3">
+        {LEVEL_C_SENTENCES.map((sent, si) => (
+          <div key={si} className="flex items-center gap-2">
+            <span className="text-[11px] text-text-tertiary font-bold w-5 shrink-0">{si + 1}.</span>
+            <div className="flex gap-1.5 flex-wrap">
+              {sent.words.map((word, wi) => {
+                const key = `${si}-${wi}`
+                return (
+                  <button key={key} onClick={() => toggle(key)}
+                    className={`px-3 py-2 rounded-lg text-[16px] font-serif transition-all ${
+                      wordStatus[key] === true ? 'bg-green-100 text-green-800 border-2 border-green-400' :
+                      wordStatus[key] === false ? 'bg-red-50 text-red-400 border-2 border-red-200 line-through' :
+                      'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
+                    }`}>
+                    {word}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between">
+        <span className={`text-[13px] font-bold ${correctCount >= 13 ? 'text-green-600' : correctCount >= 8 ? 'text-amber-600' : 'text-text-secondary'}`}>
+          {correctCount}/15 correct
+        </span>
+        <div className="flex gap-2">
+          <button onClick={() => { const ws: Record<string, boolean> = {}; allWords.forEach(w => { ws[w.key] = true }); setWordStatus(ws); onScore(15); setInitialized(true) }}
+            className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          <button onClick={() => { setWordStatus({}); onScore(0); setInitialized(true) }}
+            className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
+        </div>
+      </div>
+      {correctCount >= 13 && <p className="text-[10px] text-blue-600 font-medium">Bump-up: Reading fluently. Consider moving to Level D.</p>}
+      {initialized && correctCount === 0 && <p className="text-[10px] text-amber-600 font-medium">Bump-down: Cannot read any words. Consider moving to Level B.</p>}
+    </div>
+  )
+}
+
+function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
+  level: string; wordsRead: number | null | undefined; errors: number | null | undefined; timeSeconds: number | null | undefined;
+  onUpdate: (field: string, val: number | null) => void
+}) {
+  const [showPassage, setShowPassage] = useState(false)
+  const [lastWordIdx, setLastWordIdx] = useState<number | null>(null)
+  const passage = LEVEL_TEST_PASSAGES[level]
+  if (!passage) return null
+
+  const words = passage.text.split(/\s+/)
+
+  const handleWordClick = (idx: number) => {
+    if (lastWordIdx === idx) {
+      // Deselect
+      setLastWordIdx(null)
+      onUpdate('o_orf_words_read', null)
+    } else {
+      setLastWordIdx(idx)
+      // Words read = index + 1 (1-based count)
+      onUpdate('o_orf_words_read', idx + 1)
+    }
+  }
+
+  // Sync from external wordsRead value
+  useEffect(() => {
+    if (wordsRead != null && wordsRead > 0 && lastWordIdx === null) {
+      setLastWordIdx(wordsRead - 1)
+    }
+  }, [wordsRead])
+
+  return (
+    <>
+      <button onClick={() => setShowPassage(true)}
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-green-600 text-white hover:bg-green-700 transition-all">
+        <BookOpen size={14} /> View Passage: "{passage.title}" ({passage.wordCount} words)
+      </button>
+
+      {/* Passage modal */}
+      {showPassage && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={() => setShowPassage(false)}>
+          <div className="bg-surface rounded-xl shadow-lg w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e: any) => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-green-50">
+              <div>
+                <h3 className="font-display text-lg font-semibold text-navy">Passage {level}: {passage.title}</h3>
+                <p className="text-[11px] text-text-secondary">{passage.wordCount} words · Tap the last word the student read at 60 seconds</p>
+              </div>
+              <button onClick={() => setShowPassage(false)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="bg-amber-50/50 rounded-xl p-6 border border-amber-100">
+                <div className="flex flex-wrap gap-x-1.5 gap-y-2 leading-[2.4]">
+                  {words.map((word, i) => {
+                    const isLast = lastWordIdx === i
+                    const isPastLast = lastWordIdx !== null && i > lastWordIdx
+                    return (
+                      <button key={i} onClick={() => handleWordClick(i)}
+                        className={`px-1 py-0.5 rounded text-[17px] font-serif transition-all cursor-pointer ${
+                          isLast
+                            ? 'bg-red-500 text-white font-bold ring-2 ring-red-300'
+                            : isPastLast
+                              ? 'text-gray-300'
+                              : 'text-gray-900 hover:bg-navy/10'
+                        }`}
+                        title={isLast ? `Last word read (word ${i + 1})` : `Click to mark as last word read`}>
+                        {word}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              {lastWordIdx !== null && (
+                <div className="mt-3 flex items-center justify-between bg-green-50 rounded-lg px-4 py-2 border border-green-200">
+                  <span className="text-[12px] text-green-800 font-medium">
+                    Last word read: "{words[lastWordIdx]}" — <span className="font-bold">{lastWordIdx + 1} words read</span>
+                  </span>
+                  <button onClick={() => { setLastWordIdx(null); onUpdate('o_orf_words_read', null) }}
+                    className="text-[10px] text-red-500 hover:text-red-700">Clear</button>
+                </div>
+              )}
+              {lastWordIdx === null && (
+                <p className="text-[10px] text-text-tertiary mt-3 text-center">
+                  Tap any word to mark where the student stopped at 60 seconds. If the student finished, tap the last word.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 function OralTestEntry({ students, scores, updateScore, onSave, saving, selectedIdx, onSelectIdx, activeWave }: {
   students: Student[]
   scores: Record<string, G1Scores>
@@ -940,25 +1216,71 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
           )}
 
           {/* Adaptive ORF fields based on passage level */}
-          {passageLevel && !config?.hasCwpm && (
-            // Levels A, B, C: Simple raw score
-            <div className="w-48">
-              <label className="text-[11px] font-medium text-text-secondary block mb-1">
-                {passageLevel === 'A' ? 'Interview Score' : passageLevel === 'B' ? 'Words Correct' : 'Words Read Correctly'}
-                <span className="text-text-tertiary ml-1">/{config?.orfMax}</span>
-              </label>
-              <input type="number" min={0} max={config?.orfMax ?? 100}
-                value={sc.o_orf_raw ?? ''}
-                onChange={e => updateScore(student.id, 'o_orf_raw', e.target.value === '' ? null : Number(e.target.value))}
-                className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-surface"
-                placeholder="--"
-              />
+          {passageLevel === 'A' && (
+            // Level A: Oral Interview — all questions visible, rubric selection
+            <div className="space-y-3">
+              <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
+                <p className="text-[11px] font-semibold text-blue-800">Say: "I'm going to ask you some questions. Just try your best."</p>
+              </div>
+              <div className="bg-surface-alt rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Interview Questions</p>
+                <div className="space-y-1.5">
+                  {LEVEL_A_QUESTIONS.map((q, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[12px]">
+                      <span className="w-5 h-5 rounded-full bg-navy/10 text-navy text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                      <span className="text-text-primary">{q.q}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Overall Rubric Score</p>
+                <div className="space-y-1.5">
+                  {LEVEL_A_RUBRIC.map(r => (
+                    <button key={r.score} onClick={() => updateScore(student.id, 'o_orf_raw', sc.o_orf_raw === r.score ? null : r.score)}
+                      className={`w-full flex items-start gap-3 px-4 py-2.5 rounded-xl text-left transition-all ${
+                        sc.o_orf_raw === r.score
+                          ? 'bg-navy text-white ring-2 ring-navy/30'
+                          : 'bg-surface border border-border hover:bg-surface-alt'
+                      }`}>
+                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-[13px] font-bold shrink-0 ${
+                        sc.o_orf_raw === r.score ? 'bg-white/20 text-white' : 'bg-surface-alt text-navy'
+                      }`}>{r.score}</span>
+                      <div>
+                        <span className={`text-[12px] font-semibold ${sc.o_orf_raw === r.score ? 'text-white' : 'text-navy'}`}>{r.label}</span>
+                        <p className={`text-[10px] mt-0.5 ${sc.o_orf_raw === r.score ? 'text-white/80' : 'text-text-tertiary'}`}>{r.desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-[10px] text-blue-600 font-medium">Bump-up: If score is 4, move to Level B.</p>
             </div>
           )}
 
+          {passageLevel === 'B' && (
+            // Level B: HFW clickable word grid
+            <LevelBWordGrid score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} />
+          )}
+
+          {passageLevel === 'C' && (
+            // Level C: Clickable sentence words
+            <LevelCSentences score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} />
+          )}
+
           {passageLevel && config?.hasCwpm && (
-            // Levels D, E, F: CWPM calculation fields
+            // Levels D, E, F: CWPM with passage modal option
             <div className="space-y-4">
+              {/* Passage display button */}
+              <LevelDEFPassage
+                level={passageLevel}
+                wordsRead={sc.o_orf_words_read}
+                errors={sc.o_orf_errors}
+                timeSeconds={sc.o_orf_time_seconds}
+                onUpdate={(field: string, val: number | null) => updateScore(student.id, field, val)}
+              />
+
+              {/* Manual entry fallback */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="text-[11px] font-medium text-text-secondary block mb-1">
