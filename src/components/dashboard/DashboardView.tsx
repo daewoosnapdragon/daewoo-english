@@ -77,7 +77,7 @@ export default function DashboardView() {
         <div className="grid grid-cols-3 gap-6">
           {/* ─── Main Column (2/3) ─── */}
           <div className="col-span-2 space-y-5">
-            <WeeklyInsight />
+            <InsightsBanner />
             <TodaysPlanPreview />
             <NeedsAttentionWatchlist />
             <QuickActions />
@@ -140,7 +140,8 @@ function TodaysPlanPreview() {
 
 // ─── Recent Notes Preview ─────────────────────────────────────────
 // ─── Weekly Insight (rotating spotlight) ──────────────────────────
-function WeeklyInsight() {
+function InsightsBanner() {
+  const [showModal, setShowModal] = useState(false)
   const { currentTeacher, navigateTo } = useApp()
   const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
   const isAdmin = currentTeacher?.role === 'admin'
@@ -151,7 +152,6 @@ function WeeklyInsight() {
       const saved = localStorage.getItem(`daewoo_dismissed_insights_${currentTeacher?.id || ''}`)
       if (saved) {
         const parsed: { key: string; at: number }[] = JSON.parse(saved)
-        // Keep dismissals for 7 days
         const weekAgo = Date.now() - 7 * 86400000
         return new Set(parsed.filter(d => d.at > weekAgo).map(d => d.key))
       }
@@ -183,26 +183,11 @@ function WeeklyInsight() {
         })
         const growths = Object.values(byStudent).filter(s => s.last > s.first + 5).sort((a, b) => (b.last - b.first) - (a.last - a.first))
         growths.slice(0, 3).forEach(top => {
-          allInsights.push({
-            key: `reading_growth_${top.id}`,
-            text: `${top.name} improved CWPM from ${top.first} to ${top.last}`,
-            detail: 'Check their reading profile for the full growth trajectory.',
-            type: 'positive',
-            navView: 'readingLevels',
-            navStudent: top.id,
-          })
+          allInsights.push({ key: `reading_growth_${top.id}`, text: `${top.name} improved CWPM from ${top.first} to ${top.last}`, detail: 'Check their reading profile for the full growth trajectory.', type: 'positive', navView: 'readingLevels', navStudent: top.id })
         })
-
         const declines = Object.values(byStudent).filter(s => s.first > s.last + 10).sort((a, b) => (a.last - a.first) - (b.last - b.first))
         declines.slice(0, 2).forEach(d => {
-          allInsights.push({
-            key: `reading_decline_${d.id}`,
-            text: `${d.name}'s CWPM dropped from ${d.first} to ${d.last}`,
-            detail: 'A drop this large may mean the assigned reading level is too high.',
-            type: 'concern',
-            navView: 'readingLevels',
-            navStudent: d.id,
-          })
+          allInsights.push({ key: `reading_decline_${d.id}`, text: `${d.name}'s CWPM dropped from ${d.first} to ${d.last}`, detail: 'A drop this large may mean the assigned reading level is too high.', type: 'concern', navView: 'readingLevels', navStudent: d.id })
         })
       }
 
@@ -213,17 +198,9 @@ function WeeklyInsight() {
       if (absences) {
         const counts: Record<string, number> = {}
         absences.forEach(a => { counts[a.student_id] = (counts[a.student_id] || 0) + 1 })
-        const highAbs = Object.entries(counts).filter(([, c]) => c >= 4).sort((a, b) => b[1] - a[1])
-        highAbs.slice(0, 2).forEach(([sid, count]) => {
+        Object.entries(counts).filter(([, c]) => c >= 4).sort((a, b) => b[1] - a[1]).slice(0, 2).forEach(([sid, count]) => {
           const s = students.find(st => st.id === sid)
-          if (s) allInsights.push({
-            key: `attendance_${sid}`,
-            text: `${s.english_name} has been absent ${count} times in the last month`,
-            detail: 'Consider reaching out to parents or checking in with the homeroom teacher.',
-            type: 'concern',
-            navView: 'attendance',
-            navStudent: sid,
-          })
+          if (s) allInsights.push({ key: `attendance_${sid}`, text: `${s.english_name} has been absent ${count} times in the last month`, detail: 'Consider reaching out to parents or checking in with the homeroom teacher.', type: 'concern', navView: 'attendance', navStudent: sid })
         })
       }
 
@@ -236,52 +213,74 @@ function WeeklyInsight() {
     setDismissed(prev => {
       const next = new Set(prev)
       next.add(key)
-      // Persist
-      try {
-        const arr = Array.from(next).map(k => ({ key: k, at: Date.now() }))
-        localStorage.setItem(`daewoo_dismissed_insights_${currentTeacher?.id || ''}`, JSON.stringify(arr))
-      } catch {}
+      try { localStorage.setItem(`daewoo_dismissed_insights_${currentTeacher?.id || ''}`, JSON.stringify(Array.from(next).map(k => ({ key: k, at: Date.now() })))) } catch {}
       return next
     })
   }
 
   const visible = insights.filter(i => !dismissed.has(i.key))
+  const positiveCount = visible.filter(i => i.type === 'positive').length
+  const concernCount = visible.filter(i => i.type === 'concern').length
 
   if (loading || visible.length === 0) return null
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 mb-1">
-        <Sparkles size={14} className="text-gold" />
-        <p className="text-[10px] uppercase tracking-wider font-semibold text-text-tertiary">Insights</p>
-        <span className="text-[9px] bg-gold/20 text-gold-dark px-1.5 py-0.5 rounded-full font-bold">{visible.length}</span>
-      </div>
-      {visible.map(insight => {
-        const colors = insight.type === 'positive'
-          ? { bg: 'bg-green-50', border: 'border-green-200', icon: 'text-green-500', text: 'text-green-800', detail: 'text-green-600' }
-          : { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-500', text: 'text-amber-800', detail: 'text-amber-600' }
-        return (
-          <div key={insight.key} className={`rounded-xl border ${colors.border} ${colors.bg} p-4 group`}>
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5"><Sparkles size={15} className={colors.icon} /></div>
-              <div className="flex-1 min-w-0">
-                <button onClick={() => { if (insight.navView) navigateTo({ view: insight.navView, preSelectedStudent: insight.navStudent }) }}
-                  className={`text-[13px] font-semibold ${colors.text} leading-snug text-left hover:underline cursor-pointer`}>
-                  {insight.text}
-                  {insight.navView && <ArrowRight size={11} className="inline ml-1 opacity-50" />}
-                </button>
-                <p className={`text-[11px] ${colors.detail} mt-0.5`}>{insight.detail}</p>
+    <>
+      {/* Compact banner */}
+      <button onClick={() => setShowModal(true)}
+        className="w-full rounded-xl border border-gold/30 bg-gold/5 px-4 py-3 flex items-center gap-3 hover:bg-gold/10 transition-all text-left group">
+        <Sparkles size={16} className="text-gold flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <span className="text-[12px] font-semibold text-navy">{visible.length} insight{visible.length !== 1 ? 's' : ''}</span>
+          {positiveCount > 0 && <span className="text-[10px] text-green-600 ml-2">✦ {positiveCount} positive</span>}
+          {concernCount > 0 && <span className="text-[10px] text-amber-600 ml-2">⚠ {concernCount} concern{concernCount !== 1 ? 's' : ''}</span>}
+        </div>
+        <span className="text-[10px] text-text-tertiary group-hover:text-navy transition-colors">View all →</span>
+      </button>
+
+      {/* Insights Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setShowModal(false)}>
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-gold" />
+                <h3 className="text-[14px] font-bold text-navy">Insights</h3>
+                <span className="text-[9px] bg-gold/20 text-gold-dark px-1.5 py-0.5 rounded-full font-bold">{visible.length}</span>
               </div>
-              <button onClick={(e) => { e.stopPropagation(); dismissInsight(insight.key) }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-white/50 text-text-tertiary hover:text-text-secondary flex-shrink-0"
-                title="Dismiss for 7 days">
-                <X size={14} />
-              </button>
+              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-2">
+              {visible.map(insight => {
+                const colors = insight.type === 'positive'
+                  ? { bg: 'bg-green-50', border: 'border-green-200', icon: 'text-green-500', text: 'text-green-800', detail: 'text-green-600' }
+                  : { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-500', text: 'text-amber-800', detail: 'text-amber-600' }
+                return (
+                  <div key={insight.key} className={`rounded-xl border ${colors.border} ${colors.bg} p-3.5 group`}>
+                    <div className="flex items-start gap-2.5">
+                      <div className="mt-0.5"><Sparkles size={14} className={colors.icon} /></div>
+                      <div className="flex-1 min-w-0">
+                        <button onClick={() => { if (insight.navView) { navigateTo({ view: insight.navView, preSelectedStudent: insight.navStudent }); setShowModal(false) } }}
+                          className={`text-[12px] font-semibold ${colors.text} leading-snug text-left hover:underline cursor-pointer`}>
+                          {insight.text}
+                          {insight.navView && <ArrowRight size={10} className="inline ml-1 opacity-50" />}
+                        </button>
+                        <p className={`text-[10px] ${colors.detail} mt-0.5`}>{insight.detail}</p>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); dismissInsight(insight.key) }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-white/50 text-text-tertiary hover:text-text-secondary flex-shrink-0"
+                        title="Dismiss for 7 days">
+                        <X size={13} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
-        )
-      })}
-    </div>
+        </div>
+      )}
+    </>
   )
 }
 

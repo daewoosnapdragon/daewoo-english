@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
-import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain } from '@/types'
+import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, QuestionMapItem, ItemResponse } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
 import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
@@ -171,6 +171,14 @@ export default function GradesView() {
     // Store raw text for display -- allows typing decimals like "9."
     setRawInputs(prev => ({ ...prev, [studentId]: value }))
     setHasChanges(true)
+  }
+
+  // When an input gets focus, ensure the committed score is in rawInputs
+  // so backspace/delete works properly on existing values
+  const handleScoreFocus = (studentId: string) => {
+    if (rawInputs[studentId] === undefined && scores[studentId] != null) {
+      setRawInputs(prev => ({ ...prev, [studentId]: String(scores[studentId]) }))
+    }
   }
 
   const commitScore = (studentId: string) => {
@@ -457,7 +465,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                           )}
                         </td>
                         <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
-                        <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />}</td>
+                        <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onFocus={() => { if (rawInputs[s.id] === undefined && score != null) handleScoreChange(s.id, String(score)) }} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />}</td>
                         <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{isAbsent || isExempt ? '—' : pct ? `${pct}%` : '—'}</td>
                         <td className="px-4 py-2.5 text-center">
                           <div className="inline-flex gap-1">
@@ -1393,11 +1401,27 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
             <div className="px-6 py-2 bg-accent-light border-b border-border">
               <p className="text-[11px] text-navy">{selDomain} · {category} · max {createdAssessment?.max_score || maxScore} pts · {scoreStudents.length} students
                 {createdAssessment?.sections && ` · ${createdAssessment.sections.length} sections`}
+                {createdAssessment?.question_map && ` · ${createdAssessment.question_map.length} questions`}
               </p>
             </div>
-            <div className="p-6 max-h-[60vh] overflow-y-auto">
+
+            {/* Question-map based entry: student sidebar + question grid */}
+            {createdAssessment?.question_map && createdAssessment.question_map.length > 0 ? (
+              <ItemEntryScorePhase
+                students={scoreStudents}
+                questionMap={createdAssessment.question_map}
+                maxScore={createdAssessment.max_score}
+                assessmentId={createdAssessment.id}
+                onDone={(savedCount: number) => {
+                  showToast(`Saved item responses for ${savedCount} students`)
+                  onSaved(createdAssessment!)
+                }}
+                onSkip={() => onSaved(createdAssessment!)}
+              />
+            ) : (
+              <>
+              <div className="p-6 max-h-[60vh] overflow-y-auto">
               {createdAssessment?.sections && createdAssessment.sections.length > 0 ? (
-                /* Section-based score entry */
                 <table className="w-full text-[12px]">
                   <thead><tr className="border-b border-border">
                     <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
@@ -1429,9 +1453,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                                   if (e.key === 'Tab' || e.key === 'Enter') {
                                     e.preventDefault()
                                     const tbl = (e.target as HTMLElement).closest('table')
-                                    // Try next section same student
                                     let next = tbl?.querySelector(`input[data-col="${si + 1}"][data-row="${i}"]`) as HTMLInputElement
-                                    // If no more sections, go to first section of next student
                                     if (!next) next = tbl?.querySelector(`input[data-col="0"][data-row="${i + 1}"]`) as HTMLInputElement
                                     next?.focus()
                                   }
@@ -1450,7 +1472,6 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                   </tbody>
                 </table>
               ) : (
-                /* Simple single-score entry */
                 <table className="w-full text-[13px]">
                   <thead><tr className="border-b border-border">
                     <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
@@ -1482,17 +1503,19 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                   </tbody>
                 </table>
               )}
-            </div>
-            <div className="px-6 py-4 border-t border-border flex items-center justify-between">
-              <span className="text-[11px] text-text-tertiary">{Object.values(inlineScores).filter(v => v !== '').length} of {scoreStudents.length} entered</span>
-              <div className="flex gap-2">
-                <button onClick={() => { onSaved(createdAssessment!); }} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">Skip Scores</button>
-                <button onClick={handleSaveScores} disabled={savingScores || Object.values(inlineScores).filter(v => v !== '').length === 0}
-                  className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
-                  {savingScores && <Loader2 size={14} className="animate-spin" />} Save Scores
-                </button>
               </div>
-            </div>
+              <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+                <span className="text-[11px] text-text-tertiary">{Object.values(inlineScores).filter(v => v !== '').length} of {scoreStudents.length} entered</span>
+                <div className="flex gap-2">
+                  <button onClick={() => { onSaved(createdAssessment!); }} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">Skip Scores</button>
+                  <button onClick={handleSaveScores} disabled={savingScores || Object.values(inlineScores).filter(v => v !== '').length === 0}
+                    className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
+                    {savingScores && <Loader2 size={14} className="animate-spin" />} Save Scores
+                  </button>
+                </div>
+              </div>
+              </>
+            )}
           </div>
         ) : (
         <div>
@@ -1670,9 +1693,17 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                     </select>
                     <input type="number" min={1} value={q.max_points} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], max_points: parseInt(e.target.value) || 1 }; setQuestionMap(nm) }}
                       className="w-full px-1.5 py-1.5 border border-border rounded text-[10px] text-center outline-none focus:border-navy" />
-                    <input value={q.standard} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], standard: e.target.value }; setQuestionMap(nm) }}
-                      onBlur={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], standard: normalizeCCSS(e.target.value) }; setQuestionMap(nm) }}
-                      placeholder="e.g. RL.3.1" className="w-full px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy" />
+                    {standards.length > 0 ? (
+                      <select value={q.standard} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], standard: e.target.value }; setQuestionMap(nm) }}
+                        className="w-full px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy bg-surface">
+                        <option value="">-- standard --</option>
+                        {standards.map(code => <option key={code} value={code}>{code}</option>)}
+                      </select>
+                    ) : (
+                      <input value={q.standard} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], standard: e.target.value }; setQuestionMap(nm) }}
+                        onBlur={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], standard: normalizeCCSS(e.target.value) }; setQuestionMap(nm) }}
+                        placeholder="e.g. RL.3.1" className="w-full px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy" />
+                    )}
                     {(q.type === 'mc' || q.type === 'true_false') ? (
                       <select value={q.answer_key} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], answer_key: e.target.value }; setQuestionMap(nm) }}
                         className="px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy bg-surface">
@@ -2131,13 +2162,13 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
 
   const scoredCount = Object.keys(allScores).filter(sid => {
     const sc = allScores[sid]
-    return sc && sc.length > 0 && sc.every(v => v > 0)
+    return sc && sc.length > 0 && sc.every(v => v != null && v >= 0)
   }).length
 
   const handleApply = () => {
     const result: Record<string, number> = {}
     Object.entries(allScores).forEach(([sid, sc]) => {
-      if (sc && sc.length > 0 && sc.every(v => v > 0)) {
+      if (sc && sc.length > 0 && sc.every(v => v != null && v >= 0)) {
         result[sid] = sc.reduce((s, v) => s + v, 0)
       }
     })
@@ -2148,22 +2179,28 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
   const goNext = () => { if (activeStudentIdx < students.length - 1) setActiveStudentIdx(activeStudentIdx + 1) }
   const goPrev = () => { if (activeStudentIdx > 0) setActiveStudentIdx(activeStudentIdx - 1) }
 
+  // Auto-scroll sidebar to active student
+  useEffect(() => {
+    const el = document.getElementById(`rubric-student-${activeStudentIdx}`)
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [activeStudentIdx])
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div className="bg-surface rounded-2xl shadow-xl w-full max-w-5xl max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-border shrink-0">
+        <div className="flex items-center justify-between px-6 py-2.5 border-b border-border shrink-0">
           <div>
-            <h2 className="text-[16px] font-bold text-navy">Score with Rubric</h2>
-            <p className="text-[11px] text-text-secondary">{scoredCount}/{students.length} students scored{rubric ? ` · ${rubric.category} › ${rubric.name}` : ''}</p>
+            <h2 className="text-[15px] font-bold text-navy">Score with Rubric</h2>
+            <p className="text-[10px] text-text-secondary">{scoredCount}/{students.length} scored{rubric ? ` · ${rubric.category} › ${rubric.name}` : ''}</p>
           </div>
           <div className="flex items-center gap-2">
             {rubric && <button onClick={() => setSelectedRubric(null)} className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-border text-text-secondary hover:bg-surface-alt">Change Rubric</button>}
             {rubric && <button onClick={handleApply} disabled={scoredCount === 0}
-              className="px-4 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+              className="px-4 py-1.5 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
               Apply {scoredCount} Score{scoredCount !== 1 ? 's' : ''}
             </button>}
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
           </div>
         </div>
 
@@ -2181,10 +2218,10 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
               <div className="p-2 space-y-0.5">
                 {students.map((s, i) => {
                   const total = getStudentTotal(s.id)
-                  const isComplete = total != null && allScores[s.id]?.every(v => v > 0)
+                  const isComplete = total != null && allScores[s.id]?.every(v => v != null && v >= 0)
                   const isActive = i === activeStudentIdx
                   return (
-                    <button key={s.id} onClick={() => setActiveStudentIdx(i)}
+                    <button key={s.id} id={`rubric-student-${i}`} onClick={() => setActiveStudentIdx(i)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-[11px] transition-all flex items-center gap-2 ${
                         isActive ? 'bg-navy text-white' : 'hover:bg-surface-alt text-text-primary'
                       }`}>
@@ -2204,46 +2241,55 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
             </div>
 
             {/* Main Scoring Area */}
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="flex-1 overflow-y-auto p-4">
               {activeStudent && (
                 <>
-                  {/* Student header + nav */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <button onClick={goPrev} disabled={activeStudentIdx === 0} className="p-1.5 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={14} className="rotate-90" /></button>
+                  {/* Student header + nav - compact */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <button onClick={goPrev} disabled={activeStudentIdx === 0} className="p-1 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={13} className="rotate-90" /></button>
                       <div>
-                        <h3 className="text-[15px] font-bold text-navy">{activeStudent.english_name} <span className="text-text-tertiary font-normal">{activeStudent.korean_name}</span></h3>
-                        <p className="text-[10px] text-text-tertiary">Student {activeStudentIdx + 1} of {students.length}</p>
+                        <h3 className="text-[14px] font-bold text-navy">{activeStudent.english_name} <span className="text-text-tertiary font-normal text-[12px]">{activeStudent.korean_name}</span></h3>
+                        <p className="text-[9px] text-text-tertiary">{activeStudentIdx + 1} of {students.length}</p>
                       </div>
-                      <button onClick={goNext} disabled={activeStudentIdx === students.length - 1} className="p-1.5 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={14} className="-rotate-90" /></button>
+                      <button onClick={goNext} disabled={activeStudentIdx === students.length - 1} className="p-1 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={13} className="-rotate-90" /></button>
                     </div>
                     <div className="text-right">
-                      <div className="text-[28px] font-bold text-navy">{studentTotal}<span className="text-[15px] text-text-tertiary">/{maxTotal}</span></div>
-                      <div className="text-[11px] text-text-secondary">{maxTotal > 0 ? Math.round((studentTotal / maxTotal) * 100) : 0}%</div>
+                      <div className="text-[24px] font-bold text-navy">{studentTotal}<span className="text-[13px] text-text-tertiary">/{maxTotal}</span></div>
+                      <div className="text-[10px] text-text-secondary">{maxTotal > 0 ? Math.round((studentTotal / maxTotal) * 100) : 0}%</div>
                     </div>
                   </div>
 
-                  {/* Level legend */}
-                  <div className="flex gap-2 mb-3">
+                  {/* Level legend - compact */}
+                  <div className="flex gap-1.5 mb-2">
+                    <span className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">0 = N/A</span>
                     {LEVEL_LABELS.map((l, i) => (
-                      <span key={i} className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${LEVEL_COLORS[i].split(' ').slice(0, 2).join(' ')}`}>{i + 1} = {l}</span>
+                      <span key={i} className={`text-[8px] font-semibold px-1.5 py-0.5 rounded-full ${LEVEL_COLORS[i].split(' ').slice(0, 2).join(' ')}`}>{i + 1} = {l}</span>
                     ))}
                   </div>
 
-                  {/* Criteria Grid */}
-                  <div className="space-y-2.5">
+                  {/* Criteria Grid - compact */}
+                  <div className="space-y-2">
                     {rubric.criteria.map((c, ci) => (
-                      <div key={ci} className="bg-surface-alt/40 border border-border rounded-xl p-3">
+                      <div key={ci} className="bg-surface-alt/40 border border-border rounded-xl p-2.5">
                         <p className="text-[11px] font-semibold text-navy">{c.label}</p>
-                        <p className="text-[9px] text-text-tertiary mb-2">{c.description}</p>
-                        <div className="grid grid-cols-4 gap-1.5">
+                        <p className="text-[9px] text-text-tertiary mb-1.5 leading-snug">{c.description}</p>
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {/* 0 / N/A button */}
+                          <button onClick={() => setStudentScore(ci, 0)}
+                            className={`py-1.5 px-1 rounded-lg border-2 text-center transition-all ${
+                              studentScores[ci] === 0 ? 'bg-gray-100 border-gray-400 text-gray-700 ring-2 ring-gray-300 shadow-sm' : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'
+                            }`}>
+                            <div className="text-[13px] font-bold">0</div>
+                            <div className="text-[7px] leading-tight mt-0.5">N/A</div>
+                          </button>
                           {[1, 2, 3, 4].map(v => (
                             <button key={v} onClick={() => setStudentScore(ci, v)}
-                              className={`py-2 px-1 rounded-lg border-2 text-center transition-all ${
+                              className={`py-1.5 px-1 rounded-lg border-2 text-center transition-all ${
                                 studentScores[ci] === v ? LEVEL_COLORS[v - 1] + ' ring-2 shadow-sm' : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'
                               }`}>
-                              <div className="text-[15px] font-bold">{v}</div>
-                              <div className="text-[8px] leading-tight mt-0.5">{LEVEL_LABELS[v - 1]}</div>
+                              <div className="text-[13px] font-bold">{v}</div>
+                              <div className="text-[7px] leading-tight mt-0.5">{LEVEL_LABELS[v - 1]}</div>
                             </button>
                           ))}
                         </div>
@@ -2252,7 +2298,7 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
                   </div>
 
                   {/* Auto-advance to next unscored */}
-                  {studentScores.length === rubric.criteria.length && studentScores.every(v => v > 0) && activeStudentIdx < students.length - 1 && (
+                  {studentScores.length === rubric.criteria.length && studentScores.every(v => v != null && v >= 0) && activeStudentIdx < students.length - 1 && (
                     <div className="mt-4 flex justify-end">
                       <button onClick={goNext} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-gold text-navy-dark hover:bg-gold-light">
                         Next Student →
@@ -2270,6 +2316,253 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
 }
 
 
+
+// ─── Item Entry Score Phase (rubric-style student sidebar + question grid) ───
+function ItemEntryScorePhase({ students, questionMap, maxScore, assessmentId, onDone, onSkip }: {
+  students: { id: string; english_name: string; korean_name: string }[]
+  questionMap: QuestionMapItem[]
+  maxScore: number
+  assessmentId: string
+  onDone: (savedCount: number) => void
+  onSkip: () => void
+}) {
+  const { showToast } = useApp()
+  const [activeIdx, setActiveIdx] = useState(0)
+  const [saving, setSaving] = useState(false)
+  // responses[studentId][questionNum] = { answer, points }
+  const [responses, setResponses] = useState<Record<string, Record<number, { answer?: string; points: number }>>>({})
+
+  const activeStudent = students[activeIdx]
+  const studentResp = activeStudent ? (responses[activeStudent.id] || {}) : {}
+
+  const setAnswer = (qNum: number, answer: string, autoPoints?: number) => {
+    if (!activeStudent) return
+    setResponses(prev => ({
+      ...prev,
+      [activeStudent.id]: {
+        ...(prev[activeStudent.id] || {}),
+        [qNum]: { answer, points: autoPoints ?? (prev[activeStudent.id]?.[qNum]?.points || 0) }
+      }
+    }))
+  }
+
+  const setPoints = (qNum: number, pts: number) => {
+    if (!activeStudent) return
+    setResponses(prev => ({
+      ...prev,
+      [activeStudent.id]: {
+        ...(prev[activeStudent.id] || {}),
+        [qNum]: { ...(prev[activeStudent.id]?.[qNum] || {}), points: pts }
+      }
+    }))
+  }
+
+  const studentTotal = (sid: string) => {
+    const r = responses[sid]
+    if (!r) return null
+    const answered = Object.keys(r).length
+    if (answered === 0) return null
+    return Object.values(r).reduce((s, v) => s + (v.points || 0), 0)
+  }
+
+  const isStudentComplete = (sid: string) => {
+    const r = responses[sid]
+    if (!r) return false
+    return questionMap.every(q => r[q.num] !== undefined)
+  }
+
+  const scoredCount = students.filter(s => isStudentComplete(s.id)).length
+  const currentTotal = studentTotal(activeStudent?.id) ?? 0
+
+  const goNext = () => { if (activeIdx < students.length - 1) setActiveIdx(activeIdx + 1) }
+  const goPrev = () => { if (activeIdx > 0) setActiveIdx(activeIdx - 1) }
+
+  useEffect(() => {
+    const el = document.getElementById(`item-student-${activeIdx}`)
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [activeIdx])
+
+  const handleSave = async () => {
+    setSaving(true)
+    let saved = 0
+    for (const s of students) {
+      const r = responses[s.id]
+      if (!r || Object.keys(r).length === 0) continue
+      const itemResponses: ItemResponse[] = questionMap.map(q => {
+        const resp = r[q.num]
+        const isCorrect = resp?.answer && q.answer_key ? resp.answer === q.answer_key : undefined
+        return { q: q.num, type: q.type, answer: resp?.answer, correct: isCorrect, points: resp?.points || 0, max: q.max_points, standard: q.standard }
+      })
+      const total = itemResponses.reduce((s, ir) => s + ir.points, 0)
+      const { error } = await supabase.from('grades').upsert({
+        student_id: s.id, assessment_id: assessmentId, score: total, item_responses: itemResponses
+      }, { onConflict: 'student_id,assessment_id' })
+      if (!error) saved++
+    }
+    setSaving(false)
+    onDone(saved)
+  }
+
+  return (
+    <div className="flex" style={{ height: '65vh' }}>
+      {/* Student Sidebar */}
+      <div className="w-48 shrink-0 border-r border-border overflow-y-auto bg-surface-alt/30">
+        <div className="p-2 space-y-0.5">
+          {students.map((s, i) => {
+            const total = studentTotal(s.id)
+            const complete = isStudentComplete(s.id)
+            const isActive = i === activeIdx
+            return (
+              <button key={s.id} id={`item-student-${i}`} onClick={() => setActiveIdx(i)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-[11px] transition-all flex items-center gap-2 ${
+                  isActive ? 'bg-navy text-white' : 'hover:bg-surface-alt text-text-primary'
+                }`}>
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
+                  complete ? (isActive ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700') :
+                  total != null ? (isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700') :
+                  (isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400')
+                }`}>
+                  {complete ? '✓' : total != null ? '~' : (i + 1)}
+                </span>
+                <span className="truncate font-medium">{s.english_name}</span>
+                {total != null && <span className={`ml-auto text-[10px] shrink-0 ${isActive ? 'text-white/70' : 'text-text-tertiary'}`}>{total}</span>}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Main Question Grid */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Student header */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-surface shrink-0">
+          <div className="flex items-center gap-2">
+            <button onClick={goPrev} disabled={activeIdx === 0} className="p-1 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={13} className="rotate-90" /></button>
+            <div>
+              <h3 className="text-[13px] font-bold text-navy">{activeStudent?.english_name} <span className="text-text-tertiary font-normal text-[11px]">{activeStudent?.korean_name}</span></h3>
+              <p className="text-[9px] text-text-tertiary">{activeIdx + 1} of {students.length}</p>
+            </div>
+            <button onClick={goNext} disabled={activeIdx === students.length - 1} className="p-1 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={13} className="-rotate-90" /></button>
+          </div>
+          <div className="text-right">
+            <div className="text-[20px] font-bold text-navy">{currentTotal}<span className="text-[12px] text-text-tertiary">/{maxScore}</span></div>
+            <div className="text-[9px] text-text-secondary">{maxScore > 0 ? Math.round((currentTotal / maxScore) * 100) : 0}%</div>
+          </div>
+        </div>
+
+        {/* Questions */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-1.5">
+            {questionMap.map((q) => {
+              const resp = studentResp[q.num]
+              const hasKey = q.answer_key != null && q.answer_key !== ''
+              const isCorrect = resp?.answer && hasKey ? resp.answer === q.answer_key : undefined
+              const isMC = q.type === 'mc'
+              const isTF = q.type === 'true_false'
+
+              return (
+                <div key={q.num} className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
+                  isCorrect === true ? 'border-green-300 bg-green-50/50' :
+                  isCorrect === false ? 'border-red-300 bg-red-50/50' :
+                  resp ? 'border-border bg-surface-alt/30' : 'border-border bg-surface'
+                }`}>
+                  {/* Question number & type */}
+                  <div className="w-8 text-center shrink-0">
+                    <div className="text-[13px] font-bold text-navy">{q.num}</div>
+                    <div className="text-[7px] uppercase text-text-tertiary">{q.type === 'true_false' ? 'T/F' : q.type === 'mc' ? 'MC' : q.type === 'short_answer' ? 'SA' : q.type === 'open_ended' ? 'OE' : q.type}</div>
+                  </div>
+
+                  {/* Answer input area */}
+                  <div className="flex-1 flex items-center gap-2">
+                    {isMC ? (
+                      <div className="flex gap-1">
+                        {['A', 'B', 'C', 'D'].map(opt => (
+                          <button key={opt} onClick={() => {
+                            const pts = hasKey ? (opt === q.answer_key ? q.max_points : 0) : (resp?.points || 0)
+                            setAnswer(q.num, opt, pts)
+                          }}
+                            className={`w-8 h-8 rounded-lg text-[12px] font-bold border-2 transition-all ${
+                              resp?.answer === opt
+                                ? (hasKey
+                                    ? (opt === q.answer_key ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-400 text-red-700')
+                                    : 'bg-navy/10 border-navy text-navy')
+                                : 'border-border text-text-tertiary hover:bg-surface-alt'
+                            }`}>
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    ) : isTF ? (
+                      <div className="flex gap-1">
+                        {['T', 'F'].map(opt => (
+                          <button key={opt} onClick={() => {
+                            const pts = hasKey ? (opt === q.answer_key ? q.max_points : 0) : (resp?.points || 0)
+                            setAnswer(q.num, opt, pts)
+                          }}
+                            className={`w-10 h-8 rounded-lg text-[12px] font-bold border-2 transition-all ${
+                              resp?.answer === opt
+                                ? (hasKey
+                                    ? (opt === q.answer_key ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-400 text-red-700')
+                                    : 'bg-navy/10 border-navy text-navy')
+                                : 'border-border text-text-tertiary hover:bg-surface-alt'
+                            }`}>
+                            {opt === 'T' ? 'True' : 'False'}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <input type="number" min={0} max={q.max_points} step="any"
+                        value={resp?.points ?? ''}
+                        onChange={e => { const v = parseFloat(e.target.value); setPoints(q.num, isNaN(v) ? 0 : Math.min(v, q.max_points)) }}
+                        onFocus={e => e.target.select()}
+                        placeholder={`/ ${q.max_points}`}
+                        className="w-16 px-2 py-1.5 text-center border border-border rounded-lg text-[12px] outline-none focus:border-navy"
+                      />
+                    )}
+
+                    {/* Correct answer hint */}
+                    {hasKey && <span className="text-[8px] text-text-tertiary">Key: {q.answer_key}</span>}
+                  </div>
+
+                  {/* Points & standard */}
+                  <div className="text-right shrink-0 flex items-center gap-2">
+                    {q.standard && <span className="text-[8px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">{q.standard}</span>}
+                    <span className={`text-[11px] font-bold w-8 text-center ${
+                      isCorrect === true ? 'text-green-600' : isCorrect === false ? 'text-red-500' : 'text-text-secondary'
+                    }`}>
+                      {resp ? resp.points : '-'}<span className="text-text-tertiary font-normal">/{q.max_points}</span>
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Auto-advance */}
+          {isStudentComplete(activeStudent?.id) && activeIdx < students.length - 1 && (
+            <div className="mt-3 flex justify-end">
+              <button onClick={goNext} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-gold text-navy-dark hover:bg-gold-light">
+                Next Student →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-border flex items-center justify-between bg-surface shrink-0">
+          <span className="text-[11px] text-text-tertiary">{scoredCount}/{students.length} complete</span>
+          <div className="flex gap-2">
+            <button onClick={onSkip} className="px-4 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Skip</button>
+            <button onClick={handleSave} disabled={saving || scoredCount === 0}
+              className="px-4 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
+              {saving && <Loader2 size={13} className="animate-spin" />} Save {scoredCount} Score{scoredCount !== 1 ? 's' : ''}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─── #46 Assessment Item Analysis ─────────────────────────────────────
 

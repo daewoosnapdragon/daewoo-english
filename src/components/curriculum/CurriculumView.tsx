@@ -130,12 +130,14 @@ export function WIDAProfiles() {
 
   useEffect(() => { loadLevels() }, [loadLevels])
 
-  // Load available snapshots
+  // Load available snapshots (gracefully handle missing table)
   useEffect(() => {
     ;(async () => {
-      const { data } = await supabase.from('wida_snapshots').select('id, label, english_class, student_grade, created_at')
-        .eq('english_class', cls).eq('student_grade', gr).order('created_at', { ascending: false })
-      setSnapshots(data || [])
+      try {
+        const { data, error } = await supabase.from('wida_snapshots').select('id, label, english_class, student_grade, created_at')
+          .eq('english_class', cls).eq('student_grade', gr).order('created_at', { ascending: false })
+        if (!error) setSnapshots(data || [])
+      } catch { /* table may not exist yet */ }
     })()
   }, [cls, gr])
 
