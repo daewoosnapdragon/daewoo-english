@@ -55,7 +55,7 @@ function useClassBenchmarks(englishClass: string, grade: number) {
 export default function ReadingLevelsView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
-  const [subView, setSubView] = useState<'class' | 'student' | 'groups' | 'flexgroups' | 'passages'>('class')
+  const [subView, setSubView] = useState<'class' | 'student' | 'groups' | 'flexgroups' | 'passages' | 'bypassage'>('class')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('daewoo_reading_grade')
@@ -93,6 +93,7 @@ export default function ReadingLevelsView() {
           {([
             { id: 'class', icon: BookOpen, label: 'Class Overview' },
             { id: 'student', icon: User, label: 'Student Detail' },
+            { id: 'bypassage', icon: Users, label: 'By Passage' },
             { id: 'passages', icon: FileText, label: 'Passage Library' },
           ] as const).map((tab) => (
             <button key={tab.id} onClick={() => setSubView(tab.id)}
@@ -126,6 +127,7 @@ export default function ReadingLevelsView() {
 
         {subView === 'class' && <ClassOverview key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} onSelectStudent={(sid: string) => { setSelectedStudentId(sid); setSubView('student') }} />}
         {subView === 'student' && <StudentReadingView key={refreshKey} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} grade={selectedGrade} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} />}
+        {subView === 'bypassage' && <ByPassageView key={refreshKey} students={students} lang={lang} grade={selectedGrade} englishClass={selectedClass} onStartBatch={(passageTitle: string) => { setShowAddModal(true) }} />}
         {subView === 'passages' && <PassageLibrary lang={lang} />}
       </div>
 
@@ -908,7 +910,10 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
       setErrors(result.errors)
       setSelfCorrections(result.selfCorrections)
       setShowRunningRecord(false)
-      if (selectedPassage) setPassageTitle(selectedPassage.title)
+      if (selectedPassage) {
+        setPassageTitle(selectedPassage.title)
+        if (selectedPassage.level) setLexile(selectedPassage.level)
+      }
     }
   }
 
@@ -927,6 +932,49 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   // Batch mode state
   const [batchScores, setBatchScores] = useState<Record<string, { wc: string; ts: string; err: string; sc: string; notes: string; diff: string; lex: string; naep: string }>>({})
   const [batchRunningStudentId, setBatchRunningStudentId] = useState<string | null>(null)
+  const [savedBatchIds, setSavedBatchIds] = useState<Set<string>>(new Set())
+
+  const handleSelectPassage = async (p: any) => {
+    setSelectedPassage(p)
+    setPassageTitle(p.title)
+    setWordCount(p.word_count)
+    if (p.level) setLexile(p.level)
+
+    // Pre-populate batch with existing assessments for this passage
+    if (mode === 'batch' && p.title) {
+      const studentIds = students.map((s: any) => s.id)
+      const { data: existing } = await supabase
+        .from('reading_assessments')
+        .select('*')
+        .eq('passage_title', p.title)
+        .in('student_id', studentIds)
+        .order('date', { ascending: false })
+
+      if (existing && existing.length > 0) {
+        const newScores: Record<string, any> = {}
+        const saved = new Set<string>()
+        existing.forEach((a: any) => {
+          if (!newScores[a.student_id]) {
+            newScores[a.student_id] = {
+              wc: String(a.word_count || ''),
+              ts: String(a.time_seconds || ''),
+              err: String(a.errors || '0'),
+              sc: String(a.self_corrections || '0'),
+              notes: a.notes || '',
+              diff: '',
+              lex: a.reading_level || '',
+              naep: a.naep_fluency ? String(a.naep_fluency) : '',
+            }
+            saved.add(a.student_id)
+          }
+        })
+        setBatchScores(prev => ({ ...prev, ...newScores }))
+        setSavedBatchIds(saved)
+      } else {
+        setSavedBatchIds(new Set())
+      }
+    }
+  }
 
   const wc = typeof wordCount === 'number' ? wordCount : 0
   const ts = typeof timeSeconds === 'number' ? timeSeconds : 0
@@ -965,9 +1013,9 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
       if (error) showToast(`Error: ${error.message}`)
       else { showToast('Reading record saved'); onSaved() }
     } else {
-      // Batch save
+      // Batch save — skip already-saved students
       const rows = Object.entries(batchScores)
-        .filter(([_, b]) => b.wc && b.ts)
+        .filter(([sid, b]) => b.wc && b.ts && !savedBatchIds.has(sid))
         .map(([sid, b]) => {
           const w = parseInt(b.wc) || 0; const t = parseInt(b.ts) || 0; const e = parseInt(b.err) || 0; const sc = parseInt(b.sc) || 0
           const diffNote = b.diff ? DIFFICULTY_OPTIONS.find(d => d.id === b.diff)?.label || '' : ''
@@ -976,7 +1024,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
             student_id: sid, date, passage_title: passageTitle || null, passage_level: null,
             word_count: w, time_seconds: t, errors: e, self_corrections: sc,
             cwpm: calcBatchCwpm(b), accuracy_rate: calcBatchAcc(b),
-            reading_level: b.lex?.trim() || null, notes: fullNotes || null, assessed_by: currentTeacher?.id || null,
+            reading_level: b.lex?.trim() || selectedPassage?.level || null, notes: fullNotes || null, assessed_by: currentTeacher?.id || null,
             naep_fluency: b.naep ? parseInt(b.naep) : null,
           }
         })
@@ -989,7 +1037,8 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
     }
   }
 
-  const batchFilled = Object.values(batchScores).filter(b => b.wc && b.ts).length
+  const batchFilled = Object.entries(batchScores).filter(([sid, b]) => b.wc && b.ts && !savedBatchIds.has(sid)).length
+  const batchSavedCount = savedBatchIds.size
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center">
@@ -1030,7 +1079,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           <PassagePickerPanel
             open={showPassagePicker}
             onClose={() => { setShowPassagePicker(false); setPassageSearch('') }}
-            onSelect={(p: any) => { setSelectedPassage(p); setPassageTitle(p.title); setWordCount(p.word_count); if (p.level) setLexile(p.level) }}
+            onSelect={handleSelectPassage}
             passages={passages}
             currentStudentId={selStudent || null}
             currentStudentName={students.find((s: any) => s.id === selStudent)?.english_name || null}
@@ -1121,9 +1170,13 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                   const bCwpm = calcBatchCwpm(b)
                   const bAcc = calcBatchAcc(b)
                   const filled = b.wc && b.ts
+                  const alreadySaved = savedBatchIds.has(s.id)
                   return (
-                    <tr key={s.id} className={`border-b border-border/50 ${filled ? 'bg-green-50/50' : ''}`}>
-                      <td className="py-1.5 px-2 text-[12px] font-medium">{s.english_name}</td>
+                    <tr key={s.id} className={`border-b border-border/50 ${alreadySaved ? 'bg-blue-50/50' : filled ? 'bg-green-50/50' : ''}`}>
+                      <td className="py-1.5 px-2 text-[12px] font-medium">
+                        {s.english_name}
+                        {alreadySaved && <span className="ml-1 text-[8px] text-blue-500 font-bold">SAVED</span>}
+                      </td>
                       <td className="py-1.5 px-1 text-center">
                         {selectedPassage ? (
                           <button onClick={() => { setBatchRunningStudentId(s.id); setShowRunningRecord(true) }}
@@ -1160,7 +1213,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
         )}
 
         <div className="px-6 py-4 border-t border-border flex items-center justify-between">
-          <span className="text-[11px] text-text-tertiary">{mode === 'batch' ? `${batchFilled} of ${students.length} students` : ''}</span>
+          <span className="text-[11px] text-text-tertiary">{mode === 'batch' ? `${batchFilled} new${batchSavedCount > 0 ? `, ${batchSavedCount} already saved` : ''} · ${students.length} students` : ''}</span>
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">Cancel</button>
             {mode === 'single' && (
@@ -1208,6 +1261,159 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
       {showPassageUploader && (
         <PassageUploader onSave={handleSavePassage} onClose={() => setShowPassageUploader(false)} />
       )}
+    </div>
+  )
+}
+
+// ─── By Passage View ──────────────────────────────────────────────
+
+function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
+  students: any[]; lang: LangKey; grade: number; englishClass: string; onStartBatch: (passageTitle: string) => void
+}) {
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expandedTitle, setExpandedTitle] = useState<string | null>(null)
+
+  const studentIds = students.map((s: any) => s.id)
+  const studentMap: Record<string, any> = {}
+  students.forEach((s: any) => { studentMap[s.id] = s })
+
+  useEffect(() => {
+    if (studentIds.length === 0) { setLoading(false); return }
+    (async () => {
+      const { data: assessments } = await supabase
+        .from('reading_assessments')
+        .select('*')
+        .in('student_id', studentIds)
+        .not('passage_title', 'is', null)
+        .order('date', { ascending: false })
+
+      if (assessments) {
+        // Group by passage_title
+        const grouped: Record<string, any[]> = {}
+        assessments.forEach((a: any) => {
+          const key = a.passage_title || 'Untitled'
+          if (!grouped[key]) grouped[key] = []
+          grouped[key].push(a)
+        })
+        // Convert to array sorted by most recent date
+        const arr = Object.entries(grouped).map(([title, records]) => {
+          const dates = records.map(r => r.date).sort().reverse()
+          const avgCwpm = Math.round(records.reduce((sum: number, r: any) => sum + (r.cwpm || 0), 0) / records.length)
+          const avgAcc = Math.round(records.reduce((sum: number, r: any) => sum + (r.accuracy_rate || 0), 0) / records.length * 10) / 10
+          return {
+            title,
+            records,
+            studentCount: new Set(records.map((r: any) => r.student_id)).size,
+            totalRecords: records.length,
+            latestDate: dates[0],
+            avgCwpm,
+            avgAcc,
+          }
+        })
+        arr.sort((a, b) => (b.latestDate || '').localeCompare(a.latestDate || ''))
+        setData(arr)
+      }
+      setLoading(false)
+    })()
+  }, [studentIds.join(',')])
+
+  if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+
+  if (data.length === 0) return (
+    <div className="py-12 text-center text-text-tertiary text-[13px]">
+      <FileText size={32} className="mx-auto mb-2 opacity-30" />
+      <p>No reading assessments yet for {englishClass}.</p>
+      <p className="text-[11px] mt-1">Use the "Add ORF Record" button to start assessing students.</p>
+    </div>
+  )
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[13px] text-text-secondary">{data.length} passages used with {englishClass}. Click to expand and see individual student results.</p>
+
+      <div className="space-y-2">
+        {data.map(item => {
+          const isExpanded = expandedTitle === item.title
+          const assessed = new Set(item.records.map((r: any) => r.student_id))
+          const notAssessed = students.filter((s: any) => !assessed.has(s.id))
+
+          return (
+            <div key={item.title} className="bg-surface border border-border rounded-xl overflow-hidden">
+              {/* Summary row */}
+              <button onClick={() => setExpandedTitle(isExpanded ? null : item.title)}
+                className="w-full px-5 py-3 flex items-center justify-between hover:bg-surface-alt/50 transition-colors text-left">
+                <div className="flex items-center gap-3 min-w-0">
+                  <ChevronDown size={14} className={`text-text-tertiary transition-transform shrink-0 ${isExpanded ? '' : '-rotate-90'}`} />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-navy truncate">{item.title}</p>
+                    <p className="text-[10px] text-text-tertiary mt-0.5">
+                      Last used: {item.latestDate} · {item.studentCount}/{students.length} students assessed
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-5 shrink-0 text-[11px]">
+                  <div className="text-center"><span className="text-[16px] font-bold text-navy block">{item.avgCwpm}</span><span className="text-text-tertiary text-[9px]">avg CWPM</span></div>
+                  <div className="text-center"><span className={`text-[16px] font-bold block ${item.avgAcc >= 95 ? 'text-green-600' : item.avgAcc >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{item.avgAcc}%</span><span className="text-text-tertiary text-[9px]">avg Acc</span></div>
+                  {/* Progress bar */}
+                  <div className="w-20">
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${(item.studentCount / students.length) * 100}%` }} />
+                    </div>
+                    <p className="text-[9px] text-text-tertiary text-center mt-0.5">{item.studentCount}/{students.length}</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Expanded detail */}
+              {isExpanded && (
+                <div className="border-t border-border">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="bg-surface-alt/50 border-b border-border">
+                        <th className="text-left px-5 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
+                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Date</th>
+                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Words</th>
+                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Time</th>
+                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Errors</th>
+                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
+                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Accuracy</th>
+                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">NAEP</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {item.records.map((r: any, i: number) => {
+                        const s = studentMap[r.student_id]
+                        return (
+                          <tr key={r.id || i} className="border-b border-border/50">
+                            <td className="px-5 py-2 font-medium text-text-primary">{s?.english_name || '?'}</td>
+                            <td className="px-2 py-2 text-center text-text-secondary">{r.date}</td>
+                            <td className="px-2 py-2 text-center text-text-secondary">{r.word_count || '—'}</td>
+                            <td className="px-2 py-2 text-center text-text-secondary">{r.time_seconds ? `${Math.floor(r.time_seconds / 60)}:${String(r.time_seconds % 60).padStart(2, '0')}` : '—'}</td>
+                            <td className="px-2 py-2 text-center text-red-600 font-medium">{r.errors ?? '—'}</td>
+                            <td className="px-2 py-2 text-center font-bold text-navy">{r.cwpm ?? '—'}</td>
+                            <td className={`px-2 py-2 text-center font-medium ${(r.accuracy_rate || 0) >= 95 ? 'text-green-600' : (r.accuracy_rate || 0) >= 90 ? 'text-amber-600' : 'text-red-600'}`}>
+                              {r.accuracy_rate != null ? `${r.accuracy_rate}%` : '—'}
+                            </td>
+                            <td className="px-2 py-2 text-center text-text-secondary">{r.naep_fluency || '—'}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                  {/* Not yet assessed */}
+                  {notAssessed.length > 0 && (
+                    <div className="px-5 py-3 bg-amber-50/50 border-t border-border">
+                      <p className="text-[10px] text-amber-700 font-medium mb-1">Not yet assessed ({notAssessed.length}):</p>
+                      <p className="text-[10px] text-amber-600">{notAssessed.map((s: any) => s.english_name).join(', ')}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
