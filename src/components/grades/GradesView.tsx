@@ -867,10 +867,10 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
     const cols: { type: 'total' | 'section'; assessment: any; sectionIdx?: number; sectionLabel?: string }[] = []
     for (const a of domainAssessments) {
       cols.push({ type: 'total', assessment: a })
-      const hasSections = a.sections && a.sections.length > 0
-      if (hasSections && expandedAssessment === a.id) {
-        a.sections.forEach((sec: any, i: number) => {
-          cols.push({ type: 'section', assessment: a, sectionIdx: i, sectionLabel: sec.label || `S${i + 1}` })
+      const secs = Array.isArray(a.sections) ? a.sections : null
+      if (secs && secs.length > 0 && expandedAssessment === a.id) {
+        secs.forEach((sec: any, i: number) => {
+          cols.push({ type: 'section', assessment: a, sectionIdx: i, sectionLabel: sec?.label || `S${i + 1}` })
         })
       }
     }
@@ -897,7 +897,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
         <div>
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
           <p className="text-[12px] text-blue-800 leading-relaxed">
-            <strong>Batch Grid</strong> lets you view and edit scores for all students across all assessments. {domainAssessments.some(a => a.sections?.length > 0) ? 'Click an assessment header to expand/collapse its sections.' : ''} Changes are saved when you click "Save All."
+            <strong>Batch Grid</strong> lets you view and edit scores for all students across all assessments. {domainAssessments.some(a => Array.isArray(a.sections) && a.sections.length > 0) ? 'Click an assessment header to expand/collapse its sections.' : ''} Changes are saved when you click "Save All."
           </p>
         </div>
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
@@ -915,7 +915,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                     )
                   }
                   const a = col.assessment
-                  const hasSections = a.sections && a.sections.length > 0
+                  const hasSections = Array.isArray(a.sections) && a.sections.length > 0
                   const isExpanded = expandedAssessment === a.id
                   return (
                     <th key={a.id} className={`text-center px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[130px] ${hasSections ? 'cursor-pointer hover:bg-navy/5' : ''}`}
@@ -936,7 +936,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                   domainAssessments.forEach(a => {
                     const sc = scores[s.id]?.[a.id]
                     if (sc != null && a.max_score > 0) {
-                      weightedItems.push({ score: sc, maxScore: a.max_score, assessmentType: a.type || 'formative' })
+                      weightedItems.push({ score: sc, maxScore: a.max_score, assessmentType: (['formative','summative','performance_task'].includes(a.type) ? a.type : 'formative') as any })
                     }
                   })
                   const avg = calcWeightedAvg(weightedItems, Number(selectedGrade))
@@ -956,7 +956,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                         const a = col.assessment
                         const sc = scores[s.id]?.[a.id]
                         const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
-                        const hasSections = a.sections && a.sections.length > 0 && expandedAssessment === a.id
+                        const hasSections = Array.isArray(a.sections) && a.sections.length > 0 && expandedAssessment === a.id
                         return (
                           <td key={`total-${a.id}-${s.id}`} className="px-1 py-1.5 text-center">
                             <input type="number" step="0.5" value={sc ?? ''} onChange={e => handleChange(s.id, a.id, e.target.value)}
@@ -1019,7 +1019,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
               const a = da.find((x: any) => x.id === g.assessment_id)
               if (!a || a.max_score <= 0) return
               if (!studentScores['_all']) studentScores['_all'] = []
-              studentScores['_all'].push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
+              studentScores['_all'].push({ score: g.score, maxScore: a.max_score, assessmentType: (['formative','summative','performance_task'].includes(a.type) ? a.type : 'formative') as any })
             })
             const allItems = studentScores['_all'] || []
             result[domain].count = allItems.length
@@ -1247,7 +1247,7 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
                 </div>
                 <table className="w-full text-[12px]">
                   <thead><tr className="text-[10px] uppercase tracking-wider text-text-tertiary">
-                    <th className="text-left px-5 py-2">Assessment</th><th className="text-center px-3 py-2">Score</th><th className="text-center px-3 py-2">%</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균' : 'Class Avg'}</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균 대비' : 'vs. Class'}</th>
+                    <th className="text-left px-5 py-2">Assessment</th><th className="text-left px-3 py-2 w-20">Score</th><th className="text-left px-3 py-2 w-14">%</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균' : 'Class Avg'}</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균 대비' : 'vs. Class'}</th>
                   </tr></thead>
                   <tbody>{da.map(a => {
                     const sc = studentGrades[a.id]; const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
@@ -1256,8 +1256,8 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
                     return (
                       <tr key={a.id} className="border-t border-border/50 table-row-hover">
                         <td className="px-5 py-2"><span className="font-medium">{a.name}</span>{a.date && <span className="text-text-tertiary ml-1.5 text-[10px]">{new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}</td>
-                        <td className="text-center px-3 py-2 font-medium">{sc != null ? `${sc}/${a.max_score}` : '—'}</td>
-                        <td className={`text-center px-3 py-2 font-semibold ${pct == null ? 'text-text-tertiary' : pct >= 80 ? 'text-success' : pct >= 60 ? 'text-amber-600' : 'text-danger'}`}>{pct != null ? `${pct.toFixed(1)}%` : '—'}</td>
+                        <td className="text-left px-3 py-2 font-medium tabular-nums">{sc != null ? `${sc}/${a.max_score}` : '—'}</td>
+                        <td className={`text-left px-3 py-2 font-semibold tabular-nums ${pct == null ? 'text-text-tertiary' : pct >= 80 ? 'text-success' : pct >= 60 ? 'text-amber-600' : 'text-danger'}`}>{pct != null ? `${pct.toFixed(1)}%` : '—'}</td>
                         <td className="text-center px-3 py-2 text-text-secondary">{caP != null ? `${caP.toFixed(1)}%` : '—'}</td>
                         <td className={`text-center px-3 py-2 font-semibold ${diff == null ? 'text-text-tertiary' : diff >= 0 ? 'text-success' : 'text-danger'}`}>{diff != null ? `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}` : '—'}</td>
                       </tr>
@@ -1724,6 +1724,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                       <option value="fill_blank">Fill Blank</option>
                       <option value="listening">Listening</option>
                       <option value="oral">Oral</option>
+                      <option value="rubric">Rubric</option>
                     </select>
                     <input type="number" min={1} value={q.max_points} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], max_points: parseInt(e.target.value) || 1 }; setQuestionMap(nm) }}
                       className="w-full px-1.5 py-1.5 border border-border rounded text-[10px] text-center outline-none focus:border-navy" />
@@ -2419,8 +2420,31 @@ function ItemEntryScorePhase({ students, questionMap, maxScore, assessmentId, on
   const [activeIdx, setActiveIdx] = useState(0)
   const [saving, setSaving] = useState(false)
   const [focusedQ, setFocusedQ] = useState<number | null>(null)
+  const [loadingExisting, setLoadingExisting] = useState(true)
   // responses[studentId][questionNum] = { answer, points }
   const [responses, setResponses] = useState<Record<string, Record<number, { answer?: string; points: number }>>>({})
+
+  // Load existing item_responses from database
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('grades').select('student_id, item_responses').eq('assessment_id', assessmentId)
+      if (data) {
+        const loaded: Record<string, Record<number, { answer?: string; points: number }>> = {}
+        data.forEach((g: any) => {
+          if (g.item_responses && Array.isArray(g.item_responses)) {
+            loaded[g.student_id] = {}
+            g.item_responses.forEach((ir: any) => {
+              if (ir.q != null) {
+                loaded[g.student_id][ir.q] = { answer: ir.answer || undefined, points: ir.points ?? 0 }
+              }
+            })
+          }
+        })
+        if (Object.keys(loaded).length > 0) setResponses(loaded)
+      }
+      setLoadingExisting(false)
+    })()
+  }, [assessmentId])
 
   const activeStudent = students[activeIdx]
   const studentResp = activeStudent ? (responses[activeStudent.id] || {}) : {}
@@ -2576,6 +2600,7 @@ function ItemEntryScorePhase({ students, questionMap, maxScore, assessmentId, on
               const isCorrect = resp?.answer && hasKey ? resp.answer === q.answer_key : undefined
               const isMC = q.type === 'mc'
               const isTF = q.type === 'true_false'
+              const isRubric = q.type === 'rubric'
 
               return (
                 <div key={q.num} onClick={() => setFocusedQ(q.num)} className={`flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-all ${
@@ -2588,7 +2613,7 @@ function ItemEntryScorePhase({ students, questionMap, maxScore, assessmentId, on
                   {/* Question number & type */}
                   <div className="w-8 text-center shrink-0">
                     <div className="text-[13px] font-bold text-navy">{q.num}</div>
-                    <div className="text-[7px] uppercase text-text-tertiary">{q.type === 'true_false' ? 'T/F' : q.type === 'mc' ? 'MC' : q.type === 'short_answer' ? 'SA' : q.type === 'open_ended' ? 'OE' : q.type}</div>
+                    <div className="text-[7px] uppercase text-text-tertiary">{q.type === 'true_false' ? 'T/F' : q.type === 'mc' ? 'MC' : q.type === 'short_answer' ? 'SA' : q.type === 'open_ended' ? 'OE' : q.type === 'rubric' ? 'RUB' : q.type}</div>
                   </div>
 
                   {/* Answer input area */}
@@ -2628,6 +2653,30 @@ function ItemEntryScorePhase({ students, questionMap, maxScore, assessmentId, on
                             {opt === 'T' ? 'True' : 'False'}
                           </button>
                         ))}
+                      </div>
+                    ) : isRubric ? (
+                      <div className="flex gap-1">
+                        {[
+                          { level: 1, label: 'Beginning', color: 'red' },
+                          { level: 2, label: 'Developing', color: 'amber' },
+                          { level: 3, label: 'Proficient', color: 'blue' },
+                          { level: 4, label: 'Advanced', color: 'green' },
+                        ].map(({ level, label, color }) => {
+                          const pts = Math.round((level / 4) * q.max_points * 10) / 10
+                          const isSelected = resp?.answer === String(level)
+                          return (
+                            <button key={level} onClick={() => setAnswer(q.num, String(level), pts)}
+                              className={`px-2.5 h-8 rounded-lg text-[10px] font-bold border-2 transition-all ${
+                                isSelected
+                                  ? `bg-${color}-100 border-${color}-400 text-${color}-700`
+                                  : 'border-border text-text-tertiary hover:bg-surface-alt'
+                              }`}
+                              style={isSelected ? { backgroundColor: color === 'red' ? '#fef2f2' : color === 'amber' ? '#fffbeb' : color === 'blue' ? '#eff6ff' : '#f0fdf4', borderColor: color === 'red' ? '#f87171' : color === 'amber' ? '#fbbf24' : color === 'blue' ? '#60a5fa' : '#4ade80', color: color === 'red' ? '#b91c1c' : color === 'amber' ? '#b45309' : color === 'blue' ? '#1d4ed8' : '#15803d' } : undefined}>
+                              L{level}
+                              <div className="text-[7px] font-normal leading-none mt-0.5">{label}</div>
+                            </button>
+                          )
+                        })}
                       </div>
                     ) : (
                       <input type="number" min={0} max={q.max_points} step="any"

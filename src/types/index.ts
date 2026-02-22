@@ -132,7 +132,7 @@ export interface AssessmentSection {
 
 export interface QuestionMapItem {
   num: number;
-  type: 'mc' | 'true_false' | 'short_answer' | 'open_ended' | 'matching' | 'fill_blank' | 'cloze' | 'listening' | 'oral';
+  type: 'mc' | 'true_false' | 'short_answer' | 'open_ended' | 'matching' | 'fill_blank' | 'cloze' | 'listening' | 'oral' | 'rubric';
   max_points: number;
   standard?: string;
   answer_key?: string; // For MC: 'A','B','C','D'; for TF: 'T','F'

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, EnglishClass, GRADES } from '@/types'
@@ -11,11 +11,23 @@ import { exportToCSV } from '@/lib/export'
 type AdminTab = 'overview' | 'attendance' | 'reading' | 'behavior' | 'growth' | 'wida_corr' | 'domain_str' | 'class_comp'
 
 export default function AdminDashboard() {
-  const { language } = useApp()
+  const { language, currentTeacher } = useApp()
   const ko = language === 'ko'
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview')
+  const isHeadOrAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Snapdragon'
+  const [activeTab, setActiveTab] = useState<AdminTab>(isHeadOrAdmin ? 'overview' : 'reading')
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<any>(null)
+  const [academicYear, setAcademicYear] = useState('2025-2026')
+
+  // Compute date range for academic year (March 1 to Feb 28)
+  const yearStart = useMemo(() => {
+    const [startYear] = academicYear.split('-').map(Number)
+    return `${startYear}-03-01`
+  }, [academicYear])
+  const yearEnd = useMemo(() => {
+    const [, endYear] = academicYear.split('-').map(Number)
+    return `${endYear}-02-28`
+  }, [academicYear])
 
   useEffect(() => {
     (async () => {
@@ -28,10 +40,10 @@ export default function AdminDashboard() {
         supabase.from('students').select('id, english_name, korean_name, grade, english_class, is_active').eq('is_active', true),
         supabase.from('attendance').select('student_id, status, date').eq('date', today),
         supabase.from('attendance').select('student_id, status, date').gte('date', thirtyDaysAgo),
-        supabase.from('attendance').select('student_id, status, date').gte('date', ninetyDaysAgo),
+        supabase.from('attendance').select('student_id, status, date').gte('date', yearStart).lte('date', yearEnd),
         supabase.from('behavior_logs').select('student_id, date, flagged').gte('date', thirtyDaysAgo),
-        supabase.from('behavior_logs').select('student_id, date, flagged, antecedent, behavior, consequence').gte('date', ninetyDaysAgo),
-        supabase.from('reading_assessments').select('student_id, cwpm, date, accuracy_rate').order('date', { ascending: true }),
+        supabase.from('behavior_logs').select('student_id, date, flagged, antecedent, behavior, consequence').gte('date', yearStart).lte('date', yearEnd),
+        supabase.from('reading_assessments').select('student_id, cwpm, date, accuracy_rate').gte('date', yearStart).lte('date', yearEnd).order('date', { ascending: true }),
         supabase.from('semesters').select('id').eq('is_active', true).limit(1),
         supabase.from('student_wida_levels').select('student_id, domain, wida_level'),
       ])
@@ -194,7 +206,7 @@ export default function AdminDashboard() {
       })
       setLoading(false)
     })()
-  }, [])
+  }, [yearStart, yearEnd])
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
   if (!data) return null
@@ -205,18 +217,28 @@ export default function AdminDashboard() {
     <div className="animate-fade-in">
       <div className="px-10 pt-8 pb-5 bg-surface border-b border-border">
         <h2 className="font-display text-[26px] font-semibold tracking-tight text-navy">{ko ? '프로그램 개요' : 'Program Overview'}</h2>
-        <p className="text-text-secondary text-sm mt-1">{data.totalStudents} {ko ? '명 학생' : 'students'} · {ENGLISH_CLASSES.length} {ko ? '개 반' : 'classes'}</p>
-        <div className="flex gap-1 mt-4">
+        <div className="flex items-center gap-3 mt-1">
+          <p className="text-text-secondary text-sm">{data.totalStudents} {ko ? '명 학생' : 'students'} · {ENGLISH_CLASSES.length} {ko ? '개 반' : 'classes'}</p>
+          <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
+            className="px-3 py-1 border border-border rounded-lg text-[12px] font-medium text-navy bg-surface outline-none focus:border-navy">
+            <option value="2025-2026">2025-2026</option>
+            <option value="2026-2027">2026-2027</option>
+          </select>
+        </div>
+        <div className="flex gap-1 mt-4 flex-wrap">
           {([
-            { id: 'overview' as AdminTab, icon: BarChart3, label: ko ? '개요' : 'Overview' },
-            { id: 'attendance' as AdminTab, icon: Calendar, label: ko ? '출석 추세' : 'Attendance Trends' },
-            { id: 'reading' as AdminTab, icon: BookOpen, label: ko ? '읽기 성장' : 'Reading Progress' },
-            { id: 'behavior' as AdminTab, icon: Activity, label: ko ? '행동 패턴' : 'Behavior Patterns' },
-            { id: 'growth' as AdminTab, icon: TrendingUp, label: ko ? '성장 속도' : 'Growth Velocity' },
-            { id: 'wida_corr' as AdminTab, icon: Users, label: ko ? 'WIDA 상관' : 'WIDA Correlation' },
-            { id: 'domain_str' as AdminTab, icon: ClipboardCheck, label: ko ? '영역 강점' : 'Domain Strength' },
-            { id: 'class_comp' as AdminTab, icon: BarChart3, label: ko ? '반 구성' : 'Class Composition' },
-          ]).map(tab => (
+            { id: 'overview' as AdminTab, icon: BarChart3, label: ko ? '개요' : 'Overview', adminOnly: true },
+            { id: 'attendance' as AdminTab, icon: Calendar, label: ko ? '출석 추세' : 'Attendance Trends', adminOnly: true },
+            { id: 'reading' as AdminTab, icon: BookOpen, label: ko ? '읽기 성장' : 'Reading Progress', adminOnly: false },
+            { id: 'behavior' as AdminTab, icon: Activity, label: ko ? '행동 패턴' : 'Behavior Patterns', adminOnly: true },
+            { id: 'growth' as AdminTab, icon: TrendingUp, label: ko ? '성장 속도' : 'Growth Velocity', adminOnly: false },
+            { id: 'wida_corr' as AdminTab, icon: Users, label: ko ? 'WIDA 상관' : 'WIDA Correlation', adminOnly: false },
+            { id: 'domain_str' as AdminTab, icon: ClipboardCheck, label: ko ? '영역 강점' : 'Domain Strength', adminOnly: false },
+            { id: 'class_comp' as AdminTab, icon: BarChart3, label: ko ? '반 구성' : 'Class Composition', adminOnly: false },
+          ]).filter(tab => {
+            if (!tab.adminOnly) return true
+            return currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Snapdragon'
+          }).map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${activeTab === tab.id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
               <tab.icon size={14} /> {tab.label}
@@ -893,11 +915,12 @@ function DomainStrengthTab({ data, ko }: { data: any; ko: boolean }) {
   }, [data.students, gradeFilter])
 
   const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
-  const domainLabels: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
+  const domainLabels: Record<string, string> = { reading: 'Reading', phonics: 'Phonics', writing: 'Writing', speaking: 'Speaking', language: 'Language' }
+  const domainLabelsFull: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
   const domainColors: Record<string, string> = { reading: '#3b82f6', phonics: '#8b5cf6', writing: '#f59e0b', speaking: '#10b981', language: '#ec4899' }
 
   // SVG radar chart helper
-  const radarSize = 200, cx = radarSize / 2, cy = radarSize / 2, maxR = 80
+  const radarSize = 240, cx = radarSize / 2, cy = radarSize / 2 + 10, maxR = 72
   const angleStep = (2 * Math.PI) / domains.length
   const point = (i: number, pct: number) => {
     const angle = angleStep * i - Math.PI / 2

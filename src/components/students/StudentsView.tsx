@@ -958,6 +958,7 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
               {assessments.map((a, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <span className="text-[10px] text-text-secondary w-28 shrink-0 truncate" title={a.name}>{a.name}</span>
+                  <span className="text-[11px] font-semibold text-navy w-14 shrink-0 tabular-nums">{a.score}/{a.max}</span>
                   <div className="flex-1 h-5 bg-surface-alt rounded overflow-hidden relative">
                     {/* Class avg marker */}
                     {a.classAvg != null && (

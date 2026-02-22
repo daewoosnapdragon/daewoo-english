@@ -285,7 +285,8 @@ export function calculateWeightedAverage(
   items.forEach(item => {
     if (item.maxScore > 0) {
       const pct = (item.score / item.maxScore) * 100
-      groups[item.assessmentType].push(pct)
+      const aType = groups[item.assessmentType] ? item.assessmentType : 'formative'
+      groups[aType].push(pct)
     }
   })
 
