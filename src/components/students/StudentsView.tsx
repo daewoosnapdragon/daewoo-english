@@ -1245,12 +1245,14 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
 
   useEffect(() => {
     (async () => {
-      const [{ data }, { data: pData }] = await Promise.all([
-        supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }),
-        supabase.from('reading_passages').select('*').order('created_at', { ascending: false }).catch(() => ({ data: [] })),
-      ])
-      if (data) setRecords(data)
-      if (pData) setPassages(pData as any[] || [])
+      try {
+        const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false })
+        if (data) setRecords(data)
+      } catch {}
+      try {
+        const { data: pData } = await supabase.from('reading_passages').select('*').order('created_at', { ascending: false })
+        if (pData) setPassages(pData as any[])
+      } catch {}
       setLoading(false)
     })()
   }, [studentId])
@@ -1341,7 +1343,6 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
   }
 
   if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
-  if (records.length === 0) return <div className="py-8 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '읽기 기록이 없습니다.' : 'No reading assessments recorded yet.'}</div>
 
   // Classify reading levels based on accuracy
   const classifyLevel = (accuracy: number | null): { label: string; color: string; description: string } => {
@@ -1464,6 +1465,9 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
       {showPassageUploader && <PassageUploader onSave={handleSaveNewPassage} onClose={() => setShowPassageUploader(false)} />}
 
       {/* Reading Level Summary */}
+      {records.length === 0 ? (
+        <p className="py-4 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '읽기 기록이 없습니다. 위 버튼으로 추가하세요.' : 'No reading assessments yet. Use the buttons above to add one.'}</p>
+      ) : (<>
       {latest && latest.accuracy_rate != null && (
         <div className={`rounded-xl border p-4 ${latestLevel?.label === 'Frustration' ? 'bg-red-50 border-red-200' : latestLevel?.label === 'Independent' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
           <div className="flex items-center justify-between mb-2">
@@ -1544,6 +1548,7 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
           </tbody>
         </table>
       </div>
+      </>)}
     </div>
   )
 }

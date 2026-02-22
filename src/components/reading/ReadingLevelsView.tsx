@@ -6,7 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { getKSTDateString, classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download, Printer, BarChart3, Upload } from 'lucide-react'
+import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download, Printer, BarChart3, Upload, FileText } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
@@ -54,7 +54,7 @@ function useClassBenchmarks(englishClass: string, grade: number) {
 export default function ReadingLevelsView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
-  const [subView, setSubView] = useState<'class' | 'student' | 'groups' | 'flexgroups'>('class')
+  const [subView, setSubView] = useState<'class' | 'student' | 'groups' | 'flexgroups' | 'passages'>('class')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('daewoo_reading_grade')
@@ -92,6 +92,7 @@ export default function ReadingLevelsView() {
           {([
             { id: 'class', icon: BookOpen, label: 'Class Overview' },
             { id: 'student', icon: User, label: 'Student Detail' },
+            { id: 'passages', icon: FileText, label: 'Passage Library' },
           ] as const).map((tab) => (
             <button key={tab.id} onClick={() => setSubView(tab.id)}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${subView === tab.id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
@@ -124,6 +125,7 @@ export default function ReadingLevelsView() {
 
         {subView === 'class' && <ClassOverview key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} onSelectStudent={(sid: string) => { setSelectedStudentId(sid); setSubView('student') }} />}
         {subView === 'student' && <StudentReadingView key={refreshKey} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} grade={selectedGrade} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} />}
+        {subView === 'passages' && <PassageLibrary lang={lang} />}
       </div>
 
       {showAddModal && <AddReadingModal studentId={addForStudentId} students={students} lang={lang} onClose={() => setShowAddModal(false)} onSaved={() => { setShowAddModal(false); setRefreshKey((k: number) => k + 1) }} />}
@@ -871,6 +873,9 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const [passages, setPassages] = useState<any[]>([])
   const [selectedPassage, setSelectedPassage] = useState<any>(null)
   const [showPassagePicker, setShowPassagePicker] = useState(false)
+  const [manualCwpm, setManualCwpm] = useState(false)
+  const [directCwpm, setDirectCwpm] = useState<number | ''>('')
+  const [directAccuracy, setDirectAccuracy] = useState<number | ''>('')
 
   // Load saved passages
   useEffect(() => {
@@ -925,6 +930,26 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const handleSave = async () => {
     if (mode === 'single') {
       if (!selStudent) { showToast('Select a student'); return }
+      if (manualCwpm) {
+        if (!directCwpm) { showToast('Enter CWPM'); return }
+        setSaving(true)
+        const { error } = await supabase.from('reading_assessments').insert({
+          student_id: selStudent, date, passage_title: passageTitle || 'Manual Entry',
+          cwpm: typeof directCwpm === 'number' ? directCwpm : 0,
+          accuracy_rate: typeof directAccuracy === 'number' ? directAccuracy : null,
+          errors: typeof errors === 'number' ? errors : null,
+          self_corrections: typeof selfCorrections === 'number' ? selfCorrections : null,
+          word_count: typeof wordCount === 'number' ? wordCount : null,
+          time_seconds: typeof timeSeconds === 'number' ? timeSeconds : null,
+          reading_level: lexile.trim() || null, notes: notes.trim() || null,
+          assessed_by: currentTeacher?.id || null,
+          naep_fluency: typeof naepScore === 'number' ? naepScore : null,
+        })
+        setSaving(false)
+        if (error) showToast(`Error: ${error.message}`)
+        else { showToast('Reading record saved'); onSaved() }
+        return
+      }
       if (!wordCount || !timeSeconds) { showToast('Enter word count and time'); return }
       setSaving(true)
       const diffNote = passageDifficulty ? DIFFICULTY_OPTIONS.find(d => d.id === passageDifficulty)?.label || '' : ''
@@ -1005,7 +1030,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           {showPassagePicker && passages.length > 0 && (
             <div className="bg-surface-alt rounded-lg border border-border p-2 max-h-32 overflow-y-auto">
               {passages.map(p => (
-                <button key={p.id} onClick={() => { setSelectedPassage(p); setPassageTitle(p.title); setWordCount(p.word_count); setShowPassagePicker(false) }}
+                <button key={p.id} onClick={() => { setSelectedPassage(p); setPassageTitle(p.title); setWordCount(p.word_count); if (p.level) setLexile(p.level); setShowPassagePicker(false) }}
                   className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-white text-[11px] flex items-center justify-between">
                   <span className="font-medium">{p.title}</span>
                   <span className="text-text-tertiary">{p.word_count} words {p.level ? `· ${p.level}` : ''} {p.grade_range ? `· G${p.grade_range}` : ''}</span>
@@ -1030,11 +1055,33 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
 
         {mode === 'single' ? (
           <div className="p-6 space-y-4">
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student *</label>
-              <select value={selStudent} onChange={(e: any) => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
-                <option value="">Select...</option>
-                {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name}</option>)}
-              </select></div>
+            <div className="flex items-center justify-between">
+              <div className="flex-1"><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student *</label>
+                <select value={selStudent} onChange={(e: any) => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
+                  <option value="">Select...</option>
+                  {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name}</option>)}
+                </select></div>
+              <button onClick={() => setManualCwpm(!manualCwpm)}
+                className={`ml-3 mt-5 px-3 py-2 rounded-lg text-[11px] font-medium border transition-all ${manualCwpm ? 'bg-amber-50 text-amber-700 border-amber-300' : 'bg-surface-alt text-text-secondary border-border hover:bg-surface'}`}>
+                {manualCwpm ? 'Switch to Words/Time' : 'Enter CWPM Directly'}
+              </button>
+            </div>
+            {manualCwpm ? (
+              <>
+                <div className="grid grid-cols-4 gap-3">
+                  <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">CWPM *</label>
+                    <input type="number" min={0} value={directCwpm} onChange={(e: any) => setDirectCwpm(e.target.value ? parseFloat(e.target.value) : '')} placeholder="e.g. 45" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+                  <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Accuracy %</label>
+                    <input type="number" min={0} max={100} step={0.1} value={directAccuracy} onChange={(e: any) => setDirectAccuracy(e.target.value ? parseFloat(e.target.value) : '')} placeholder="e.g. 94.5" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+                  <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
+                    <input type="number" min={0} value={errors} onChange={(e: any) => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+                  <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
+                    <input type="number" min={0} value={selfCorrections} onChange={(e: any) => setSelfCorrections(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+                </div>
+                <p className="text-[10px] text-text-tertiary">Already did the running record on paper? Just enter the final numbers here.</p>
+              </>
+            ) : (
+              <>
             <div className="grid grid-cols-4 gap-3">
               <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words *</label>
                 <input type="number" min={0} value={wordCount} onChange={(e: any) => setWordCount(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
@@ -1062,6 +1109,8 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                   <p className={`text-2xl font-display font-bold ${accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{accuracy.toFixed(1)}%</p>
                   <p className="text-[9px] text-text-tertiary">{accuracy >= 97 ? 'Easy — move up' : accuracy >= 95 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration — move down'}</p></div>
               </div>
+            )}
+              </>
             )}
             <div className="grid grid-cols-2 gap-3">
               <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile Level</label>
@@ -1172,6 +1221,216 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
       {/* Passage uploader modal */}
       {showPassageUploader && (
         <PassageUploader onSave={handleSavePassage} onClose={() => setShowPassageUploader(false)} />
+      )}
+    </div>
+  )
+}
+
+// ─── Passage Library ──────────────────────────────────────────────
+
+function PassageLibrary({ lang }: { lang: LangKey }) {
+  const { currentTeacher, showToast } = useApp()
+  const [passages, setPassages] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<any>({})
+  const [showAdd, setShowAdd] = useState(false)
+  const [newForm, setNewForm] = useState({ title: '', text: '', level: '', grade_range: '', source: '' })
+  const [saving, setSaving] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from('reading_passages').select('*').order('created_at', { ascending: false })
+        if (data) setPassages(data)
+      } catch {}
+      setLoading(false)
+    })()
+  }, [])
+
+  const handleAdd = async () => {
+    if (!newForm.title.trim() || !newForm.text.trim()) { showToast('Title and text are required'); return }
+    setSaving(true)
+    const { data, error } = await supabase.from('reading_passages').insert({
+      title: newForm.title.trim(), text: newForm.text.trim(),
+      word_count: newForm.text.trim().split(/\s+/).length,
+      level: newForm.level || null, grade_range: newForm.grade_range || null,
+      source: newForm.source || null, created_by: currentTeacher?.id, is_shared: true
+    }).select().single()
+    setSaving(false)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    if (data) setPassages(prev => [data, ...prev])
+    setShowAdd(false)
+    setNewForm({ title: '', text: '', level: '', grade_range: '', source: '' })
+    showToast('Passage added')
+  }
+
+  const startEdit = (p: any) => {
+    setEditingId(p.id)
+    setEditForm({ title: p.title, text: p.text || '', level: p.level || '', grade_range: p.grade_range || '', source: p.source || '' })
+  }
+
+  const saveEdit = async () => {
+    if (!editingId) return
+    setSaving(true)
+    const { error } = await supabase.from('reading_passages').update({
+      title: editForm.title, text: editForm.text,
+      word_count: editForm.text.trim().split(/\s+/).length,
+      level: editForm.level || null, grade_range: editForm.grade_range || null,
+      source: editForm.source || null,
+    }).eq('id', editingId)
+    setSaving(false)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setPassages(prev => prev.map(p => p.id === editingId ? { ...p, ...editForm, word_count: editForm.text.trim().split(/\s+/).length } : p))
+    setEditingId(null)
+    showToast('Passage updated')
+  }
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return
+    const { error } = await supabase.from('reading_passages').delete().eq('id', id)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setPassages(prev => prev.filter(p => p.id !== id))
+    showToast('Passage deleted')
+  }
+
+  if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+
+  const LEVEL_COLORS: Record<string, string> = {
+    'Pre-A': 'bg-gray-100 text-gray-600', 'A': 'bg-pink-100 text-pink-700', 'B': 'bg-red-100 text-red-700',
+    'C': 'bg-orange-100 text-orange-700', 'D': 'bg-amber-100 text-amber-700', 'E': 'bg-yellow-100 text-yellow-700',
+    'F': 'bg-lime-100 text-lime-700', 'G': 'bg-green-100 text-green-700', 'H': 'bg-emerald-100 text-emerald-700',
+    'I': 'bg-teal-100 text-teal-700', 'J': 'bg-cyan-100 text-cyan-700', 'K': 'bg-sky-100 text-sky-700',
+    'L': 'bg-blue-100 text-blue-700', 'M': 'bg-indigo-100 text-indigo-700', 'N': 'bg-violet-100 text-violet-700',
+    'O': 'bg-purple-100 text-purple-700', 'P': 'bg-fuchsia-100 text-fuchsia-700',
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[13px] text-text-secondary">{passages.length} passages saved. Click to expand and view the full text.</p>
+        </div>
+        <button onClick={() => setShowAdd(!showAdd)}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark transition-all">
+          <Plus size={14} /> Add Passage
+        </button>
+      </div>
+
+      {/* Add new passage form */}
+      {showAdd && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-3">
+          <p className="text-[12px] font-semibold text-blue-800">New Passage</p>
+          <div className="grid grid-cols-4 gap-3">
+            <div className="col-span-2">
+              <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Title *</label>
+              <input value={newForm.title} onChange={e => setNewForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Level</label>
+              <input value={newForm.level} onChange={e => setNewForm(f => ({ ...f, level: e.target.value }))} placeholder="e.g. F or 450L" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
+              <input value={newForm.grade_range} onChange={e => setNewForm(f => ({ ...f, grade_range: e.target.value }))} placeholder="e.g. 1-2" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
+            <input value={newForm.source} onChange={e => setNewForm(f => ({ ...f, source: e.target.value }))} placeholder="e.g. DIBELS, teacher-created, Fountas & Pinnell" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Passage Text * <span className="normal-case text-text-tertiary">({newForm.text.trim() ? newForm.text.trim().split(/\s+/).length : 0} words)</span></label>
+            <textarea value={newForm.text} onChange={e => setNewForm(f => ({ ...f, text: e.target.value }))} rows={6} placeholder="Paste or type the full passage text here..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleAdd} disabled={saving} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{saving ? 'Saving...' : 'Save Passage'}</button>
+            <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-lg text-[12px] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Passage cards */}
+      {passages.length === 0 ? (
+        <div className="py-12 text-center text-text-tertiary text-[13px]">
+          <FileText size={32} className="mx-auto mb-2 opacity-30" />
+          <p>No passages saved yet. Add your first passage above.</p>
+          <p className="text-[11px] mt-1">Passages are shared across all teachers and can be used for running records.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {passages.map(p => {
+            const isExpanded = expandedId === p.id
+            const isEditing = editingId === p.id
+            const levelColor = LEVEL_COLORS[p.level] || (p.level?.includes('L') ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-500')
+
+            if (isEditing) {
+              return (
+                <div key={p.id} className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="col-span-2">
+                      <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Title</label>
+                      <input value={editForm.title} onChange={e => setEditForm((f: any) => ({ ...f, title: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Level</label>
+                      <input value={editForm.level} onChange={e => setEditForm((f: any) => ({ ...f, level: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
+                      <input value={editForm.grade_range} onChange={e => setEditForm((f: any) => ({ ...f, grade_range: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
+                    <input value={editForm.source} onChange={e => setEditForm((f: any) => ({ ...f, source: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Passage Text ({editForm.text?.trim() ? editForm.text.trim().split(/\s+/).length : 0} words)</label>
+                    <textarea value={editForm.text} onChange={e => setEditForm((f: any) => ({ ...f, text: e.target.value }))} rows={8} className="w-full px-3 py-2 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={saveEdit} disabled={saving} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>
+                    <button onClick={() => setEditingId(null)} className="px-4 py-2 rounded-lg text-[12px] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
+                  </div>
+                </div>
+              )
+            }
+
+            return (
+              <div key={p.id} className="bg-surface border border-border rounded-xl overflow-hidden hover:shadow-sm transition-shadow">
+                <div className="px-5 py-3 flex items-center gap-3 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : p.id)}>
+                  <ChevronDown size={14} className={`text-text-tertiary transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-semibold text-navy">{p.title}</span>
+                      {p.level && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${levelColor}`}>{p.level}</span>}
+                      {p.grade_range && <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-surface-alt text-text-secondary">G{p.grade_range}</span>}
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-[10px] text-text-tertiary">{p.word_count || 0} words</span>
+                      {p.source && <span className="text-[10px] text-text-tertiary">{p.source}</span>}
+                      <span className="text-[10px] text-text-tertiary">{new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => startEdit(p)} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Edit"><Pencil size={13} /></button>
+                    <button onClick={() => handleDelete(p.id, p.title)} className="p-1.5 rounded-lg hover:bg-red-50 text-text-tertiary hover:text-red-500" title="Delete"><Trash2 size={13} /></button>
+                  </div>
+                </div>
+                {isExpanded && p.text && (
+                  <div className="px-5 pb-4 pt-1 border-t border-border/50">
+                    <div className="bg-amber-50/50 rounded-lg p-4 border border-amber-100">
+                      <p className="text-[12px] leading-[1.8] font-serif text-gray-800 whitespace-pre-wrap">{p.text}</p>
+                    </div>
+                    <p className="text-[9px] text-text-tertiary mt-2 text-right">{p.text.trim().split(/\s+/).length} words</p>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )
