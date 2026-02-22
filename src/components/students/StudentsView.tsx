@@ -6,12 +6,14 @@ import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber, domainLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw } from 'lucide-react'
+import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw, BookOpen } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WIDABadge from '@/components/shared/WIDABadge'
 import { WIDAProfiles } from '@/components/curriculum/CurriculumView'
 import RosterUploadModal from './RosterUploadModal'
 import { exportToCSV } from '@/lib/export'
+import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
+import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
 // ─── Main View ──────────────────────────────────────────────────────
 
@@ -1225,16 +1227,62 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
 // ─── Reading Tab (in Modal) ──────────────────────────────────────────
 
 function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+  const { currentTeacher, showToast } = useApp()
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [showRunningRecord, setShowRunningRecord] = useState(false)
+  const [passages, setPassages] = useState<any[]>([])
+  const [selectedPassage, setSelectedPassage] = useState<any>(null)
+  const [showPassageUploader, setShowPassageUploader] = useState(false)
+  const [pasteText, setPasteText] = useState('')
+  const [pasteTitle, setPasteTitle] = useState('')
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false })
+      const [{ data }, { data: pData }] = await Promise.all([
+        supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }),
+        supabase.from('reading_passages').select('*').order('created_at', { ascending: false }).catch(() => ({ data: [] })),
+      ])
       if (data) setRecords(data)
+      if (pData) setPassages(pData as any[] || [])
       setLoading(false)
     })()
   }, [studentId])
+
+  const handleRunningRecordComplete = async (result: RunningRecordResult) => {
+    const { error } = await supabase.from('reading_assessments').insert({
+      student_id: studentId,
+      date: new Date().toISOString().split('T')[0],
+      cwpm: result.cwpm,
+      accuracy_rate: result.accuracyRate,
+      errors: result.errors,
+      self_corrections: result.selfCorrections,
+      time_seconds: result.timeSeconds,
+      passage_title: selectedPassage?.title || pasteTitle || 'Untitled',
+      word_count: result.totalWords,
+      assessed_by: currentTeacher?.id,
+    })
+    if (error) { showToast?.(`Error: ${error.message}`); return }
+    // Reload
+    const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false })
+    if (data) setRecords(data)
+    setShowRunningRecord(false)
+    setSelectedPassage(null)
+    setPasteText('')
+    setPasteTitle('')
+    showToast?.(`Saved: ${result.cwpm} CWPM, ${result.accuracyRate}% accuracy`)
+  }
+
+  const handleSaveNewPassage = async (p: { title: string; text: string; level: string; grade_range: string; source: string }) => {
+    const { data, error } = await supabase.from('reading_passages').insert({
+      title: p.title, text: p.text, word_count: p.text.trim().split(/\s+/).length,
+      level: p.level || null, grade_range: p.grade_range || null, source: p.source || null,
+      created_by: currentTeacher?.id, is_shared: true
+    }).select().single()
+    if (!error && data) { setPassages(prev => [data, ...prev]); setSelectedPassage(data) }
+    setShowPassageUploader(false)
+    showToast?.('Passage saved to library')
+  }
 
   if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
   if (records.length === 0) return <div className="py-8 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '읽기 기록이 없습니다.' : 'No reading assessments recorded yet.'}</div>
@@ -1253,6 +1301,62 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
 
   return (
     <div className="space-y-3">
+      {/* New Running Record */}
+      {!showRunningRecord ? (
+        <button onClick={() => setShowRunningRecord(true)}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-all">
+          <BookOpen size={14} /> New Running Record
+        </button>
+      ) : (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-semibold text-blue-800">Select a Passage</span>
+            <button onClick={() => { setShowRunningRecord(false); setSelectedPassage(null); setPasteText('') }}
+              className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {passages.slice(0, 6).map(p => (
+              <button key={p.id} onClick={() => setSelectedPassage(p)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${selectedPassage?.id === p.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}>
+                {p.title} ({p.word_count}w)
+              </button>
+            ))}
+            <button onClick={() => setShowPassageUploader(true)}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-text-tertiary border border-dashed border-blue-300 hover:bg-white">
+              + New Passage
+            </button>
+          </div>
+          {!selectedPassage && (
+            <div className="space-y-1">
+              <input value={pasteTitle} onChange={e => setPasteTitle(e.target.value)} placeholder="Passage title..."
+                className="w-full px-3 py-1.5 border border-blue-200 rounded-lg text-[11px] outline-none focus:border-blue-400 bg-white" />
+              <textarea value={pasteText} onChange={e => setPasteText(e.target.value)} placeholder="Or paste passage text here..."
+                rows={2} className="w-full px-3 py-1.5 border border-blue-200 rounded-lg text-[11px] outline-none focus:border-blue-400 bg-white resize-y" />
+            </div>
+          )}
+          {(selectedPassage || pasteText.trim()) && (
+            <button onClick={() => {
+              if (!selectedPassage && pasteText.trim()) {
+                setSelectedPassage({ title: pasteTitle || 'Untitled', text: pasteText.trim(), word_count: pasteText.trim().split(/\s+/).length })
+              }
+            }} className={`px-4 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark ${selectedPassage ? '' : 'opacity-90'}`}>
+              {selectedPassage ? `Start Reading: ${selectedPassage.title}` : `Use Pasted Text (${pasteText.trim().split(/\s+/).length}w)`}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Running Record modal */}
+      {selectedPassage && showRunningRecord && (
+        <RunningRecord
+          passageText={selectedPassage.text}
+          passageTitle={selectedPassage.title}
+          onComplete={handleRunningRecordComplete}
+          onClose={() => { setShowRunningRecord(false); setSelectedPassage(null) }}
+        />
+      )}
+      {showPassageUploader && <PassageUploader onSave={handleSaveNewPassage} onClose={() => setShowPassageUploader(false)} />}
+
       {/* Reading Level Summary */}
       {latest && latest.accuracy_rate != null && (
         <div className={`rounded-xl border p-4 ${latestLevel?.label === 'Frustration' ? 'bg-red-50 border-red-200' : latestLevel?.label === 'Independent' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>

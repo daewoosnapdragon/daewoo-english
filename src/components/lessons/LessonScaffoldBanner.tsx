@@ -9,6 +9,7 @@ import { ChevronDown, ChevronRight, Lightbulb, Users } from 'lucide-react'
 interface Props {
   englishClass: EnglishClass
   grade: Grade
+  onGradeChange?: (g: Grade) => void
 }
 
 interface WIDADistribution {
@@ -16,13 +17,14 @@ interface WIDADistribution {
   count: number
 }
 
-export default function LessonScaffoldBanner({ englishClass, grade }: Props) {
+export default function LessonScaffoldBanner({ englishClass, grade, onGradeChange }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [showAllScaffolds, setShowAllScaffolds] = useState(false)
   const [distribution, setDistribution] = useState<WIDADistribution[]>([])
-  const [commonScaffolds, setCommonScaffolds] = useState<{ domain: string; text: string; count: number }[]>([])
+  const [commonScaffolds, setCommonScaffolds] = useState<{ domain: string; text: string; count: number; level: number }[]>([])
   const [studentCount, setStudentCount] = useState(0)
   const [loaded, setLoaded] = useState(false)
+  const [levelFilter, setLevelFilter] = useState<number | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -59,17 +61,26 @@ export default function LessonScaffoldBanner({ englishClass, grade }: Props) {
           .sort((a, b) => a.level - b.level)
       )
 
-      // Get most common scaffolds for this class
+      // Get most common scaffolds for this class (with WIDA level)
       const { data: scaffolds } = await supabase.from('student_scaffolds')
-        .select('domain, scaffold_text')
+        .select('student_id, domain, scaffold_text')
         .in('student_id', sids)
         .eq('is_active', true)
 
-      const scaffoldCounts: Record<string, { domain: string; text: string; count: number }> = {}
+      // Map student -> average WIDA level
+      const studentAvgLevel: Record<string, number> = {}
+      Object.entries(studentLevels).forEach(([sid, levels]) => {
+        studentAvgLevel[sid] = Math.round(levels.reduce((a, b) => a + b, 0) / levels.length)
+      })
+
+      const scaffoldCounts: Record<string, { domain: string; text: string; count: number; level: number }> = {}
       scaffolds?.forEach((s: any) => {
         const key = s.scaffold_text
-        if (!scaffoldCounts[key]) scaffoldCounts[key] = { domain: s.domain, text: s.scaffold_text, count: 0 }
+        const lvl = studentAvgLevel[s.student_id] || 0
+        if (!scaffoldCounts[key]) scaffoldCounts[key] = { domain: s.domain, text: s.scaffold_text, count: 0, level: lvl }
         scaffoldCounts[key].count++
+        // Use the most common level
+        if (lvl > 0) scaffoldCounts[key].level = lvl
       })
       setCommonScaffolds(
         Object.values(scaffoldCounts)
@@ -110,6 +121,18 @@ export default function LessonScaffoldBanner({ englishClass, grade }: Props) {
 
       {expanded && (
         <div className="px-4 pb-3 border-t border-blue-200 pt-3">
+          {/* Grade tabs for quick switching */}
+          {onGradeChange && (
+            <div className="flex items-center gap-1.5 mb-3">
+              <span className="text-[9px] uppercase tracking-wider text-blue-600 font-semibold mr-1">Grade:</span>
+              {[1, 2, 3, 4, 5].map(g => (
+                <button key={g} onClick={() => onGradeChange(g as Grade)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${grade === g ? 'bg-navy text-white' : 'bg-white text-blue-700 border border-blue-200 hover:bg-blue-50'}`}>
+                  G{g}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-[9px] uppercase tracking-wider text-blue-800 font-semibold mb-2">
@@ -143,27 +166,65 @@ export default function LessonScaffoldBanner({ englishClass, grade }: Props) {
             </div>
             <div>
               <p className="text-[9px] uppercase tracking-wider text-blue-800 font-semibold mb-2">
-                <Lightbulb size={10} className="inline mr-1" />Most Common Scaffolds in This Class
+                <Lightbulb size={10} className="inline mr-1" />Scaffolding Strategies
               </p>
-              {commonScaffolds.length === 0 ? (
-                <p className="text-[10px] text-blue-600 italic">No scaffolds assigned yet. Visit Curriculum {'>'} WIDA/CCSS Guide {'>'} Assign to Students.</p>
-              ) : (
-                <div className="space-y-1">
-                  {(showAllScaffolds ? commonScaffolds : commonScaffolds.slice(0, 5)).map((s, i) => (
-                    <div key={i} className="flex items-start gap-1.5 px-2 py-1 rounded bg-white border border-blue-100">
-                      <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 uppercase flex-shrink-0 mt-px">{s.domain.slice(0, 4)}</span>
-                      <p className="text-[9px] text-blue-800 leading-snug flex-1">{s.text}</p>
-                      <span className="text-[8px] text-blue-500 flex-shrink-0 mt-px">{s.count}x</span>
-                    </div>
-                  ))}
-                  {commonScaffolds.length > 5 && (
-                    <button onClick={() => setShowAllScaffolds(!showAllScaffolds)}
-                      className="text-[9px] font-medium text-blue-600 hover:text-blue-800 mt-1">
-                      {showAllScaffolds ? 'Show fewer' : `Show ${commonScaffolds.length - 5} more...`}
+              {/* Level filter tabs */}
+              <div className="flex gap-1 mb-2 flex-wrap">
+                <button onClick={() => setLevelFilter(null)}
+                  className={`px-2 py-0.5 rounded text-[9px] font-medium ${levelFilter === null ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 border border-blue-200'}`}>
+                  All
+                </button>
+                {[1, 2, 3, 4, 5, 6].map(lvl => {
+                  const info = WIDA_LEVELS.find(w => w.level === lvl)
+                  const hasScaffolds = commonScaffolds.some(s => s.level === lvl) || distribution.some(d => d.level === lvl)
+                  if (!hasScaffolds) return null
+                  return (
+                    <button key={lvl} onClick={() => setLevelFilter(lvl)}
+                      className={`px-2 py-0.5 rounded text-[9px] font-medium ${levelFilter === lvl ? 'text-white' : 'border border-blue-200'}`}
+                      style={levelFilter === lvl ? { backgroundColor: info?.color || '#3b82f6' } : { backgroundColor: info?.bg || '#f0f9ff' }}>
+                      L{lvl} {info?.name}
                     </button>
-                  )}
+                  )
+                })}
+              </div>
+              {/* Filtered WIDA strategies */}
+              {levelFilter && (
+                <div className="bg-white border border-blue-100 rounded-lg p-2 mb-2">
+                  {(() => {
+                    const info = WIDA_LEVELS.find(w => w.level === levelFilter)
+                    return info ? (
+                      <div>
+                        <p className="text-[10px] font-bold" style={{ color: info.color }}>L{info.level} {info.name}</p>
+                        <p className="text-[9px] text-blue-800 mt-0.5">{info.desc}</p>
+                        <p className="text-[9px] text-blue-600 mt-1"><strong>Scaffolds:</strong> {info.scaffolds}</p>
+                      </div>
+                    ) : null
+                  })()}
                 </div>
               )}
+              {/* Class-specific scaffolds */}
+              {(() => {
+                const filtered = levelFilter ? commonScaffolds.filter(s => s.level === levelFilter) : commonScaffolds
+                return filtered.length === 0 ? (
+                  <p className="text-[10px] text-blue-600 italic">{levelFilter ? `No assigned scaffolds for L${levelFilter} students.` : 'No scaffolds assigned yet.'}</p>
+                ) : (
+                  <div className="space-y-1">
+                    {(showAllScaffolds ? filtered : filtered.slice(0, 5)).map((s, i) => (
+                      <div key={i} className="flex items-start gap-1.5 px-2 py-1 rounded bg-white border border-blue-100">
+                        <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 uppercase flex-shrink-0 mt-px">{s.domain.slice(0, 4)}</span>
+                        <p className="text-[9px] text-blue-800 leading-snug flex-1">{s.text}</p>
+                        <span className="text-[8px] text-blue-500 flex-shrink-0 mt-px">{s.count}x</span>
+                      </div>
+                    ))}
+                    {filtered.length > 5 && (
+                      <button onClick={() => setShowAllScaffolds(!showAllScaffolds)}
+                        className="text-[9px] font-medium text-blue-600 hover:text-blue-800 mt-1">
+                        {showAllScaffolds ? 'Show fewer' : `Show ${filtered.length - 5} more...`}
+                      </button>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           </div>
         </div>

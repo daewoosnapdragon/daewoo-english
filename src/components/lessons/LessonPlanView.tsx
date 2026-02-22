@@ -142,7 +142,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
     if (hwRes.data) hwRes.data.forEach((h: any) => { hm[h.week_start] = h })
     setHomework(hm)
     const ce: Record<string, CalendarEvent> = {}
-    if (eventsRes.data) eventsRes.data.forEach((ev: any) => { if (ev.show_on_lesson_plan) ce[ev.date] = ev })
+    if (eventsRes.data) eventsRes.data.forEach((ev: any) => { ce[ev.date] = ev })
     setCalEvents(ce)
     setLoading(false)
   }, [selectedClass, selectedGrade, year, month])
@@ -483,12 +483,29 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
                               </div>
                             </div>
                           ) : event ? (
-                            <div className="flex items-center justify-center h-[70px]">
-                              <div className="text-center">
-                                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 text-[11px] font-bold"><AlertCircle size={12} /> {event.title}</div>
-                                <p className="text-[9px] text-slate-500 mt-1">{event.type || 'Event'}</p>
+                            <>
+                              <div className="mb-2 px-2 py-1 rounded-lg bg-slate-200 text-slate-700">
+                                <div className="flex items-center gap-1 text-[10px] font-bold"><AlertCircle size={10} /> {event.title}</div>
+                                {event.type && <p className="text-[8px] text-slate-500 mt-0.5">{event.type}</p>}
                               </div>
-                            </div>
+                              {daySlots.length > 0 ? daySlots.map(slot => {
+                                const key = `${day.date}::${slot}`; const entry = entries[key]; const sc = getSlotColor(slot)
+                                return (
+                                  <div key={slot} className="mt-2 first:mt-0">
+                                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-px rounded text-[8px] font-bold uppercase tracking-wide ${sc.bg} ${sc.text} ${sc.border} border`}>{slot}</span>
+                                    {entry ? (
+                                      <div onClick={() => { if (canEdit) { setEditingCell({ date: day.date, slot }); setEditTitle(entry?.title || ''); setEditObjective(entry?.objective || '') } }}
+                                        className={`text-[10px] mt-0.5 leading-snug ${canEdit ? 'cursor-pointer hover:bg-slate-50 rounded px-1 -mx-1' : ''}`}>
+                                        {entry.title && <p className="font-semibold text-navy">{entry.title}</p>}
+                                        {entry.objective && <p className="text-text-tertiary">{entry.objective}</p>}
+                                      </div>
+                                    ) : canEdit ? (
+                                      <button onClick={() => { setEditingCell({ date: day.date, slot }); setEditTitle(''); setEditObjective('') }} className="text-[9px] text-text-tertiary hover:text-navy mt-0.5">+ add</button>
+                                    ) : null}
+                                  </div>
+                                )
+                              }) : <p className="text-[9px] text-text-tertiary italic">No slots</p>}
+                            </>
                           ) : (
                             <>
                               {daySlots.length === 0 && !canEdit && <p className="text-[10px] text-text-tertiary italic mt-3">No slots for {DAY_NAMES[di]}</p>}
@@ -704,6 +721,19 @@ function TeacherWeeklyPlans() {
     const d = new Date(); const dow = d.getDay()
     return dow >= 1 && dow <= 5 ? dow - 1 : 0
   })
+  const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }>>({})
+
+  // Load calendar events for this week
+  useEffect(() => {
+    if (weekDates.length < 5) return
+    supabase.from('calendar_events').select('date, title, type')
+      .gte('date', weekDates[0]).lte('date', weekDates[4])
+      .then(({ data }) => {
+        const ce: Record<string, { title: string; type?: string }> = {}
+        data?.forEach((ev: any) => { ce[ev.date] = { title: ev.title, type: ev.type } })
+        setCalEvents(ce)
+      }).catch(() => {})
+  }, [weekDates])
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
 
@@ -920,12 +950,32 @@ function TeacherWeeklyPlans() {
         </div>
       </div>
 
-      <LessonScaffoldBanner englishClass={selectedClass} grade={selectedGrade} />
+      <LessonScaffoldBanner englishClass={selectedClass} grade={selectedGrade} onGradeChange={setSelectedGrade} />
 
       {loading ? (
         <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
       ) : (
         <>
+          {/* Calendar events strip for the week */}
+          {Object.keys(calEvents).length > 0 && (
+            <div className="mb-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 flex items-start gap-2">
+              <Calendar size={14} className="text-slate-500 mt-0.5 shrink-0" />
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {weekDates.map((date, i) => {
+                  const ev = calEvents[date]
+                  if (!ev) return null
+                  return (
+                    <div key={date} className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-slate-500">{DAY_SHORT[i]}</span>
+                      <span className="text-[11px] font-semibold text-slate-700">{ev.title}</span>
+                      {ev.type && <span className="text-[8px] text-slate-400 bg-slate-200 px-1 py-0.5 rounded">{ev.type}</span>}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {viewMode === 'day' ? (
             /* Day view -- single day at full width */
             <div>
@@ -943,6 +993,13 @@ function TeacherWeeklyPlans() {
                   {DAY_NAMES[selectedDayIdx]} {formatShort(weekDates[selectedDayIdx])}
                   {weekDates[selectedDayIdx] === todayStr && <span className="text-[10px] font-semibold text-gold ml-2">TODAY</span>}
                 </div>
+                {calEvents[weekDates[selectedDayIdx]] && (
+                  <div className="px-4 py-2 bg-slate-100 border-b border-slate-200 flex items-center gap-2">
+                    <AlertCircle size={13} className="text-slate-600 shrink-0" />
+                    <span className="text-[11px] font-semibold text-slate-700">{calEvents[weekDates[selectedDayIdx]].title}</span>
+                    {calEvents[weekDates[selectedDayIdx]].type && <span className="text-[9px] text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">{calEvents[weekDates[selectedDayIdx]].type}</span>}
+                  </div>
+                )}
                 <textarea
                   value={plans[weekDates[selectedDayIdx]] || ''}
                   onChange={e => updateDay(weekDates[selectedDayIdx], e.target.value)}
@@ -967,6 +1024,12 @@ function TeacherWeeklyPlans() {
                         {isToday && <span className="text-[9px] font-semibold text-gold ml-1.5">TODAY</span>}
                       </span>
                     </div>
+                    {calEvents[date] && (
+                      <div className="px-2 py-1.5 bg-slate-100 border-b border-slate-200 flex items-center gap-1.5">
+                        <AlertCircle size={10} className="text-slate-600 shrink-0" />
+                        <span className="text-[9px] font-semibold text-slate-700 truncate">{calEvents[date].title}</span>
+                      </div>
+                    )}
                     <textarea
                       value={plans[date] || ''}
                       onChange={e => updateDay(date, e.target.value)}

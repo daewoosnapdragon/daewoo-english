@@ -5,12 +5,14 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
-import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users } from 'lucide-react'
+import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
 import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
 import { exportToCSV } from '@/lib/export'
+import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
+import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
 type Phase = 'setup' | 'scores' | 'anecdotal' | 'results' | 'meeting'
 
@@ -275,7 +277,13 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
   const [activeTab, setActiveTab] = useState<EnglishClass>(teacherClass || 'Lily')
   const [editingSections, setEditingSections] = useState(false)
   const [editSections, setEditSections] = useState<{ key: string; label: string; max: number | null }[]>([])
-
+  const [runningRecordStudent, setRunningRecordStudent] = useState<Student | null>(null)
+  const [passages, setPassages] = useState<any[]>([])
+  const [selectedPassage, setSelectedPassage] = useState<any>(null)
+  const [showPassagePicker, setShowPassagePicker] = useState(false)
+  const [showPassageUploader, setShowPassageUploader] = useState(false)
+  const [pastePassageText, setPastePassageText] = useState('')
+  const [pastePassageTitle, setPastePassageTitle] = useState('')
   const sections = levelTest.config?.sections || [
     { key: 'word_reading_correct', label: 'WR Correct', max: 80 },
     { key: 'word_reading_attempted', label: 'WR Attempted', max: null },
@@ -295,6 +303,38 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
       showToast('Sections updated')
       setEditingSections(false)
     }
+  }
+
+  // Load saved passages for running record
+  useEffect(() => {
+    supabase.from('reading_passages').select('*').order('created_at', { ascending: false }).then(({ data }) => {
+      if (data) setPassages(data)
+    }).catch(() => {})
+  }, [])
+
+  const handleRunningRecordComplete = (result: RunningRecordResult) => {
+    if (runningRecordStudent) {
+      setScores(prev => ({
+        ...prev,
+        [runningRecordStudent.id]: {
+          ...prev[runningRecordStudent.id],
+          passage_cwpm: result.cwpm
+        }
+      }))
+    }
+    setRunningRecordStudent(null)
+  }
+
+  const handleSaveNewPassage = async (p: { title: string; text: string; level: string; grade_range: string; source: string }) => {
+    const { data, error } = await supabase.from('reading_passages').insert({
+      title: p.title, text: p.text, word_count: p.text.trim().split(/\s+/).length,
+      level: p.level || null, grade_range: p.grade_range || null, source: p.source || null,
+      created_by: currentTeacher?.id, is_shared: true
+    }).select().single()
+    if (error) { showToast(`Error: ${error.message}`); return }
+    if (data) { setPassages(prev => [data, ...prev]); setSelectedPassage(data) }
+    setShowPassageUploader(false)
+    showToast('Passage saved to library')
   }
 
   useEffect(() => {
@@ -381,6 +421,70 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
           <p className="text-[9px] text-amber-600">Changes are saved to the database and apply immediately.</p>
         </div>
       )}
+
+      {/* Passage selector for Running Record */}
+      {sections.some(s => s.key === 'passage_cwpm') && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <BookOpen size={15} className="text-blue-600" />
+            <span className="text-[12px] font-semibold text-blue-800">Reading Passage for Running Record</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedPassage ? (
+              <>
+                <span className="text-[11px] font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded-lg">📖 {selectedPassage.title} ({selectedPassage.word_count} words)</span>
+                <button onClick={() => setSelectedPassage(null)} className="text-[10px] text-red-500 hover:text-red-700">Clear</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setShowPassagePicker(!showPassagePicker)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-white border border-blue-200 text-blue-700 hover:bg-blue-50">
+                  <BookOpen size={12} /> Choose Saved Passage
+                </button>
+                <button onClick={() => setShowPassageUploader(true)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-white border border-blue-200">
+                  <Upload size={12} /> Upload New Passage
+                </button>
+                <span className="text-[10px] text-blue-600">or paste text below:</span>
+              </>
+            )}
+          </div>
+          {/* Quick paste input */}
+          {!selectedPassage && (
+            <div className="mt-2 space-y-1">
+              <input value={pastePassageTitle} onChange={e => setPastePassageTitle(e.target.value)} placeholder="Passage title..."
+                className="w-full px-3 py-1.5 border border-blue-200 rounded-lg text-[11px] outline-none focus:border-blue-400 bg-white" />
+              <textarea value={pastePassageText} onChange={e => setPastePassageText(e.target.value)} placeholder="Paste passage text here for a quick running record..."
+                rows={2} className="w-full px-3 py-1.5 border border-blue-200 rounded-lg text-[11px] outline-none focus:border-blue-400 bg-white resize-y" />
+              {pastePassageText.trim() && (
+                <button onClick={() => {
+                  const text = pastePassageText.trim()
+                  setSelectedPassage({ title: pastePassageTitle || 'Untitled', text, word_count: text.split(/\s+/).length })
+                }} className="px-3 py-1 rounded-lg text-[10px] font-medium bg-blue-600 text-white hover:bg-blue-700">
+                  Use This Passage ({pastePassageText.trim().split(/\s+/).length} words)
+                </button>
+              )}
+            </div>
+          )}
+          {/* Passage picker dropdown */}
+          {showPassagePicker && passages.length > 0 && (
+            <div className="mt-2 bg-white rounded-lg border border-blue-200 p-1.5 max-h-28 overflow-y-auto">
+              {passages.map(p => (
+                <button key={p.id} onClick={() => { setSelectedPassage(p); setShowPassagePicker(false) }}
+                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-blue-50 text-[11px] flex justify-between">
+                  <span className="font-medium">{p.title}</span>
+                  <span className="text-text-tertiary">{p.word_count}w {p.level ? `· ${p.level}` : ''}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {!selectedPassage && passages.length === 0 && !pastePassageText && (
+            <p className="text-[10px] text-blue-600 mt-2">No passages saved yet. Upload one or paste text above to use the digital running record.</p>
+          )}
+          {selectedPassage && <p className="text-[10px] text-blue-600 mt-2">Click the 📖 icon next to a student's CWPM field to open the running record.</p>}
+        </div>
+      )}
+
       <div className="bg-surface border border-border rounded-xl overflow-x-auto">
         <table className="w-full text-[12px]">
           <thead><tr className="bg-surface-alt">
@@ -392,13 +496,48 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
               <tr key={student.id} className="border-t border-border hover:bg-surface-alt/30">
                 <td className="px-4 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{student.english_name} <span className="text-text-tertiary font-normal text-[11px]">{student.korean_name}</span></td>
                 {sections.map(sec => <td key={sec.key} className="px-2 py-1.5 text-center">
-                  <input type="number" step="0.5" value={scores[student.id]?.[sec.key] ?? ''} onChange={e => setScores(prev => ({ ...prev, [student.id]: { ...prev[student.id], [sec.key]: e.target.value === '' ? null : Number(e.target.value) } }))}
-                    className="w-16 px-2 py-1.5 border border-border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20" max={sec.max || undefined} />
+                  <div className="flex items-center justify-center gap-1">
+                    <input type="number" step="0.5" value={scores[student.id]?.[sec.key] ?? ''} onChange={e => setScores(prev => ({ ...prev, [student.id]: { ...prev[student.id], [sec.key]: e.target.value === '' ? null : Number(e.target.value) } }))}
+                      className="w-16 px-2 py-1.5 border border-border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20" max={sec.max || undefined} />
+                    {sec.key === 'passage_cwpm' && (
+                      <button onClick={() => setRunningRecordStudent(student)}
+                        title="Open Digital Running Record"
+                        className="p-1 rounded-lg text-blue-500 hover:bg-blue-50 hover:text-blue-700 shrink-0">
+                        <BookOpen size={14} />
+                      </button>
+                    )}
+                  </div>
                 </td>)}
               </tr>))}</tbody>
         </table>
       </div>
       <p className="text-[11px] text-text-tertiary mt-3">Entered by: {currentTeacher?.name || 'Unknown'} | Only {activeTab} students saved when you click Save.</p>
+
+      {/* Running Record modal */}
+      {runningRecordStudent && selectedPassage && (
+        <RunningRecord
+          passageText={selectedPassage.text}
+          passageTitle={selectedPassage.title}
+          studentName={runningRecordStudent.english_name}
+          onComplete={handleRunningRecordComplete}
+          onClose={() => setRunningRecordStudent(null)}
+        />
+      )}
+      {runningRecordStudent && !selectedPassage && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRunningRecordStudent(null)}>
+          <div className="bg-surface rounded-xl shadow-lg p-6 max-w-sm text-center" onClick={e => e.stopPropagation()}>
+            <BookOpen size={24} className="text-blue-500 mx-auto mb-3" />
+            <p className="text-[13px] font-medium text-navy mb-2">No passage selected</p>
+            <p className="text-[11px] text-text-tertiary mb-4">Choose or paste a passage in the blue panel above to use the digital running record.</p>
+            <button onClick={() => setRunningRecordStudent(null)} className="px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white">OK</button>
+          </div>
+        </div>
+      )}
+
+      {/* Passage uploader modal */}
+      {showPassageUploader && (
+        <PassageUploader onSave={handleSaveNewPassage} onClose={() => setShowPassageUploader(false)} />
+      )}
     </div>
   )
 }

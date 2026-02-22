@@ -6,10 +6,12 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { getKSTDateString, classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download, Printer, BarChart3 } from 'lucide-react'
+import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download, Printer, BarChart3, Upload } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
+import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
+import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
 type LangKey = 'en' | 'ko'
 interface ReadingRecord {
@@ -866,6 +868,39 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const [lexile, setLexile] = useState('')
   const [naepScore, setNaepScore] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
+  const [showRunningRecord, setShowRunningRecord] = useState(false)
+  const [showPassageUploader, setShowPassageUploader] = useState(false)
+  const [passages, setPassages] = useState<any[]>([])
+  const [selectedPassage, setSelectedPassage] = useState<any>(null)
+  const [showPassagePicker, setShowPassagePicker] = useState(false)
+
+  // Load saved passages
+  useEffect(() => {
+    supabase.from('reading_passages').select('*').order('created_at', { ascending: false }).then(({ data }) => {
+      if (data) setPassages(data)
+    })
+  }, [])
+
+  const handleRunningRecordComplete = (result: RunningRecordResult) => {
+    setWordCount(result.totalWords)
+    setTimeSeconds(result.timeSeconds)
+    setErrors(result.errors)
+    setSelfCorrections(result.selfCorrections)
+    setShowRunningRecord(false)
+    if (selectedPassage) setPassageTitle(selectedPassage.title)
+  }
+
+  const handleSavePassage = async (p: { title: string; text: string; level: string; grade_range: string; source: string }) => {
+    const { data, error } = await supabase.from('reading_passages').insert({
+      title: p.title, text: p.text, word_count: p.text.trim().split(/\s+/).length,
+      level: p.level || null, grade_range: p.grade_range || null, source: p.source || null,
+      created_by: currentTeacher?.id, is_shared: true
+    }).select().single()
+    if (error) { showToast(`Error: ${error.message}`); return }
+    if (data) { setPassages(prev => [data, ...prev]); setSelectedPassage(data); setPassageTitle(data.title) }
+    setShowPassageUploader(false)
+    showToast('Passage saved to library')
+  }
 
   // Batch mode state
   const [batchScores, setBatchScores] = useState<Record<string, { wc: string; ts: string; err: string; sc: string; notes: string; diff: string; lex: string; naep: string }>>({})
@@ -949,6 +984,38 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
 
         {/* Shared passage info for both modes */}
         <div className="px-6 pt-4 pb-2 space-y-3 border-b border-border">
+          {/* Digital Running Record option */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => setShowPassagePicker(!showPassagePicker)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
+              <BookOpen size={13} /> {selectedPassage ? `📖 ${selectedPassage.title}` : '📖 Use Saved Passage'}
+            </button>
+            <button onClick={() => setShowPassageUploader(true)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-surface-alt border border-border">
+              <Upload size={12} /> New Passage
+            </button>
+            {selectedPassage && (
+              <button onClick={() => { if (mode === 'single' && !selStudent) { showToast('Select a student first'); return } setShowRunningRecord(true) }}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-semibold bg-green-600 text-white hover:bg-green-700">
+                ▶ Open Digital Running Record
+              </button>
+            )}
+            {selectedPassage && <button onClick={() => { setSelectedPassage(null); setPassageTitle('') }} className="text-[10px] text-red-500 hover:text-red-700">Clear</button>}
+          </div>
+
+          {/* Passage picker dropdown */}
+          {showPassagePicker && passages.length > 0 && (
+            <div className="bg-surface-alt rounded-lg border border-border p-2 max-h-32 overflow-y-auto">
+              {passages.map(p => (
+                <button key={p.id} onClick={() => { setSelectedPassage(p); setPassageTitle(p.title); setWordCount(p.word_count); setShowPassagePicker(false) }}
+                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-white text-[11px] flex items-center justify-between">
+                  <span className="font-medium">{p.title}</span>
+                  <span className="text-text-tertiary">{p.word_count} words {p.level ? `· ${p.level}` : ''} {p.grade_range ? `· G${p.grade_range}` : ''}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
               <input type="date" value={date} onChange={(e: any) => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
@@ -1092,6 +1159,22 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           </div>
         </div>
       </div>
+
+      {/* Running Record modal */}
+      {showRunningRecord && selectedPassage && (
+        <RunningRecord
+          passageText={selectedPassage.text}
+          passageTitle={selectedPassage.title}
+          studentName={mode === 'single' ? students.find(s => s.id === selStudent)?.english_name : undefined}
+          onComplete={handleRunningRecordComplete}
+          onClose={() => setShowRunningRecord(false)}
+        />
+      )}
+
+      {/* Passage uploader modal */}
+      {showPassageUploader && (
+        <PassageUploader onSave={handleSavePassage} onClose={() => setShowPassageUploader(false)} />
+      )}
     </div>
   )
 }
