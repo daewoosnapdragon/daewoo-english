@@ -873,6 +873,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const [passages, setPassages] = useState<any[]>([])
   const [selectedPassage, setSelectedPassage] = useState<any>(null)
   const [showPassagePicker, setShowPassagePicker] = useState(false)
+  const [passageSearch, setPassageSearch] = useState('')
   const [manualCwpm, setManualCwpm] = useState(false)
   const [directCwpm, setDirectCwpm] = useState<number | ''>('')
   const [directAccuracy, setDirectAccuracy] = useState<number | ''>('')
@@ -1007,15 +1008,32 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           </div>
 
           {/* Passage picker dropdown */}
-          {showPassagePicker && passages.length > 0 && (
-            <div className="bg-surface-alt rounded-lg border border-border p-2 max-h-32 overflow-y-auto">
-              {passages.map(p => (
-                <button key={p.id} onClick={() => { setSelectedPassage(p); setPassageTitle(p.title); setWordCount(p.word_count); if (p.level) setLexile(p.level); setShowPassagePicker(false) }}
-                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-white text-[11px] flex items-center justify-between">
-                  <span className="font-medium">{p.title}</span>
-                  <span className="text-text-tertiary">{p.word_count} words {p.level ? `· ${p.level}` : ''} {p.grade_range ? `· G${p.grade_range}` : ''}</span>
-                </button>
-              ))}
+          {showPassagePicker && (
+            <div className="bg-surface-alt rounded-lg border border-border p-3 space-y-2">
+              <input value={passageSearch} onChange={(e: any) => setPassageSearch(e.target.value)}
+                placeholder="Search by title or Lexile (e.g. 450L)..."
+                className="w-full px-3 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white"
+                autoFocus />
+              <div className="max-h-40 overflow-y-auto space-y-0.5">
+                {passages.filter(p => {
+                  if (!passageSearch.trim()) return true
+                  const q = passageSearch.toLowerCase()
+                  return (p.title || '').toLowerCase().includes(q) || (p.level || '').toLowerCase().includes(q) || (p.grade_range || '').includes(q)
+                }).map(p => (
+                  <button key={p.id} onClick={() => { setSelectedPassage(p); setPassageTitle(p.title); setWordCount(p.word_count); if (p.level) setLexile(p.level); setShowPassagePicker(false); setPassageSearch('') }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-white text-[11px] flex items-center justify-between transition-colors">
+                    <span className="font-medium text-navy">{p.title}</span>
+                    <span className="text-text-tertiary shrink-0 ml-2">{p.word_count}w {p.level ? `· ${p.level}` : ''} {p.grade_range ? `· G${p.grade_range}` : ''}</span>
+                  </button>
+                ))}
+                {passages.filter(p => {
+                  if (!passageSearch.trim()) return true
+                  const q = passageSearch.toLowerCase()
+                  return (p.title || '').toLowerCase().includes(q) || (p.level || '').toLowerCase().includes(q) || (p.grade_range || '').includes(q)
+                }).length === 0 && (
+                  <p className="text-[11px] text-text-tertiary text-center py-2">No passages match "{passageSearch}"</p>
+                )}
+              </div>
             </div>
           )}
 

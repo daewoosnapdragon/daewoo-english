@@ -72,14 +72,31 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
     setWords(prev => prev.map(w => ({ ...w, mark: null })))
   }
 
-  const toggleWord = useCallback((index: number) => {
-    setWords(prev => prev.map(w => {
-      if (w.index !== index) return w
-      // Cycle: null -> error -> self_correct -> null
-      const next: WordMark = w.mark === null ? 'error' : w.mark === 'error' ? 'self_correct' : null
-      return { ...w, mark: next }
-    }))
-  }, [])
+  const handleWordClick = useCallback((index: number) => {
+    const w = words[index]
+    if (!w) return
+    // Don't allow interaction with words past the last-word marker (except to clear it)
+    if (lastWordIdx !== null && index > lastWordIdx) return
+
+    // If this word is currently the last-word marker:
+    if (lastWordIdx === index) {
+      // 4th click: reset — clear last word marker entirely
+      setLastWordIdx(null)
+      return
+    }
+
+    if (w.mark === null) {
+      // 1st click: error
+      setWords(prev => prev.map(wd => wd.index === index ? { ...wd, mark: 'error' as WordMark } : wd))
+    } else if (w.mark === 'error') {
+      // 2nd click: self-correct
+      setWords(prev => prev.map(wd => wd.index === index ? { ...wd, mark: 'self_correct' as WordMark } : wd))
+    } else if (w.mark === 'self_correct') {
+      // 3rd click: mark as last word read + clear the mark
+      setWords(prev => prev.map(wd => wd.index === index ? { ...wd, mark: null } : wd))
+      setLastWordIdx(index)
+    }
+  }, [words, lastWordIdx])
 
   // Computed stats
   const totalWords = words.length
@@ -176,8 +193,7 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
 
         {/* Instructions */}
         <div className="px-6 py-2 bg-accent-light border-b border-border text-[10px] text-navy shrink-0">
-          <strong>Tap a word:</strong> 1× = <span className="text-red-600 font-bold">error</span> (red) · 2× = <span className="text-amber-600 font-bold">self-correct</span> (yellow) · 3× = clear
-          <span className="text-text-tertiary ml-3">| <strong>Right-click (or long-press)</strong> a word = mark as last word read at timer stop</span>
+          <strong>Click cycle:</strong> 1× = <span className="text-red-600 font-bold">error</span> · 2× = <span className="text-amber-600 font-bold">self-correct</span> · 3× = <span className="text-blue-600 font-bold">last word read</span> · 4× = reset
         </div>
 
         {/* Passage words */}
@@ -202,14 +218,13 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
                   return (
                     <button
                       key={w.index}
-                      onClick={() => !isPastLast && toggleWord(w.index)}
-                      onContextMenu={(e) => { e.preventDefault(); setLastWordIdx(isLastWord ? null : w.index) }}
+                      onClick={() => handleWordClick(w.index)}
                       className={`
                         px-1.5 py-1 rounded-lg text-[16px] font-medium transition-all select-none
                         ${isPastLast
                           ? 'text-gray-300 border-2 border-transparent cursor-default'
                           : isLastWord
-                            ? 'bg-blue-500 text-white border-2 border-blue-600 ring-2 ring-blue-300'
+                            ? 'bg-red-500 text-white border-2 border-red-600 ring-2 ring-red-300 font-bold'
                             : w.mark === 'error' 
                               ? 'bg-red-100 text-red-700 border-2 border-red-400 line-through decoration-2' 
                               : w.mark === 'self_correct'

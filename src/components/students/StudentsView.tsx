@@ -1237,6 +1237,7 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
   const [showPassageUploader, setShowPassageUploader] = useState(false)
   const [pasteText, setPasteText] = useState('')
   const [pasteTitle, setPasteTitle] = useState('')
+  const [passageSearch, setPassageSearch] = useState('')
   const [showManualEntry, setShowManualEntry] = useState(false)
   const [manualForm, setManualForm] = useState({ cwpm: '', accuracy: '', errors: '', self_corrections: '', time_seconds: '60', word_count: '', passage_title: '', naep: '', reading_level: '' })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -1422,12 +1423,24 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
               className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {passages.slice(0, 6).map(p => (
-              <button key={p.id} onClick={() => setSelectedPassage(p)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${selectedPassage?.id === p.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}>
-                {p.title} ({p.word_count}w)
-              </button>
-            ))}
+            <div className="w-full">
+              <input value={passageSearch} onChange={e => setPassageSearch(e.target.value)}
+                placeholder="Search passages by title or Lexile..."
+                className="w-full px-3 py-1.5 border border-blue-200 rounded-lg text-[11px] outline-none focus:border-blue-400 bg-white" />
+            </div>
+            <div className="w-full max-h-28 overflow-y-auto space-y-0.5">
+              {passages.filter(p => {
+                if (!passageSearch.trim()) return true
+                const q = passageSearch.toLowerCase()
+                return (p.title || '').toLowerCase().includes(q) || (p.level || '').toLowerCase().includes(q)
+              }).map(p => (
+                <button key={p.id} onClick={() => setSelectedPassage(p)}
+                  className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] flex items-center justify-between transition-colors ${selectedPassage?.id === p.id ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 hover:bg-blue-50'}`}>
+                  <span className="font-medium">{p.title}</span>
+                  <span className={selectedPassage?.id === p.id ? 'text-blue-100' : 'text-text-tertiary'}>{p.word_count}w {p.level ? `· ${p.level}` : ''}</span>
+                </button>
+              ))}
+            </div>
             <button onClick={() => setShowPassageUploader(true)}
               className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-text-tertiary border border-dashed border-blue-300 hover:bg-white">
               + New Passage

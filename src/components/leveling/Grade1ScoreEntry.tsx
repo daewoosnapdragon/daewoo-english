@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
@@ -958,85 +958,196 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
   onUpdate: (field: string, val: number | null) => void
 }) {
   const [showPassage, setShowPassage] = useState(false)
+  const [wordMarks, setWordMarks] = useState<Record<number, 'error' | 'self_correct' | null>>({})
   const [lastWordIdx, setLastWordIdx] = useState<number | null>(null)
+  const [timing, setTiming] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  const [finished, setFinished] = useState(false)
+  const [notes, setNotes] = useState('')
+  const startRef = useRef<number | null>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const passage = LEVEL_TEST_PASSAGES[level]
   if (!passage) return null
-
   const words = passage.text.split(/\s+/)
 
+  // Timer
+  useEffect(() => {
+    if (timing) {
+      startRef.current = Date.now() - (elapsed * 1000)
+      timerRef.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - (startRef.current || Date.now())) / 1000))
+      }, 100)
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current)
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [timing])
+
+  const wRead = lastWordIdx !== null ? lastWordIdx + 1 : words.length
+  const errCount = Object.entries(wordMarks).filter(([i, m]) => m === 'error' && (lastWordIdx === null || Number(i) <= lastWordIdx)).length
+  const scCount = Object.entries(wordMarks).filter(([i, m]) => m === 'self_correct' && (lastWordIdx === null || Number(i) <= lastWordIdx)).length
+  const t = elapsed || 1
+  const cwpm = Math.round(((wRead - errCount) / t) * 60)
+  const accuracy = wRead > 0 ? Math.round(((wRead - errCount) / wRead) * 1000) / 10 : 0
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
   const handleWordClick = (idx: number) => {
-    if (lastWordIdx === idx) {
-      // Deselect
-      setLastWordIdx(null)
-      onUpdate('o_orf_words_read', null)
-    } else {
+    if (lastWordIdx !== null && idx > lastWordIdx) return
+    // If this word is the lastWord marker: 4th click = clear marker
+    if (lastWordIdx === idx) { setLastWordIdx(null); return }
+
+    const current = wordMarks[idx] || null
+    if (current === null) {
+      setWordMarks(prev => ({ ...prev, [idx]: 'error' }))
+    } else if (current === 'error') {
+      setWordMarks(prev => ({ ...prev, [idx]: 'self_correct' }))
+    } else if (current === 'self_correct') {
+      setWordMarks(prev => ({ ...prev, [idx]: null }))
       setLastWordIdx(idx)
-      // Words read = index + 1 (1-based count)
-      onUpdate('o_orf_words_read', idx + 1)
     }
   }
 
-  // Sync from external wordsRead value
+  const handleSave = () => {
+    onUpdate('o_orf_words_read', wRead)
+    onUpdate('o_orf_errors', errCount)
+    onUpdate('o_orf_time_seconds', elapsed > 0 && elapsed < 60 ? elapsed : null)
+    setFinished(true)
+    setTiming(false)
+    setShowPassage(false)
+  }
+
+  const handleReset = () => {
+    setWordMarks({})
+    setLastWordIdx(null)
+    setTiming(false)
+    setElapsed(0)
+    setFinished(false)
+    setNotes('')
+  }
+
+  // Sync lastWordIdx from external
   useEffect(() => {
-    if (wordsRead != null && wordsRead > 0 && lastWordIdx === null) {
+    if (wordsRead != null && wordsRead > 0 && wordsRead < words.length && lastWordIdx === null && !showPassage) {
       setLastWordIdx(wordsRead - 1)
     }
   }, [wordsRead])
+
+  // Split words into lines of 10
+  const lines: { word: string; idx: number }[][] = []
+  for (let i = 0; i < words.length; i += 10) {
+    lines.push(words.slice(i, i + 10).map((w, j) => ({ word: w, idx: i + j })))
+  }
 
   return (
     <>
       <button onClick={() => setShowPassage(true)}
         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-green-600 text-white hover:bg-green-700 transition-all">
-        <BookOpen size={14} /> View Passage: "{passage.title}" ({passage.wordCount} words)
+        <BookOpen size={14} /> {finished ? '✓ ' : ''}Open Passage: "{passage.title}" ({passage.wordCount} words)
       </button>
 
-      {/* Passage modal */}
       {showPassage && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={() => setShowPassage(false)}>
-          <div className="bg-surface rounded-xl shadow-lg w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e: any) => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-green-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowPassage(false)}>
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-[850px] max-h-[90vh] flex flex-col overflow-hidden" onClick={(e: any) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-green-50 shrink-0">
               <div>
                 <h3 className="font-display text-lg font-semibold text-navy">Passage {level}: {passage.title}</h3>
-                <p className="text-[11px] text-text-secondary">{passage.wordCount} words · Tap the last word the student read at 60 seconds</p>
+                <p className="text-[10px] text-text-secondary">{passage.wordCount} words</p>
               </div>
               <button onClick={() => setShowPassage(false)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
             </div>
-            <div className="p-6 overflow-y-auto flex-1">
-              <div className="bg-amber-50/50 rounded-xl p-6 border border-amber-100">
-                <div className="flex flex-wrap gap-x-1.5 gap-y-2 leading-[2.4]">
-                  {words.map((word, i) => {
-                    const isLast = lastWordIdx === i
-                    const isPastLast = lastWordIdx !== null && i > lastWordIdx
-                    return (
-                      <button key={i} onClick={() => handleWordClick(i)}
-                        className={`px-1 py-0.5 rounded text-[17px] font-serif transition-all cursor-pointer ${
-                          isLast
-                            ? 'bg-red-500 text-white font-bold ring-2 ring-red-300'
-                            : isPastLast
-                              ? 'text-gray-300'
-                              : 'text-gray-900 hover:bg-navy/10'
-                        }`}
-                        title={isLast ? `Last word read (word ${i + 1})` : `Click to mark as last word read`}>
-                        {word}
-                      </button>
-                    )
-                  })}
-                </div>
+
+            {/* Timer bar */}
+            <div className="flex items-center justify-between px-6 py-2.5 bg-navy-dark text-white shrink-0">
+              <div className="flex items-center gap-3">
+                {!timing && !finished && (
+                  <button onClick={() => { setTiming(true); setFinished(false) }}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-[12px] font-semibold">
+                    ▶ Start
+                  </button>
+                )}
+                {timing && (
+                  <button onClick={() => { setTiming(false); setFinished(true) }}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold animate-pulse">
+                    ■ Stop
+                  </button>
+                )}
+                {finished && (
+                  <button onClick={handleReset}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium">
+                    ↺ Reset
+                  </button>
+                )}
+                <span className="text-[24px] font-mono font-bold tabular-nums">{formatTime(elapsed)}</span>
               </div>
+              <div className="flex items-center gap-5 text-[11px]">
+                <div className="text-center"><div className="text-[18px] font-bold">{errCount}</div><div className="text-white/60 text-[8px] uppercase">Errors</div></div>
+                <div className="text-center"><div className="text-[18px] font-bold">{scCount}</div><div className="text-white/60 text-[8px] uppercase">SC</div></div>
+                <div className="text-center"><div className="text-[18px] font-bold text-gold">{elapsed > 0 ? cwpm : '—'}</div><div className="text-white/60 text-[8px] uppercase">CWPM</div></div>
+                <div className="text-center"><div className={`text-[18px] font-bold ${accuracy >= 95 ? 'text-green-400' : accuracy >= 90 ? 'text-amber-400' : elapsed > 0 ? 'text-red-400' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '—'}</div><div className="text-white/60 text-[8px] uppercase">Acc</div></div>
+                <div className="text-center"><div className="text-[18px] font-bold">{wRead}/{words.length}</div><div className="text-white/60 text-[8px] uppercase">Words</div></div>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="px-6 py-1.5 bg-accent-light border-b border-border text-[10px] text-navy shrink-0">
+              <strong>Click:</strong> 1× = <span className="text-red-600 font-bold">error</span> · 2× = <span className="text-amber-600 font-bold">self-correct</span> · 3× = <span className="text-red-600 font-bold">last word read</span> · 4× = reset
+            </div>
+
+            {/* Passage words */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
               {lastWordIdx !== null && (
-                <div className="mt-3 flex items-center justify-between bg-green-50 rounded-lg px-4 py-2 border border-green-200">
-                  <span className="text-[12px] text-green-800 font-medium">
-                    Last word read: "{words[lastWordIdx]}" — <span className="font-bold">{lastWordIdx + 1} words read</span>
+                <div className="mb-3 flex items-center justify-between bg-blue-50 rounded-lg px-4 py-2 border border-blue-200">
+                  <span className="text-[11px] text-blue-800 font-medium">
+                    Last word: "{words[lastWordIdx]}" — <span className="font-bold">{lastWordIdx + 1}/{words.length}</span>
+                    {lastWordIdx + 1 < words.length && <span className="text-blue-600 ml-1">(didn't finish)</span>}
                   </span>
-                  <button onClick={() => { setLastWordIdx(null); onUpdate('o_orf_words_read', null) }}
-                    className="text-[10px] text-red-500 hover:text-red-700">Clear</button>
+                  <button onClick={() => setLastWordIdx(null)} className="text-[10px] text-red-500 hover:text-red-700">Clear</button>
                 </div>
               )}
-              {lastWordIdx === null && (
-                <p className="text-[10px] text-text-tertiary mt-3 text-center">
-                  Tap any word to mark where the student stopped at 60 seconds. If the student finished, tap the last word.
-                </p>
-              )}
+              <div className="leading-[2.8]">
+                {lines.map((line, li) => (
+                  <div key={li} className="flex flex-wrap gap-x-1 mb-1">
+                    <span className="text-[8px] text-text-tertiary w-5 text-right mr-2 mt-2 shrink-0">{li * 10 + 1}</span>
+                    {line.map(({ word, idx }) => {
+                      const mark = wordMarks[idx] || null
+                      const isPastLast = lastWordIdx !== null && idx > lastWordIdx
+                      const isLastWord = lastWordIdx === idx
+                      return (
+                        <button key={idx} onClick={() => handleWordClick(idx)}
+                          className={`px-1.5 py-1 rounded-lg text-[17px] font-serif font-medium transition-all select-none ${
+                            isPastLast ? 'text-gray-300 border-2 border-transparent cursor-default' :
+                            isLastWord ? 'bg-red-500 text-white border-2 border-red-600 ring-2 ring-red-300 font-bold' :
+                            mark === 'error' ? 'bg-red-100 text-red-700 border-2 border-red-400 line-through decoration-2' :
+                            mark === 'self_correct' ? 'bg-amber-100 text-amber-700 border-2 border-amber-400' :
+                            'hover:bg-surface-alt border-2 border-transparent text-text-primary'
+                          }`} style={{ touchAction: 'manipulation' }}>
+                          {word}
+                          {mark === 'self_correct' && !isPastLast && <span className="text-[8px] align-super ml-0.5">SC</span>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer: notes + save */}
+            <div className="px-6 py-3 border-t border-border bg-surface-alt/30 shrink-0 space-y-2">
+              <input value={notes} onChange={(e: any) => setNotes(e.target.value)}
+                placeholder="Quick notes (e.g. struggled with blends, good expression)..."
+                className="w-full px-3 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white" />
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] text-text-tertiary">
+                  {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> · Accuracy: <strong className={accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}>{accuracy}%</strong> · </>}
+                  Errors: <strong className="text-red-600">{errCount}</strong> · SC: <strong className="text-amber-600">{scCount}</strong>
+                </div>
+                <button onClick={handleSave}
+                  className="px-5 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy/90 transition-all">
+                  Save & Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
