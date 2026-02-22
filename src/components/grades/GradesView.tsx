@@ -465,7 +465,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                           )}
                         </td>
                         <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
-                        <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? score : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onFocus={() => { if (rawInputs[s.id] === undefined && score != null) handleScoreChange(s.id, String(score)) }} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />}</td>
+                        <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? String(score) : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onFocus={e => { if (rawInputs[s.id] === undefined && score != null) { handleScoreChange(s.id, String(score)); } e.target.select() }} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />}</td>
                         <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{isAbsent || isExempt ? '—' : pct ? `${pct}%` : '—'}</td>
                         <td className="px-4 py-2.5 text-center">
                           <div className="inline-flex gap-1">
@@ -1715,7 +1715,7 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                   </div>
                 ))}
                 <div className="flex items-center justify-between pt-1">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <button onClick={() => setQuestionMap([...questionMap, { num: questionMap.length + 1, type: 'mc', max_points: 1, standard: '', answer_key: '' }])}
                       className="inline-flex items-center gap-1 text-[10px] text-navy font-medium hover:text-navy-dark"><Plus size={11} /> Add Question</button>
                     <button onClick={() => {
@@ -1725,6 +1725,23 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                         setQuestionMap([...questionMap, ...newQs])
                       }
                     }} className="inline-flex items-center gap-1 text-[10px] text-text-tertiary font-medium hover:text-navy"><Plus size={11} /> Bulk Add</button>
+                    {standards.length > 0 && (
+                      <button onClick={() => {
+                        const rangeStr = prompt('Apply standard to which questions? (e.g. "1-5" or "all")')
+                        if (!rangeStr) return
+                        const stdCode = prompt(`Which standard?\n${standards.join(', ')}`)
+                        if (!stdCode || !standards.includes(stdCode)) return
+                        const nm = [...questionMap]
+                        if (rangeStr.toLowerCase() === 'all') {
+                          nm.forEach(q => { q.standard = stdCode })
+                        } else {
+                          const [start, end] = rangeStr.split('-').map(Number)
+                          if (start && end) nm.forEach(q => { if (q.num >= start && q.num <= end) q.standard = stdCode })
+                          else if (start) nm.forEach(q => { if (q.num === start) q.standard = stdCode })
+                        }
+                        setQuestionMap(nm)
+                      }} className="inline-flex items-center gap-1 text-[10px] text-text-tertiary font-medium hover:text-navy">⚡ Set Standard (range)</button>
+                    )}
                   </div>
                   <span className="text-[10px] text-text-tertiary font-semibold">
                     {questionMap.length} Q · {questionMap.reduce((s, q) => s + q.max_points, 0)} pts total
@@ -2329,6 +2346,7 @@ function ItemEntryScorePhase({ students, questionMap, maxScore, assessmentId, on
   const { showToast } = useApp()
   const [activeIdx, setActiveIdx] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [focusedQ, setFocusedQ] = useState<number | null>(null)
   // responses[studentId][questionNum] = { answer, points }
   const [responses, setResponses] = useState<Record<string, Record<number, { answer?: string; points: number }>>>({})
 
@@ -2451,7 +2469,34 @@ function ItemEntryScorePhase({ students, questionMap, maxScore, assessmentId, on
         </div>
 
         {/* Questions */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4" tabIndex={0} onKeyDown={e => {
+          if (!activeStudent) return
+          const qIdx = focusedQ != null ? questionMap.findIndex(q => q.num === focusedQ) : -1
+          const currentQ = focusedQ != null ? questionMap.find(q => q.num === focusedQ) : null
+
+          // ABCD for MC questions
+          if (currentQ?.type === 'mc' && ['a', 'b', 'c', 'd'].includes(e.key.toLowerCase())) {
+            e.preventDefault()
+            const opt = e.key.toUpperCase()
+            const hasKey = currentQ.answer_key != null && currentQ.answer_key !== ''
+            const pts = hasKey ? (opt === currentQ.answer_key ? currentQ.max_points : 0) : 0
+            setAnswer(currentQ.num, opt, pts)
+            // Auto-advance to next question
+            if (qIdx < questionMap.length - 1) setFocusedQ(questionMap[qIdx + 1].num)
+          }
+          // T/F for true_false questions
+          if (currentQ?.type === 'true_false' && ['t', 'f'].includes(e.key.toLowerCase())) {
+            e.preventDefault()
+            const opt = e.key.toUpperCase()
+            const hasKey = currentQ.answer_key != null && currentQ.answer_key !== ''
+            const pts = hasKey ? (opt === currentQ.answer_key ? currentQ.max_points : 0) : 0
+            setAnswer(currentQ.num, opt, pts)
+            if (qIdx < questionMap.length - 1) setFocusedQ(questionMap[qIdx + 1].num)
+          }
+          // Arrow keys to navigate questions
+          if (e.key === 'ArrowDown' && qIdx < questionMap.length - 1) { e.preventDefault(); setFocusedQ(questionMap[qIdx + 1].num) }
+          if (e.key === 'ArrowUp' && qIdx > 0) { e.preventDefault(); setFocusedQ(questionMap[qIdx - 1].num) }
+        }}>
           <div className="space-y-1.5">
             {questionMap.map((q) => {
               const resp = studentResp[q.num]
@@ -2461,7 +2506,9 @@ function ItemEntryScorePhase({ students, questionMap, maxScore, assessmentId, on
               const isTF = q.type === 'true_false'
 
               return (
-                <div key={q.num} className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
+                <div key={q.num} onClick={() => setFocusedQ(q.num)} className={`flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-all ${
+                  focusedQ === q.num ? 'ring-2 ring-navy/40 ' : ''
+                }${
                   isCorrect === true ? 'border-green-300 bg-green-50/50' :
                   isCorrect === false ? 'border-red-300 bg-red-50/50' :
                   resp ? 'border-border bg-surface-alt/30' : 'border-border bg-surface'

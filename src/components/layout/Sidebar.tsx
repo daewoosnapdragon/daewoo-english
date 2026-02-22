@@ -26,7 +26,7 @@ const NAV_ITEMS = [
   { id: 'curriculum', icon: Map },
   { id: 'teacherGuides', icon: BookMarked },
   { section: 'SYSTEM' },
-  { id: 'adminDashboard', icon: BarChart3 },
+  { id: 'adminDashboard', icon: BarChart3, label: 'Program Overview' },
   { id: 'settings', icon: Settings },
 ]
 

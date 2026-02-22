@@ -33,7 +33,7 @@ export default function AdminDashboard() {
         supabase.from('behavior_logs').select('student_id, date, flagged, antecedent, behavior, consequence').gte('date', ninetyDaysAgo),
         supabase.from('reading_assessments').select('student_id, cwpm, date, accuracy_rate').order('date', { ascending: true }),
         supabase.from('semesters').select('id').eq('is_active', true).limit(1),
-        supabase.from('wida_profiles').select('student_id, overall_level'),
+        supabase.from('student_wida_levels').select('student_id, domain, wida_level'),
       ])
 
       const students = studentsRes.data || []
@@ -90,8 +90,16 @@ export default function AdminDashboard() {
       })
 
       // --- WIDA distribution ---
+      // Compute overall WIDA level as average of domain levels
+      const widaByStudentDomain: Record<string, number[]> = {}
+      ;(wida as any[]).forEach(w => {
+        if (!widaByStudentDomain[w.student_id]) widaByStudentDomain[w.student_id] = []
+        widaByStudentDomain[w.student_id].push(w.wida_level)
+      })
       const widaMap: Record<string, number> = {}
-      ;(wida as any[]).forEach(w => { widaMap[w.student_id] = w.overall_level })
+      Object.entries(widaByStudentDomain).forEach(([sid, levels]) => {
+        widaMap[sid] = levels.reduce((a, b) => a + b, 0) / levels.length
+      })
       const widaByClass: Record<string, Record<number, number>> = {}
       ENGLISH_CLASSES.forEach(c => { widaByClass[c] = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 } })
       students.forEach(s => {
@@ -182,7 +190,7 @@ export default function AdminDashboard() {
         todayAbsent: todayAtt.filter(a => a.status === 'absent').length,
         todayUnmarked: todayUnmarked.length,
         weeklyAtt, behaviorWeekly, topBeh, topAnt, readingTrends, studentReadingHistory,
-        behaviorDetail, widaMap,
+        behaviorDetail, widaMap, recentAtt, reading,
       })
       setLoading(false)
     })()
@@ -233,8 +241,55 @@ export default function AdminDashboard() {
 
 function OverviewTab({ data, ko }: { data: any; ko: boolean }) {
   const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0
+  const students: any[] = data.students || []
+  const history: Record<string, { date: string; cwpm: number }[]> = data.studentReadingHistory || {}
+
+  // Build Needs Attention list across ALL classes
+  const concerns: { name: string; cls: string; grade: number; reasons: string[] }[] = []
+  students.forEach(s => {
+    const reasons: string[] = []
+    // High absence
+    const absCount = (data.recentAtt || []).filter((a: any) => a.student_id === s.id && a.status === 'absent').length
+    if (absCount >= 4) reasons.push(`${absCount} absences (30d)`)
+    // Behavior incidents
+    const behCount = (data.behaviorDetail || []).filter((b: any) => b.student_id === s.id).length
+    if (behCount >= 5) reasons.push(`${behCount} behavior incidents (90d)`)
+    // Reading decline
+    const readings = history[s.id]
+    if (readings && readings.length >= 2) {
+      const sorted = [...readings].sort((a, b) => a.date.localeCompare(b.date))
+      if (sorted[sorted.length - 1].cwpm < sorted[0].cwpm - 10) reasons.push(`CWPM dropped ${sorted[0].cwpm}→${sorted[sorted.length - 1].cwpm}`)
+    }
+    if (reasons.length > 0) concerns.push({ name: s.english_name, cls: s.english_class, grade: s.grade, reasons })
+  })
+
   return (
     <div className="px-10 py-6 space-y-6 max-w-[1200px]">
+      {/* Needs Attention - TOP */}
+      {concerns.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle size={16} className="text-amber-600" />
+            <h3 className="font-display text-base font-semibold text-navy">{ko ? '주의 필요 학생' : 'Needs Attention'}</h3>
+            <span className="text-[10px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-bold">{concerns.length}</span>
+          </div>
+          <div className="space-y-2">
+            {concerns.slice(0, 8).map((c, i) => (
+              <div key={i} className="flex items-center gap-3 bg-white/60 rounded-lg px-3 py-2">
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: classToColor(c.cls as EnglishClass), color: classToTextColor(c.cls as EnglishClass) }}>{c.cls}</span>
+                <span className="text-[12px] font-medium text-navy w-28">{c.name}</span>
+                <span className="text-[10px] text-text-tertiary">G{c.grade}</span>
+                <div className="flex-1 flex flex-wrap gap-1">
+                  {c.reasons.map((r, ri) => <span key={ri} className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">{r}</span>)}
+                </div>
+              </div>
+            ))}
+            {concerns.length > 8 && <p className="text-[10px] text-text-tertiary text-center">+{concerns.length - 8} more students</p>}
+          </div>
+        </div>
+      )}
+
+      {/* Summary cards */}
       <div className="grid grid-cols-4 gap-4">
         <SummaryCard icon={Users} label={ko ? '전체 학생' : 'Total Students'} value={data.totalStudents} sub={`${ENGLISH_CLASSES.length} ${ko ? '개 반' : 'classes'}`} />
         <SummaryCard icon={ClipboardCheck} label={ko ? '오늘 출석' : "Today's Attendance"} value={`${data.todayPresent}/${data.totalStudents}`}
@@ -243,7 +298,8 @@ function OverviewTab({ data, ko }: { data: any; ko: boolean }) {
           sub={data.flaggedCount > 0 ? `${data.flaggedCount} ${ko ? '개 플래그' : 'flagged'}` : (ko ? '플래그 없음' : 'No flagged')} />
         <SummaryCard icon={BookOpen} label={ko ? '평균 CWPM' : 'Avg CWPM'} value={Math.round(avg(Object.values(data.cwpmByClass).flat() as number[]))} sub={ko ? '최신 읽기 유창성' : 'Latest fluency'} />
       </div>
-      {/* Attendance rate + Grade avg + CWPM side by side */}
+
+      {/* Attendance rate */}
       <div className="bg-surface border border-border rounded-xl p-6">
         <h3 className="font-display text-base font-semibold text-navy mb-4">{ko ? '반별 출석률 (30일)' : 'Attendance Rate by Class (30 days)'}</h3>
         <div className="space-y-3">
@@ -258,6 +314,8 @@ function OverviewTab({ data, ko }: { data: any; ko: boolean }) {
             </div>) })}
         </div>
       </div>
+
+      {/* Grade avg + CWPM side by side */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-surface border border-border rounded-xl p-6">
           <h3 className="font-display text-base font-semibold text-navy mb-4">{ko ? '반별 성적 평균' : 'Grade Averages by Class'}</h3>
@@ -274,6 +332,27 @@ function OverviewTab({ data, ko }: { data: any; ko: boolean }) {
               <span className="text-[11px] font-bold w-20 px-2 py-0.5 rounded text-center" style={{ backgroundColor: classToColor(cls as EnglishClass), color: classToTextColor(cls as EnglishClass) }}>{cls}</span>
               <div className="flex-1 h-5 bg-surface-alt rounded-lg overflow-hidden relative">{ca != null ? <div className="h-full rounded-lg bg-blue-500" style={{ width: `${(ca / mx) * 100}%` }} /> : null}<span className="absolute inset-0 flex items-center px-2 text-[10px] font-semibold">{ca != null ? `${Math.round(ca)} CWPM` : 'No data'} <span className="text-text-tertiary ml-1">({cwpms.length})</span></span></div>
             </div>) })}</div>
+        </div>
+      </div>
+
+      {/* Students by Class - BOTTOM */}
+      <div className="bg-surface border border-border rounded-xl p-6">
+        <h3 className="font-display text-base font-semibold text-navy mb-4">{ko ? '반별 학생 수' : 'Students by Class'}</h3>
+        <div className="grid grid-cols-6 gap-3">
+          {ENGLISH_CLASSES.map((cls: string) => {
+            const classStudents = students.filter(s => s.english_class === cls)
+            const grades: Record<number, number> = {}
+            classStudents.forEach(s => { grades[s.grade] = (grades[s.grade] || 0) + 1 })
+            return (
+              <div key={cls} className="text-center p-4 rounded-xl border border-border bg-surface-alt/30">
+                <span className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold mb-2" style={{ backgroundColor: classToColor(cls as EnglishClass), color: classToTextColor(cls as EnglishClass) }}>{cls}</span>
+                <p className="text-2xl font-bold text-navy">{classStudents.length}</p>
+                <div className="text-[9px] text-text-tertiary mt-1 space-x-1">
+                  {Object.entries(grades).sort(([a], [b]) => Number(a) - Number(b)).map(([g, c]) => <span key={g}>G{g}:{c}</span>)}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -328,43 +407,142 @@ function AttendanceTrendsTab({ data, ko }: { data: any; ko: boolean }) {
 // ─── Reading Progress ──────────────────────────────────────────────
 
 function ReadingProgressTab({ data, ko }: { data: any; ko: boolean }) {
-  const trends: Record<string, { month: string; avg: number }[]> = data.readingTrends || {}
-  const allMonths = Array.from(new Set(Object.values(trends).flatMap((t: any) => t.map((r: any) => r.month)))).sort()
+  const MONTH_NAMES = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const students: any[] = data.students || []
+  const reading: any[] = data.reading || []
+  const [schoolYear, setSchoolYear] = useState('2025-2026')
+  const [gradeFilter, setGradeFilter] = useState<number | null>(null)
+  const uniqueGrades = Array.from(new Set(students.map(s => s.grade))).sort((a, b) => a - b)
+
+  // School year months: Mar-Feb
+  const yearStart = schoolYear === '2025-2026' ? '2025-03' : '2026-03'
+  const yearEnd = schoolYear === '2025-2026' ? '2026-02' : '2027-02'
+  const schoolMonths: string[] = []
+  let cur = new Date(yearStart + '-01')
+  const end = new Date(yearEnd + '-28')
+  while (cur <= end) {
+    schoolMonths.push(cur.toISOString().slice(0, 7))
+    cur.setMonth(cur.getMonth() + 1)
+  }
+
+  // Filter students by grade
+  const filteredStudents = gradeFilter ? students.filter(s => s.grade === gradeFilter) : students
+  const filteredIds = new Set(filteredStudents.map(s => s.id))
+
+  // Build reading trends by class for filtered students within school year
+  const readingByClassDate: Record<string, Record<string, number[]>> = {}
+  ENGLISH_CLASSES.forEach(c => { readingByClassDate[c] = {} })
+  reading.forEach((r: any) => {
+    const s = students.find((st: any) => st.id === r.student_id)
+    if (!s || !filteredIds.has(s.id) || !readingByClassDate[s.english_class]) return
+    const month = r.date.slice(0, 7)
+    if (month < yearStart || month > yearEnd) return
+    if (!readingByClassDate[s.english_class][month]) readingByClassDate[s.english_class][month] = []
+    readingByClassDate[s.english_class][month].push(r.cwpm)
+  })
+  const trends: Record<string, Record<string, number>> = {}
+  ENGLISH_CLASSES.forEach(c => {
+    trends[c] = {}
+    Object.entries(readingByClassDate[c]).forEach(([month, vals]) => {
+      trends[c][month] = vals.reduce((a, b) => a + b, 0) / vals.length
+    })
+  })
+
+  // Grade-level trends
+  const readingByGradeDate: Record<number, Record<string, number[]>> = {}
+  uniqueGrades.forEach(g => { readingByGradeDate[g] = {} })
+  reading.forEach((r: any) => {
+    const s = students.find((st: any) => st.id === r.student_id)
+    if (!s || !readingByGradeDate[s.grade]) return
+    const month = r.date.slice(0, 7)
+    if (month < yearStart || month > yearEnd) return
+    if (!readingByGradeDate[s.grade][month]) readingByGradeDate[s.grade][month] = []
+    readingByGradeDate[s.grade][month].push(r.cwpm)
+  })
+
   return (
     <div className="px-10 py-6 space-y-6 max-w-[1200px]">
+      {/* Filters */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">School Year</span>
+          {['2025-2026', '2026-2027'].map(yr => (
+            <button key={yr} onClick={() => setSchoolYear(yr)}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${schoolYear === yr ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80'}`}>
+              {yr}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5 ml-4">
+          <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Grade</span>
+          <button onClick={() => setGradeFilter(null)}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${gradeFilter === null ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80'}`}>All</button>
+          {uniqueGrades.map(g => (
+            <button key={g} onClick={() => setGradeFilter(g)}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${gradeFilter === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80'}`}>
+              G{g}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Monthly CWPM table by class */}
       <div className="bg-surface border border-border rounded-xl p-6">
         <h3 className="font-display text-base font-semibold text-navy mb-1">{ko ? '반별 월간 CWPM 추세' : 'Monthly CWPM by Class'}</h3>
-        <p className="text-[11px] text-text-tertiary mb-4">{ko ? '월별 평균 읽기 유창성 점수' : 'Average reading fluency scores per month'}</p>
-        {allMonths.length === 0 ? <p className="text-text-tertiary text-center py-8">No reading data</p> : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
-              <thead><tr className="border-b border-border">
-                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-                {allMonths.map(m => <th key={m} className="text-center px-2 py-2 text-[10px] text-text-secondary font-semibold">{m.slice(5)}</th>)}
-                <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">{ko ? '변화' : 'Change'}</th>
-              </tr></thead>
-              <tbody>{ENGLISH_CLASSES.map((cls: string) => { const t = trends[cls] || []; const first = t[0]?.avg; const last = t[t.length - 1]?.avg; const change = first && last ? last - first : null; return (
+        <p className="text-[11px] text-text-tertiary mb-4">{gradeFilter ? `Grade ${gradeFilter} students only` : 'All students'} · {schoolYear}</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12px]">
+            <thead><tr className="border-b border-border">
+              <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
+              {schoolMonths.map(m => {
+                const [y, mo] = m.split('-')
+                return <th key={m} className="text-center px-2 py-2 text-[10px] text-text-secondary font-semibold">{MONTH_NAMES[parseInt(mo)]} {y.slice(2)}</th>
+              })}
+              <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">{ko ? '변화' : 'Change'}</th>
+            </tr></thead>
+            <tbody>{ENGLISH_CLASSES.map((cls: string) => {
+              const clsTrends = trends[cls] || {}
+              const months = schoolMonths.filter(m => clsTrends[m])
+              const first = months.length > 0 ? clsTrends[months[0]] : null
+              const last = months.length > 0 ? clsTrends[months[months.length - 1]] : null
+              const change = first && last ? last - first : null
+              return (
                 <tr key={cls} className="border-b border-border/50">
                   <td className="px-3 py-2"><span className="font-bold px-2 py-0.5 rounded text-[11px]" style={{ backgroundColor: classToColor(cls as EnglishClass), color: classToTextColor(cls as EnglishClass) }}>{cls}</span></td>
-                  {allMonths.map(m => { const entry = t.find((r: any) => r.month === m); return <td key={m} className="text-center px-2 py-2 font-medium">{entry ? Math.round(entry.avg) : '—'}</td> })}
+                  {schoolMonths.map(m => <td key={m} className="text-center px-2 py-2 font-medium">{clsTrends[m] ? Math.round(clsTrends[m]) : '—'}</td>)}
                   <td className={`text-center px-3 py-2 font-bold ${change == null ? 'text-text-tertiary' : change >= 0 ? 'text-green-600' : 'text-red-600'}`}>{change != null ? `${change >= 0 ? '+' : ''}${Math.round(change)}` : '—'}</td>
-                </tr>) })}</tbody>
-            </table>
-          </div>
-        )}
+                </tr>
+              )
+            })}</tbody>
+          </table>
+        </div>
       </div>
+
+      {/* Current CWPM by class */}
       <div className="bg-surface border border-border rounded-xl p-6">
         <h3 className="font-display text-base font-semibold text-navy mb-4">{ko ? '반별 현재 CWPM' : 'Current CWPM by Class'}</h3>
-        <div className="space-y-3">{ENGLISH_CLASSES.map((cls: string) => { const cwpms: number[] = data.cwpmByClass[cls] || []; const sorted = [...cwpms].sort((a, b) => a - b); const lo = sorted[0] || 0; const hi = sorted[sorted.length - 1] || 0; const avg = cwpms.length > 0 ? cwpms.reduce((a: number, b: number) => a + b, 0) / cwpms.length : 0; const maxAll = Math.max(...Object.values(data.cwpmByClass).flat().map((v: any) => v || 0), 1); return (
-          <div key={cls} className="flex items-center gap-3">
-            <span className="text-[11px] font-bold w-20 px-2 py-0.5 rounded text-center" style={{ backgroundColor: classToColor(cls as EnglishClass), color: classToTextColor(cls as EnglishClass) }}>{cls}</span>
-            <div className="flex-1 h-6 bg-surface-alt rounded-lg overflow-hidden relative">
-              {cwpms.length > 0 && <><div className="absolute h-full bg-blue-200 rounded-lg" style={{ left: `${(lo / maxAll) * 100}%`, width: `${((hi - lo) / maxAll) * 100}%` }} />
-              <div className="absolute h-full w-0.5 bg-blue-600" style={{ left: `${(avg / maxAll) * 100}%` }} /></>}
-              <span className="absolute inset-0 flex items-center px-2 text-[10px] font-semibold z-10">{cwpms.length > 0 ? `${lo}–${hi} (avg ${Math.round(avg)})` : 'No data'}</span>
+        <div className="space-y-3">{ENGLISH_CLASSES.map((cls: string) => {
+          const classStudents = filteredStudents.filter(s => s.english_class === cls)
+          const cwpms = classStudents.map(s => {
+            const readings = data.studentReadingHistory[s.id]
+            return readings && readings.length > 0 ? readings[readings.length - 1].cwpm : null
+          }).filter((c: any): c is number => c != null)
+          const sorted = [...cwpms].sort((a, b) => a - b)
+          const lo = sorted[0] || 0; const hi = sorted[sorted.length - 1] || 0
+          const avg = cwpms.length > 0 ? cwpms.reduce((a: number, b: number) => a + b, 0) / cwpms.length : 0
+          const mx = 180
+          return (
+            <div key={cls} className="flex items-center gap-3">
+              <span className="text-[11px] font-bold w-20 px-2 py-0.5 rounded text-center" style={{ backgroundColor: classToColor(cls as EnglishClass), color: classToTextColor(cls as EnglishClass) }}>{cls}</span>
+              <div className="flex-1 h-6 bg-surface-alt rounded-lg overflow-hidden relative">
+                {cwpms.length > 0 && <><div className="absolute h-full bg-blue-200 rounded-lg" style={{ left: `${(lo / mx) * 100}%`, width: `${((hi - lo) / mx) * 100}%` }} />
+                <div className="absolute h-full w-0.5 bg-blue-600" style={{ left: `${(avg / mx) * 100}%` }} /></>}
+                <span className="absolute inset-0 flex items-center px-2 text-[10px] font-semibold z-10">{cwpms.length > 0 ? `${lo}–${hi} (avg ${Math.round(avg)})` : 'No data'}</span>
+              </div>
+              <span className="text-[10px] text-text-tertiary w-10">{cwpms.length}</span>
             </div>
-            <span className="text-[10px] text-text-tertiary w-10">{cwpms.length}</span>
-          </div>) })}</div>
+          )
+        })}</div>
       </div>
     </div>
   )
@@ -377,8 +555,44 @@ function BehaviorPatternsTab({ data, ko }: { data: any; ko: boolean }) {
   const topBeh: [string, number][] = data.topBeh || []
   const topAnt: [string, number][] = data.topAnt || []
   const maxWeekly = Math.max(...weekly.map(w => w.count), 1)
+  const students: any[] = data.students || []
+  const behaviorDetail: any[] = data.behaviorDetail || []
+
+  // Students to watch: high negative behavior count (90 days)
+  const behByStudent: Record<string, { name: string; cls: string; count: number; flagged: number }> = {}
+  behaviorDetail.forEach(b => {
+    const s = students.find((st: any) => st.id === b.student_id)
+    if (!s) return
+    if (!behByStudent[b.student_id]) behByStudent[b.student_id] = { name: s.english_name, cls: s.english_class, count: 0, flagged: 0 }
+    behByStudent[b.student_id].count++
+    if (b.flagged) behByStudent[b.student_id].flagged++
+  })
+  const studentsToWatch = Object.values(behByStudent).filter(s => s.count >= 3).sort((a, b) => b.count - a.count)
+
   return (
     <div className="px-10 py-6 space-y-6 max-w-[1200px]">
+      {/* Students to Watch */}
+      {studentsToWatch.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle size={16} className="text-red-500" />
+            <h3 className="font-display text-base font-semibold text-navy">{ko ? '주의 학생' : 'Students to Watch'}</h3>
+            <span className="text-[10px] bg-red-200 text-red-800 px-2 py-0.5 rounded-full font-bold">{studentsToWatch.length}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {studentsToWatch.slice(0, 10).map((s, i) => (
+              <div key={i} className="flex items-center gap-3 bg-white/60 rounded-lg px-3 py-2">
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: classToColor(s.cls as EnglishClass), color: classToTextColor(s.cls as EnglishClass) }}>{s.cls}</span>
+                <span className="text-[12px] font-medium text-navy">{s.name}</span>
+                <span className="text-[10px] text-red-600 font-bold ml-auto">{s.count} incidents</span>
+                {s.flagged > 0 && <span className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-medium">{s.flagged} flagged</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Weekly trend chart */}
       <div className="bg-surface border border-border rounded-xl p-6">
         <h3 className="font-display text-base font-semibold text-navy mb-1">{ko ? '주간 행동 사건 추세 (90일)' : 'Weekly Behavior Incidents (90 days)'}</h3>
         <p className="text-[11px] text-text-tertiary mb-4">{ko ? '주별 전체 행동 기록 건수' : 'Total behavior logs per week across all classes'}</p>
@@ -437,9 +651,13 @@ function BehaviorPatternsTab({ data, ko }: { data: any; ko: boolean }) {
 function GrowthVelocityTab({ data, ko }: { data: any; ko: boolean }) {
   const students: any[] = data.students || []
   const history: Record<string, { date: string; cwpm: number }[]> = data.studentReadingHistory || {}
+  const [gradeFilter, setGradeFilter] = useState<number | null>(null)
+  const uniqueGrades = Array.from(new Set(students.map(s => s.grade))).sort((a, b) => a - b)
+
+  const filteredStudents = gradeFilter ? students.filter(s => s.grade === gradeFilter) : students
 
   // Calculate growth rate (CWPM per month) for each student
-  const growthData = students.map(s => {
+  const growthData = filteredStudents.map(s => {
     const readings = history[s.id]
     if (!readings || readings.length < 2) return null
     const sorted = [...readings].sort((a, b) => a.date.localeCompare(b.date))
@@ -463,6 +681,22 @@ function GrowthVelocityTab({ data, ko }: { data: any; ko: boolean }) {
         </p>
         <p className="text-[11px] text-text-tertiary leading-relaxed"><strong>{ko ? '왜 중요한가:' : 'Why it matters:'}</strong> {ko ? '평탄하거나 감소하는 성장은 학생이 정체되었음을 의미합니다.' : 'Flat or declining growth signals a student has plateaued and may need a different approach -- different reading level, more decodable texts, or a fluency intervention.'}</p>
         <p className="text-[11px] text-text-tertiary leading-relaxed mt-1"><strong>{ko ? '조치:' : 'What to do:'}</strong> {ko ? '빨간색 학생은 즉시 중재가 필요합니다.' : 'Red students need immediate intervention. Green students are on track. Look for students with high current CWPM but slow growth -- they may be coasting. Look for low CWPM but fast growth -- they are catching up and may need a level bump.'}</p>
+      </div>
+
+      {/* Grade filter */}
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Grade</span>
+        <button onClick={() => setGradeFilter(null)}
+          className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${gradeFilter === null ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80'}`}>All ({growthData.length})</button>
+        {uniqueGrades.map(g => {
+          const count = growthData.filter(s => s.grade === g).length
+          return (
+            <button key={g} onClick={() => setGradeFilter(g)}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${gradeFilter === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80'}`}>
+              G{g} ({count})
+            </button>
+          )
+        })}
       </div>
 
       {ENGLISH_CLASSES.map((cls: string) => {
@@ -617,14 +851,15 @@ function DomainStrengthTab({ data, ko }: { data: any; ko: boolean }) {
 
   useEffect(() => {
     (async () => {
-      const { data: semGrades } = await supabase.from('semester_grades').select('student_id, domain, score')
+      const { data: semGrades } = await supabase.from('semester_grades').select('student_id, domain, calculated_grade, final_grade')
       const students: any[] = data.students || []
       const byClass: Record<string, Record<string, number[]>> = {}
       ENGLISH_CLASSES.forEach(c => { byClass[c] = { reading: [], phonics: [], writing: [], speaking: [], language: [] } })
       ;(semGrades || []).forEach((sg: any) => {
         const s = students.find((st: any) => st.id === sg.student_id)
-        if (s && byClass[s.english_class] && byClass[s.english_class][sg.domain]) {
-          byClass[s.english_class][sg.domain].push(sg.score)
+        const score = sg.final_grade ?? sg.calculated_grade
+        if (s && score != null && byClass[s.english_class] && byClass[s.english_class][sg.domain]) {
+          byClass[s.english_class][sg.domain].push(score)
         }
       })
       const avgByClass: Record<string, Record<string, number>> = {}
@@ -712,10 +947,29 @@ function DomainStrengthTab({ data, ko }: { data: any; ko: boolean }) {
 function ClassCompositionTab({ data, ko }: { data: any; ko: boolean }) {
   const students: any[] = data.students || []
   const widaMap: Record<string, number> = data.widaMap || {}
-  const cwpmByClass: Record<string, number[]> = data.cwpmByClass || {}
+  const [gradeFilter, setGradeFilter] = useState<number | null>(null)
+  const [classFilter, setClassFilter] = useState<string | null>(null)
+  const uniqueGrades = Array.from(new Set(students.map(s => s.grade))).sort((a, b) => a - b)
+
+  const filteredStudents = students.filter(s =>
+    (!gradeFilter || s.grade === gradeFilter) &&
+    (!classFilter || s.english_class === classFilter)
+  )
+  const displayClasses = classFilter ? [classFilter] : ENGLISH_CLASSES
+
+  // Build CWPM data for filtered students
+  const history: Record<string, { date: string; cwpm: number }[]> = data.studentReadingHistory || {}
+  const cwpmByClass: Record<string, number[]> = {}
+  displayClasses.forEach((c: string) => { cwpmByClass[c] = [] })
+  filteredStudents.forEach(s => {
+    const readings = history[s.id]
+    if (readings && readings.length > 0 && cwpmByClass[s.english_class]) {
+      cwpmByClass[s.english_class].push(readings[readings.length - 1].cwpm)
+    }
+  })
 
   // Compute stats per class: min, max, median, q1, q3, mean for CWPM
-  const classStats = ENGLISH_CLASSES.map((cls: string) => {
+  const classStats = (displayClasses as string[]).map((cls: string) => {
     const cwpms = [...(cwpmByClass[cls] || [])].sort((a, b) => a - b)
     const n = cwpms.length
     if (n === 0) return { cls, n: 0, min: 0, max: 0, q1: 0, median: 0, q3: 0, mean: 0, spread: 0 }
@@ -731,15 +985,15 @@ function ClassCompositionTab({ data, ko }: { data: any; ko: boolean }) {
 
   // WIDA distribution by class
   const widaByClass: Record<string, number[]> = {}
-  ENGLISH_CLASSES.forEach(c => { widaByClass[c] = [] })
-  students.forEach(s => {
+  ;(displayClasses as string[]).forEach(c => { widaByClass[c] = [] })
+  filteredStudents.forEach(s => {
     const w = widaMap[s.id]
     if (w && widaByClass[s.english_class]) widaByClass[s.english_class].push(w)
   })
 
   // Grade spread by class
   const gradesByClass: Record<string, number[]> = {}
-  ENGLISH_CLASSES.forEach(c => { gradesByClass[c] = students.filter(s => s.english_class === c).map(s => s.grade) })
+  ;(displayClasses as string[]).forEach(c => { gradesByClass[c] = filteredStudents.filter(s => s.english_class === c).map(s => s.grade) })
 
   return (
     <div className="px-10 py-6 space-y-6 max-w-[1200px]">
@@ -750,6 +1004,24 @@ function ClassCompositionTab({ data, ko }: { data: any; ko: boolean }) {
         </p>
         <p className="text-[11px] text-text-tertiary leading-relaxed"><strong>{ko ? '왜 중요한가:' : 'Why it matters:'}</strong> {ko ? '넓은 분포는 차별화된 수업이 필요함을 의미합니다.' : 'A class where the top student reads at 120 CWPM and the bottom at 20 CWPM is essentially two classes. The teacher cannot effectively reach both ends. This data drives leveling decisions.'}</p>
         <p className="text-[11px] text-text-tertiary leading-relaxed mt-1"><strong>{ko ? '조치:' : 'What to do:'}</strong> {ko ? 'IQR이 큰 반은 수준 조정이 필요합니다.' : 'Classes with wide IQR (the dark bar) need attention at leveling meetings. Consider whether borderline students should move classes. Also compare WIDA spreads -- a class with L1 through L5 needs more differentiation than one clustered at L2-L3.'}</p>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Grade</span>
+          <button onClick={() => setGradeFilter(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${gradeFilter === null ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
+          {uniqueGrades.map(g => (
+            <button key={g} onClick={() => setGradeFilter(g)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${gradeFilter === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>G{g}</button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5 ml-4">
+          <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Class</span>
+          <button onClick={() => setClassFilter(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${classFilter === null ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
+          {ENGLISH_CLASSES.map(c => (
+            <button key={c} onClick={() => setClassFilter(c)} className={`px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all ${classFilter === c ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>{c}</button>
+          ))}
+        </div>
       </div>
 
       {/* Box-and-whisker style chart for CWPM */}
@@ -781,8 +1053,8 @@ function ClassCompositionTab({ data, ko }: { data: any; ko: boolean }) {
       {/* WIDA level distribution */}
       <div className="bg-surface border border-border rounded-xl p-6">
         <h3 className="font-display text-base font-semibold text-navy mb-4">{ko ? 'WIDA 수준 분포' : 'WIDA Level Distribution by Class'}</h3>
-        <div className="grid grid-cols-6 gap-3">
-          {ENGLISH_CLASSES.map((cls: string) => {
+        <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${Math.min((displayClasses as string[]).length, 6)}, 1fr)` }}>
+          {(displayClasses as string[]).map((cls: string) => {
             const widas = widaByClass[cls] || []
             const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }
             widas.forEach(w => { counts[Math.round(w)] = (counts[Math.round(w)] || 0) + 1 })
@@ -815,7 +1087,7 @@ function ClassCompositionTab({ data, ko }: { data: any; ko: boolean }) {
             <th className="text-center px-3 py-2">Total</th>
             <th className="text-center px-3 py-2">Grades Span</th>
           </tr></thead>
-          <tbody>{ENGLISH_CLASSES.map((cls: string) => {
+          <tbody>{(displayClasses as string[]).map((cls: string) => {
             const grades = gradesByClass[cls] || []
             const counts: Record<number, number> = {}
             grades.forEach(g => { counts[g] = (counts[g] || 0) + 1 })

@@ -222,6 +222,24 @@ export function WIDAProfiles() {
     return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10
   }
 
+  const [widaView, setWidaView] = useState<'edit' | 'timeline'>('edit')
+  const [historyData, setHistoryData] = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  // Load history when timeline tab is selected
+  useEffect(() => {
+    if (widaView !== 'timeline' || students.length === 0) return
+    setHistoryLoading(true)
+    ;(async () => {
+      try {
+        const { data } = await supabase.from('student_wida_history').select('student_id, domain, wida_level, recorded_at')
+          .in('student_id', students.map(s => s.id)).order('recorded_at', { ascending: true })
+        setHistoryData(data || [])
+      } catch { setHistoryData([]) }
+      setHistoryLoading(false)
+    })()
+  }, [widaView, students])
+
   return (
     <div>
       {/* Understanding & Using WIDA Profiles - guidance panel */}
@@ -298,6 +316,21 @@ export function WIDAProfiles() {
           </div>
         )}
       </div>
+
+      {/* View tabs */}
+      <div className="flex gap-1 mb-5">
+        <button onClick={() => setWidaView('edit')} className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${widaView === 'edit' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
+          Edit Levels
+        </button>
+        <button onClick={() => setWidaView('timeline')} className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${widaView === 'timeline' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
+          Class Timeline
+        </button>
+      </div>
+
+      {widaView === 'timeline' ? (
+        <WIDATimeline students={students} historyData={historyData} currentLevels={levels} loading={historyLoading} cls={cls} gr={gr} />
+      ) : (
+      <>
 
       {/* Snapshots */}
       {snapshots.length > 0 && (
@@ -379,6 +412,106 @@ export function WIDAProfiles() {
           </tbody>
         </table>
       </div>}
+      </>
+      )}
+    </div>
+  )
+}
+
+// ─── WIDA Timeline Grid View ──────────────────────────────────────
+function WIDATimeline({ students, historyData, currentLevels, loading, cls, gr }: {
+  students: any[]; historyData: any[]; currentLevels: Record<string, Record<string, number>>; loading: boolean; cls: string; gr: number
+}) {
+  if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+
+  // Group history by month
+  const months = new Set<string>()
+  const byStudentMonth: Record<string, Record<string, Record<string, number>>> = {} // sid -> month -> { domain: level }
+  historyData.forEach(h => {
+    const month = h.recorded_at.slice(0, 7)
+    months.add(month)
+    if (!byStudentMonth[h.student_id]) byStudentMonth[h.student_id] = {}
+    if (!byStudentMonth[h.student_id][month]) byStudentMonth[h.student_id][month] = {}
+    byStudentMonth[h.student_id][month][h.domain] = h.wida_level
+  })
+  const sortedMonths = Array.from(months).sort()
+  const MONTH_NAMES = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+  // Also add "Current" as the last column
+  const allColumns = [...sortedMonths, 'current']
+
+  const getOverall = (levels: Record<string, number> | undefined) => {
+    if (!levels) return null
+    const vals = Object.values(levels).filter(v => v > 0)
+    return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+  }
+
+  if (sortedMonths.length === 0 && students.length > 0) {
+    return (
+      <div className="bg-surface border border-border rounded-xl p-8 text-center">
+        <p className="text-text-secondary text-[13px] mb-2">No WIDA history data yet for this class.</p>
+        <p className="text-text-tertiary text-[11px]">History is recorded each time you save WIDA levels. Save levels now to start tracking changes over time.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-xl overflow-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="bg-surface-alt border-b border-border">
+            <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[160px]">Student</th>
+            {allColumns.map(col => {
+              if (col === 'current') return <th key="current" className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-bold w-20">Current</th>
+              const [y, m] = col.split('-')
+              return <th key={col} className="text-center px-3 py-3 text-[10px] text-text-secondary font-semibold w-16">{MONTH_NAMES[parseInt(m)]} {y.slice(2)}</th>
+            })}
+            <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-20">Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          {students.map((s: any) => {
+            const firstMonthLevels = sortedMonths.length > 0 ? byStudentMonth[s.id]?.[sortedMonths[0]] : null
+            const firstOverall = getOverall(firstMonthLevels)
+            const currentOverall = getOverall(currentLevels[s.id])
+            const change = firstOverall && currentOverall ? currentOverall - firstOverall : null
+
+            return (
+              <tr key={s.id} className="border-t border-border hover:bg-surface-alt/50">
+                <td className="px-4 py-2 sticky left-0 bg-surface">
+                  <span className="text-[11px] font-medium">{s.english_name}</span>
+                  <span className="text-[10px] text-text-tertiary ml-1.5">{s.korean_name}</span>
+                </td>
+                {allColumns.map(col => {
+                  const levels = col === 'current' ? currentLevels[s.id] : byStudentMonth[s.id]?.[col]
+                  const overall = getOverall(levels)
+                  if (!overall) return <td key={col} className="text-center px-3 py-2 text-[10px] text-text-tertiary">--</td>
+                  const bg = overall <= 1.5 ? '#fef2f2' : overall <= 2.5 ? '#fffbeb' : overall <= 3.5 ? '#f0fdf4' : overall <= 4.5 ? '#eff6ff' : '#f5f3ff'
+                  const color = overall <= 1.5 ? '#dc2626' : overall <= 2.5 ? '#d97706' : overall <= 3.5 ? '#16a34a' : overall <= 4.5 ? '#2563eb' : '#7c3aed'
+                  return (
+                    <td key={col} className="text-center px-3 py-2">
+                      <span className="inline-block px-2 py-1 rounded text-[11px] font-bold" style={{ backgroundColor: bg, color }}
+                        title={levels ? WIDA_DOMAINS.map(d => `${d}: L${levels[d] || '?'}`).join(', ') : ''}>
+                        {overall.toFixed(1)}
+                      </span>
+                    </td>
+                  )
+                })}
+                <td className="text-center px-3 py-2">
+                  {change != null ? (
+                    <span className={`text-[11px] font-bold ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-text-tertiary'}`}>
+                      {change > 0 ? '+' : ''}{change.toFixed(1)}
+                    </span>
+                  ) : <span className="text-[10px] text-text-tertiary">--</span>}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <div className="px-4 py-3 border-t border-border text-[10px] text-text-tertiary">
+        Hover over a score to see domain breakdown. Colors indicate overall proficiency level. Timeline shows the overall average (L/S/R/W) at each snapshot date.
+      </div>
     </div>
   )
 }
