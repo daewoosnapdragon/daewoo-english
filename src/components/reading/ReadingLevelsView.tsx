@@ -887,12 +887,29 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   }, [])
 
   const handleRunningRecordComplete = (result: RunningRecordResult) => {
-    setWordCount(result.wordsRead)
-    setTimeSeconds(result.timeSeconds)
-    setErrors(result.errors)
-    setSelfCorrections(result.selfCorrections)
-    setShowRunningRecord(false)
-    if (selectedPassage) setPassageTitle(selectedPassage.title)
+    if (batchRunningStudentId) {
+      // Batch mode: fill in the specific student's row
+      setBatchScores(prev => ({
+        ...prev,
+        [batchRunningStudentId]: {
+          ...(prev[batchRunningStudentId] || { wc: '', ts: '', err: '0', sc: '0', notes: '', diff: '', lex: '', naep: '' }),
+          wc: String(result.wordsRead),
+          ts: String(result.timeSeconds),
+          err: String(result.errors),
+          sc: String(result.selfCorrections),
+        }
+      }))
+      setBatchRunningStudentId(null)
+      setShowRunningRecord(false)
+    } else {
+      // Single mode
+      setWordCount(result.wordsRead)
+      setTimeSeconds(result.timeSeconds)
+      setErrors(result.errors)
+      setSelfCorrections(result.selfCorrections)
+      setShowRunningRecord(false)
+      if (selectedPassage) setPassageTitle(selectedPassage.title)
+    }
   }
 
   const handleSavePassage = async (p: { title: string; text: string; level: string; grade_range: string; source: string }) => {
@@ -909,6 +926,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
 
   // Batch mode state
   const [batchScores, setBatchScores] = useState<Record<string, { wc: string; ts: string; err: string; sc: string; notes: string; diff: string; lex: string; naep: string }>>({})
+  const [batchRunningStudentId, setBatchRunningStudentId] = useState<string | null>(null)
 
   const wc = typeof wordCount === 'number' ? wordCount : 0
   const ts = typeof timeSeconds === 'number' ? timeSeconds : 0
@@ -975,7 +993,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center">
-      <div className={`bg-surface rounded-xl shadow-lg w-full ${mode === 'batch' ? 'max-w-3xl max-h-[85vh] overflow-hidden flex flex-col' : 'max-w-lg'}`} onClick={(e: any) => e.stopPropagation()}>
+      <div className={`bg-surface rounded-xl shadow-lg w-full ${mode === 'batch' ? 'max-w-4xl max-h-[85vh] overflow-hidden flex flex-col' : 'max-w-3xl max-h-[85vh] overflow-y-auto'}`} onClick={(e: any) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold text-navy">Add ORF Record</h3>
           <div className="flex items-center gap-2">
@@ -1088,6 +1106,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
             <table className="w-full text-[12px]">
               <thead><tr className="border-b border-border">
                 <th className="text-left py-2 px-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-36">Student</th>
+                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-8"></th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Words</th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-20">Time <span className="text-[8px] normal-case">(m:ss or sec)</span></th>
                 <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Err</th>
@@ -1105,6 +1124,18 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                   return (
                     <tr key={s.id} className={`border-b border-border/50 ${filled ? 'bg-green-50/50' : ''}`}>
                       <td className="py-1.5 px-2 text-[12px] font-medium">{s.english_name}</td>
+                      <td className="py-1.5 px-0.5 text-center">
+                        {selectedPassage ? (
+                          <button onClick={() => { setBatchRunningStudentId(s.id); setShowRunningRecord(true) }}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] transition-all ${
+                              filled ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                            }`} title={`Open running record for ${s.english_name}`}>
+                            {filled ? '✓' : '▶'}
+                          </button>
+                        ) : (
+                          <span className="text-[9px] text-text-tertiary">—</span>
+                        )}
+                      </td>
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.wc} onChange={e => setBatchField(s.id, 'wc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
                       <td className="py-1.5 px-1"><input value={b.ts} onChange={e => {
                         const v = e.target.value
@@ -1167,9 +1198,9 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
         <RunningRecord
           passageText={selectedPassage.text}
           passageTitle={selectedPassage.title}
-          studentName={mode === 'single' ? students.find(s => s.id === selStudent)?.english_name : undefined}
+          studentName={mode === 'single' ? students.find((s: any) => s.id === selStudent)?.english_name : students.find((s: any) => s.id === batchRunningStudentId)?.english_name}
           onComplete={handleRunningRecordComplete}
-          onClose={() => setShowRunningRecord(false)}
+          onClose={() => { setShowRunningRecord(false); setBatchRunningStudentId(null) }}
         />
       )}
 

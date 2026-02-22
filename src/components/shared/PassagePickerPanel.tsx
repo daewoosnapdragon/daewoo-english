@@ -44,29 +44,39 @@ function parseLexile(s: string | null): number | null {
   return isNaN(n) ? null : n
 }
 
-// Parse a range query: "200-400", "BR-100L", "BR100-200", "450", "450L"
-function parseRange(query: string): { min: number; max: number } | null {
-  const q = query.trim().toUpperCase().replace(/\s+/g, '')
-  if (!q) return null
-
-  // Range: "200-400", "BR100-200", "BR-100"
-  const rangeMatch = q.match(/^(BR?\d*)-(\d+)L?$/)
-  if (rangeMatch) {
-    const min = parseLexile(rangeMatch[1]) ?? -999
-    const max = parseInt(rangeMatch[2])
-    if (!isNaN(max)) return { min, max }
-  }
-
-  // Single value: "450" or "450L"
-  const single = parseLexile(q)
-  if (single !== null) return { min: single - 50, max: single + 50 }
-
-  return null
-}
+// Lexile dropdown options — BR higher number = easier, so BR goes from BR1400 down to BR0, then 0L up to 1600L
+const LEXILE_OPTIONS = [
+  { value: -9999, label: 'Any' },
+  { value: -1400, label: 'BR1400' },
+  { value: -1200, label: 'BR1200' },
+  { value: -1000, label: 'BR1000' },
+  { value: -800, label: 'BR800' },
+  { value: -600, label: 'BR600' },
+  { value: -400, label: 'BR400' },
+  { value: -200, label: 'BR200' },
+  { value: -100, label: 'BR100' },
+  { value: 0, label: '0L' },
+  { value: 100, label: '100L' },
+  { value: 200, label: '200L' },
+  { value: 300, label: '300L' },
+  { value: 400, label: '400L' },
+  { value: 500, label: '500L' },
+  { value: 600, label: '600L' },
+  { value: 700, label: '700L' },
+  { value: 800, label: '800L' },
+  { value: 900, label: '900L' },
+  { value: 1000, label: '1000L' },
+  { value: 1100, label: '1100L' },
+  { value: 1200, label: '1200L' },
+  { value: 1300, label: '1300L' },
+  { value: 1400, label: '1400L' },
+  { value: 9999, label: 'Any' },
+]
 
 export default function PassagePickerPanel({ open, onClose, onSelect, passages, currentStudentId, currentStudentName }: Props) {
   const [searchText, setSearchText] = useState('')
-  const [lexileRange, setLexileRange] = useState('')
+  const [lexileMin, setLexileMin] = useState(-9999)
+  const [lexileMax, setLexileMax] = useState(9999)
   const [usageData, setUsageData] = useState<Record<string, UsageRecord[]>>({})
   const [studentHistory, setStudentHistory] = useState<Set<string>>(new Set())
   const [loadingUsage, setLoadingUsage] = useState(false)
@@ -140,17 +150,17 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
     }
 
     // Lexile range filter
-    const range = parseRange(lexileRange)
-    if (range) {
+    const hasLexileFilter = lexileMin > -9999 || lexileMax < 9999
+    if (hasLexileFilter) {
       result = result.filter(p => {
         const lex = parseLexile(p.level)
         if (lex === null) return false
-        return lex >= range.min && lex <= range.max
+        return lex >= lexileMin && lex <= lexileMax
       })
     }
 
     return result
-  }, [passages, searchText, lexileRange])
+  }, [passages, searchText, lexileMin, lexileMax])
 
   // Get usage info for a passage
   const getUsage = (title: string) => usageData[title.toLowerCase()] || []
@@ -189,16 +199,26 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
                 placeholder="Search by title..."
                 className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
             </div>
-            <div className="relative">
-              <input value={lexileRange} onChange={e => setLexileRange(e.target.value)}
-                placeholder="Lexile range (e.g. 200-400, BR-100, 450L)"
-                className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
-              {lexileRange && parseRange(lexileRange) && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-green-600 font-medium">
-                  {parseRange(lexileRange)!.min}–{parseRange(lexileRange)!.max}L
-                </span>
-              )}
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-text-secondary font-medium shrink-0">Lexile</span>
+              <select value={lexileMin} onChange={e => setLexileMin(Number(e.target.value))}
+                className="flex-1 px-2 py-2 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white">
+                {LEXILE_OPTIONS.filter(o => o.value <= lexileMax || o.value === -9999).map(o => (
+                  <option key={`min-${o.value}`} value={o.value}>{o.value === -9999 ? 'Min' : o.label}</option>
+                ))}
+              </select>
+              <span className="text-[11px] text-text-tertiary">to</span>
+              <select value={lexileMax} onChange={e => setLexileMax(Number(e.target.value))}
+                className="flex-1 px-2 py-2 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white">
+                {LEXILE_OPTIONS.filter(o => o.value >= lexileMin || o.value === 9999).map(o => (
+                  <option key={`max-${o.value}`} value={o.value}>{o.value === 9999 ? 'Max' : o.label}</option>
+                ))}
+              </select>
             </div>
+            {(searchText || lexileMin > -9999 || lexileMax < 9999) && (
+              <button onClick={() => { setSearchText(''); setLexileMin(-9999); setLexileMax(9999) }}
+                className="text-[10px] text-blue-600 hover:text-blue-800 underline">Clear All Filters</button>
+            )}
           </div>
 
           <p className="text-[10px] text-text-tertiary mt-2">
