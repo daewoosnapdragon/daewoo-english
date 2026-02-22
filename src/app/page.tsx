@@ -26,9 +26,19 @@ import { Loader2 } from 'lucide-react'
 export default function Home() {
   const [activeView, setActiveView] = useState('dashboard')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { t, currentTeacher, setActiveSemester } = useApp()
+  const { t, currentTeacher, setActiveSemester, pendingNavigation, clearNavigation } = useApp()
   const { teachers, loading: teachersLoading } = useTeachers()
   const { activeSemester, loading: semestersLoading } = useSemesters()
+
+  // Listen for navigation requests from context (e.g. dashboard deep links)
+  useEffect(() => {
+    if (pendingNavigation) {
+      setActiveView(pendingNavigation.view)
+      // Don't clear immediately — let the target view read it on mount
+      const timer = setTimeout(() => clearNavigation(), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [pendingNavigation, clearNavigation])
 
   useEffect(() => {
     if (activeSemester) setActiveSemester(activeSemester)

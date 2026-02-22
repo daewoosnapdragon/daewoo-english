@@ -105,6 +105,10 @@ export function WIDAProfiles() {
   const [snapshots, setSnapshots] = useState<any[]>([])
   const [viewingSnapshot, setViewingSnapshot] = useState<string | null>(null)
   const [snapshotData, setSnapshotData] = useState<Record<string, Record<string, number>> | null>(null)
+  const [guidanceExpanded, setGuidanceExpanded] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem('daewoo_wida_guidance_dismissed') !== 'true'
+  })
 
   // Warn on page leave with unsaved changes
   useEffect(() => {
@@ -218,6 +222,48 @@ export function WIDAProfiles() {
 
   return (
     <div>
+      {/* Understanding & Using WIDA Profiles - guidance panel */}
+      <div className="mb-5">
+        <button onClick={() => {
+          const next = !guidanceExpanded
+          setGuidanceExpanded(next)
+          if (!next) localStorage.setItem('daewoo_wida_guidance_dismissed', 'true')
+          else localStorage.removeItem('daewoo_wida_guidance_dismissed')
+        }} className="flex items-center gap-2 text-[12px] font-semibold text-navy hover:text-navy-dark mb-2">
+          <Info size={14} />
+          <span>Understanding &amp; Using WIDA Profiles</span>
+          <span className="text-[10px] text-text-tertiary font-normal ml-1">{guidanceExpanded ? '▾ collapse' : '▸ expand'}</span>
+        </button>
+        {guidanceExpanded && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 space-y-3 text-[11px] text-blue-900 leading-relaxed">
+            <div>
+              <p className="font-bold text-[12px] text-blue-800 mb-1">What WIDA levels mean</p>
+              <p>These are not grades. They describe where a student is in their English language development journey. Every student progresses through these levels — no level is &ldquo;bad.&rdquo; A Level 2 student working hard is exactly where they should be.</p>
+            </div>
+            <div>
+              <p className="font-bold text-[12px] text-blue-800 mb-1">How to set levels</p>
+              <p>Rate each student on 4 domains (listening, speaking, reading, writing) based on classroom observation, not testing. Ask yourself: &ldquo;How does this student perform in English during regular class?&rdquo; Use the level descriptions below as your guide. When in doubt, go with the lower level — it&apos;s better to over-scaffold than under-scaffold.</p>
+            </div>
+            <div>
+              <p className="font-bold text-[12px] text-blue-800 mb-1">How to use scaffolds</p>
+              <p>The scaffolding strategies listed for each level are starting points. If a student is Level 2 in writing but Level 4 in speaking, scaffold their writing tasks (sentence starters, word banks) while letting them participate freely in discussion. Don&apos;t apply one level uniformly across all domains.</p>
+            </div>
+            <div>
+              <p className="font-bold text-[12px] text-blue-800 mb-1">How often to update</p>
+              <p>Review WIDA levels every 4–6 weeks or after a major assessment cycle. Students can jump levels quickly, especially at lower levels. If a Level 2 student starts producing full sentences independently, bump them to Level 3.</p>
+            </div>
+            <div>
+              <p className="font-bold text-[12px] text-blue-800 mb-1">How this connects to other features</p>
+              <p>WIDA levels appear on student hover cards throughout the app. They&apos;re factored into report card comment auto-drafts, inform group placement suggestions, and show up in leveling test results.</p>
+            </div>
+            <button onClick={() => { setGuidanceExpanded(false); localStorage.setItem('daewoo_wida_guidance_dismissed', 'true') }}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-600 text-white hover:bg-blue-700 mt-1">
+              Got it
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <div>
           <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Class</label>

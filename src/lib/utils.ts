@@ -1,5 +1,41 @@
 import { GradingScaleEntry, EnglishClass, CLASS_ORDER } from '@/types'
 
+// ─── Student Display Name ─────────────────────────────────────────────
+// Korean naming: LAST NAME FIRST NAME (ENGLISH NAME)
+// If English name exists, use it. Otherwise use Korean first name.
+// Korean names: "이지수" → given name is last 2 chars (or 1 if name is 2 chars total)
+// english_name field stores: "Lee Ji Su" or "Lee Ji Su (Alex)"
+// We want: "Alex" if has English name, "Ji Su" if not
+
+export function getDisplayName(student: { english_name?: string; korean_name?: string }): string {
+  const en = student.english_name?.trim() || ''
+  // Check for English nickname in parentheses: "Lee Ji Su (Alex)" → "Alex"  
+  const parenMatch = en.match(/\(([^)]+)\)/)
+  if (parenMatch) return parenMatch[1].trim()
+  
+  // If english_name has multiple words, use the first name (skip the last-name, which is first word)
+  // "Lee Ji Su" → "Ji Su", "Kim Ha Jin" → "Ha Jin"
+  // But "Sa Yul" (2 words) → "Yul" (single char given name)
+  const parts = en.split(/\s+/).filter(Boolean)
+  if (parts.length >= 3) return parts.slice(1).join(' ') // "Lee Ji Su" → "Ji Su"
+  if (parts.length === 2) return parts[1] // "Sa Yul" → "Yul"
+  if (parts.length === 1 && en.length > 0) return en // single word name
+  
+  // Fallback to korean_name: skip first character (family name), rest is given name
+  const kr = student.korean_name?.trim() || ''
+  if (kr.length >= 3) return kr.slice(1) // "이지수" → "지수"
+  if (kr.length === 2) return kr[1] // "사율" → "율"
+  return kr || 'Unknown'
+}
+
+// Full name for formal contexts: "English Name (Korean Name)" or just Korean if no English
+export function getFullDisplayName(student: { english_name?: string; korean_name?: string }): string {
+  const en = student.english_name?.trim() || ''
+  const kr = student.korean_name?.trim() || ''
+  if (en && kr) return `${en} (${kr})`
+  return en || kr || 'Unknown'
+}
+
 // ─── Grade Calculations ──────────────────────────────────────────────
 
 const DEFAULT_SCALE: GradingScaleEntry[] = [

@@ -52,6 +52,17 @@ export default function GroupsView() {
   // Hoisted editingId so nested GroupManager doesn't lose state on parent re-render
   const [editingId, setEditingId] = useState<string | null>(null)
   const [savingGroup, setSavingGroup] = useState(false)
+  const [editForm, setEditForm] = useState<Partial<Group>>({})
+
+  // When editingId changes, populate editForm from the group
+  useEffect(() => {
+    if (editingId) {
+      const g = groups.find(gr => gr.id === editingId)
+      if (g) setEditForm({ name: g.name, focus: g.focus, book: g.book, notes: g.notes, students: [...g.students], tasks: g.tasks ? [...g.tasks] : [] })
+    } else {
+      setEditForm({})
+    }
+  }, [editingId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const availableGrades = useMemo(() => Array.from(new Set(students.map(s => s.grade))).sort(), [students])
 
@@ -70,7 +81,10 @@ export default function GroupsView() {
 
       // Groups — handle old type values by mapping them
       const { data: grps, error: grpsErr } = await supabase.from('student_groups').select('*').eq('english_class', selectedClass).order('created_at', { ascending: false })
-      if (!grpsErr) {
+      if (grpsErr) {
+        console.warn('student_groups query error (table may not exist yet):', grpsErr.message)
+        setGroups([])
+      } else {
         const typeMap: Record<string, GroupType> = { fluency: 'reading', litCircle: 'custom', partner: 'custom' }
         setGroups((grps || []).map((g: any) => ({
           ...g,
@@ -355,7 +369,11 @@ export default function GroupsView() {
   }) {
     const typeGroups = filteredGroups.filter(g => g.type === type)
 
-    const toggleStudent = (gid: string, sid: string) => setGroups(prev => prev.map(g => g.id !== gid ? g : { ...g, students: g.students.includes(sid) ? g.students.filter(s => s !== sid) : [...g.students, sid] }))
+    const toggleStudent = (gid: string, sid: string) => {
+      if (editingId === gid) {
+        setEditForm(prev => ({ ...prev, students: (prev.students || []).includes(sid) ? (prev.students || []).filter(s => s !== sid) : [...(prev.students || []), sid] }))
+      }
+    }
 
     const getWarnings = (group: Group) => {
       const w: string[] = []
@@ -371,7 +389,8 @@ export default function GroupsView() {
 
     const handleSave = async (group: Group) => {
       setSavingGroup(true)
-      const saved = await saveGroup(group)
+      const merged = { ...group, ...editForm, students: editForm.students || group.students, tasks: editForm.tasks || group.tasks }
+      const saved = await saveGroup(merged)
       if (saved) {
         setGroups(prev => prev.map(g => g.id === group.id ? saved : g))
         setEditingId(null)
@@ -446,7 +465,7 @@ export default function GroupsView() {
               <div className="px-4 py-3 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   {isEditing ? (
-                    <input value={group.name} onChange={e => setGroups(prev => prev.map(g => g.id === group.id ? { ...g, name: e.target.value } : g))}
+                    <input value={editForm.name || ''} onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                       className="text-[13px] font-bold text-navy border-b border-navy/30 outline-none bg-transparent w-full" placeholder="Group name..." autoFocus />
                   ) : (
                     <div className="flex items-center gap-2">
@@ -487,20 +506,20 @@ export default function GroupsView() {
                 <div className="px-4 py-3 border-t border-border space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div><label className="text-[9px] uppercase text-text-tertiary font-semibold">Focus</label>
-                      <input value={group.focus || ''} onChange={e => setGroups(prev => prev.map(g => g.id === group.id ? { ...g, focus: e.target.value } : g))}
+                      <input value={editForm.focus || ''} onChange={e => setEditForm(prev => ({ ...prev, focus: e.target.value }))}
                         className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none" placeholder="Group purpose..." /></div>
                     <div><label className="text-[9px] uppercase text-text-tertiary font-semibold">Book / Material</label>
-                      <input value={group.book || ''} onChange={e => setGroups(prev => prev.map(g => g.id === group.id ? { ...g, book: e.target.value } : g))}
+                      <input value={editForm.book || ''} onChange={e => setEditForm(prev => ({ ...prev, book: e.target.value }))}
                         className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none" placeholder="Optional..." /></div>
                   </div>
                   <div><label className="text-[9px] uppercase text-text-tertiary font-semibold">Notes</label>
-                    <textarea value={group.notes || ''} onChange={e => setGroups(prev => prev.map(g => g.id === group.id ? { ...g, notes: e.target.value } : g))}
+                    <textarea value={editForm.notes || ''} onChange={e => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
                       className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none h-16 resize-none" placeholder="Teaching notes..." /></div>
 
                   <div><label className="text-[9px] uppercase text-text-tertiary font-semibold mb-1 block">Select Students</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                       {gradeStudents.map(s => {
-                        const inGroup = group.students.includes(s.id)
+                        const inGroup = (editForm.students || []).includes(s.id)
                         const extra = extraStudentInfo?.(s.id) || ''
                         return (
                           <button key={s.id} onClick={() => toggleStudent(group.id, s.id)}
@@ -518,18 +537,18 @@ export default function GroupsView() {
                   {/* Tasks */}
                   <div>
                     <label className="text-[9px] uppercase text-text-tertiary font-semibold mb-1 block">Tasks</label>
-                    {(group.tasks || []).map((t, i) => (
+                    {(editForm.tasks || []).map((t, i) => (
                       <div key={i} className="flex items-center gap-2 mb-1">
-                        <button onClick={() => setGroups(prev => prev.map(g => g.id !== group.id ? g : { ...g, tasks: g.tasks?.map((tt, j) => j === i ? { ...tt, done: !tt.done } : tt) }))}
+                        <button onClick={() => setEditForm(prev => ({ ...prev, tasks: (prev.tasks || []).map((tt, j) => j === i ? { ...tt, done: !tt.done } : tt) }))}
                           className={'w-4 h-4 rounded flex items-center justify-center shrink-0 ' + (t.done ? 'bg-green-500 text-white' : 'border border-border')}>{t.done && <Check size={10} />}</button>
                         <span className={'text-[11px] flex-1 ' + (t.done ? 'line-through text-text-tertiary' : '')}>{t.text}</span>
-                        <button onClick={() => setGroups(prev => prev.map(g => g.id !== group.id ? g : { ...g, tasks: g.tasks?.filter((_, j) => j !== i) }))}
+                        <button onClick={() => setEditForm(prev => ({ ...prev, tasks: (prev.tasks || []).filter((_, j) => j !== i) }))}
                           className="p-0.5 rounded hover:bg-red-50"><X size={10} className="text-text-tertiary" /></button>
                       </div>
                     ))}
                     <button onClick={() => {
                       const text = prompt('Task:')
-                      if (text?.trim()) setGroups(prev => prev.map(g => g.id !== group.id ? g : { ...g, tasks: [...(g.tasks || []), { text: text.trim(), done: false, created_at: new Date().toISOString() }] }))
+                      if (text?.trim()) setEditForm(prev => ({ ...prev, tasks: [...(prev.tasks || []), { text: text.trim(), done: false, created_at: new Date().toISOString() }] }))
                     }} className="text-[10px] text-navy hover:underline">+ Add task</button>
                   </div>
                 </div>

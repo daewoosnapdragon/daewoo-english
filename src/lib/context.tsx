@@ -4,6 +4,14 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 import { Teacher, Semester, Language } from '@/types'
 import { translations } from '@/i18n/translations'
 
+export interface NavigationTarget {
+  view: string
+  preSelectedStudent?: string
+  preSelectedFilter?: string
+  preSelectedDomain?: string
+  preSelectedAssessment?: string
+}
+
 interface AppContextType {
   currentTeacher: Teacher | null
   setCurrentTeacher: (teacher: Teacher | null) => void
@@ -16,6 +24,9 @@ interface AppContextType {
   t: typeof translations.en | typeof translations.ko
   showToast: (message: string) => void
   toast: string | null
+  navigateTo: (target: NavigationTarget) => void
+  pendingNavigation: NavigationTarget | null
+  clearNavigation: () => void
 }
 
 const AppContext = createContext<AppContextType | null>(null)
@@ -26,6 +37,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeSemester, setActiveSemester] = useState<Semester | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [theme, setThemeState] = useState<'light' | 'dark'>('light')
+  const [pendingNavigation, setPendingNavigation] = useState<NavigationTarget | null>(null)
+
+  const navigateTo = useCallback((target: NavigationTarget) => {
+    setPendingNavigation(target)
+  }, [])
+
+  const clearNavigation = useCallback(() => {
+    setPendingNavigation(null)
+  }, [])
 
   const setTheme = useCallback((t: 'light' | 'dark') => {
     setThemeState(t)
@@ -57,6 +77,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       activeSemester, setActiveSemester,
       theme, setTheme,
       t, showToast, toast,
+      navigateTo, pendingNavigation, clearNavigation,
     }}>
       {children}
     </AppContext.Provider>

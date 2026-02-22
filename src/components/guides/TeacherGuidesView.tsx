@@ -8,11 +8,11 @@ import {
   Lightbulb, Loader2, BookMarked, FileText, Layers, Type, Languages,
   Volume2, Puzzle, Gauge, Brain, Sparkles, PencilLine, Mic, Headphones
 } from 'lucide-react'
-import { PhonicsSequence } from '@/components/curriculum/TeacherReferences'
+import { PhonicsSequence, PhonicsStrategies, AssessmentLiteracy, ReadingFluencyGuide } from '@/components/curriculum/TeacherReferences'
 import ResourceGuideRenderer from './ResourceGuideRenderer'
-import { PHONOLOGICAL_AWARENESS, PHONICS, READING_FLUENCY, READING_SKILLS, VOCABULARY, GRAMMAR, WRITING, SPEAKING, LISTENING } from './resource-guide-data'
+import { PHONOLOGICAL_AWARENESS, PHONICS, READING_FLUENCY, READING_SKILLS, VOCABULARY, GRAMMAR, WRITING, SPEAKING, LISTENING, CLASSROOM_MANAGEMENT } from './resource-guide-data'
 
-type ResourceSection = 'home' | 'phonological-awareness' | 'phonics-guide' | 'reading-fluency' | 'reading-skills' | 'vocabulary' | 'grammar' | 'writing' | 'speaking' | 'listening' | 'sor-progression' | 'subplans'
+type ResourceSection = 'home' | 'phonological-awareness' | 'phonics-guide' | 'reading-fluency' | 'reading-skills' | 'vocabulary' | 'grammar' | 'writing' | 'speaking' | 'listening' | 'classroom-management' | 'sor-progression' | 'phonics-strategies' | 'assessment-literacy' | 'fluency-guide' | 'subplans'
 
 export default function TeacherGuidesView() {
   const { lang } = useApp()
@@ -30,8 +30,12 @@ export default function TeacherGuidesView() {
     { id: 'writing', icon: PencilLine, label: 'Writing', desc: 'Process writing, genres, and sentence development', category: 'ELA/ESL Resource Guides' },
     { id: 'speaking', icon: Mic, label: 'Speaking', desc: 'Oral language, academic discussion, and pronunciation', category: 'ELA/ESL Resource Guides' },
     { id: 'listening', icon: Headphones, label: 'Listening', desc: 'Comprehension, academic listening, and note-taking', category: 'ELA/ESL Resource Guides' },
+    { id: 'classroom-management', icon: Layers, label: 'Classroom Management', desc: 'Routines, behavior systems, and ELL-specific strategies', category: 'ELA/ESL Resource Guides' },
     // Existing tools
     { id: 'sor-progression', icon: Lightbulb, label: 'Science of Reading Progression', desc: 'Scope & sequence and teaching strategies', category: 'Reference Tools' },
+    { id: 'phonics-strategies', icon: Puzzle, label: 'Phonics Instructional Strategies', desc: '8 research-backed strategies for structured literacy', category: 'Reference Tools' },
+    { id: 'assessment-literacy', icon: Brain, label: 'Assessment Literacy', desc: 'Types, purposes, and best practices for classroom assessment', category: 'Reference Tools' },
+    { id: 'fluency-guide', icon: Gauge, label: 'Fluency Teaching Guide', desc: 'Prosody, repeated reading, and fluency interventions', category: 'Reference Tools' },
     { id: 'subplans', icon: FileText, label: 'Sub Plans', desc: 'Substitute teacher lesson plans', category: 'Reference Tools' },
   ]
 
@@ -88,8 +92,12 @@ export default function TeacherGuidesView() {
       {section === 'writing' && <ResourceGuideRenderer guide={WRITING} />}
       {section === 'speaking' && <ResourceGuideRenderer guide={SPEAKING} />}
       {section === 'listening' && <ResourceGuideRenderer guide={LISTENING} />}
+      {section === 'classroom-management' && <ResourceGuideRenderer guide={CLASSROOM_MANAGEMENT} />}
       {/* Coming soon sections will render here as data is added */}
       {section === 'sor-progression' && <PhonicsSequence />}
+      {section === 'phonics-strategies' && <PhonicsStrategies />}
+      {section === 'assessment-literacy' && <AssessmentLiteracy />}
+      {section === 'fluency-guide' && <ReadingFluencyGuide />}
       {section === 'subplans' && <SubPlansContent />}
     </div>
   )

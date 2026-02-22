@@ -19,7 +19,7 @@ interface ParsedRow {
   english_name?: string // may not be in admin roster
 }
 
-type MatchStatus = 'matched' | 'new' | 'missing' | 'changed'
+type MatchStatus = 'matched' | 'new' | 'missing' | 'changed' | 'duplicate'
 
 interface ComparisonRow {
   status: MatchStatus
@@ -29,6 +29,7 @@ interface ComparisonRow {
   action: 'update' | 'add' | 'transfer' | 'skip'
   englishName: string
   englishClass: EnglishClass
+  candidates?: Student[] // when duplicate names exist, teacher picks the right one
 }
 
 interface Props {
@@ -120,7 +121,27 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
     const results: ComparisonRow[] = []
 
     rows.forEach(parsed => {
-      // Try exact match: same korean_name + grade (allowing grade progression: grade-1)
+      // Find ALL candidates with same korean_name
+      const allNameMatches = activeStudents.filter(s =>
+        s.korean_name === parsed.korean_name && !matchedExistingIds.has(s.id)
+      )
+
+      // If multiple candidates exist in the same grade, flag as duplicate for manual selection
+      const sameGradeMatches = allNameMatches.filter(s => s.grade === parsed.grade)
+      if (sameGradeMatches.length > 1) {
+        // Duplicate name in same grade — teacher must manually pick
+        results.push({
+          status: 'duplicate',
+          parsed,
+          candidates: sameGradeMatches,
+          action: 'skip', // default to skip until teacher picks
+          englishName: parsed.english_name || sameGradeMatches[0]?.english_name || '',
+          englishClass: (sameGradeMatches[0]?.english_class || 'Lily') as EnglishClass,
+        })
+        return
+      }
+
+      // Try exact match: same korean_name + grade
       let match = activeStudents.find(s =>
         s.korean_name === parsed.korean_name && s.grade === parsed.grade && !matchedExistingIds.has(s.id)
       )
@@ -130,11 +151,9 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
           s.korean_name === parsed.korean_name && (s.grade === parsed.grade - 1 || s.grade === parsed.grade + 1) && !matchedExistingIds.has(s.id)
         )
       }
-      // Try name-only match (last resort)
-      if (!match) {
-        match = activeStudents.find(s =>
-          s.korean_name === parsed.korean_name && !matchedExistingIds.has(s.id)
-        )
+      // Try name-only match (last resort) — but only if there's exactly one candidate
+      if (!match && allNameMatches.length === 1) {
+        match = allNameMatches[0]
       }
 
       if (match) {
@@ -233,6 +252,7 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
     changed: comparison.filter(r => r.status === 'changed').length,
     new: comparison.filter(r => r.status === 'new').length,
     missing: missingStudents.length,
+    duplicate: comparison.filter(r => r.status === 'duplicate').length,
   }
 
   return (
@@ -326,7 +346,7 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
           {step === 'review' && (
             <div>
               {/* Stats */}
-              <div className="grid grid-cols-4 gap-3 mb-5">
+              <div className="grid grid-cols-5 gap-3 mb-5">
                 <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
                   <p className="text-[20px] font-bold text-green-700">{stats.matched}</p>
                   <p className="text-[10px] text-green-600 font-medium">Matched</p>
@@ -339,6 +359,12 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                   <p className="text-[20px] font-bold text-blue-700">{stats.new}</p>
                   <p className="text-[10px] text-blue-600 font-medium">New Students</p>
                 </div>
+                {stats.duplicate > 0 && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 text-center">
+                    <p className="text-[20px] font-bold text-purple-700">{stats.duplicate}</p>
+                    <p className="text-[10px] text-purple-600 font-medium">⚠ Duplicate Names</p>
+                  </div>
+                )}
                 <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
                   <p className="text-[20px] font-bold text-red-700">{stats.missing}</p>
                   <p className="text-[10px] text-red-600 font-medium">Not in Roster (Transfer?)</p>
@@ -373,6 +399,41 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                     <tbody className="divide-y divide-border">
                       {filtered.map((row, i) => {
                         const realIdx = comparison.indexOf(row)
+                        if (row.status === 'duplicate') {
+                          return (
+                            <tr key={i} className="bg-purple-50/50">
+                              <td className="px-3 py-2"><AlertTriangle size={14} className="text-purple-500" /></td>
+                              <td className="px-3 py-2 font-medium">{row.parsed.korean_name}</td>
+                              <td className="px-3 py-2 text-center">{row.parsed.grade}</td>
+                              <td className="px-3 py-2 text-center">{row.parsed.korean_class} {row.parsed.class_number}</td>
+                              <td colSpan={3} className="px-3 py-2">
+                                <div className="text-[10px] text-purple-700 font-semibold mb-1">⚠ Duplicate name — select the correct student:</div>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {(row.candidates || []).map(c => (
+                                    <button key={c.id} onClick={() => {
+                                      setComparison(prev => prev.map((r, j) => j === realIdx ? {
+                                        ...r, status: 'changed', existing: c, action: 'update',
+                                        englishName: c.english_name, englishClass: c.english_class as EnglishClass,
+                                        changes: [`Matched to ${c.english_name} in ${c.english_class}`], candidates: undefined,
+                                      } : r))
+                                    }}
+                                      className={'px-2.5 py-1.5 rounded-lg text-[10px] font-medium border transition-all ' +
+                                        (row.existing?.id === c.id ? 'bg-purple-100 border-purple-300 text-purple-800' : 'bg-surface border-border text-text-secondary hover:border-purple-300')}>
+                                      {c.english_name || c.korean_name} <span className="opacity-60">({c.english_class})</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <select value={row.action} onChange={e => updateRow(realIdx, 'action', e.target.value)}
+                                  className="px-2 py-1 rounded text-[10px] font-medium border bg-purple-50 border-purple-200 text-purple-600">
+                                  <option value="skip">Skip</option>
+                                  <option value="update">Update</option>
+                                </select>
+                              </td>
+                            </tr>
+                          )
+                        }
                         return (
                         <tr key={i} className={row.action === 'skip' ? 'opacity-40' : ''}>
                           <td className="px-3 py-2">
@@ -435,6 +496,17 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                     className="mt-2 text-[10px] text-red-600 hover:text-red-800 underline">
                     Keep all these students active (don't mark as transfer)
                   </button>
+                </div>
+              )}
+
+              {/* Unresolved duplicates warning */}
+              {comparison.some(r => r.status === 'duplicate' && r.action !== 'skip') && (
+                <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 mb-4 flex items-start gap-2">
+                  <AlertTriangle size={14} className="text-purple-600 shrink-0 mt-0.5" />
+                  <div className="text-[11px] text-purple-800">
+                    <strong>Unresolved duplicate names.</strong> Some students have the same Korean name in the same grade. 
+                    Select the correct student for each duplicate, or set them to "Skip" to handle manually.
+                  </div>
                 </div>
               )}
 

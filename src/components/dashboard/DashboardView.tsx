@@ -6,7 +6,7 @@ import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, Pencil, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX, Sparkles, Eye, BookOpen, CalendarDays, UserCheck } from 'lucide-react'
+import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, Pencil, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX, Sparkles, Eye, BookOpen, CalendarDays, UserCheck, CheckCircle, XCircle, ArrowRight } from 'lucide-react'
 
 const EVENT_TYPES = [
   { value: 'day_off', label: 'Day Off', color: '#22C55E', bg: 'bg-green-100 text-green-800' },
@@ -141,15 +141,28 @@ function TodaysPlanPreview() {
 // ─── Recent Notes Preview ─────────────────────────────────────────
 // ─── Weekly Insight (rotating spotlight) ──────────────────────────
 function WeeklyInsight() {
-  const { currentTeacher } = useApp()
+  const { currentTeacher, navigateTo } = useApp()
   const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
   const isAdmin = currentTeacher?.role === 'admin'
-  const [insight, setInsight] = useState<{ text: string; detail: string; type: string } | null>(null)
+  const [insights, setInsights] = useState<{ key: string; text: string; detail: string; type: string; navView?: string; navStudent?: string; navDomain?: string }[]>([])
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    try {
+      const saved = localStorage.getItem(`daewoo_dismissed_insights_${currentTeacher?.id || ''}`)
+      if (saved) {
+        const parsed: { key: string; at: number }[] = JSON.parse(saved)
+        // Keep dismissals for 7 days
+        const weekAgo = Date.now() - 7 * 86400000
+        return new Set(parsed.filter(d => d.at > weekAgo).map(d => d.key))
+      }
+    } catch {}
+    return new Set()
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     ;(async () => {
-      const insights: { text: string; detail: string; type: string }[] = []
+      const allInsights: typeof insights = []
       const classFilter = isTeacher ? currentTeacher?.english_class : null
 
       let studQuery = supabase.from('students').select('id, english_name, english_class, grade').eq('is_active', true)
@@ -157,29 +170,40 @@ function WeeklyInsight() {
       const { data: students } = await studQuery
       if (!students || students.length === 0) { setLoading(false); return }
 
-      // Reading growth: find students whose CWPM improved most
+      // Reading growth & decline
       const { data: readingData } = await supabase.from('reading_assessments').select('student_id, cwpm, date')
         .in('student_id', students.map(s => s.id)).order('date', { ascending: true })
       if (readingData && readingData.length > 0) {
-        const byStudent: Record<string, { name: string; first: number; last: number }> = {}
+        const byStudent: Record<string, { name: string; id: string; first: number; last: number }> = {}
         readingData.forEach(r => {
           const s = students.find(st => st.id === r.student_id)
           if (!s || r.cwpm == null) return
-          if (!byStudent[r.student_id]) byStudent[r.student_id] = { name: s.english_name, first: r.cwpm, last: r.cwpm }
+          if (!byStudent[r.student_id]) byStudent[r.student_id] = { name: s.english_name, id: s.id, first: r.cwpm, last: r.cwpm }
           byStudent[r.student_id].last = r.cwpm
         })
         const growths = Object.values(byStudent).filter(s => s.last > s.first + 5).sort((a, b) => (b.last - b.first) - (a.last - a.first))
-        if (growths.length > 0) {
-          const top = growths[0]
-          insights.push({ text: `${top.name} improved CWPM from ${top.first} to ${top.last} this semester`, detail: 'Check their reading profile for the full growth trajectory.', type: 'positive' })
-        }
+        growths.slice(0, 3).forEach(top => {
+          allInsights.push({
+            key: `reading_growth_${top.id}`,
+            text: `${top.name} improved CWPM from ${top.first} to ${top.last}`,
+            detail: 'Check their reading profile for the full growth trajectory.',
+            type: 'positive',
+            navView: 'readingLevels',
+            navStudent: top.id,
+          })
+        })
 
-        // Reading concern
         const declines = Object.values(byStudent).filter(s => s.first > s.last + 10).sort((a, b) => (a.last - a.first) - (b.last - b.first))
-        if (declines.length > 0) {
-          const d = declines[0]
-          insights.push({ text: `${d.name}'s CWPM dropped from ${d.first} to ${d.last} -- check passage level`, detail: 'A drop this large may mean the assigned reading level is too high.', type: 'concern' })
-        }
+        declines.slice(0, 2).forEach(d => {
+          allInsights.push({
+            key: `reading_decline_${d.id}`,
+            text: `${d.name}'s CWPM dropped from ${d.first} to ${d.last}`,
+            detail: 'A drop this large may mean the assigned reading level is too high.',
+            type: 'concern',
+            navView: 'readingLevels',
+            navStudent: d.id,
+          })
+        })
       }
 
       // Attendance pattern
@@ -190,36 +214,73 @@ function WeeklyInsight() {
         const counts: Record<string, number> = {}
         absences.forEach(a => { counts[a.student_id] = (counts[a.student_id] || 0) + 1 })
         const highAbs = Object.entries(counts).filter(([, c]) => c >= 4).sort((a, b) => b[1] - a[1])
-        if (highAbs.length > 0) {
-          const s = students.find(st => st.id === highAbs[0][0])
-          if (s) insights.push({ text: `${s.english_name} has been absent ${highAbs[0][1]} times in the last month`, detail: 'Consider reaching out to parents or checking in with the homeroom teacher.', type: 'concern' })
-        }
+        highAbs.slice(0, 2).forEach(([sid, count]) => {
+          const s = students.find(st => st.id === sid)
+          if (s) allInsights.push({
+            key: `attendance_${sid}`,
+            text: `${s.english_name} has been absent ${count} times in the last month`,
+            detail: 'Consider reaching out to parents or checking in with the homeroom teacher.',
+            type: 'concern',
+            navView: 'attendance',
+            navStudent: sid,
+          })
+        })
       }
 
-      // Pick a random insight (rotate on each load)
-      if (insights.length > 0) {
-        setInsight(insights[Math.floor(Math.random() * insights.length)])
-      }
+      setInsights(allInsights)
       setLoading(false)
     })()
   }, [currentTeacher, isTeacher, isAdmin])
 
-  if (loading || !insight) return null
+  const dismissInsight = (key: string) => {
+    setDismissed(prev => {
+      const next = new Set(prev)
+      next.add(key)
+      // Persist
+      try {
+        const arr = Array.from(next).map(k => ({ key: k, at: Date.now() }))
+        localStorage.setItem(`daewoo_dismissed_insights_${currentTeacher?.id || ''}`, JSON.stringify(arr))
+      } catch {}
+      return next
+    })
+  }
 
-  const colors = insight.type === 'positive'
-    ? { bg: 'bg-green-50', border: 'border-green-200', icon: 'text-green-500', text: 'text-green-800', detail: 'text-green-600' }
-    : { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-500', text: 'text-amber-800', detail: 'text-amber-600' }
+  const visible = insights.filter(i => !dismissed.has(i.key))
+
+  if (loading || visible.length === 0) return null
 
   return (
-    <div className={`rounded-xl border ${colors.border} ${colors.bg} p-5`}>
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5"><Sparkles size={18} className={colors.icon} /></div>
-        <div className="flex-1">
-          <p className="text-[9px] uppercase tracking-wider font-semibold text-text-tertiary mb-1">This Week's Insight</p>
-          <p className={`text-[14px] font-semibold ${colors.text} leading-snug`}>{insight.text}</p>
-          <p className={`text-[12px] ${colors.detail} mt-1`}>{insight.detail}</p>
-        </div>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 mb-1">
+        <Sparkles size={14} className="text-gold" />
+        <p className="text-[10px] uppercase tracking-wider font-semibold text-text-tertiary">Insights</p>
+        <span className="text-[9px] bg-gold/20 text-gold-dark px-1.5 py-0.5 rounded-full font-bold">{visible.length}</span>
       </div>
+      {visible.map(insight => {
+        const colors = insight.type === 'positive'
+          ? { bg: 'bg-green-50', border: 'border-green-200', icon: 'text-green-500', text: 'text-green-800', detail: 'text-green-600' }
+          : { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-500', text: 'text-amber-800', detail: 'text-amber-600' }
+        return (
+          <div key={insight.key} className={`rounded-xl border ${colors.border} ${colors.bg} p-4 group`}>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5"><Sparkles size={15} className={colors.icon} /></div>
+              <div className="flex-1 min-w-0">
+                <button onClick={() => { if (insight.navView) navigateTo({ view: insight.navView, preSelectedStudent: insight.navStudent }) }}
+                  className={`text-[13px] font-semibold ${colors.text} leading-snug text-left hover:underline cursor-pointer`}>
+                  {insight.text}
+                  {insight.navView && <ArrowRight size={11} className="inline ml-1 opacity-50" />}
+                </button>
+                <p className={`text-[11px] ${colors.detail} mt-0.5`}>{insight.detail}</p>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); dismissInsight(insight.key) }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-white/50 text-text-tertiary hover:text-text-secondary flex-shrink-0"
+                title="Dismiss for 7 days">
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -521,13 +582,25 @@ interface WatchlistStudent {
 }
 
 function NeedsAttentionWatchlist() {
-  const { currentTeacher } = useApp()
+  const { currentTeacher, navigateTo } = useApp()
   const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
   const isAdmin = currentTeacher?.role === 'admin'
   const [watchlist, setWatchlist] = useState<WatchlistStudent[]>([])
-  const [classAlerts, setClassAlerts] = useState<{ id: string; text: string }[]>([])
+  const [classAlerts, setClassAlerts] = useState<{ id: string; text: string; assessmentId?: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(false)
+  const [dismissedStudents, setDismissedStudents] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    try {
+      const saved = localStorage.getItem(`daewoo_watchlist_dismissed_${currentTeacher?.id || ''}`)
+      if (saved) {
+        const parsed: { id: string; at: number }[] = JSON.parse(saved)
+        const weekAgo = Date.now() - 7 * 86400000
+        return new Set(parsed.filter(d => d.at > weekAgo).map(d => d.id))
+      }
+    } catch {}
+    return new Set()
+  })
 
   useEffect(() => {
     if (!currentTeacher) return
@@ -643,9 +716,40 @@ function NeedsAttentionWatchlist() {
   if (loading) return null
   if (watchlist.length === 0 && classAlerts.length === 0) return null
 
-  const shown = expanded ? watchlist : watchlist.slice(0, 5)
+  const dismissStudent = (sid: string) => {
+    setDismissedStudents(prev => {
+      const next = new Set(prev)
+      next.add(sid)
+      try {
+        const arr = Array.from(next).map(k => ({ id: k, at: Date.now() }))
+        localStorage.setItem(`daewoo_watchlist_dismissed_${currentTeacher?.id || ''}`, JSON.stringify(arr))
+      } catch {}
+      return next
+    })
+  }
+
+  const filteredWatchlist = watchlist.filter(s => !dismissedStudents.has(s.id))
+  const shown = expanded ? filteredWatchlist : filteredWatchlist.slice(0, 5)
   const icons: Record<string, any> = { grade_decline: TrendingDown, behavior_spike: AlertTriangle, missing_orf: BookOpen, attendance: CalendarDays, missing_grades: FileX }
   const tagColors: Record<string, string> = { grade_decline: 'bg-red-100 text-red-700', behavior_spike: 'bg-amber-100 text-amber-700', missing_orf: 'bg-blue-100 text-blue-700', attendance: 'bg-purple-100 text-purple-700' }
+
+  const handleConcernClick = (studentId: string, type: string) => {
+    switch (type) {
+      case 'grade_decline':
+      case 'missing_grades':
+        navigateTo({ view: 'grades', preSelectedStudent: studentId })
+        break
+      case 'behavior_spike':
+        navigateTo({ view: 'students', preSelectedStudent: studentId, preSelectedFilter: 'behavior' })
+        break
+      case 'missing_orf':
+        navigateTo({ view: 'readingLevels', preSelectedStudent: studentId })
+        break
+      case 'attendance':
+        navigateTo({ view: 'attendance', preSelectedStudent: studentId })
+        break
+    }
+  }
 
   return (
     <div>
@@ -654,7 +758,7 @@ function NeedsAttentionWatchlist() {
           <div className="flex items-center gap-2">
             <Eye size={15} className="text-amber-600" />
             <h3 className="text-[13px] font-semibold text-amber-900">Needs Attention</h3>
-            <span className="text-[10px] bg-amber-200 text-amber-700 px-2 py-0.5 rounded-full font-bold">{watchlist.length}</span>
+            <span className="text-[10px] bg-amber-200 text-amber-700 px-2 py-0.5 rounded-full font-bold">{filteredWatchlist.length}</span>
           </div>
         </div>
 
@@ -674,21 +778,30 @@ function NeedsAttentionWatchlist() {
         {/* Student watchlist */}
         <div className="divide-y divide-border">
           {shown.map(student => (
-            <div key={student.id} className="px-5 py-3 hover:bg-surface-alt/30 transition-colors">
+            <div key={student.id} className="px-5 py-3 hover:bg-surface-alt/30 transition-colors group">
               <div className="flex items-center justify-between mb-1.5">
                 <div>
                   <span className="text-[13px] font-semibold text-navy">{student.name}</span>
                   <span className="text-[10px] ml-2 px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: classToColor(student.class as EnglishClass), color: classToTextColor(student.class as EnglishClass) }}>{student.class}</span>
                 </div>
-                <span className="text-[10px] text-text-tertiary">{student.concerns.length} concern{student.concerns.length > 1 ? 's' : ''}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-text-tertiary">{student.concerns.length} concern{student.concerns.length > 1 ? 's' : ''}</span>
+                  <button onClick={() => dismissStudent(student.id)} title="Dismiss for 7 days"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-amber-100 text-text-tertiary hover:text-amber-600">
+                    <X size={12} />
+                  </button>
+                </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {student.concerns.map((c, i) => {
                   const Icon = icons[c.type] || AlertTriangle
                   return (
-                    <span key={i} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium ${tagColors[c.type] || 'bg-gray-100 text-gray-700'}`}>
+                    <button key={i} onClick={() => handleConcernClick(student.id, c.type)}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium ${tagColors[c.type] || 'bg-gray-100 text-gray-700'} hover:ring-1 hover:ring-current/30 transition-all cursor-pointer`}
+                      title={`Go to ${c.type.replace(/_/g, ' ')}`}>
                       <Icon size={10} /> {c.text}
-                    </span>
+                      <ArrowRight size={8} className="opacity-40" />
+                    </button>
                   )
                 })}
               </div>
@@ -696,10 +809,18 @@ function NeedsAttentionWatchlist() {
           ))}
         </div>
 
-        {watchlist.length > 5 && (
+        {filteredWatchlist.length > 5 && (
           <div className="px-5 py-2.5 border-t border-border">
             <button onClick={() => setExpanded(!expanded)} className="text-[11px] font-medium text-navy hover:text-navy-dark">
-              {expanded ? 'Show fewer' : `Show all ${watchlist.length} students...`}
+              {expanded ? 'Show fewer' : `Show all ${filteredWatchlist.length} students...`}
+            </button>
+          </div>
+        )}
+        {dismissedStudents.size > 0 && (
+          <div className="px-5 py-1.5 border-t border-border">
+            <button onClick={() => { setDismissedStudents(new Set()); localStorage.removeItem(`daewoo_watchlist_dismissed_${currentTeacher?.id || ''}`) }}
+              className="text-[10px] text-text-tertiary hover:text-navy">
+              Show {dismissedStudents.size} dismissed student{dismissedStudents.size > 1 ? 's' : ''}
             </button>
           </div>
         )}

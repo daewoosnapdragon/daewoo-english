@@ -45,6 +45,9 @@ interface Assessment {
   description: string
   created_by: string | null
   created_at: string
+  standards?: { code: string; dok?: number; description?: string }[]
+  sections?: { label: string; standard: string; max_points: number }[] | null
+  question_map?: { num: number; type: string; max_points: number; standard?: string; answer_key?: string }[] | null
 }
 
 interface StudentRow { id: string; english_name: string; korean_name: string; photo_url?: string }
@@ -1256,6 +1259,10 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
     editing?.sections || []
   )
   const [focusedSection, setFocusedSection] = useState<number | null>(null)
+  const [useQuestionMap, setUseQuestionMap] = useState(!!editing?.question_map?.length)
+  const [questionMap, setQuestionMap] = useState<{ num: number; type: string; max_points: number; standard: string; answer_key: string }[]>(
+    editing?.question_map?.map(q => ({ num: q.num, type: q.type, max_points: q.max_points, standard: q.standard || '', answer_key: q.answer_key || '' })) || []
+  )
   const nameRef = useRef<HTMLInputElement>(null)
   useEffect(() => { nameRef.current?.focus() }, [])
 
@@ -1302,11 +1309,12 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
     const stdTags = standards.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.text || '' } })
     // If using sections, merge section standards into stdTags and auto-calc max_score
     const finalSections = useSections && sections.length > 0 ? sections : null
-    const finalMaxScore = finalSections ? finalSections.reduce((s, sec) => s + sec.max_points, 0) : maxScore
+    const finalQuestionMap = useQuestionMap && questionMap.length > 0 ? questionMap : null
+    const finalMaxScore = finalQuestionMap ? finalQuestionMap.reduce((s, q) => s + q.max_points, 0) : finalSections ? finalSections.reduce((s, sec) => s + sec.max_points, 0) : maxScore
     // Merge section standards into the assessment-level standards
     const sectionStds = (finalSections || []).map(s => s.standard).filter(s => s && !standards.includes(s))
     const allStdTags = [...stdTags, ...sectionStds.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.text || '' } })]
-    const basePayload = { name: name.trim(), domain: selDomain, max_score: finalMaxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null, standards: allStdTags, sections: finalSections }
+    const basePayload = { name: name.trim(), domain: selDomain, max_score: finalMaxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null, standards: allStdTags, sections: finalSections, question_map: useQuestionMap && questionMap.length > 0 ? questionMap.map((q, i) => ({ num: i + 1, type: q.type, max_points: q.max_points, standard: q.standard || undefined, answer_key: q.answer_key || undefined })) : null }
     if (editing) {
       const { data, error } = await supabase.from('assessments').update({ ...basePayload, english_class: englishClass }).eq('id', editing.id).select().single()
       setSaving(false)
@@ -1621,6 +1629,77 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                   </span>
                 </div>
                 <p className="text-[9px] text-text-tertiary">Each section's score is tracked separately. Total points auto-calculated from sections. Standards mastery is tracked per-section.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Question Map Builder (for Item Analysis) */}
+          <div className="border border-border rounded-lg overflow-hidden">
+            <button onClick={() => {
+              setUseQuestionMap(!useQuestionMap)
+              if (!useQuestionMap && questionMap.length === 0) {
+                setQuestionMap([{ num: 1, type: 'mc', max_points: 1, standard: '', answer_key: '' }])
+              }
+            }}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-surface-alt hover:bg-surface-alt/80 transition-all">
+              <span className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold">
+                Question Map <span className="text-text-tertiary font-normal normal-case">(for item-by-item analysis)</span>
+              </span>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${useQuestionMap ? 'bg-navy text-white' : 'bg-surface text-text-tertiary border border-border'}`}>
+                {useQuestionMap ? 'ON' : 'OFF'}
+              </span>
+            </button>
+            {useQuestionMap && (
+              <div className="p-4 space-y-2">
+                <div className="grid grid-cols-[32px_90px_50px_1fr_70px_24px] gap-1.5 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1 px-0.5">
+                  <span>#</span><span>Type</span><span>Pts</span><span>Standard</span><span>Key</span><span></span>
+                </div>
+                {questionMap.map((q, qi) => (
+                  <div key={qi} className="grid grid-cols-[32px_90px_50px_1fr_70px_24px] gap-1.5 items-center">
+                    <span className="text-[11px] text-text-secondary font-semibold text-center">{qi + 1}</span>
+                    <select value={q.type} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], type: e.target.value }; setQuestionMap(nm) }}
+                      className="px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy bg-surface">
+                      <option value="mc">MC</option>
+                      <option value="true_false">T/F</option>
+                      <option value="short_answer">Short Ans</option>
+                      <option value="open_ended">Open End</option>
+                      <option value="matching">Matching</option>
+                      <option value="fill_blank">Fill Blank</option>
+                      <option value="listening">Listening</option>
+                      <option value="oral">Oral</option>
+                    </select>
+                    <input type="number" min={1} value={q.max_points} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], max_points: parseInt(e.target.value) || 1 }; setQuestionMap(nm) }}
+                      className="w-full px-1.5 py-1.5 border border-border rounded text-[10px] text-center outline-none focus:border-navy" />
+                    <input value={q.standard} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], standard: e.target.value }; setQuestionMap(nm) }}
+                      onBlur={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], standard: normalizeCCSS(e.target.value) }; setQuestionMap(nm) }}
+                      placeholder="e.g. RL.3.1" className="w-full px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy" />
+                    {(q.type === 'mc' || q.type === 'true_false') ? (
+                      <select value={q.answer_key} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], answer_key: e.target.value }; setQuestionMap(nm) }}
+                        className="px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy bg-surface">
+                        <option value="">--</option>
+                        {q.type === 'mc' ? ['A', 'B', 'C', 'D'].map(o => <option key={o} value={o}>{o}</option>) : ['T', 'F'].map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : <span className="text-[9px] text-text-tertiary text-center">n/a</span>}
+                    <button onClick={() => setQuestionMap(questionMap.filter((_, i) => i !== qi))} className="p-0.5 text-text-tertiary hover:text-red-500"><X size={12} /></button>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex gap-2">
+                    <button onClick={() => setQuestionMap([...questionMap, { num: questionMap.length + 1, type: 'mc', max_points: 1, standard: '', answer_key: '' }])}
+                      className="inline-flex items-center gap-1 text-[10px] text-navy font-medium hover:text-navy-dark"><Plus size={11} /> Add Question</button>
+                    <button onClick={() => {
+                      const count = parseInt(prompt('How many MC questions to add?') || '0')
+                      if (count > 0 && count <= 50) {
+                        const newQs = Array.from({ length: count }, (_, i) => ({ num: questionMap.length + i + 1, type: 'mc', max_points: 1, standard: '', answer_key: '' }))
+                        setQuestionMap([...questionMap, ...newQs])
+                      }
+                    }} className="inline-flex items-center gap-1 text-[10px] text-text-tertiary font-medium hover:text-navy"><Plus size={11} /> Bulk Add</button>
+                  </div>
+                  <span className="text-[10px] text-text-tertiary font-semibold">
+                    {questionMap.length} Q · {questionMap.reduce((s, q) => s + q.max_points, 0)} pts total
+                  </span>
+                </div>
+                <p className="text-[9px] text-text-tertiary">Question map enables item-by-item entry and analysis. For MC/T-F, set answer keys for auto-scoring. Standards tag each question for mastery rollups.</p>
               </div>
             )}
           </div>
@@ -2195,54 +2274,244 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
 // ─── #46 Assessment Item Analysis ─────────────────────────────────────
 
 function ItemAnalysisView({ allAssessments, students }: { allAssessments: Assessment[]; students: any[] }) {
+  const { showToast } = useApp()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [scores, setScores] = useState<{ student: string; score: number }[]>([])
+  const [scores, setScores] = useState<{ student: string; studentId: string; score: number }[]>([])
   const [loading, setLoading] = useState(false)
+  const [itemResponses, setItemResponses] = useState<Record<string, any[]>>({}) // studentId -> ItemResponse[]
+  const [itemEntryMode, setItemEntryMode] = useState(false)
+  const [itemInputs, setItemInputs] = useState<Record<string, Record<number, string>>>({}) // studentId -> { qNum -> value }
+  const [savingItems, setSavingItems] = useState(false)
 
   const selected = allAssessments.find(a => a.id === selectedId)
+  const hasQuestionMap = selected?.question_map && selected.question_map.length > 0
 
   useEffect(() => {
     if (!selectedId) return
-    setLoading(true);
-    (async () => {
-      const { data } = await supabase.from('grades').select('student_id, score').eq('assessment_id', selectedId).not('score', 'is', null)
+    setLoading(true)
+    setItemEntryMode(false)
+    ;(async () => {
+      const { data } = await supabase.from('grades').select('student_id, score, item_responses').eq('assessment_id', selectedId).not('score', 'is', null)
       if (data) {
         setScores(data.map(g => {
           const st = students.find(s => s.id === g.student_id)
-          return { student: st?.english_name || 'Unknown', score: g.score }
+          return { student: st?.english_name || 'Unknown', studentId: g.student_id, score: g.score }
         }).sort((a, b) => a.score - b.score))
+        // Load item responses
+        const ir: Record<string, any[]> = {}
+        data.forEach(g => { if (g.item_responses) ir[g.student_id] = g.item_responses })
+        setItemResponses(ir)
       }
       setLoading(false)
     })()
   }, [selectedId])
 
+  // Initialize item inputs from question map
+  const initItemInputs = () => {
+    if (!selected?.question_map) return
+    const inputs: Record<string, Record<number, string>> = {}
+    students.forEach(s => {
+      inputs[s.id] = {}
+      const existing = itemResponses[s.id]
+      selected.question_map!.forEach((q, qi) => {
+        const existingQ = existing?.find((r: any) => r.q === qi + 1)
+        if (existingQ) {
+          inputs[s.id][qi] = q.type === 'mc' || q.type === 'true_false' ? (existingQ.answer || '') : String(existingQ.points ?? '')
+        } else {
+          inputs[s.id][qi] = ''
+        }
+      })
+    })
+    setItemInputs(inputs)
+    setItemEntryMode(true)
+  }
+
+  const saveItemResponses = async () => {
+    if (!selected?.question_map) return
+    setSavingItems(true)
+    let savedCount = 0
+    for (const s of students) {
+      const sInputs = itemInputs[s.id]
+      if (!sInputs) continue
+      const responses: any[] = []
+      let totalPoints = 0
+      let hasAnyInput = false
+      selected.question_map.forEach((q, qi) => {
+        const val = sInputs[qi]
+        if (!val && val !== '0') {
+          responses.push({ q: qi + 1, type: q.type, points: 0, max: q.max_points, standard: q.standard || undefined })
+          return
+        }
+        hasAnyInput = true
+        if (q.type === 'mc' || q.type === 'true_false') {
+          const correct = q.answer_key ? val.toUpperCase() === q.answer_key.toUpperCase() : undefined
+          const pts = correct ? q.max_points : correct === false ? 0 : parseInt(val) || 0
+          totalPoints += pts
+          responses.push({ q: qi + 1, type: q.type, answer: val.toUpperCase(), correct, points: pts, max: q.max_points, standard: q.standard || undefined })
+        } else {
+          const pts = Math.min(parseFloat(val) || 0, q.max_points)
+          totalPoints += pts
+          responses.push({ q: qi + 1, type: q.type, points: pts, max: q.max_points, standard: q.standard || undefined })
+        }
+      })
+      if (!hasAnyInput) continue
+      // Upsert grade with item_responses
+      const { error } = await supabase.from('grades').upsert({
+        student_id: s.id, assessment_id: selected.id, score: totalPoints, item_responses: responses, is_exempt: false,
+      }, { onConflict: 'student_id,assessment_id' })
+      if (!error) savedCount++
+    }
+    setSavingItems(false)
+    showToast(`Saved item responses for ${savedCount} students`)
+    // Reload
+    setSelectedId(selected.id)
+    setItemEntryMode(false)
+  }
+
   return (
     <div className="px-10 py-6 space-y-4">
-      <div>
-        <label className="text-[10px] font-semibold text-text-secondary uppercase mb-1 block">Select Assessment</label>
-        <select value={selectedId || ''} onChange={e => setSelectedId(e.target.value || null)}
-          className="px-3 py-2 border border-border rounded-lg text-[12px] bg-surface outline-none w-full max-w-md">
-          <option value="">Choose an assessment...</option>
-          {allAssessments.map(a => <option key={a.id} value={a.id}>{a.name} ({a.domain}, /{a.max_score})</option>)}
-        </select>
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <label className="text-[10px] font-semibold text-text-secondary uppercase mb-1 block">Select Assessment</label>
+          <select value={selectedId || ''} onChange={e => setSelectedId(e.target.value || null)}
+            className="px-3 py-2 border border-border rounded-lg text-[12px] bg-surface outline-none w-full max-w-md">
+            <option value="">Choose an assessment...</option>
+            {allAssessments.map(a => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({a.domain}, /{a.max_score}){a.question_map?.length ? ` · ${a.question_map.length}Q` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+        {hasQuestionMap && !itemEntryMode && (
+          <button onClick={initItemInputs} className="mt-5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
+            Item-by-Item Entry
+          </button>
+        )}
       </div>
 
       {loading && <div className="py-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>}
 
-      {selected && !loading && scores.length > 0 && (() => {
+      {/* Item-by-Item Entry Grid */}
+      {itemEntryMode && hasQuestionMap && (
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 bg-navy/5 border-b border-border flex items-center justify-between">
+            <span className="text-[12px] font-semibold text-navy">Item-by-Item Entry: {selected!.name}</span>
+            <div className="flex gap-2">
+              <button onClick={() => setItemEntryMode(false)} className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
+              <button onClick={saveItemResponses} disabled={savingItems}
+                className="px-4 py-1.5 rounded-lg text-[11px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-40 flex items-center gap-1">
+                {savingItems && <Loader2 size={12} className="animate-spin" />} Save All
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="border-b border-border bg-surface-alt">
+                  <th className="text-left px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[120px] z-10">Student</th>
+                  {selected!.question_map!.map((q, qi) => (
+                    <th key={qi} className="text-center px-1 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[52px]">
+                      <div>Q{qi + 1}</div>
+                      <div className="text-[7px] font-normal text-text-tertiary">
+                        {q.type === 'mc' ? 'MC' : q.type === 'true_false' ? 'T/F' : `/${q.max_points}`}
+                        {q.answer_key && <span className="text-green-600 ml-0.5">({q.answer_key})</span>}
+                      </div>
+                    </th>
+                  ))}
+                  <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-navy font-bold min-w-[50px]">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((s: any) => {
+                  const sInputs = itemInputs[s.id] || {}
+                  let total = 0
+                  selected!.question_map!.forEach((q, qi) => {
+                    const val = sInputs[qi]
+                    if (!val) return
+                    if (q.type === 'mc' || q.type === 'true_false') {
+                      if (q.answer_key && val.toUpperCase() === q.answer_key.toUpperCase()) total += q.max_points
+                    } else {
+                      total += Math.min(parseFloat(val) || 0, q.max_points)
+                    }
+                  })
+                  return (
+                    <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
+                      <td className="px-3 py-1.5 text-[11px] font-medium sticky left-0 bg-surface z-10">{s.english_name}</td>
+                      {selected!.question_map!.map((q, qi) => {
+                        const val = sInputs[qi] || ''
+                        const isMcTf = q.type === 'mc' || q.type === 'true_false'
+                        const isCorrect = isMcTf && q.answer_key ? val.toUpperCase() === q.answer_key.toUpperCase() : null
+                        const isWrong = isMcTf && q.answer_key && val ? val.toUpperCase() !== q.answer_key.toUpperCase() : false
+                        return (
+                          <td key={qi} className="text-center px-0.5 py-1">
+                            {isMcTf ? (
+                              <select value={val} onChange={e => setItemInputs(prev => ({ ...prev, [s.id]: { ...prev[s.id], [qi]: e.target.value } }))}
+                                className={`w-10 px-0.5 py-1 border rounded text-[11px] text-center outline-none ${isCorrect === true ? 'bg-green-50 border-green-300 text-green-700' : isWrong ? 'bg-red-50 border-red-300 text-red-700' : 'border-border'}`}>
+                                <option value="">-</option>
+                                {q.type === 'mc' ? ['A', 'B', 'C', 'D'].map(o => <option key={o} value={o}>{o}</option>) : ['T', 'F'].map(o => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            ) : (
+                              <input value={val} onChange={e => setItemInputs(prev => ({ ...prev, [s.id]: { ...prev[s.id], [qi]: e.target.value } }))}
+                                type="number" min={0} max={q.max_points} step="any"
+                                className="w-10 px-0.5 py-1 border border-border rounded text-[11px] text-center outline-none focus:border-navy" />
+                            )}
+                          </td>
+                        )
+                      })}
+                      <td className="text-center px-2 py-1 font-bold text-navy">{total}/{selected!.max_score}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Analysis Views */}
+      {selected && !loading && !itemEntryMode && scores.length > 0 && (() => {
         const max = selected.max_score
         const vals = scores.map(s => s.score)
         const mean = vals.reduce((a, b) => a + b, 0) / vals.length
-        const median = vals.length % 2 === 0 ? (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2 : vals[Math.floor(vals.length / 2)]
+        const sorted = [...vals].sort((a, b) => a - b)
+        const median = sorted.length % 2 === 0 ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2 : sorted[Math.floor(sorted.length / 2)]
         const stdDev = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length)
         const pctArr = vals.map(v => (v / max) * 100)
         const passing = pctArr.filter(p => p >= 60).length
         const proficient = pctArr.filter(p => p >= 80).length
 
         // Score distribution buckets
-        const buckets = [0, 0, 0, 0, 0] // 0-20, 20-40, 40-60, 60-80, 80-100
+        const buckets = [0, 0, 0, 0, 0]
         pctArr.forEach(p => { const idx = Math.min(4, Math.floor(p / 20)); buckets[idx]++ })
         const maxBucket = Math.max(...buckets, 1)
+
+        // Item-level analysis
+        const hasItemData = Object.keys(itemResponses).length > 0 && hasQuestionMap
+        const qMap = selected.question_map || []
+
+        // Per-question stats
+        const questionStats = qMap.map((q, qi) => {
+          let correct = 0; let total = 0; const answerDist: Record<string, number> = {}
+          Object.values(itemResponses).forEach((responses: any[]) => {
+            const r = responses.find((r: any) => r.q === qi + 1)
+            if (!r) return
+            total++
+            if (r.correct === true || (r.points === r.max)) correct++
+            if (r.answer) answerDist[r.answer] = (answerDist[r.answer] || 0) + 1
+          })
+          return { qNum: qi + 1, type: q.type, standard: q.standard, pctCorrect: total > 0 ? (correct / total) * 100 : 0, total, correct, answerDist, maxPts: q.max_points, answerKey: q.answer_key }
+        })
+
+        // Standard rollup
+        const standardStats: Record<string, { correct: number; total: number; questions: number[] }> = {}
+        questionStats.forEach(qs => {
+          if (!qs.standard) return
+          if (!standardStats[qs.standard]) standardStats[qs.standard] = { correct: 0, total: 0, questions: [] }
+          standardStats[qs.standard].correct += qs.correct
+          standardStats[qs.standard].total += qs.total
+          standardStats[qs.standard].questions.push(qs.qNum)
+        })
 
         return (
           <div className="space-y-4">
@@ -2279,9 +2548,158 @@ function ItemAnalysisView({ allAssessments, students }: { allAssessments: Assess
                   </div>
                 ))}
               </div>
+              {/* Threshold reference lines */}
+              <div className="flex justify-between text-[8px] text-text-tertiary mt-2 px-1">
+                <span>Below 60%: {pctArr.filter(p => p < 60).length} students</span>
+                <span>60-79%: {pctArr.filter(p => p >= 60 && p < 80).length} students</span>
+                <span>80%+: {proficient} students</span>
+              </div>
             </div>
 
-            {/* Students needing reteach (below 60%) */}
+            {/* Question-Level Analysis (if item data exists) */}
+            {hasItemData && questionStats.length > 0 && (
+              <>
+                {/* Per-question difficulty */}
+                <div className="bg-surface border border-border rounded-xl p-4">
+                  <h3 className="text-[12px] font-semibold text-navy mb-3">Question Difficulty</h3>
+                  <div className="space-y-1.5">
+                    {questionStats.map(qs => {
+                      const pct = qs.pctCorrect
+                      const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#3b82f6' : pct >= 30 ? '#f59e0b' : '#ef4444'
+                      const flag = pct < 30 ? '⚠ Hard' : pct > 90 ? '✦ Easy' : ''
+                      return (
+                        <div key={qs.qNum} className="flex items-center gap-2">
+                          <span className="text-[10px] text-text-secondary w-8 text-right">Q{qs.qNum}</span>
+                          <span className="text-[8px] text-text-tertiary w-10">{qs.type === 'mc' ? 'MC' : qs.type === 'true_false' ? 'T/F' : qs.type.replace('_', ' ').slice(0, 6)}</span>
+                          <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+                          </div>
+                          <span className="text-[10px] font-bold w-10 text-right">{pct.toFixed(0)}%</span>
+                          {qs.standard && <span className="text-[8px] text-navy bg-navy/8 px-1.5 py-0.5 rounded">{qs.standard}</span>}
+                          {flag && <span className="text-[8px] font-bold" style={{ color }}>{flag}</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Distractor Analysis for MC */}
+                {questionStats.some(qs => qs.type === 'mc' && Object.keys(qs.answerDist).length > 0) && (
+                  <div className="bg-surface border border-border rounded-xl p-4">
+                    <h3 className="text-[12px] font-semibold text-navy mb-3">Distractor Analysis (MC Questions)</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {questionStats.filter(qs => qs.type === 'mc' && Object.keys(qs.answerDist).length > 0).map(qs => (
+                        <div key={qs.qNum} className="border border-border rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[11px] font-semibold text-navy">Q{qs.qNum}</span>
+                            <span className="text-[9px] text-text-tertiary">{qs.total} responses</span>
+                          </div>
+                          <div className="space-y-1">
+                            {['A', 'B', 'C', 'D'].map(opt => {
+                              const count = qs.answerDist[opt] || 0
+                              const pct = qs.total > 0 ? (count / qs.total) * 100 : 0
+                              const isCorrect = qs.answerKey === opt
+                              return (
+                                <div key={opt} className="flex items-center gap-1.5">
+                                  <span className={`text-[10px] font-bold w-4 ${isCorrect ? 'text-green-600' : 'text-text-secondary'}`}>{opt}{isCorrect ? '✓' : ''}</span>
+                                  <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{
+                                      width: `${pct}%`,
+                                      backgroundColor: isCorrect ? '#22c55e' : pct > 40 ? '#ef4444' : '#d1d5db',
+                                    }} />
+                                  </div>
+                                  <span className="text-[9px] w-8 text-right">{count} ({pct.toFixed(0)}%)</span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                          {/* Flag common misconceptions */}
+                          {Object.entries(qs.answerDist).filter(([opt, count]) => opt !== qs.answerKey && count / qs.total >= 0.4).map(([opt, count]) => (
+                            <p key={opt} className="text-[9px] text-red-600 mt-1.5 font-medium">
+                              ⚠ {Math.round((count / qs.total) * 100)}% chose {opt} — possible misconception
+                            </p>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Standard-Level Rollup */}
+                {Object.keys(standardStats).length > 0 && (
+                  <div className="bg-surface border border-border rounded-xl p-4">
+                    <h3 className="text-[12px] font-semibold text-navy mb-3">Standards Mastery</h3>
+                    <div className="space-y-2">
+                      {Object.entries(standardStats).sort((a, b) => (a[1].total > 0 ? a[1].correct / a[1].total : 0) - (b[1].total > 0 ? b[1].correct / b[1].total : 0)).map(([std, data]) => {
+                        const pct = data.total > 0 ? (data.correct / data.total) * 100 : 0
+                        const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#3b82f6' : '#ef4444'
+                        return (
+                          <div key={std} className="flex items-center gap-3">
+                            <span className="text-[11px] font-bold text-navy w-20">{std}</span>
+                            <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full flex items-center justify-end pr-2" style={{ width: `${Math.max(pct, 8)}%`, backgroundColor: color }}>
+                                <span className="text-[8px] font-bold text-white">{pct.toFixed(0)}%</span>
+                              </div>
+                            </div>
+                            <span className="text-[9px] text-text-tertiary">Q{data.questions.join(', Q')}</span>
+                            {pct < 60 && <span className="text-[9px] font-bold text-red-500">Reteach</span>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Reteach Recommendations */}
+                {(() => {
+                  const reteachStds = Object.entries(standardStats).filter(([, d]) => d.total > 0 && (d.correct / d.total) * 100 < 60)
+                  if (reteachStds.length === 0) return null
+                  // Find students who need small group
+                  const needsSmallGroup: Set<string> = new Set()
+                  const challengeStudents: Set<string> = new Set()
+                  scores.forEach(s => {
+                    const responses = itemResponses[s.studentId]
+                    if (!responses) return
+                    let allProficient = true
+                    reteachStds.forEach(([std]) => {
+                      const stdQs = questionStats.filter(q => q.standard === std)
+                      const studentStdResponses = responses.filter((r: any) => stdQs.some(sq => sq.qNum === r.q))
+                      const correct = studentStdResponses.filter((r: any) => r.correct === true || r.points === r.max).length
+                      if (studentStdResponses.length > 0 && correct / studentStdResponses.length < 0.6) {
+                        needsSmallGroup.add(s.student)
+                      }
+                      if (studentStdResponses.length > 0 && correct / studentStdResponses.length < 1) allProficient = false
+                    })
+                    if (allProficient && (s.score / max) * 100 >= 90) challengeStudents.add(s.student)
+                  })
+                  return (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                      <h3 className="text-[12px] font-semibold text-amber-900 mb-2">Reteach Recommendations</h3>
+                      <p className="text-[11px] text-amber-800 mb-2">
+                        Standards needing reteach: {reteachStds.map(([std, d]) => `${std} (${((d.correct / d.total) * 100).toFixed(0)}% mastery)`).join(', ')}
+                      </p>
+                      {needsSmallGroup.size > 0 && (
+                        <p className="text-[11px] text-amber-700">Small group: {Array.from(needsSmallGroup).join(', ')}</p>
+                      )}
+                      {challengeStudents.size > 0 && (
+                        <p className="text-[11px] text-green-700 mt-1">Ready for challenge: {Array.from(challengeStudents).join(', ')}</p>
+                      )}
+                    </div>
+                  )
+                })()}
+              </>
+            )}
+
+            {/* No item data but has question map */}
+            {hasQuestionMap && !hasItemData && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <p className="text-[11px] text-blue-800">
+                  This assessment has a question map ({qMap.length} questions). Use <strong>Item-by-Item Entry</strong> above to enter responses per question, then see question difficulty, distractor analysis, and standards mastery.
+                </p>
+              </div>
+            )}
+
+            {/* Students needing reteach (overall) */}
             {(() => {
               const needsReteach = scores.filter(s => (s.score / max) * 100 < 61)
               const approaching = scores.filter(s => { const p = (s.score / max) * 100; return p >= 61 && p < 71 })

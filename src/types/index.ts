@@ -120,6 +120,7 @@ export interface Assessment {
   description: string;
   standards: StandardTag[];
   sections?: AssessmentSection[] | null;
+  question_map?: QuestionMapItem[] | null;
   created_by: string | null;
 }
 
@@ -127,6 +128,24 @@ export interface AssessmentSection {
   label: string;
   standard: string;
   max_points: number;
+}
+
+export interface QuestionMapItem {
+  num: number;
+  type: 'mc' | 'true_false' | 'short_answer' | 'open_ended' | 'matching' | 'fill_blank' | 'cloze' | 'listening' | 'oral';
+  max_points: number;
+  standard?: string;
+  answer_key?: string; // For MC: 'A','B','C','D'; for TF: 'T','F'
+}
+
+export interface ItemResponse {
+  q: number;
+  type: string;
+  answer?: string; // Student's answer for MC/TF
+  correct?: boolean;
+  points: number;
+  max: number;
+  standard?: string;
 }
 
 export interface StandardTag {
