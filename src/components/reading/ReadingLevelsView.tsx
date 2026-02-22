@@ -1017,8 +1017,8 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-surface-alt border border-border">
               <Upload size={12} /> New Passage
             </button>
-            {selectedPassage && (
-              <button onClick={() => { if (mode === 'single' && !selStudent) { showToast('Select a student first'); return } setShowRunningRecord(true) }}
+            {selectedPassage && mode === 'single' && (
+              <button onClick={() => { if (!selStudent) { showToast('Select a student first'); return } setShowRunningRecord(true) }}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-semibold bg-green-600 text-white hover:bg-green-700">
                 ▶ Open Digital Running Record
               </button>
@@ -1124,11 +1124,11 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                   return (
                     <tr key={s.id} className={`border-b border-border/50 ${filled ? 'bg-green-50/50' : ''}`}>
                       <td className="py-1.5 px-2 text-[12px] font-medium">{s.english_name}</td>
-                      <td className="py-1.5 px-0.5 text-center">
+                      <td className="py-1.5 px-1 text-center">
                         {selectedPassage ? (
                           <button onClick={() => { setBatchRunningStudentId(s.id); setShowRunningRecord(true) }}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] transition-all ${
-                              filled ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold transition-all shadow-sm ${
+                              filled ? 'bg-green-500 text-white hover:bg-green-600 ring-2 ring-green-200' : 'bg-green-100 text-green-700 hover:bg-green-200 border-2 border-green-300'
                             }`} title={`Open running record for ${s.english_name}`}>
                             {filled ? '✓' : '▶'}
                           </button>
@@ -1281,6 +1281,39 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
     showToast('Passage deleted')
   }
 
+  const [searchText, setSearchText] = useState('')
+  const [lexMinFilter, setLexMinFilter] = useState(-9999)
+  const [lexMaxFilter, setLexMaxFilter] = useState(9999)
+
+  const LEXILE_OPTS = [
+    { value: -9999, label: 'Min' }, { value: -1400, label: 'BR1400' }, { value: -1000, label: 'BR1000' },
+    { value: -600, label: 'BR600' }, { value: -200, label: 'BR200' }, { value: -100, label: 'BR100' },
+    { value: 0, label: '0L' }, { value: 100, label: '100L' }, { value: 200, label: '200L' }, { value: 300, label: '300L' },
+    { value: 400, label: '400L' }, { value: 500, label: '500L' }, { value: 600, label: '600L' }, { value: 700, label: '700L' },
+    { value: 800, label: '800L' }, { value: 900, label: '900L' }, { value: 1000, label: '1000L' }, { value: 1200, label: '1200L' },
+    { value: 1400, label: '1400L' }, { value: 9999, label: 'Max' },
+  ]
+
+  const parseLex = (s: string | null): number | null => {
+    if (!s) return null
+    const c = s.trim().toUpperCase().replace(/L$/, '')
+    if (c.startsWith('BR')) { return -(parseInt(c.replace('BR', '')) || 0) }
+    const n = parseInt(c); return isNaN(n) ? null : n
+  }
+
+  const filteredPassages = passages.filter(p => {
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase()
+      if (!(p.title || '').toLowerCase().includes(q) && !(p.source || '').toLowerCase().includes(q)) return false
+    }
+    if (lexMinFilter > -9999 || lexMaxFilter < 9999) {
+      const lex = parseLex(p.level)
+      if (lex === null) return false
+      if (lex < lexMinFilter || lex > lexMaxFilter) return false
+    }
+    return true
+  })
+
   if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
   const levelColor = (level: string | null) => {
@@ -1292,12 +1325,41 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[13px] text-text-secondary">{passages.length} passages saved. Click to expand and view the full text.</p>
+          <p className="text-[13px] text-text-secondary">{filteredPassages.length}{filteredPassages.length !== passages.length ? ` of ${passages.length}` : ''} passages saved. Click to expand and view the full text.</p>
         </div>
         <button onClick={() => setShowAdd(!showAdd)}
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark transition-all">
           <Plus size={14} /> Add Passage
         </button>
+      </div>
+
+      {/* Search & Filter */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[180px]">
+          <input value={searchText} onChange={e => setSearchText(e.target.value)}
+            placeholder="Search by title or source..."
+            className="w-full pl-3 pr-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-text-secondary font-medium">Lexile</span>
+          <select value={lexMinFilter} onChange={e => setLexMinFilter(Number(e.target.value))}
+            className="px-2 py-2 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white">
+            {LEXILE_OPTS.filter(o => o.value <= lexMaxFilter || o.value === -9999).map(o => (
+              <option key={`lmin-${o.value}`} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <span className="text-[11px] text-text-tertiary">to</span>
+          <select value={lexMaxFilter} onChange={e => setLexMaxFilter(Number(e.target.value))}
+            className="px-2 py-2 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white">
+            {LEXILE_OPTS.filter(o => o.value >= lexMinFilter || o.value === 9999).map(o => (
+              <option key={`lmax-${o.value}`} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        {(searchText || lexMinFilter > -9999 || lexMaxFilter < 9999) && (
+          <button onClick={() => { setSearchText(''); setLexMinFilter(-9999); setLexMaxFilter(9999) }}
+            className="text-[10px] text-blue-600 hover:text-blue-800 underline">Clear Filters</button>
+        )}
       </div>
 
       {/* Add new passage form */}
@@ -1340,9 +1402,13 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
           <p>No passages saved yet. Add your first passage above.</p>
           <p className="text-[11px] mt-1">Passages are shared across all teachers and can be used for running records.</p>
         </div>
+      ) : filteredPassages.length === 0 ? (
+        <div className="py-8 text-center text-text-tertiary text-[13px]">
+          <p>No passages match your filters.</p>
+        </div>
       ) : (
         <div className="space-y-2">
-          {passages.map(p => {
+          {filteredPassages.map(p => {
             const isExpanded = expandedId === p.id
             const isEditing = editingId === p.id
             const lc = levelColor(p.level)
