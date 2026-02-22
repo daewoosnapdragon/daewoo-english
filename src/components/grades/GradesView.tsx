@@ -235,6 +235,7 @@ export default function GradesView() {
     }
     setHasChanges(false); setSaving(false)
     showToast(lang === 'ko' ? '저장 완료!' : `Saved ${allStudentIds.size} entries`)
+    loadAllAssessments() // Refresh so domain overview picks up new grades
   }
 
   const handleDeleteAssessment = async (a: Assessment) => {
@@ -592,7 +593,6 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
         student_id: s.id,
         assessment_id: assessment.id,
         score: total,
-        max_score: assessment.max_score,
         section_scores: ss,
         is_exempt: false,
       }, { onConflict: 'student_id,assessment_id' })

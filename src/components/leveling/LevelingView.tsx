@@ -432,7 +432,7 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
           <div className="flex items-center gap-2 flex-wrap">
             {selectedPassage ? (
               <>
-                <span className="text-[11px] font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded-lg">📖 {selectedPassage.title} ({selectedPassage.word_count} words)</span>
+                <span className="text-[11px] font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded-lg">{selectedPassage.title} ({selectedPassage.word_count} words)</span>
                 <button onClick={() => setSelectedPassage(null)} className="text-[10px] text-red-500 hover:text-red-700">Clear</button>
               </>
             ) : (
@@ -481,7 +481,7 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
           {!selectedPassage && passages.length === 0 && !pastePassageText && (
             <p className="text-[10px] text-blue-600 mt-2">No passages saved yet. Upload one or paste text above to use the digital running record.</p>
           )}
-          {selectedPassage && <p className="text-[10px] text-blue-600 mt-2">Click the 📖 icon next to a student's CWPM field to open the running record.</p>}
+          {selectedPassage && <p className="text-[10px] text-blue-600 mt-2">Click the icon next to a student's CWPM field to open the running record.</p>}
         </div>
       )}
 

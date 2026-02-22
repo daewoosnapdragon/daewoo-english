@@ -33,9 +33,9 @@ const CWPM_BENCHMARKS: Record<number, { below: number; approaching: number; prof
 // Passage difficulty feedback options (for teacher to note if passage was appropriate)
 const DIFFICULTY_OPTIONS = [
   { id: '', label: '— Not rated —' },
-  { id: 'too_easy', label: '📗 Too Easy' },
-  { id: 'just_right', label: '📘 Just Right' },
-  { id: 'too_hard', label: '📕 Too Difficult' },
+  { id: 'too_easy', label: 'Too Easy' },
+  { id: 'just_right', label: 'Just Right' },
+  { id: 'too_hard', label: 'Too Difficult' },
 ]
 
 // Load class benchmarks from DB for the selected class
@@ -54,7 +54,7 @@ function useClassBenchmarks(englishClass: string, grade: number) {
 export default function ReadingLevelsView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
-  const [subView, setSubView] = useState<'class' | 'student' | 'groups' | 'correlation' | 'flexgroups'>('class')
+  const [subView, setSubView] = useState<'class' | 'student' | 'groups' | 'flexgroups'>('class')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('daewoo_reading_grade')
@@ -92,7 +92,6 @@ export default function ReadingLevelsView() {
           {([
             { id: 'class', icon: BookOpen, label: 'Class Overview' },
             { id: 'student', icon: User, label: 'Student Detail' },
-            { id: 'correlation', icon: BarChart3, label: 'CWPM vs Grades' },
           ] as const).map((tab) => (
             <button key={tab.id} onClick={() => setSubView(tab.id)}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${subView === tab.id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
@@ -125,7 +124,6 @@ export default function ReadingLevelsView() {
 
         {subView === 'class' && <ClassOverview key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} onSelectStudent={(sid: string) => { setSelectedStudentId(sid); setSubView('student') }} />}
         {subView === 'student' && <StudentReadingView key={refreshKey} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} grade={selectedGrade} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} />}
-        {subView === 'correlation' && <CorrelationView students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} />}
       </div>
 
       {showAddModal && <AddReadingModal studentId={addForStudentId} students={students} lang={lang} onClose={() => setShowAddModal(false)} onSaved={() => { setShowAddModal(false); setRefreshKey((k: number) => k + 1) }} />}
@@ -988,7 +986,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           <div className="flex items-center gap-2 flex-wrap">
             <button onClick={() => setShowPassagePicker(!showPassagePicker)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
-              <BookOpen size={13} /> {selectedPassage ? `📖 ${selectedPassage.title}` : '📖 Use Saved Passage'}
+              <BookOpen size={13} /> {selectedPassage ? `${selectedPassage.title}` : 'Use Saved Passage'}
             </button>
             <button onClick={() => setShowPassageUploader(true)}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-surface-alt border border-border">

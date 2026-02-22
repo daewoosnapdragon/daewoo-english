@@ -289,13 +289,13 @@ function calculateG1Composite(scores: G1Scores): {
       cwpm = Math.round((wordsCorrect / timeSeconds) * 60)
     }
 
-    const naepMultiplier = NAEP_MULTIPLIERS[scores.o_naep ?? 3] ?? 1.0
-    weightedCwpm = cwpm != null ? Math.round(cwpm * config.passageWeight * naepMultiplier) : null
+    // Use raw CWPM directly — passage difficulty is tracked as metadata only
+    weightedCwpm = cwpm
 
     // Normalize CWPM to 0-100 scale using grade 1 benchmarks
     // Lily end target: 15 CWPM, Snapdragon end target: 90 CWPM
-    if (weightedCwpm != null) {
-      orfPct = Math.min(100, (weightedCwpm / 90) * 100)
+    if (cwpm != null) {
+      orfPct = Math.min(100, (cwpm / 90) * 100)
     }
   }
 

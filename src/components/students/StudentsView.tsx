@@ -1237,6 +1237,11 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
   const [showPassageUploader, setShowPassageUploader] = useState(false)
   const [pasteText, setPasteText] = useState('')
   const [pasteTitle, setPasteTitle] = useState('')
+  const [showManualEntry, setShowManualEntry] = useState(false)
+  const [manualForm, setManualForm] = useState({ cwpm: '', accuracy: '', errors: '', self_corrections: '', time_seconds: '60', word_count: '', passage_title: '', naep: '', reading_level: '' })
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<any>({})
+  const [savingEdit, setSavingEdit] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -1285,6 +1290,56 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
     showToast?.('Passage saved to library')
   }
 
+  const handleManualSave = async () => {
+    const cwpm = parseFloat(manualForm.cwpm)
+    const accuracy = manualForm.accuracy ? parseFloat(manualForm.accuracy) : null
+    if (isNaN(cwpm)) { showToast?.('CWPM is required'); return }
+    const { error } = await supabase.from('reading_assessments').insert({
+      student_id: studentId,
+      date: new Date().toISOString().split('T')[0],
+      cwpm,
+      accuracy_rate: accuracy,
+      errors: manualForm.errors ? parseInt(manualForm.errors) : null,
+      self_corrections: manualForm.self_corrections ? parseInt(manualForm.self_corrections) : null,
+      time_seconds: manualForm.time_seconds ? parseInt(manualForm.time_seconds) : 60,
+      passage_title: manualForm.passage_title || 'Manual Entry',
+      word_count: manualForm.word_count ? parseInt(manualForm.word_count) : null,
+      naep_fluency: manualForm.naep ? parseInt(manualForm.naep) : null,
+      reading_level: manualForm.reading_level || null,
+      assessed_by: currentTeacher?.id,
+    })
+    if (error) { showToast?.(`Error: ${error.message}`); return }
+    const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false })
+    if (data) setRecords(data)
+    setShowManualEntry(false)
+    setManualForm({ cwpm: '', accuracy: '', errors: '', self_corrections: '', time_seconds: '60', word_count: '', passage_title: '', naep: '', reading_level: '' })
+    showToast?.(`Saved: ${cwpm} CWPM`)
+  }
+
+  const startEdit = (r: any) => {
+    setEditingId(r.id)
+    setEditForm({ cwpm: r.cwpm ?? '', accuracy_rate: r.accuracy_rate ?? '', errors: r.errors ?? '', self_corrections: r.self_corrections ?? '', naep_fluency: r.naep_fluency ?? '', reading_level: r.reading_level ?? '' })
+  }
+
+  const saveEdit = async () => {
+    if (!editingId) return
+    setSavingEdit(true)
+    const updates: any = {}
+    if (editForm.cwpm !== '') updates.cwpm = parseFloat(editForm.cwpm)
+    if (editForm.accuracy_rate !== '') updates.accuracy_rate = parseFloat(editForm.accuracy_rate)
+    if (editForm.errors !== '') updates.errors = parseInt(editForm.errors)
+    if (editForm.self_corrections !== '') updates.self_corrections = parseInt(editForm.self_corrections)
+    updates.naep_fluency = editForm.naep_fluency !== '' ? parseInt(editForm.naep_fluency) : null
+    updates.reading_level = editForm.reading_level || null
+    const { error } = await supabase.from('reading_assessments').update(updates).eq('id', editingId)
+    if (error) { showToast?.(`Error: ${error.message}`); setSavingEdit(false); return }
+    const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false })
+    if (data) setRecords(data)
+    setEditingId(null)
+    setSavingEdit(false)
+    showToast?.('Updated')
+  }
+
   if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
   if (records.length === 0) return <div className="py-8 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '읽기 기록이 없습니다.' : 'No reading assessments recorded yet.'}</div>
 
@@ -1302,12 +1357,62 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
 
   return (
     <div className="space-y-3">
-      {/* New Running Record */}
-      {!showRunningRecord ? (
-        <button onClick={() => setShowRunningRecord(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-all">
-          <BookOpen size={14} /> New Running Record
-        </button>
+      {/* New Running Record / Manual Entry */}
+      {!showRunningRecord && !showManualEntry ? (
+        <div className="flex gap-2">
+          <button onClick={() => setShowRunningRecord(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-all">
+            <BookOpen size={14} /> New Running Record
+          </button>
+          <button onClick={() => setShowManualEntry(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-surface text-navy border border-border hover:bg-surface-alt transition-all">
+            <Pencil size={14} /> Enter Manually
+          </button>
+        </div>
+      ) : showManualEntry ? (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-semibold text-amber-800">Manual ORF Entry</span>
+            <button onClick={() => setShowManualEntry(false)} className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-0.5">CWPM *</label>
+              <input type="number" value={manualForm.cwpm} onChange={e => setManualForm(f => ({ ...f, cwpm: e.target.value }))} placeholder="e.g. 45" className="w-full px-2 py-1.5 border border-amber-200 rounded-lg text-[12px] outline-none focus:border-amber-400 bg-white" />
+            </div>
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-0.5">Accuracy %</label>
+              <input type="number" step="0.1" value={manualForm.accuracy} onChange={e => setManualForm(f => ({ ...f, accuracy: e.target.value }))} placeholder="e.g. 94.5" className="w-full px-2 py-1.5 border border-amber-200 rounded-lg text-[12px] outline-none focus:border-amber-400 bg-white" />
+            </div>
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-0.5">Errors</label>
+              <input type="number" value={manualForm.errors} onChange={e => setManualForm(f => ({ ...f, errors: e.target.value }))} placeholder="0" className="w-full px-2 py-1.5 border border-amber-200 rounded-lg text-[12px] outline-none focus:border-amber-400 bg-white" />
+            </div>
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-0.5">Self-Corr</label>
+              <input type="number" value={manualForm.self_corrections} onChange={e => setManualForm(f => ({ ...f, self_corrections: e.target.value }))} placeholder="0" className="w-full px-2 py-1.5 border border-amber-200 rounded-lg text-[12px] outline-none focus:border-amber-400 bg-white" />
+            </div>
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-0.5">Time (sec)</label>
+              <input type="number" value={manualForm.time_seconds} onChange={e => setManualForm(f => ({ ...f, time_seconds: e.target.value }))} className="w-full px-2 py-1.5 border border-amber-200 rounded-lg text-[12px] outline-none focus:border-amber-400 bg-white" />
+            </div>
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-0.5">Word Count</label>
+              <input type="number" value={manualForm.word_count} onChange={e => setManualForm(f => ({ ...f, word_count: e.target.value }))} placeholder="e.g. 120" className="w-full px-2 py-1.5 border border-amber-200 rounded-lg text-[12px] outline-none focus:border-amber-400 bg-white" />
+            </div>
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-0.5">Passage Title</label>
+              <input value={manualForm.passage_title} onChange={e => setManualForm(f => ({ ...f, passage_title: e.target.value }))} placeholder="Optional" className="w-full px-2 py-1.5 border border-amber-200 rounded-lg text-[12px] outline-none focus:border-amber-400 bg-white" />
+            </div>
+            <div>
+              <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-0.5">NAEP Level</label>
+              <select value={manualForm.naep} onChange={e => setManualForm(f => ({ ...f, naep: e.target.value }))} className="w-full px-2 py-1.5 border border-amber-200 rounded-lg text-[12px] outline-none focus:border-amber-400 bg-white">
+                <option value="">—</option><option value="1">L1</option><option value="2">L2</option><option value="3">L3</option><option value="4">L4</option>
+              </select>
+            </div>
+          </div>
+          <button onClick={handleManualSave} className="px-4 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark">Save Record</button>
+        </div>
       ) : (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -1398,12 +1503,33 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
             <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Reading Level</th>
             <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Lexile</th>
             <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">NAEP</th>
+            <th className="text-center px-2 py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16"></th>
           </tr></thead>
           <tbody>
             {records.map((r: any) => {
               const level = classifyLevel(r.accuracy_rate)
+              const isEditing = editingId === r.id
+              if (isEditing) {
+                return (
+                  <tr key={r.id} className="border-t border-border bg-amber-50/30">
+                    <td className="px-3 py-1.5">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                    <td className="px-2 py-1.5 text-[11px] text-text-tertiary">{r.passage_title || '—'}</td>
+                    <td className="px-1 py-1"><input type="number" value={editForm.cwpm} onChange={e => setEditForm((f: any) => ({ ...f, cwpm: e.target.value }))} className="w-14 px-1 py-1 text-center border border-amber-300 rounded text-[11px] outline-none focus:border-navy" /></td>
+                    <td className="px-1 py-1"><input type="number" step="0.1" value={editForm.accuracy_rate} onChange={e => setEditForm((f: any) => ({ ...f, accuracy_rate: e.target.value }))} className="w-14 px-1 py-1 text-center border border-amber-300 rounded text-[11px] outline-none focus:border-navy" /></td>
+                    <td className="px-2 py-1.5 text-center text-[10px] text-text-tertiary">{level.label}</td>
+                    <td className="px-1 py-1"><input value={editForm.reading_level} onChange={e => setEditForm((f: any) => ({ ...f, reading_level: e.target.value }))} className="w-14 px-1 py-1 text-center border border-amber-300 rounded text-[11px] outline-none focus:border-navy" placeholder="—" /></td>
+                    <td className="px-1 py-1"><select value={editForm.naep_fluency} onChange={e => setEditForm((f: any) => ({ ...f, naep_fluency: e.target.value }))} className="w-14 px-1 py-1 text-center border border-amber-300 rounded text-[11px] outline-none focus:border-navy"><option value="">—</option><option value="1">L1</option><option value="2">L2</option><option value="3">L3</option><option value="4">L4</option></select></td>
+                    <td className="px-2 py-1.5 text-center">
+                      <div className="flex gap-1 justify-center">
+                        <button onClick={saveEdit} disabled={savingEdit} className="px-2 py-0.5 rounded text-[10px] font-medium bg-navy text-white hover:bg-navy-dark">{savingEdit ? '...' : 'Save'}</button>
+                        <button onClick={() => setEditingId(null)} className="px-2 py-0.5 rounded text-[10px] font-medium text-text-tertiary hover:bg-surface-alt">Cancel</button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              }
               return (
-                <tr key={r.id} className="border-t border-border">
+                <tr key={r.id} className="border-t border-border hover:bg-surface-alt/30 cursor-pointer" onClick={() => startEdit(r)}>
                   <td className="px-3 py-2">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
                   <td className="px-2 py-2 font-medium truncate max-w-[100px]">{r.passage_title || '—'}</td>
                   <td className="px-2 py-2 text-center font-semibold text-navy">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
@@ -1411,6 +1537,7 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
                   <td className={`px-2 py-2 text-center text-[10px] font-semibold ${level.color}`}>{level.label}</td>
                   <td className="px-2 py-2 text-center text-purple-600 font-medium">{r.reading_level || '—'}</td>
                   <td className="px-2 py-2 text-center text-text-secondary">{r.naep_fluency ? `L${r.naep_fluency}` : '—'}</td>
+                  <td className="px-2 py-2 text-center"><Pencil size={11} className="text-text-tertiary mx-auto" /></td>
                 </tr>
               )
             })}
