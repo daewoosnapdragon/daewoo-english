@@ -6,7 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, QuestionMapItem, ItemResponse } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
-import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search } from 'lucide-react'
+import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, ChevronUp, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
@@ -353,7 +353,9 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
 }) {
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [rubricOpen, setRubricOpen] = useState(false)
+  const [itemEntryOpen, setItemEntryOpen] = useState(false)
   const isRubricDomain = selectedDomain === 'writing' || selectedDomain === 'reading' || selectedDomain === 'speaking'
+  const hasQuestionMap = selectedAssessment?.question_map && selectedAssessment.question_map.length > 0
   return (
     <>
       {rubricOpen && selectedAssessment && (
@@ -433,6 +435,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                   <span className="text-[12px] text-text-secondary">{enteredCount}/{students.length} entered</span>
                   <div className="w-24 h-1.5 bg-navy/10 rounded-full overflow-hidden"><div className="h-full bg-navy rounded-full transition-all" style={{ width: `${students.length > 0 ? (enteredCount / students.length) * 100 : 0}%` }} /></div>
                   {isRubricDomain && <button onClick={() => setRubricOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-all"><ClipboardEdit size={13} />Score with Rubric</button>}
+                  {hasQuestionMap && <button onClick={() => setItemEntryOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all"><Zap size={13} />Score by Question</button>}
                   <CrossClassCompare assessmentName={selectedAssessment.name} domain={selectedAssessment.domain} maxScore={selectedAssessment.max_score} currentClass={selectedClass} grade={selectedGrade} semesterId={selectedSemester || ''} />
                 </div>
               </div>
@@ -491,6 +494,31 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
           </>
         )}
       </div>
+      {/* Item-by-Question modal for assessments with question_map */}
+      {itemEntryOpen && hasQuestionMap && selectedAssessment && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setItemEntryOpen(false)}>
+          <div className="bg-surface rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
+              <h3 className="font-display text-lg font-semibold text-navy">Score by Question: {selectedAssessment.name}</h3>
+              <button onClick={() => setItemEntryOpen(false)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+            </div>
+            <ItemEntryScorePhase
+              students={students}
+              questionMap={selectedAssessment.question_map! as QuestionMapItem[]}
+              maxScore={selectedAssessment.max_score}
+              assessmentId={selectedAssessment.id}
+              onDone={(savedCount: number) => {
+                setItemEntryOpen(false)
+                // Trigger a reload by re-selecting the assessment
+                const a = selectedAssessment
+                setSelectedAssessment(null)
+                setTimeout(() => setSelectedAssessment(a), 50)
+              }}
+              onSkip={() => setItemEntryOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -1678,7 +1706,13 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                   <span>#</span><span>Type</span><span>Pts</span><span>Standard</span><span>Key</span><span></span>
                 </div>
                 {questionMap.map((q, qi) => (
-                  <div key={qi} className="grid grid-cols-[32px_90px_50px_1fr_70px_24px] gap-1.5 items-center">
+                  <div key={qi} className="grid grid-cols-[24px_32px_90px_50px_1fr_70px_24px] gap-1.5 items-center">
+                    <div className="flex flex-col">
+                      <button disabled={qi === 0} onClick={() => { const nm = [...questionMap]; [nm[qi - 1], nm[qi]] = [nm[qi], nm[qi - 1]]; setQuestionMap(nm) }}
+                        className="text-text-tertiary hover:text-navy disabled:opacity-20 p-0"><ChevronUp size={10} /></button>
+                      <button disabled={qi === questionMap.length - 1} onClick={() => { const nm = [...questionMap]; [nm[qi], nm[qi + 1]] = [nm[qi + 1], nm[qi]]; setQuestionMap(nm) }}
+                        className="text-text-tertiary hover:text-navy disabled:opacity-20 p-0"><ChevronDown size={10} /></button>
+                    </div>
                     <span className="text-[11px] text-text-secondary font-semibold text-center">{qi + 1}</span>
                     <select value={q.type} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], type: e.target.value }; setQuestionMap(nm) }}
                       className="px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy bg-surface">
@@ -1856,15 +1890,13 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'1' | '3'>('3')
 
   const year = Number(month.split('-')[0])
   const mon = Number(month.split('-')[1]) - 1
-  const firstDay = new Date(year, mon, 1).getDay() // 0=Sun
-  const daysInMonth = new Date(year, mon + 1, 0).getDate()
-  const monthLabel = new Date(year, mon, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
-  const prevMonth = () => { const d = new Date(year, mon - 1, 1); setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); setSelectedDate(null) }
-  const nextMonth = () => { const d = new Date(year, mon + 1, 1); setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); setSelectedDate(null) }
+  const prevMonth = () => { const step = viewMode === '3' ? 3 : 1; const d = new Date(year, mon - step, 1); setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); setSelectedDate(null) }
+  const nextMonth = () => { const step = viewMode === '3' ? 3 : 1; const d = new Date(year, mon + step, 1); setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); setSelectedDate(null) }
 
   // Map assessments by date
   const byDate: Record<string, Assessment[]> = {}
@@ -1888,13 +1920,71 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
   DOMAINS.forEach(d => { domainCounts[d] = allAssessments.filter(a => a.domain === d).length })
   const totalAssessments = allAssessments.length || 1
 
-  // Selected date details
   const selectedAssessments = selectedDate ? (byDate[selectedDate] || []) : []
 
-  const calendarDays: (number | null)[] = []
-  for (let i = 0; i < firstDay; i++) calendarDays.push(null)
-  for (let d = 1; d <= daysInMonth; d++) calendarDays.push(d)
-  while (calendarDays.length % 7 !== 0) calendarDays.push(null)
+  // Build month data for 1 or 3 months
+  const monthsToShow = viewMode === '3' ? [0, 1, 2] : [0]
+  const monthData = monthsToShow.map(offset => {
+    const mYear = new Date(year, mon + offset, 1).getFullYear()
+    const mMon = new Date(year, mon + offset, 1).getMonth()
+    const firstDayOfWeek = new Date(mYear, mMon, 1).getDay()
+    const daysCount = new Date(mYear, mMon + 1, 0).getDate()
+    const label = new Date(mYear, mMon, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    const key = `${mYear}-${String(mMon + 1).padStart(2, '0')}`
+    const days: (number | null)[] = []
+    for (let i = 0; i < firstDayOfWeek; i++) days.push(null)
+    for (let d = 1; d <= daysCount; d++) days.push(d)
+    while (days.length % 7 !== 0) days.push(null)
+    return { mYear, mMon, firstDayOfWeek, daysCount, label, key, days }
+  })
+
+  const renderCalendar = (md: typeof monthData[0], compact: boolean) => (
+    <div key={md.key} className="bg-surface border border-border rounded-xl overflow-hidden">
+      <div className="px-3 py-2 bg-surface-alt border-b border-border text-center">
+        <h3 className={`${compact ? 'text-[12px]' : 'text-[14px]'} font-bold text-navy`}>{md.label}</h3>
+      </div>
+      <div className="grid grid-cols-7">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+          <div key={`${md.key}-h-${i}`} className={`py-1 text-center ${compact ? 'text-[7px]' : 'text-[9px]'} font-semibold text-text-tertiary uppercase border-b border-border bg-surface-alt/50`}>{d}</div>
+        ))}
+        {md.days.map((day, i) => {
+          if (day === null) return <div key={`${md.key}-e-${i}`} className={`${compact ? 'min-h-[40px]' : 'min-h-[72px]'} border-b border-r border-border/30 bg-surface-alt/20`} />
+          const dateStr = `${md.mYear}-${String(md.mMon + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+          const dayAssessments = byDate[dateStr] || []
+          const isToday = dateStr === new Date().toISOString().split('T')[0]
+          const isSelected = dateStr === selectedDate
+          const isWeekend = i % 7 === 0 || i % 7 === 6
+          return (
+            <div key={dateStr} onClick={() => dayAssessments.length > 0 ? setSelectedDate(isSelected ? null : dateStr) : null}
+              className={`${compact ? 'min-h-[40px]' : 'min-h-[72px]'} border-b border-r border-border/30 p-0.5 transition-all ${
+                isSelected ? 'bg-navy/5 ring-1 ring-navy/30' : dayAssessments.length > 0 ? 'cursor-pointer hover:bg-surface-alt' : ''
+              } ${isWeekend ? 'bg-surface-alt/30' : ''}`}>
+              <div className={`${compact ? 'text-[9px]' : 'text-[10px]'} font-medium ${isToday ? 'text-white bg-navy rounded-full w-5 h-5 flex items-center justify-center mx-auto' : 'text-text-secondary text-right px-0.5'}`}>{day}</div>
+              {compact ? (
+                dayAssessments.length > 0 && (
+                  <div className="flex flex-wrap gap-0.5 justify-center mt-0.5">
+                    {dayAssessments.slice(0, 3).map(a => (
+                      <span key={a.id} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: DOMAIN_COLORS[a.domain] }} />
+                    ))}
+                  </div>
+                )
+              ) : (
+                <div className="space-y-0.5 mt-0.5">
+                  {dayAssessments.slice(0, 3).map(a => (
+                    <div key={a.id} className="flex items-center gap-1 rounded px-1 py-0.5" style={{ backgroundColor: `${DOMAIN_COLORS[a.domain]}10` }}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: DOMAIN_COLORS[a.domain] }} />
+                      <span className="text-[8px] font-medium text-text-primary truncate leading-tight">{a.name}</span>
+                    </div>
+                  ))}
+                  {dayAssessments.length > 3 && <span className="text-[8px] text-text-tertiary px-1">+{dayAssessments.length - 3} more</span>}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 
   return (
     <div className="px-10 py-6 space-y-4">
@@ -1925,44 +2015,24 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
         </div>
       )}
 
-      {/* Calendar Grid */}
-      <div className="bg-surface border border-border rounded-xl overflow-hidden">
-        <div className="px-4 py-3 bg-surface-alt border-b border-border flex items-center justify-between">
-          <button onClick={prevMonth} className="px-2 py-1 rounded hover:bg-border text-text-secondary text-[13px]">&larr;</button>
-          <h3 className="text-[14px] font-bold text-navy">{monthLabel}</h3>
-          <button onClick={nextMonth} className="px-2 py-1 rounded hover:bg-border text-text-secondary text-[13px]">&rarr;</button>
+      {/* View toggle + nav */}
+      <div className="flex items-center justify-between">
+        <button onClick={prevMonth} className="px-3 py-1.5 rounded-lg hover:bg-surface-alt text-text-secondary text-[13px] border border-border">&larr; {viewMode === '3' ? 'Prev 3' : 'Prev'}</button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setViewMode('1')} className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition-all ${viewMode === '1' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt border border-border'}`}>1 Month</button>
+          <button onClick={() => setViewMode('3')} className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition-all ${viewMode === '3' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt border border-border'}`}>3 Months</button>
         </div>
-        <div className="grid grid-cols-7">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-            <div key={d} className="py-1.5 text-center text-[9px] font-semibold text-text-tertiary uppercase border-b border-border bg-surface-alt/50">{d}</div>
-          ))}
-          {calendarDays.map((day, i) => {
-            if (day === null) return <div key={`e${i}`} className="min-h-[72px] border-b border-r border-border/30 bg-surface-alt/20" />
-            const dateStr = `${year}-${String(mon + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-            const dayAssessments = byDate[dateStr] || []
-            const isToday = dateStr === new Date().toISOString().split('T')[0]
-            const isSelected = dateStr === selectedDate
-            const isWeekend = i % 7 === 0 || i % 7 === 6
-            return (
-              <div key={dateStr} onClick={() => dayAssessments.length > 0 ? setSelectedDate(isSelected ? null : dateStr) : null}
-                className={`min-h-[72px] border-b border-r border-border/30 p-1 transition-all ${
-                  isSelected ? 'bg-navy/5 ring-1 ring-navy/30' : dayAssessments.length > 0 ? 'cursor-pointer hover:bg-surface-alt' : ''
-                } ${isWeekend ? 'bg-surface-alt/30' : ''}`}>
-                <span className={`text-[10px] font-medium ${isToday ? 'bg-navy text-white px-1.5 py-0.5 rounded-full' : 'text-text-secondary'}`}>{day}</span>
-                <div className="mt-0.5 space-y-0.5">
-                  {dayAssessments.slice(0, 3).map(a => (
-                    <div key={a.id} className="flex items-center gap-1 rounded px-1 py-0.5" style={{ backgroundColor: `${DOMAIN_COLORS[a.domain]}10` }}>
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: DOMAIN_COLORS[a.domain] }} />
-                      <span className="text-[8px] font-medium text-text-primary truncate leading-tight">{a.name}</span>
-                    </div>
-                  ))}
-                  {dayAssessments.length > 3 && <span className="text-[8px] text-text-tertiary px-1">+{dayAssessments.length - 3} more</span>}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <button onClick={nextMonth} className="px-3 py-1.5 rounded-lg hover:bg-surface-alt text-text-secondary text-[13px] border border-border">{viewMode === '3' ? 'Next 3' : 'Next'} &rarr;</button>
       </div>
+
+      {/* Calendar Grid(s) */}
+      {viewMode === '1' ? (
+        renderCalendar(monthData[0], false)
+      ) : (
+        <div className="grid grid-cols-3 gap-3">
+          {monthData.map(md => renderCalendar(md, true))}
+        </div>
+      )}
 
       {/* Selected date detail panel */}
       {selectedDate && selectedAssessments.length > 0 && (
@@ -1982,15 +2052,16 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
         </div>
       )}
 
-      {/* Month summary */}
+      {/* Period summary */}
       {(() => {
-        const monthAssessments = allAssessments.filter(a => a.date?.startsWith(month))
-        if (monthAssessments.length === 0) return <p className="text-center text-text-tertiary text-[12px] py-4">No assessments this month.</p>
+        const visibleMonthKeys = monthData.map(m => m.key)
+        const visibleAssessments = allAssessments.filter(a => a.date && visibleMonthKeys.some(k => a.date!.startsWith(k)))
+        if (visibleAssessments.length === 0) return <p className="text-center text-text-tertiary text-[12px] py-4">No assessments in this period.</p>
         const byDom: Record<string, number> = {}
-        monthAssessments.forEach(a => { byDom[a.domain] = (byDom[a.domain] || 0) + 1 })
+        visibleAssessments.forEach(a => { byDom[a.domain] = (byDom[a.domain] || 0) + 1 })
         return (
           <div className="bg-surface border border-border rounded-xl p-4">
-            <h4 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-2">This Month: {monthAssessments.length} assessments</h4>
+            <h4 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-2">{viewMode === '3' ? 'These 3 Months' : 'This Month'}: {visibleAssessments.length} assessments</h4>
             <div className="flex gap-3 flex-wrap">
               {DOMAINS.filter(d => byDom[d]).map(d => (
                 <span key={d} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium" style={{ backgroundColor: `${DOMAIN_COLORS[d]}15`, color: DOMAIN_COLORS[d] }}>
@@ -2005,6 +2076,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
     </div>
   )
 }
+
 
 // ─── #36 Rubric Builder and Library ───────────────────────────────────
 

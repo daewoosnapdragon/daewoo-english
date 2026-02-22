@@ -744,10 +744,13 @@ function WIDACorrelationTab({ data, ko }: { data: any; ko: boolean }) {
   const widaMap: Record<string, number> = data.widaMap || {}
   const gradeAvgByClass: Record<string, number | null> = data.gradeAvgByClass || {}
   const cwpmByClass: Record<string, number[]> = data.cwpmByClass || {}
+  const [gradeFilter, setGradeFilter] = useState<number | null>(null)
+  const uniqueGrades = Array.from(new Set(students.map((s: any) => s.grade))).sort((a: number, b: number) => a - b)
+  const filteredStudents = gradeFilter ? students.filter((s: any) => s.grade === gradeFilter) : students
 
   // Build per-student data: wida level, latest cwpm, class
   const history: Record<string, { date: string; cwpm: number }[]> = data.studentReadingHistory || {}
-  const scatterData = students.map(s => {
+  const scatterData = filteredStudents.map((s: any) => {
     const wida = widaMap[s.id]
     if (!wida) return null
     const readings = history[s.id]
@@ -759,6 +762,16 @@ function WIDACorrelationTab({ data, ko }: { data: any; ko: boolean }) {
 
   return (
     <div className="px-10 py-6 space-y-6 max-w-[1200px]">
+      {/* Grade filter */}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Grade:</span>
+        <button onClick={() => setGradeFilter(null)} className={`px-3 py-1 rounded-lg text-[11px] font-medium transition-all ${!gradeFilter ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>All</button>
+        {uniqueGrades.map((g: number) => (
+          <button key={g} onClick={() => setGradeFilter(g)} className={`px-3 py-1 rounded-lg text-[11px] font-medium transition-all ${gradeFilter === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>G{g}</button>
+        ))}
+        {gradeFilter && <span className="text-[10px] text-text-tertiary ml-2">{filteredStudents.length} students</span>}
+      </div>
+
       <div className="bg-purple-50 border border-purple-200 rounded-xl p-5">
         <h3 className="font-display text-base font-semibold text-navy mb-2">{ko ? 'WIDA 수준과 성적의 상관관계' : 'WIDA Level vs. Performance'}</h3>
         <p className="text-[12px] text-text-secondary leading-relaxed mb-2">
@@ -848,14 +861,19 @@ function WIDACorrelationTab({ data, ko }: { data: any; ko: boolean }) {
 function DomainStrengthTab({ data, ko }: { data: any; ko: boolean }) {
   const [domainData, setDomainData] = useState<Record<string, Record<string, number>>>({})
   const [loading, setLoading] = useState(true)
+  const [gradeFilter, setGradeFilter] = useState<number | null>(null)
+  const students: any[] = data.students || []
+  const uniqueGrades = Array.from(new Set(students.map((s: any) => s.grade))).sort((a: number, b: number) => a - b)
 
   useEffect(() => {
     (async () => {
       const { data: semGrades } = await supabase.from('semester_grades').select('student_id, domain, calculated_grade, final_grade')
-      const students: any[] = data.students || []
+      const filteredStudents = gradeFilter ? students.filter((s: any) => s.grade === gradeFilter) : students
+      const filteredIds = new Set(filteredStudents.map((s: any) => s.id))
       const byClass: Record<string, Record<string, number[]>> = {}
       ENGLISH_CLASSES.forEach(c => { byClass[c] = { reading: [], phonics: [], writing: [], speaking: [], language: [] } })
       ;(semGrades || []).forEach((sg: any) => {
+        if (!filteredIds.has(sg.student_id)) return
         const s = students.find((st: any) => st.id === sg.student_id)
         const score = sg.final_grade ?? sg.calculated_grade
         if (s && score != null && byClass[s.english_class] && byClass[s.english_class][sg.domain]) {
@@ -872,7 +890,7 @@ function DomainStrengthTab({ data, ko }: { data: any; ko: boolean }) {
       setDomainData(avgByClass)
       setLoading(false)
     })()
-  }, [data.students])
+  }, [data.students, gradeFilter])
 
   const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
   const domainLabels: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
@@ -888,6 +906,16 @@ function DomainStrengthTab({ data, ko }: { data: any; ko: boolean }) {
 
   return (
     <div className="px-10 py-6 space-y-6 max-w-[1200px]">
+      {/* Grade filter */}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Grade:</span>
+        <button onClick={() => setGradeFilter(null)} className={`px-3 py-1 rounded-lg text-[11px] font-medium transition-all ${!gradeFilter ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>All</button>
+        {uniqueGrades.map((g: number) => (
+          <button key={g} onClick={() => setGradeFilter(g)} className={`px-3 py-1 rounded-lg text-[11px] font-medium transition-all ${gradeFilter === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>G{g}</button>
+        ))}
+        {gradeFilter && <span className="text-[10px] text-text-tertiary ml-2">{students.filter((s: any) => s.grade === gradeFilter).length} students</span>}
+      </div>
+
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
         <h3 className="font-display text-base font-semibold text-navy mb-2">{ko ? '영역별 강점 프로필' : 'What are Domain Strength Profiles?'}</h3>
         <p className="text-[12px] text-text-secondary leading-relaxed mb-2">
