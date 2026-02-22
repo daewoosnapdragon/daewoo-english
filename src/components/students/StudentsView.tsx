@@ -14,6 +14,7 @@ import RosterUploadModal from './RosterUploadModal'
 import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
+import PassagePickerPanel from '@/components/shared/PassagePickerPanel'
 
 // ─── Main View ──────────────────────────────────────────────────────
 
@@ -374,7 +375,7 @@ function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string
       {activeTab === 'about' && <AboutTab studentId={studentId} lang={lang} />}
       {activeTab === 'behavior' && <BehaviorTracker studentId={studentId} studentName={studentName} />}
       {activeTab === 'academic' && <AcademicHistoryTab studentId={studentId} lang={lang} />}
-      {activeTab === 'reading' && <ReadingTabInModal studentId={studentId} lang={lang} />}
+      {activeTab === 'reading' && <ReadingTabInModal studentId={studentId} studentName={studentName} lang={lang} />}
       {activeTab === 'attendance' && <AttendanceTabInModal studentId={studentId} studentName={studentName} lang={lang} />}
       {activeTab === 'standards' && <StandardsMasteryTab studentId={studentId} lang={lang} />}
       {activeTab === 'scaffolds' && <ScaffoldsTab studentId={studentId} />}
@@ -1227,7 +1228,7 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
 
 // ─── Reading Tab (in Modal) ──────────────────────────────────────────
 
-function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+function ReadingTabInModal({ studentId, studentName, lang }: { studentId: string; studentName?: string; lang: 'en' | 'ko' }) {
   const { currentTeacher, showToast } = useApp()
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -1238,6 +1239,7 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
   const [pasteText, setPasteText] = useState('')
   const [pasteTitle, setPasteTitle] = useState('')
   const [passageSearch, setPassageSearch] = useState('')
+  const [showPassagePanel, setShowPassagePanel] = useState(false)
   const [showManualEntry, setShowManualEntry] = useState(false)
   const [manualForm, setManualForm] = useState({ cwpm: '', accuracy: '', errors: '', self_corrections: '', time_seconds: '60', word_count: '', passage_title: '', naep: '', reading_level: '' })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -1422,47 +1424,51 @@ function ReadingTabInModal({ studentId, lang }: { studentId: string; lang: 'en' 
             <button onClick={() => { setShowRunningRecord(false); setSelectedPassage(null); setPasteText('') }}
               className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <div className="w-full">
-              <input value={passageSearch} onChange={e => setPassageSearch(e.target.value)}
-                placeholder="Search passages by title or Lexile..."
-                className="w-full px-3 py-1.5 border border-blue-200 rounded-lg text-[11px] outline-none focus:border-blue-400 bg-white" />
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <button onClick={() => setShowPassagePanel(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-semibold bg-navy text-white hover:bg-navy/90">
+                <BookOpen size={13} /> Browse Passages
+              </button>
+              <button onClick={() => setShowPassageUploader(true)}
+                className="px-3 py-2 rounded-lg text-[11px] font-medium text-text-secondary border border-blue-200 hover:bg-white">
+                + New Passage
+              </button>
             </div>
-            <div className="w-full max-h-28 overflow-y-auto space-y-0.5">
-              {passages.filter(p => {
-                if (!passageSearch.trim()) return true
-                const q = passageSearch.toLowerCase()
-                return (p.title || '').toLowerCase().includes(q) || (p.level || '').toLowerCase().includes(q)
-              }).map(p => (
-                <button key={p.id} onClick={() => setSelectedPassage(p)}
-                  className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] flex items-center justify-between transition-colors ${selectedPassage?.id === p.id ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 hover:bg-blue-50'}`}>
-                  <span className="font-medium">{p.title}</span>
-                  <span className={selectedPassage?.id === p.id ? 'text-blue-100' : 'text-text-tertiary'}>{p.word_count}w {p.level ? `· ${p.level}` : ''}</span>
-                </button>
-              ))}
-            </div>
-            <button onClick={() => setShowPassageUploader(true)}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-text-tertiary border border-dashed border-blue-300 hover:bg-white">
-              + New Passage
-            </button>
+            {selectedPassage && (
+              <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-blue-200">
+                <BookOpen size={13} className="text-blue-600 shrink-0" />
+                <span className="text-[12px] font-medium text-navy">{selectedPassage.title}</span>
+                <span className="text-[10px] text-text-tertiary">({selectedPassage.word_count}w)</span>
+                <button onClick={() => setSelectedPassage(null)} className="ml-auto text-[10px] text-red-500 hover:text-red-700">×</button>
+              </div>
+            )}
+            {!selectedPassage && (
+              <div className="space-y-1">
+                <input value={pasteTitle} onChange={e => setPasteTitle(e.target.value)} placeholder="Passage title..."
+                  className="w-full px-3 py-1.5 border border-blue-200 rounded-lg text-[11px] outline-none focus:border-blue-400 bg-white" />
+                <textarea value={pasteText} onChange={e => setPasteText(e.target.value)} placeholder="Or paste passage text here..."
+                  rows={2} className="w-full px-3 py-1.5 border border-blue-200 rounded-lg text-[11px] outline-none focus:border-blue-400 bg-white resize-y" />
+              </div>
+            )}
+            {(selectedPassage || pasteText.trim()) && (
+              <button onClick={() => {
+                if (!selectedPassage && pasteText.trim()) {
+                  setSelectedPassage({ title: pasteTitle || 'Untitled', text: pasteText.trim(), word_count: pasteText.trim().split(/\s+/).length })
+                }
+              }} className={`px-4 py-2 rounded-xl text-[12px] font-semibold bg-green-600 text-white hover:bg-green-700 ${selectedPassage ? '' : 'opacity-90'}`}>
+                {selectedPassage ? `▶ Start Reading: ${selectedPassage.title}` : `Use Pasted Text (${pasteText.trim().split(/\s+/).length}w)`}
+              </button>
+            )}
           </div>
-          {!selectedPassage && (
-            <div className="space-y-1">
-              <input value={pasteTitle} onChange={e => setPasteTitle(e.target.value)} placeholder="Passage title..."
-                className="w-full px-3 py-1.5 border border-blue-200 rounded-lg text-[11px] outline-none focus:border-blue-400 bg-white" />
-              <textarea value={pasteText} onChange={e => setPasteText(e.target.value)} placeholder="Or paste passage text here..."
-                rows={2} className="w-full px-3 py-1.5 border border-blue-200 rounded-lg text-[11px] outline-none focus:border-blue-400 bg-white resize-y" />
-            </div>
-          )}
-          {(selectedPassage || pasteText.trim()) && (
-            <button onClick={() => {
-              if (!selectedPassage && pasteText.trim()) {
-                setSelectedPassage({ title: pasteTitle || 'Untitled', text: pasteText.trim(), word_count: pasteText.trim().split(/\s+/).length })
-              }
-            }} className={`px-4 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark ${selectedPassage ? '' : 'opacity-90'}`}>
-              {selectedPassage ? `Start Reading: ${selectedPassage.title}` : `Use Pasted Text (${pasteText.trim().split(/\s+/).length}w)`}
-            </button>
-          )}
+          <PassagePickerPanel
+            open={showPassagePanel}
+            onClose={() => setShowPassagePanel(false)}
+            onSelect={(p: any) => { setSelectedPassage(p) }}
+            passages={passages}
+            currentStudentId={studentId}
+            currentStudentName={studentName || null}
+          />
         </div>
       )}
 

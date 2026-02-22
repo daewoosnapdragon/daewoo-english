@@ -10,6 +10,7 @@ import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Penci
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
+import PassagePickerPanel from '@/components/shared/PassagePickerPanel'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
@@ -1008,34 +1009,14 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           </div>
 
           {/* Passage picker dropdown */}
-          {showPassagePicker && (
-            <div className="bg-surface-alt rounded-lg border border-border p-3 space-y-2">
-              <input value={passageSearch} onChange={(e: any) => setPassageSearch(e.target.value)}
-                placeholder="Search by title or Lexile (e.g. 450L)..."
-                className="w-full px-3 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white"
-                autoFocus />
-              <div className="max-h-40 overflow-y-auto space-y-0.5">
-                {passages.filter(p => {
-                  if (!passageSearch.trim()) return true
-                  const q = passageSearch.toLowerCase()
-                  return (p.title || '').toLowerCase().includes(q) || (p.level || '').toLowerCase().includes(q) || (p.grade_range || '').includes(q)
-                }).map(p => (
-                  <button key={p.id} onClick={() => { setSelectedPassage(p); setPassageTitle(p.title); setWordCount(p.word_count); if (p.level) setLexile(p.level); setShowPassagePicker(false); setPassageSearch('') }}
-                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-white text-[11px] flex items-center justify-between transition-colors">
-                    <span className="font-medium text-navy">{p.title}</span>
-                    <span className="text-text-tertiary shrink-0 ml-2">{p.word_count}w {p.level ? `· ${p.level}` : ''} {p.grade_range ? `· G${p.grade_range}` : ''}</span>
-                  </button>
-                ))}
-                {passages.filter(p => {
-                  if (!passageSearch.trim()) return true
-                  const q = passageSearch.toLowerCase()
-                  return (p.title || '').toLowerCase().includes(q) || (p.level || '').toLowerCase().includes(q) || (p.grade_range || '').includes(q)
-                }).length === 0 && (
-                  <p className="text-[11px] text-text-tertiary text-center py-2">No passages match "{passageSearch}"</p>
-                )}
-              </div>
-            </div>
-          )}
+          <PassagePickerPanel
+            open={showPassagePicker}
+            onClose={() => { setShowPassagePicker(false); setPassageSearch('') }}
+            onSelect={(p: any) => { setSelectedPassage(p); setPassageTitle(p.title); setWordCount(p.word_count); if (p.level) setLexile(p.level) }}
+            passages={passages}
+            currentStudentId={selStudent || null}
+            currentStudentName={students.find((s: any) => s.id === selStudent)?.english_name || null}
+          />
 
           <div className="grid grid-cols-3 gap-3">
             <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
