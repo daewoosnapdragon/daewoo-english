@@ -912,13 +912,16 @@ function ClusterTracker() {
 
   useEffect(() => { setAutoSuggested(false) }, [cls, gr])
 
-  // Effective status: "not_started" if no saved status AND no assessment data
+  // Effective status: use saved status, or compute from average, or "not_started" if no data
   const getEffectiveStatus = useCallback((code: string): StdStatus | 'not_started' => {
     const saved = statuses[code]
     if (saved) return saved
-    if (stdAverages[code] != null) return 'below'
+    const avg = stdAverages[code]
+    if (avg != null) {
+      return avg >= t.above ? 'above' : avg >= t.on ? 'on' : avg >= t.approaching ? 'approaching' : 'below'
+    }
     return 'not_started'
-  }, [statuses, stdAverages])
+  }, [statuses, stdAverages, t])
 
   const cycleStatus = async (code: string) => {
     const cur = getEffectiveStatus(code)

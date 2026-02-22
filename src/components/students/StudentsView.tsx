@@ -1712,7 +1712,7 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
       assessments.forEach((a: any) => {
         if (!a.standards || a.standards.length === 0) return
         const grade = grades.find((g: any) => g.assessment_id === a.id)
-        if (!grade || grade.score == null || grade.is_exempt) return
+        if (!grade || grade.score == null || grade.is_exempt || !a.max_score || a.max_score <= 0) return
         const pct = (grade.score / a.max_score) * 100
 
         a.standards.forEach((std: any) => {

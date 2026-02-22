@@ -21,20 +21,8 @@ CREATE TABLE IF NOT EXISTS reading_passages (
 
 ALTER TABLE reading_passages ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Teachers can view shared passages"
-  ON reading_passages FOR SELECT
-  TO authenticated
-  USING (is_shared = true OR created_by = auth.uid());
-
-CREATE POLICY "Teachers can insert passages"
-  ON reading_passages FOR INSERT
-  TO authenticated
-  WITH CHECK (true);
-
-CREATE POLICY "Teachers can update own passages"
-  ON reading_passages FOR UPDATE
-  TO authenticated
-  USING (created_by = auth.uid());
+-- Open policy matching other tables in the app
+CREATE POLICY "Allow all" ON reading_passages FOR ALL USING (true) WITH CHECK (true);
 
 -- ═══════════════════════════════════════════════════════════════
 -- 2. Add item_responses JSONB column to grades table

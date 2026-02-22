@@ -287,7 +287,7 @@ function SkillDetail({ skill }: { skill: SkillEntry }) {
               <span className="w-6 h-6 rounded-lg bg-navy/10 text-navy text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
               <div>
                 <p className="text-[12px] font-semibold text-navy">{step.step}</p>
-                <p className="text-[11px] text-text-secondary leading-relaxed mt-0.5">{step.detail}</p>
+                <p className="text-[11px] text-text-secondary leading-relaxed mt-0.5 whitespace-pre-line">{step.detail}</p>
               </div>
             </div>
           ))}
