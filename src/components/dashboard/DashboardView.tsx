@@ -20,7 +20,7 @@ const EVENT_TYPES = [
   { value: 'other', label: 'Other', color: '#6B7280', bg: 'bg-gray-100 text-gray-700' },
 ]
 
-interface CalEvent { id: string; title: string; date: string; type: string; description: string; created_by: string | null; created_at: string; show_on_lesson_plan?: boolean; show_on_parent_calendar?: boolean; target_grades?: number[] | null }
+interface CalEvent { id: string; title: string; date: string; type: string; description: string; created_by: string | null; created_at: string; show_on_parent_calendar?: boolean; target_grades?: number[] | null }
 interface FlaggedEntry { id: string; student_id: string; date: string; type: string; note: string; time: string; behaviors: string[]; antecedents: string[]; consequences: string[]; intensity: number; frequency: number; activity: string; duration: string; is_flagged: boolean; teacher_name: string; student_name: string; student_class: string; created_at: string }
 
 export default function DashboardView() {
@@ -1065,7 +1065,6 @@ function SharedCalendar() {
                       </div>
                       {ev.description && <p className="text-[11px] text-text-secondary mt-0.5">{ev.description}</p>}
                       <div className="flex gap-1.5 mt-1">
-                        {(ev as any).show_on_lesson_plan && <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">Lesson Plan</span>}
                         {(ev as any).show_on_parent_calendar && <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">Parent Cal{(ev as any).target_grades?.length > 0 ? ` (G${(ev as any).target_grades.join(',')})` : ''}</span>}
                       </div>
                     </div>
@@ -1093,7 +1092,6 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
   const [eventDate, setEventDate] = useState(existingEvent?.date || date)
   const [type, setType] = useState(existingEvent?.type || 'event')
   const [desc, setDesc] = useState(existingEvent?.description || '')
-  const [showOnLessonPlan, setShowOnLessonPlan] = useState(existingEvent?.show_on_lesson_plan || false)
   const [showOnParentCalendar, setShowOnParentCalendar] = useState(existingEvent?.show_on_parent_calendar || false)
   const [targetGrades, setTargetGrades] = useState<number[]>(existingEvent?.target_grades || [])
   const [saving, setSaving] = useState(false)
@@ -1108,7 +1106,6 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
     setSaving(true)
     const payload: any = {
       title: title.trim(), date: eventDate, type, description: desc.trim(),
-      show_on_lesson_plan: showOnLessonPlan,
       show_on_parent_calendar: showOnParentCalendar,
       target_grades: showOnParentCalendar && targetGrades.length > 0 ? targetGrades : null,
     }
@@ -1166,20 +1163,11 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
 
           <div className="bg-surface-alt/50 rounded-lg px-4 py-3 space-y-2.5">
             <label className="flex items-center gap-2.5 cursor-pointer">
-              <input type="checkbox" checked={showOnLessonPlan} onChange={e => setShowOnLessonPlan(e.target.checked)}
-                className="w-4 h-4 rounded border-border text-navy focus:ring-navy" />
-              <div>
-                <span className="text-[12px] font-medium text-text-primary">Block on Lesson Plans</span>
-                <span className="text-[10px] text-text-tertiary block">Blocks this day on the monthly lesson plan grid</span>
-              </div>
-            </label>
-
-            <label className="flex items-center gap-2.5 cursor-pointer">
               <input type="checkbox" checked={showOnParentCalendar} onChange={e => setShowOnParentCalendar(e.target.checked)}
                 className="w-4 h-4 rounded border-border text-navy focus:ring-navy" />
               <div>
                 <span className="text-[12px] font-medium text-text-primary">Show on Parent Calendar</span>
-                <span className="text-[10px] text-text-tertiary block">Include when printing calendars for parents</span>
+                <span className="text-[10px] text-text-tertiary block">Display this event on the parent calendar for selected grades</span>
               </div>
             </label>
 

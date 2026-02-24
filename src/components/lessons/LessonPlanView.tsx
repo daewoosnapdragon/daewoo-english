@@ -72,7 +72,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
 
   const [dayData, setDayData] = useState<Record<string, DayContent>>({})
   const [weeklyHomework, setWeeklyHomework] = useState<Record<string, string>>({}) // keyed by Monday date
-  const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }>>({})
+  const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }[]>>({})
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
 
@@ -157,13 +157,10 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
     }
 
     // Load calendar events for parent calendar
-    const ce: Record<string, { title: string; type?: string }> = {}
+    const ce: Record<string, { title: string; type?: string }[]> = {}
     let eventsList = eventsRes.data
     if (eventsRes.error) {
-      // show_on_parent_calendar column doesn't exist -- retry without it (no events will show, that's correct)
       const fallbackRes = await supabase.from('calendar_events').select('date, title, type').gte('date', firstDay).lte('date', lastDay)
-      // Without the column we can't filter, so don't show any events
-      // (teacher needs to run migration to enable this feature)
       eventsList = null
     }
     if (eventsList) {
@@ -172,7 +169,8 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
         const tg = ev.target_grades as number[] | null
         const gradeMatch = !tg || tg.length === 0 || tg.includes(selectedGrade)
         if (gradeMatch) {
-          ce[ev.date] = { title: ev.title, type: ev.type }
+          if (!ce[ev.date]) ce[ev.date] = []
+          ce[ev.date].push({ title: ev.title, type: ev.type })
         }
       })
     }
@@ -365,14 +363,14 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
       fw.forEach((day, di) => {
         if (!day) { daysHTML += '<td class="day empty"></td>'; return }
         const data = dayData[day.date] || emptyDay()
-        const ev = calEvents[day.date]
+        const evts = calEvents[day.date] || []
         const noG5 = di === 0 && selectedGrade === 5
 
         let inner = ''
         if (noG5) {
           inner = '<div class="no-class">No Grade 5</div>'
         } else {
-          if (ev) inner += `<div class="event">${ev.title}</div>`
+          evts.forEach(ev => { inner += `<div class="event">${ev.title}</div>` })
           data.subjects.forEach(s => {
             if (!s.content.trim()) return
             inner += `<div class="subj"><span class="subj-label">${s.label}:</span> ${s.content}</div>`
@@ -521,7 +519,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                 {fw.map((day, di) => {
                   if (!day) return <div key={di} className="bg-gray-50/50 border-r border-border last:border-r-0 min-h-[110px]" />
                   const data = dayData[day.date] || emptyDay()
-                  const ev = calEvents[day.date]
+                  const evts = calEvents[day.date] || []
                   const isToday = day.date === todayStr
                   const noG5 = di === 0 && selectedGrade === 5
                   const hasFill = data.subjects.some(s => s.content.trim())
@@ -541,7 +539,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                         <div className="text-[10px] text-text-secondary italic text-center mt-4">No G5 Mondays</div>
                       ) : (
                         <>
-                          {ev && <div className="text-[9px] font-bold text-slate-600 bg-slate-100 rounded px-1.5 py-1 mb-1.5">{ev.title}</div>}
+                          {evts.map((ev, ei) => <div key={ei} className="text-[9px] font-bold text-slate-600 bg-slate-100 rounded px-1.5 py-1 mb-1">{ev.title}</div>)}
                           {data.subjects.filter(s => s.content.trim()).map(s => (
                             <div key={s.label} className="text-[10px] leading-snug mb-0.5">
                               <span className="font-bold text-navy">{s.label}:</span>{' '}
@@ -553,7 +551,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                               <span className="text-navy font-semibold">Students will</span> {data.objective}
                             </div>
                           )}
-                          {!hasFill && !data.objective && !ev && canEdit && (
+                          {!hasFill && !data.objective && evts.length === 0 && canEdit && (
                             <div className="text-[10px] text-text-tertiary/25 italic text-center mt-5">Click to edit</div>
                           )}
                         </>
@@ -607,10 +605,14 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
             </div>
 
             {/* Calendar event banner */}
-            {calEvents[editDate] && (
-              <div className="px-5 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center gap-2">
-                <AlertCircle size={14} className="text-slate-500 shrink-0" />
-                <span className="text-[12px] font-semibold text-slate-700">{calEvents[editDate].title}</span>
+            {calEvents[editDate]?.length > 0 && (
+              <div className="px-5 py-2.5 bg-slate-100 border-b border-slate-200 space-y-1">
+                {calEvents[editDate].map((ev, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <AlertCircle size={14} className="text-slate-500 shrink-0" />
+                    <span className="text-[12px] font-semibold text-slate-700">{ev.title}</span>
+                  </div>
+                ))}
               </div>
             )}
 
