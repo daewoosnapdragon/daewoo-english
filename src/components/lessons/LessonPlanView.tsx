@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Printer, Settings, Plus, X, Loader2, Calendar, AlertCircle, CalendarRange, ClipboardList, Save } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Printer, X, Loader2, Calendar, AlertCircle, CalendarRange, ClipboardList, Save } from 'lucide-react'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 import YearlyPlanView from '@/components/curriculum/YearlyPlanView'
 
@@ -18,45 +18,6 @@ const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-const SLOT_COLORS: Record<string, { bg: string; text: string; border: string; print: string }> = {}
-const COLOR_PALETTE = [
-  { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200', print: '#DBEAFE' },
-  { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200', print: '#D1FAE5' },
-  { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', print: '#FEF3C7' },
-  { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', print: '#EDE9FE' },
-  { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200', print: '#FFE4E6' },
-  { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-200', print: '#CFFAFE' },
-  { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200', print: '#FFEDD5' },
-  { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-200', print: '#E0E7FF' },
-]
-function getSlotColor(label: string) {
-  if (!SLOT_COLORS[label]) {
-    const idx = Object.keys(SLOT_COLORS).length % COLOR_PALETTE.length
-    SLOT_COLORS[label] = COLOR_PALETTE[idx]
-  }
-  return SLOT_COLORS[label]
-}
-
-function getMonthDays(year: number, month: number) {
-  const days: { date: string; dayOfWeek: number; dayNum: number; weekIdx: number }[] = []
-  const last = new Date(year, month + 1, 0)
-  let weekIdx = 0; let lastDow = -1
-  for (let d = 1; d <= last.getDate(); d++) {
-    const dow = new Date(year, month, d).getDay()
-    if (dow === 0 || dow === 6) continue
-    if (dow === 1 && lastDow !== -1) weekIdx++
-    lastDow = dow
-    days.push({ date: `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, dayOfWeek: dow, dayNum: d, weekIdx })
-  }
-  return days
-}
-
-function getWeekStart(dateStr: string): string {
-  const dt = new Date(dateStr + 'T00:00:00')
-  const diff = dt.getDay() === 0 ? -6 : 1 - dt.getDay()
-  const monday = new Date(dt); monday.setDate(dt.getDate() + diff)
-  return monday.toISOString().split('T')[0]
-}
 
 export default function LessonPlanView() {
   const [tab, setTab] = useState<'monthly' | 'teacher' | 'yearly'>('monthly')
@@ -69,7 +30,7 @@ export default function LessonPlanView() {
   )
   return (
     <div className="animate-fade-in">
-      {tab === 'monthly' ? <MonthlyLessonPlanView tabBar={tabButtons} /> : tab === 'teacher' ? (
+      {tab === 'monthly' ? <ParentCalendarView tabBar={tabButtons} /> : tab === 'teacher' ? (
         <div>
           <div className="bg-surface border-b border-border px-8 py-5">
             <h2 className="font-display text-2xl font-bold text-navy">Lesson Plans</h2>
@@ -92,363 +53,280 @@ export default function LessonPlanView() {
   )
 }
 
-function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
+function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   const { currentTeacher, showToast } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin'
+  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Snapdragon'
   const teacherClass = currentTeacher?.english_class as EnglishClass
 
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(teacherClass || 'Snapdragon')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(3)
   const [year, setYear] = useState(new Date().getFullYear())
   const [month, setMonth] = useState(new Date().getMonth())
-  const [slots, setSlots] = useState<SlotTemplate[]>([])
-  const [entries, setEntries] = useState<Record<string, LessonEntry>>({})
-  const [hiddenSlots, setHiddenSlots] = useState<Set<string>>(new Set()) // keys like "2026-02-20::PHONICS"
-  const [homework, setHomework] = useState<Record<string, HomeworkEntry>>({})
-  const [calEvents, setCalEvents] = useState<Record<string, CalendarEvent>>({})
-  const [parentCalEvents, setParentCalEvents] = useState<CalendarEvent[]>([]) // events marked for parent calendar
+  const [editDate, setEditDate] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showSetup, setShowSetup] = useState(false)
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
-  const [currentWeekIdx, setCurrentWeekIdx] = useState(0)
-  const [editingCell, setEditingCell] = useState<{ date: string; slot: string } | null>(null)
-  const [editTitle, setEditTitle] = useState('')
-  const [editObjective, setEditObjective] = useState('')
-  const [editingHomework, setEditingHomework] = useState<string | null>(null)
-  const [editHwText, setEditHwText] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const DEFAULT_SUBJECTS = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
+  interface DayContent { subjects: { label: string; content: string }[]; objective: string; homework: string; notes: string }
+  const emptyDay = (): DayContent => ({ subjects: DEFAULT_SUBJECTS.map(s => ({ label: s, content: '' })), objective: '', homework: '', notes: '' })
+
+  const [dayData, setDayData] = useState<Record<string, DayContent>>({})
+  const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }>>({})
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
-  const days = useMemo(() => getMonthDays(year, month), [year, month])
+
+  // Build month grid
+  const monthDays = useMemo(() => {
+    const first = new Date(year, month, 1)
+    const lastDate = new Date(year, month + 1, 0).getDate()
+    const startDow = first.getDay() // 0=Sun
+    const days: { date: string; dayNum: number; dayOfWeek: number; weekIdx: number }[] = []
+    for (let d = 1; d <= lastDate; d++) {
+      const dt = new Date(year, month, d)
+      const dow = dt.getDay()
+      if (dow === 0 || dow === 6) continue // skip weekends
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      days.push({ date: dateStr, dayNum: d, dayOfWeek: dow, weekIdx: 0 })
+    }
+    // Assign week indices
+    let wi = 0; let lastWeekMon = ''
+    days.forEach(d => {
+      const dt = new Date(year, month, d.dayNum)
+      const diff = dt.getDay() === 0 ? -6 : 1 - dt.getDay()
+      const mon = new Date(dt); mon.setDate(dt.getDate() + diff)
+      const monStr = mon.toISOString().split('T')[0]
+      if (monStr !== lastWeekMon) { if (lastWeekMon) wi++; lastWeekMon = monStr }
+      d.weekIdx = wi
+    })
+    return days
+  }, [year, month])
+
   const weeks = useMemo(() => {
-    const w: (typeof days[number])[][] = []
-    days.forEach(d => { while (w.length <= d.weekIdx) w.push([]); w[d.weekIdx].push(d) })
+    const w: typeof monthDays[number][][] = []
+    monthDays.forEach(d => { while (w.length <= d.weekIdx) w.push([]); w[d.weekIdx].push(d) })
     return w
-  }, [days])
+  }, [monthDays])
+
+  const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  const todayStr = getKSTDateString()
 
   const loadData = useCallback(async () => {
     setLoading(true)
     const firstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`
     const lastDay = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`
-    const [slotsRes, entriesRes, hwRes, eventsRes] = await Promise.all([
-      supabase.from('lesson_plan_slots').select('*').eq('english_class', selectedClass).or(`grade.eq.${selectedGrade},grade.is.null`).order('sort_order'),
-      supabase.from('lesson_plan_entries').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade).gte('date', firstDay).lte('date', lastDay),
-      supabase.from('lesson_plan_homework').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade),
-      supabase.from('calendar_events').select('*').gte('date', firstDay).lte('date', lastDay),
+
+    const [planRes, eventsRes] = await Promise.all([
+      supabase.from('parent_calendar').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade).gte('date', firstDay).lte('date', lastDay),
+      supabase.from('calendar_events').select('date, title, type, show_on_lesson_plan').gte('date', firstDay).lte('date', lastDay),
     ])
-    setSlots(slotsRes.data || [])
-    const em: Record<string, LessonEntry> = {}
-    if (entriesRes.data) entriesRes.data.forEach((e: any) => { em[`${e.date}::${e.slot_label}`] = e })
-    setEntries(em)
-    const hm: Record<string, HomeworkEntry> = {}
-    if (hwRes.data) hwRes.data.forEach((h: any) => { hm[h.week_start] = h })
-    setHomework(hm)
-    const ce: Record<string, CalendarEvent> = {}
-    const pce: CalendarEvent[] = []
-    if (eventsRes.data) eventsRes.data.forEach((ev: any) => {
-      // Only show events on lesson plan if explicitly checked
-      if (ev.show_on_lesson_plan) ce[ev.date] = ev
-      // Collect parent calendar events (filtered by grade if target_grades specified)
-      // Gracefully handle missing columns (migration not yet run)
-      if (ev.show_on_parent_calendar) {
-        const tg = ev.target_grades as number[] | null
-        if (!tg || tg.length === 0 || tg.includes(selectedGrade)) {
-          pce.push(ev)
-        }
+
+    const dd: Record<string, DayContent> = {}
+
+    if (planRes.error && (planRes.error.message?.includes('does not exist') || planRes.error.code === '42P01')) {
+      // Table doesn't exist -- fall back to legacy lesson_plan_entries
+      const legacyRes = await supabase.from('lesson_plan_entries').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade).gte('date', firstDay).lte('date', lastDay)
+      if (legacyRes.data) {
+        legacyRes.data.forEach((e: any) => {
+          if (!dd[e.date]) dd[e.date] = emptyDay()
+          const subIdx = dd[e.date].subjects.findIndex(s => s.label.toLowerCase() === (e.slot_label || '').toLowerCase())
+          if (subIdx >= 0) dd[e.date].subjects[subIdx].content = e.title || ''
+          if (e.objective && !dd[e.date].objective) dd[e.date].objective = e.objective
+        })
       }
-    })
+    } else if (planRes.data) {
+      planRes.data.forEach((row: any) => {
+        try {
+          const parsed = typeof row.content === 'string' ? JSON.parse(row.content) : row.content
+          dd[row.date] = { ...emptyDay(), ...parsed }
+          DEFAULT_SUBJECTS.forEach(s => {
+            if (!dd[row.date].subjects.find((sub: any) => sub.label === s)) {
+              dd[row.date].subjects.push({ label: s, content: '' })
+            }
+          })
+        } catch { dd[row.date] = emptyDay() }
+      })
+    }
+
+    const ce: Record<string, { title: string; type?: string }> = {}
+    eventsRes.data?.forEach((ev: any) => { if (ev.show_on_lesson_plan) ce[ev.date] = { title: ev.title, type: ev.type } })
     setCalEvents(ce)
-    setParentCalEvents(pce)
+    setDayData(dd)
     setLoading(false)
-  }, [selectedClass, selectedGrade, year, month])
+  }, [year, month, selectedClass, selectedGrade])
 
   useEffect(() => { loadData() }, [loadData])
 
-  const classSlots = useMemo(() => {
-    const byDay: Record<number, string[]> = { 1: [], 2: [], 3: [], 4: [], 5: [] }
-    slots.forEach(s => { if (!byDay[s.day_of_week].includes(s.slot_label)) byDay[s.day_of_week].push(s.slot_label) })
-    return byDay
-  }, [slots])
-
-  const [addingSlotDate, setAddingSlotDate] = useState<string | null>(null)
-  const [newSlotLabel, setNewSlotLabel] = useState('')
-
-  // Get all slots for a specific date: template slots + any ad-hoc entries
-  const getDaySlots = (date: string, dayOfWeek: number) => {
-    const template = classSlots[dayOfWeek] || []
-    // Find ad-hoc entries for this date that aren't in the template
-    const adHoc = Object.keys(entries)
-      .filter(k => k.startsWith(`${date}::`))
-      .map(k => k.split('::')[1])
-      .filter(s => !template.includes(s))
-    return [...template, ...Array.from(new Set(adHoc))].filter(s => !hiddenSlots.has(`${date}::${s}`))
-  }
-
-  const hasSlots = slots.length > 0
   const prevMonth = () => { if (month === 0) { setYear(y => y - 1); setMonth(11) } else setMonth(m => m - 1) }
   const nextMonth = () => { if (month === 11) { setYear(y => y + 1); setMonth(0) } else setMonth(m => m + 1) }
 
-  const saveEntry = async () => {
-    if (!editingCell) return
-    const { date, slot } = editingCell
-    const row = { english_class: selectedClass, grade: selectedGrade, date, slot_label: slot, title: editTitle.trim(), objective: editObjective.trim(), updated_by: currentTeacher?.id, updated_at: new Date().toISOString() }
-    const { data, error } = await supabase.from('lesson_plan_entries').upsert(row, { onConflict: 'english_class,grade,date,slot_label' }).select().single()
-    if (error) { showToast(`Error: ${error.message}`); return }
-    setEntries(prev => ({ ...prev, [`${date}::${slot}`]: data }))
-    setEditingCell(null)
-  }
-
-  const saveHomework = async (weekStart: string) => {
-    const row = { english_class: selectedClass, grade: selectedGrade, week_start: weekStart, homework_text: editHwText.trim(), updated_by: currentTeacher?.id, updated_at: new Date().toISOString() }
-    const { data, error } = await supabase.from('lesson_plan_homework').upsert(row, { onConflict: 'english_class,grade,week_start' }).select().single()
-    if (error) { showToast(`Error: ${error.message}`); return }
-    setHomework(prev => ({ ...prev, [weekStart]: data }))
-    setEditingHomework(null)
-  }
-
-  const copyPreviousWeek = async (targetWeek: (typeof days[number])[]) => {
-    if (targetWeek.length === 0) return
-    const targetMonday = getWeekStart(targetWeek[0].date)
-    const targetDate = new Date(targetMonday + 'T00:00:00')
-    const prevMonday = new Date(targetDate); prevMonday.setDate(prevMonday.getDate() - 7)
-    const prevMondayStr = prevMonday.toISOString().split('T')[0]
-    const prevSunday = new Date(prevMonday); prevSunday.setDate(prevSunday.getDate() + 6)
-
-    const { data: prevEntries } = await supabase.from('lesson_plan_entries').select('*')
-      .eq('english_class', selectedClass).eq('grade', selectedGrade)
-      .gte('date', prevMondayStr).lte('date', prevSunday.toISOString().split('T')[0])
-    if (!prevEntries || prevEntries.length === 0) { showToast('No entries found in previous week'); return }
-
-    let copied = 0
-    for (const entry of prevEntries) {
-      const prevDate = new Date(entry.date + 'T00:00:00')
-      const dayOffset = (prevDate.getDay() === 0 ? 7 : prevDate.getDay()) - 1
-      const newDate = new Date(targetDate); newDate.setDate(newDate.getDate() + dayOffset)
-      const { error } = await supabase.from('lesson_plan_entries').upsert({
-        english_class: selectedClass, grade: selectedGrade, date: newDate.toISOString().split('T')[0],
-        slot_label: entry.slot_label, title: entry.title, objective: entry.objective,
-        updated_by: currentTeacher?.id, updated_at: new Date().toISOString()
-      }, { onConflict: 'english_class,grade,date,slot_label' })
-      if (!error) copied++
-    }
-    showToast(`Copied ${copied} entries from previous week`)
-    loadData()
-  }
-
-  const addSlot = async (dayOfWeek: number, label: string) => {
-    const trimmed = label.trim()
-    // Check for duplicate slot label on same day/class to avoid unique constraint violation
-    const exists = slots.find(s => s.day_of_week === dayOfWeek && s.slot_label.toLowerCase() === trimmed.toLowerCase())
-    if (exists) {
-      // If it exists in template but was hidden on specific days, unhide all instances
-      setHiddenSlots(prev => {
-        const n = new Set(prev)
-        for (const key of n) { if (key.endsWith(`::${trimmed}`)) n.delete(key) }
-        return n
-      })
-      showToast(`"${trimmed}" restored for all days`)
-      return
-    }
-    const maxOrder = slots.filter(s => s.day_of_week === dayOfWeek).reduce((max, s) => Math.max(max, s.sort_order), 0)
-    const { data, error } = await supabase.from('lesson_plan_slots').insert({ english_class: selectedClass, grade: selectedGrade, day_of_week: dayOfWeek, slot_label: trimmed, sort_order: maxOrder + 1 }).select().single()
-    if (error) { showToast(`Error: ${error.message}`); return }
-    setSlots(prev => [...prev, data])
-    // Clear any hidden entries for this label so it shows up immediately
-    setHiddenSlots(prev => {
-      const n = new Set(prev)
-      for (const key of n) { if (key.endsWith(`::${trimmed}`)) n.delete(key) }
-      return n
+  const updateSubject = (date: string, idx: number, content: string) => {
+    setDayData(prev => {
+      const d = { ...(prev[date] || emptyDay()) }
+      d.subjects = [...d.subjects]; d.subjects[idx] = { ...d.subjects[idx], content }
+      return { ...prev, [date]: d }
     })
   }
-  const removeSlot = async (id: string) => {
-    const slot = slots.find(s => s.id === id)
-    if (slot) {
-      const daySlotsCount = slots.filter(s => s.day_of_week === slot.day_of_week).length
-      if (daySlotsCount <= 1) { showToast('Cannot delete the last slot for a day'); return }
+  const updateField = (date: string, field: 'objective' | 'homework' | 'notes', value: string) => {
+    setDayData(prev => ({ ...prev, [date]: { ...(prev[date] || emptyDay()), [field]: value } }))
+  }
+
+  // Save a single day
+  const saveDay = async (date: string) => {
+    const content = dayData[date] || emptyDay()
+    const { error } = await supabase.from('parent_calendar').upsert({
+      date, english_class: selectedClass, grade: selectedGrade,
+      content: JSON.stringify(content),
+      updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+    }, { onConflict: 'date,english_class,grade' })
+    if (error) { showToast(`Error: ${error.message}`); return false }
+    return true
+  }
+
+  // Save all days in the month
+  const saveAll = async () => {
+    setSaving(true)
+    let errors = 0
+    const dates = monthDays.map(d => d.date)
+    for (const date of dates) {
+      if (!dayData[date]) continue
+      const ok = await saveDay(date)
+      if (!ok) errors++
     }
-    await supabase.from('lesson_plan_slots').delete().eq('id', id); setSlots(prev => prev.filter(s => s.id !== id))
+    setSaving(false)
+    showToast(errors > 0 ? `Saved with ${errors} error(s)` : 'Month saved')
   }
 
-  const weekCompletion = (week: (typeof days[number])[]) => {
-    let filled = 0; let total = 0
-    week.forEach(d => {
-      if (calEvents[d.date]) return
-      const ds = classSlots[d.dayOfWeek] || []
-      total += ds.length
-      ds.forEach(slot => { if (entries[`${d.date}::${slot}`]?.title) filled++ })
-    })
-    return { filled, total }
+  // Navigate to adjacent weekday from modal
+  const getAdjacentDate = (date: string, direction: 'prev' | 'next'): string | null => {
+    const idx = monthDays.findIndex(d => d.date === date)
+    if (idx < 0) return null
+    const newIdx = direction === 'next' ? idx + 1 : idx - 1
+    return newIdx >= 0 && newIdx < monthDays.length ? monthDays[newIdx].date : null
   }
 
-  const handlePrint = (orientation: 'landscape' | 'portrait' = 'landscape') => {
+  const navigateModal = async (direction: 'prev' | 'next') => {
+    if (!editDate) return
+    // Auto-save current day before navigating
+    await saveDay(editDate)
+    const next = getAdjacentDate(editDate, direction)
+    if (next) setEditDate(next)
+  }
+
+  // Print full month
+  const handlePrint = () => {
     const pw = window.open('', '_blank'); if (!pw) return
-    const allLabels = Array.from(new Set(slots.map(s => s.slot_label)))
-    allLabels.forEach(l => getSlotColor(l))
     const mn = MONTH_NAMES[month]
 
     let weeksHTML = ''
-    weeks.forEach((week) => {
-      const fw: (typeof days[0] | null)[] = [null, null, null, null, null]
+    weeks.forEach(week => {
+      const fw: (typeof monthDays[0] | null)[] = [null, null, null, null, null]
       week.forEach(d => { fw[d.dayOfWeek - 1] = d })
-      const ws = week.length > 0 ? getWeekStart(week[0].date) : ''
-      const hw = homework[ws]
 
       let daysHTML = ''
       fw.forEach((day, di) => {
-        if (!day) { daysHTML += `<td class="day empty"></td>`; return }
-        const event = calEvents[day.date]
-        if (event) {
-          daysHTML += `<td class="day event-day">
-            <div class="day-hdr">${DAY_NAMES[di]} ${month + 1}/${day.dayNum}</div>
-            <div class="event-block"><div class="event-star">&#9733;</div><div class="event-name">${event.title}</div></div></td>`
-          return
-        }
-        const ds = getDaySlots(day.date, di + 1)
-        let slotsHTML = ''
-        ds.forEach(slot => {
-          const entry = entries[`${day.date}::${slot}`]; const sc = getSlotColor(slot)
-          slotsHTML += `<div class="slot"><span class="pill" style="background:${sc.print}">${slot}</span>`
-          if (entry?.title) slotsHTML += `<div class="slot-title">${entry.title}</div>`
-          if (entry?.objective) slotsHTML += `<div class="slot-obj"><em>Students will</em> ${entry.objective}</div>`
-          slotsHTML += `</div>`
-        })
-        daysHTML += `<td class="day"><div class="day-hdr">${DAY_NAMES[di]} ${month + 1}/${day.dayNum}</div>${slotsHTML}</td>`
-      })
+        if (!day) { daysHTML += '<td class="day empty"></td>'; return }
+        const data = dayData[day.date] || emptyDay()
+        const ev = calEvents[day.date]
+        const noG5 = di === 0 && selectedGrade === 5
 
-      weeksHTML += `<table class="week"><tr>${daysHTML}</tr></table>`
-      if (hw?.homework_text) weeksHTML += `<div class="hw-row">&#9998; <strong>Homework:</strong> ${hw.homework_text}</div>`
-      weeksHTML += `<div style="height:12px"></div>`
+        let inner = ''
+        if (noG5) {
+          inner = '<div class="no-class">No Grade 5</div>'
+        } else {
+          if (ev) inner += `<div class="event">${ev.title}</div>`
+          data.subjects.forEach(s => {
+            if (!s.content.trim()) return
+            inner += `<div class="subj"><span class="subj-label">${s.label}:</span> ${s.content}</div>`
+          })
+          if (data.objective) inner += `<div class="obj"><span class="obj-pre">Students will</span> ${data.objective}</div>`
+          if (data.homework) inner += `<div class="hw">HW: ${data.homework}</div>`
+          if (!inner) inner = '<div class="empty-day">--</div>'
+        }
+
+        daysHTML += `<td class="day"><div class="day-hdr">${DAY_SHORT[di]} <span class="day-num">${month + 1}/${day.dayNum}</span></div>${inner}</td>`
+      })
+      weeksHTML += `<tr>${daysHTML}</tr>`
     })
 
     pw.document.write(`<!DOCTYPE html><html><head><title>${selectedClass} Grade ${selectedGrade} - ${mn} ${year}</title>
 <style>
-  @page { size: ${orientation}; margin: ${orientation === 'portrait' ? '8mm 10mm' : '12mm 14mm'}; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; ${orientation === 'portrait' ? 'font-size: 85%;' : ''} }
-
-  /* ── HEADER ── */
-  .header {
-    background: #1e3a5f; color: white; padding: 16px 28px 12px;
-    border-radius: 10px 10px 0 0; position: relative;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .header::after {
-    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-    height: 4px; background: linear-gradient(90deg, #C9A84C, #e8d48b, #C9A84C);
-  }
-  .header .label { font-size: 8px; text-transform: uppercase; letter-spacing: 2.5px; color: rgba(255,255,255,0.4); margin-bottom: 3px; }
-  .header h1 { font-size: 22px; font-weight: 700; font-family: Georgia, serif; }
-  .header .sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
-  .header .month-box { text-align: right; }
-  .header .month-name { font-size: 18px; font-weight: 700; font-family: Georgia, serif; color: rgba(255,255,255,0.85); }
-  .header .year { font-size: 13px; color: rgba(255,255,255,0.35); font-weight: 600; }
-
-  /* ── BODY ── */
-  .body { padding: 16px 0 8px; }
-
-  /* ── WEEK TABLE ── */
-  .week {
-    width: 100%; border-collapse: collapse;
-    border: 1.5px solid #d4cfc7; border-radius: 8px; overflow: hidden;
-    page-break-inside: avoid; margin-bottom: 2px;
-  }
-  .week td {
-    width: 20%; vertical-align: top;
-    border-right: 1px solid #e5e0d8;
-    padding: 10px 12px; min-height: 110px;
-    background: white;
-  }
-  .week td:last-child { border-right: none; }
-
-  /* Day header */
-  .day-hdr {
-    font-size: 10px; font-weight: 700; color: #6b5f50;
-    text-transform: uppercase; letter-spacing: 0.5px;
-    padding-bottom: 6px; margin-bottom: 8px;
-    border-bottom: 2px solid #e8e0d4;
-  }
-
-  /* Empty / Event days */
-  .day.empty { background: #f9f7f4; }
-  .day.event-day { background: #f5f2ec; }
-  .event-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 0; }
-  .event-star { font-size: 18px; color: #C9A84C; margin-bottom: 4px; }
-  .event-name { font-size: 13px; font-weight: 700; color: #5a4e3c; font-family: Georgia, serif; text-align: center; }
-
-  /* Slot content */
-  .slot { margin-top: 8px; }
-  .slot:first-child { margin-top: 0; }
-  .pill {
-    display: inline-block; font-size: 9px; font-weight: 700;
-    padding: 2px 8px; border-radius: 4px;
-    text-transform: uppercase; letter-spacing: 0.3px;
-    border: 1px solid rgba(0,0,0,0.08);
-  }
-  .slot-title { font-size: 12px; font-weight: 600; color: #1e293b; margin-top: 3px; line-height: 1.35; }
-  .slot-obj { font-size: 10.5px; color: #64748b; margin-top: 2px; line-height: 1.4; }
-  .slot-obj em { color: #94a3b8; font-style: italic; }
-
-  /* Homework */
-  .hw-row {
-    font-size: 10px; color: #7a6e5e; padding: 5px 14px;
-    background: #f9f7f4; border: 1px solid #e5e0d8; border-top: none;
-    border-radius: 0 0 8px 8px;
-  }
-
-  /* ── FOOTER ── */
-  .footer {
-    text-align: center; padding-top: 10px; margin-top: 4px;
-    border-top: 1.5px solid #e5e0d8;
-  }
-  .footer span {
-    font-size: 8px; color: #b0a494; letter-spacing: 2px; text-transform: uppercase;
-  }
+  @page { size: landscape; margin: 8mm 10mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .header { background: #1e3a5f; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+  .header::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #C9A84C, #e8d48b, #C9A84C); }
+  .header h1 { font-size: 20px; font-weight: 700; font-family: Georgia, serif; }
+  .header .sub { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+  .header .right { text-align: right; font-size: 11px; opacity: 0.6; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; margin-top: 2px; }
+  .col-hdr { text-align: center; font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; padding: 6px 4px; background: #f1f5f9; border: 1px solid #e2e8f0; }
+  .day { vertical-align: top; padding: 6px 8px; border: 1px solid #e2e8f0; width: 20%; min-height: 60px; }
+  .day.empty { background: #fafafa; }
+  .day-hdr { font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; padding-bottom: 3px; border-bottom: 1px solid #f1f5f9; }
+  .day-num { color: #475569; font-weight: 800; }
+  .subj { font-size: 9.5px; line-height: 1.4; margin: 2px 0; }
+  .subj-label { font-weight: 700; color: #1e3a5f; }
+  .obj { font-size: 9px; color: #64748b; font-style: italic; margin-top: 3px; padding-top: 3px; border-top: 1px solid #f1f5f9; }
+  .obj-pre { color: #94a3b8; }
+  .hw { font-size: 9px; font-weight: 600; color: #b8860b; margin-top: 3px; padding: 2px 5px; background: #fff8e1; border-radius: 3px; }
+  .event { font-size: 9px; font-weight: 700; color: #475569; background: #e2e8f0; border-radius: 4px; padding: 3px 6px; margin-bottom: 4px; }
+  .no-class { font-size: 9px; color: #94a3b8; font-style: italic; text-align: center; padding: 10px 0; }
+  .empty-day { font-size: 9px; color: #cbd5e1; text-align: center; padding: 8px 0; }
+  .footer { text-align: center; margin-top: 8px; font-size: 8px; color: #94a3b8; letter-spacing: 1px; }
 </style></head><body>
   <div class="header">
-    <div>
-      <div class="label">Monthly Lesson Plan</div>
-      <h1>${selectedClass} Class</h1>
-      <div class="sub">Grade ${selectedGrade} &bull; Daewoo Elementary School English Program</div>
-    </div>
-    <div class="month-box">
-      <div class="month-name">${mn}</div>
-      <div class="year">${year}</div>
-    </div>
+    <div><h1>${selectedClass} -- ${mn} ${year}</h1><div class="sub">Grade ${selectedGrade} -- Daewoo Elementary School English Program</div></div>
+    <div class="right">Daewoo Elementary School<br>English Program</div>
   </div>
-  <div class="body">${weeksHTML}</div>
-  ${parentCalEvents.length > 0 ? `<div style="margin:8px 16px 12px;padding:10px 14px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px">
-    <div style="font-size:10px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Upcoming Events</div>
-    ${parentCalEvents.sort((a: any, b: any) => a.date.localeCompare(b.date)).map((ev: any) => {
-      const d = new Date(ev.date + 'T12:00:00')
-      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })
-      return `<div style="display:flex;gap:8px;align-items:baseline;font-size:11px;padding:2px 0"><span style="font-weight:600;color:#3b82f6;min-width:80px">${dateStr}</span><span style="color:#334155">${ev.title}</span></div>`
-    }).join('')}
-  </div>` : ''}
-  <div class="footer"><span>Daewoo Elementary School &bull; English Program &bull; ${mn} ${year}</span></div>
+  <table>
+    <tr><th class="col-hdr">Monday</th><th class="col-hdr">Tuesday</th><th class="col-hdr">Wednesday</th><th class="col-hdr">Thursday</th><th class="col-hdr">Friday</th></tr>
+    ${weeksHTML}
+  </table>
+  <div class="footer">Daewoo Elementary School -- English Program -- ${mn} ${year}</div>
 </body></html>`)
     pw.document.close(); setTimeout(() => pw.print(), 400)
   }
 
-  if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  const fmtShort = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+  const fmtDayName = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long' })
+  }
+
+  if (loading) return (
+    <div>
+      <div className="bg-surface border-b border-border px-8 py-5">
+        <h2 className="font-display text-2xl font-bold text-navy">Lesson Plans</h2>
+        <p className="text-[13px] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
+        {tabBar}
+      </div>
+      <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+    </div>
+  )
+
+  const editDay = editDate ? (dayData[editDate] || emptyDay()) : null
+  const editDateIsNoG5 = editDate ? (new Date(editDate + 'T12:00:00').getDay() === 1 && selectedGrade === 5) : false
 
   return (
-    <div className="animate-fade-in">
+    <div>
       <div className="bg-surface border-b border-border px-8 py-5">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display text-2xl font-bold text-navy">Lesson Plans</h2>
-            <p className="text-[13px] text-text-secondary mt-1">Monthly lesson planning by class and grade</p>
+            <p className="text-[13px] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
           </div>
           <div className="flex items-center gap-2">
-            {/* View toggle */}
-            <div className="flex rounded-lg border border-border overflow-hidden">
-              <button onClick={() => setViewMode('month')} className={`px-3 py-1.5 text-[11px] font-medium ${viewMode === 'month' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-gray-100'}`}>Month</button>
-              <button onClick={() => setViewMode('week')} className={`px-3 py-1.5 text-[11px] font-medium ${viewMode === 'week' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-gray-100'}`}>Week</button>
-            </div>
-            {canEdit && <button onClick={() => setShowSetup(!showSetup)} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium border transition-all ${showSetup ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border'}`}><Settings size={14} /> Day Setup</button>}
-            <div className="flex gap-1">
-              <button onClick={() => handlePrint('landscape')} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print Landscape</button>
-              <button onClick={() => handlePrint('portrait')} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-medium bg-surface-alt text-text-secondary hover:bg-border"><Printer size={14} /> Print Portrait</button>
-            </div>
+            <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print Month</button>
+            {canEdit && (
+              <button onClick={saveAll} disabled={saving}
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-semibold bg-gold text-navy-dark hover:bg-gold/90 disabled:opacity-50">
+                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                {saving ? 'Saving...' : 'Save Month'}
+              </button>
+            )}
           </div>
         </div>
         {tabBar}
@@ -467,279 +345,206 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
       </div>
 
       <div className="px-8 py-6 max-w-[1400px] mx-auto">
+        {/* Month nav */}
         <div className="flex items-center justify-center gap-4 mb-6">
-          {viewMode === 'month' ? (
-            <>
-              <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronLeft size={20} /></button>
-              <h3 className="text-xl font-display font-bold text-navy min-w-[220px] text-center">{MONTH_NAMES[month]} {year}</h3>
-              <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronRight size={20} /></button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => { if (currentWeekIdx > 0) setCurrentWeekIdx(i => i - 1); else { prevMonth(); setCurrentWeekIdx(99) } }}
-                className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronLeft size={20} /></button>
-              <h3 className="text-xl font-display font-bold text-navy min-w-[280px] text-center">
-                {weeks[Math.min(currentWeekIdx, weeks.length - 1)]?.length > 0
-                  ? `Week of ${MONTH_NAMES[month]} ${weeks[Math.min(currentWeekIdx, weeks.length - 1)][0].dayNum}, ${year}`
-                  : `${MONTH_NAMES[month]} ${year}`}
-              </h3>
-              <button onClick={() => { if (currentWeekIdx < weeks.length - 1) setCurrentWeekIdx(i => i + 1); else { nextMonth(); setCurrentWeekIdx(0) } }}
-                className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronRight size={20} /></button>
-            </>
-          )}
+          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronLeft size={20} /></button>
+          <h3 className="text-xl font-display font-bold text-navy min-w-[240px] text-center">{MONTH_NAMES[month]} {year}</h3>
+          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronRight size={20} /></button>
         </div>
 
-        {showSetup && canEdit && <DaySetupPanel selectedClass={selectedClass} selectedGrade={selectedGrade} slots={slots} onAdd={addSlot} onRemove={removeSlot} onClose={() => setShowSetup(false)} />}
+        {/* Month grid */}
+        <div className="border border-border rounded-xl overflow-hidden shadow-sm">
+          {/* Column headers */}
+          <div className="grid grid-cols-5 bg-surface-alt border-b border-border">
+            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(d => (
+              <div key={d} className="px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-text-tertiary border-r border-border last:border-r-0">{d}</div>
+            ))}
+          </div>
 
-        {(viewMode === 'week' ? [weeks[Math.min(currentWeekIdx, weeks.length - 1)]].filter(Boolean) : weeks).map((week, wi) => {
-          const fw: (typeof days[0] | null)[] = [null, null, null, null, null]
-          week.forEach(d => { fw[d.dayOfWeek - 1] = d })
-          const ws = week.length > 0 ? getWeekStart(week[0].date) : ''
-          const hw = homework[ws]
-
-          return (
-            <div key={wi} className="mb-6">
-              <div className="flex items-center justify-between mb-1.5">
-              </div>
-
-              <div className="grid grid-cols-5 gap-px bg-border rounded-xl overflow-hidden border border-border shadow-sm">
+          {/* Weeks */}
+          {weeks.map((week, wi) => {
+            const fw: (typeof monthDays[0] | null)[] = [null, null, null, null, null]
+            week.forEach(d => { fw[d.dayOfWeek - 1] = d })
+            return (
+              <div key={wi} className="grid grid-cols-5 border-b border-border last:border-b-0">
                 {fw.map((day, di) => {
-                  const daySlots = day ? getDaySlots(day.date, di + 1) : (classSlots[di + 1] || [])
-                  const isToday = day?.date === getKSTDateString()
-                  const event = day ? calEvents[day.date] : null
-                  const isMonday = di === 0
-                  const noG5Monday = isMonday && selectedGrade === 5
+                  if (!day) return <div key={di} className="bg-gray-50/50 border-r border-border last:border-r-0 min-h-[110px]" />
+                  const data = dayData[day.date] || emptyDay()
+                  const ev = calEvents[day.date]
+                  const isToday = day.date === todayStr
+                  const noG5 = di === 0 && selectedGrade === 5
+                  const hasFill = data.subjects.some(s => s.content.trim())
                   return (
-                    <div key={di} className={`p-3 min-h-[130px] transition-colors ${!day ? 'bg-gray-50' : noG5Monday ? 'bg-gray-100' : event ? 'bg-slate-100' : isToday ? 'bg-amber-50/40 ring-2 ring-inset ring-gold/60' : 'bg-white'}`}>
-                      {day ? (
+                    <div key={di}
+                      onClick={() => { if (canEdit) setEditDate(day.date) }}
+                      className={`border-r border-border last:border-r-0 min-h-[110px] p-2.5 transition-all ${
+                        canEdit ? 'cursor-pointer hover:bg-blue-50/30' : ''
+                      } ${isToday ? 'bg-amber-50/30 ring-2 ring-inset ring-gold/40' : 'bg-white'}`}>
+                      {/* Day header */}
+                      <div className={`text-[9px] font-bold uppercase tracking-wider mb-1.5 pb-1 border-b ${isToday ? 'text-gold border-gold/20' : 'text-text-tertiary border-border/30'}`}>
+                        {DAY_SHORT[di]} <span className="text-text-primary font-extrabold">{month + 1}/{day.dayNum}</span>
+                        {isToday && <span className="text-gold ml-1">TODAY</span>}
+                      </div>
+
+                      {noG5 ? (
+                        <div className="text-[10px] text-text-tertiary italic text-center mt-4">No G5 Mondays</div>
+                      ) : (
                         <>
-                          <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 pb-1.5 border-b ${isToday ? 'text-gold border-gold/30' : 'text-text-tertiary border-border'}`}>
-                            {DAY_SHORT[di]} <span className="text-text-primary">{month + 1}/{day.dayNum}</span>
-                          </div>
-                          {noG5Monday ? (
-                            <div className="flex items-center justify-center h-[70px]">
-                              <div className="text-center">
-                                <p className="text-[11px] font-semibold text-text-tertiary">No Grade 5</p>
-                                <p className="text-[9px] text-text-tertiary mt-0.5">on Mondays</p>
-                              </div>
+                          {ev && <div className="text-[9px] font-bold text-slate-600 bg-slate-100 rounded px-1.5 py-1 mb-1.5">{ev.title}</div>}
+                          {data.subjects.filter(s => s.content.trim()).map(s => (
+                            <div key={s.label} className="text-[10px] leading-snug mb-0.5">
+                              <span className="font-bold text-navy">{s.label}:</span>{' '}
+                              <span className="text-text-secondary">{s.content}</span>
                             </div>
-                          ) : event ? (
-                            <>
-                              <div className="mb-2 px-2 py-1 rounded-lg bg-slate-200 text-slate-700">
-                                <div className="flex items-center gap-1 text-[10px] font-bold"><AlertCircle size={10} /> {event.title}</div>
-                                {event.type && <p className="text-[8px] text-slate-500 mt-0.5">{event.type}</p>}
-                              </div>
-                              {daySlots.length > 0 ? daySlots.map(slot => {
-                                const key = `${day.date}::${slot}`; const entry = entries[key]; const sc = getSlotColor(slot)
-                                return (
-                                  <div key={slot} className="mt-2 first:mt-0">
-                                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-px rounded text-[8px] font-bold uppercase tracking-wide ${sc.bg} ${sc.text} ${sc.border} border`}>{slot}</span>
-                                    {entry ? (
-                                      <div onClick={() => { if (canEdit) { setEditingCell({ date: day.date, slot }); setEditTitle(entry?.title || ''); setEditObjective(entry?.objective || '') } }}
-                                        className={`text-[10px] mt-0.5 leading-snug ${canEdit ? 'cursor-pointer hover:bg-slate-50 rounded px-1 -mx-1' : ''}`}>
-                                        {entry.title && <p className="font-semibold text-navy">{entry.title}</p>}
-                                        {entry.objective && <p className="text-text-tertiary">{entry.objective}</p>}
-                                      </div>
-                                    ) : canEdit ? (
-                                      <button onClick={() => { setEditingCell({ date: day.date, slot }); setEditTitle(''); setEditObjective('') }} className="text-[9px] text-text-tertiary hover:text-navy mt-0.5">+ add</button>
-                                    ) : null}
-                                  </div>
-                                )
-                              }) : <p className="text-[9px] text-text-tertiary italic">No slots</p>}
-                            </>
-                          ) : (
-                            <>
-                              {daySlots.length === 0 && !canEdit && <p className="text-[10px] text-text-tertiary italic mt-3">No slots for {DAY_NAMES[di]}</p>}
-                              {daySlots.map(slot => {
-                                const key = `${day.date}::${slot}`; const entry = entries[key]; const sc = getSlotColor(slot)
-                                const isEditing = editingCell?.date === day.date && editingCell?.slot === slot
-                                return (
-                                  <div key={slot} className="mt-2 first:mt-0">
-                                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-px rounded text-[8px] font-bold uppercase tracking-wide ${sc.bg} ${sc.text} ${sc.border} border`}>
-                                      {slot}
-                                      {canEdit && (
-                                        <button onClick={(e) => { e.stopPropagation(); const key = `${day.date}::${slot}`; if (entries[key]?.id) { supabase.from('lesson_plan_entries').delete().eq('id', entries[key].id); setEntries(prev => { const n = { ...prev }; delete n[key]; return n }) } setHiddenSlots(prev => { const n = new Set(prev); n.add(key); return n }); showToast(`${slot} hidden for this day`) }}
-                                          className="ml-0.5 opacity-40 hover:opacity-100 transition-opacity" title={`Hide ${slot} for this day`}>
-                                          <X size={8} />
-                                        </button>
-                                      )}
-                                    </span>
-                                    {isEditing ? (
-                                      <div className="mt-1 space-y-1.5">
-                                        <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Title (e.g., Into Reading 2.2 - What's the Matter?)"
-                                          className="w-full px-2 py-1.5 text-[11px] border border-navy rounded-lg outline-none font-medium" autoFocus />
-                                        <div className="relative">
-                                          <span className="absolute left-2 top-1.5 text-[10px] text-text-tertiary italic pointer-events-none">Students will</span>
-                                          <textarea value={editObjective} onChange={e => setEditObjective(e.target.value)} placeholder="(e.g., classify three kinds of matter)"
-                                            className="w-full pl-[76px] pr-2 py-1.5 text-[10px] border border-border rounded-lg outline-none resize-none focus:border-navy" rows={2} />
-                                        </div>
-                                        <div className="flex gap-1 items-center">
-                                          <button onClick={saveEntry} className="px-2.5 py-1 rounded-lg bg-navy text-white text-[10px] font-medium">Save</button>
-                                          <button onClick={() => setEditingCell(null)} className="px-2.5 py-1 rounded-lg bg-surface-alt text-text-secondary text-[10px]">Cancel</button>
-                                          {entry?.id && <button onClick={async () => {
-                                            await supabase.from('lesson_plan_entries').delete().eq('id', entry.id)
-                                            setEntries(prev => { const n = { ...prev }; delete n[key]; return n })
-                                            setEditingCell(null)
-                                            showToast('Entry deleted')
-                                          }} className="ml-auto px-2.5 py-1 rounded-lg text-red-500 hover:bg-red-50 text-[10px] font-medium">Delete</button>}
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div onClick={() => { if (canEdit) { setEditingCell({ date: day.date, slot }); setEditTitle(entry?.title || ''); setEditObjective(entry?.objective || '') } }}
-                                        className={`mt-0.5 rounded-lg px-1.5 py-1 ${canEdit ? 'cursor-pointer hover:bg-surface-alt/60' : ''} ${!entry?.title ? 'border border-dashed border-border/60' : ''}`}>
-                                        {entry?.title ? (
-                                          <>
-                                            <div className="text-[11px] font-semibold text-navy leading-snug">{entry.title}</div>
-                                            {entry.objective && <div className="text-[10px] text-text-secondary leading-snug mt-0.5"><span className="text-text-tertiary italic">Students will </span>{entry.objective}</div>}
-                                          </>
-                                        ) : (canEdit && <div className="text-[10px] text-text-tertiary/50 py-1">+ Add</div>)}
-                                      </div>
-                                    )}
-                                  </div>
-                                )
-                              })}
-                              {/* Per-day add slot for one-off overrides */}
-                              {canEdit && day && (
-                                addingSlotDate === day.date ? (
-                                  <div className="mt-2">
-                                    <input value={newSlotLabel} onChange={e => setNewSlotLabel(e.target.value)} placeholder="e.g., Phonics"
-                                      className="w-full px-2 py-1 text-[10px] border border-navy rounded-lg outline-none" autoFocus
-                                      onKeyDown={e => {
-                                        if (e.key === 'Enter' && newSlotLabel.trim()) {
-                                          setEditingCell({ date: day.date, slot: newSlotLabel.trim() })
-                                          setEditTitle(''); setEditObjective('')
-                                          setEntries(prev => ({ ...prev, [`${day.date}::${newSlotLabel.trim()}`]: { title: '', objective: '', notes: '' } as any }))
-                                          setNewSlotLabel(''); setAddingSlotDate(null)
-                                        }
-                                        if (e.key === 'Escape') { setAddingSlotDate(null); setNewSlotLabel('') }
-                                      }} />
-                                  </div>
-                                ) : (
-                                  <button onClick={() => setAddingSlotDate(day.date)} className="mt-2 text-[9px] text-text-tertiary/50 hover:text-navy font-medium">+ Add slot</button>
-                                )
-                              )}
-                            </>
+                          ))}
+                          {data.objective && (
+                            <div className="text-[9px] text-text-tertiary italic mt-1 pt-1 border-t border-border/20">
+                              <span className="opacity-50">Students will</span> {data.objective}
+                            </div>
+                          )}
+                          {data.homework && <div className="text-[9px] font-semibold text-amber-700 mt-1">HW: {data.homework}</div>}
+                          {!hasFill && !data.objective && !ev && canEdit && (
+                            <div className="text-[10px] text-text-tertiary/25 italic text-center mt-5">Click to edit</div>
                           )}
                         </>
-                      ) : <div />}
-                    </div>
-                  )
-                })}
-              </div>
-
-              <div className={`mt-1.5 px-3 py-2 rounded-lg ${hw?.homework_text ? 'bg-amber-50 border border-amber-200' : 'bg-surface-alt/50 border border-dashed border-border'}`}>
-                {editingHomework === ws ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-amber-700 font-semibold whitespace-nowrap"> Homework:</span>
-                    <input value={editHwText} onChange={e => setEditHwText(e.target.value)} className="flex-1 px-2 py-1 text-[11px] border border-amber-300 rounded-lg outline-none focus:border-navy bg-white"
-                      onKeyDown={e => { if (e.key === 'Enter') saveHomework(ws); if (e.key === 'Escape') setEditingHomework(null) }} autoFocus />
-                    <button onClick={() => saveHomework(ws)} className="px-2 py-1 rounded-lg bg-navy text-white text-[10px] font-medium">Save</button>
-                    <button onClick={() => setEditingHomework(null)} className="text-[10px] text-text-tertiary">Cancel</button>
-                  </div>
-                ) : (
-                  <div onClick={() => { if (canEdit && ws) { setEditingHomework(ws); setEditHwText(hw?.homework_text || '') } }}
-                    className={`text-[11px] ${hw?.homework_text ? 'text-amber-800 font-medium' : 'text-text-tertiary'} ${canEdit ? 'cursor-pointer hover:text-amber-900' : ''}`}>
-                    {hw?.homework_text ? ` Homework: ${hw.homework_text}` : (canEdit ? '+ Click to add homework note for this week' : 'No homework assigned')}
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function DaySetupPanel({ selectedClass, selectedGrade, slots, onAdd, onRemove, onClose }: {
-  selectedClass: EnglishClass; selectedGrade: Grade; slots: SlotTemplate[]; onAdd: (dow: number, label: string) => void; onRemove: (id: string) => void; onClose: () => void
-}) {
-  const [addingDay, setAddingDay] = useState<number | null>(null)
-  const [newLabel, setNewLabel] = useState('')
-  const [editingSlot, setEditingSlot] = useState<string | null>(null)
-  const [editLabel, setEditLabel] = useState('')
-
-  const handleRename = async (slotId: string, newName: string) => {
-    if (!newName.trim()) return
-    await supabase.from('lesson_plan_slots').update({ slot_label: newName.trim() }).eq('id', slotId)
-    // Update local state by removing and re-adding won't work, so force parent refresh
-    setEditingSlot(null)
-    window.location.reload() // Simple refresh to pick up the rename
-  }
-
-  return (
-    <div className="mb-6 bg-surface border border-border rounded-2xl p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h4 className="text-[14px] font-semibold text-navy">Weekly Schedule for {selectedClass} -- Grade {selectedGrade}</h4>
-          <p className="text-[11px] text-text-tertiary mt-0.5">Add, rename, or remove class slots for each day. Click a slot name to rename it.</p>
-        </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
-      </div>
-      <div className="grid grid-cols-5 gap-3">
-        {DAY_NAMES.map((dayName, di) => {
-          const daySlots = slots.filter(s => s.day_of_week === di + 1)
-          return (
-            <div key={di} className="bg-surface-alt rounded-xl p-3">
-              <div className="text-[12px] font-bold text-navy mb-2.5">{dayName}</div>
-              <div className="space-y-1.5">
-                {daySlots.map(slot => {
-                  const sc = getSlotColor(slot.slot_label)
-                  const isEditing = editingSlot === slot.id
-                  return (
-                    <div key={slot.id} className="flex items-center justify-between bg-white rounded-lg px-2.5 py-1.5 border border-border">
-                      {isEditing ? (
-                        <input value={editLabel} onChange={e => setEditLabel(e.target.value)} autoFocus
-                          onKeyDown={e => { if (e.key === 'Enter') handleRename(slot.id, editLabel); if (e.key === 'Escape') setEditingSlot(null) }}
-                          onBlur={() => { if (editLabel.trim() && editLabel !== slot.slot_label) handleRename(slot.id, editLabel); else setEditingSlot(null) }}
-                          className="flex-1 min-w-0 px-1 py-0.5 text-[10px] font-medium border border-navy rounded outline-none" />
-                      ) : (
-                        <span className={`text-[10px] font-medium ${sc.text} cursor-pointer hover:underline`}
-                          onClick={() => { setEditingSlot(slot.id); setEditLabel(slot.slot_label) }}
-                          title="Click to rename">{slot.slot_label}</span>
                       )}
-                      <button onClick={() => onRemove(slot.id)} className="p-0.5 text-text-tertiary hover:text-red-500 ml-1"><X size={11} /></button>
                     </div>
                   )
                 })}
               </div>
-              {addingDay === di + 1 ? (
-                <div className="mt-2 flex gap-1 relative z-10">
-                  <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="e.g., Phonics"
-                    className="flex-1 min-w-0 px-2 py-1.5 text-[10px] border border-border rounded-lg outline-none focus:border-navy" autoFocus
-                    onKeyDown={e => { if (e.key === 'Enter' && newLabel.trim()) { onAdd(di + 1, newLabel); setNewLabel(''); setAddingDay(null) }; if (e.key === 'Escape') setAddingDay(null) }} />
-                  <button onClick={() => { if (newLabel.trim()) { onAdd(di + 1, newLabel); setNewLabel(''); setAddingDay(null) } }} className="px-2.5 py-1 rounded-lg bg-navy text-white text-[9px] font-medium whitespace-nowrap">Add</button>
-                </div>
-              ) : (
-                <button onClick={() => setAddingDay(di + 1)} className="mt-2 flex items-center gap-1 text-[10px] text-text-tertiary hover:text-navy font-medium"><Plus size={11} /> Add slot</button>
-              )}
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
+
+      {/* ═══ EDIT DAY MODAL ═══ */}
+      {editDate && editDay && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={async () => { await saveDay(editDate); setEditDate(null) }}>
+          <div className="bg-surface rounded-xl shadow-xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            {/* Modal header */}
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+              <div>
+                <h3 className="font-display text-[16px] font-bold text-navy">{fmtDayName(editDate)}</h3>
+                <p className="text-[12px] text-text-secondary">{fmtShort(editDate)} -- {selectedClass} Grade {selectedGrade}</p>
+              </div>
+              <div className="flex items-center gap-1">
+                <button onClick={() => navigateModal('prev')} disabled={!getAdjacentDate(editDate, 'prev')} className="p-1.5 rounded-lg hover:bg-surface-alt disabled:opacity-20" title="Previous day"><ChevronLeft size={18} /></button>
+                <button onClick={() => navigateModal('next')} disabled={!getAdjacentDate(editDate, 'next')} className="p-1.5 rounded-lg hover:bg-surface-alt disabled:opacity-20" title="Next day"><ChevronRight size={18} /></button>
+                <div className="w-px h-5 bg-border mx-1" />
+                <button onClick={async () => { await saveDay(editDate); setEditDate(null) }} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary"><X size={18} /></button>
+              </div>
+            </div>
+
+            {/* Calendar event banner */}
+            {calEvents[editDate] && (
+              <div className="px-5 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center gap-2">
+                <AlertCircle size={14} className="text-slate-500 shrink-0" />
+                <span className="text-[12px] font-semibold text-slate-700">{calEvents[editDate].title}</span>
+              </div>
+            )}
+
+            {editDateIsNoG5 ? (
+              <div className="px-5 py-16 text-center">
+                <p className="text-[15px] font-semibold text-text-tertiary">No Grade 5 on Mondays</p>
+              </div>
+            ) : (
+              <div className="px-5 py-5 space-y-0">
+                {/* Subject inputs */}
+                {editDay.subjects.map((sub, idx) => (
+                  <div key={sub.label} className="flex items-center gap-3">
+                    <label className="text-[12px] font-bold text-navy w-[72px] text-right shrink-0 py-3">{sub.label}</label>
+                    <input
+                      value={sub.content}
+                      onChange={e => updateSubject(editDate, idx, e.target.value)}
+                      placeholder={`What are students doing in ${sub.label}?`}
+                      className="flex-1 px-3 py-3 text-[14px] bg-transparent border-b border-border/40 outline-none focus:border-navy transition-colors placeholder:text-text-tertiary/25"
+                      autoFocus={idx === 0}
+                      onKeyDown={e => {
+                        if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
+                          e.preventDefault()
+                          const inputs = document.querySelectorAll('.pcal-modal-input')
+                          const cur = Array.from(inputs).indexOf(e.currentTarget)
+                          if (cur >= 0 && cur < inputs.length - 1) (inputs[cur + 1] as HTMLInputElement).focus()
+                        }
+                        if (e.key === 'ArrowUp') {
+                          e.preventDefault()
+                          const inputs = document.querySelectorAll('.pcal-modal-input')
+                          const cur = Array.from(inputs).indexOf(e.currentTarget)
+                          if (cur > 0) (inputs[cur - 1] as HTMLInputElement).focus()
+                        }
+                        // Cmd+Left/Right to change day
+                        if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); navigateModal('prev') }
+                        if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); navigateModal('next') }
+                      }}
+                      data-input-idx={idx}
+                      ref={el => { if (el) el.classList.add('pcal-modal-input') }}
+                    />
+                  </div>
+                ))}
+
+                {/* Objective */}
+                <div className="flex items-center gap-3 pt-4 mt-2 border-t border-border/20">
+                  <label className="text-[11px] font-medium text-text-tertiary w-[72px] text-right shrink-0 italic">Students will</label>
+                  <input
+                    value={editDay.objective}
+                    onChange={e => updateField(editDate, 'objective', e.target.value)}
+                    placeholder="identify main idea and key details in a nonfiction text"
+                    className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-transparent border-b border-border/40 outline-none focus:border-navy transition-colors placeholder:text-text-tertiary/20 italic"
+                    onKeyDown={e => {
+                      if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
+                        e.preventDefault()
+                        const inputs = document.querySelectorAll('.pcal-modal-input')
+                        const cur = Array.from(inputs).indexOf(e.currentTarget)
+                        if (cur >= 0 && cur < inputs.length - 1) (inputs[cur + 1] as HTMLInputElement).focus()
+                      }
+                      if (e.key === 'ArrowUp') {
+                        e.preventDefault()
+                        const inputs = document.querySelectorAll('.pcal-modal-input')
+                        const cur = Array.from(inputs).indexOf(e.currentTarget)
+                        if (cur > 0) (inputs[cur - 1] as HTMLInputElement).focus()
+                      }
+                      if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); navigateModal('prev') }
+                      if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); navigateModal('next') }
+                    }}
+                  />
+                </div>
+
+                {/* Homework */}
+                <div className="flex items-center gap-3 pt-2">
+                  <label className="text-[11px] font-bold text-amber-700 w-[72px] text-right shrink-0">Homework</label>
+                  <input
+                    value={editDay.homework}
+                    onChange={e => updateField(editDate, 'homework', e.target.value)}
+                    placeholder="(optional)"
+                    className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-amber-50/30 border-b border-amber-200/30 outline-none focus:border-amber-400 transition-colors placeholder:text-text-tertiary/20 rounded-t"
+                    onKeyDown={e => {
+                      if (e.key === 'ArrowUp') {
+                        e.preventDefault()
+                        const inputs = document.querySelectorAll('.pcal-modal-input')
+                        const cur = Array.from(inputs).indexOf(e.currentTarget)
+                        if (cur > 0) (inputs[cur - 1] as HTMLInputElement).focus()
+                      }
+                      if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); navigateModal('prev') }
+                      if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); navigateModal('next') }
+                      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveDay(editDate).then(() => setEditDate(null)) }
+                      if (e.key === 'Escape') { saveDay(editDate).then(() => setEditDate(null)) }
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Modal footer */}
+            <div className="px-5 py-3 border-t border-border flex items-center justify-between bg-surface-alt/30 rounded-b-xl">
+              <p className="text-[10px] text-text-tertiary">Arrow keys to move between fields -- Cmd+Arrow to change day -- Esc to save and close</p>
+              <button onClick={async () => { await saveDay(editDate); setEditDate(null) }}
+                className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Done</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// TEACHER WEEKLY PLANS -- Freeform text, Mon-Fri, printable
-// ═══════════════════════════════════════════════════════════════════
-
-function getWeekDatesForPlans(dateStr: string): string[] {
-  // Parse date parts directly to avoid timezone issues
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d) // local midnight, no TZ ambiguity
-  const dow = date.getDay()
-  const mondayOffset = dow === 0 ? -6 : 1 - dow
-  return Array.from({ length: 5 }, (_, i) => {
-    const dd = new Date(y, m - 1, d + mondayOffset + i)
-    return `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`
-  })
-}
-
-function formatShort(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 function TeacherWeeklyPlans() {
