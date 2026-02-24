@@ -751,6 +751,11 @@ function TeacherWeeklyPlans() {
   const isAdmin = currentTeacher?.role === 'admin'
   const teacherClass = currentTeacher?.english_class as EnglishClass
 
+  const formatShort = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return `${m}/${d}`
+  }
+
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(teacherClass || 'Snapdragon')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(3)
   const todayStr = getKSTDateString()
