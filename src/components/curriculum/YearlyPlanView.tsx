@@ -5,20 +5,30 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, Trash2, Pencil, Check } from 'lucide-react'
+import { Plus, X, Loader2, Trash2, Pencil, Check, Bold, Italic, List, Minus } from 'lucide-react'
 
 interface Period { id: string; name: string; sort_order: number; color: string }
 interface Track { id: string; english_class: string; name: string; sort_order: number }
 interface Cell { id?: string; content: string; standard_codes: string[] }
 
+// Render cell content with markdown-like formatting
+function renderCellContent(content: string): string {
+  if (!content) return ''
+  return content
+    .replace(/---/g, '<hr style="border:0;border-top:1px solid #e2e8f0;margin:4px 0">')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<div style="padding-left:12px;position:relative;margin:1px 0"><span style="position:absolute;left:2px">&#8226;</span>$1</div>')
+    .replace(/\n/g, '<br>')
+}
+
 export default function YearlyPlanView() {
   const { currentTeacher, showToast } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin'
+  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Snapdragon'
   const teacherClass = currentTeacher?.english_class as EnglishClass
   const [viewMode, setViewMode] = useState<'class' | 'program'>(isAdmin ? 'program' : 'class')
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(teacherClass || 'Snapdragon')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(3)
-  // Program view filters
   const [progGrade, setProgGrade] = useState<Grade | 'all'>('all')
   const [progClass, setProgClass] = useState<EnglishClass | 'all'>('all')
 
@@ -43,7 +53,6 @@ export default function YearlyPlanView() {
         supabase.from('yearly_plan_periods').select('*').order('sort_order'),
         supabase.from('yearly_plan_tracks').select('*').order('sort_order'),
       ])
-      // Deduplicate periods by name (fix double Spring A/Spring B columns)
       const uniquePeriods = (pRes.data || []).filter((p: any, i: number, arr: any[]) => arr.findIndex((q: any) => q.name === p.name) === i)
       setPeriods(uniquePeriods)
       setTracks(tRes.data || [])
@@ -109,11 +118,26 @@ export default function YearlyPlanView() {
     setRenamingTrack(null); setRenameText('')
   }
 
-  // Program view: which classes/grades to show
+  const insertFormatting = (type: 'bold' | 'italic' | 'bullet' | 'line') => {
+    const ta = document.querySelector('.yearly-plan-editor') as HTMLTextAreaElement
+    if (!ta) return
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    const selected = editText.substring(start, end)
+    let replacement = ''
+    let cursorOffset = 0
+    if (type === 'bold') { replacement = `**${selected || 'text'}**`; cursorOffset = selected ? replacement.length : 2 }
+    else if (type === 'italic') { replacement = `*${selected || 'text'}*`; cursorOffset = selected ? replacement.length : 1 }
+    else if (type === 'bullet') { replacement = `${start > 0 ? '\n' : ''}- ${selected || 'item'}`; cursorOffset = replacement.length }
+    else if (type === 'line') { replacement = `\n---\n`; cursorOffset = replacement.length }
+    const newText = editText.substring(0, start) + replacement + editText.substring(end)
+    setEditText(newText)
+    setTimeout(() => { ta.focus(); ta.setSelectionRange(start + cursorOffset, start + cursorOffset) }, 10)
+  }
+
   const progClasses = progClass === 'all' ? ENGLISH_CLASSES : [progClass]
   const progGrades = progGrade === 'all' ? GRADES : [progGrade]
 
-  // Ensure valid values after any state reset
   useEffect(() => {
     if (progGrade !== 'all' && !GRADES.includes(progGrade)) setProgGrade('all')
     if (progClass !== 'all' && !ENGLISH_CLASSES.includes(progClass)) setProgClass('all')
@@ -161,17 +185,21 @@ export default function YearlyPlanView() {
       {/* CLASS VIEW */}
       {viewMode === 'class' && (
         <div className="bg-surface border border-border rounded-xl overflow-auto">
-          <table className="w-full min-w-[800px]">
+          <table className="w-full table-fixed min-w-[900px]">
+            <colgroup>
+              <col style={{ width: '140px' }} />
+              {periods.map(p => <col key={p.id} />)}
+            </colgroup>
             <thead>
               <tr>
-                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-44 bg-surface-alt border-b border-border">Track</th>
-                {periods.map(p => <th key={p.id} className="text-center px-4 py-3 text-[12px] font-bold border-b border-border" style={{ backgroundColor: p.color, color: '#1B2A4A' }}>{p.name}</th>)}
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-secondary font-semibold bg-surface-alt border-b border-border">Track</th>
+                {periods.map(p => <th key={p.id} className="text-center px-3 py-3 text-[12px] font-bold border-b border-border" style={{ backgroundColor: p.color, color: '#1B2A4A' }}>{p.name}</th>)}
               </tr>
             </thead>
             <tbody>
               {classTracks.map(track => (
-                <tr key={track.id} className="border-t border-border group hover:bg-surface-alt/30">
-                  <td className="px-4 py-3 text-[12px] font-semibold text-navy whitespace-nowrap">
+                <tr key={track.id} className="border-t border-border group">
+                  <td className="px-4 py-3 text-[12px] font-semibold text-navy whitespace-nowrap align-top bg-surface-alt/30">
                     {renamingTrack === track.id ? (
                       <div className="flex items-center gap-1">
                         <input value={renameText} onChange={e => setRenameText(e.target.value)} className="px-2 py-1 border border-navy rounded text-[11px] outline-none w-28" autoFocus
@@ -194,25 +222,26 @@ export default function YearlyPlanView() {
                   {periods.map(period => {
                     const key = `${track.id}::${period.id}`; const cell = cells[key]; const isEditing = editCell === key
                     return (
-                      <td key={period.id} className="px-3 py-2 border-l border-border align-top min-w-[180px]">
+                      <td key={period.id} className="px-3 py-2 border-l border-border align-top">
                         {isEditing ? (
                           <div>
-                            <textarea value={editText} onChange={e => setEditText(e.target.value)} autoFocus rows={3} className="w-full px-2 py-1.5 text-[11px] border border-navy rounded-lg outline-none resize-none" />
-                            <p className="text-[8px] text-text-tertiary mt-0.5">**bold**, *italic*, - bullet</p>
-                            <div className="flex gap-1 mt-1">
-                              <button onClick={() => saveCell(track.id, period.id, editText)} className="px-2 py-0.5 rounded bg-navy text-white text-[10px] font-medium">Save</button>
-                              <button onClick={() => { setEditCell(null); setEditText('') }} className="px-2 py-0.5 rounded bg-surface-alt text-text-secondary text-[10px]">Cancel</button>
+                            <div className="flex gap-0.5 mb-1.5 border-b border-border/50 pb-1.5">
+                              <button onClick={() => insertFormatting('bold')} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Bold"><Bold size={12} /></button>
+                              <button onClick={() => insertFormatting('italic')} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Italic"><Italic size={12} /></button>
+                              <button onClick={() => insertFormatting('bullet')} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Bullet"><List size={12} /></button>
+                              <button onClick={() => insertFormatting('line')} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Divider"><Minus size={12} /></button>
+                            </div>
+                            <textarea value={editText} onChange={e => setEditText(e.target.value)} autoFocus rows={5}
+                              className="yearly-plan-editor w-full px-2 py-1.5 text-[11px] border border-navy rounded-lg outline-none resize-y font-mono leading-relaxed" />
+                            <div className="flex gap-1 mt-1.5">
+                              <button onClick={() => saveCell(track.id, period.id, editText)} className="px-2.5 py-1 rounded bg-navy text-white text-[10px] font-medium">Save</button>
+                              <button onClick={() => { setEditCell(null); setEditText('') }} className="px-2.5 py-1 rounded bg-surface-alt text-text-secondary text-[10px]">Cancel</button>
                             </div>
                           </div>
                         ) : (
                           <div onClick={() => { if (canEdit) { setEditCell(key); setEditText(cell?.content || '') } }}
-                            className={`min-h-[40px] rounded-lg px-2 py-1.5 text-[11px] leading-snug transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'}`}
-                            dangerouslySetInnerHTML={cell?.content ? { __html: cell.content
-                              .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                              .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                              .replace(/^- (.+)$/gm, '<span style="display:block;padding-left:8px">• $1</span>')
-                              .replace(/\n/g, '<br>')
-                            } : undefined}>
+                            className={`min-h-[72px] rounded-lg px-2 py-1.5 text-[11px] leading-relaxed transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'}`}
+                            dangerouslySetInnerHTML={cell?.content ? { __html: renderCellContent(cell.content) } : undefined}>
                             {!cell?.content ? (canEdit ? 'Click to edit' : '') : undefined}
                           </div>
                         )}
@@ -240,44 +269,66 @@ export default function YearlyPlanView() {
         </div>
       )}
 
-      {/* PROGRAM VIEW */}
+      {/* PROGRAM VIEW -- one row per grade per track for equal spacing */}
       {viewMode === 'program' && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {progClasses.map(cls => {
             const clsTracks = tracks.filter(t => t.english_class === cls)
             if (clsTracks.length === 0) return null
             return (
               <div key={cls}>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <span className="inline-flex px-3 py-1 rounded-lg text-[12px] font-bold" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>{cls}</span>
+                  {progGrade === 'all' && <span className="text-[10px] text-text-tertiary">Grades {progGrades.join(', ')}</span>}
                 </div>
                 <div className="bg-surface border border-border rounded-xl overflow-auto">
-                  <table className="w-full min-w-[800px]">
+                  <table className="w-full table-fixed min-w-[900px]">
+                    <colgroup>
+                      <col style={{ width: '120px' }} />
+                      {progGrade === 'all' && <col style={{ width: '40px' }} />}
+                      {periods.map(p => <col key={p.id} />)}
+                    </colgroup>
                     <thead>
                       <tr>
-                        <th className="text-left px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold w-32 bg-surface-alt border-b border-border">Track</th>
-                        {periods.map(p => <th key={p.id} className="text-center px-3 py-2 text-[11px] font-bold border-b border-border" style={{ backgroundColor: p.color, color: '#1B2A4A' }}>{p.name}</th>)}
+                        <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold bg-surface-alt border-b border-border">Track</th>
+                        {progGrade === 'all' && <th className="text-center px-1 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold bg-surface-alt border-b border-border">Gr</th>}
+                        {periods.map(p => <th key={p.id} className="text-center px-3 py-2.5 text-[11px] font-bold border-b border-border" style={{ backgroundColor: p.color, color: '#1B2A4A' }}>{p.name}</th>)}
                       </tr>
                     </thead>
                     <tbody>
-                      {clsTracks.map(track => (
-                        <tr key={track.id} className="border-t border-border">
-                          <td className="px-3 py-2 text-[10px] font-semibold text-navy whitespace-nowrap">{track.name}</td>
-                          {periods.map(period => {
-                            const contents: string[] = []
-                            progGrades.forEach(g => {
-                              const cellData = allCells[`${cls}::${g}`]
-                              const cell = cellData?.[`${track.id}::${period.id}`]
-                              if (cell?.content) contents.push(`${progGrade === 'all' ? `G${g}: ` : ''}${cell.content}`)
-                            })
-                            return (
-                              <td key={period.id} className="px-2 py-1.5 border-l border-border align-top text-[10px] leading-snug text-text-primary min-w-[160px]">
-                                {contents.length > 0 ? contents.map((c, i) => <div key={i} className={i > 0 ? 'mt-1 pt-1 border-t border-border/50' : ''}>{c}</div>) : <span className="text-text-tertiary italic">--</span>}
-                              </td>
-                            )
-                          })}
-                        </tr>
-                      ))}
+                      {clsTracks.map(track => {
+                        return progGrades.map((g, gi) => {
+                          const cellData = allCells[`${cls}::${g}`]
+                          const hasAnyContent = periods.some(p => cellData?.[`${track.id}::${p.id}`]?.content)
+                          return (
+                            <tr key={`${track.id}-${g}`} className={`${gi === 0 ? 'border-t-2 border-border' : 'border-t border-border/30'}`}>
+                              {gi === 0 && (
+                                <td rowSpan={progGrades.length} className="px-3 py-2.5 text-[11px] font-semibold text-navy whitespace-nowrap align-middle bg-surface-alt/20 border-r border-border">
+                                  {track.name}
+                                </td>
+                              )}
+                              {progGrade === 'all' && (
+                                <td className="px-1 py-2 text-center text-[10px] font-bold text-navy border-r border-border/30">
+                                  G{g}
+                                </td>
+                              )}
+                              {periods.map(period => {
+                                const periodCell = cellData?.[`${track.id}::${period.id}`]
+                                return (
+                                  <td key={period.id} className="px-2.5 py-2 border-l border-border/30 align-top" style={{ height: '44px' }}>
+                                    {periodCell?.content ? (
+                                      <div className="text-[10px] leading-relaxed text-text-primary overflow-hidden"
+                                        dangerouslySetInnerHTML={{ __html: renderCellContent(periodCell.content) }} />
+                                    ) : (
+                                      <span className="text-text-tertiary/40 text-[10px]">--</span>
+                                    )}
+                                  </td>
+                                )
+                              })}
+                            </tr>
+                          )
+                        })
+                      })}
                     </tbody>
                   </table>
                 </div>

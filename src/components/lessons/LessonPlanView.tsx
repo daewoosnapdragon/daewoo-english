@@ -106,6 +106,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
   const [hiddenSlots, setHiddenSlots] = useState<Set<string>>(new Set()) // keys like "2026-02-20::PHONICS"
   const [homework, setHomework] = useState<Record<string, HomeworkEntry>>({})
   const [calEvents, setCalEvents] = useState<Record<string, CalendarEvent>>({})
+  const [parentCalEvents, setParentCalEvents] = useState<CalendarEvent[]>([]) // events marked for parent calendar
   const [loading, setLoading] = useState(true)
   const [showSetup, setShowSetup] = useState(false)
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
@@ -142,8 +143,20 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
     if (hwRes.data) hwRes.data.forEach((h: any) => { hm[h.week_start] = h })
     setHomework(hm)
     const ce: Record<string, CalendarEvent> = {}
-    if (eventsRes.data) eventsRes.data.forEach((ev: any) => { ce[ev.date] = ev })
+    const pce: CalendarEvent[] = []
+    if (eventsRes.data) eventsRes.data.forEach((ev: any) => {
+      // Only show events on lesson plan if explicitly checked
+      if (ev.show_on_lesson_plan) ce[ev.date] = ev
+      // Collect parent calendar events (filtered by grade if target_grades specified)
+      if (ev.show_on_parent_calendar) {
+        const tg = ev.target_grades as number[] | null
+        if (!tg || tg.length === 0 || tg.includes(selectedGrade)) {
+          pce.push(ev)
+        }
+      }
+    })
     setCalEvents(ce)
+    setParentCalEvents(pce)
     setLoading(false)
   }, [selectedClass, selectedGrade, year, month])
 
@@ -221,8 +234,12 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
   }
 
   const addSlot = async (dayOfWeek: number, label: string) => {
+    const trimmed = label.trim()
+    // Check for duplicate slot label on same day/class to avoid unique constraint violation
+    const exists = slots.find(s => s.day_of_week === dayOfWeek && s.slot_label.toLowerCase() === trimmed.toLowerCase())
+    if (exists) { showToast(`"${trimmed}" already exists for this day`); return }
     const maxOrder = slots.filter(s => s.day_of_week === dayOfWeek).reduce((max, s) => Math.max(max, s.sort_order), 0)
-    const { data, error } = await supabase.from('lesson_plan_slots').insert({ english_class: selectedClass, grade: selectedGrade, day_of_week: dayOfWeek, slot_label: label.trim(), sort_order: maxOrder + 1 }).select().single()
+    const { data, error } = await supabase.from('lesson_plan_slots').insert({ english_class: selectedClass, grade: selectedGrade, day_of_week: dayOfWeek, slot_label: trimmed, sort_order: maxOrder + 1 }).select().single()
     if (error) { showToast(`Error: ${error.message}`); return }
     setSlots(prev => [...prev, data])
   }
@@ -382,6 +399,14 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
     </div>
   </div>
   <div class="body">${weeksHTML}</div>
+  ${parentCalEvents.length > 0 ? `<div style="margin:8px 16px 12px;padding:10px 14px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px">
+    <div style="font-size:10px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Upcoming Events</div>
+    ${parentCalEvents.sort((a: any, b: any) => a.date.localeCompare(b.date)).map((ev: any) => {
+      const d = new Date(ev.date + 'T12:00:00')
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })
+      return `<div style="display:flex;gap:8px;align-items:baseline;font-size:11px;padding:2px 0"><span style="font-weight:600;color:#3b82f6;min-width:80px">${dateStr}</span><span style="color:#334155">${ev.title}</span></div>`
+    }).join('')}
+  </div>` : ''}
   <div class="footer"><span>Daewoo Elementary School &bull; English Program &bull; ${mn} ${year}</span></div>
 </body></html>`)
     pw.document.close(); setTimeout(() => pw.print(), 400)

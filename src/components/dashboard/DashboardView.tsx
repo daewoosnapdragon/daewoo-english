@@ -20,7 +20,7 @@ const EVENT_TYPES = [
   { value: 'other', label: 'Other', color: '#6B7280', bg: 'bg-gray-100 text-gray-700' },
 ]
 
-interface CalEvent { id: string; title: string; date: string; type: string; description: string; created_by: string | null; created_at: string }
+interface CalEvent { id: string; title: string; date: string; type: string; description: string; created_by: string | null; created_at: string; show_on_lesson_plan?: boolean; show_on_parent_calendar?: boolean; target_grades?: number[] | null }
 interface FlaggedEntry { id: string; student_id: string; date: string; type: string; note: string; time: string; behaviors: string[]; antecedents: string[]; consequences: string[]; intensity: number; frequency: number; activity: string; duration: string; is_flagged: boolean; teacher_name: string; student_name: string; student_class: string; created_at: string }
 
 export default function DashboardView() {
@@ -1064,6 +1064,10 @@ function SharedCalendar() {
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${typeInfo?.bg || 'bg-gray-100 text-gray-700'}`}>{typeInfo?.label || ev.type}</span>
                       </div>
                       {ev.description && <p className="text-[11px] text-text-secondary mt-0.5">{ev.description}</p>}
+                      <div className="flex gap-1.5 mt-1">
+                        {(ev as any).show_on_lesson_plan && <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">Lesson Plan</span>}
+                        {(ev as any).show_on_parent_calendar && <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">Parent Cal{(ev as any).target_grades?.length > 0 ? ` (G${(ev as any).target_grades.join(',')})` : ''}</span>}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <button onClick={() => setEditEvent(ev)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy"><Pencil size={13} /></button>
@@ -1090,19 +1094,31 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
   const [type, setType] = useState(existingEvent?.type || 'event')
   const [desc, setDesc] = useState(existingEvent?.description || '')
   const [showOnLessonPlan, setShowOnLessonPlan] = useState(existingEvent?.show_on_lesson_plan || false)
+  const [showOnParentCalendar, setShowOnParentCalendar] = useState(existingEvent?.show_on_parent_calendar || false)
+  const [targetGrades, setTargetGrades] = useState<number[]>(existingEvent?.target_grades || [])
   const [saving, setSaving] = useState(false)
   const isEdit = !!existingEvent
+
+  const toggleGrade = (g: number) => {
+    setTargetGrades(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g].sort())
+  }
 
   const handleSave = async () => {
     if (!title.trim()) return
     setSaving(true)
+    const payload = {
+      title: title.trim(), date: eventDate, type, description: desc.trim(),
+      show_on_lesson_plan: showOnLessonPlan,
+      show_on_parent_calendar: showOnParentCalendar,
+      target_grades: showOnParentCalendar && targetGrades.length > 0 ? targetGrades : null,
+    }
     if (isEdit) {
-      const { error } = await supabase.from('calendar_events').update({ title: title.trim(), date: eventDate, type, description: desc.trim(), show_on_lesson_plan: showOnLessonPlan }).eq('id', existingEvent.id)
+      const { error } = await supabase.from('calendar_events').update(payload).eq('id', existingEvent.id)
       setSaving(false)
       if (error) showToast(`Error: ${error.message}`)
       else { showToast('Event updated'); onSaved() }
     } else {
-      const { error } = await supabase.from('calendar_events').insert({ title: title.trim(), date: eventDate, type, description: desc.trim(), show_on_lesson_plan: showOnLessonPlan, created_by: currentTeacher?.id || null })
+      const { error } = await supabase.from('calendar_events').insert({ ...payload, created_by: currentTeacher?.id || null })
       setSaving(false)
       if (error) showToast(`Error: ${error.message}`)
       else { showToast('Event added'); onSaved() }
@@ -1132,14 +1148,47 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Description <span className="normal-case text-text-tertiary">(opt)</span></label>
             <textarea value={desc} onChange={(e: any) => setDesc(e.target.value)} rows={2} placeholder="Details..."
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
-          <label className="flex items-center gap-2.5 cursor-pointer py-1 px-5 pb-2">
-            <input type="checkbox" checked={showOnLessonPlan} onChange={e => setShowOnLessonPlan(e.target.checked)}
-              className="w-4 h-4 rounded border-border text-navy focus:ring-navy" />
-            <div>
-              <span className="text-[12px] font-medium text-text-primary">Show on Lesson Plans</span>
-              <span className="text-[10px] text-text-tertiary block">Block this day on monthly lesson plans</span>
-            </div>
-          </label>
+
+          <div className="bg-surface-alt/50 rounded-lg px-4 py-3 space-y-2.5">
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={showOnLessonPlan} onChange={e => setShowOnLessonPlan(e.target.checked)}
+                className="w-4 h-4 rounded border-border text-navy focus:ring-navy" />
+              <div>
+                <span className="text-[12px] font-medium text-text-primary">Block on Lesson Plans</span>
+                <span className="text-[10px] text-text-tertiary block">Blocks this day on the monthly lesson plan grid</span>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={showOnParentCalendar} onChange={e => setShowOnParentCalendar(e.target.checked)}
+                className="w-4 h-4 rounded border-border text-navy focus:ring-navy" />
+              <div>
+                <span className="text-[12px] font-medium text-text-primary">Show on Parent Calendar</span>
+                <span className="text-[10px] text-text-tertiary block">Include when printing calendars for parents</span>
+              </div>
+            </label>
+
+            {showOnParentCalendar && (
+              <div className="ml-7">
+                <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1.5">Which grades?</span>
+                <div className="flex gap-1.5">
+                  <button onClick={() => setTargetGrades(targetGrades.length === 4 ? [] : [2, 3, 4, 5])}
+                    className={`px-2 py-1 rounded text-[10px] font-medium ${targetGrades.length === 4 ? 'bg-navy text-white' : 'bg-surface border border-border text-text-secondary'}`}>
+                    All
+                  </button>
+                  {[2, 3, 4, 5].map(g => (
+                    <button key={g} onClick={() => toggleGrade(g)}
+                      className={`px-2.5 py-1 rounded text-[10px] font-medium ${targetGrades.includes(g) ? 'bg-navy text-white' : 'bg-surface border border-border text-text-secondary hover:border-navy'}`}>
+                      G{g}
+                    </button>
+                  ))}
+                </div>
+                {targetGrades.length === 0 && (
+                  <p className="text-[9px] text-amber-600 mt-1">No grades selected = shows on ALL parent calendars</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Cancel</button>

@@ -3365,6 +3365,15 @@ function QuickCheckView({ students, selectedClass, selectedGrade }: { students: 
   const [archiveData, setArchiveData] = useState<any[]>([])
   const [filterStd, setFilterStd] = useState('')
 
+  // Reset standard selection when grade or class changes to prevent data conflicts
+  useEffect(() => {
+    setSelectedStd(null)
+    setMarks({})
+    setHistory([])
+    setShowArchive(false)
+    setArchiveData([])
+  }, [selectedGrade, selectedClass])
+
   // Load CCSS standards data
   useEffect(() => {
     import('../curriculum/ccss-standards').then(m => {
