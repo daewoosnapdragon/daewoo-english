@@ -151,7 +151,6 @@ export default function YearlyPlanView() {
     setEditText(nextContent)
     yearlyLastSaved.current = nextContent
   }
-  }
 
   // Save current cell and navigate to adjacent period
   const navigatePeriod = async (direction: 'left' | 'right') => {
