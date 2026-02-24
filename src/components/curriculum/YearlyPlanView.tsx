@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
@@ -85,13 +85,16 @@ export default function YearlyPlanView() {
 
   const classTracks = useMemo(() => tracks.filter(t => t.english_class === selectedClass), [tracks, selectedClass])
 
-  const saveCell = async (trackId: string, periodId: string, content: string) => {
+  const saveCellData = async (trackId: string, periodId: string, content: string) => {
     const key = `${trackId}::${periodId}`
     const existing = cells[key]
     const row = { english_class: selectedClass, grade: selectedGrade, track_id: trackId, period_id: periodId, content: content.trim(), updated_by: currentTeacher?.id, updated_at: new Date().toISOString() }
     const { data, error } = await supabase.from('yearly_plan_cells').upsert(row, { onConflict: 'english_class,grade,track_id,period_id' }).select().single()
     if (error) { showToast(`Error: ${error.message}`); return }
     setCells(prev => ({ ...prev, [key]: { id: data.id, content: content.trim(), standard_codes: existing?.standard_codes || [] } }))
+  }
+  const saveCell = async (trackId: string, periodId: string, content: string) => {
+    await saveCellData(trackId, periodId, content)
     setEditModal(null); setEditText('')
   }
 
@@ -138,26 +141,31 @@ export default function YearlyPlanView() {
   // Save current cell and navigate to adjacent track
   const navigateTrack = async (direction: 'up' | 'down') => {
     if (!editModal) return
-    // Save current content first
-    await saveCell(editModal.trackId, editModal.periodId, editText)
+    await saveCellData(editModal.trackId, editModal.periodId, editText)
     const newIdx = editModal.trackIdx + (direction === 'down' ? 1 : -1)
     if (newIdx < 0 || newIdx >= classTracks.length) return
     const nextTrack = classTracks[newIdx]
     const key = `${nextTrack.id}::${editModal.periodId}`
+    const nextContent = cells[key]?.content || ''
     setEditModal({ trackId: nextTrack.id, periodId: editModal.periodId, trackIdx: newIdx, periodIdx: editModal.periodIdx })
-    setEditText(cells[key]?.content || '')
+    setEditText(nextContent)
+    yearlyLastSaved.current = nextContent
+  }
   }
 
   // Save current cell and navigate to adjacent period
   const navigatePeriod = async (direction: 'left' | 'right') => {
     if (!editModal) return
-    await saveCell(editModal.trackId, editModal.periodId, editText)
+    await saveCellData(editModal.trackId, editModal.periodId, editText)
     const newIdx = editModal.periodIdx + (direction === 'right' ? 1 : -1)
     if (newIdx < 0 || newIdx >= periods.length) return
     const nextPeriod = periods[newIdx]
     const key = `${editModal.trackId}::${nextPeriod.id}`
+    const nextContent = cells[key]?.content || ''
     setEditModal({ trackId: editModal.trackId, periodId: nextPeriod.id, trackIdx: editModal.trackIdx, periodIdx: newIdx })
-    setEditText(cells[key]?.content || '')
+    setEditText(nextContent)
+    yearlyLastSaved.current = nextContent
+  }
   }
 
   const openEditModal = (trackId: string, periodId: string) => {
@@ -166,7 +174,22 @@ export default function YearlyPlanView() {
     const key = `${trackId}::${periodId}`
     setEditModal({ trackId, periodId, trackIdx, periodIdx })
     setEditText(cells[key]?.content || '')
+    yearlyLastSaved.current = cells[key]?.content || ''
   }
+
+  // Debounced autosave for yearly plan modal
+  const yearlyAutosaveTimer = useRef<NodeJS.Timeout | null>(null)
+  const yearlyLastSaved = useRef<string>('')
+  useEffect(() => {
+    if (!editModal) return
+    if (editText === yearlyLastSaved.current) return
+    if (yearlyAutosaveTimer.current) clearTimeout(yearlyAutosaveTimer.current)
+    yearlyAutosaveTimer.current = setTimeout(async () => {
+      await saveCellData(editModal.trackId, editModal.periodId, editText)
+      yearlyLastSaved.current = editText
+    }, 2000)
+    return () => { if (yearlyAutosaveTimer.current) clearTimeout(yearlyAutosaveTimer.current) }
+  }, [editText, editModal])
 
   const progClasses = progClass === 'all' ? ENGLISH_CLASSES : [progClass]
   const progGrades = progGrade === 'all' ? GRADES : [progGrade]

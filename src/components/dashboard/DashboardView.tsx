@@ -1106,36 +1106,38 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
   const handleSave = async () => {
     if (!title.trim()) return
     setSaving(true)
-    // Base payload (always works with existing columns)
-    const basePayload: any = {
+    const payload: any = {
       title: title.trim(), date: eventDate, type, description: desc.trim(),
       show_on_lesson_plan: showOnLessonPlan,
-    }
-    // Extended payload (requires add_parent_calendar_fields migration)
-    const extPayload: any = {
-      ...basePayload,
       show_on_parent_calendar: showOnParentCalendar,
       target_grades: showOnParentCalendar && targetGrades.length > 0 ? targetGrades : null,
     }
 
-    const tryPayload = async (payload: any) => {
-      if (isEdit) {
-        const { error } = await supabase.from('calendar_events').update(payload).eq('id', existingEvent.id)
-        return error
-      } else {
-        const { error } = await supabase.from('calendar_events').insert({ ...payload, created_by: currentTeacher?.id || null })
-        return error
-      }
+    let error: any = null
+    if (isEdit) {
+      const res = await supabase.from('calendar_events').update(payload).eq('id', existingEvent.id)
+      error = res.error
+    } else {
+      const res = await supabase.from('calendar_events').insert({ ...payload, created_by: currentTeacher?.id || null })
+      error = res.error
     }
 
-    // Try with extended fields first, fall back to base if columns don't exist (400 error)
-    let error = await tryPayload(extPayload)
-    if (error && (error.code === '42703' || error.message?.includes('column') || error.message?.includes('schema') || String(error.code) === 'PGRST204' || (error as any).status === 400)) {
-      error = await tryPayload(basePayload)
+    // If columns don't exist, retry without them and warn
+    if (error && (error.code === '42703' || error.message?.includes('column') || error.message?.includes('schema'))) {
+      const { show_on_parent_calendar, target_grades, ...basePayload } = payload
+      if (isEdit) {
+        const res = await supabase.from('calendar_events').update(basePayload).eq('id', existingEvent.id)
+        error = res.error
+      } else {
+        const res = await supabase.from('calendar_events').insert({ ...basePayload, created_by: currentTeacher?.id || null })
+        error = res.error
+      }
+      if (!error) showToast('Saved -- run add_parent_calendar_fields.sql to enable parent calendar features')
     }
+
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast(isEdit ? 'Event updated' : 'Event added'); onSaved() }
+    else { if (!error) showToast(isEdit ? 'Event updated' : 'Event added'); onSaved() }
   }
 
   return (
@@ -1185,11 +1187,11 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
               <div className="ml-7">
                 <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1.5">Which grades?</span>
                 <div className="flex gap-1.5">
-                  <button onClick={() => setTargetGrades(targetGrades.length === 4 ? [] : [2, 3, 4, 5])}
-                    className={`px-2 py-1 rounded text-[10px] font-medium ${targetGrades.length === 4 ? 'bg-navy text-white' : 'bg-surface border border-border text-text-secondary'}`}>
+                  <button onClick={() => setTargetGrades(targetGrades.length === 5 ? [] : [1, 2, 3, 4, 5])}
+                    className={`px-2 py-1 rounded text-[10px] font-medium ${targetGrades.length === 5 ? 'bg-navy text-white' : 'bg-surface border border-border text-text-secondary'}`}>
                     All
                   </button>
-                  {[2, 3, 4, 5].map(g => (
+                  {[1, 2, 3, 4, 5].map(g => (
                     <button key={g} onClick={() => toggleGrade(g)}
                       className={`px-2.5 py-1 rounded text-[10px] font-medium ${targetGrades.includes(g) ? 'bg-navy text-white' : 'bg-surface border border-border text-text-secondary hover:border-navy'}`}>
                       G{g}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
@@ -126,13 +126,13 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
 
     const [planRes, eventsRes] = await Promise.all([
       supabase.from('parent_calendar').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade).gte('date', firstDay).lte('date', lastDay),
-      supabase.from('calendar_events').select('date, title, type, show_on_lesson_plan, show_on_parent_calendar, target_grades').gte('date', firstDay).lte('date', lastDay),
+      supabase.from('calendar_events').select('date, title, type, show_on_parent_calendar, target_grades').gte('date', firstDay).lte('date', lastDay),
     ])
 
     const dd: Record<string, DayContent> = {}
 
     if (planRes.error && (planRes.error.message?.includes('does not exist') || planRes.error.code === '42P01')) {
-      // Table doesn't exist -- fall back to legacy lesson_plan_entries
+      // parent_calendar table doesn't exist -- fall back to legacy
       const legacyRes = await supabase.from('lesson_plan_entries').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade).gte('date', firstDay).lte('date', lastDay)
       if (legacyRes.data) {
         legacyRes.data.forEach((e: any) => {
@@ -156,19 +156,22 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
       })
     }
 
+    // Load calendar events for parent calendar
     const ce: Record<string, { title: string; type?: string }> = {}
-    // Show events that are either marked for lesson plan OR marked for parent calendar for this grade
+    let eventsList = eventsRes.data
     if (eventsRes.error) {
-      // If select fails (columns don't exist), retry without the new columns
-      const fallbackRes = await supabase.from('calendar_events').select('date, title, type, show_on_lesson_plan').gte('date', firstDay).lte('date', lastDay)
-      fallbackRes.data?.forEach((ev: any) => { if (ev.show_on_lesson_plan) ce[ev.date] = { title: ev.title, type: ev.type } })
-    } else {
-      eventsRes.data?.forEach((ev: any) => {
-        const showLesson = ev.show_on_lesson_plan
-        const showParent = ev.show_on_parent_calendar
+      // show_on_parent_calendar column doesn't exist -- retry without it (no events will show, that's correct)
+      const fallbackRes = await supabase.from('calendar_events').select('date, title, type').gte('date', firstDay).lte('date', lastDay)
+      // Without the column we can't filter, so don't show any events
+      // (teacher needs to run migration to enable this feature)
+      eventsList = null
+    }
+    if (eventsList) {
+      eventsList.forEach((ev: any) => {
+        if (!ev.show_on_parent_calendar) return
         const tg = ev.target_grades as number[] | null
         const gradeMatch = !tg || tg.length === 0 || tg.includes(selectedGrade)
-        if (showLesson || (showParent && gradeMatch)) {
+        if (gradeMatch) {
           ce[ev.date] = { title: ev.title, type: ev.type }
         }
       })
@@ -209,6 +212,51 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
       return { ...prev, [date]: d }
     })
   }
+  const updateSubjectLabel = (date: string, idx: number, label: string) => {
+    setDayData(prev => {
+      const d = { ...(prev[date] || emptyDay()) }
+      d.subjects = [...d.subjects]; d.subjects[idx] = { ...d.subjects[idx], label }
+      return { ...prev, [date]: d }
+    })
+  }
+  const addSubjectRow = (date: string) => {
+    setDayData(prev => {
+      const d = { ...(prev[date] || emptyDay()) }
+      d.subjects = [...d.subjects, { label: '', content: '' }]
+      return { ...prev, [date]: d }
+    })
+  }
+  const removeSubjectRow = (date: string, idx: number) => {
+    setDayData(prev => {
+      const d = { ...(prev[date] || emptyDay()) }
+      d.subjects = d.subjects.filter((_, i) => i !== idx)
+      return { ...prev, [date]: d }
+    })
+  }
+  const openDay = (date: string) => {
+    if (!canEdit) return
+    // If this day has no data, inherit labels from the nearest day that does
+    if (!dayData[date] || !dayData[date].subjects.some(s => s.content.trim() || s.label !== DEFAULT_SUBJECTS[dayData[date].subjects.indexOf(s)])) {
+      const filledDays = Object.entries(dayData).filter(([_, d]) => d.subjects.some(s => s.content.trim()))
+      if (filledDays.length > 0) {
+        // Use the labels from the closest filled day
+        const closest = filledDays.reduce((best, [d]) => {
+          return Math.abs(new Date(d).getTime() - new Date(date).getTime()) <
+                 Math.abs(new Date(best).getTime() - new Date(date).getTime()) ? d : best
+        }, filledDays[0][0])
+        const templateLabels = dayData[closest].subjects.map(s => s.label)
+        setDayData(prev => ({
+          ...prev,
+          [date]: {
+            ...(prev[date] || emptyDay()),
+            subjects: templateLabels.map(label => ({ label, content: prev[date]?.subjects.find(s => s.label === label)?.content || '' }))
+          }
+        }))
+      }
+    }
+    setEditDate(date)
+  }
+
   const updateField = (date: string, field: 'objective' | 'notes', value: string) => {
     setDayData(prev => ({ ...prev, [date]: { ...(prev[date] || emptyDay()), [field]: value } }))
   }
@@ -262,6 +310,30 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
     setSaving(false)
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : 'Month saved')
   }
+
+  // Debounced autosave -- save current day after 2s of no edits
+  const autosaveTimer = useRef<NodeJS.Timeout | null>(null)
+  const lastSavedRef = useRef<string>('')
+
+  useEffect(() => {
+    if (!editDate || !canEdit) return
+    const content = dayData[editDate]
+    if (!content) return
+    const contentStr = JSON.stringify(content)
+    if (contentStr === lastSavedRef.current) return
+
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    autosaveTimer.current = setTimeout(async () => {
+      await supabase.from('parent_calendar').upsert({
+        date: editDate, english_class: selectedClass, grade: selectedGrade,
+        content: contentStr,
+        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+      }, { onConflict: 'date,english_class,grade' })
+      lastSavedRef.current = contentStr
+    }, 2000)
+
+    return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current) }
+  }, [dayData, editDate, canEdit, selectedClass, selectedGrade])
 
   // Navigate to adjacent weekday from modal
   const getAdjacentDate = (date: string, direction: 'prev' | 'next'): string | null => {
@@ -340,8 +412,8 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   .day-num { color: #475569; font-weight: 800; }
   .subj { font-size: 9.5px; line-height: 1.4; margin: 2px 0; }
   .subj-label { font-weight: 700; color: #1e3a5f; }
-  .obj { font-size: 9px; color: #334155; font-style: italic; margin-top: 3px; padding-top: 3px; border-top: 1px solid #f1f5f9; }
-  .obj-pre { color: #64748b; font-weight: 600; }
+  .obj { font-size: 9px; color: #1e293b; font-style: italic; margin-top: 3px; padding-top: 3px; border-top: 1px solid #f1f5f9; }
+  .obj-pre { color: #475569; font-weight: 600; }
   .hw { font-size: 9px; font-weight: 600; color: #b8860b; margin-top: 3px; padding: 2px 5px; background: #fff8e1; border-radius: 3px; }
   .event { font-size: 9px; font-weight: 700; color: #475569; background: #e2e8f0; border-radius: 4px; padding: 3px 6px; margin-bottom: 4px; }
   .no-class { font-size: 9px; color: #94a3b8; font-style: italic; text-align: center; padding: 10px 0; }
@@ -455,30 +527,30 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                   const hasFill = data.subjects.some(s => s.content.trim())
                   return (
                     <div key={di}
-                      onClick={() => { if (canEdit) setEditDate(day.date) }}
+                      onClick={() => openDay(day.date)}
                       className={`border-r border-border last:border-r-0 min-h-[110px] p-2.5 transition-all ${
                         canEdit ? 'cursor-pointer hover:bg-blue-50/30' : ''
                       } ${isToday ? 'bg-amber-50/30 ring-2 ring-inset ring-gold/40' : 'bg-white'}`}>
                       {/* Day header */}
-                      <div className={`text-[9px] font-bold uppercase tracking-wider mb-1.5 pb-1 border-b ${isToday ? 'text-gold border-gold/20' : 'text-text-tertiary border-border/30'}`}>
+                      <div className={`text-[9px] font-bold uppercase tracking-wider mb-1.5 pb-1 border-b ${isToday ? 'text-amber-700 border-gold/30' : 'text-slate-500 border-border/40'}`}>
                         {DAY_SHORT[di]} <span className="text-text-primary font-extrabold">{month + 1}/{day.dayNum}</span>
                         {isToday && <span className="text-gold ml-1">TODAY</span>}
                       </div>
 
                       {noG5 ? (
-                        <div className="text-[10px] text-text-tertiary italic text-center mt-4">No G5 Mondays</div>
+                        <div className="text-[10px] text-text-secondary italic text-center mt-4">No G5 Mondays</div>
                       ) : (
                         <>
                           {ev && <div className="text-[9px] font-bold text-slate-600 bg-slate-100 rounded px-1.5 py-1 mb-1.5">{ev.title}</div>}
                           {data.subjects.filter(s => s.content.trim()).map(s => (
                             <div key={s.label} className="text-[10px] leading-snug mb-0.5">
                               <span className="font-bold text-navy">{s.label}:</span>{' '}
-                              <span className="text-text-secondary">{s.content}</span>
+                              <span className="text-text-primary">{s.content}</span>
                             </div>
                           ))}
                           {data.objective && (
-                            <div className="text-[9px] text-text-secondary italic mt-1 pt-1 border-t border-border/20">
-                              <span className="text-text-tertiary font-medium">Students will</span> {data.objective}
+                            <div className="text-[9px] text-text-primary italic mt-1 pt-1 border-t border-border/20">
+                              <span className="text-navy font-semibold">Students will</span> {data.objective}
                             </div>
                           )}
                           {!hasFill && !data.objective && !ev && canEdit && (
@@ -496,6 +568,13 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                     <span className="text-[10px] font-bold text-amber-800 shrink-0">Weekly HW:</span>
                     {canEdit ? (
                       <input value={hw} onChange={e => updateHomework(weekMonday, e.target.value)}
+                        onBlur={async () => {
+                          await supabase.from('parent_calendar').upsert({
+                            date: weekMonday, english_class: selectedClass + '_hw', grade: selectedGrade,
+                            content: JSON.stringify({ homework: weeklyHomework[weekMonday] || '' }),
+                            updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+                          }, { onConflict: 'date,english_class,grade' })
+                        }}
                         placeholder="Enter homework for this week..."
                         className="flex-1 text-[10px] bg-transparent outline-none text-amber-900 placeholder:text-amber-300 py-0.5" />
                     ) : (
@@ -543,13 +622,18 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
               <div className="px-5 py-5 space-y-0">
                 {/* Subject inputs */}
                 {editDay.subjects.map((sub, idx) => (
-                  <div key={sub.label} className="flex items-center gap-3">
-                    <label className="text-[12px] font-bold text-navy w-[72px] text-right shrink-0 py-3">{sub.label}</label>
+                  <div key={idx} className="flex items-center gap-2 group">
+                    <input
+                      value={sub.label}
+                      onChange={e => updateSubjectLabel(editDate, idx, e.target.value)}
+                      className="text-[12px] font-bold text-navy w-[76px] text-right shrink-0 py-3 bg-transparent outline-none border-b border-transparent focus:border-navy/30 placeholder:text-navy/30"
+                      placeholder="Label"
+                    />
                     <input
                       value={sub.content}
                       onChange={e => updateSubject(editDate, idx, e.target.value)}
-                      placeholder={`What are students doing in ${sub.label}?`}
-                      className="flex-1 px-3 py-3 text-[14px] bg-transparent border-b border-border/40 outline-none focus:border-navy transition-colors placeholder:text-text-tertiary/25"
+                      placeholder={sub.label ? `What are students doing in ${sub.label}?` : 'Content...'}
+                      className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-transparent border-b border-border/40 outline-none focus:border-navy transition-colors placeholder:text-text-tertiary/25"
                       autoFocus={idx === 0}
                       onKeyDown={e => {
                         if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
@@ -564,19 +648,24 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                           const cur = Array.from(inputs).indexOf(e.currentTarget)
                           if (cur > 0) (inputs[cur - 1] as HTMLInputElement).focus()
                         }
-                        // Cmd+Left/Right to change day
                         if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); navigateModal('prev') }
                         if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); navigateModal('next') }
                       }}
-                      data-input-idx={idx}
                       ref={el => { if (el) el.classList.add('pcal-modal-input') }}
                     />
+                    {editDay.subjects.length > 1 && (
+                      <button onClick={() => removeSubjectRow(editDate, idx)} className="opacity-0 group-hover:opacity-40 hover:!opacity-100 p-1 text-red-400 hover:text-red-600 transition-opacity shrink-0" title="Remove row"><X size={14} /></button>
+                    )}
                   </div>
                 ))}
+                {/* Add subject row */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button onClick={() => addSubjectRow(editDate)} className="ml-[76px] text-[11px] text-text-tertiary hover:text-navy font-medium px-2 py-1 rounded hover:bg-surface-alt transition-colors">+ Add row</button>
+                </div>
 
                 {/* Objective */}
                 <div className="flex items-center gap-3 pt-4 mt-2 border-t border-border/20">
-                  <label className="text-[12px] font-semibold text-text-secondary w-[72px] text-right shrink-0 italic">Students will</label>
+                  <label className="text-[12px] font-bold text-navy w-[72px] text-right shrink-0 italic">Students will</label>
                   <input
                     value={editDay.objective}
                     onChange={e => updateField(editDate, 'objective', e.target.value)}
@@ -724,6 +813,33 @@ function TeacherWeeklyPlans() {
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasChanges])
+
+  // Debounced autosave -- save all plans after 3s of no edits
+  const teacherAutosaveTimer = useRef<NodeJS.Timeout | null>(null)
+  useEffect(() => {
+    if (!hasChanges || !canEdit) return
+    if (teacherAutosaveTimer.current) clearTimeout(teacherAutosaveTimer.current)
+    teacherAutosaveTimer.current = setTimeout(async () => {
+      let errors = 0
+      for (const date of weekDates) {
+        const text = plans[date] || ''
+        const { error } = await supabase.from('teacher_daily_plans').upsert({
+          date, english_class: selectedClass, plan_text: text,
+          updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+        }, { onConflict: 'date,english_class' })
+        if (error) errors++
+      }
+      if (plans['_reflection'] !== undefined) {
+        await supabase.from('teacher_daily_plans').upsert({
+          date: weekDates[0], english_class: selectedClass + '_refl',
+          plan_text: plans['_reflection'] || '',
+          updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+        }, { onConflict: 'date,english_class' })
+      }
+      if (errors === 0) setHasChanges(false)
+    }, 3000)
+    return () => { if (teacherAutosaveTimer.current) clearTimeout(teacherAutosaveTimer.current) }
+  }, [plans, hasChanges, canEdit])
 
   const changeWeek = (delta: number) => {
     const [y, m, d] = weekDates[0].split('-').map(Number)
