@@ -166,7 +166,6 @@ export default function YearlyPlanView() {
     setEditText(nextContent)
     yearlyLastSaved.current = nextContent
   }
-  }
 
   const openEditModal = (trackId: string, periodId: string) => {
     const trackIdx = classTracks.findIndex(t => t.id === trackId)
