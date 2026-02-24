@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, Trash2, Pencil, Check, Bold, Italic, List, Minus } from 'lucide-react'
+import { Plus, X, Loader2, Trash2, Pencil, Check, Bold, Italic, List, Minus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Period { id: string; name: string; sort_order: number; color: string }
 interface Track { id: string; english_class: string; name: string; sort_order: number }
@@ -37,7 +37,7 @@ export default function YearlyPlanView() {
   const [cells, setCells] = useState<Record<string, Cell>>({})
   const [allCells, setAllCells] = useState<Record<string, Record<string, Cell>>>({})
   const [loading, setLoading] = useState(true)
-  const [editCell, setEditCell] = useState<string | null>(null)
+  const [editModal, setEditModal] = useState<{ trackId: string; periodId: string; trackIdx: number; periodIdx: number } | null>(null)
   const [editText, setEditText] = useState('')
   const [addingTrack, setAddingTrack] = useState(false)
   const [newTrackName, setNewTrackName] = useState('')
@@ -92,7 +92,7 @@ export default function YearlyPlanView() {
     const { data, error } = await supabase.from('yearly_plan_cells').upsert(row, { onConflict: 'english_class,grade,track_id,period_id' }).select().single()
     if (error) { showToast(`Error: ${error.message}`); return }
     setCells(prev => ({ ...prev, [key]: { id: data.id, content: content.trim(), standard_codes: existing?.standard_codes || [] } }))
-    setEditCell(null); setEditText('')
+    setEditModal(null); setEditText('')
   }
 
   const addTrack = async () => {
@@ -133,6 +133,39 @@ export default function YearlyPlanView() {
     const newText = editText.substring(0, start) + replacement + editText.substring(end)
     setEditText(newText)
     setTimeout(() => { ta.focus(); ta.setSelectionRange(start + cursorOffset, start + cursorOffset) }, 10)
+  }
+
+  // Save current cell and navigate to adjacent track
+  const navigateTrack = async (direction: 'up' | 'down') => {
+    if (!editModal) return
+    // Save current content first
+    await saveCell(editModal.trackId, editModal.periodId, editText)
+    const newIdx = editModal.trackIdx + (direction === 'down' ? 1 : -1)
+    if (newIdx < 0 || newIdx >= classTracks.length) return
+    const nextTrack = classTracks[newIdx]
+    const key = `${nextTrack.id}::${editModal.periodId}`
+    setEditModal({ trackId: nextTrack.id, periodId: editModal.periodId, trackIdx: newIdx, periodIdx: editModal.periodIdx })
+    setEditText(cells[key]?.content || '')
+  }
+
+  // Save current cell and navigate to adjacent period
+  const navigatePeriod = async (direction: 'left' | 'right') => {
+    if (!editModal) return
+    await saveCell(editModal.trackId, editModal.periodId, editText)
+    const newIdx = editModal.periodIdx + (direction === 'right' ? 1 : -1)
+    if (newIdx < 0 || newIdx >= periods.length) return
+    const nextPeriod = periods[newIdx]
+    const key = `${editModal.trackId}::${nextPeriod.id}`
+    setEditModal({ trackId: editModal.trackId, periodId: nextPeriod.id, trackIdx: editModal.trackIdx, periodIdx: newIdx })
+    setEditText(cells[key]?.content || '')
+  }
+
+  const openEditModal = (trackId: string, periodId: string) => {
+    const trackIdx = classTracks.findIndex(t => t.id === trackId)
+    const periodIdx = periods.findIndex(p => p.id === periodId)
+    const key = `${trackId}::${periodId}`
+    setEditModal({ trackId, periodId, trackIdx, periodIdx })
+    setEditText(cells[key]?.content || '')
   }
 
   const progClasses = progClass === 'all' ? ENGLISH_CLASSES : [progClass]
@@ -220,31 +253,14 @@ export default function YearlyPlanView() {
                     )}
                   </td>
                   {periods.map(period => {
-                    const key = `${track.id}::${period.id}`; const cell = cells[key]; const isEditing = editCell === key
+                    const key = `${track.id}::${period.id}`; const cell = cells[key]
                     return (
                       <td key={period.id} className="px-3 py-2 border-l border-border align-top">
-                        {isEditing ? (
-                          <div>
-                            <div className="flex gap-0.5 mb-1.5 border-b border-border/50 pb-1.5">
-                              <button onClick={() => insertFormatting('bold')} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Bold"><Bold size={12} /></button>
-                              <button onClick={() => insertFormatting('italic')} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Italic"><Italic size={12} /></button>
-                              <button onClick={() => insertFormatting('bullet')} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Bullet"><List size={12} /></button>
-                              <button onClick={() => insertFormatting('line')} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Divider"><Minus size={12} /></button>
-                            </div>
-                            <textarea value={editText} onChange={e => setEditText(e.target.value)} autoFocus rows={5}
-                              className="yearly-plan-editor w-full px-2 py-1.5 text-[11px] border border-navy rounded-lg outline-none resize-y font-mono leading-relaxed" />
-                            <div className="flex gap-1 mt-1.5">
-                              <button onClick={() => saveCell(track.id, period.id, editText)} className="px-2.5 py-1 rounded bg-navy text-white text-[10px] font-medium">Save</button>
-                              <button onClick={() => { setEditCell(null); setEditText('') }} className="px-2.5 py-1 rounded bg-surface-alt text-text-secondary text-[10px]">Cancel</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div onClick={() => { if (canEdit) { setEditCell(key); setEditText(cell?.content || '') } }}
+                          <div onClick={() => { if (canEdit) openEditModal(track.id, period.id) }}
                             className={`min-h-[72px] rounded-lg px-2 py-1.5 text-[11px] leading-relaxed transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'}`}
                             dangerouslySetInnerHTML={cell?.content ? { __html: renderCellContent(cell.content) } : undefined}>
                             {!cell?.content ? (canEdit ? 'Click to edit' : '') : undefined}
                           </div>
-                        )}
                       </td>
                     )
                   })}
@@ -337,6 +353,60 @@ export default function YearlyPlanView() {
           })}
         </div>
       )}
+      {/* EDIT MODAL */}
+      {editModal && (() => {
+        const track = classTracks.find(t => t.id === editModal.trackId)
+        const period = periods.find(p => p.id === editModal.periodId)
+        const canGoUp = editModal.trackIdx > 0
+        const canGoDown = editModal.trackIdx < classTracks.length - 1
+        const canGoLeft = editModal.periodIdx > 0
+        const canGoRight = editModal.periodIdx < periods.length - 1
+        return (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => { saveCell(editModal.trackId, editModal.periodId, editText); setEditModal(null) }}>
+            <div className="bg-surface rounded-xl shadow-xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+              <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+                <div>
+                  <h3 className="font-display text-[15px] font-semibold text-navy">{track?.name}</h3>
+                  <p className="text-[11px] text-text-secondary">{period?.name} -- {selectedClass} Grade {selectedGrade}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => navigatePeriod('left')} disabled={!canGoLeft} className="p-1.5 rounded-lg hover:bg-surface-alt disabled:opacity-20" title="Previous period"><ChevronLeft size={16} /></button>
+                  <button onClick={() => navigateTrack('up')} disabled={!canGoUp} className="p-1.5 rounded-lg hover:bg-surface-alt disabled:opacity-20" title="Previous track"><ChevronUp size={16} /></button>
+                  <button onClick={() => navigateTrack('down')} disabled={!canGoDown} className="p-1.5 rounded-lg hover:bg-surface-alt disabled:opacity-20" title="Next track"><ChevronDown size={16} /></button>
+                  <button onClick={() => navigatePeriod('right')} disabled={!canGoRight} className="p-1.5 rounded-lg hover:bg-surface-alt disabled:opacity-20" title="Next period"><ChevronRight size={16} /></button>
+                  <div className="w-px h-5 bg-border mx-1" />
+                  <button onClick={() => { saveCell(editModal.trackId, editModal.periodId, editText); setEditModal(null) }} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+                </div>
+              </div>
+              <div className="p-5">
+                <div className="flex gap-1 mb-3">
+                  <button onClick={() => insertFormatting('bold')} className="px-2.5 py-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy text-[11px] font-medium flex items-center gap-1"><Bold size={13} /> Bold</button>
+                  <button onClick={() => insertFormatting('italic')} className="px-2.5 py-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy text-[11px] font-medium flex items-center gap-1"><Italic size={13} /> Italic</button>
+                  <button onClick={() => insertFormatting('bullet')} className="px-2.5 py-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy text-[11px] font-medium flex items-center gap-1"><List size={13} /> Bullet</button>
+                  <button onClick={() => insertFormatting('line')} className="px-2.5 py-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy text-[11px] font-medium flex items-center gap-1"><Minus size={13} /> Line</button>
+                </div>
+                <textarea value={editText} onChange={e => setEditText(e.target.value)} autoFocus rows={10}
+                  className="yearly-plan-editor w-full px-4 py-3 text-[13px] border border-border rounded-xl outline-none resize-y font-mono leading-relaxed focus:border-navy focus:ring-1 focus:ring-navy/20"
+                  placeholder={"Type content here...\n\nFormatting: **bold**, *italic*, - bullet, --- divider"}
+                  onKeyDown={e => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowDown') { e.preventDefault(); navigateTrack('down') }
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowUp') { e.preventDefault(); navigateTrack('up') }
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); navigatePeriod('left') }
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); navigatePeriod('right') }
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveCell(editModal.trackId, editModal.periodId, editText); setEditModal(null) }
+                    if (e.key === 'Escape') { saveCell(editModal.trackId, editModal.periodId, editText); setEditModal(null) }
+                  }}
+                />
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-[10px] text-text-tertiary">Cmd+Arrow to navigate -- Cmd+Enter or Esc to save</p>
+                  <button onClick={() => { saveCell(editModal.trackId, editModal.periodId, editText); setEditModal(null) }}
+                    className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

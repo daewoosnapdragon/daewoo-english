@@ -1106,23 +1106,39 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
   const handleSave = async () => {
     if (!title.trim()) return
     setSaving(true)
-    const payload = {
+    // Base payload (always works)
+    const basePayload: any = {
       title: title.trim(), date: eventDate, type, description: desc.trim(),
       show_on_lesson_plan: showOnLessonPlan,
+    }
+    // Extended payload (requires migration)
+    const extPayload: any = {
+      ...basePayload,
       show_on_parent_calendar: showOnParentCalendar,
       target_grades: showOnParentCalendar && targetGrades.length > 0 ? targetGrades : null,
     }
-    if (isEdit) {
-      const { error } = await supabase.from('calendar_events').update(payload).eq('id', existingEvent.id)
-      setSaving(false)
-      if (error) showToast(`Error: ${error.message}`)
-      else { showToast('Event updated'); onSaved() }
-    } else {
-      const { error } = await supabase.from('calendar_events').insert({ ...payload, created_by: currentTeacher?.id || null })
-      setSaving(false)
-      if (error) showToast(`Error: ${error.message}`)
-      else { showToast('Event added'); onSaved() }
+
+    const tryPayload = async (payload: any, fallback: boolean) => {
+      if (isEdit) {
+        const { error } = await supabase.from('calendar_events').update(payload).eq('id', existingEvent.id)
+        return error
+      } else {
+        const { error } = await supabase.from('calendar_events').insert({ ...payload, created_by: currentTeacher?.id || null })
+        return error
+      }
     }
+
+    // Try with extended fields first, fall back to base if columns don't exist
+    let error = await tryPayload(extPayload, false)
+    if (error && error.message?.includes('schema cache')) {
+      error = await tryPayload(basePayload, true)
+      if (!error && (showOnParentCalendar || targetGrades.length > 0)) {
+        showToast('Saved (run SQL migration to enable parent calendar features)')
+      }
+    }
+    setSaving(false)
+    if (error) showToast(`Error: ${error.message}`)
+    else { showToast(isEdit ? 'Event updated' : 'Event added'); onSaved() }
   }
 
   return (

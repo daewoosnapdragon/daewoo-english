@@ -352,13 +352,11 @@ export function WIDAProfiles() {
                 className={`px-2.5 py-1 rounded-l-lg text-[10px] font-medium border transition-all ${viewingSnapshot === snap.id ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border hover:border-navy'}`}>
                 {snap.label} ({new Date(snap.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
               </button>
-              {(isAdmin || currentTeacher?.english_class === 'Snapdragon') && (
-                <button onClick={() => deleteSnapshot(snap.id)}
+              <button onClick={() => deleteSnapshot(snap.id)}
                   className={`px-1.5 py-1 rounded-r-lg text-[10px] border border-l-0 transition-all hover:bg-red-50 hover:text-red-600 hover:border-red-200 ${viewingSnapshot === snap.id ? 'bg-navy/80 text-white/70 border-navy' : 'bg-surface-alt text-text-tertiary border-border'}`}
                   title="Delete snapshot">
                   <Trash2 size={10} />
                 </button>
-              )}
             </div>
           ))}
           {viewingSnapshot && <button onClick={() => { setViewingSnapshot(null); setSnapshotData(null) }} className="text-[10px] text-red-500 hover:text-red-700 font-medium">Clear comparison</button>}

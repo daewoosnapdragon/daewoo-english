@@ -137,9 +137,9 @@ export default function StudentsView() {
             <Printer size={14} /> {t.students.sortForPrinting}
           </button>
           <button onClick={() => {
-            exportToCSV('students', ['Name', 'Korean Name', 'Grade', 'English Class', 'Korean Class', 'Class Number', 'Active'],
-              sorted.map(s => [s.english_name, s.korean_name, s.grade, s.english_class, s.korean_class, s.class_number, s.is_active ? 'Yes' : 'No']))
-            showToast('Exported to CSV')
+            exportToCSV('students-full', ['UUID', 'Name', 'Korean Name', 'Grade', 'English Class', 'Korean Class', 'Class Number', 'Active'],
+              sorted.map(s => [s.id, s.english_name, s.korean_name, s.grade, s.english_class, s.korean_class, s.class_number, s.is_active ? 'Yes' : 'No']))
+            showToast('Exported to CSV with UUIDs')
           }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
             <Download size={14} /> CSV
           </button>

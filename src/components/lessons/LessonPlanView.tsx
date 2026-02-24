@@ -148,6 +148,7 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
       // Only show events on lesson plan if explicitly checked
       if (ev.show_on_lesson_plan) ce[ev.date] = ev
       // Collect parent calendar events (filtered by grade if target_grades specified)
+      // Gracefully handle missing columns (migration not yet run)
       if (ev.show_on_parent_calendar) {
         const tg = ev.target_grades as number[] | null
         if (!tg || tg.length === 0 || tg.includes(selectedGrade)) {
@@ -237,11 +238,26 @@ function MonthlyLessonPlanView({ tabBar }: { tabBar: React.ReactNode }) {
     const trimmed = label.trim()
     // Check for duplicate slot label on same day/class to avoid unique constraint violation
     const exists = slots.find(s => s.day_of_week === dayOfWeek && s.slot_label.toLowerCase() === trimmed.toLowerCase())
-    if (exists) { showToast(`"${trimmed}" already exists for this day`); return }
+    if (exists) {
+      // If it exists in template but was hidden on specific days, unhide all instances
+      setHiddenSlots(prev => {
+        const n = new Set(prev)
+        for (const key of n) { if (key.endsWith(`::${trimmed}`)) n.delete(key) }
+        return n
+      })
+      showToast(`"${trimmed}" restored for all days`)
+      return
+    }
     const maxOrder = slots.filter(s => s.day_of_week === dayOfWeek).reduce((max, s) => Math.max(max, s.sort_order), 0)
     const { data, error } = await supabase.from('lesson_plan_slots').insert({ english_class: selectedClass, grade: selectedGrade, day_of_week: dayOfWeek, slot_label: trimmed, sort_order: maxOrder + 1 }).select().single()
     if (error) { showToast(`Error: ${error.message}`); return }
     setSlots(prev => [...prev, data])
+    // Clear any hidden entries for this label so it shows up immediately
+    setHiddenSlots(prev => {
+      const n = new Set(prev)
+      for (const key of n) { if (key.endsWith(`::${trimmed}`)) n.delete(key) }
+      return n
+    })
   }
   const removeSlot = async (id: string) => {
     const slot = slots.find(s => s.id === id)

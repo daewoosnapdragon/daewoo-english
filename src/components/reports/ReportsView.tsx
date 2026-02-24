@@ -211,12 +211,12 @@ function RadarChart({ studentGrades, classAverages }: {
   studentGrades: Record<string, number | null>
   classAverages: Record<string, number | null>
 }) {
-  const size = 260
-  const cx = size / 2, cy = size / 2 + 6 // shift center down slightly so top label fits
-  const maxR = 75
+  const size = 300
+  const cx = size / 2, cy = size / 2 + 4
+  const maxR = 80
   const levels = [20, 40, 60, 80, 100]
   const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
-  const labels = ['Read', 'Phon', 'Write', 'Speak', 'Lang']
+  const labels = ['Reading', 'Phonics', 'Writing', 'Speaking &\nListening', 'Language\nStandards']
   const angles = domains.map((_, i) => (Math.PI * 2 * i) / domains.length - Math.PI / 2)
 
   const toXY = (angle: number, pct: number) => ({
@@ -283,21 +283,24 @@ function RadarChart({ studentGrades, classAverages }: {
         return <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r={4} fill="#1e3a5f" stroke="white" strokeWidth={1.5} />
       })}
 
-      {/* Domain labels — positioned further out with smart anchoring */}
+      {/* Domain labels -- positioned further out with smart anchoring */}
       {angles.map((a, i) => {
-        const labelR = maxR + 28
+        const labelR = maxR + 38
         const pt = toXY(a, (labelR / maxR) * 100)
         const sv = studentValues[i]
         // Smart text anchor: left side = end, right side = start, top/bottom = middle
         const anchor = pt.x < cx - 10 ? 'end' : pt.x > cx + 10 ? 'start' : 'middle'
+        const labelLines = labels[i].split('\n')
         return (
           <g key={`label-${i}`}>
-            <text x={pt.x} y={pt.y - 5} textAnchor={anchor} dominantBaseline="middle"
-              style={{ fontSize: '10px', fontWeight: 700, fill: '#475569' }}>
-              {labels[i]}
-            </text>
+            {labelLines.map((line, li) => (
+              <text key={li} x={pt.x} y={pt.y - 5 + (li * 12) - ((labelLines.length - 1) * 6)} textAnchor={anchor} dominantBaseline="middle"
+                style={{ fontSize: '10px', fontWeight: 700, fill: '#475569' }}>
+                {line}
+              </text>
+            ))}
             {sv != null && (
-              <text x={pt.x} y={pt.y + 7} textAnchor={anchor} dominantBaseline="middle"
+              <text x={pt.x} y={pt.y + 7 + ((labelLines.length - 1) * 6)} textAnchor={anchor} dominantBaseline="middle"
                 style={{ fontSize: '9px', fontWeight: 700, fill: '#1e3a5f' }}>
                 {sv.toFixed(0)}%
               </text>
@@ -640,9 +643,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     }).join('')
 
     // Radar chart SVG for print
-    const radarSize = 240, rcx = radarSize / 2, rcy = radarSize / 2 + 6, maxR = 70
+    const radarSize = 280, rcx = radarSize / 2, rcy = radarSize / 2 + 6, maxR = 80
     const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
-    const rLabels = ['Reading', 'Phonics & Foundational Skills', 'Writing', 'Speaking & Listening', 'Language Standards']
+    const rLabels = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
     const rAngles = domains.map((_, i) => (Math.PI * 2 * i) / 5 - Math.PI / 2)
     const toXY = (a: number, p: number) => ({ x: rcx + Math.cos(a) * (p / 100) * maxR, y: rcy + Math.sin(a) * (p / 100) * maxR })
     const makePoly = (vals: (number | null)[]) => vals.map((v, i) => { const pt = toXY(rAngles[i], v ?? 0); return `${pt.x},${pt.y}` }).join(' ')
@@ -1162,51 +1165,95 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 // ─── Print Progress Report Helper ────────────────────────────────────
 function printProgressReport(student: any, data: any) {
   const ds = DOMAINS.map(dom => {
-    const v = data.domainGrades[dom]; if (v == null) return `<div style="text-align:center;border:1px solid #e2e8f0;border-radius:8px;padding:10px 6px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">${DOMAIN_SHORT[dom]}</p><p style="font-size:18px;font-weight:700;color:#94a3b8;margin-top:4px">--</p></div>`
+    const v = data.domainGrades[dom]
+    if (v == null) return `<div style="text-align:center;border:1px solid #d4d4d4;border-radius:10px;padding:14px 8px;background:#f5f0eb">
+      <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px">${DOMAIN_SHORT[dom]}</p>
+      <p style="font-size:22px;font-weight:700;color:#94a3b8;margin:0">--</p></div>`
     const letter = getLetterGrade(v); const t = tileBgPrint(v)
-    return `<div style="text-align:center;border:1px solid ${t.border};border-radius:8px;padding:10px 6px;background:${t.bg}"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">${DOMAIN_SHORT[dom]}</p><p style="font-size:18px;font-weight:700;color:${letterColor(letter)};margin-top:4px">${letter}</p><p style="font-size:10px;color:#64748b">${v.toFixed(1)}%</p></div>`
+    return `<div style="text-align:center;border:1px solid ${t.border};border-radius:10px;padding:14px 8px;background:${t.bg}">
+      <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 4px">${DOMAIN_SHORT[dom]}</p>
+      <p style="font-size:24px;font-weight:800;color:${letterColor(letter)};margin:0">${letter}</p>
+      <p style="font-size:11px;color:#64748b;margin:2px 0 0">${v.toFixed(1)}%</p></div>`
   }).join('')
 
   const cwpm = data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'
   const lexile = data.latestReading ? (data.latestReading.reading_level || data.latestReading.passage_level || '--') : '--'
-  const accuracy = data.latestReading?.accuracy_rate != null ? `${data.latestReading.accuracy_rate.toFixed(1)}%` : '--'
+  const lastAssessed = data.latestReading?.date ? new Date(data.latestReading.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '--'
 
   const pw = window.open('', '_blank')
   if (!pw) return
-  pw.document.write(`<html><head><title>Progress Report - ${student.english_name}</title>
-  <style>body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f5f0eb}
-  .card{max-width:680px;margin:20px auto;overflow:hidden;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
-  @media print{@page{size:A4;margin:8mm}body{background:white}.card{margin:0;box-shadow:none;border-radius:0;page-break-after:always;max-height:277mm;overflow:hidden;transform-origin:top left}}</style></head>
+  pw.document.write(`<!DOCTYPE html><html><head><title>Progress Report - ${student.english_name}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f0eb; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    .card { max-width: 720px; margin: 20px auto; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.08); background: white; }
+    .header { background: #1e3a5f; padding: 20px 28px; color: white; display: flex; justify-content: space-between; align-items: center; }
+    .header .label { font-size: 10px; text-transform: uppercase; letter-spacing: 3px; opacity: 0.5; font-weight: 600; }
+    .header .name { font-size: 24px; font-weight: 700; font-family: Georgia, serif; margin-top: 4px; }
+    .header .sub { font-size: 13px; opacity: 0.65; margin-top: 3px; }
+    .header .right { text-align: right; font-size: 12px; opacity: 0.6; line-height: 1.7; }
+    .body { padding: 28px 28px 20px; }
+    .overall-row { display: flex; align-items: center; gap: 18px; margin-bottom: 28px; }
+    .overall-box { width: 80px; height: 80px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-direction: column; border: 2px solid #d4d4d4; background: #f8fafc; }
+    .overall-letter { font-size: 28px; font-weight: 800; color: #94a3b8; }
+    .overall-pct { font-size: 10px; color: #64748b; }
+    .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #94a3b8; font-weight: 700; margin-bottom: 10px; }
+    .domain-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 28px; }
+    .fluency-box { background: #f5f0eb; border: 1px solid #e8e0d8; border-radius: 10px; padding: 18px 20px; margin-bottom: 24px; }
+    .fluency-grid { display: flex; gap: 36px; margin-top: 8px; }
+    .fluency-item p:first-child { font-size: 10px; color: #94a3b8; font-weight: 600; }
+    .fluency-item p:last-child { font-size: 22px; font-weight: 700; color: #1e3a5f; margin-top: 2px; }
+    .comment-box { background: #f8f9fb; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; font-size: 13px; line-height: 1.8; color: #374151; margin-bottom: 20px; }
+    .footer { text-align: center; padding-top: 14px; border-top: 1px solid #e8e0d8; font-size: 10px; color: #b8b0a6; letter-spacing: 1px; }
+    @media print {
+      @page { size: A4; margin: 10mm; }
+      body { background: white; }
+      .card { margin: 0; box-shadow: none; border-radius: 0; max-width: 100%; }
+    }
+  </style></head>
   <body><div class="card">
-  <div style="background:#1e3a5f;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
-    <div><p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;opacity:0.6">Progress Report</p>
-    <p style="font-size:20px;font-weight:700;font-family:Georgia,serif;margin-top:4px">${student.english_name}</p>
-    <p style="font-size:12px;opacity:0.7">${student.korean_name} -- ${student.english_class} -- Grade ${student.grade}</p></div>
-    <div style="text-align:right"><p style="font-size:11px;opacity:0.6">${data.semesterName}</p><p style="font-size:11px;opacity:0.6">Teacher: ${data.teacherName}</p></div>
-  </div>
-  <div style="background:white;padding:20px 24px">
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
-      <div style="width:64px;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:${data.overallGrade != null ? tileBgPrint(data.overallGrade).bg : '#f8fafc'};border:2px solid ${data.overallGrade != null ? tileBgPrint(data.overallGrade).border : '#e2e8f0'}">
-        <div style="text-align:center"><p style="font-size:22px;font-weight:800;color:${data.overallGrade != null ? letterColor(data.overallLetter) : '#94a3b8'}">${data.overallLetter}</p>
-        ${data.overallGrade != null ? `<p style="font-size:9px;color:#64748b">${data.overallGrade.toFixed(1)}%</p>` : ''}</div>
+    <div class="header">
+      <div>
+        <p class="label">Progress Report</p>
+        <p class="name">${student.english_name}</p>
+        <p class="sub">${student.korean_name} -- ${student.english_class} -- Grade ${student.grade}</p>
       </div>
-      <div><p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600">Overall Grade</p>
-      <p style="font-size:14px;font-weight:700;color:#1e3a5f">${data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}</p></div>
+      <div class="right">${data.semesterName}<br>Teacher: ${data.teacherName}</div>
     </div>
-    <p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:8px">Domain Scores</p>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px">${ds}</div>
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin-bottom:20px">
-      <p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:8px">Reading Fluency</p>
-      <div style="display:flex;gap:24px">
-        <div><p style="font-size:9px;color:#94a3b8">CWPM</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${cwpm}</p></div>
-        <div><p style="font-size:9px;color:#94a3b8">Lexile</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${lexile}</p></div>
-        <div><p style="font-size:9px;color:#94a3b8">Accuracy</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${accuracy}</p></div>
+    <div class="body">
+      <div class="overall-row">
+        <div class="overall-box" ${data.overallGrade != null ? `style="background:${tileBgPrint(data.overallGrade).bg};border-color:${tileBgPrint(data.overallGrade).border}"` : ''}>
+          <p class="overall-letter" ${data.overallGrade != null ? `style="color:${letterColor(data.overallLetter)}"` : ''}>
+            ${data.overallLetter}
+          </p>
+          ${data.overallGrade != null ? `<p class="overall-pct">${data.overallGrade.toFixed(1)}%</p>` : ''}
+        </div>
+        <div>
+          <p class="section-label" style="margin-bottom:4px">Overall Grade</p>
+          <p style="font-size:16px;font-weight:700;color:#1e3a5f">
+            ${data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}
+          </p>
+        </div>
       </div>
+
+      <p class="section-label">Domain Scores</p>
+      <div class="domain-grid">${ds}</div>
+
+      <div class="fluency-box">
+        <p class="section-label" style="margin-bottom:0">Reading Fluency</p>
+        <div class="fluency-grid">
+          <div class="fluency-item"><p>CWPM</p><p>${cwpm}</p></div>
+          <div class="fluency-item"><p>Lexile</p><p>${lexile}</p></div>
+          <div class="fluency-item"><p>Last Assessed</p><p style="font-size:16px">${lastAssessed}</p></div>
+        </div>
+      </div>
+
+      ${data.comment ? `<p class="section-label">Teacher Comment</p><div class="comment-box">${data.comment}</div>` : ''}
+
+      <div class="footer">Daewoo Elementary School \u00b7 English Program \u00b7 ${data.semesterName}</div>
     </div>
-    ${data.comment ? `<p style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:600;margin-bottom:6px">Teacher Comment</p><div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.7;color:#374151">${data.comment}</div>` : ''}
-    <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid #e8e0d8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School \u00b7 English Program \u00b7 ${data.semesterName}</div>
-  </div></div></body></html>`)
-  pw.document.close(); pw.print()
+  </div></body></html>`)
+  pw.document.close(); setTimeout(() => pw.print(), 300)
 }
 
 // ─── Batch Print All Progress Reports ────────────────────────────────
