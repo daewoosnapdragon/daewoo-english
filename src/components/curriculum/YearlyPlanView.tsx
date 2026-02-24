@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, Trash2, Pencil, Check, Bold, Italic, List, Minus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, X, Loader2, Trash2, Pencil, Check, Minus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Period { id: string; name: string; sort_order: number; color: string }
 interface Track { id: string; english_class: string; name: string; sort_order: number }
@@ -39,6 +39,41 @@ export default function YearlyPlanView() {
   const [loading, setLoading] = useState(true)
   const [editModal, setEditModal] = useState<{ trackId: string; periodId: string; trackIdx: number; periodIdx: number } | null>(null)
   const [editText, setEditText] = useState('')
+  // Block editor state
+  type BlockType = 'text' | 'heading' | 'bullet' | 'divider'
+  interface Block { id: string; type: BlockType; text: string }
+  const [blocks, setBlocks] = useState<Block[]>([])
+  const blockIdCounter = useRef(0)
+  const newBlock = (type: BlockType = 'text', text = ''): Block => ({ id: `b${++blockIdCounter.current}`, type, text })
+
+  // Parse markdown string into blocks
+  const parseToBlocks = (md: string): Block[] => {
+    if (!md.trim()) return [newBlock()]
+    return md.split('\n').map(line => {
+      const trimmed = line.trim()
+      if (trimmed === '---' || trimmed === '***' || trimmed === '___') return newBlock('divider')
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) return newBlock('bullet', trimmed.slice(2))
+      if (trimmed.startsWith('**') && trimmed.endsWith('**')) return newBlock('heading', trimmed.slice(2, -2))
+      if (trimmed.startsWith('**')) return newBlock('heading', trimmed.replace(/\*\*/g, ''))
+      return newBlock('text', line)
+    }).filter((b, i, arr) => !(b.type === 'text' && !b.text && i === arr.length - 1 && arr.length > 1))
+  }
+
+  // Serialize blocks back to markdown
+  const blocksToMarkdown = (bs: Block[]): string => {
+    return bs.map(b => {
+      if (b.type === 'divider') return '---'
+      if (b.type === 'heading') return `**${b.text}**`
+      if (b.type === 'bullet') return `- ${b.text}`
+      return b.text
+    }).join('\n')
+  }
+
+  // Sync blocks -> editText whenever blocks change
+  const updateBlocks = (newBlocks: Block[]) => {
+    setBlocks(newBlocks)
+    setEditText(blocksToMarkdown(newBlocks))
+  }
   const [addingTrack, setAddingTrack] = useState(false)
   const [newTrackName, setNewTrackName] = useState('')
   const [renamingTrack, setRenamingTrack] = useState<string | null>(null)
@@ -121,23 +156,6 @@ export default function YearlyPlanView() {
     setRenamingTrack(null); setRenameText('')
   }
 
-  const insertFormatting = (type: 'bold' | 'italic' | 'bullet' | 'line') => {
-    const ta = document.querySelector('.yearly-plan-editor') as HTMLTextAreaElement
-    if (!ta) return
-    const start = ta.selectionStart
-    const end = ta.selectionEnd
-    const selected = editText.substring(start, end)
-    let replacement = ''
-    let cursorOffset = 0
-    if (type === 'bold') { replacement = `**${selected || 'text'}**`; cursorOffset = selected ? replacement.length : 2 }
-    else if (type === 'italic') { replacement = `*${selected || 'text'}*`; cursorOffset = selected ? replacement.length : 1 }
-    else if (type === 'bullet') { replacement = `${start > 0 ? '\n' : ''}- ${selected || 'item'}`; cursorOffset = replacement.length }
-    else if (type === 'line') { replacement = `\n---\n`; cursorOffset = replacement.length }
-    const newText = editText.substring(0, start) + replacement + editText.substring(end)
-    setEditText(newText)
-    setTimeout(() => { ta.focus(); ta.setSelectionRange(start + cursorOffset, start + cursorOffset) }, 10)
-  }
-
   // Save current cell and navigate to adjacent track
   const navigateTrack = async (direction: 'up' | 'down') => {
     if (!editModal) return
@@ -149,6 +167,7 @@ export default function YearlyPlanView() {
     const nextContent = cells[key]?.content || ''
     setEditModal({ trackId: nextTrack.id, periodId: editModal.periodId, trackIdx: newIdx, periodIdx: editModal.periodIdx })
     setEditText(nextContent)
+    setBlocks(parseToBlocks(nextContent))
     yearlyLastSaved.current = nextContent
   }
 
@@ -163,6 +182,7 @@ export default function YearlyPlanView() {
     const nextContent = cells[key]?.content || ''
     setEditModal({ trackId: editModal.trackId, periodId: nextPeriod.id, trackIdx: editModal.trackIdx, periodIdx: newIdx })
     setEditText(nextContent)
+    setBlocks(parseToBlocks(nextContent))
     yearlyLastSaved.current = nextContent
   }
 
@@ -170,9 +190,11 @@ export default function YearlyPlanView() {
     const trackIdx = classTracks.findIndex(t => t.id === trackId)
     const periodIdx = periods.findIndex(p => p.id === periodId)
     const key = `${trackId}::${periodId}`
+    const content = cells[key]?.content || ''
     setEditModal({ trackId, periodId, trackIdx, periodIdx })
-    setEditText(cells[key]?.content || '')
-    yearlyLastSaved.current = cells[key]?.content || ''
+    setEditText(content)
+    setBlocks(parseToBlocks(content))
+    yearlyLastSaved.current = content
   }
 
   // Debounced autosave for yearly plan modal
@@ -400,28 +422,107 @@ export default function YearlyPlanView() {
                 </div>
               </div>
               <div className="p-5">
-                <div className="flex gap-1 mb-3">
-                  <button onClick={() => insertFormatting('bold')} className="px-2.5 py-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy text-[11px] font-medium flex items-center gap-1"><Bold size={13} /> Bold</button>
-                  <button onClick={() => insertFormatting('italic')} className="px-2.5 py-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy text-[11px] font-medium flex items-center gap-1"><Italic size={13} /> Italic</button>
-                  <button onClick={() => insertFormatting('bullet')} className="px-2.5 py-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy text-[11px] font-medium flex items-center gap-1"><List size={13} /> Bullet</button>
-                  <button onClick={() => insertFormatting('line')} className="px-2.5 py-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy text-[11px] font-medium flex items-center gap-1"><Minus size={13} /> Line</button>
+                {/* Block editor */}
+                <div className="border border-border rounded-xl overflow-hidden focus-within:border-navy focus-within:ring-1 focus-within:ring-navy/20">
+                  <div className="max-h-[400px] overflow-y-auto px-1 py-2 space-y-0.5">
+                    {blocks.map((block, idx) => {
+                      if (block.type === 'divider') {
+                        return (
+                          <div key={block.id} className="flex items-center gap-2 px-2 py-1.5 group">
+                            <button onClick={() => {
+                              const types: BlockType[] = ['text', 'heading', 'bullet', 'divider']
+                              const next = types[(types.indexOf(block.type) + 1) % types.length]
+                              const nb = [...blocks]; nb[idx] = { ...block, type: next }; updateBlocks(nb)
+                            }} className="w-6 h-6 rounded flex items-center justify-center text-text-tertiary hover:bg-surface-alt hover:text-navy shrink-0" title="Change type">
+                              <Minus size={13} />
+                            </button>
+                            <div className="flex-1 border-t-2 border-border/60 my-2" />
+                            <button onClick={() => { const nb = blocks.filter((_, i) => i !== idx); updateBlocks(nb.length ? nb : [newBlock()]) }}
+                              className="opacity-0 group-hover:opacity-40 hover:!opacity-100 p-0.5 text-red-400 hover:text-red-600 shrink-0"><X size={12} /></button>
+                          </div>
+                        )
+                      }
+                      const typeIcon = block.type === 'heading' ? 'H' : block.type === 'bullet' ? '\u2022' : '\u00b6'
+                      const typeTitle = block.type === 'heading' ? 'Heading (bold)' : block.type === 'bullet' ? 'Bullet point' : 'Plain text'
+                      return (
+                        <div key={block.id} className="flex items-start gap-1.5 px-2 group">
+                          <button onClick={() => {
+                            const types: BlockType[] = ['text', 'heading', 'bullet', 'divider']
+                            const next = types[(types.indexOf(block.type) + 1) % types.length]
+                            const nb = [...blocks]; nb[idx] = { ...block, type: next, text: next === 'divider' ? '' : block.text }; updateBlocks(nb)
+                          }} className="w-6 h-6 mt-[5px] rounded flex items-center justify-center text-[11px] text-text-tertiary hover:bg-surface-alt hover:text-navy shrink-0 font-bold" title={`${typeTitle} -- click to cycle type`}>
+                            {typeIcon}
+                          </button>
+                          <input
+                            value={block.text}
+                            onChange={e => { const nb = [...blocks]; nb[idx] = { ...block, text: e.target.value }; updateBlocks(nb) }}
+                            placeholder={block.type === 'heading' ? 'Heading...' : block.type === 'bullet' ? 'List item...' : 'Type here...'}
+                            className={`flex-1 px-2 py-1.5 text-[13px] bg-transparent outline-none border-b border-transparent focus:border-navy/20 transition-colors ${
+                              block.type === 'heading' ? 'font-bold text-navy' : block.type === 'bullet' ? 'text-text-primary' : 'text-text-primary'
+                            }`}
+                            data-block-idx={idx}
+                            autoFocus={idx === 0 && blocks.length === 1}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey) {
+                                e.preventDefault()
+                                // Insert new block after this one, inherit bullet type
+                                const nb = [...blocks]
+                                const inheritType = block.type === 'bullet' ? 'bullet' : 'text'
+                                nb.splice(idx + 1, 0, newBlock(inheritType))
+                                updateBlocks(nb)
+                                setTimeout(() => {
+                                  const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]')
+                                  inputs[idx + 1]?.focus()
+                                }, 20)
+                              }
+                              if (e.key === 'Backspace' && !block.text && blocks.length > 1) {
+                                e.preventDefault()
+                                const nb = blocks.filter((_, i) => i !== idx)
+                                updateBlocks(nb)
+                                setTimeout(() => {
+                                  const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]')
+                                  const target = Math.max(0, idx - 1)
+                                  inputs[target]?.focus()
+                                }, 20)
+                              }
+                              if (e.key === 'ArrowDown' && !e.metaKey && !e.ctrlKey) {
+                                const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]')
+                                if (idx < inputs.length - 1) { e.preventDefault(); inputs[idx + 1]?.focus() }
+                              }
+                              if (e.key === 'ArrowUp' && !e.metaKey && !e.ctrlKey) {
+                                const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]')
+                                if (idx > 0) { e.preventDefault(); inputs[idx - 1]?.focus() }
+                              }
+                              if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowDown') { e.preventDefault(); navigateTrack('down') }
+                              if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowUp') { e.preventDefault(); navigateTrack('up') }
+                              if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); navigatePeriod('left') }
+                              if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); navigatePeriod('right') }
+                              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveCell(editModal.trackId, editModal.periodId, editText); setEditModal(null) }
+                              if (e.key === 'Escape') { saveCell(editModal.trackId, editModal.periodId, editText); setEditModal(null) }
+                            }}
+                          />
+                          <button onClick={() => { const nb = blocks.filter((_, i) => i !== idx); updateBlocks(nb.length ? nb : [newBlock()]) }}
+                            className="opacity-0 group-hover:opacity-40 hover:!opacity-100 p-1 mt-1 text-red-400 hover:text-red-600 shrink-0"><X size={12} /></button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {/* Add block bar */}
+                  <div className="px-3 py-2 border-t border-border/40 flex gap-1">
+                    <button onClick={() => { updateBlocks([...blocks, newBlock('text')]); setTimeout(() => { const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]'); inputs[inputs.length - 1]?.focus() }, 20) }}
+                      className="px-2.5 py-1 rounded-md text-[10px] font-medium text-text-tertiary hover:bg-surface-alt hover:text-navy">+ Text</button>
+                    <button onClick={() => { updateBlocks([...blocks, newBlock('heading')]); setTimeout(() => { const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]'); inputs[inputs.length - 1]?.focus() }, 20) }}
+                      className="px-2.5 py-1 rounded-md text-[10px] font-medium text-text-tertiary hover:bg-surface-alt hover:text-navy">+ Heading</button>
+                    <button onClick={() => { updateBlocks([...blocks, newBlock('bullet')]); setTimeout(() => { const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]'); inputs[inputs.length - 1]?.focus() }, 20) }}
+                      className="px-2.5 py-1 rounded-md text-[10px] font-medium text-text-tertiary hover:bg-surface-alt hover:text-navy">+ Bullet</button>
+                    <button onClick={() => { updateBlocks([...blocks, newBlock('divider')]) }}
+                      className="px-2.5 py-1 rounded-md text-[10px] font-medium text-text-tertiary hover:bg-surface-alt hover:text-navy">+ Divider</button>
+                  </div>
                 </div>
-                <textarea value={editText} onChange={e => setEditText(e.target.value)} autoFocus rows={10}
-                  className="yearly-plan-editor w-full px-4 py-3 text-[13px] border border-border rounded-xl outline-none resize-y font-mono leading-relaxed focus:border-navy focus:ring-1 focus:ring-navy/20"
-                  placeholder={"Type content here...\n\nFormatting: **bold**, *italic*, - bullet, --- divider"}
-                  onKeyDown={e => {
-                    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowDown') { e.preventDefault(); navigateTrack('down') }
-                    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowUp') { e.preventDefault(); navigateTrack('up') }
-                    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); navigatePeriod('left') }
-                    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); navigatePeriod('right') }
-                    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveCell(editModal.trackId, editModal.periodId, editText); setEditModal(null) }
-                    if (e.key === 'Escape') { saveCell(editModal.trackId, editModal.periodId, editText); setEditModal(null) }
-                  }}
-                />
                 <div className="flex items-center justify-between mt-3">
-                  <p className="text-[10px] text-text-tertiary">Cmd+Arrow to navigate -- Cmd+Enter or Esc to save</p>
+                  <p className="text-[10px] text-text-tertiary">Enter = new line -- Backspace on empty = delete -- Arrow keys to move -- Cmd+Arrow to navigate cells</p>
                   <button onClick={() => { saveCell(editModal.trackId, editModal.periodId, editText); setEditModal(null) }}
-                    className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Save</button>
+                    className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Done</button>
                 </div>
               </div>
             </div>
