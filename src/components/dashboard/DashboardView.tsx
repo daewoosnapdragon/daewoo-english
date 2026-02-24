@@ -1106,19 +1106,19 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
   const handleSave = async () => {
     if (!title.trim()) return
     setSaving(true)
-    // Base payload (always works)
+    // Base payload (always works with existing columns)
     const basePayload: any = {
       title: title.trim(), date: eventDate, type, description: desc.trim(),
       show_on_lesson_plan: showOnLessonPlan,
     }
-    // Extended payload (requires migration)
+    // Extended payload (requires add_parent_calendar_fields migration)
     const extPayload: any = {
       ...basePayload,
       show_on_parent_calendar: showOnParentCalendar,
       target_grades: showOnParentCalendar && targetGrades.length > 0 ? targetGrades : null,
     }
 
-    const tryPayload = async (payload: any, fallback: boolean) => {
+    const tryPayload = async (payload: any) => {
       if (isEdit) {
         const { error } = await supabase.from('calendar_events').update(payload).eq('id', existingEvent.id)
         return error
@@ -1128,13 +1128,10 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
       }
     }
 
-    // Try with extended fields first, fall back to base if columns don't exist
-    let error = await tryPayload(extPayload, false)
-    if (error && error.message?.includes('schema cache')) {
-      error = await tryPayload(basePayload, true)
-      if (!error && (showOnParentCalendar || targetGrades.length > 0)) {
-        showToast('Saved (run SQL migration to enable parent calendar features)')
-      }
+    // Try with extended fields first, fall back to base if columns don't exist (400 error)
+    let error = await tryPayload(extPayload)
+    if (error && (error.code === '42703' || error.message?.includes('column') || error.message?.includes('schema') || String(error.code) === 'PGRST204' || (error as any).status === 400)) {
+      error = await tryPayload(basePayload)
     }
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)

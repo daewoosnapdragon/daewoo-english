@@ -67,13 +67,22 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   const [saving, setSaving] = useState(false)
 
   const DEFAULT_SUBJECTS = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
-  interface DayContent { subjects: { label: string; content: string }[]; objective: string; homework: string; notes: string }
-  const emptyDay = (): DayContent => ({ subjects: DEFAULT_SUBJECTS.map(s => ({ label: s, content: '' })), objective: '', homework: '', notes: '' })
+  interface DayContent { subjects: { label: string; content: string }[]; objective: string; notes: string }
+  const emptyDay = (): DayContent => ({ subjects: DEFAULT_SUBJECTS.map(s => ({ label: s, content: '' })), objective: '', notes: '' })
 
   const [dayData, setDayData] = useState<Record<string, DayContent>>({})
+  const [weeklyHomework, setWeeklyHomework] = useState<Record<string, string>>({}) // keyed by Monday date
   const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }>>({})
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
+
+  const getMondayOf = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const dt = new Date(y, m - 1, d)
+    const dow = dt.getDay(); const diff = dow === 0 ? -6 : 1 - dow
+    const mon = new Date(dt); mon.setDate(dt.getDate() + diff)
+    return `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, '0')}-${String(mon.getDate()).padStart(2, '0')}`
+  }
 
   // Build month grid
   const monthDays = useMemo(() => {
@@ -117,7 +126,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
 
     const [planRes, eventsRes] = await Promise.all([
       supabase.from('parent_calendar').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade).gte('date', firstDay).lte('date', lastDay),
-      supabase.from('calendar_events').select('date, title, type, show_on_lesson_plan').gte('date', firstDay).lte('date', lastDay),
+      supabase.from('calendar_events').select('date, title, type, show_on_lesson_plan, show_on_parent_calendar, target_grades').gte('date', firstDay).lte('date', lastDay),
     ])
 
     const dd: Record<string, DayContent> = {}
@@ -148,9 +157,43 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
     }
 
     const ce: Record<string, { title: string; type?: string }> = {}
-    eventsRes.data?.forEach((ev: any) => { if (ev.show_on_lesson_plan) ce[ev.date] = { title: ev.title, type: ev.type } })
+    // Show events that are either marked for lesson plan OR marked for parent calendar for this grade
+    if (eventsRes.error) {
+      // If select fails (columns don't exist), retry without the new columns
+      const fallbackRes = await supabase.from('calendar_events').select('date, title, type, show_on_lesson_plan').gte('date', firstDay).lte('date', lastDay)
+      fallbackRes.data?.forEach((ev: any) => { if (ev.show_on_lesson_plan) ce[ev.date] = { title: ev.title, type: ev.type } })
+    } else {
+      eventsRes.data?.forEach((ev: any) => {
+        const showLesson = ev.show_on_lesson_plan
+        const showParent = ev.show_on_parent_calendar
+        const tg = ev.target_grades as number[] | null
+        const gradeMatch = !tg || tg.length === 0 || tg.includes(selectedGrade)
+        if (showLesson || (showParent && gradeMatch)) {
+          ce[ev.date] = { title: ev.title, type: ev.type }
+        }
+      })
+    }
     setCalEvents(ce)
     setDayData(dd)
+
+    // Load weekly homework (stored as class_hw entries keyed by Monday date)
+    const hwRes = await supabase.from('parent_calendar').select('date, content')
+      .eq('english_class', selectedClass + '_hw').eq('grade', selectedGrade)
+      .gte('date', firstDay).lte('date', lastDay)
+    const hw: Record<string, string> = {}
+    if (hwRes.data) {
+      hwRes.data.forEach((row: any) => {
+        try { hw[row.date] = typeof row.content === 'string' ? JSON.parse(row.content)?.homework || '' : '' } catch { }
+      })
+    }
+    // Also check if old per-day homework exists in dayData and migrate it
+    Object.entries(dd).forEach(([date, d]) => {
+      if ((d as any).homework) {
+        const mon = getMondayOf(date)
+        if (!hw[mon]) hw[mon] = (d as any).homework
+      }
+    })
+    setWeeklyHomework(hw)
     setLoading(false)
   }, [year, month, selectedClass, selectedGrade])
 
@@ -166,8 +209,11 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
       return { ...prev, [date]: d }
     })
   }
-  const updateField = (date: string, field: 'objective' | 'homework' | 'notes', value: string) => {
+  const updateField = (date: string, field: 'objective' | 'notes', value: string) => {
     setDayData(prev => ({ ...prev, [date]: { ...(prev[date] || emptyDay()), [field]: value } }))
+  }
+  const updateHomework = (mondayDate: string, value: string) => {
+    setWeeklyHomework(prev => ({ ...prev, [mondayDate]: value }))
   }
 
   // Save a single day
@@ -179,18 +225,39 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
       updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
     }, { onConflict: 'date,english_class,grade' })
     if (error) { showToast(`Error: ${error.message}`); return false }
+    // Also save weekly homework for this week
+    const mon = getMondayOf(date)
+    const hw = weeklyHomework[mon] || ''
+    await supabase.from('parent_calendar').upsert({
+      date: mon, english_class: selectedClass + '_hw', grade: selectedGrade,
+      content: JSON.stringify({ homework: hw }),
+      updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+    }, { onConflict: 'date,english_class,grade' })
     return true
   }
 
-  // Save all days in the month
+  // Save all days in the month + all weekly homework
   const saveAll = async () => {
     setSaving(true)
     let errors = 0
-    const dates = monthDays.map(d => d.date)
-    for (const date of dates) {
+    for (const date of monthDays.map(d => d.date)) {
       if (!dayData[date]) continue
-      const ok = await saveDay(date)
-      if (!ok) errors++
+      const content = dayData[date] || emptyDay()
+      const { error } = await supabase.from('parent_calendar').upsert({
+        date, english_class: selectedClass, grade: selectedGrade,
+        content: JSON.stringify(content),
+        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+      }, { onConflict: 'date,english_class,grade' })
+      if (error) errors++
+    }
+    // Save all weekly homework entries
+    for (const [mon, hw] of Object.entries(weeklyHomework)) {
+      const { error } = await supabase.from('parent_calendar').upsert({
+        date: mon, english_class: selectedClass + '_hw', grade: selectedGrade,
+        content: JSON.stringify({ homework: hw }),
+        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+      }, { onConflict: 'date,english_class,grade' })
+      if (error) errors++
     }
     setSaving(false)
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : 'Month saved')
@@ -239,13 +306,20 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
             inner += `<div class="subj"><span class="subj-label">${s.label}:</span> ${s.content}</div>`
           })
           if (data.objective) inner += `<div class="obj"><span class="obj-pre">Students will</span> ${data.objective}</div>`
-          if (data.homework) inner += `<div class="hw">HW: ${data.homework}</div>`
           if (!inner) inner = '<div class="empty-day">--</div>'
         }
 
         daysHTML += `<td class="day"><div class="day-hdr">${DAY_SHORT[di]} <span class="day-num">${month + 1}/${day.dayNum}</span></div>${inner}</td>`
       })
-      weeksHTML += `<tr>${daysHTML}</tr>`
+
+      // Add weekly homework row if this week has homework
+      const weekMonday = week.length > 0 ? getMondayOf(week[0].date) : ''
+      const hw = weeklyHomework[weekMonday] || ''
+      if (hw) {
+        weeksHTML += `<tr>${daysHTML}</tr><tr><td colspan="5" class="hw-row"><span class="hw-label">Weekly Homework:</span> ${hw}</td></tr>`
+      } else {
+        weeksHTML += `<tr>${daysHTML}</tr>`
+      }
     })
 
     pw.document.write(`<!DOCTYPE html><html><head><title>${selectedClass} Grade ${selectedGrade} - ${mn} ${year}</title>
@@ -266,12 +340,14 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   .day-num { color: #475569; font-weight: 800; }
   .subj { font-size: 9.5px; line-height: 1.4; margin: 2px 0; }
   .subj-label { font-weight: 700; color: #1e3a5f; }
-  .obj { font-size: 9px; color: #64748b; font-style: italic; margin-top: 3px; padding-top: 3px; border-top: 1px solid #f1f5f9; }
-  .obj-pre { color: #94a3b8; }
+  .obj { font-size: 9px; color: #334155; font-style: italic; margin-top: 3px; padding-top: 3px; border-top: 1px solid #f1f5f9; }
+  .obj-pre { color: #64748b; font-weight: 600; }
   .hw { font-size: 9px; font-weight: 600; color: #b8860b; margin-top: 3px; padding: 2px 5px; background: #fff8e1; border-radius: 3px; }
   .event { font-size: 9px; font-weight: 700; color: #475569; background: #e2e8f0; border-radius: 4px; padding: 3px 6px; margin-bottom: 4px; }
   .no-class { font-size: 9px; color: #94a3b8; font-style: italic; text-align: center; padding: 10px 0; }
   .empty-day { font-size: 9px; color: #cbd5e1; text-align: center; padding: 8px 0; }
+  .hw-row { padding: 5px 10px; background: #fffbeb; border: 1px solid #e2e8f0; font-size: 9.5px; color: #92400e; }
+  .hw-label { font-weight: 700; }
   .footer { text-align: center; margin-top: 8px; font-size: 8px; color: #94a3b8; letter-spacing: 1px; }
 </style></head><body>
   <div class="header">
@@ -365,8 +441,11 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
           {weeks.map((week, wi) => {
             const fw: (typeof monthDays[0] | null)[] = [null, null, null, null, null]
             week.forEach(d => { fw[d.dayOfWeek - 1] = d })
+            const weekMonday = week.length > 0 ? getMondayOf(week[0].date) : ''
+            const hw = weeklyHomework[weekMonday] || ''
             return (
-              <div key={wi} className="grid grid-cols-5 border-b border-border last:border-b-0">
+              <div key={wi}>
+                <div className="grid grid-cols-5 border-b border-border">
                 {fw.map((day, di) => {
                   if (!day) return <div key={di} className="bg-gray-50/50 border-r border-border last:border-r-0 min-h-[110px]" />
                   const data = dayData[day.date] || emptyDay()
@@ -398,11 +477,10 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                             </div>
                           ))}
                           {data.objective && (
-                            <div className="text-[9px] text-text-tertiary italic mt-1 pt-1 border-t border-border/20">
-                              <span className="opacity-50">Students will</span> {data.objective}
+                            <div className="text-[9px] text-text-secondary italic mt-1 pt-1 border-t border-border/20">
+                              <span className="text-text-tertiary font-medium">Students will</span> {data.objective}
                             </div>
                           )}
-                          {data.homework && <div className="text-[9px] font-semibold text-amber-700 mt-1">HW: {data.homework}</div>}
                           {!hasFill && !data.objective && !ev && canEdit && (
                             <div className="text-[10px] text-text-tertiary/25 italic text-center mt-5">Click to edit</div>
                           )}
@@ -411,6 +489,20 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                     </div>
                   )
                 })}
+                </div>
+                {/* Weekly homework bar */}
+                {(hw || canEdit) && (
+                  <div className={`border-b border-border px-3 py-1.5 flex items-center gap-2 ${hw ? 'bg-amber-50/50' : 'bg-gray-50/30'}`}>
+                    <span className="text-[10px] font-bold text-amber-800 shrink-0">Weekly HW:</span>
+                    {canEdit ? (
+                      <input value={hw} onChange={e => updateHomework(weekMonday, e.target.value)}
+                        placeholder="Enter homework for this week..."
+                        className="flex-1 text-[10px] bg-transparent outline-none text-amber-900 placeholder:text-amber-300 py-0.5" />
+                    ) : (
+                      <span className="text-[10px] text-amber-900">{hw || '--'}</span>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })}
@@ -484,7 +576,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
 
                 {/* Objective */}
                 <div className="flex items-center gap-3 pt-4 mt-2 border-t border-border/20">
-                  <label className="text-[11px] font-medium text-text-tertiary w-[72px] text-right shrink-0 italic">Students will</label>
+                  <label className="text-[12px] font-semibold text-text-secondary w-[72px] text-right shrink-0 italic">Students will</label>
                   <input
                     value={editDay.objective}
                     onChange={e => updateField(editDate, 'objective', e.target.value)}
@@ -509,14 +601,14 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                   />
                 </div>
 
-                {/* Homework */}
+                {/* Weekly Homework */}
                 <div className="flex items-center gap-3 pt-2">
-                  <label className="text-[11px] font-bold text-amber-700 w-[72px] text-right shrink-0">Homework</label>
+                  <label className="text-[11px] font-bold text-amber-700 w-[72px] text-right shrink-0">Weekly HW</label>
                   <input
-                    value={editDay.homework}
-                    onChange={e => updateField(editDate, 'homework', e.target.value)}
-                    placeholder="(optional)"
-                    className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-amber-50/30 border-b border-amber-200/30 outline-none focus:border-amber-400 transition-colors placeholder:text-text-tertiary/20 rounded-t"
+                    value={weeklyHomework[getMondayOf(editDate)] || ''}
+                    onChange={e => updateHomework(getMondayOf(editDate), e.target.value)}
+                    placeholder="Homework for this week (shared across Mon-Fri)"
+                    className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-amber-50/30 border-b border-amber-200/30 outline-none focus:border-amber-400 transition-colors placeholder:text-amber-300/50 rounded-t"
                     onKeyDown={e => {
                       if (e.key === 'ArrowUp') {
                         e.preventDefault()
