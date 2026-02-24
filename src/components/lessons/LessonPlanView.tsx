@@ -730,6 +730,22 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   )
 }
 
+// Get Mon-Fri dates for a given week containing the target date
+function getWeekDatesForPlans(dateStr: string): string[] {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const day = date.getDay()
+  const monday = new Date(date)
+  monday.setDate(date.getDate() - ((day + 6) % 7)) // Roll back to Monday
+  const dates: string[] = []
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+  }
+  return dates
+}
+
 function TeacherWeeklyPlans() {
   const { currentTeacher, showToast } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'

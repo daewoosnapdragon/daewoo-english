@@ -44,11 +44,11 @@ export default function YearlyPlanView() {
   interface Block { id: string; type: BlockType; text: string }
   const [blocks, setBlocks] = useState<Block[]>([])
   const blockIdCounter = useRef(0)
-  const newBlock = (type: BlockType = 'text', text = ''): Block => ({ id: `b${++blockIdCounter.current}`, type, text })
+  const newBlock = (type: BlockType = 'heading', text = ''): Block => ({ id: `b${++blockIdCounter.current}`, type, text })
 
   // Parse markdown string into blocks
   const parseToBlocks = (md: string): Block[] => {
-    if (!md.trim()) return [newBlock()]
+    if (!md.trim()) return [newBlock('heading')]
     return md.split('\n').map(line => {
       const trimmed = line.trim()
       if (trimmed === '---' || trimmed === '***' || trimmed === '___') return newBlock('divider')
@@ -424,13 +424,13 @@ export default function YearlyPlanView() {
               <div className="p-5">
                 {/* Block editor */}
                 <div className="border border-border rounded-xl overflow-hidden focus-within:border-navy focus-within:ring-1 focus-within:ring-navy/20">
-                  <div className="max-h-[400px] overflow-y-auto px-1 py-2 space-y-0.5">
+                  <div className="max-h-[400px] overflow-y-auto px-1 py-2 space-y-0">
                     {blocks.map((block, idx) => {
                       if (block.type === 'divider') {
                         return (
                           <div key={block.id} className="flex items-center gap-2 px-2 py-1.5 group">
                             <button onClick={() => {
-                              const types: BlockType[] = ['text', 'heading', 'bullet', 'divider']
+                              const types: BlockType[] = ['heading', 'text', 'bullet', 'divider']
                               const next = types[(types.indexOf(block.type) + 1) % types.length]
                               const nb = [...blocks]; nb[idx] = { ...block, type: next }; updateBlocks(nb)
                             }} className="w-6 h-6 rounded flex items-center justify-center text-text-tertiary hover:bg-surface-alt hover:text-navy shrink-0" title="Change type">
@@ -447,7 +447,7 @@ export default function YearlyPlanView() {
                       return (
                         <div key={block.id} className="flex items-start gap-1.5 px-2 group">
                           <button onClick={() => {
-                            const types: BlockType[] = ['text', 'heading', 'bullet', 'divider']
+                            const types: BlockType[] = ['heading', 'text', 'bullet', 'divider']
                             const next = types[(types.indexOf(block.type) + 1) % types.length]
                             const nb = [...blocks]; nb[idx] = { ...block, type: next, text: next === 'divider' ? '' : block.text }; updateBlocks(nb)
                           }} className="w-6 h-6 mt-[5px] rounded flex items-center justify-center text-[11px] text-text-tertiary hover:bg-surface-alt hover:text-navy shrink-0 font-bold" title={`${typeTitle} -- click to cycle type`}>
@@ -465,14 +465,14 @@ export default function YearlyPlanView() {
                             onKeyDown={e => {
                               if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey) {
                                 e.preventDefault()
-                                // Insert new block after this one, inherit bullet type
                                 const nb = [...blocks]
                                 const inheritType = block.type === 'bullet' ? 'bullet' : 'text'
                                 nb.splice(idx + 1, 0, newBlock(inheritType))
                                 updateBlocks(nb)
                                 setTimeout(() => {
                                   const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]')
-                                  inputs[idx + 1]?.focus()
+                                  const target = inputs[idx + 1]
+                                  if (target) { target.focus(); target.setSelectionRange(0, 0) }
                                 }, 20)
                               }
                               if (e.key === 'Backspace' && !block.text && blocks.length > 1) {
@@ -482,7 +482,8 @@ export default function YearlyPlanView() {
                                 setTimeout(() => {
                                   const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]')
                                   const target = Math.max(0, idx - 1)
-                                  inputs[target]?.focus()
+                                  const el = inputs[target]
+                                  if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length) }
                                 }, 20)
                               }
                               if (e.key === 'ArrowDown' && !e.metaKey && !e.ctrlKey) {
