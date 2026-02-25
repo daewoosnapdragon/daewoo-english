@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber, domainLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Camera, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw, BookOpen } from 'lucide-react'
+import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw, BookOpen } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WIDABadge from '@/components/shared/WIDABadge'
 import { WIDAProfiles } from '@/components/curriculum/CurriculumView'
@@ -15,6 +15,14 @@ import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 import PassagePickerPanel from '@/components/shared/PassagePickerPanel'
+
+// ─── Constants ───────────────────────────────────────────────────────
+
+const TEACHER_MAP: Record<string, string> = {
+  Lily: '00000000-0000-0000-0000-000000000001', Camellia: '00000000-0000-0000-0000-000000000002',
+  Daisy: '00000000-0000-0000-0000-000000000003', Sunflower: '00000000-0000-0000-0000-000000000004',
+  Marigold: '00000000-0000-0000-0000-000000000005', Snapdragon: '00000000-0000-0000-0000-000000000006',
+}
 
 // ─── Main View ──────────────────────────────────────────────────────
 
@@ -283,12 +291,6 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ korean_name: '', english_name: '', grade: 2 as Grade, korean_class: '대' as KoreanClass, class_number: 1, english_class: 'Lily' as EnglishClass })
 
-  const teacherMap: Record<string, string> = {
-    Lily: '00000000-0000-0000-0000-000000000001', Camellia: '00000000-0000-0000-0000-000000000002',
-    Daisy: '00000000-0000-0000-0000-000000000003', Sunflower: '00000000-0000-0000-0000-000000000004',
-    Marigold: '00000000-0000-0000-0000-000000000005', Snapdragon: '00000000-0000-0000-0000-000000000006',
-  }
-
   const handleSave = async () => {
     if (!form.korean_name || !form.english_name) return
     setSaving(true)
@@ -299,7 +301,7 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
       showToast(`A student already exists with ${form.korean_class} #${form.class_number} in Grade ${form.grade} (${existing[0].english_name}). Change the class number or edit the existing student.`)
       return
     }
-    const { error } = await addStudent({ ...form, teacher_id: teacherMap[form.english_class] || null, is_active: true, notes: '', photo_url: '', google_drive_folder_url: '' })
+    const { error } = await addStudent({ ...form, teacher_id: TEACHER_MAP[form.english_class] || null, is_active: true, notes: '', photo_url: '', google_drive_folder_url: '' })
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
     else { showToast(`Added ${form.english_name}`); setForm({ korean_name: '', english_name: '', grade: 2 as Grade, korean_class: '대' as KoreanClass, class_number: 1, english_class: 'Lily' as EnglishClass }); onComplete() }
@@ -513,13 +515,14 @@ function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' })
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
 
-  useState(() => {
-    (async () => {
+  useEffect(() => {
+    setLoading(true)
+    ;(async () => {
       const { data } = await supabase.from('students').select('notes').eq('id', studentId).single()
       if (data) setNotes(data.notes || '')
       setLoading(false)
     })()
-  })
+  }, [studentId])
 
   const handleSave = async () => {
     setSaving(true)
@@ -997,17 +1000,22 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
     is_transfer: (student as any).is_transfer || false, transfer_date: (student as any).transfer_date || '',
   })
   const [saving, setSaving] = useState(false)
-  const [uploadingPhoto, setUploadingPhoto] = useState(false)
-  const [photoUrl, setPhotoUrl] = useState(student.photo_url || '')
   const [deleting, setDeleting] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const handleDelete = async () => {
     const counts: Record<string, number> = {}
-    const tables = ['semester_grades', 'grades', 'summative_scores', 'comments', 'reading_assessments', 'behavior_logs', 'attendance', 'level_test_scores']
+    const tables = [
+      'semester_grades', 'grades', 'summative_scores', 'comments',
+      'reading_assessments', 'behavior_logs', 'attendance', 'level_test_scores',
+      'level_test_placements', 'student_scaffolds', 'student_goals',
+      'student_vocabulary', 'student_wida_levels', 'peer_observations',
+      'parent_communications', 'class_transfers',
+    ]
     for (const t of tables) {
-      const { count } = await supabase.from(t).select('*', { count: 'exact', head: true }).eq('student_id', student.id)
-      if ((count || 0) > 0) counts[t] = count || 0
+      try {
+        const { count } = await supabase.from(t).select('*', { count: 'exact', head: true }).eq('student_id', student.id)
+        if ((count || 0) > 0) counts[t] = count || 0
+      } catch {} // table might not exist yet
     }
     const total = Object.values(counts).reduce((a, b) => a + b, 0)
     const details = Object.entries(counts).map(([t, c]) => `${c} ${t.replace(/_/g, ' ')}`).join(', ')
@@ -1048,47 +1056,9 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
     if (w) { w.document.write(html); w.document.close() }
   }
 
-  const teacherMap: Record<string, string> = {
-    Lily: '00000000-0000-0000-0000-000000000001', Camellia: '00000000-0000-0000-0000-000000000002',
-    Daisy: '00000000-0000-0000-0000-000000000003', Sunflower: '00000000-0000-0000-0000-000000000004',
-    Marigold: '00000000-0000-0000-0000-000000000005', Snapdragon: '00000000-0000-0000-0000-000000000006',
-  }
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) { showToast('Please select an image file'); return }
-    if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5MB'); return }
-    setUploadingPhoto(true)
-    const ext = file.name.split('.').pop() || 'jpg'
-    const path = `student-photos/${student.id}.${ext}`
-    const { error: uploadError } = await supabase.storage.from('photos').upload(path, file, { upsert: true })
-    if (uploadError) {
-      const reader = new FileReader()
-      reader.onloadend = async () => {
-        const dataUrl = reader.result as string
-        const { error } = await supabase.from('students').update({ photo_url: dataUrl }).eq('id', student.id)
-        setUploadingPhoto(false)
-        if (!error) { setPhotoUrl(dataUrl); showToast('Photo uploaded'); onUpdated({ ...student, photo_url: dataUrl }) }
-      }
-      reader.readAsDataURL(file)
-      return
-    }
-    const { data: urlData } = supabase.storage.from('photos').getPublicUrl(path)
-    const publicUrl = urlData.publicUrl + '?t=' + Date.now()
-    await supabase.from('students').update({ photo_url: publicUrl }).eq('id', student.id)
-    setUploadingPhoto(false)
-    setPhotoUrl(publicUrl); showToast('Photo uploaded'); onUpdated({ ...student, photo_url: publicUrl })
-  }
-
-  const handleRemovePhoto = async () => {
-    await supabase.from('students').update({ photo_url: '' }).eq('id', student.id)
-    setPhotoUrl(''); showToast('Photo removed'); onUpdated({ ...student, photo_url: '' })
-  }
-
   const handleSaveEdit = async () => {
     setSaving(true)
-    const updateData: any = { ...form, teacher_id: teacherMap[form.english_class] || null }
+    const updateData: any = { ...form, teacher_id: TEACHER_MAP[form.english_class] || null }
     if ((form as any).is_transfer !== undefined) { updateData.is_transfer = (form as any).is_transfer; updateData.transfer_date = (form as any).transfer_date || null }
     const { data, error } = await updateStudent(student.id, updateData)
     setSaving(false)
@@ -1103,20 +1073,9 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
         {/* Header */}
         <div className="px-8 py-6 border-b border-border flex items-start justify-between">
           <div className="flex items-center gap-5">
-            <div className="relative group">
-              {photoUrl ? (
-                <img src={photoUrl} alt="" className="w-20 h-20 rounded-full object-cover border-2 border-border" />
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-surface-alt border-2 border-border flex items-center justify-center"><User size={28} className="text-text-tertiary" /></div>
-              )}
-              <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
-              <button onClick={() => fileRef.current?.click()} disabled={uploadingPhoto}
-                className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100">
-                {uploadingPhoto ? <Loader2 size={18} className="text-white animate-spin" /> : <Camera size={18} className="text-white" />}
-              </button>
-              {photoUrl && (
-                <button onClick={handleRemovePhoto} className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-700"><X size={10} /></button>
-              )}
+            <div className="w-14 h-14 rounded-full border-2 border-border flex items-center justify-center text-lg font-bold text-navy bg-accent-light shrink-0"
+              style={{ backgroundColor: classToColor(student.english_class as EnglishClass) + '22' }}>
+              {student.english_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
             </div>
             <div>
               <h3 className="font-display text-xl font-semibold text-navy">{student.english_name}</h3>
@@ -1650,10 +1609,10 @@ function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: str
         <div className="bg-surface-alt rounded-lg p-3">
           <div className="flex justify-between items-center mb-1">
             <span className="text-[11px] font-semibold text-text-secondary">Attendance Rate</span>
-            <span className="text-[13px] font-bold text-navy">{((counts.present / total) * 100).toFixed(1)}%</span>
+            <span className="text-[13px] font-bold text-navy">{(((counts.present + counts.tardy) / total) * 100).toFixed(1)}%</span>
           </div>
           <div className="w-full bg-border rounded-full h-2">
-            <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(counts.present / total) * 100}%` }} />
+            <div className="bg-green-500 h-2 rounded-full" style={{ width: `${((counts.present + counts.tardy) / total) * 100}%` }} />
           </div>
         </div>
       )}
@@ -1723,8 +1682,9 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
         }
       } catch {}
 
-      // Get all assessments that have standards tagged
+      // Get assessments for this student's class/grade only (not ALL assessments)
       const { data: assessments } = await supabase.from('assessments').select('*')
+        .eq('english_class', studentData?.english_class)
       // Get all grades for this student
       const { data: grades } = await supabase.from('grades').select('*').eq('student_id', studentId)
 
@@ -2151,7 +2111,7 @@ ${behaviorHTML}
 ${attendanceRecords.length > 0 ? (() => {
     const counts: Record<string, number> = { present: 0, absent: 0, tardy: 0, excused: 0 }
     attendanceRecords.forEach((a: any) => { counts[a.status] = (counts[a.status] || 0) + 1 })
-    const rate = attendanceRecords.length > 0 ? ((counts.present / attendanceRecords.length) * 100).toFixed(1) : '—'
+    const rate = attendanceRecords.length > 0 ? (((counts.present + counts.tardy) / attendanceRecords.length) * 100).toFixed(1) : '—'
     return `<p style="font-size:12px;margin-bottom:8px"><strong>Attendance Rate: ${rate}%</strong></p>
     <p>Present: ${counts.present} | Absent: ${counts.absent} | Tardy: ${counts.tardy} | Excused: ${counts.excused} | Total Days: ${attendanceRecords.length}</p>`
   })() : '<p class="empty">No attendance records.</p>'}
@@ -2382,261 +2342,3 @@ function GoalsTab({ studentId, studentName }: { studentId: string; studentName: 
   )
 }
 
-// ─── #39 Peer/Partner Teacher Observation Notes ───────────────────────
-
-function PeerNotesTab({ studentId, studentName }: { studentId: string; studentName: string }) {
-  const { currentTeacher, showToast } = useApp()
-  const [notes, setNotes] = useState<any[]>([])
-  const [newNote, setNewNote] = useState('')
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('peer_observations').select('*, teachers(name)').eq('student_id', studentId).order('created_at', { ascending: false })
-      setNotes(data || [])
-      setLoading(false)
-    })()
-  }, [studentId])
-
-  const handleAdd = async () => {
-    if (!newNote.trim() || !currentTeacher) return
-    const { data, error } = await supabase.from('peer_observations').insert({
-      student_id: studentId, teacher_id: currentTeacher.id, note: newNote.trim(),
-    }).select('*, teachers(name)').single()
-    if (error) { showToast('Error saving note'); return }
-    if (data) setNotes(prev => [data, ...prev])
-    setNewNote('')
-    showToast('Observation saved')
-  }
-
-  if (loading) return <div className="py-8 text-center"><Loader2 size={16} className="animate-spin text-navy mx-auto" /></div>
-
-  return (
-    <div className="space-y-4">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-[10px] text-blue-800">
-        Peer observations are visible to all teachers. Use this to share insights from co-teaching, covering, or peer observations about {studentName.split(' ')[0]}.
-      </div>
-      <div className="flex gap-2">
-        <textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="What did you notice about this student?"
-          className="flex-1 px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface resize-none h-16" />
-        <button onClick={handleAdd} disabled={!newNote.trim()}
-          className="self-end px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-          Add Note
-        </button>
-      </div>
-      {notes.length === 0 ? (
-        <p className="text-[12px] text-text-tertiary text-center py-4">No peer observations yet.</p>
-      ) : (
-        <div className="space-y-2">
-          {notes.map(n => (
-            <div key={n.id} className="bg-surface border border-border rounded-lg px-4 py-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-semibold text-navy">{n.teachers?.name || 'Unknown Teacher'}</span>
-                <span className="text-[9px] text-text-tertiary">{new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-              </div>
-              <p className="text-[12px] text-text-primary leading-relaxed">{n.note}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── #47 Parent Communication Log ─────────────────────────────────────
-
-function ParentLogTab({ studentId, studentName }: { studentId: string; studentName: string }) {
-  const { currentTeacher, showToast } = useApp()
-  const [logs, setLogs] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ type: 'note_home', summary: '' })
-
-  const COMM_TYPES = [
-    { value: 'note_home', label: 'Note sent home' },
-    { value: 'parent_response', label: 'Parent responded' },
-    { value: 'phone_call', label: 'Phone/app call' },
-    { value: 'conference', label: 'Conference' },
-    { value: 'translation', label: 'Translation requested' },
-    { value: 'reading_log', label: 'Reading log sent' },
-    { value: 'other', label: 'Other' },
-  ]
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('parent_communications').select('*, teachers(name)').eq('student_id', studentId).order('created_at', { ascending: false })
-      setLogs(data || [])
-      setLoading(false)
-    })()
-  }, [studentId])
-
-  const handleAdd = async () => {
-    if (!form.summary.trim() || !currentTeacher) return
-    const { data, error } = await supabase.from('parent_communications').insert({
-      student_id: studentId, teacher_id: currentTeacher.id, comm_type: form.type, summary: form.summary.trim(),
-    }).select('*, teachers(name)').single()
-    if (error) { showToast('Error saving'); return }
-    if (data) setLogs(prev => [data, ...prev])
-    setForm({ type: 'note_home', summary: '' })
-    setShowForm(false)
-    showToast('Communication logged')
-  }
-
-  const typeLabel = (t: string) => COMM_TYPES.find(c => c.value === t)?.label || t
-
-  if (loading) return <div className="py-8 text-center"><Loader2 size={16} className="animate-spin text-navy mx-auto" /></div>
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] text-text-secondary">Log all parent communication for {studentName.split(' ')[0]} -- notes home, responses, conferences, translation requests.</p>
-        <button onClick={() => setShowForm(!showForm)} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark">
-          {showForm ? 'Cancel' : '+ Log Communication'}
-        </button>
-      </div>
-      {showForm && (
-        <div className="bg-surface-alt border border-border rounded-xl p-4 space-y-3">
-          <div>
-            <label className="text-[10px] font-semibold text-text-secondary uppercase block mb-1">Type</label>
-            <div className="flex gap-1 flex-wrap">
-              {COMM_TYPES.map(ct => (
-                <button key={ct.value} onClick={() => setForm(f => ({ ...f, type: ct.value }))}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${form.type === ct.value ? 'bg-navy text-white' : 'bg-surface border border-border text-text-secondary hover:bg-border'}`}>
-                  {ct.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <textarea value={form.summary} onChange={e => setForm(f => ({ ...f, summary: e.target.value }))}
-            placeholder="Brief summary of the communication..."
-            className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface resize-none h-16" />
-          <button onClick={handleAdd} disabled={!form.summary.trim()} className="px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">Save</button>
-        </div>
-      )}
-      {logs.length === 0 ? (
-        <p className="text-[12px] text-text-tertiary text-center py-4">No parent communication logged yet.</p>
-      ) : (
-        <div className="space-y-2">
-          {logs.map(l => (
-            <div key={l.id} className="bg-surface border border-border rounded-lg px-4 py-3">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy uppercase">{typeLabel(l.comm_type)}</span>
-                <span className="text-[10px] text-text-tertiary ml-auto">{l.teachers?.name} -- {new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-              </div>
-              <p className="text-[12px] text-text-primary">{l.summary}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── #37 Vocabulary Tracker ───────────────────────────────────────────
-
-function VocabularyTab({ studentId, studentName }: { studentId: string; studentName: string }) {
-  const { currentTeacher, showToast } = useApp()
-  const [words, setWords] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [newWord, setNewWord] = useState('')
-  const [newDomain, setNewDomain] = useState('reading')
-  const [newStatus, setNewStatus] = useState<'introduced' | 'practicing' | 'mastered'>('introduced')
-
-  const DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language']
-  const STATUS_OPTS = [
-    { value: 'introduced', label: 'Introduced', color: 'bg-blue-100 text-blue-700' },
-    { value: 'practicing', label: 'Practicing', color: 'bg-amber-100 text-amber-700' },
-    { value: 'mastered', label: 'Mastered', color: 'bg-green-100 text-green-700' },
-  ]
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('student_vocabulary').select('*').eq('student_id', studentId).order('created_at', { ascending: false })
-      setWords(data || [])
-      setLoading(false)
-    })()
-  }, [studentId])
-
-  const handleAdd = async () => {
-    if (!newWord.trim() || !currentTeacher) return
-    const { data, error } = await supabase.from('student_vocabulary').insert({
-      student_id: studentId, word: newWord.trim(), domain: newDomain, status: newStatus,
-      added_by: currentTeacher.id,
-    }).select().single()
-    if (error) { showToast('Error saving'); return }
-    if (data) setWords(prev => [data, ...prev])
-    setNewWord('')
-    showToast('Word added')
-  }
-
-  const updateStatus = async (id: string, status: string) => {
-    await supabase.from('student_vocabulary').update({ status }).eq('id', id)
-    setWords(prev => prev.map(w => w.id === id ? { ...w, status } : w))
-  }
-
-  if (loading) return <div className="py-8 text-center"><Loader2 size={16} className="animate-spin text-navy mx-auto" /></div>
-
-  const grouped = DOMAINS.reduce((acc, d) => {
-    acc[d] = words.filter(w => w.domain === d)
-    return acc
-  }, {} as Record<string, any[]>)
-
-  const statusColor = (s: string) => STATUS_OPTS.find(o => o.value === s)?.color || 'bg-gray-100 text-gray-700'
-
-  return (
-    <div className="space-y-4">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-[10px] text-blue-800">
-        Track key vocabulary for {studentName.split(' ')[0]}. Words are organized by domain and status. Click status badges to cycle through introduced, practicing, mastered.
-      </div>
-
-      {/* Add word form */}
-      <div className="flex gap-2 items-end">
-        <div className="flex-1">
-          <input value={newWord} onChange={e => setNewWord(e.target.value)} placeholder="New vocabulary word or phrase"
-            className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface"
-            onKeyDown={e => e.key === 'Enter' && handleAdd()} />
-        </div>
-        <select value={newDomain} onChange={e => setNewDomain(e.target.value)}
-          className="px-2 py-2 border border-border rounded-lg text-[11px] bg-surface outline-none">
-          {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
-        </select>
-        <button onClick={handleAdd} disabled={!newWord.trim()} className="px-3 py-2 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">Add</button>
-      </div>
-
-      {/* Word counts */}
-      <div className="flex gap-3 text-[10px]">
-        <span className="text-text-tertiary">{words.length} total words</span>
-        <span className="text-blue-600">{words.filter(w => w.status === 'introduced').length} introduced</span>
-        <span className="text-amber-600">{words.filter(w => w.status === 'practicing').length} practicing</span>
-        <span className="text-green-600">{words.filter(w => w.status === 'mastered').length} mastered</span>
-      </div>
-
-      {/* Grouped by domain */}
-      {DOMAINS.map(domain => {
-        const domWords = grouped[domain]
-        if (!domWords || domWords.length === 0) return null
-        return (
-          <div key={domain} className="border border-border rounded-lg overflow-hidden">
-            <div className="px-3 py-1.5 bg-surface-alt border-b border-border">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary">{domain} ({domWords.length})</span>
-            </div>
-            <div className="px-3 py-2 flex flex-wrap gap-1.5">
-              {domWords.map(w => (
-                <button key={w.id} onClick={() => {
-                  const next = w.status === 'introduced' ? 'practicing' : w.status === 'practicing' ? 'mastered' : 'introduced'
-                  updateStatus(w.id, next)
-                }}
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${statusColor(w.status)}`}
-                  title={`Click to change status (currently: ${w.status})`}>
-                  {w.word}
-                </button>
-              ))}
-            </div>
-          </div>
-        )
-      })}
-
-      {words.length === 0 && <p className="text-center text-text-tertiary text-[12px] py-4">No vocabulary words tracked yet.</p>}
-    </div>
-  )
-}
