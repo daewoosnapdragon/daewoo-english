@@ -118,7 +118,7 @@ export default function YearlyPlanView() {
     })()
   }, [viewMode])
 
-  const classTracks = useMemo(() => tracks.filter(t => t.english_class === selectedClass), [tracks, selectedClass])
+  const classTracks = useMemo(() => tracks.filter(t => t.english_class === selectedClass && (t.grade === selectedGrade || !t.grade)), [tracks, selectedClass, selectedGrade])
 
   const saveCellData = async (trackId: string, periodId: string, content: string) => {
     const key = `${trackId}::${periodId}`
@@ -136,14 +136,14 @@ export default function YearlyPlanView() {
   const addTrack = async () => {
     if (!newTrackName.trim()) return
     const maxOrder = classTracks.reduce((max, t) => Math.max(max, t.sort_order), 0)
-    const { data, error } = await supabase.from('yearly_plan_tracks').insert({ english_class: selectedClass, name: newTrackName.trim(), sort_order: maxOrder + 1 }).select().single()
+    const { data, error } = await supabase.from('yearly_plan_tracks').insert({ english_class: selectedClass, grade: selectedGrade, name: newTrackName.trim(), sort_order: maxOrder + 1 }).select().single()
     if (error) { showToast(`Error: ${error.message}`); return }
     setTracks(prev => [...prev, data]); setNewTrackName(''); setAddingTrack(false)
   }
 
   const deleteTrack = async (trackId: string) => {
-    if (!confirm('Delete this track and all its content?')) return
-    await supabase.from('yearly_plan_cells').delete().eq('track_id', trackId)
+    if (!confirm(`Delete this track for ${selectedClass} Grade ${selectedGrade}?`)) return
+    await supabase.from('yearly_plan_cells').delete().eq('track_id', trackId).eq('english_class', selectedClass).eq('grade', selectedGrade)
     await supabase.from('yearly_plan_tracks').delete().eq('id', trackId)
     setTracks(prev => prev.filter(t => t.id !== trackId)); showToast('Track deleted')
   }
@@ -300,7 +300,7 @@ export default function YearlyPlanView() {
                     return (
                       <td key={period.id} className="px-3 py-2 border-l border-border align-top">
                           <div onClick={() => { if (canEdit) openEditModal(track.id, period.id) }}
-                            className={`min-h-[72px] rounded-lg px-2 py-1.5 text-[11px] leading-relaxed transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'}`}
+                            className={`min-h-[72px] max-h-[160px] overflow-hidden rounded-lg px-2 py-1.5 text-[11px] leading-relaxed transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'}`}
                             dangerouslySetInnerHTML={cell?.content ? { __html: renderCellContent(cell.content) } : undefined}>
                             {!cell?.content ? (canEdit ? 'Click to edit' : '') : undefined}
                           </div>

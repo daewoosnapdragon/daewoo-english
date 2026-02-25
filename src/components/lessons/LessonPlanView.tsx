@@ -371,9 +371,11 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
           inner = '<div class="no-class">No Grade 5</div>'
         } else {
           evts.forEach(ev => { inner += `<div class="event">${ev.title}</div>` })
+          const hasAny = data.subjects.some(s => s.content.trim()) || data.objective
           data.subjects.forEach(s => {
-            if (!s.content.trim()) return
-            inner += `<div class="subj"><span class="subj-label">${s.label}:</span> ${s.content}</div>`
+            if (!s.content.trim() && !hasAny) return
+            if (!s.content.trim() && !s.label.trim()) return
+            inner += `<div class="subj"><span class="subj-label">${s.label}${s.content ? ':' : ''}</span>${s.content ? ' ' + s.content : ''}</div>`
           })
           if (data.objective) inner += `<div class="obj"><span class="obj-pre">Students will</span> ${data.objective}</div>`
           if (!inner) inner = '<div class="empty-day">--</div>'
@@ -522,7 +524,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                   const evts = calEvents[day.date] || []
                   const isToday = day.date === todayStr
                   const noG5 = di === 0 && selectedGrade === 5
-                  const hasFill = data.subjects.some(s => s.content.trim())
+                  const hasFill = data.subjects.some(s => s.content.trim()) || data.objective
                   return (
                     <div key={di}
                       onClick={() => openDay(day.date)}
@@ -540,9 +542,9 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                       ) : (
                         <>
                           {evts.map((ev, ei) => <div key={ei} className="text-[9px] font-bold text-slate-600 bg-slate-100 rounded px-1.5 py-1 mb-1">{ev.title}</div>)}
-                          {data.subjects.filter(s => s.content.trim()).map(s => (
+                          {data.subjects.filter(s => s.content.trim() || (hasFill && s.label.trim())).map(s => (
                             <div key={s.label} className="text-[10px] leading-snug mb-0.5">
-                              <span className="font-bold text-navy">{s.label}:</span>{' '}
+                              <span className="font-bold text-navy">{s.label}{s.content ? ':' : ''}</span>{s.content ? ' ' : ''}
                               <span className="text-text-primary">{s.content}</span>
                             </div>
                           ))}

@@ -1270,9 +1270,9 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
 
     pw.document.write(`<html><head><title>Progress Reports - ${cls} Grade ${students[0]?.grade}</title>
     <style>body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:white}
-    .card{max-width:680px;margin:0 auto;overflow:hidden;page-break-after:always}
+    .card{max-width:680px;margin:20px auto;overflow:visible;page-break-after:always;page-break-inside:avoid}
     .card:last-child{page-break-after:auto}
-    @media print{@page{size:A4;margin:8mm}.card{margin:0;box-shadow:none;max-height:277mm;overflow:hidden}}</style></head><body>`)
+    @media print{@page{size:A4;margin:12mm 10mm}.card{margin:0;box-shadow:none;overflow:visible}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>`)
 
     for (const student of students) {
       // Load data for each student
