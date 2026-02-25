@@ -368,60 +368,69 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
     let done = 0
     const errors: string[] = []
 
-    // ── Sort updates by grade DESCENDING to avoid unique constraint collisions ──
-    // When students promote (Gr2→Gr3), the old Gr3 slot must be vacated first.
-    // Processing highest grades first ensures each (grade, class, number) slot
-    // is freed before a lower-grade student moves into it.
-    const sorted = [...toProcess].sort((a, b) => {
-      // Updates before adds (updates free slots, adds fill them)
-      if (a.action === 'update' && b.action === 'add') return -1
-      if (a.action === 'add' && b.action === 'update') return 1
-      // Within updates: higher grade first
-      return (b.parsed.grade - a.parsed.grade)
-    })
+    // ── TWO-PASS UPDATE to avoid unique constraint collisions ──
+    // The unique constraint is (grade, korean_class, class_number).
+    // When students change grade/class/number, updating one-by-one can collide
+    // with students who haven't been updated yet. Fix: clear all slots first,
+    // then write final values.
+    
+    const updates = toProcess.filter(r => r.action === 'update' && r.existing)
+    const adds = toProcess.filter(r => r.action === 'add')
 
-    // Batch updates — only write fields that should change
-    for (const row of sorted) {
-      try {
-        if (row.action === 'update' && row.existing) {
-          // Only update fields that actually changed from the roster file
-          const updates: Record<string, any> = {
-            grade: row.parsed.grade,
-            korean_class: row.parsed.korean_class,
-            class_number: row.parsed.class_number,
-            needs_review: false,
-            updated_at: new Date().toISOString(),
-          }
-
-          // Only update english_name if the user changed it from what's in DB
-          if (row.englishName && row.englishName !== row.existing.english_name) {
-            updates.english_name = row.englishName
-          }
-
-          // Only update english_class if the user changed it from what's in DB
-          if (row.englishClass !== row.existing.english_class) {
-            updates.english_class = row.englishClass
-          }
-
-          const { error } = await supabase.from('students').update(updates).eq('id', row.existing.id)
-          if (error) throw new Error(`Update ${row.existing.english_name}: ${error.message}`)
-
-        } else if (row.action === 'add') {
-          const { error } = await supabase.from('students').insert({
-            korean_name: row.parsed.korean_name,
-            english_name: row.englishName || row.parsed.korean_name,
-            grade: row.parsed.grade,
-            korean_class: row.parsed.korean_class,
-            class_number: row.parsed.class_number,
-            english_class: row.englishClass,
-            is_active: true,
-            needs_review: false,
-            notes: '',
-            photo_url: '',
-            google_drive_folder_url: '',
-          })
-          if (error) throw new Error(`Add ${row.parsed.korean_name}: ${error.message}`)
+    // Pass 1: Temporarily set class_number to negative values to free all slots
+    if (updates.length > 0) {
+      const ids = updates.map(r => r.existing!.id)
+      // Batch clear — set class_number to -(index+1) so they're all unique but impossible
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50)
+        for (let j = 0; j < batch.length; j++) {
+          await supabase.from('students').update({ class_number: -(i + j + 1) }).eq('id', batch[j])
         }
+      }
+    }
+
+    // Pass 2: Write all final values
+    for (const row of updates) {
+      try {
+        const upd: Record<string, any> = {
+          grade: row.parsed.grade,
+          korean_class: row.parsed.korean_class,
+          class_number: row.parsed.class_number,
+          needs_review: false,
+          updated_at: new Date().toISOString(),
+        }
+        if (row.englishName && row.englishName !== row.existing!.english_name) {
+          upd.english_name = row.englishName
+        }
+        if (row.englishClass !== row.existing!.english_class) {
+          upd.english_class = row.englishClass
+        }
+        const { error } = await supabase.from('students').update(upd).eq('id', row.existing!.id)
+        if (error) throw new Error(`Update ${row.existing!.english_name}: ${error.message}`)
+      } catch (e: any) {
+        errors.push(e.message)
+      }
+      done++
+      setProgress({ done, total: totalOps, errors: [...errors] })
+    }
+
+    // Pass 3: Insert new students
+    for (const row of adds) {
+      try {
+        const { error } = await supabase.from('students').insert({
+          korean_name: row.parsed.korean_name,
+          english_name: row.englishName || row.parsed.korean_name,
+          grade: row.parsed.grade,
+          korean_class: row.parsed.korean_class,
+          class_number: row.parsed.class_number,
+          english_class: row.englishClass,
+          is_active: true,
+          needs_review: false,
+          notes: '',
+          photo_url: '',
+          google_drive_folder_url: '',
+        })
+        if (error) throw new Error(`Add ${row.parsed.korean_name}: ${error.message}`)
       } catch (e: any) {
         errors.push(e.message)
       }
