@@ -547,10 +547,6 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                   <p className="text-[10px] text-green-700">{fileNames.join(', ')}</p>
                 </div>
               )}
-                <Upload size={36} className="mx-auto text-text-tertiary mb-3" />
-                <p className="text-[14px] font-medium text-navy">Drop file here or click to browse</p>
-                <p className="text-[11px] text-text-tertiary mt-1">.xlsx, .xls, or .csv</p>
-              </div>
               <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-[11px] text-amber-800 leading-relaxed">
                   <strong>Expected columns:</strong> Korean Name (이름), Grade (학년), Korean Class (반), Class Number (번호). English Name is optional — existing English names will be carried over from the current roster.
