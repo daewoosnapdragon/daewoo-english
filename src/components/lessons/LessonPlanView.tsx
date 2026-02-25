@@ -636,45 +636,20 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
               <div className="px-5 py-5 space-y-0">
                 {/* Subject inputs */}
                 {editDay.subjects.map((sub, idx) => (
-                  <div key={idx} className="flex items-center gap-2 group">
-                    <input
-                      value={sub.label}
-                      onChange={e => updateSubjectLabel(editDate, idx, e.target.value)}
-                      className="text-[12px] font-bold text-navy w-[76px] text-right shrink-0 py-3 bg-transparent outline-none border-b border-transparent focus:border-navy/30 placeholder:text-navy/30"
-                      placeholder="Label"
-                    />
-                    <input
-                      value={sub.content}
-                      onChange={e => updateSubject(editDate, idx, e.target.value)}
-                      placeholder={sub.label ? `What are students doing in ${sub.label}?` : 'Content...'}
-                      className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-transparent border-b border-border/40 outline-none focus:border-navy transition-colors placeholder:text-text-tertiary/25"
-                      autoFocus={idx === 0}
-                      onKeyDown={e => {
-                        if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
-                          e.preventDefault()
-                          const inputs = document.querySelectorAll('.pcal-modal-input')
-                          const cur = Array.from(inputs).indexOf(e.currentTarget)
-                          if (cur >= 0 && cur < inputs.length - 1) (inputs[cur + 1] as HTMLInputElement).focus()
-                        }
-                        if (e.key === 'ArrowUp') {
-                          e.preventDefault()
-                          const inputs = document.querySelectorAll('.pcal-modal-input')
-                          const cur = Array.from(inputs).indexOf(e.currentTarget)
-                          if (cur > 0) (inputs[cur - 1] as HTMLInputElement).focus()
-                        }
-                        if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); navigateModal('prev') }
-                        if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); navigateModal('next') }
-                      }}
-                      ref={el => { if (el) el.classList.add('pcal-modal-input') }}
-                    />
-                    {editDay.subjects.length > 1 && (
-                      <button onClick={() => removeSubjectRow(editDate, idx)} className="opacity-0 group-hover:opacity-40 hover:!opacity-100 p-1 text-red-400 hover:text-red-600 transition-opacity shrink-0" title="Remove row"><X size={14} /></button>
-                    )}
-                  </div>
+                  <SubjectLabelRow
+                    key={idx}
+                    label={sub.label}
+                    content={sub.content}
+                    onLabelChange={(label: string) => updateSubjectLabel(editDate, idx, label)}
+                    onContentChange={(content: string) => updateSubject(editDate, idx, content)}
+                    onRemove={editDay.subjects.length > 1 ? () => removeSubjectRow(editDate, idx) : undefined}
+                    autoFocus={idx === 0}
+                    onNavigateDay={navigateModal}
+                  />
                 ))}
                 {/* Add subject row */}
                 <div className="flex items-center gap-2 pt-1">
-                  <button onClick={() => addSubjectRow(editDate)} className="ml-[76px] text-[11px] text-text-tertiary hover:text-navy font-medium px-2 py-1 rounded hover:bg-surface-alt transition-colors">+ Add row</button>
+                  <button onClick={() => addSubjectRow(editDate)} className="ml-[100px] text-[11px] text-text-tertiary hover:text-navy font-medium px-2 py-1 rounded hover:bg-surface-alt transition-colors">+ Add row</button>
                 </div>
 
                 {/* Objective */}
@@ -737,6 +712,88 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+const SUBJECT_OPTIONS = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Grammar', 'Vocabulary', 'Spelling', 'Listening', 'Review']
+
+function SubjectLabelRow({ label, content, onLabelChange, onContentChange, onRemove, autoFocus, onNavigateDay }: {
+  label: string; content: string
+  onLabelChange: (label: string) => void
+  onContentChange: (content: string) => void
+  onRemove?: () => void
+  autoFocus?: boolean
+  onNavigateDay: (direction: 'prev' | 'next') => void
+}) {
+  const isCustom = label !== '' && !SUBJECT_OPTIONS.includes(label)
+  const [showCustomInput, setShowCustomInput] = useState(isCustom)
+
+  return (
+    <div className="flex items-center gap-2 group">
+      {showCustomInput ? (
+        <div className="flex items-center w-[100px] shrink-0">
+          <input
+            value={label}
+            onChange={e => onLabelChange(e.target.value)}
+            className="text-[12px] font-bold text-navy w-full text-right py-3 bg-transparent outline-none border-b border-navy/30 placeholder:text-navy/30"
+            placeholder="Custom..."
+            autoFocus
+            onKeyDown={e => {
+              if (e.key === 'Escape') { if (!label) setShowCustomInput(false) }
+            }}
+          />
+          <button onClick={() => { onLabelChange(''); setShowCustomInput(false) }}
+            className="p-0.5 text-text-tertiary hover:text-navy ml-0.5 shrink-0" title="Back to dropdown">
+            <X size={10} />
+          </button>
+        </div>
+      ) : (
+        <select
+          value={label}
+          onChange={e => {
+            if (e.target.value === '__custom__') {
+              setShowCustomInput(true)
+              onLabelChange('')
+            } else {
+              onLabelChange(e.target.value)
+            }
+          }}
+          className="text-[12px] font-bold text-navy w-[100px] text-right shrink-0 py-3 bg-transparent outline-none border-b border-transparent focus:border-navy/30 cursor-pointer"
+          style={{ textAlignLast: 'right' }}
+        >
+          <option value="">Select...</option>
+          {SUBJECT_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+          <option value="__custom__">Custom...</option>
+        </select>
+      )}
+      <input
+        value={content}
+        onChange={e => onContentChange(e.target.value)}
+        placeholder={label ? `What are students doing in ${label}?` : 'Select a subject first...'}
+        className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-transparent border-b border-border/40 outline-none focus:border-navy transition-colors placeholder:text-text-tertiary/25"
+        autoFocus={autoFocus}
+        onKeyDown={e => {
+          if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
+            e.preventDefault()
+            const inputs = document.querySelectorAll('.pcal-modal-input')
+            const cur = Array.from(inputs).indexOf(e.currentTarget)
+            if (cur >= 0 && cur < inputs.length - 1) (inputs[cur + 1] as HTMLInputElement).focus()
+          }
+          if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            const inputs = document.querySelectorAll('.pcal-modal-input')
+            const cur = Array.from(inputs).indexOf(e.currentTarget)
+            if (cur > 0) (inputs[cur - 1] as HTMLInputElement).focus()
+          }
+          if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); onNavigateDay('prev') }
+          if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); onNavigateDay('next') }
+        }}
+        ref={el => { if (el) el.classList.add('pcal-modal-input') }}
+      />
+      {onRemove && (
+        <button onClick={onRemove} className="opacity-0 group-hover:opacity-40 hover:!opacity-100 p-1 text-red-400 hover:text-red-600 transition-opacity shrink-0" title="Remove row"><X size={14} /></button>
       )}
     </div>
   )
