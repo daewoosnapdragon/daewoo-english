@@ -53,6 +53,7 @@ export interface Student {
   notes: string;
   photo_url: string;
   google_drive_folder_url: string;
+  needs_review: boolean;
   created_at: string;
   updated_at: string;
   // Joined fields
