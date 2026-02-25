@@ -8,7 +8,7 @@ import { classToColor, classToTextColor } from '@/lib/utils'
 import { Plus, X, Loader2, Trash2, Pencil, Check, Minus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Copy, ClipboardPaste, GripVertical } from 'lucide-react'
 
 interface Period { id: string; name: string; sort_order: number; color: string }
-interface Track { id: string; english_class: string; name: string; sort_order: number }
+interface Track { id: string; english_class: string; grade: number | null; name: string; sort_order: number }
 interface Cell { id?: string; content: string; standard_codes: string[] }
 
 // Render cell content with markdown-like formatting
@@ -219,10 +219,30 @@ export default function YearlyPlanView() {
   }
 
   const deleteTrack = async (trackId: string) => {
-    if (!confirm(`Delete this track for ${selectedClass} Grade ${selectedGrade}?`)) return
+    const track = tracks.find(t => t.id === trackId)
+    if (!confirm(`Remove "${track?.name || 'this track'}" from ${selectedClass} Grade ${selectedGrade}?\n\nThis only affects ${selectedClass} Grade ${selectedGrade}.`)) return
+    
+    // Delete cells for THIS class+grade only
     await supabase.from('yearly_plan_cells').delete().eq('track_id', trackId).eq('english_class', selectedClass).eq('grade', selectedGrade)
-    await supabase.from('yearly_plan_tracks').delete().eq('id', trackId)
-    setTracks(prev => prev.filter(t => t.id !== trackId)); showToast('Track deleted')
+    
+    // Check if any OTHER class/grade still has cells or if the track is used elsewhere
+    const { count } = await supabase.from('yearly_plan_cells')
+      .select('*', { count: 'exact', head: true })
+      .eq('track_id', trackId)
+    
+    if (!count || count === 0) {
+      // No cells remain anywhere — safe to delete the track row
+      await supabase.from('yearly_plan_tracks').delete().eq('id', trackId)
+      setTracks(prev => prev.filter(t => t.id !== trackId))
+    } else {
+      // Other classes/grades still use this track — hide it locally but keep the row
+      // Just update local state to remove it from view
+      // (Track still exists for other class/grade combos)
+      setTracks(prev => prev.filter(t => t.id !== trackId))
+      showToast(`Track hidden from ${selectedClass} Gr${selectedGrade} (still used by other classes)`)
+      return
+    }
+    showToast('Track removed')
   }
 
   const renameTrack = async (trackId: string) => {
@@ -347,7 +367,7 @@ export default function YearlyPlanView() {
         <div className="bg-surface border border-border rounded-xl overflow-auto">
           <table className="w-full table-fixed min-w-[900px]">
             <colgroup>
-              <col style={{ width: '140px' }} />
+              <col style={{ width: '170px' }} />
               {periods.map(p => <col key={p.id} />)}
             </colgroup>
             <thead>
@@ -366,7 +386,7 @@ export default function YearlyPlanView() {
                   onDrop={handleDrop}
                   onDragEnd={handleDragEnd}
                 >
-                  <td className="px-2 py-3 text-[12px] font-semibold text-navy align-top bg-surface-alt/30 break-words">
+                  <td className="px-2 py-3 text-[11px] font-semibold text-navy align-top bg-surface-alt/30">
                     <div className="flex items-start gap-1">
                       {canEdit && (
                         <span className="cursor-grab active:cursor-grabbing text-text-tertiary/40 hover:text-text-secondary mt-0.5 shrink-0" title="Drag to reorder">
@@ -382,12 +402,12 @@ export default function YearlyPlanView() {
                         <button onClick={() => setRenamingTrack(null)} className="p-0.5 text-text-tertiary"><X size={12} /></button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1.5">
-                        <span>{track.name}</span>
+                      <div>
+                        <span className="break-words leading-snug">{track.name}</span>
                         {canEdit && (
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                            <button onClick={() => { setRenamingTrack(track.id); setRenameText(track.name) }} className="p-0.5 rounded text-text-tertiary hover:text-navy"><Pencil size={11} /></button>
-                            <button onClick={() => deleteTrack(track.id)} className="p-0.5 rounded text-text-tertiary hover:text-red-500"><Trash2 size={11} /></button>
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 mt-1">
+                            <button onClick={() => { setRenamingTrack(track.id); setRenameText(track.name) }} className="p-0.5 rounded text-text-tertiary hover:text-navy" title="Rename"><Pencil size={11} /></button>
+                            <button onClick={() => deleteTrack(track.id)} className="p-0.5 rounded text-text-tertiary hover:text-red-500" title="Remove track"><Trash2 size={11} /></button>
                           </span>
                         )}
                       </div>
@@ -401,7 +421,7 @@ export default function YearlyPlanView() {
                     return (
                       <td key={period.id} className="px-3 py-2 border-l border-border align-top group/cell relative">
                           <div onClick={() => { if (canEdit) openEditModal(track.id, period.id) }}
-                            className={`min-h-[72px] max-h-[200px] overflow-hidden rounded-lg px-2 py-1.5 text-[11px] leading-relaxed break-words transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'} ${isCopied ? 'ring-2 ring-gold/40' : ''}`}
+                            className={`min-h-[72px] max-h-[160px] overflow-y-auto rounded-lg px-2 py-1.5 text-[11px] leading-relaxed break-words whitespace-pre-wrap transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20 hover:max-h-[400px]' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'} ${isCopied ? 'ring-2 ring-gold/40' : ''}`}
                             dangerouslySetInnerHTML={cell?.content ? { __html: renderCellContent(cell.content) } : undefined}>
                             {!cell?.content ? (canEdit ? (clipboard ? 'Click to paste' : 'Click to edit') : '') : undefined}
                           </div>
@@ -493,7 +513,7 @@ export default function YearlyPlanView() {
                                 return (
                                   <td key={period.id} className="px-2.5 py-2 border-l border-border/30 align-top" style={{ height: '44px' }}>
                                     {periodCell?.content ? (
-                                      <div className="text-[10px] leading-relaxed text-text-primary overflow-hidden"
+                                      <div className="text-[10px] leading-relaxed text-text-primary max-h-[120px] overflow-y-auto break-words whitespace-pre-wrap"
                                         dangerouslySetInnerHTML={{ __html: renderCellContent(periodCell.content) }} />
                                     ) : (
                                       <span className="text-text-tertiary/40 text-[10px]">--</span>
