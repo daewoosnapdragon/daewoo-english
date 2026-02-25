@@ -22,6 +22,27 @@ function renderCellContent(content: string): string {
     .replace(/\n/g, '<br>')
 }
 
+// Extract just the bold headings for the at-a-glance view
+function extractHeadings(content: string): string[] {
+  if (!content) return []
+  const headings: string[] = []
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim()
+    const match = trimmed.match(/^\*\*(.+?)\*\*$/)
+    if (match) headings.push(match[1])
+  }
+  return headings
+}
+
+// Check if content has detail beyond just headings
+function hasDetail(content: string): boolean {
+  if (!content) return false
+  return content.split('\n').some(line => {
+    const t = line.trim()
+    return t && !t.match(/^\*\*(.+?)\*\*$/) && t !== '---' && t !== '***' && t !== '___'
+  })
+}
+
 export default function YearlyPlanView() {
   const { currentTeacher, showToast } = useApp()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Snapdragon'
@@ -38,6 +59,8 @@ export default function YearlyPlanView() {
   const [allCells, setAllCells] = useState<Record<string, Record<string, Cell>>>({})
   const [loading, setLoading] = useState(true)
   const [clipboard, setClipboard] = useState<{ content: string; fromKey: string } | null>(null)
+  const [popover, setPopover] = useState<{ key: string; rect: DOMRect } | null>(null)
+  const popoverTimer = useRef<NodeJS.Timeout | null>(null)
   const [editModal, setEditModal] = useState<{ trackId: string; periodId: string; trackIdx: number; periodIdx: number } | null>(null)
   const [editText, setEditText] = useState('')
   // Block editor state
@@ -170,7 +193,7 @@ export default function YearlyPlanView() {
     })()
   }, [viewMode])
 
-  const classTracks = useMemo(() => tracks.filter(t => t.english_class === selectedClass && (t.grade === selectedGrade || !t.grade)), [tracks, selectedClass, selectedGrade])
+  const classTracks = useMemo(() => tracks.filter(t => t.english_class === selectedClass && (t.grade === selectedGrade || !t.grade)).sort((a, b) => a.sort_order - b.sort_order), [tracks, selectedClass, selectedGrade])
 
   const saveCellData = async (trackId: string, periodId: string, content: string) => {
     const key = `${trackId}::${periodId}`
@@ -418,15 +441,41 @@ export default function YearlyPlanView() {
                   {periods.map(period => {
                     const key = `${track.id}::${period.id}`; const cell = cells[key]
                     const isCopied = clipboard?.fromKey === key
+                    const headings = cell?.content ? extractHeadings(cell.content) : []
+                    const detail = cell?.content ? hasDetail(cell.content) : false
                     return (
-                      <td key={period.id} className="px-3 py-2 border-l border-border align-top group/cell relative">
-                          <div onClick={() => { if (canEdit) openEditModal(track.id, period.id) }}
-                            className={`min-h-[72px] max-h-[160px] overflow-y-auto rounded-lg px-2 py-1.5 text-[11px] leading-relaxed break-words whitespace-pre-wrap transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20 hover:max-h-[400px]' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'} ${isCopied ? 'ring-2 ring-gold/40' : ''}`}
-                            dangerouslySetInnerHTML={cell?.content ? { __html: renderCellContent(cell.content) } : undefined}>
-                            {!cell?.content ? (canEdit ? (clipboard ? 'Click to paste' : 'Click to edit') : '') : undefined}
+                      <td key={period.id} className="px-2 py-1.5 border-l border-border align-top group/cell relative"
+                        onMouseEnter={e => {
+                          if (!cell?.content || editModal) return
+                          const td = e.currentTarget
+                          popoverTimer.current = setTimeout(() => {
+                            setPopover({ key, rect: td.getBoundingClientRect() })
+                          }, 400)
+                        }}
+                        onMouseLeave={() => {
+                          if (popoverTimer.current) clearTimeout(popoverTimer.current)
+                          setPopover(prev => prev?.key === key ? null : prev)
+                        }}
+                      >
+                          <div onClick={() => { if (canEdit) { if (popoverTimer.current) clearTimeout(popoverTimer.current); setPopover(null); openEditModal(track.id, period.id) } }}
+                            className={`min-h-[48px] rounded-lg px-2 py-1.5 transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20' : ''} ${cell?.content ? '' : 'text-text-tertiary italic text-[11px]'} ${isCopied ? 'ring-2 ring-gold/40' : ''}`}>
+                            {cell?.content ? (
+                              headings.length > 0 ? (
+                                <div className="space-y-0.5">
+                                  {headings.map((h, i) => (
+                                    <p key={i} className="text-[11px] font-semibold text-navy leading-snug truncate">{h}</p>
+                                  ))}
+                                  {detail && <span className="text-[9px] text-text-tertiary">···</span>}
+                                </div>
+                              ) : (
+                                <p className="text-[10px] text-text-secondary leading-snug line-clamp-3">{cell.content.replace(/\*\*/g, '').replace(/^- /gm, '• ').slice(0, 80)}</p>
+                              )
+                            ) : (
+                              canEdit ? (clipboard ? 'Click to paste' : '') : ''
+                            )}
                           </div>
                           {canEdit && (
-                            <div className="absolute top-1 right-1 opacity-0 group-hover/cell:opacity-100 transition-opacity flex gap-0.5">
+                            <div className="absolute top-0.5 right-0.5 opacity-0 group-hover/cell:opacity-100 transition-opacity flex gap-0.5">
                               {cell?.content && (
                                 <button onClick={e => { e.stopPropagation(); copyCell(track.id, period.id) }}
                                   className={`p-1 rounded ${isCopied ? 'bg-gold/20 text-gold' : 'bg-white/80 text-text-tertiary hover:text-navy'} shadow-sm`} title="Copy">
@@ -533,6 +582,33 @@ export default function YearlyPlanView() {
           })}
         </div>
       )}
+      {/* HOVER POPOVER — full content preview */}
+      {popover && !editModal && (() => {
+        const [trackId, periodId] = popover.key.split('::')
+        const cell = cells[popover.key]
+        if (!cell?.content) return null
+        const track = classTracks.find(t => t.id === trackId)
+        const period = periods.find(p => p.id === periodId)
+        // Position: below the cell, clamped to viewport
+        const top = Math.min(popover.rect.bottom + 4, window.innerHeight - 300)
+        const left = Math.max(8, Math.min(popover.rect.left, window.innerWidth - 340))
+        return (
+          <div className="fixed z-[90] w-[320px] max-h-[280px] overflow-y-auto bg-surface border border-border rounded-xl shadow-xl"
+            style={{ top, left }}
+            onMouseEnter={() => { if (popoverTimer.current) clearTimeout(popoverTimer.current) }}
+            onMouseLeave={() => setPopover(null)}
+          >
+            <div className="px-3 py-2 border-b border-border/60 flex items-center gap-2">
+              <span className="text-[10px] font-bold text-navy">{track?.name}</span>
+              <span className="text-[9px] text-text-tertiary">·</span>
+              <span className="text-[10px] font-semibold" style={{ color: period?.color ? '#1B2A4A' : undefined }}>{period?.name}</span>
+            </div>
+            <div className="px-3 py-2.5 text-[11px] leading-relaxed text-text-primary break-words"
+              dangerouslySetInnerHTML={{ __html: renderCellContent(cell.content) }} />
+          </div>
+        )
+      })()}
+
       {/* EDIT MODAL */}
       {editModal && (() => {
         const track = classTracks.find(t => t.id === editModal.trackId)
