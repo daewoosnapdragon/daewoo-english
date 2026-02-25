@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, Trash2, Pencil, Check, Minus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Copy, ClipboardPaste } from 'lucide-react'
+import { Plus, X, Loader2, Trash2, Pencil, Check, Minus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Copy, ClipboardPaste, GripVertical } from 'lucide-react'
 
 interface Period { id: string; name: string; sort_order: number; color: string }
 interface Track { id: string; english_class: string; name: string; sort_order: number }
@@ -81,6 +81,57 @@ export default function YearlyPlanView() {
   const [renameText, setRenameText] = useState('')
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
+
+  // Drag-to-reorder state for tracks
+  const dragTrack = useRef<string | null>(null)
+  const dragOverTrack = useRef<string | null>(null)
+  const [dragTrackId, setDragTrackId] = useState<string | null>(null)
+
+  const handleDragStart = (trackId: string) => {
+    dragTrack.current = trackId
+    setDragTrackId(trackId)
+  }
+  const handleDragOver = (e: React.DragEvent, trackId: string) => {
+    e.preventDefault()
+    dragOverTrack.current = trackId
+  }
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    const from = dragTrack.current
+    const to = dragOverTrack.current
+    if (!from || !to || from === to) { setDragTrackId(null); return }
+
+    const fromIdx = classTracks.findIndex(t => t.id === from)
+    const toIdx = classTracks.findIndex(t => t.id === to)
+    if (fromIdx < 0 || toIdx < 0) { setDragTrackId(null); return }
+
+    // Reorder locally
+    const reordered = [...classTracks]
+    const [moved] = reordered.splice(fromIdx, 1)
+    reordered.splice(toIdx, 0, moved)
+
+    // Update sort_order for all affected tracks
+    const updates = reordered.map((t, i) => ({ ...t, sort_order: i }))
+    setTracks(prev => prev.map(t => {
+      const updated = updates.find(u => u.id === t.id)
+      return updated ? { ...t, sort_order: updated.sort_order } : t
+    }))
+
+    // Persist to database
+    for (const t of updates) {
+      await supabase.from('yearly_plan_tracks').update({ sort_order: t.sort_order }).eq('id', t.id)
+    }
+
+    dragTrack.current = null
+    dragOverTrack.current = null
+    setDragTrackId(null)
+    showToast('Tracks reordered')
+  }
+  const handleDragEnd = () => {
+    dragTrack.current = null
+    dragOverTrack.current = null
+    setDragTrackId(null)
+  }
 
   useEffect(() => {
     (async () => {
@@ -307,8 +358,22 @@ export default function YearlyPlanView() {
             </thead>
             <tbody>
               {classTracks.map(track => (
-                <tr key={track.id} className="border-t border-border group">
-                  <td className="px-4 py-3 text-[12px] font-semibold text-navy align-top bg-surface-alt/30 break-words">
+                <tr key={track.id}
+                  className={`border-t border-border group ${dragTrackId === track.id ? 'opacity-40' : ''}`}
+                  draggable={canEdit}
+                  onDragStart={() => handleDragStart(track.id)}
+                  onDragOver={e => handleDragOver(e, track.id)}
+                  onDrop={handleDrop}
+                  onDragEnd={handleDragEnd}
+                >
+                  <td className="px-2 py-3 text-[12px] font-semibold text-navy align-top bg-surface-alt/30 break-words">
+                    <div className="flex items-start gap-1">
+                      {canEdit && (
+                        <span className="cursor-grab active:cursor-grabbing text-text-tertiary/40 hover:text-text-secondary mt-0.5 shrink-0" title="Drag to reorder">
+                          <GripVertical size={14} />
+                        </span>
+                      )}
+                      <div className="flex-1 min-w-0">
                     {renamingTrack === track.id ? (
                       <div className="flex items-center gap-1">
                         <input value={renameText} onChange={e => setRenameText(e.target.value)} className="px-2 py-1 border border-navy rounded text-[11px] outline-none w-28" autoFocus
@@ -327,6 +392,8 @@ export default function YearlyPlanView() {
                         )}
                       </div>
                     )}
+                      </div>
+                    </div>
                   </td>
                   {periods.map(period => {
                     const key = `${track.id}::${period.id}`; const cell = cells[key]
@@ -334,7 +401,7 @@ export default function YearlyPlanView() {
                     return (
                       <td key={period.id} className="px-3 py-2 border-l border-border align-top group/cell relative">
                           <div onClick={() => { if (canEdit) openEditModal(track.id, period.id) }}
-                            className={`min-h-[72px] max-h-[160px] overflow-hidden rounded-lg px-2 py-1.5 text-[11px] leading-relaxed transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'} ${isCopied ? 'ring-2 ring-gold/40' : ''}`}
+                            className={`min-h-[72px] max-h-[200px] overflow-hidden rounded-lg px-2 py-1.5 text-[11px] leading-relaxed break-words transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20' : ''} ${cell?.content ? 'text-text-primary' : 'text-text-tertiary italic'} ${isCopied ? 'ring-2 ring-gold/40' : ''}`}
                             dangerouslySetInnerHTML={cell?.content ? { __html: renderCellContent(cell.content) } : undefined}>
                             {!cell?.content ? (canEdit ? (clipboard ? 'Click to paste' : 'Click to edit') : '') : undefined}
                           </div>
@@ -412,7 +479,7 @@ export default function YearlyPlanView() {
                           return (
                             <tr key={`${track.id}-${g}`} className={`${gi === 0 ? 'border-t-2 border-border' : 'border-t border-border/30'}`}>
                               {gi === 0 && (
-                                <td rowSpan={progGrades.length} className="px-3 py-2.5 text-[11px] font-semibold text-navy whitespace-nowrap align-middle bg-surface-alt/20 border-r border-border">
+                                <td rowSpan={progGrades.length} className="px-3 py-2.5 text-[11px] font-semibold text-navy align-middle bg-surface-alt/20 border-r border-border break-words">
                                   {track.name}
                                 </td>
                               )}

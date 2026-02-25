@@ -68,7 +68,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
 
   const DEFAULT_SUBJECTS = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
   interface DayContent { subjects: { label: string; content: string }[]; objective: string; notes: string }
-  const emptyDay = (): DayContent => ({ subjects: DEFAULT_SUBJECTS.map(s => ({ label: s, content: '' })), objective: '', notes: '' })
+  const emptyDay = (): DayContent => ({ subjects: [{ label: '', content: '' }], objective: '', notes: '' })
 
   const [dayData, setDayData] = useState<Record<string, DayContent>>({})
   const [weeklyHomework, setWeeklyHomework] = useState<Record<string, string>>({}) // keyed by Monday date
@@ -147,11 +147,13 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
         try {
           const parsed = typeof row.content === 'string' ? JSON.parse(row.content) : row.content
           dd[row.date] = { ...emptyDay(), ...parsed }
-          // Only ensure default subjects exist if this day has NO subjects saved at all
-          // (i.e., legacy data or first-time migration). If the teacher has saved subjects
-          // (even fewer than the defaults), respect their choices.
-          if (!parsed.subjects || parsed.subjects.length === 0) {
-            dd[row.date].subjects = DEFAULT_SUBJECTS.map(s => ({ label: s, content: '' }))
+          // Filter out empty subject rows — only keep rows where the teacher has entered content
+          if (parsed.subjects && parsed.subjects.length > 0) {
+            const filledSubjects = parsed.subjects.filter((s: any) => s.content && s.content.trim())
+            // If there are filled subjects, show only those. Otherwise show one empty row.
+            dd[row.date].subjects = filledSubjects.length > 0 ? filledSubjects : [{ label: '', content: '' }]
+          } else {
+            dd[row.date].subjects = [{ label: '', content: '' }]
           }
         } catch { dd[row.date] = emptyDay() }
       })
@@ -234,24 +236,9 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   }
   const openDay = (date: string) => {
     if (!canEdit) return
-    // If this day has no data, inherit labels from the nearest day that does
-    if (!dayData[date] || !dayData[date].subjects.some(s => s.content.trim() || s.label !== DEFAULT_SUBJECTS[dayData[date].subjects.indexOf(s)])) {
-      const filledDays = Object.entries(dayData).filter(([_, d]) => d.subjects.some(s => s.content.trim()))
-      if (filledDays.length > 0) {
-        // Use the labels from the closest filled day
-        const closest = filledDays.reduce((best, [d]) => {
-          return Math.abs(new Date(d).getTime() - new Date(date).getTime()) <
-                 Math.abs(new Date(best).getTime() - new Date(date).getTime()) ? d : best
-        }, filledDays[0][0])
-        const templateLabels = dayData[closest].subjects.map(s => s.label)
-        setDayData(prev => ({
-          ...prev,
-          [date]: {
-            ...(prev[date] || emptyDay()),
-            subjects: templateLabels.map(label => ({ label, content: prev[date]?.subjects.find(s => s.label === label)?.content || '' }))
-          }
-        }))
-      }
+    // If this day has no data at all, initialize with one empty subject row
+    if (!dayData[date]) {
+      setDayData(prev => ({ ...prev, [date]: emptyDay() }))
     }
     setEditDate(date)
   }
