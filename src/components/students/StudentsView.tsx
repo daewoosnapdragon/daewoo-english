@@ -35,6 +35,7 @@ export default function StudentsView() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [showManage, setShowManage] = useState(false)
   const [subView, setSubView] = useState<'roster' | 'wida'>('roster')
+  const [filterReview, setFilterReview] = useState(false)
 
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class as EnglishClass : null
 
@@ -52,8 +53,9 @@ export default function StudentsView() {
       result.sort((a, b) => (classOrder[a.english_class] || 99) - (classOrder[b.english_class] || 99) || a.english_name.localeCompare(b.english_name))
     } else if (sortMode === 'grade') result.sort((a, b) => a.grade - b.grade || a.english_name.localeCompare(b.english_name))
     else result.sort((a, b) => a.english_name.localeCompare(b.english_name))
+    if (filterReview) result = result.filter(s => s.needs_review)
     return result
-  }, [students, sortMode])
+  }, [students, sortMode, filterReview])
 
   const duplicates = useMemo(() => {
     const seen = new Map<string, Student[]>()
@@ -105,10 +107,10 @@ export default function StudentsView() {
 
         {duplicates.length > 0 && (
           <div className="mb-4 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start gap-3">
-            <AlertTriangle size={18} className="text-yellow-600 mt-0.5 flex-shrink-0" />
+            <AlertTriangle size={18} className="text-gray-900 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-[13px] font-medium text-yellow-800">{t.students.duplicateWarning}</p>
-              <p className="text-[12px] text-yellow-700 mt-0.5">{duplicates.length} duplicate(s) found.</p>
+              <p className="text-[13px] font-medium text-gray-900">{t.students.duplicateWarning}</p>
+              <p className="text-[12px] text-gray-800 mt-0.5">{duplicates.length} duplicate(s) found.</p>
             </div>
           </div>
         )}
@@ -130,6 +132,12 @@ export default function StudentsView() {
               <option value="">{t.common.all} Classes</option>
               {ALL_ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+          )}
+          {students.some(s => s.needs_review) && (
+            <button onClick={() => setFilterReview(!filterReview)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium transition-all ${filterReview ? 'bg-amber-500 text-white' : 'bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100'}`}>
+              ⚠ {students.filter(s => s.needs_review).length} Need Review
+            </button>
           )}
           <div className="flex items-center gap-1 ml-auto">
             <span className="text-[11px] text-text-tertiary uppercase tracking-wider mr-1">Sort:</span>
@@ -226,7 +234,9 @@ export default function StudentsView() {
                         <div className="w-7 h-7 rounded-full bg-surface-alt flex items-center justify-center"><User size={13} className="text-text-tertiary" /></div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-medium">{s.english_name} <WIDABadge studentId={s.id} compact /></td>
+                    <td className="px-4 py-3 font-medium">
+                      {s.needs_review && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
+                      {s.english_name} <WIDABadge studentId={s.id} compact /></td>
                     <td className="px-4 py-3 text-text-secondary">{s.korean_name}</td>
                     <td className="px-4 py-3 text-center">{s.grade}</td>
                     <td className="px-4 py-3 text-center font-medium">{s.korean_class}</td>
@@ -1118,6 +1128,27 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
           </div>
         </div>
 
+        {/* Needs Review Banner */}
+        {student.needs_review && (
+          <div className="px-8 py-3 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-amber-600 text-[16px]">⚠</span>
+              <p className="text-[12px] text-gray-900 font-medium">
+                This student was flagged for review during roster upload. Verify their info is correct.
+              </p>
+            </div>
+            <button onClick={async () => {
+              const { error } = await supabase.from('students').update({ needs_review: false }).eq('id', student.id)
+              if (!error) {
+                showToast('Review flag cleared')
+                onUpdated({ ...student, needs_review: false } as any)
+              }
+            }} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-amber-600 text-white hover:bg-amber-700 transition-all whitespace-nowrap">
+              ✓ Mark Reviewed
+            </button>
+          </div>
+        )}
+
         {/* Edit Mode */}
         {editing && (
           <div className="px-8 py-5 bg-accent-light border-b border-border">
@@ -1335,7 +1366,7 @@ function ReadingTabInModal({ studentId, studentName, lang }: { studentId: string
       ) : showManualEntry ? (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[12px] font-semibold text-amber-800">Manual ORF Entry</span>
+            <span className="text-[12px] font-semibold text-gray-900">Manual ORF Entry</span>
             <button onClick={() => setShowManualEntry(false)} className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
           </div>
           <div className="grid grid-cols-4 gap-2">
@@ -1595,8 +1626,8 @@ function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: str
           <p className="text-[10px] uppercase tracking-wider text-red-600 font-semibold">{lang === 'ko' ? '결석' : 'Absent'}</p>
         </div>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
-          <p className="text-[20px] font-bold text-amber-700">{counts.tardy}</p>
-          <p className="text-[10px] uppercase tracking-wider text-amber-600 font-semibold">{lang === 'ko' ? '지각' : 'Tardy'}</p>
+          <p className="text-[20px] font-bold text-gray-900">{counts.tardy}</p>
+          <p className="text-[10px] uppercase tracking-wider text-gray-800 font-semibold">{lang === 'ko' ? '지각' : 'Tardy'}</p>
         </div>
         <div className="bg-surface-alt border border-border rounded-lg p-3 text-center">
           <p className="text-[20px] font-bold text-navy">{total}</p>
@@ -1779,7 +1810,7 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
           <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-          <span className="text-[11px] font-semibold text-amber-700">{approaching} approaching</span>
+          <span className="text-[11px] font-semibold text-gray-900">{approaching} approaching</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500" />

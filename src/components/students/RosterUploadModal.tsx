@@ -284,16 +284,14 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
         return
       }
 
-      // Case 2: Exact match — same name AND same grade (or grade+1 for year rollover)
+      // Case 2: Exact match on name + grade, OR grade±1 (normal year-to-year update)
       const exactMatch = allNameMatches.find(s => s.grade === parsed.grade)
-      const promotionMatch = !exactMatch
-        ? allNameMatches.find(s => s.grade === parsed.grade - 1) // was grade N-1, now grade N
+      const gradeAdjacentMatch = !exactMatch
+        ? allNameMatches.find(s => Math.abs(s.grade - parsed.grade) === 1)
         : null
 
-      // Case 3: Multiple candidates in different grades → needs review
-      // This catches: same name across grades, which the old code silently auto-matched
-      if (!exactMatch && !promotionMatch && allNameMatches.length >= 1) {
-        // Flag for manual review — could be a different student with same name
+      // Case 3: No exact or adjacent match, but name matches exist → needs review
+      if (!exactMatch && !gradeAdjacentMatch && allNameMatches.length >= 1) {
         results.push({
           status: 'needs_review',
           confidence: 'ambiguous',
@@ -325,8 +323,8 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
         return
       }
 
-      // Case 5: Single clear match
-      const match = exactMatch || promotionMatch!
+      // Case 5: Single clear match (exact grade or grade±1)
+      const match = exactMatch || gradeAdjacentMatch!
       matchedExistingIds.add(match.id)
 
       const changes: string[] = []
@@ -334,30 +332,9 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
       if (match.korean_class !== parsed.korean_class) changes.push(`반: ${match.korean_class} → ${parsed.korean_class}`)
       if (match.class_number !== parsed.class_number) changes.push(`번호: ${match.class_number} → ${parsed.class_number}`)
 
-      const isPromotion = !exactMatch && !!promotionMatch
-      const confidence: MatchConfidence = isPromotion ? 'grade_changed' : 'exact'
-
-      // FIX: For promotion matches with only 1 candidate, still flag for review
-      // so teacher confirms it's the same kid
-      if (isPromotion) {
-        results.push({
-          status: 'needs_review',
-          confidence: 'grade_changed',
-          parsed,
-          existing: match,
-          candidates: [match],
-          changes,
-          action: 'update', // pre-fill as update since it's likely correct
-          englishName: match.english_name,
-          englishClass: match.english_class as EnglishClass,
-          reviewReason: `Grade promotion: ${match.english_name} (Gr${match.grade} → Gr${parsed.grade}). Confirm this is the same student.`,
-        })
-        return
-      }
-
       results.push({
         status: changes.length > 0 ? 'changed' : 'matched',
-        confidence,
+        confidence: match.grade !== parsed.grade ? 'grade_changed' : 'exact',
         parsed,
         existing: match,
         changes,
@@ -383,23 +360,36 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
     setStep('processing')
 
     const toProcess = comparison.filter(r => r.action !== 'skip')
+    const skippedWithExisting = comparison.filter(r => r.action === 'skip' && r.existing)
     const toDeactivate = missingStudents.filter(m => m.deactivate)
-    const totalOps = toProcess.length + toDeactivate.length
+    const totalOps = toProcess.length + skippedWithExisting.length + toDeactivate.length
     setProgress({ done: 0, total: totalOps, errors: [] })
 
     let done = 0
     const errors: string[] = []
 
+    // ── Sort updates by grade DESCENDING to avoid unique constraint collisions ──
+    // When students promote (Gr2→Gr3), the old Gr3 slot must be vacated first.
+    // Processing highest grades first ensures each (grade, class, number) slot
+    // is freed before a lower-grade student moves into it.
+    const sorted = [...toProcess].sort((a, b) => {
+      // Updates before adds (updates free slots, adds fill them)
+      if (a.action === 'update' && b.action === 'add') return -1
+      if (a.action === 'add' && b.action === 'update') return 1
+      // Within updates: higher grade first
+      return (b.parsed.grade - a.parsed.grade)
+    })
+
     // Batch updates — only write fields that should change
-    for (const row of toProcess) {
+    for (const row of sorted) {
       try {
         if (row.action === 'update' && row.existing) {
-          // FIX: Only update fields that actually changed from the roster file
-          // Never overwrite english_name or english_class unless user explicitly changed them in the review table
+          // Only update fields that actually changed from the roster file
           const updates: Record<string, any> = {
             grade: row.parsed.grade,
             korean_class: row.parsed.korean_class,
             class_number: row.parsed.class_number,
+            needs_review: false,
             updated_at: new Date().toISOString(),
           }
 
@@ -425,12 +415,31 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
             class_number: row.parsed.class_number,
             english_class: row.englishClass,
             is_active: true,
+            needs_review: false,
             notes: '',
             photo_url: '',
             google_drive_folder_url: '',
           })
           if (error) throw new Error(`Add ${row.parsed.korean_name}: ${error.message}`)
         }
+      } catch (e: any) {
+        errors.push(e.message)
+      }
+      done++
+      setProgress({ done, total: totalOps, errors: [...errors] })
+    }
+
+    // Flag skipped students as needs_review so teacher can find them later
+    for (const row of skippedWithExisting) {
+      try {
+        const reason = row.reviewReason || 'Skipped during roster upload'
+        const { error } = await supabase.from('students').update({
+          needs_review: true,
+          notes: (row.existing!.notes ? row.existing!.notes + '\n' : '') +
+            `⚠️ Needs review (${new Date().toLocaleDateString()}): ${reason}`,
+          updated_at: new Date().toISOString(),
+        }).eq('id', row.existing!.id)
+        if (error) throw new Error(`Flag ${row.existing!.english_name}: ${error.message}`)
       } catch (e: any) {
         errors.push(e.message)
       }
@@ -548,7 +557,7 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                 </div>
               )}
               <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <p className="text-[11px] text-amber-800 leading-relaxed">
+                <p className="text-[11px] text-gray-900 leading-relaxed">
                   <strong>Expected columns:</strong> Korean Name (이름), Grade (학년), Korean Class (반), Class Number (번호). English Name is optional — existing English names will be carried over from the current roster.
                 </p>
               </div>
@@ -723,8 +732,8 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                 </button>
                 <button onClick={() => setStatusFilter('changed')}
                   className={`rounded-xl p-3 text-center border transition-all ${statusFilter === 'changed' ? 'ring-2 ring-amber-400' : ''} bg-amber-50 border-amber-200`}>
-                  <p className="text-[20px] font-bold text-amber-700">{stats.changed}</p>
-                  <p className="text-[10px] text-amber-600 font-medium">Changed</p>
+                  <p className="text-[20px] font-bold text-gray-900">{stats.changed}</p>
+                  <p className="text-[10px] text-gray-800 font-medium">Changed</p>
                 </button>
                 <button onClick={() => setStatusFilter('new')}
                   className={`rounded-xl p-3 text-center border transition-all ${statusFilter === 'new' ? 'ring-2 ring-blue-400' : ''} bg-blue-50 border-blue-200`}>
@@ -1008,7 +1017,7 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                         {adds.length > 10 && <span className="text-[10px] text-blue-600">+{adds.length - 10} more</span>}
                       </div>
                       {adds.some(r => !r.englishName) && (
-                        <p className="text-[10px] text-amber-600 ml-6 mt-1 flex items-center gap-1">
+                        <p className="text-[10px] text-gray-700 ml-6 mt-1 flex items-center gap-1">
                           <AlertTriangle size={10} /> Some new students have no English name — Korean name will be used
                         </p>
                       )}
@@ -1136,7 +1145,7 @@ function DoneStepWithBatchAssign({
         </>
       ) : (
         <>
-          <AlertTriangle size={48} className="mx-auto text-amber-500 mb-4" />
+          <AlertTriangle size={48} className="mx-auto text-gray-700 mb-4" />
           <p className="text-[16px] font-bold text-navy mb-2">Roster Updated with {progress.errors.length} Error{progress.errors.length !== 1 ? 's' : ''}</p>
           <p className="text-[12px] text-text-secondary mb-3">
             {progress.done - progress.errors.length} of {progress.total} operations succeeded.
