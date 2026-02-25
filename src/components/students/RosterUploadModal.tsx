@@ -1137,35 +1137,92 @@ function DoneStepWithBatchAssign({
 }) {
   const [showBatchAssign, setShowBatchAssign] = useState(false)
   const newlyAdded = comparison.filter(r => r.action === 'add')
+  const skipped = comparison.filter(r => r.action === 'skip')
+  const updated = comparison.filter(r => r.action === 'update')
+  const deactivated = missingStudents.filter(m => m.deactivate)
 
   if (showBatchAssign) {
     return <BatchAssignEnglishClass onDone={() => { setShowBatchAssign(false); onComplete() }} />
   }
 
   return (
-    <div className="max-w-md mx-auto py-8 text-center">
-      {progress.errors.length === 0 ? (
-        <>
-          <CheckCircle2 size={48} className="mx-auto text-green-500 mb-4" />
-          <p className="text-[16px] font-bold text-navy mb-2">Roster Updated Successfully</p>
-          <p className="text-[12px] text-text-secondary">
-            {comparison.filter(r => r.action === 'update').length} updated · {comparison.filter(r => r.action === 'add').length} added · {missingStudents.filter(m => m.deactivate).length} deactivated
+    <div className="max-w-lg mx-auto py-6">
+      {/* Header */}
+      <div className="text-center mb-5">
+        {progress.errors.length === 0 ? (
+          <>
+            <CheckCircle2 size={44} className="mx-auto text-green-500 mb-3" />
+            <p className="text-[16px] font-bold text-navy">Roster Updated Successfully</p>
+          </>
+        ) : (
+          <>
+            <AlertTriangle size={44} className="mx-auto text-gray-700 mb-3" />
+            <p className="text-[16px] font-bold text-navy">Roster Updated with {progress.errors.length} Error{progress.errors.length !== 1 ? 's' : ''}</p>
+          </>
+        )}
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-4 gap-2 mb-5">
+        <div className="rounded-xl p-3 text-center bg-blue-50 border border-blue-200">
+          <p className="text-[18px] font-bold text-gray-900">{updated.length}</p>
+          <p className="text-[10px] text-gray-700 font-medium">Updated</p>
+        </div>
+        <div className="rounded-xl p-3 text-center bg-green-50 border border-green-200">
+          <p className="text-[18px] font-bold text-gray-900">{newlyAdded.length}</p>
+          <p className="text-[10px] text-gray-700 font-medium">Added</p>
+        </div>
+        <div className="rounded-xl p-3 text-center bg-gray-50 border border-gray-200">
+          <p className="text-[18px] font-bold text-gray-900">{deactivated.length}</p>
+          <p className="text-[10px] text-gray-700 font-medium">Deactivated</p>
+        </div>
+        <div className={`rounded-xl p-3 text-center ${skipped.length > 0 ? 'bg-amber-50 border-2 border-amber-400' : 'bg-gray-50 border border-gray-200'}`}>
+          <p className={`text-[18px] font-bold ${skipped.length > 0 ? 'text-gray-900' : 'text-gray-900'}`}>{skipped.length}</p>
+          <p className={`text-[10px] font-medium ${skipped.length > 0 ? 'text-gray-800' : 'text-gray-700'}`}>Skipped</p>
+        </div>
+      </div>
+
+      {/* Skipped students detail */}
+      {skipped.length > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-4">
+          <p className="text-[12px] font-bold text-gray-900 mb-2">
+            ⚠ {skipped.length} student{skipped.length !== 1 ? 's' : ''} skipped — flagged for review
           </p>
-        </>
-      ) : (
-        <>
-          <AlertTriangle size={48} className="mx-auto text-gray-700 mb-4" />
-          <p className="text-[16px] font-bold text-navy mb-2">Roster Updated with {progress.errors.length} Error{progress.errors.length !== 1 ? 's' : ''}</p>
-          <p className="text-[12px] text-text-secondary mb-3">
-            {progress.done - progress.errors.length} of {progress.total} operations succeeded.
+          <p className="text-[11px] text-gray-700 mb-3">
+            These students were marked with a review flag. Use the "⚠ Need Review" filter on the Students page to find and fix them.
           </p>
-          <div className="text-left bg-red-50 border border-red-200 rounded-lg p-3 max-h-40 overflow-y-auto mb-4">
-            {progress.errors.map((e, i) => <p key={i} className="text-[10px] text-red-600 mb-0.5">{e}</p>)}
+          <div className="max-h-32 overflow-y-auto space-y-1">
+            {skipped.map((r, i) => (
+              <div key={i} className="flex items-center gap-2 text-[11px] text-gray-800">
+                <span className="font-medium">{r.parsed.korean_name}</span>
+                {r.reviewReason && <span className="text-gray-600">— {r.reviewReason}</span>}
+              </div>
+            ))}
           </div>
-        </>
+        </div>
       )}
 
-      <div className="flex flex-col gap-2 mt-6">
+      {/* Errors detail */}
+      {progress.errors.length > 0 && (
+        <div className="bg-red-50 border border-red-300 rounded-xl p-4 mb-4">
+          <p className="text-[12px] font-bold text-gray-900 mb-2">
+            ✕ {progress.errors.length} error{progress.errors.length !== 1 ? 's' : ''}
+          </p>
+          <p className="text-[11px] text-gray-700 mb-3">
+            {progress.done - progress.errors.length} of {progress.total} operations succeeded. Failed students were not modified.
+          </p>
+          <div className="max-h-40 overflow-y-auto space-y-1">
+            {progress.errors.map((e, i) => {
+              // Clean up verbose DB error messages
+              const clean = e.replace(/duplicate key value violates unique constraint "[^"]*"/, 'slot already taken (duplicate grade+반+번호)')
+              return <p key={i} className="text-[11px] text-red-800">{clean}</p>
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex flex-col gap-2 mt-5">
         {newlyAdded.length > 0 && (
           <button onClick={() => setShowBatchAssign(true)}
             className="px-6 py-2.5 rounded-lg text-[13px] font-bold bg-gold text-navy-dark hover:bg-gold-light transition-all">
