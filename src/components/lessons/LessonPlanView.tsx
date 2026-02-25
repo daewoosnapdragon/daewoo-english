@@ -147,11 +147,12 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
         try {
           const parsed = typeof row.content === 'string' ? JSON.parse(row.content) : row.content
           dd[row.date] = { ...emptyDay(), ...parsed }
-          DEFAULT_SUBJECTS.forEach(s => {
-            if (!dd[row.date].subjects.find((sub: any) => sub.label === s)) {
-              dd[row.date].subjects.push({ label: s, content: '' })
-            }
-          })
+          // Only ensure default subjects exist if this day has NO subjects saved at all
+          // (i.e., legacy data or first-time migration). If the teacher has saved subjects
+          // (even fewer than the defaults), respect their choices.
+          if (!parsed.subjects || parsed.subjects.length === 0) {
+            dd[row.date].subjects = DEFAULT_SUBJECTS.map(s => ({ label: s, content: '' }))
+          }
         } catch { dd[row.date] = emptyDay() }
       })
     }
@@ -161,7 +162,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
     let eventsList = eventsRes.data
     if (eventsRes.error) {
       const fallbackRes = await supabase.from('calendar_events').select('date, title, type').gte('date', firstDay).lte('date', lastDay)
-      eventsList = null
+      eventsList = fallbackRes.data || null
     }
     if (eventsList) {
       eventsList.forEach((ev: any) => {
@@ -310,6 +311,9 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   }
 
   // Debounced autosave -- save current day after 2s of no edits
+  // IMPORTANT: We snapshot class/grade/date at timer-set time to prevent
+  // race conditions where switching class/grade before the timer fires
+  // would save data to the wrong destination.
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null)
   const lastSavedRef = useRef<string>('')
 
@@ -320,12 +324,18 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
     const contentStr = JSON.stringify(content)
     if (contentStr === lastSavedRef.current) return
 
+    // Snapshot current values so the timeout closure uses the correct targets
+    const snapshotDate = editDate
+    const snapshotClass = selectedClass
+    const snapshotGrade = selectedGrade
+    const snapshotTeacherId = currentTeacher?.id
+
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
     autosaveTimer.current = setTimeout(async () => {
       await supabase.from('parent_calendar').upsert({
-        date: editDate, english_class: selectedClass, grade: selectedGrade,
+        date: snapshotDate, english_class: snapshotClass, grade: snapshotGrade,
         content: contentStr,
-        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+        updated_by: snapshotTeacherId, updated_at: new Date().toISOString(),
       }, { onConflict: 'date,english_class,grade' })
       lastSavedRef.current = contentStr
     }, 2000)
@@ -839,29 +849,43 @@ function TeacherWeeklyPlans() {
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasChanges])
 
-  // Debounced autosave -- save all plans after 3s of no edits
+  // Track which days have been edited (not just that *something* changed)
+  const changedDays = useRef<Set<string>>(new Set())
+
+  // Debounced autosave -- save only changed plans after 3s of no edits
+  // IMPORTANT: Snapshot selectedClass at timer-set time to prevent race conditions
   const teacherAutosaveTimer = useRef<NodeJS.Timeout | null>(null)
   useEffect(() => {
     if (!hasChanges || !canEdit) return
+
+    const snapshotClass = selectedClass
+    const snapshotWeekDates = [...weekDates]
+    const snapshotPlans = { ...plans }
+    const snapshotTeacherId = currentTeacher?.id
+    const snapshotChangedDays = new Set(changedDays.current)
+
     if (teacherAutosaveTimer.current) clearTimeout(teacherAutosaveTimer.current)
     teacherAutosaveTimer.current = setTimeout(async () => {
       let errors = 0
-      for (const date of weekDates) {
-        const text = plans[date] || ''
+      // Only save days that actually changed
+      for (const date of snapshotWeekDates) {
+        if (!snapshotChangedDays.has(date) && !snapshotChangedDays.has('_reflection')) continue
+        if (!snapshotChangedDays.has(date)) continue
+        const text = snapshotPlans[date] || ''
         const { error } = await supabase.from('teacher_daily_plans').upsert({
-          date, english_class: selectedClass, plan_text: text,
-          updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+          date, english_class: snapshotClass, plan_text: text,
+          updated_by: snapshotTeacherId, updated_at: new Date().toISOString(),
         }, { onConflict: 'date,english_class' })
         if (error) errors++
       }
-      if (plans['_reflection'] !== undefined) {
+      if (snapshotChangedDays.has('_reflection') && snapshotPlans['_reflection'] !== undefined) {
         await supabase.from('teacher_daily_plans').upsert({
-          date: weekDates[0], english_class: selectedClass + '_refl',
-          plan_text: plans['_reflection'] || '',
-          updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+          date: snapshotWeekDates[0], english_class: snapshotClass + '_refl',
+          plan_text: snapshotPlans['_reflection'] || '',
+          updated_by: snapshotTeacherId, updated_at: new Date().toISOString(),
         }, { onConflict: 'date,english_class' })
       }
-      if (errors === 0) setHasChanges(false)
+      if (errors === 0) { setHasChanges(false); changedDays.current.clear() }
     }, 3000)
     return () => { if (teacherAutosaveTimer.current) clearTimeout(teacherAutosaveTimer.current) }
   }, [plans, hasChanges, canEdit])
@@ -875,6 +899,7 @@ function TeacherWeeklyPlans() {
 
   const updateDay = (date: string, text: string) => {
     setPlans(prev => ({ ...prev, [date]: text }))
+    changedDays.current.add(date)
     setHasChanges(true)
   }
 
@@ -1132,7 +1157,7 @@ function TeacherWeeklyPlans() {
             </div>
             <textarea
               value={plans['_reflection'] || ''}
-              onChange={e => { setPlans(prev => ({ ...prev, _reflection: e.target.value })); setHasChanges(true) }}
+              onChange={e => { setPlans(prev => ({ ...prev, _reflection: e.target.value })); changedDays.current.add('_reflection'); setHasChanges(true) }}
               disabled={!canEdit}
               placeholder="End-of-week reflection... What worked well? What needs adjustment? Which students need follow-up? Notes for next week."
               className="w-full min-h-[80px] px-4 py-3 text-[11.5px] text-text-primary bg-surface outline-none focus:ring-2 focus:ring-gold/20 leading-relaxed placeholder:text-text-tertiary/40 resize-none disabled:opacity-50"
