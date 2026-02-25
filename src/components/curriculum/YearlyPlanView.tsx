@@ -16,20 +16,23 @@ function renderCellContent(content: string): string {
   if (!content) return ''
   return content
     .replace(/---/g, '<hr style="border:0;border-top:1px solid #e2e8f0;margin:4px 0">')
+    .replace(/^## (.+)$/gm, '<div style="font-size:13px;font-weight:800;color:#1B2A4A;margin:4px 0 2px">$1</div>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/^- (.+)$/gm, '<div style="padding-left:12px;position:relative;margin:1px 0"><span style="position:absolute;left:2px">&#8226;</span>$1</div>')
     .replace(/\n/g, '<br>')
 }
 
-// Extract just the bold headings for the at-a-glance view
-function extractHeadings(content: string): string[] {
+// Extract just the bold headings and titles for the at-a-glance view
+function extractHeadings(content: string): { text: string; isTitle: boolean }[] {
   if (!content) return []
-  const headings: string[] = []
+  const headings: { text: string; isTitle: boolean }[] = []
   for (const line of content.split('\n')) {
     const trimmed = line.trim()
-    const match = trimmed.match(/^\*\*(.+?)\*\*$/)
-    if (match) headings.push(match[1])
+    const titleMatch = trimmed.match(/^## (.+)$/)
+    if (titleMatch) { headings.push({ text: titleMatch[1], isTitle: true }); continue }
+    const headingMatch = trimmed.match(/^\*\*(.+?)\*\*$/)
+    if (headingMatch) headings.push({ text: headingMatch[1], isTitle: false })
   }
   return headings
 }
@@ -60,13 +63,26 @@ export default function YearlyPlanView() {
   const [loading, setLoading] = useState(true)
   const [clipboard, setClipboard] = useState<{ content: string; fromKey: string } | null>(null)
   const [popover, setPopover] = useState<{ key: string; rect: DOMRect } | null>(null)
-  const popoverTimer = useRef<NodeJS.Timeout | null>(null)
+  const popoverOpenTimer = useRef<NodeJS.Timeout | null>(null)
+  const popoverCloseTimer = useRef<NodeJS.Timeout | null>(null)
+  const clearPopoverTimers = () => {
+    if (popoverOpenTimer.current) clearTimeout(popoverOpenTimer.current)
+    if (popoverCloseTimer.current) clearTimeout(popoverCloseTimer.current)
+  }
+  const schedulePopoverClose = () => {
+    if (popoverCloseTimer.current) clearTimeout(popoverCloseTimer.current)
+    popoverCloseTimer.current = setTimeout(() => setPopover(null), 300)
+  }
+  const cancelPopoverClose = () => {
+    if (popoverCloseTimer.current) clearTimeout(popoverCloseTimer.current)
+  }
   const [editModal, setEditModal] = useState<{ trackId: string; periodId: string; trackIdx: number; periodIdx: number } | null>(null)
   const [editText, setEditText] = useState('')
   // Block editor state
-  type BlockType = 'text' | 'heading' | 'bullet' | 'divider'
+  type BlockType = 'title' | 'heading' | 'text' | 'bullet' | 'divider'
   interface Block { id: string; type: BlockType; text: string }
   const [blocks, setBlocks] = useState<Block[]>([])
+  const [focusedBlockIdx, setFocusedBlockIdx] = useState<number | null>(null)
   const blockIdCounter = useRef(0)
   const newBlock = (type: BlockType = 'heading', text = ''): Block => ({ id: `b${++blockIdCounter.current}`, type, text })
 
@@ -77,6 +93,7 @@ export default function YearlyPlanView() {
       const trimmed = line.trim()
       if (trimmed === '---' || trimmed === '***' || trimmed === '___') return newBlock('divider')
       if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) return newBlock('bullet', trimmed.slice(2))
+      if (trimmed.startsWith('## ')) return newBlock('title', trimmed.slice(3))
       if (trimmed.startsWith('**') && trimmed.endsWith('**')) return newBlock('heading', trimmed.slice(2, -2))
       if (trimmed.startsWith('**')) return newBlock('heading', trimmed.replace(/\*\*/g, ''))
       return newBlock('text', line)
@@ -87,6 +104,7 @@ export default function YearlyPlanView() {
   const blocksToMarkdown = (bs: Block[]): string => {
     return bs.map(b => {
       if (b.type === 'divider') return '---'
+      if (b.type === 'title') return `## ${b.text}`
       if (b.type === 'heading') return `**${b.text}**`
       if (b.type === 'bullet') return `- ${b.text}`
       return b.text
@@ -447,23 +465,24 @@ export default function YearlyPlanView() {
                       <td key={period.id} className="px-2 py-1.5 border-l border-border align-top group/cell relative"
                         onMouseEnter={e => {
                           if (!cell?.content || editModal) return
+                          cancelPopoverClose()
                           const td = e.currentTarget
-                          popoverTimer.current = setTimeout(() => {
+                          popoverOpenTimer.current = setTimeout(() => {
                             setPopover({ key, rect: td.getBoundingClientRect() })
                           }, 400)
                         }}
                         onMouseLeave={() => {
-                          if (popoverTimer.current) clearTimeout(popoverTimer.current)
-                          setPopover(prev => prev?.key === key ? null : prev)
+                          if (popoverOpenTimer.current) clearTimeout(popoverOpenTimer.current)
+                          schedulePopoverClose()
                         }}
                       >
-                          <div onClick={() => { if (canEdit) { if (popoverTimer.current) clearTimeout(popoverTimer.current); setPopover(null); openEditModal(track.id, period.id) } }}
+                          <div onClick={() => { if (canEdit) { clearPopoverTimers(); setPopover(null); openEditModal(track.id, period.id) } }}
                             className={`min-h-[48px] rounded-lg px-2 py-1.5 transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20' : ''} ${cell?.content ? '' : 'text-text-tertiary italic text-[11px]'} ${isCopied ? 'ring-2 ring-gold/40' : ''}`}>
                             {cell?.content ? (
                               headings.length > 0 ? (
                                 <div className="space-y-0.5">
                                   {headings.map((h, i) => (
-                                    <p key={i} className="text-[11px] font-semibold text-navy leading-snug truncate">{h}</p>
+                                    <p key={i} className={`leading-snug truncate ${h.isTitle ? 'text-[12px] font-extrabold text-navy' : 'text-[11px] font-semibold text-navy/80'}`}>{h.text}</p>
                                   ))}
                                   {detail && <span className="text-[9px] text-text-tertiary">···</span>}
                                 </div>
@@ -595,8 +614,8 @@ export default function YearlyPlanView() {
         return (
           <div className="fixed z-[90] w-[320px] max-h-[280px] overflow-y-auto bg-surface border border-border rounded-xl shadow-xl"
             style={{ top, left }}
-            onMouseEnter={() => { if (popoverTimer.current) clearTimeout(popoverTimer.current) }}
-            onMouseLeave={() => setPopover(null)}
+            onMouseEnter={cancelPopoverClose}
+            onMouseLeave={schedulePopoverClose}
           >
             <div className="px-3 py-2 border-b border-border/60 flex items-center gap-2">
               <span className="text-[10px] font-bold text-navy">{track?.name}</span>
@@ -643,7 +662,7 @@ export default function YearlyPlanView() {
                         return (
                           <div key={block.id} className="flex items-center gap-2 px-2 py-1.5 group">
                             <button onClick={() => {
-                              const types: BlockType[] = ['heading', 'text', 'bullet', 'divider']
+                              const types: BlockType[] = ['title', 'heading', 'text', 'bullet', 'divider']
                               const next = types[(types.indexOf(block.type) + 1) % types.length]
                               const nb = [...blocks]; nb[idx] = { ...block, type: next }; updateBlocks(nb)
                             }} className="w-6 h-6 rounded flex items-center justify-center text-text-tertiary hover:bg-surface-alt hover:text-navy shrink-0" title="Change type">
@@ -655,12 +674,12 @@ export default function YearlyPlanView() {
                           </div>
                         )
                       }
-                      const typeIcon = block.type === 'heading' ? 'H' : block.type === 'bullet' ? '\u2022' : '\u00b6'
-                      const typeTitle = block.type === 'heading' ? 'Heading (bold)' : block.type === 'bullet' ? 'Bullet point' : 'Plain text'
+                      const typeIcon = block.type === 'title' ? 'T' : block.type === 'heading' ? 'H' : block.type === 'bullet' ? '\u2022' : '\u00b6'
+                      const typeTitle = block.type === 'title' ? 'Title' : block.type === 'heading' ? 'Heading (bold)' : block.type === 'bullet' ? 'Bullet point' : 'Plain text'
                       return (
-                        <div key={block.id} className="flex items-start gap-1.5 px-2 group">
+                        <div key={block.id} className={`flex items-start gap-1.5 px-2 group ${focusedBlockIdx === idx ? 'bg-navy/[0.03] rounded-lg' : ''}`}>
                           <button onClick={() => {
-                            const types: BlockType[] = ['heading', 'text', 'bullet', 'divider']
+                            const types: BlockType[] = ['title', 'heading', 'text', 'bullet', 'divider']
                             const next = types[(types.indexOf(block.type) + 1) % types.length]
                             const nb = [...blocks]; nb[idx] = { ...block, type: next, text: next === 'divider' ? '' : block.text }; updateBlocks(nb)
                           }} className="w-6 h-6 mt-[5px] rounded flex items-center justify-center text-[11px] text-text-tertiary hover:bg-surface-alt hover:text-navy shrink-0 font-bold" title={`${typeTitle} -- click to cycle type`}>
@@ -669,9 +688,10 @@ export default function YearlyPlanView() {
                           <input
                             value={block.text}
                             onChange={e => { const nb = [...blocks]; nb[idx] = { ...block, text: e.target.value }; updateBlocks(nb) }}
-                            placeholder={block.type === 'heading' ? 'Heading...' : block.type === 'bullet' ? 'List item...' : 'Type here...'}
+                            onFocus={() => setFocusedBlockIdx(idx)}
+                            placeholder={block.type === 'title' ? 'Section title...' : block.type === 'heading' ? 'Heading...' : block.type === 'bullet' ? 'List item...' : 'Type here...'}
                             className={`flex-1 px-2 py-1.5 text-[13px] bg-transparent outline-none border-b border-transparent focus:border-navy/20 transition-colors ${
-                              block.type === 'heading' ? 'font-bold text-navy' : block.type === 'bullet' ? 'text-text-primary' : 'text-text-primary'
+                              block.type === 'title' ? 'font-extrabold text-navy text-[14px]' : block.type === 'heading' ? 'font-bold text-navy' : block.type === 'bullet' ? 'text-text-primary' : 'text-text-primary'
                             }`}
                             data-block-idx={idx}
                             autoFocus={idx === 0 && blocks.length === 1}
@@ -721,16 +741,40 @@ export default function YearlyPlanView() {
                       )
                     })}
                   </div>
-                  {/* Add block bar */}
-                  <div className="px-3 py-2 border-t border-border/40 flex gap-1">
-                    <button onClick={() => { updateBlocks([...blocks, newBlock('text')]); setTimeout(() => { const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]'); inputs[inputs.length - 1]?.focus() }, 20) }}
-                      className="px-2.5 py-1 rounded-md text-[10px] font-medium text-text-tertiary hover:bg-surface-alt hover:text-navy">+ Text</button>
-                    <button onClick={() => { updateBlocks([...blocks, newBlock('heading')]); setTimeout(() => { const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]'); inputs[inputs.length - 1]?.focus() }, 20) }}
-                      className="px-2.5 py-1 rounded-md text-[10px] font-medium text-text-tertiary hover:bg-surface-alt hover:text-navy">+ Heading</button>
-                    <button onClick={() => { updateBlocks([...blocks, newBlock('bullet')]); setTimeout(() => { const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]'); inputs[inputs.length - 1]?.focus() }, 20) }}
-                      className="px-2.5 py-1 rounded-md text-[10px] font-medium text-text-tertiary hover:bg-surface-alt hover:text-navy">+ Bullet</button>
-                    <button onClick={() => { updateBlocks([...blocks, newBlock('divider')]) }}
-                      className="px-2.5 py-1 rounded-md text-[10px] font-medium text-text-tertiary hover:bg-surface-alt hover:text-navy">+ Divider</button>
+                  {/* Block toolbar */}
+                  <div className="px-3 py-2 border-t border-border/40 flex items-center gap-3">
+                    {/* Change type of current block */}
+                    {focusedBlockIdx != null && blocks[focusedBlockIdx] && (
+                      <div className="flex items-center gap-1 pr-3 border-r border-border/40">
+                        <span className="text-[9px] text-text-tertiary uppercase tracking-wider mr-1">Type:</span>
+                        {([['title', 'T', 'Title'], ['heading', 'H', 'Heading'], ['text', '¶', 'Text'], ['bullet', '•', 'Bullet'], ['divider', '—', 'Divider']] as const).map(([type, icon, label]) => (
+                          <button key={type} onClick={() => {
+                            const nb = [...blocks]; nb[focusedBlockIdx] = { ...blocks[focusedBlockIdx], type: type as BlockType, text: type === 'divider' ? '' : blocks[focusedBlockIdx].text }; updateBlocks(nb)
+                            // Re-focus the input
+                            setTimeout(() => { const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]'); inputs[focusedBlockIdx]?.focus() }, 20)
+                          }}
+                            className={`w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold transition-all ${blocks[focusedBlockIdx].type === type ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt hover:text-navy'}`}
+                            title={label}>{icon}</button>
+                        ))}
+                      </div>
+                    )}
+                    {/* Insert new block after cursor */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] text-text-tertiary uppercase tracking-wider mr-1">Insert:</span>
+                      {([['title', '+ Title'], ['heading', '+ Heading'], ['text', '+ Text'], ['bullet', '+ Bullet'], ['divider', '+ Divider']] as const).map(([type, label]) => (
+                        <button key={type} onClick={() => {
+                          const insertIdx = focusedBlockIdx != null ? focusedBlockIdx + 1 : blocks.length
+                          const nb = [...blocks]
+                          nb.splice(insertIdx, 0, newBlock(type as BlockType))
+                          updateBlocks(nb)
+                          setFocusedBlockIdx(insertIdx)
+                          if (type !== 'divider') {
+                            setTimeout(() => { const inputs = document.querySelectorAll<HTMLInputElement>('[data-block-idx]'); inputs[insertIdx]?.focus() }, 20)
+                          }
+                        }}
+                          className="px-2 py-1 rounded-md text-[10px] font-medium text-text-tertiary hover:bg-surface-alt hover:text-navy">{label}</button>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-3">
