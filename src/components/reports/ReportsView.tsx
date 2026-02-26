@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useSemesters } from '@/hooks/useData'
+import { useAI } from '@/hooks/useAI'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
@@ -346,120 +347,54 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     })()
   }, [studentId, semesterId])
 
+  const ai = useAI()
+
   const generateTemplateComment = useCallback(async () => {
     if (!data || !studentId) return
     const d = data, s = d.student
-    const name = s.english_name?.split(' ')[0] || s.english_name || 'This student'
 
-    // Fetch extra data for richer comments
-    const [widaRes, readingRes, behaviorRes] = await Promise.all([
+    // Fetch extra data for richer AI context
+    const [widaRes, readingRes, goalsRes] = await Promise.all([
       supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId),
-      supabase.from('reading_assessments').select('cwpm, accuracy_rate, date').eq('student_id', studentId).order('date', { ascending: false }).limit(3),
-      supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('student_id', studentId),
+      supabase.from('reading_assessments').select('cwpm, accuracy_rate, date, passage_level, reading_level').eq('student_id', studentId).order('date', { ascending: false }).limit(3),
+      supabase.from('student_goals').select('goal_text, status, target_metric, target_value, baseline_value, current_value').eq('student_id', studentId).limit(5),
     ])
 
-    // WIDA info
-    const widaLevels = widaRes.data || []
-    const widaMap: Record<string, number> = {}
-    widaLevels.forEach((w: any) => { widaMap[w.domain] = w.wida_level })
-    const widaVals = Object.values(widaMap).filter(v => v > 0)
-    const widaAvg = widaVals.length > 0 ? Math.floor((widaVals.reduce((a, b) => a + b, 0) / widaVals.length) * 10) / 10 : null
-    const WIDA_NAMES: Record<number, string> = { 1: 'Entering', 2: 'Emerging', 3: 'Developing', 4: 'Expanding', 5: 'Bridging', 6: 'Reaching' }
+    // WIDA levels as map
+    const widaLevels: Record<string, number> = {}
+    ;(widaRes.data || []).forEach((w: any) => { if (w.wida_level > 0) widaLevels[w.domain] = w.wida_level })
 
-    // Reading
+    // Reading data
     const readings = readingRes.data || []
-    const latestCwpm = readings[0]?.cwpm ? Math.round(readings[0].cwpm) : null
-    const readingTrend = readings.length >= 2 ? (readings[0].cwpm > readings[1].cwpm ? 'improving' : readings[0].cwpm < readings[1].cwpm ? 'declining' : 'stable') : null
+    const readingData = readings.length > 0 ? {
+      latestCwpm: readings[0]?.cwpm ? Math.round(readings[0].cwpm) : null,
+      trend: readings.length >= 2 ? (readings[0].cwpm > readings[1].cwpm ? 'improving' : readings[0].cwpm < readings[1].cwpm ? 'declining' : 'stable') : null,
+      readingLevel: readings[0]?.passage_level || readings[0]?.reading_level || null,
+    } : null
 
-    // Grades
-    const scoredDomains = DOMAINS.filter(dom => d.domainGrades[dom] != null)
-    const strongDomains = scoredDomains.filter(dom => (d.domainGrades[dom] || 0) >= 80)
-    const weakDomains = scoredDomains.filter(dom => (d.domainGrades[dom] || 0) < 65)
-    const growthDomains = d.prevDomainGrades ? scoredDomains.filter(dom => d.prevDomainGrades![dom] != null && (d.domainGrades[dom] || 0) > (d.prevDomainGrades![dom] || 0) + 3) : []
+    const result = await ai.generate('report_comment', {
+      student: { english_name: s.english_name, grade: s.grade, english_class: s.english_class },
+      tone: commentTone,
+      domainGrades: d.domainGrades,
+      overallGrade: d.overallGrade,
+      prevDomainGrades: d.prevDomainGrades,
+      prevOverall: d.prevOverall,
+      widaLevels,
+      readingData,
+      behaviorCount: d.behaviorCount,
+      goals: goalsRes.data || [],
+      semesterName: d.semesterName,
+      attendanceData: d.attCounts,
+    })
 
-    // Build comment
-    const parts: string[] = []
-
-    // Opening
-    if (d.overallGrade != null && d.overallGrade >= 85) {
-      parts.push(`${name} is performing very well in the English program this semester with an overall average of ${d.overallGrade.toFixed(1)}%.`)
-    } else if (d.overallGrade != null && d.overallGrade >= 70) {
-      parts.push(`${name} is making steady progress in the English program this semester with an overall average of ${d.overallGrade.toFixed(1)}%.`)
-    } else if (d.overallGrade != null) {
-      parts.push(`${name} is working to build foundational skills in the English program this semester with a current overall average of ${d.overallGrade.toFixed(1)}%.`)
+    if (result) {
+      setComment(result)
+      setShowAiPanel(false)
+      showToast('AI draft generated -- please review and edit before saving')
     } else {
-      parts.push(`${name} is a member of the ${s.english_class} class this semester.`)
+      showToast(ai.error || 'Failed to generate comment')
     }
-
-    // Strengths
-    if (strongDomains.length > 0) {
-      const labels = strongDomains.map(dom => DOMAIN_SHORT[dom]).join(' and ')
-      parts.push(`${name} shows particular strength in ${labels}.`)
-    }
-
-    // Growth areas (tone-dependent)
-    if (commentTone === 'Constructive' && weakDomains.length > 0) {
-      const labels = weakDomains.map(dom => DOMAIN_SHORT[dom]).join(' and ')
-      parts.push(`${labels} ${weakDomains.length > 1 ? 'are areas' : 'is an area'} where additional practice and support would be beneficial.`)
-    } else if (commentTone === 'Highlight growth' && growthDomains.length > 0) {
-      const labels = growthDomains.map(dom => DOMAIN_SHORT[dom]).join(' and ')
-      parts.push(`${name} has shown notable improvement in ${labels} compared to last semester.`)
-    }
-
-    // WIDA context
-    if (widaAvg != null) {
-      const widaRounded = Math.floor(widaAvg)
-      const widaName = WIDA_NAMES[widaRounded] || ''
-      if (widaRounded <= 2) {
-        parts.push(`As a WIDA Level ${widaRounded} (${widaName}) English learner, ${name} benefits from visual supports, sentence frames, and vocabulary pre-teaching.`)
-      } else if (widaRounded === 3) {
-        parts.push(`As a WIDA Level 3 (Developing) English learner, ${name} is growing in independence and benefits from graphic organizers and structured writing support.`)
-      } else if (widaRounded >= 4) {
-        parts.push(`As a WIDA Level ${widaRounded} (${widaName}) English learner, ${name} communicates effectively and is working to refine academic language skills.`)
-      }
-    }
-
-    // Reading fluency
-    if (latestCwpm != null) {
-      if (readingTrend === 'improving') {
-        parts.push(`In reading fluency, ${name} is currently reading at ${latestCwpm} CWPM and showing an upward trend.`)
-      } else if (readingTrend === 'declining') {
-        parts.push(`${name}'s current reading fluency is ${latestCwpm} CWPM. Continued practice with independent reading would help build consistency.`)
-      } else {
-        parts.push(`${name} is currently reading at ${latestCwpm} CWPM.`)
-      }
-    }
-
-    // Student goals context
-    const { data: goalsData } = await supabase.from('student_goals').select('goal_text, status, target_metric, target_value, baseline_value, current_value')
-      .eq('student_id', studentId).eq('status', 'active').limit(3)
-    if (goalsData && goalsData.length > 0) {
-      const achieved = goalsData.filter((g: any) => g.status === 'achieved')
-      const active = goalsData.filter((g: any) => g.status === 'active')
-      if (achieved.length > 0) {
-        parts.push(`This semester, ${name} achieved ${achieved.length === 1 ? 'a key learning goal' : `${achieved.length} learning goals`}, including: "${achieved[0].goal_text}."`)
-      }
-      if (active.length > 0) {
-        const goalSummary = active[0].target_value && active[0].baseline_value
-          ? `"${active[0].goal_text}" (from ${active[0].baseline_value} toward ${active[0].target_value})`
-          : `"${active[0].goal_text}"`
-        parts.push(`${name} is currently working toward ${goalSummary}.`)
-      }
-    }
-
-    // Closing
-    if (commentTone === 'Highlight growth' && d.prevOverall != null && d.overallGrade != null && d.overallGrade > d.prevOverall) {
-      parts.push(`Overall, ${name} has improved from ${d.prevOverall.toFixed(1)}% to ${d.overallGrade.toFixed(1)}% since last semester, which reflects real effort and growth.`)
-    } else if (commentTone === 'Constructive') {
-      parts.push(`With continued effort and targeted practice, ${name} is well-positioned for further growth.`)
-    } else {
-      parts.push(`${name} is a valued member of the classroom and I look forward to continued progress.`)
-    }
-
-    setComment(parts.join(' '))
-    setShowAiPanel(false)
-    showToast('Draft generated -- please review and edit before saving')
-  }, [data, studentId, commentTone])
+  }, [data, studentId, commentTone, ai])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const loadReport = useCallback(async () => {
@@ -1127,6 +1062,22 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   </div>
                 </div>
               )}
+
+              {/* AI Generate Controls */}
+              <div className="border-t border-[#d1d5db] pt-3 mt-1">
+                <p className="text-[10px] font-bold text-[#475569] mb-2">Generate AI Draft</p>
+                <div className="flex gap-1.5 flex-wrap mb-3">
+                  {(['Balanced', 'Highlight growth', 'Constructive'] as const).map((tone) => (
+                    <button key={tone} onClick={() => setCommentTone(tone)}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-semibold border transition-all ${commentTone === tone ? 'bg-navy text-white border-navy' : 'bg-white border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]'}`}>{tone}</button>
+                  ))}
+                </div>
+                <button onClick={() => generateTemplateComment()} disabled={ai.loading}
+                  className="w-full py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-60 flex items-center justify-center gap-2">
+                  {ai.loading ? <><Loader2 size={13} className="animate-spin" /> Generating...</> : 'Generate Draft Comment'}
+                </button>
+                {ai.error && <p className="text-[10px] text-red-600 mt-1.5">{ai.error}</p>}
+              </div>
             </div>
           )}
 
@@ -1361,6 +1312,75 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
   )
 }
 
+// ─── Progress Report AI Draft Button ─────────────────────────────────
+function ProgressReportAIDraft({ student, data, studentId, onGenerated }: {
+  student: any; data: any; studentId: string; onGenerated: (text: string) => void
+}) {
+  const { showToast } = useApp()
+  const ai = useAI()
+  const [tone, setTone] = useState<'Balanced' | 'Highlight growth' | 'Constructive'>('Balanced')
+  const [open, setOpen] = useState(false)
+
+  const handleGenerate = async () => {
+    // Fetch WIDA and reading data
+    const [widaRes, readingRes] = await Promise.all([
+      supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId),
+      supabase.from('reading_assessments').select('cwpm, date, passage_level, reading_level').eq('student_id', studentId).order('date', { ascending: false }).limit(3),
+    ])
+    const widaLevels: Record<string, number> = {}
+    ;(widaRes.data || []).forEach((w: any) => { if (w.wida_level > 0) widaLevels[w.domain] = w.wida_level })
+    const readings = readingRes.data || []
+    const readingData = readings.length > 0 ? {
+      latestCwpm: readings[0]?.cwpm ? Math.round(readings[0].cwpm) : null,
+      trend: readings.length >= 2 ? (readings[0].cwpm > readings[1].cwpm ? 'improving' : readings[0].cwpm < readings[1].cwpm ? 'declining' : 'stable') : null,
+      readingLevel: readings[0]?.passage_level || readings[0]?.reading_level || null,
+    } : null
+
+    const result = await ai.generate('progress_comment', {
+      student: { english_name: student.english_name, grade: student.grade, english_class: student.english_class },
+      tone,
+      domainGrades: data.domainGrades,
+      overallGrade: data.overallGrade,
+      widaLevels,
+      readingData,
+      semesterName: data.semesterName,
+    })
+    if (result) {
+      onGenerated(result)
+      setOpen(false)
+      showToast('AI draft generated -- please review and edit')
+    } else {
+      showToast(ai.error || 'Failed to generate')
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(!open)}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-all ${open ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border hover:border-navy/30'}`}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        AI Draft
+      </button>
+      {open && (
+        <div className="absolute right-0 top-8 z-20 bg-surface border border-border rounded-xl shadow-lg p-3 w-[260px]">
+          <p className="text-[10px] font-bold text-text-secondary mb-2">Generate progress report comment</p>
+          <div className="flex gap-1 flex-wrap mb-2">
+            {(['Balanced', 'Highlight growth', 'Constructive'] as const).map(t => (
+              <button key={t} onClick={() => setTone(t)}
+                className={`px-2 py-0.5 rounded text-[9px] font-semibold border ${tone === t ? 'bg-navy text-white border-navy' : 'bg-white border-border text-text-secondary'}`}>{t}</button>
+            ))}
+          </div>
+          <button onClick={handleGenerate} disabled={ai.loading}
+            className="w-full py-1.5 rounded-lg text-[11px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {ai.loading ? <><Loader2 size={11} className="animate-spin" /> Generating...</> : 'Generate'}
+          </button>
+          {ai.error && <p className="text-[9px] text-red-600 mt-1">{ai.error}</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Progress Report (simplified, overall averages only) ────────────
 function ProgressReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass }: {
   studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: EnglishClass
@@ -1509,7 +1529,15 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
           {/* Teacher Comment */}
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Teacher Comment</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Teacher Comment</p>
+              <ProgressReportAIDraft
+                student={student}
+                data={data}
+                studentId={studentId}
+                onGenerated={(text) => { setComment(text) }}
+              />
+            </div>
             <textarea value={comment} onChange={e => setComment(e.target.value)}
               rows={4} placeholder="Write a comment about this student's progress..."
               className="w-full px-4 py-3 border border-border rounded-lg text-[13px] text-text-secondary outline-none focus:border-navy resize-none leading-relaxed" />

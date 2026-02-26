@@ -10,6 +10,7 @@ import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, ChevronUp, BarCha
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
+import { useAI } from '@/hooks/useAI'
 import { SCORING_RUBRICS, LEVEL_LABELS, LEVEL_COLORS, RUBRIC_CATEGORIES } from '@/components/curriculum/scoring-rubrics'
 
 // Normalize CCSS input: "rl21" -> "RL.2.1", "rf13a" -> "RF.1.3a", "sl42" -> "SL.4.2"
@@ -1275,6 +1276,169 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
   )
 }
 
+// ─── AI Assessment Blueprint Panel ──────────────────────────────────
+
+interface BlueprintItem {
+  standard: string
+  questionType: string
+  count: number
+  pointsEach: number
+  note: string
+}
+
+interface Blueprint {
+  name: string
+  items: BlueprintItem[]
+  maxScore: number
+  estimatedMinutes: number
+  scaffoldingNotes: string
+  tips: string
+}
+
+function AssessmentBlueprintPanel({ grade, englishClass, domain, category, standards, onApply }: {
+  grade: number; englishClass: string; domain: string; category: string
+  standards: { code: string; text: string; description: string }[]
+  onApply: (blueprint: Blueprint & { notes: string }) => void
+}) {
+  const { showToast } = useApp()
+  const ai = useAI()
+  const [blueprint, setBlueprint] = useState<Blueprint | null>(null)
+  const [open, setOpen] = useState(false)
+  const [lengthCategory, setLengthCategory] = useState<string>(
+    category === 'formative' ? 'quick' : category === 'summative' ? 'standard' : 'extended'
+  )
+
+  const LENGTH_OPTIONS = [
+    { value: 'quick', label: 'Quick Check', desc: '5-10 items, ~10 min' },
+    { value: 'standard', label: 'Standard', desc: '10-15 items, ~20 min' },
+    { value: 'comprehensive', label: 'Comprehensive', desc: '15-20 items, ~30 min' },
+  ]
+
+  const handleGenerate = async () => {
+    const result = await ai.generate('assessment_blueprint', {
+      grade,
+      englishClass,
+      domain,
+      assessmentType: category,
+      lengthCategory,
+      standards,
+    })
+
+    if (result) {
+      try {
+        const parsed = JSON.parse(result) as Blueprint
+        setBlueprint(parsed)
+      } catch {
+        showToast('Failed to parse AI response')
+      }
+    } else {
+      showToast(ai.error || 'Failed to generate blueprint')
+    }
+  }
+
+  const handleApply = () => {
+    if (!blueprint) return
+    onApply({
+      ...blueprint,
+      notes: [
+        blueprint.scaffoldingNotes ? `Scaffolding: ${blueprint.scaffoldingNotes}` : '',
+        blueprint.tips ? `Grading tips: ${blueprint.tips}` : '',
+        `Est. ${blueprint.estimatedMinutes} minutes`,
+      ].filter(Boolean).join('\n'),
+    })
+    setOpen(false)
+    showToast('Blueprint applied -- review and adjust before saving')
+  }
+
+  return (
+    <div className="border border-blue-200 bg-blue-50/50 rounded-xl p-3">
+      <button onClick={() => { setOpen(!open); if (!open && !blueprint) handleGenerate() }}
+        className="flex items-center gap-2 w-full text-left">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e3a5f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        <span className="text-[12px] font-semibold text-navy">AI Assessment Blueprint</span>
+        <span className="text-[10px] text-text-tertiary ml-auto">{open ? 'collapse' : `${standards.length} standard${standards.length > 1 ? 's' : ''} selected`}</span>
+      </button>
+
+      {open && (
+        <div className="mt-3 space-y-3">
+          {/* Length selector */}
+          <div>
+            <p className="text-[10px] font-semibold text-text-secondary mb-1.5">Assessment Length</p>
+            <div className="flex gap-1.5">
+              {LENGTH_OPTIONS.map(opt => (
+                <button key={opt.value} onClick={() => setLengthCategory(opt.value)}
+                  className={`flex-1 px-2 py-1.5 rounded-lg text-center border transition-all ${lengthCategory === opt.value ? 'bg-navy text-white border-navy' : 'bg-white border-border text-text-secondary hover:border-navy/30'}`}>
+                  <p className="text-[10px] font-semibold">{opt.label}</p>
+                  <p className="text-[8px] opacity-70">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Generate / Regenerate */}
+          {!blueprint && !ai.loading && (
+            <button onClick={handleGenerate} className="w-full py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark">
+              Generate Blueprint
+            </button>
+          )}
+
+          {ai.loading && (
+            <div className="flex items-center justify-center gap-2 py-4 text-text-tertiary text-[12px]">
+              <Loader2 size={14} className="animate-spin" /> Building assessment blueprint...
+            </div>
+          )}
+
+          {ai.error && <p className="text-[10px] text-red-600">{ai.error}</p>}
+
+          {/* Blueprint Preview */}
+          {blueprint && !ai.loading && (
+            <div className="space-y-2">
+              <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+                <p className="text-[12px] font-bold text-navy mb-1">{blueprint.name}</p>
+                <div className="flex gap-3 text-[10px] text-text-tertiary mb-2">
+                  <span>{blueprint.maxScore} pts</span>
+                  <span>{blueprint.estimatedMinutes} min</span>
+                  <span>{blueprint.items?.length || 0} sections</span>
+                </div>
+                <div className="space-y-1">
+                  {blueprint.items?.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[11px] py-1 border-b border-[#f1f5f9] last:border-0">
+                      <span className="font-mono text-[9px] bg-[#f1f5f9] px-1.5 py-0.5 rounded text-navy font-bold">{item.standard}</span>
+                      <span className="text-text-secondary flex-1">{item.note}</span>
+                      <span className="text-text-tertiary whitespace-nowrap">{item.count}x{item.pointsEach}pt ({item.questionType})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {blueprint.scaffoldingNotes && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  <p className="text-[9px] uppercase tracking-wider text-amber-700 font-semibold mb-0.5">ELL Scaffolding</p>
+                  <p className="text-[11px] text-amber-900">{blueprint.scaffoldingNotes}</p>
+                </div>
+              )}
+
+              {blueprint.tips && (
+                <p className="text-[10px] text-text-tertiary italic">{blueprint.tips}</p>
+              )}
+
+              <div className="flex gap-2">
+                <button onClick={handleApply} className="flex-1 py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark">
+                  Apply to Form
+                </button>
+                <button onClick={handleGenerate} disabled={ai.loading}
+                  className="px-3 py-2 rounded-lg text-[11px] font-medium bg-white border border-border text-text-secondary hover:bg-surface-alt">
+                  Regenerate
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Assessment Modal ───────────────────────────────────────────────
 
 function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onClose, onSaved }: { grade: Grade; englishClass: EnglishClass; domain: Domain; editing: Assessment | null; semesterId: string | null; onClose: () => void; onSaved: (a: Assessment) => void }) {
@@ -1805,6 +1969,33 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
             </div>
           )}
           <div className="bg-accent-light rounded-lg px-4 py-3"><p className="text-[12px] text-navy"><strong>Grade {grade} · {englishClass}{shareClasses.length > 0 ? ` + ${shareClasses.join(', ')}` : ''}</strong></p></div>
+
+          {/* AI Assessment Blueprint Builder */}
+          {!editing && standards.length > 0 && (
+            <AssessmentBlueprintPanel
+              grade={grade}
+              englishClass={englishClass}
+              domain={selDomain}
+              category={category}
+              standards={standards.map(code => {
+                const s = ccssStandards.find((x: any) => x.code === code)
+                return { code, text: s?.text || '', description: s?.text || '' }
+              })}
+              onApply={(blueprint) => {
+                if (blueprint.name) setName(blueprint.name)
+                if (blueprint.maxScore) setMaxScore(blueprint.maxScore)
+                if (blueprint.notes) setNotes(blueprint.notes)
+                if (blueprint.items?.length) {
+                  setUseSections(true)
+                  setSections(blueprint.items.map((item: any) => ({
+                    label: item.note || `${item.standard} (${item.questionType})`,
+                    standard: item.standard,
+                    max_points: item.count * item.pointsEach,
+                  })))
+                }
+              }}
+            />
+          )}
         </div>
         <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">{lang === 'ko' ? '취소' : 'Cancel'}</button>
