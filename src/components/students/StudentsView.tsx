@@ -36,6 +36,8 @@ export default function StudentsView() {
   const [showManage, setShowManage] = useState(false)
   const [subView, setSubView] = useState<'roster' | 'wida'>('roster')
   const [filterReview, setFilterReview] = useState(false)
+  const [bulkEdit, setBulkEdit] = useState(false)
+  const [bulkEdits, setBulkEdits] = useState<Record<string, Partial<Student>>>({})
 
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class as EnglishClass : null
 
@@ -155,6 +157,39 @@ export default function StudentsView() {
             <Printer size={14} /> {t.students.sortForPrinting}
           </button>
           <button onClick={() => {
+            if (bulkEdit) {
+              const entries = Object.entries(bulkEdits).filter(([_, e]) => Object.keys(e).length > 0)
+              if (entries.length > 0) {
+                (async () => {
+                  let saved = 0
+                  for (const [id, edit] of entries) {
+                    const updates: Record<string, any> = { updated_at: new Date().toISOString() }
+                    if (edit.english_name !== undefined) updates.english_name = edit.english_name
+                    if (edit.english_class !== undefined) updates.english_class = edit.english_class
+                    const { error } = await supabase.from('students').update(updates).eq('id', id)
+                    if (!error) saved++
+                  }
+                  showToast(`Saved ${saved} student${saved !== 1 ? 's' : ''}`)
+                  setBulkEdits({})
+                  refetch()
+                })()
+              }
+              setBulkEdit(false)
+            } else {
+              setBulkEdit(true)
+              setBulkEdits({})
+            }
+          }}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium transition-all ${bulkEdit ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+            <Pencil size={14} /> {bulkEdit ? `Save (${Object.keys(bulkEdits).length})` : 'Bulk Edit'}
+          </button>
+          {bulkEdit && (
+            <button onClick={() => { setBulkEdit(false); setBulkEdits({}) }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
+              Cancel
+            </button>
+          )}
+          <button onClick={() => {
             exportToCSV('students-full', ['UUID', 'Name', 'Korean Name', 'Grade', 'English Class', 'Korean Class', 'Class Number', 'Active'],
               sorted.map(s => [s.id, s.english_name, s.korean_name, s.grade, s.english_class, s.korean_class, s.class_number, s.is_active ? 'Yes' : 'No']))
             showToast('Exported to CSV with UUIDs')
@@ -227,7 +262,8 @@ export default function StudentsView() {
               </thead>
               <tbody>
                 {sorted.map((s, i) => (
-                  <tr key={s.id} className={`border-t border-border table-row-hover cursor-pointer ${!s.is_active ? 'opacity-40' : ''}`} onClick={() => setSelectedStudent(s)}>
+                  <tr key={s.id} className={`border-t border-border table-row-hover ${bulkEdit ? '' : 'cursor-pointer'} ${!s.is_active ? 'opacity-40' : ''}`}
+                    onClick={() => { if (!bulkEdit) setSelectedStudent(s) }}>
                     <td className="px-4 py-3 text-text-tertiary">{i + 1}</td>
                     <td className="px-4 py-2">
                       {s.photo_url ? (
@@ -236,20 +272,43 @@ export default function StudentsView() {
                         <div className="w-7 h-7 rounded-full bg-surface-alt flex items-center justify-center"><User size={13} className="text-text-tertiary" /></div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-medium">
-                      {s.needs_review && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
-                      {s.english_name} <WIDABadge studentId={s.id} compact /></td>
+                    <td className="px-4 py-1.5 font-medium">
+                      {bulkEdit ? (
+                        <input
+                          value={bulkEdits[s.id]?.english_name ?? s.english_name}
+                          onChange={e => setBulkEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], english_name: e.target.value } }))}
+                          className="w-full px-2 py-1.5 border border-border rounded text-[13px] outline-none focus:border-navy bg-white"
+                          tabIndex={i + 1}
+                        />
+                      ) : (
+                        <>
+                          {s.needs_review && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
+                          {s.english_name} <WIDABadge studentId={s.id} compact />
+                        </>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-text-secondary">{s.korean_name}</td>
                     <td className="px-4 py-3 text-center">{s.grade}</td>
                     <td className="px-4 py-3 text-center font-medium">{s.korean_class}</td>
                     <td className="px-4 py-3 text-center">{s.class_number}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-                        style={{ backgroundColor: classToColor(s.english_class), color: classToTextColor(s.english_class) }}>
-                        {s.english_class}
-                      </span>
+                    <td className="px-4 py-1.5 text-center">
+                      {bulkEdit ? (
+                        <select
+                          value={bulkEdits[s.id]?.english_class ?? s.english_class}
+                          onChange={e => setBulkEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], english_class: e.target.value as EnglishClass } }))}
+                          className="px-1 py-1.5 border border-border rounded text-[11px] outline-none bg-white"
+                          tabIndex={-1}
+                        >
+                          {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      ) : (
+                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                          style={{ backgroundColor: classToColor(s.english_class), color: classToTextColor(s.english_class) }}>
+                          {s.english_class}
+                        </span>
+                      )}
                     </td>
-                    <td className="px-4 py-3 text-center"><ChevronRight size={14} className="text-text-tertiary inline" /></td>
+                    <td className="px-4 py-3 text-center">{!bulkEdit && <ChevronRight size={14} className="text-text-tertiary inline" />}</td>
                   </tr>
                 ))}
               </tbody>
