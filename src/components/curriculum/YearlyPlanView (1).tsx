@@ -38,6 +38,26 @@ function extractHeadings(content: string): { text: string; isTitle: boolean }[] 
   return headings
 }
 
+// Extract topic keywords — non-heading, non-divider lines as compact tags
+function extractKeywords(content: string): string[] {
+  if (!content) return []
+  const kw: string[] = []
+  for (const line of content.split('\n')) {
+    const t = line.trim()
+    if (!t) continue
+    if (t.match(/^## /)) continue                  // skip titles
+    if (t.match(/^\*\*(.+?)\*\*$/)) continue        // skip bold headings
+    if (t === '---' || t === '***' || t === '___') continue // skip dividers
+    // Clean up: strip bullet prefix, bold markers, leading/trailing punctuation
+    let clean = t.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').replace(/\*(.+?)\*/g, '$1').trim()
+    if (!clean || clean.length < 2) continue
+    // Split on common delimiters (·, /, ,) to get individual topics
+    const parts = clean.split(/\s*[·\/]\s*|,\s*/).map(s => s.trim()).filter(s => s.length >= 2)
+    if (parts.length > 1) { kw.push(...parts) } else if (clean.length <= 40) { kw.push(clean) } else { kw.push(clean.slice(0, 38) + '…') }
+  }
+  return kw.slice(0, 6) // max 6 tags
+}
+
 // Check if content has detail beyond just headings
 function hasDetail(content: string): boolean {
   if (!content) return false
@@ -489,16 +509,26 @@ export default function YearlyPlanView() {
                           <div onClick={() => { if (canEdit) { clearPopoverTimers(); setPopover(null); openEditModal(track.id, period.id) } }}
                             className={`min-h-[48px] rounded-lg px-2 py-1.5 transition-all ${canEdit ? 'cursor-pointer hover:bg-surface-alt/50 hover:ring-1 hover:ring-navy/20' : ''} ${cell?.content ? '' : 'text-text-tertiary italic text-[11px]'} ${isCopied ? 'ring-2 ring-gold/40' : ''}`}>
                             {cell?.content ? (
-                              headings.length > 0 ? (
-                                <div className="space-y-0.5">
-                                  {headings.map((h, i) => (
-                                    <p key={i} className={`leading-snug truncate ${h.isTitle ? 'text-[12px] font-extrabold text-navy' : 'text-[11px] font-semibold text-navy/80'}`}>{h.text}</p>
-                                  ))}
-                                  {detail && <span className="text-[9px] text-text-tertiary">···</span>}
-                                </div>
-                              ) : (
-                                <p className="text-[10px] text-text-secondary leading-snug line-clamp-3">{cell.content.replace(/\*\*/g, '').replace(/^- /gm, '• ').slice(0, 80)}</p>
-                              )
+                              <>
+                                {headings.length > 0 && (
+                                  <div className="space-y-0.5">
+                                    {headings.map((h, i) => (
+                                      <p key={i} className={`leading-snug truncate ${h.isTitle ? 'text-[12px] font-extrabold text-navy' : 'text-[11px] font-semibold text-navy/80'}`}>{h.text}</p>
+                                    ))}
+                                  </div>
+                                )}
+                                {(() => {
+                                  const kw = extractKeywords(cell.content)
+                                  if (kw.length === 0) return headings.length === 0 ? <p className="text-[10px] text-text-secondary leading-snug line-clamp-3">{cell.content.replace(/\*\*/g, '').replace(/^- /gm, '• ').slice(0, 80)}</p> : null
+                                  return (
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {kw.map((k, i) => (
+                                        <span key={i} className="inline-block px-1.5 py-0.5 rounded text-[8px] font-medium bg-white/50 text-text-secondary border border-border/30 leading-tight">{k}</span>
+                                      ))}
+                                    </div>
+                                  )
+                                })()}
+                              </>
                             ) : (
                               canEdit ? (clipboard ? 'Click to paste' : '') : ''
                             )}
@@ -642,16 +672,24 @@ export default function YearlyPlanView() {
                                 onClick={() => { if (cellContent && clsTrack) openCompare(trackName, period.id, period.name, cellGrade, cls) }}>
                                 {cellContent ? (
                                   <>
-                                    {headings.length > 0 ? (
-                                      <div className="space-y-0.5">
-                                        {headings.slice(0, 3).map((h, i) => (
+                                    {headings.length > 0 && (
+                                      <div className="mb-1">
+                                        {headings.slice(0, 2).map((h, i) => (
                                           <p key={i} className={`leading-snug ${h.isTitle ? 'text-[11px] font-extrabold text-navy' : 'text-[10px] font-semibold text-navy/80'}`}>{h.text}</p>
                                         ))}
-                                        {(hasMore || headings.length > 3) && <span className="text-[9px] text-text-tertiary">···</span>}
                                       </div>
-                                    ) : (
-                                      <p className="text-[10px] text-text-secondary leading-snug line-clamp-3">{cellContent.replace(/\*\*/g, '').replace(/^- /gm, '• ').slice(0, 80)}</p>
                                     )}
+                                    {(() => {
+                                      const kw = extractKeywords(cellContent)
+                                      if (kw.length === 0) return headings.length === 0 ? <p className="text-[10px] text-text-secondary leading-snug line-clamp-2">{cellContent.replace(/\*\*/g, '').replace(/^- /gm, '• ').slice(0, 60)}</p> : null
+                                      return (
+                                        <div className="flex flex-wrap gap-1">
+                                          {kw.map((k, i) => (
+                                            <span key={i} className="inline-block px-1.5 py-0.5 rounded text-[8px] font-medium bg-white/60 text-text-secondary border border-border/30 leading-tight">{k}</span>
+                                          ))}
+                                        </div>
+                                      )
+                                    })()}
                                     <span className="absolute top-1 right-1 opacity-0 group-hover/cell:opacity-100 transition-opacity text-[8px] text-text-tertiary bg-white/80 px-1 rounded border border-border/50">⤢</span>
                                   </>
                                 ) : (
