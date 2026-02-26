@@ -102,6 +102,8 @@ export default function StudentsView() {
               <ManageUploadCard onComplete={refetch} />
               <ManageAddCard onComplete={refetch} />
             </div>
+            {/* Review Queue — shows when flagged students exist */}
+            <ReviewQueue students={students} onComplete={refetch} />
           </div>
         )}
 
@@ -353,6 +355,136 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
           className="flex-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center justify-center gap-1.5">
           {saving && <Loader2 size={12} className="animate-spin" />} Save & Add Another
         </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Review Queue ───────────────────────────────────────────────────
+
+function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete: () => void }) {
+  const { showToast } = useApp()
+  const flagged = students.filter(s => s.needs_review)
+  const [edits, setEdits] = useState<Record<string, Partial<Student>>>({})
+  const [saving, setSaving] = useState<string | null>(null)
+  const [clearingAll, setClearingAll] = useState(false)
+
+  if (flagged.length === 0) return null
+
+  const getEdit = (id: string) => edits[id] || {}
+  const setEdit = (id: string, patch: Partial<Student>) => setEdits(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }))
+
+  const saveAndClear = async (s: Student) => {
+    setSaving(s.id)
+    const edit = getEdit(s.id)
+    const updates: Record<string, any> = { needs_review: false, updated_at: new Date().toISOString() }
+    if (edit.english_name && edit.english_name !== s.english_name) updates.english_name = edit.english_name
+    if (edit.korean_class && edit.korean_class !== s.korean_class) updates.korean_class = edit.korean_class
+    if (edit.class_number && edit.class_number !== s.class_number) updates.class_number = edit.class_number
+    if (edit.english_class && edit.english_class !== s.english_class) updates.english_class = edit.english_class
+    if (edit.grade && edit.grade !== s.grade) updates.grade = edit.grade
+
+    const { error } = await supabase.from('students').update(updates).eq('id', s.id)
+    setSaving(null)
+    if (error) showToast(`Error: ${error.message}`)
+    else {
+      setEdits(prev => { const copy = { ...prev }; delete copy[s.id]; return copy })
+      onComplete()
+    }
+  }
+
+  const clearAllFlags = async () => {
+    if (!confirm(`Clear review flag from all ${flagged.length} students? This won't change any student info, just removes the flag.`)) return
+    setClearingAll(true)
+    const ids = flagged.map(s => s.id)
+    const { error } = await supabase.from('students').update({ needs_review: false, updated_at: new Date().toISOString() }).in('id', ids)
+    setClearingAll(false)
+    if (error) showToast(`Error: ${error.message}`)
+    else { showToast(`Cleared ${ids.length} review flags`); onComplete() }
+  }
+
+  return (
+    <div className="mt-4 border border-amber-300 bg-amber-50 rounded-xl overflow-hidden">
+      <div className="px-4 py-3 flex items-center justify-between border-b border-amber-200">
+        <div className="flex items-center gap-2">
+          <span className="text-[15px]">⚠</span>
+          <h4 className="text-[13px] font-bold text-gray-900">{flagged.length} Student{flagged.length !== 1 ? 's' : ''} Need Review</h4>
+          <span className="text-[11px] text-gray-600">Verify info, edit inline, then clear flag</span>
+        </div>
+        <button onClick={clearAllFlags} disabled={clearingAll}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-white border border-amber-300 text-gray-700 hover:bg-amber-100 disabled:opacity-40 transition-all">
+          {clearingAll ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+          Clear All Flags
+        </button>
+      </div>
+      <div className="max-h-[400px] overflow-y-auto">
+        <table className="w-full text-[12px]">
+          <thead className="sticky top-0 bg-amber-100/80 backdrop-blur-sm">
+            <tr>
+              <th className="text-left px-3 py-2 font-semibold text-gray-700">Korean Name</th>
+              <th className="text-left px-3 py-2 font-semibold text-gray-700">English Name</th>
+              <th className="text-center px-3 py-2 font-semibold text-gray-700">Grade</th>
+              <th className="text-center px-3 py-2 font-semibold text-gray-700">반</th>
+              <th className="text-center px-3 py-2 font-semibold text-gray-700">#</th>
+              <th className="text-center px-3 py-2 font-semibold text-gray-700">English Class</th>
+              <th className="text-left px-3 py-2 font-semibold text-gray-700">Reason</th>
+              <th className="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {flagged.map(s => {
+              const edit = getEdit(s.id)
+              // Extract reason from notes (last ⚠️ line)
+              const reasonMatch = (s.notes || '').match(/⚠️ Needs review[^:]*:\s*(.+?)$/m)
+              const reason = reasonMatch ? reasonMatch[1] : ''
+              return (
+                <tr key={s.id} className="border-t border-amber-200 hover:bg-amber-100/50">
+                  <td className="px-3 py-2 font-medium text-gray-900">{s.korean_name}</td>
+                  <td className="px-3 py-1.5">
+                    <input
+                      value={edit.english_name ?? s.english_name}
+                      onChange={e => setEdit(s.id, { english_name: e.target.value })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-[12px] outline-none focus:border-navy bg-white"
+                    />
+                  </td>
+                  <td className="px-3 py-1.5 text-center">
+                    <select value={edit.grade ?? s.grade} onChange={e => setEdit(s.id, { grade: Number(e.target.value) as Grade })}
+                      className="px-1 py-1 border border-gray-300 rounded text-[12px] outline-none bg-white text-center">
+                      {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </td>
+                  <td className="px-3 py-1.5 text-center">
+                    <select value={edit.korean_class ?? s.korean_class} onChange={e => setEdit(s.id, { korean_class: e.target.value as KoreanClass })}
+                      className="px-1 py-1 border border-gray-300 rounded text-[12px] outline-none bg-white text-center">
+                      {KOREAN_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </td>
+                  <td className="px-3 py-1.5 text-center">
+                    <input type="number" min={1} max={35}
+                      value={edit.class_number ?? s.class_number}
+                      onChange={e => setEdit(s.id, { class_number: parseInt(e.target.value) || 1 })}
+                      className="w-12 px-1 py-1 border border-gray-300 rounded text-[12px] outline-none bg-white text-center"
+                    />
+                  </td>
+                  <td className="px-3 py-1.5 text-center">
+                    <select value={edit.english_class ?? s.english_class} onChange={e => setEdit(s.id, { english_class: e.target.value as EnglishClass })}
+                      className="px-1 py-1 border border-gray-300 rounded text-[12px] outline-none bg-white text-center">
+                      {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </td>
+                  <td className="px-3 py-2 text-[10px] text-gray-600 max-w-[180px] truncate" title={reason}>{reason}</td>
+                  <td className="px-3 py-1.5 text-right">
+                    <button onClick={() => saveAndClear(s)} disabled={saving === s.id}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 transition-all whitespace-nowrap">
+                      {saving === s.id ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                      Save & Clear
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )
