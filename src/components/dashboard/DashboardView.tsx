@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
@@ -23,12 +23,126 @@ const EVENT_TYPES = [
 interface CalEvent { id: string; title: string; date: string; type: string; description: string; created_by: string | null; created_at: string; show_on_parent_calendar?: boolean; target_grades?: number[] | null }
 interface FlaggedEntry { id: string; student_id: string; date: string; type: string; note: string; time: string; behaviors: string[]; antecedents: string[]; consequences: string[]; intensity: number; frequency: number; activity: string; duration: string; is_flagged: boolean; teacher_name: string; student_name: string; student_class: string; created_at: string }
 
+// ─── Shared Dashboard Data ───────────────────────────────────────
+// Fetches common data once and shares across all sub-components.
+// Before: ~30 independent Supabase round trips on mount.
+// After: ~10 queries in parallel via Promise.all.
+
+interface DashboardStudent { id: string; english_name: string; english_class: string; grade: number }
+interface SharedDashboardData {
+  students: DashboardStudent[]
+  activeSemester: any | null
+  todayAttendanceIds: Set<string>
+  todayEvents: any[]
+  todayBehaviorCount: number
+  readingAssessments: { student_id: string; cwpm: number | null; date: string }[]
+  absences30d: { student_id: string }[]
+  behaviorLogs28d: { student_id: string; date: string }[]
+  semesterAssessments: any[]
+  semesterGrades: any[]
+  loading: boolean
+}
+
+function useDashboardData(currentTeacher: any): SharedDashboardData {
+  const [data, setData] = useState<Omit<SharedDashboardData, 'loading'>>({
+    students: [], activeSemester: null, todayAttendanceIds: new Set(),
+    todayEvents: [], todayBehaviorCount: 0, readingAssessments: [],
+    absences30d: [], behaviorLogs28d: [], semesterAssessments: [], semesterGrades: [],
+  })
+  const [loading, setLoading] = useState(true)
+
+  const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
+  const isAdmin = currentTeacher?.role === 'admin'
+  const classFilter = isTeacher ? currentTeacher?.english_class : null
+
+  useEffect(() => {
+    if (!currentTeacher) return
+    let cancelled = false
+    ;(async () => {
+      const today = getKSTDateString()
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+      const twentyEightDaysAgo = new Date(Date.now() - 28 * 86400000).toISOString().split('T')[0]
+
+      // Phase 1: Fetch students + semester (needed to scope other queries)
+      let studQuery = supabase.from('students').select('id, english_name, english_class, grade').eq('is_active', true)
+      if (classFilter) studQuery = studQuery.eq('english_class', classFilter)
+
+      const [studRes, semRes] = await Promise.all([
+        studQuery,
+        supabase.from('semesters').select('*').eq('is_active', true).single(),
+      ])
+      if (cancelled) return
+
+      const students: DashboardStudent[] = studRes.data || []
+      const activeSemester = semRes.data
+      const studentIds = students.map(s => s.id)
+
+      if (studentIds.length === 0) {
+        setData(prev => ({ ...prev, students, activeSemester }))
+        setLoading(false)
+        return
+      }
+
+      // Phase 2: All other queries in parallel (scoped to student IDs)
+      const [attRes, eventsRes, behaviorCountRes, readingRes, absRes, behaviorLogsRes, assessmentsRes] = await Promise.all([
+        // Today's attendance
+        supabase.from('attendance').select('student_id').eq('date', today).in('student_id', studentIds),
+        // Today's calendar events
+        supabase.from('calendar_events').select('title, type').eq('date', today),
+        // Today's behavior log count
+        supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('date', today),
+        // All reading assessments (for growth tracking in InsightsBanner + missing ORF in Watchlist)
+        supabase.from('reading_assessments').select('student_id, cwpm, date').in('student_id', studentIds).order('date', { ascending: true }),
+        // Absences in last 30 days
+        supabase.from('attendance').select('student_id').eq('status', 'absent').in('student_id', studentIds).gte('date', thirtyDaysAgo),
+        // Behavior logs in last 28 days (covers both 14-day and 28-day windows)
+        supabase.from('behavior_logs').select('student_id, date').in('student_id', studentIds).gte('date', twentyEightDaysAgo),
+        // Semester assessments (if we have a semester)
+        activeSemester
+          ? supabase.from('assessments').select('id, domain, name, english_class, grade, max_score, created_at').eq('semester_id', activeSemester.id)
+          : Promise.resolve({ data: [] as any[] }),
+      ])
+      if (cancelled) return
+
+      // Fetch grades for semester assessments (separate because we need assessment IDs)
+      const semAssessments = (assessmentsRes as any).data || []
+      let semGrades: any[] = []
+      if (semAssessments.length > 0) {
+        const { data: grades } = await supabase.from('grades').select('student_id, assessment_id, score')
+          .in('assessment_id', semAssessments.map((a: any) => a.id)).not('score', 'is', null)
+        if (grades) semGrades = grades
+      }
+      if (cancelled) return
+
+      setData({
+        students,
+        activeSemester,
+        todayAttendanceIds: new Set((attRes.data || []).map((a: any) => a.student_id)),
+        todayEvents: eventsRes.data || [],
+        todayBehaviorCount: (behaviorCountRes as any).count || 0,
+        readingAssessments: readingRes.data || [],
+        absences30d: absRes.data || [],
+        behaviorLogs28d: behaviorLogsRes.data || [],
+        semesterAssessments: semAssessments,
+        semesterGrades: semGrades,
+      })
+      setLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [currentTeacher?.id, classFilter, isAdmin])
+
+  return useMemo(() => ({ ...data, loading }), [data, loading])
+}
+
 export default function DashboardView() {
   const { language, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
   const isTeacher = currentTeacher?.role === 'teacher'
   const [semesters, setSemesters] = useState<{ id: string; name: string; name_ko: string; is_active: boolean }[]>([])
   const [activeSem, setActiveSem] = useState<string>('')
+
+  // Shared data: fetched once, shared across all sub-components
+  const shared = useDashboardData(currentTeacher)
 
   useEffect(() => {
     (async () => {
@@ -74,20 +188,20 @@ export default function DashboardView() {
         {/* ─── Top Row: Status + Calendar ─── */}
         <div className="grid grid-cols-[280px_1fr] gap-5">
           <div className="space-y-4">
-            <ActionableSummary />
+            <ActionableSummary shared={shared} />
             {isAdmin && <ClassOverviewTable />}
           </div>
           <SharedCalendar />
         </div>
         {/* ─── Below: Insights + Content ─── */}
-        <InsightsBanner />
+        <InsightsBanner shared={shared} />
         <div className="grid grid-cols-2 gap-5">
           <div className="space-y-5">
             <TodaysPlanPreview />
-            <NeedsAttentionWatchlist />
+            <NeedsAttentionWatchlist shared={shared} />
           </div>
           <div className="space-y-5">
-            <QuickActions />
+            <QuickActions shared={shared} />
             {isAdmin && <AdminAlertPanel />}
           </div>
         </div>
@@ -142,12 +256,9 @@ function TodaysPlanPreview() {
 
 // ─── Recent Notes Preview ─────────────────────────────────────────
 // ─── Weekly Insight (rotating spotlight) ──────────────────────────
-function InsightsBanner() {
+function InsightsBanner({ shared }: { shared: SharedDashboardData }) {
   const [showModal, setShowModal] = useState(false)
   const { currentTeacher, navigateTo } = useApp()
-  const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
-  const isAdmin = currentTeacher?.role === 'admin'
-  const [insights, setInsights] = useState<{ key: string; text: string; detail: string; type: string; navView?: string; navStudent?: string; navDomain?: string }[]>([])
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set()
     try {
@@ -160,56 +271,41 @@ function InsightsBanner() {
     } catch {}
     return new Set()
   })
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    ;(async () => {
-      const allInsights: typeof insights = []
-      const classFilter = isTeacher ? currentTeacher?.english_class : null
+  // Compute insights from shared data (no independent fetching)
+  const insights = useMemo(() => {
+    if (shared.loading || shared.students.length === 0) return []
+    const allInsights: { key: string; text: string; detail: string; type: string; navView?: string; navStudent?: string; navDomain?: string }[] = []
 
-      let studQuery = supabase.from('students').select('id, english_name, english_class, grade').eq('is_active', true)
-      if (classFilter) studQuery = studQuery.eq('english_class', classFilter)
-      const { data: students } = await studQuery
-      if (!students || students.length === 0) { setLoading(false); return }
+    // Reading growth & decline
+    if (shared.readingAssessments.length > 0) {
+      const byStudent: Record<string, { name: string; id: string; first: number; last: number }> = {}
+      shared.readingAssessments.forEach(r => {
+        const s = shared.students.find(st => st.id === r.student_id)
+        if (!s || r.cwpm == null) return
+        if (!byStudent[r.student_id]) byStudent[r.student_id] = { name: s.english_name, id: s.id, first: r.cwpm, last: r.cwpm }
+        byStudent[r.student_id].last = r.cwpm
+      })
+      const growths = Object.values(byStudent).filter(s => s.last > s.first + 5).sort((a, b) => (b.last - b.first) - (a.last - a.first))
+      growths.slice(0, 3).forEach(top => {
+        allInsights.push({ key: `reading_growth_${top.id}`, text: `${top.name} improved CWPM from ${top.first} to ${top.last}`, detail: 'Check their reading profile for the full growth trajectory.', type: 'positive', navView: 'readingLevels', navStudent: top.id })
+      })
+      const declines = Object.values(byStudent).filter(s => s.first > s.last + 10).sort((a, b) => (a.last - a.first) - (b.last - b.first))
+      declines.slice(0, 2).forEach(d => {
+        allInsights.push({ key: `reading_decline_${d.id}`, text: `${d.name}'s CWPM dropped from ${d.first} to ${d.last}`, detail: 'A drop this large may mean the assigned reading level is too high.', type: 'concern', navView: 'readingLevels', navStudent: d.id })
+      })
+    }
 
-      // Reading growth & decline
-      const { data: readingData } = await supabase.from('reading_assessments').select('student_id, cwpm, date')
-        .in('student_id', students.map(s => s.id)).order('date', { ascending: true })
-      if (readingData && readingData.length > 0) {
-        const byStudent: Record<string, { name: string; id: string; first: number; last: number }> = {}
-        readingData.forEach(r => {
-          const s = students.find(st => st.id === r.student_id)
-          if (!s || r.cwpm == null) return
-          if (!byStudent[r.student_id]) byStudent[r.student_id] = { name: s.english_name, id: s.id, first: r.cwpm, last: r.cwpm }
-          byStudent[r.student_id].last = r.cwpm
-        })
-        const growths = Object.values(byStudent).filter(s => s.last > s.first + 5).sort((a, b) => (b.last - b.first) - (a.last - a.first))
-        growths.slice(0, 3).forEach(top => {
-          allInsights.push({ key: `reading_growth_${top.id}`, text: `${top.name} improved CWPM from ${top.first} to ${top.last}`, detail: 'Check their reading profile for the full growth trajectory.', type: 'positive', navView: 'readingLevels', navStudent: top.id })
-        })
-        const declines = Object.values(byStudent).filter(s => s.first > s.last + 10).sort((a, b) => (a.last - a.first) - (b.last - b.first))
-        declines.slice(0, 2).forEach(d => {
-          allInsights.push({ key: `reading_decline_${d.id}`, text: `${d.name}'s CWPM dropped from ${d.first} to ${d.last}`, detail: 'A drop this large may mean the assigned reading level is too high.', type: 'concern', navView: 'readingLevels', navStudent: d.id })
-        })
-      }
+    // Attendance pattern (from shared 30-day absences)
+    const counts: Record<string, number> = {}
+    shared.absences30d.forEach(a => { counts[a.student_id] = (counts[a.student_id] || 0) + 1 })
+    Object.entries(counts).filter(([, c]) => c >= 4).sort((a, b) => b[1] - a[1]).slice(0, 2).forEach(([sid, count]) => {
+      const s = shared.students.find(st => st.id === sid)
+      if (s) allInsights.push({ key: `attendance_${sid}`, text: `${s.english_name} has been absent ${count} times in the last month`, detail: 'Consider reaching out to parents or checking in with the homeroom teacher.', type: 'concern', navView: 'attendance', navStudent: sid })
+    })
 
-      // Attendance pattern
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
-      const { data: absences } = await supabase.from('attendance').select('student_id').eq('status', 'absent')
-        .in('student_id', students.map(s => s.id)).gte('date', thirtyDaysAgo)
-      if (absences) {
-        const counts: Record<string, number> = {}
-        absences.forEach(a => { counts[a.student_id] = (counts[a.student_id] || 0) + 1 })
-        Object.entries(counts).filter(([, c]) => c >= 4).sort((a, b) => b[1] - a[1]).slice(0, 2).forEach(([sid, count]) => {
-          const s = students.find(st => st.id === sid)
-          if (s) allInsights.push({ key: `attendance_${sid}`, text: `${s.english_name} has been absent ${count} times in the last month`, detail: 'Consider reaching out to parents or checking in with the homeroom teacher.', type: 'concern', navView: 'attendance', navStudent: sid })
-        })
-      }
-
-      setInsights(allInsights)
-      setLoading(false)
-    })()
-  }, [currentTeacher, isTeacher, isAdmin])
+    return allInsights
+  }, [shared.loading, shared.students, shared.readingAssessments, shared.absences30d])
 
   const dismissInsight = (key: string) => {
     setDismissed(prev => {
@@ -224,7 +320,7 @@ function InsightsBanner() {
   const positiveCount = visible.filter(i => i.type === 'positive').length
   const concernCount = visible.filter(i => i.type === 'concern').length
 
-  if (loading || visible.length === 0) return null
+  if (shared.loading || visible.length === 0) return null
 
   return (
     <>
@@ -287,73 +383,51 @@ function InsightsBanner() {
 }
 
 // ─── Actionable Summary (sidebar) ────────────────────────────────
-function ActionableSummary() {
+function ActionableSummary({ shared }: { shared: SharedDashboardData }) {
   const { currentTeacher, language } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin'
-  const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class : null
-  const [items, setItems] = useState<{ icon: any; text: string; urgent: boolean }[]>([])
-  const [loading, setLoading] = useState(true)
   const today = getKSTDateString()
 
-  useEffect(() => {
-    ;(async () => {
-      const newItems: { icon: any; text: string; urgent: boolean }[] = []
+  // Compute items from shared data (no independent fetching)
+  const items = useMemo(() => {
+    if (shared.loading) return []
+    const newItems: { icon: any; text: string; urgent: boolean }[] = []
 
-      // Unmarked attendance
-      let unmarked = 0
-      if (teacherClass) {
-        const { data: studs } = await supabase.from('students').select('id').eq('english_class', teacherClass).eq('is_active', true)
-        if (studs) {
-          const { data: att } = await supabase.from('attendance').select('student_id').eq('date', today).in('student_id', studs.map((s: any) => s.id))
-          unmarked = studs.length - (att?.length || 0)
-        }
-      } else if (isAdmin) {
-        const { data: studs } = await supabase.from('students').select('id').eq('is_active', true)
-        if (studs) {
-          const { data: att } = await supabase.from('attendance').select('student_id').eq('date', today)
-          unmarked = studs.length - (att?.length || 0)
-        }
+    // Unmarked attendance
+    const unmarked = shared.students.length - shared.todayAttendanceIds.size
+    if (unmarked > 0) {
+      newItems.push({ icon: UserCheck, text: `${unmarked} students need attendance marked`, urgent: true })
+    } else {
+      newItems.push({ icon: UserCheck, text: 'All attendance recorded today', urgent: false })
+    }
+
+    // Today's events
+    shared.todayEvents.forEach((ev: any) => {
+      newItems.push({ icon: CalendarDays, text: ev.title, urgent: ev.type === 'deadline' || ev.type === 'testing' })
+    })
+
+    // Upcoming deadlines
+    if (shared.activeSemester) {
+      const sem = shared.activeSemester
+      const daysUntil = (d: string) => Math.ceil((new Date(d).getTime() - new Date(today).getTime()) / 86400000)
+      if (sem.midterm_cutoff_date) {
+        const days = daysUntil(sem.midterm_cutoff_date)
+        if (days >= 0 && days <= 7) newItems.push({ icon: AlertTriangle, text: `Midterm cutoff in ${days} day${days !== 1 ? 's' : ''}`, urgent: days <= 3 })
       }
-      if (unmarked > 0) {
-        newItems.push({ icon: UserCheck, text: `${unmarked} students need attendance marked`, urgent: true })
-      } else {
-        newItems.push({ icon: UserCheck, text: 'All attendance recorded today', urgent: false })
+      if (sem.report_card_cutoff_date) {
+        const days = daysUntil(sem.report_card_cutoff_date)
+        if (days >= 0 && days <= 14) newItems.push({ icon: AlertTriangle, text: `Report card cutoff in ${days} day${days !== 1 ? 's' : ''}`, urgent: days <= 5 })
       }
+    }
 
-      // Today's events
-      const { data: events } = await supabase.from('calendar_events').select('title, type').eq('date', today)
-      if (events && events.length > 0) {
-        events.forEach((ev: any) => {
-          newItems.push({ icon: CalendarDays, text: ev.title, urgent: ev.type === 'deadline' || ev.type === 'testing' })
-        })
-      }
+    // Behavior logs today
+    if (shared.todayBehaviorCount > 0) {
+      newItems.push({ icon: ClipboardCheck, text: `${shared.todayBehaviorCount} behavior log${shared.todayBehaviorCount > 1 ? 's' : ''} recorded today`, urgent: false })
+    }
 
-      // Upcoming deadlines
-      const { data: sem } = await supabase.from('semesters').select('*').eq('is_active', true).single()
-      if (sem) {
-        const daysUntil = (d: string) => Math.ceil((new Date(d).getTime() - new Date(today).getTime()) / 86400000)
-        if (sem.midterm_cutoff_date) {
-          const days = daysUntil(sem.midterm_cutoff_date)
-          if (days >= 0 && days <= 7) newItems.push({ icon: AlertTriangle, text: `Midterm cutoff in ${days} day${days !== 1 ? 's' : ''}`, urgent: days <= 3 })
-        }
-        if (sem.report_card_cutoff_date) {
-          const days = daysUntil(sem.report_card_cutoff_date)
-          if (days >= 0 && days <= 14) newItems.push({ icon: AlertTriangle, text: `Report card cutoff in ${days} day${days !== 1 ? 's' : ''}`, urgent: days <= 5 })
-        }
-      }
+    return newItems
+  }, [shared.loading, shared.students.length, shared.todayAttendanceIds.size, shared.todayEvents, shared.activeSemester, shared.todayBehaviorCount, today])
 
-      // Behavior logs today
-      const { count: behaviorCount } = await supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('date', today)
-      if (behaviorCount && behaviorCount > 0) {
-        newItems.push({ icon: ClipboardCheck, text: `${behaviorCount} behavior log${behaviorCount > 1 ? 's' : ''} recorded today`, urgent: false })
-      }
-
-      setItems(newItems)
-      setLoading(false)
-    })()
-  }, [teacherClass, isAdmin])
-
-  if (loading) return null
+  if (shared.loading) return null
 
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden">
@@ -375,183 +449,37 @@ function ActionableSummary() {
   )
 }
 
-// ─── Today at a Glance ──────────────────────────────────────────────
-function TodayAtGlance() {
-  const { currentTeacher, language } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin'
-  const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class : null
-  const [data, setData] = useState<{ unmarkedAttendance: number; behaviorToday: number; eventsToday: any[]; alerts: { declining: number; behaviorSpike: number; missingData: number; attendancePattern: number }; upcomingDeadlines: any[] }>({ unmarkedAttendance: 0, behaviorToday: 0, eventsToday: [], alerts: { declining: 0, behaviorSpike: 0, missingData: 0, attendancePattern: 0 }, upcomingDeadlines: [] })
-  const [loading, setLoading] = useState(true)
-  const today = getKSTDateString()
-
-  useEffect(() => {
-    (async () => {
-      const [eventsRes, behaviorRes, semRes] = await Promise.all([
-        supabase.from('calendar_events').select('*').eq('date', today),
-        supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('date', today),
-        supabase.from('semesters').select('*').eq('is_active', true).single(),
-      ])
-
-      // Check unmarked attendance
-      let unmarked = 0
-      if (teacherClass) {
-        const { data: studs } = await supabase.from('students').select('id').eq('english_class', teacherClass).eq('is_active', true)
-        if (studs) {
-          const { data: att } = await supabase.from('attendance').select('student_id').eq('date', today).in('student_id', studs.map((s: any) => s.id))
-          unmarked = studs.length - (att?.length || 0)
-        }
-      } else if (isAdmin) {
-        const { data: studs } = await supabase.from('students').select('id').eq('is_active', true)
-        if (studs) {
-          const { data: att } = await supabase.from('attendance').select('student_id').eq('date', today)
-          unmarked = studs.length - (att?.length || 0)
-        }
-      }
-
-      // Student alerts: patterns that need attention
-      let alerts = { declining: 0, behaviorSpike: 0, missingData: 0, attendancePattern: 0 }
-      {
-        let studQuery = supabase.from('students').select('id, english_class').eq('is_active', true)
-        if (teacherClass) studQuery = studQuery.eq('english_class', teacherClass)
-        const { data: studs } = await studQuery
-        if (studs && studs.length > 0) {
-          // Students with no reading assessments in last 60 days
-          const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          const { data: recentReading } = await supabase.from('reading_assessments').select('student_id')
-            .in('student_id', studs.map(s => s.id)).gte('date', sixtyDaysAgo)
-          const studentsWithReading = new Set((recentReading || []).map(r => r.student_id))
-          alerts.missingData = studs.filter(s => !studentsWithReading.has(s.id)).length
-
-          // Students with 3+ behavior incidents in last 14 days
-          const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          const { data: recentBehavior } = await supabase.from('behavior_logs').select('student_id')
-            .in('student_id', studs.map(s => s.id)).gte('date', twoWeeksAgo)
-          const behaviorCounts: Record<string, number> = {}
-          recentBehavior?.forEach(b => { behaviorCounts[b.student_id] = (behaviorCounts[b.student_id] || 0) + 1 })
-          alerts.behaviorSpike = Object.values(behaviorCounts).filter(c => c >= 3).length
-
-          // Grade decline: students whose recent grades avg is 10+ points below their earlier avg
-          const { data: allGrades } = await supabase.from('grades').select('student_id, score, assessment_id, assessments!inner(max_score, date)')
-            .in('student_id', studs.map(s => s.id)).not('score', 'is', null)
-          if (allGrades && allGrades.length > 0) {
-            const byStudent: Record<string, { date: string; pct: number }[]> = {}
-            allGrades.forEach((g: any) => {
-              if (!byStudent[g.student_id]) byStudent[g.student_id] = []
-              byStudent[g.student_id].push({ date: g.assessments?.date || '', pct: (g.score / (g.assessments?.max_score || 100)) * 100 })
-            })
-            Object.values(byStudent).forEach(entries => {
-              if (entries.length < 4) return
-              const sorted = entries.sort((a, b) => a.date.localeCompare(b.date))
-              const mid = Math.floor(sorted.length / 2)
-              const earlyAvg = sorted.slice(0, mid).reduce((s, e) => s + e.pct, 0) / mid
-              const lateAvg = sorted.slice(mid).reduce((s, e) => s + e.pct, 0) / (sorted.length - mid)
-              if (earlyAvg - lateAvg >= 10) alerts.declining++
-            })
-          }
-
-          // Attendance patterns: students with 3+ absences in last 30 days
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          const { data: recentAtt } = await supabase.from('attendance').select('student_id, status')
-            .in('student_id', studs.map(s => s.id)).gte('date', thirtyDaysAgo).eq('status', 'absent')
-          if (recentAtt) {
-            const absCounts: Record<string, number> = {}
-            recentAtt.forEach(a => { absCounts[a.student_id] = (absCounts[a.student_id] || 0) + 1 })
-            alerts.attendancePattern = Object.values(absCounts).filter(c => c >= 3).length
-          }
-        }
-      }
-
-      // Upcoming deadlines
-      const deadlines: any[] = []
-      if (semRes.data) {
-        const sem = semRes.data
-        if (sem.midterm_cutoff_date && new Date(sem.midterm_cutoff_date) >= new Date(today)) deadlines.push({ label: 'Midterm Cutoff', date: sem.midterm_cutoff_date })
-        if (sem.report_card_cutoff_date && new Date(sem.report_card_cutoff_date) >= new Date(today)) deadlines.push({ label: 'Report Card Cutoff', date: sem.report_card_cutoff_date })
-        if (sem.end_date && new Date(sem.end_date) >= new Date(today)) deadlines.push({ label: 'Semester End', date: sem.end_date })
-      }
-
-      setData({
-        unmarkedAttendance: Math.max(0, unmarked),
-        behaviorToday: behaviorRes.count || 0,
-        eventsToday: eventsRes.data || [],
-        alerts,
-        upcomingDeadlines: deadlines.slice(0, 3),
-      })
-      setLoading(false)
-    })()
-  }, [teacherClass, isAdmin])
-
-  if (loading) return null
-
-  const totalAlerts = data.alerts.behaviorSpike + data.alerts.missingData + data.alerts.declining + data.alerts.attendancePattern
-
-  const cards = [
-    { label: language === 'ko' ? '미기록 출석' : 'Unmarked Attendance', value: data.unmarkedAttendance, color: data.unmarkedAttendance > 0 ? 'text-red-600' : 'text-green-600', bg: data.unmarkedAttendance > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200', sub: data.unmarkedAttendance > 0 ? 'Take attendance!' : 'All done' },
-    { label: language === 'ko' ? '오늘 행동 기록' : 'Behavior Logs Today', value: data.behaviorToday, color: 'text-navy', bg: 'bg-surface-alt border-border', sub: '' },
-    { label: 'Student Alerts', value: totalAlerts, color: totalAlerts > 0 ? 'text-amber-600' : 'text-green-600', bg: totalAlerts > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200', sub: totalAlerts > 0 ? [data.alerts.declining > 0 ? `${data.alerts.declining} grade decline` : '', data.alerts.behaviorSpike > 0 ? `${data.alerts.behaviorSpike} behavior` : '', data.alerts.attendancePattern > 0 ? `${data.alerts.attendancePattern} attendance` : '', data.alerts.missingData > 0 ? `${data.alerts.missingData} no ORF` : ''].filter(Boolean).join(', ') : 'No concerns' },
-  ]
-
-  return (
-    <div className="">
-      <h3 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">{language === 'ko' ? '오늘 한눈에' : 'Today at a Glance'} -- {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
-      <div className="grid grid-cols-4 gap-3">
-        {cards.map((c, i) => (
-          <div key={i} className={`rounded-xl border p-4 ${c.bg}`}>
-            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">{c.label}</p>
-            <p className={`text-[24px] font-bold ${c.color}`}>{c.value}</p>
-            {c.sub && <p className="text-[10px] text-text-tertiary mt-0.5">{c.sub}</p>}
-          </div>
-        ))}
-        <div className="rounded-xl border bg-surface-alt border-border p-4">
-          <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">{language === 'ko' ? '오늘 일정' : "Today's Events"}</p>
-          {data.eventsToday.length === 0 ? <p className="text-[13px] text-text-tertiary mt-1">No events today</p> :
-            <div className="space-y-1 mt-1">{data.eventsToday.slice(0, 3).map((ev: any) => {
-              const cfg = EVENT_TYPES.find(t => t.value === ev.type)
-              return <p key={ev.id} className={`text-[11px] font-medium px-2 py-0.5 rounded ${cfg?.bg || 'bg-gray-100 text-gray-700'}`}>{ev.title}</p>
-            })}</div>}
-          {data.upcomingDeadlines.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-border">
-              <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Upcoming</p>
-              {data.upcomingDeadlines.map((d: any, i: number) => (
-                <p key={i} className="text-[10px] text-text-secondary">{d.label}: <span className="font-semibold">{new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></p>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Quick Actions ────────────────────────────────────────────────
-function QuickActions() {
+function QuickActions({ shared }: { shared: SharedDashboardData }) {
   const { currentTeacher } = useApp()
   const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
-  const [recentAssessments, setRecentAssessments] = useState<any[]>([])
 
-  useEffect(() => {
-    if (!isTeacher) return
-    (async () => {
-      // Find assessments this teacher recently worked on
-      const { data } = await supabase.from('assessments').select('id, name, domain, max_score, english_class, grade')
-        .eq('english_class', currentTeacher.english_class)
-        .order('created_at', { ascending: false }).limit(3)
-      if (data && data.length > 0) {
-        // For each, count entered grades
-        const withCounts = await Promise.all(data.map(async (a: any) => {
-          const { count } = await supabase.from('grades').select('*', { count: 'exact', head: true }).eq('assessment_id', a.id)
-          const { data: studs } = await supabase.from('students').select('id', { count: 'exact', head: true }).eq('english_class', a.english_class).eq('grade', a.grade).eq('is_active', true)
-          return { ...a, entered: count || 0, total: studs?.length || 0 }
-        }))
-        setRecentAssessments(withCounts.filter(a => a.total > 0))
-      }
-    })()
-  }, [currentTeacher, isTeacher])
+  // Compute incomplete assessments from shared data (no independent fetching, no N+1)
+  const incomplete = useMemo(() => {
+    if (shared.loading || !isTeacher || shared.semesterAssessments.length === 0) return []
 
-  if (!isTeacher || recentAssessments.length === 0) return null
+    // Get recent assessments for this teacher's class (sorted by created_at desc, limit 3)
+    const classAssessments = shared.semesterAssessments
+      .filter((a: any) => a.english_class === currentTeacher.english_class)
+      .sort((a: any, b: any) => (b.created_at || '').localeCompare(a.created_at || ''))
+      .slice(0, 3)
 
-  const incomplete = recentAssessments.filter(a => a.entered < a.total)
-  if (incomplete.length === 0) return null
+    if (classAssessments.length === 0) return []
+
+    // Count grades from shared data instead of N+1 queries
+    const gradesByAssessment: Record<string, number> = {}
+    shared.semesterGrades.forEach((g: any) => {
+      gradesByAssessment[g.assessment_id] = (gradesByAssessment[g.assessment_id] || 0) + 1
+    })
+
+    return classAssessments.map((a: any) => {
+      const total = shared.students.filter(s => s.english_class === a.english_class && s.grade === a.grade).length
+      const entered = gradesByAssessment[a.id] || 0
+      return { ...a, entered, total }
+    }).filter((a: any) => a.total > 0 && a.entered < a.total)
+  }, [shared.loading, shared.semesterAssessments, shared.semesterGrades, shared.students, isTeacher, currentTeacher?.english_class])
+
+  if (!isTeacher || incomplete.length === 0) return null
 
   return (
     <div className="">
@@ -582,13 +510,8 @@ interface WatchlistStudent {
   concerns: { type: 'grade_decline' | 'behavior_spike' | 'missing_orf' | 'attendance' | 'missing_grades'; text: string }[]
 }
 
-function NeedsAttentionWatchlist() {
+function NeedsAttentionWatchlist({ shared }: { shared: SharedDashboardData }) {
   const { currentTeacher, navigateTo } = useApp()
-  const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
-  const isAdmin = currentTeacher?.role === 'admin'
-  const [watchlist, setWatchlist] = useState<WatchlistStudent[]>([])
-  const [classAlerts, setClassAlerts] = useState<{ id: string; text: string; assessmentId?: string }[]>([])
-  const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(false)
   const [dismissedStudents, setDismissedStudents] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set()
@@ -603,118 +526,96 @@ function NeedsAttentionWatchlist() {
     return new Set()
   })
 
-  useEffect(() => {
-    if (!currentTeacher) return
-    ;(async () => {
-      const classFilter = isTeacher ? currentTeacher.english_class : null
-      let studQuery = supabase.from('students').select('id, english_name, english_class, grade').eq('is_active', true)
-      if (classFilter) studQuery = studQuery.eq('english_class', classFilter)
-      const { data: students } = await studQuery
-      if (!students || students.length === 0) { setLoading(false); return }
+  // Compute watchlist + class alerts from shared data
+  const { watchlist, classAlerts } = useMemo(() => {
+    if (shared.loading || shared.students.length === 0 || !shared.activeSemester) {
+      return { watchlist: [] as WatchlistStudent[], classAlerts: [] as { id: string; text: string }[] }
+    }
 
-      const { data: sem } = await supabase.from('semesters').select('id').eq('is_active', true).single()
-      if (!sem) { setLoading(false); return }
+    const students = shared.students
+    const studentConcerns: Record<string, WatchlistStudent> = {}
+    const addConcern = (s: DashboardStudent, type: WatchlistStudent['concerns'][0]['type'], text: string) => {
+      if (!studentConcerns[s.id]) studentConcerns[s.id] = { id: s.id, name: s.english_name, class: s.english_class, concerns: [] }
+      studentConcerns[s.id].concerns.push({ type, text })
+    }
 
-      const studentConcerns: Record<string, WatchlistStudent> = {}
-      const addConcern = (s: any, type: WatchlistStudent['concerns'][0]['type'], text: string) => {
-        if (!studentConcerns[s.id]) studentConcerns[s.id] = { id: s.id, name: s.english_name, class: s.english_class, concerns: [] }
-        studentConcerns[s.id].concerns.push({ type, text })
-      }
-
-      // Grade decline
-      const { data: assessments } = await supabase.from('assessments').select('id, domain, name, english_class, grade, max_score').eq('semester_id', sem.id)
-      if (assessments && assessments.length > 0) {
-        const { data: allGrades } = await supabase.from('grades').select('student_id, assessment_id, score').in('assessment_id', assessments.map(a => a.id)).not('score', 'is', null)
-        if (allGrades) {
-          for (const student of students) {
-            const sAssessments = assessments.filter(a => a.english_class === student.english_class && a.grade === student.grade)
-            const domains = Array.from(new Set(sAssessments.map(a => a.domain)))
-            for (const domain of domains) {
-              const scores = sAssessments.filter(a => a.domain === domain).map(a => {
-                const g = allGrades.find(gr => gr.student_id === student.id && gr.assessment_id === a.id)
-                return g?.score != null && a.max_score > 0 ? (g.score / a.max_score) * 100 : null
-              }).filter((s): s is number => s != null)
-              if (scores.length >= 3) {
-                const recent = scores.slice(-3)
-                const firstAvg = (recent[0] + recent[1]) / 2
-                const last = recent[2]
-                if (firstAvg - last >= 15) {
-                  addConcern(student, 'grade_decline', `${domain.charAt(0).toUpperCase() + domain.slice(1)} dropped ${firstAvg.toFixed(0)}% to ${last.toFixed(0)}%`)
-                }
-              }
+    // Grade decline (from shared semester assessments + grades)
+    const cAlerts: { id: string; text: string }[] = []
+    if (shared.semesterAssessments.length > 0 && shared.semesterGrades.length > 0) {
+      for (const student of students) {
+        const sAssessments = shared.semesterAssessments.filter((a: any) => a.english_class === student.english_class && a.grade === student.grade)
+        const domains = Array.from(new Set(sAssessments.map((a: any) => a.domain)))
+        for (const domain of domains) {
+          const scores = sAssessments.filter((a: any) => a.domain === domain).map((a: any) => {
+            const g = shared.semesterGrades.find((gr: any) => gr.student_id === student.id && gr.assessment_id === a.id)
+            return g?.score != null && a.max_score > 0 ? (g.score / a.max_score) * 100 : null
+          }).filter((s): s is number => s != null)
+          if (scores.length >= 3) {
+            const recent = scores.slice(-3)
+            const firstAvg = (recent[0] + recent[1]) / 2
+            const last = recent[2]
+            if (firstAvg - last >= 15) {
+              addConcern(student, 'grade_decline', `${domain.charAt(0).toUpperCase() + domain.slice(1)} dropped ${firstAvg.toFixed(0)}% to ${last.toFixed(0)}%`)
             }
-          }
-
-          // Class-level: missing grades
-          const cAlerts: { id: string; text: string }[] = []
-          for (const a of assessments) {
-            const classStudents = students.filter(s => s.english_class === a.english_class && s.grade === a.grade)
-            if (classStudents.length === 0) continue
-            const gradedSet = new Set(allGrades.filter(g => g.assessment_id === a.id).map(g => g.student_id))
-            const ungradedCount = classStudents.filter(s => !gradedSet.has(s.id)).length
-            if (ungradedCount > 0 && ungradedCount < classStudents.length) {
-              cAlerts.push({ id: `mg-${a.id}`, text: `"${a.name}" (${a.english_class}) -- ${ungradedCount} of ${classStudents.length} students ungraded` })
-            }
-          }
-          setClassAlerts(cAlerts)
-        }
-      }
-
-      // Behavior spike
-      const now = new Date()
-      const twoWeeksAgo = new Date(now.getTime() - 14 * 86400000).toISOString().split('T')[0]
-      const fourWeeksAgo = new Date(now.getTime() - 28 * 86400000).toISOString().split('T')[0]
-      const { data: recentBehavior } = await supabase.from('behavior_logs').select('student_id, date')
-        .in('student_id', students.map(s => s.id)).gte('date', fourWeeksAgo)
-      if (recentBehavior) {
-        const recent: Record<string, number> = {}
-        const prior: Record<string, number> = {}
-        recentBehavior.forEach(b => {
-          if (b.date >= twoWeeksAgo) recent[b.student_id] = (recent[b.student_id] || 0) + 1
-          else prior[b.student_id] = (prior[b.student_id] || 0) + 1
-        })
-        for (const [sid, count] of Object.entries(recent)) {
-          if (count >= 3 && count >= (prior[sid] || 0) * 2) {
-            const s = students.find(st => st.id === sid)
-            if (s) addConcern(s, 'behavior_spike', `${count} behavior logs in 2 weeks (was ${prior[sid] || 0})`)
           }
         }
       }
 
-      // No ORF in 60 days
-      const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0]
-      const { data: recentReading } = await supabase.from('reading_assessments').select('student_id')
-        .in('student_id', students.map(s => s.id)).gte('date', sixtyDaysAgo)
-      const withReading = new Set((recentReading || []).map(r => r.student_id))
-      students.forEach(s => {
-        if (!withReading.has(s.id)) addConcern(s, 'missing_orf', 'No reading assessment in 60+ days')
-      })
-
-      // Attendance pattern
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
-      const { data: recentAtt } = await supabase.from('attendance').select('student_id').eq('status', 'absent')
-        .in('student_id', students.map(s => s.id)).gte('date', thirtyDaysAgo)
-      if (recentAtt) {
-        const counts: Record<string, number> = {}
-        recentAtt.forEach(a => { counts[a.student_id] = (counts[a.student_id] || 0) + 1 })
-        Object.entries(counts).forEach(([sid, c]) => {
-          if (c >= 3) {
-            const s = students.find(st => st.id === sid)
-            if (s) addConcern(s, 'attendance', `Absent ${c} times in 30 days`)
-          }
-        })
+      // Class-level: missing grades
+      for (const a of shared.semesterAssessments) {
+        const classStudents = students.filter(s => s.english_class === a.english_class && s.grade === a.grade)
+        if (classStudents.length === 0) continue
+        const gradedSet = new Set(shared.semesterGrades.filter((g: any) => g.assessment_id === a.id).map((g: any) => g.student_id))
+        const ungradedCount = classStudents.filter(s => !gradedSet.has(s.id)).length
+        if (ungradedCount > 0 && ungradedCount < classStudents.length) {
+          cAlerts.push({ id: `mg-${a.id}`, text: `"${a.name}" (${a.english_class}) -- ${ungradedCount} of ${classStudents.length} students ungraded` })
+        }
       }
+    }
 
-      // Sort by number of concerns (most concerning first), exclude "missing_orf only" students
-      const list = Object.values(studentConcerns)
-        .filter(s => s.concerns.some(c => c.type !== 'missing_orf') || s.concerns.length > 1)
-        .sort((a, b) => b.concerns.length - a.concerns.length)
-      setWatchlist(list)
-      setLoading(false)
-    })()
-  }, [currentTeacher, isTeacher, isAdmin])
+    // Behavior spike (from shared 28-day behavior logs)
+    const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0]
+    const recent: Record<string, number> = {}
+    const prior: Record<string, number> = {}
+    shared.behaviorLogs28d.forEach(b => {
+      if (b.date >= twoWeeksAgo) recent[b.student_id] = (recent[b.student_id] || 0) + 1
+      else prior[b.student_id] = (prior[b.student_id] || 0) + 1
+    })
+    for (const [sid, count] of Object.entries(recent)) {
+      if (count >= 3 && count >= (prior[sid] || 0) * 2) {
+        const s = students.find(st => st.id === sid)
+        if (s) addConcern(s, 'behavior_spike', `${count} behavior logs in 2 weeks (was ${prior[sid] || 0})`)
+      }
+    }
 
-  if (loading) return null
+    // No ORF in 60 days (from shared reading assessments)
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0]
+    const withReading = new Set(
+      shared.readingAssessments.filter(r => r.date >= sixtyDaysAgo).map(r => r.student_id)
+    )
+    students.forEach(s => {
+      if (!withReading.has(s.id)) addConcern(s, 'missing_orf', 'No reading assessment in 60+ days')
+    })
+
+    // Attendance pattern (from shared 30-day absences)
+    const absCounts: Record<string, number> = {}
+    shared.absences30d.forEach(a => { absCounts[a.student_id] = (absCounts[a.student_id] || 0) + 1 })
+    Object.entries(absCounts).forEach(([sid, c]) => {
+      if (c >= 3) {
+        const s = students.find(st => st.id === sid)
+        if (s) addConcern(s, 'attendance', `Absent ${c} times in 30 days`)
+      }
+    })
+
+    // Sort by concern count, exclude "missing_orf only"
+    const list = Object.values(studentConcerns)
+      .filter(s => s.concerns.some(c => c.type !== 'missing_orf') || s.concerns.length > 1)
+      .sort((a, b) => b.concerns.length - a.concerns.length)
+
+    return { watchlist: list, classAlerts: cAlerts }
+  }, [shared.loading, shared.students, shared.activeSemester, shared.semesterAssessments, shared.semesterGrades, shared.behaviorLogs28d, shared.readingAssessments, shared.absences30d])
+
+  if (shared.loading) return null
   if (watchlist.length === 0 && classAlerts.length === 0) return null
 
   const dismissStudent = (sid: string) => {
