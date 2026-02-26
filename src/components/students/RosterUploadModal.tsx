@@ -273,7 +273,7 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
         const { error } = await supabase.from('students').insert({
           korean_name: row.parsed.korean_name, english_name: row.parsed.english_name || row.parsed.korean_name,
           grade: row.parsed.grade, korean_class: row.parsed.korean_class, class_number: row.parsed.class_number,
-          english_class: 'Lily', is_active: true, needs_review: false, notes: '', photo_url: '', google_drive_folder_url: '',
+          english_class: 'Unplaced', is_active: true, needs_review: false, notes: '', photo_url: '', google_drive_folder_url: '',
         })
         if (error) throw new Error(`Add ${row.parsed.korean_name}: ${error.message}`)
       } catch (e: any) { errors.push(e.message) }

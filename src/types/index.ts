@@ -2,7 +2,7 @@
 // DAEWOO ENGLISH - TYPE DEFINITIONS
 // ============================================================================
 
-export type EnglishClass = 'Lily' | 'Camellia' | 'Daisy' | 'Sunflower' | 'Marigold' | 'Snapdragon';
+export type EnglishClass = 'Lily' | 'Camellia' | 'Daisy' | 'Sunflower' | 'Marigold' | 'Snapdragon' | 'Unplaced';
 export type KoreanClass = '대' | '솔' | '매';
 export type Grade = 1 | 2 | 3 | 4 | 5;
 export type Domain = 'reading' | 'phonics' | 'writing' | 'speaking' | 'language';
@@ -11,8 +11,8 @@ export type BehaviorGrade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+' | 'C' |
 export type Role = 'teacher' | 'admin';
 export type Language = 'en' | 'ko';
 
-export const ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon'];
-export const ALL_ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon'];
+export const ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon', 'Unplaced'];
+export const ALL_ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon', 'Unplaced'];
 export const KOREAN_CLASSES: KoreanClass[] = ['대', '솔', '매'];
 export const GRADES: Grade[] = [1, 2, 3, 4, 5];
 export const DOMAINS: Domain[] = ['reading', 'phonics', 'writing', 'speaking', 'language'];
@@ -32,10 +32,11 @@ export const CLASS_COLORS: Record<EnglishClass, string> = {
   Sunflower: '#ABEBC6',
   Marigold: '#AED6F1',
   Snapdragon: '#D2B4DE',
+  Unplaced: '#D5D8DC',
 };
 
 export const CLASS_ORDER: Record<EnglishClass, number> = {
-  Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6,
+  Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6, Unplaced: 99,
 };
 
 // ─── Database Row Types ──────────────────────────────────────────────
