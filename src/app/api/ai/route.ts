@@ -2,37 +2,59 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // ─── Gemini API Configuration ────────────────────────────────────────
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-const GEMINI_MODEL = 'gemini-2.0-flash'
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
+// Try models in order: flash first, fall back to flash-lite
+const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite']
+
+function geminiUrl(model: string) {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`
+}
 
 async function callGemini(systemPrompt: string, userPrompt: string): Promise<string> {
   if (!GEMINI_API_KEY) {
     throw new Error('GEMINI_API_KEY not configured. Add it to your Vercel environment variables.')
   }
 
-  const response = await fetch(GEMINI_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ parts: [{ text: userPrompt }] }],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1024,
-        topP: 0.95,
-      },
-    }),
+  const body = JSON.stringify({
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ parts: [{ text: userPrompt }] }],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 1024,
+      topP: 0.95,
+    },
   })
 
-  if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Gemini API error (${response.status}): ${error}`)
+  let lastError = ''
+
+  for (const model of GEMINI_MODELS) {
+    // Try each model with one retry on 429
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await fetch(geminiUrl(model), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+        if (!text) throw new Error('No response from Gemini')
+        return text.trim()
+      }
+
+      if (response.status === 429 && attempt === 0) {
+        // Rate limited -- wait and retry once
+        await new Promise(r => setTimeout(r, 5000))
+        continue
+      }
+
+      // Not 429 or second attempt failed -- try next model
+      lastError = await response.text()
+      break
+    }
   }
 
-  const data = await response.json()
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-  if (!text) throw new Error('No response from Gemini')
-  return text.trim()
+  throw new Error(`Gemini API error: ${lastError}`)
 }
 
 // ─── System Prompts ──────────────────────────────────────────────────
