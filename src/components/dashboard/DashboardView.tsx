@@ -71,22 +71,24 @@ export default function DashboardView() {
         </div>
       </div>
       <div className="px-10 py-6 space-y-5">
-        {/* ─── Calendar First (Full Width) ─── */}
-        <SharedCalendar />
-        {/* ─── Two Column Layout Below ─── */}
-        <div className="grid grid-cols-3 gap-6">
-          {/* ─── Main Column (2/3) ─── */}
-          <div className="col-span-2 space-y-5">
-            <InsightsBanner />
-            <TodaysPlanPreview />
-            <NeedsAttentionWatchlist />
-            <QuickActions />
-            {isAdmin && <AdminAlertPanel />}
-          </div>
-          {/* ─── Sidebar (1/3) ─── */}
-          <div className="space-y-5">
+        {/* ─── Top Row: Status + Calendar ─── */}
+        <div className="grid grid-cols-[280px_1fr] gap-5">
+          <div className="space-y-4">
             <ActionableSummary />
             {isAdmin && <ClassOverviewTable />}
+          </div>
+          <SharedCalendar />
+        </div>
+        {/* ─── Below: Insights + Content ─── */}
+        <InsightsBanner />
+        <div className="grid grid-cols-2 gap-5">
+          <div className="space-y-5">
+            <TodaysPlanPreview />
+            <NeedsAttentionWatchlist />
+          </div>
+          <div className="space-y-5">
+            <QuickActions />
+            {isAdmin && <AdminAlertPanel />}
           </div>
         </div>
       </div>
@@ -1006,7 +1008,7 @@ function SharedCalendar() {
           {dayN.map(d => <div key={d} className="text-center text-[10px] uppercase tracking-wider text-text-tertiary font-semibold py-1">{d}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
-          {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} className="bg-surface-alt/50 min-h-[80px]" />)}
+          {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} className="bg-surface-alt/50 min-h-[90px]" />)}
           {Array.from({ length: days }).map((_, i) => {
             const d = i + 1
             const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
@@ -1017,7 +1019,7 @@ function SharedCalendar() {
 
             return (
               <div key={d} onClick={() => setSelDay(dateStr)}
-                className={`bg-surface min-h-[80px] p-1.5 cursor-pointer transition-all hover:bg-accent-light/50 ${isSelected ? 'ring-2 ring-navy ring-inset' : ''} ${isWeekend ? 'bg-surface-alt/30' : ''}`}>
+                className={`bg-surface min-h-[90px] p-1.5 cursor-pointer transition-all hover:bg-accent-light/50 ${isSelected ? 'ring-2 ring-navy ring-inset' : ''} ${isWeekend ? 'bg-surface-alt/30' : ''}`}>
                 <div className={`text-[11px] font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-navy text-white' : 'text-text-primary'}`}>{d}</div>
                 <div className="space-y-0.5">
                   {evts.slice(0, 3).map(ev => {
@@ -1033,7 +1035,7 @@ function SharedCalendar() {
               </div>
             )
           })}
-          {Array.from({ length: (7 - (first + days) % 7) % 7 }).map((_, i) => <div key={`t${i}`} className="bg-surface-alt/50 min-h-[80px]" />)}
+          {Array.from({ length: (7 - (first + days) % 7) % 7 }).map((_, i) => <div key={`t${i}`} className="bg-surface-alt/50 min-h-[90px]" />)}
         </div>
       </div>
 
@@ -1213,43 +1215,37 @@ function ClassOverviewTable() {
 
   return (
     <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-border">
-        <h3 className="font-display text-base font-semibold text-navy">{language === 'ko' ? '반별 학생 수' : 'Students by Class'}</h3>
+      <div className="px-4 py-3 border-b border-border">
+        <h3 className="font-display text-[13px] font-semibold text-navy">{language === 'ko' ? '반별 학생 수' : 'Students by Class'}</h3>
       </div>
-      <div className="p-5">
-        <table className="w-full text-[13px]">
+      <div className="p-3 overflow-x-auto">
+        <table className="w-full text-[11px]">
           <thead>
             <tr>
-              <th className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">{language === 'ko' ? '학년' : 'Grade'}</th>
-              {ENGLISH_CLASSES.map(cls => (
-                <th key={cls} className="text-center px-2 py-2">
-                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10.5px] font-bold" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>{cls}</span>
+              <th className="text-left px-1.5 py-1.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">{language === 'ko' ? '학년' : 'Gr'}</th>
+              {ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(cls => (
+                <th key={cls} className="text-center px-1 py-1.5">
+                  <span className="inline-flex px-1.5 py-0.5 rounded-full text-[8px] font-bold" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>{cls.slice(0, 3)}</span>
                 </th>
               ))}
-              <th className="text-center px-2 py-2 text-[11px] uppercase tracking-wider text-text-secondary font-bold">Total</th>
             </tr>
           </thead>
           <tbody>
-            {[2,3,4,5].map(grade => {
-              const gradeTotal = counts.filter((c: any) => c.grade === grade).reduce((a, c) => a + c.count, 0)
-              return (
-                <tr key={grade} className="border-t border-border">
-                  <td className="px-2 py-2.5 font-semibold text-navy">Grade {grade}</td>
-                  {ENGLISH_CLASSES.map(cls => {
-                    const c = counts.find(c => c.grade === grade && c.english_class === cls)
-                    return <td key={cls} className="text-center px-2 py-2.5 font-medium">{c?.count || <span className="text-text-tertiary">—</span>}</td>
-                  })}
-                  <td className="text-center px-2 py-2.5 font-bold text-navy">{gradeTotal || '—'}</td>
-                </tr>
-              )
-            })}
+            {[2,3,4,5].map(grade => (
+              <tr key={grade} className="border-t border-border">
+                <td className="px-1.5 py-1.5 font-semibold text-navy">{grade}</td>
+                {ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(cls => {
+                  const c = counts.find(c => c.grade === grade && c.english_class === cls)
+                  return <td key={cls} className="text-center px-1 py-1.5 font-medium">{c?.count || <span className="text-text-tertiary">—</span>}</td>
+                })}
+              </tr>
+            ))}
             <tr className="border-t-2 border-navy/20">
-              <td className="px-2 py-2.5 font-bold text-navy">Total</td>
-              {ENGLISH_CLASSES.map(cls => {
+              <td className="px-1.5 py-1.5 font-bold text-navy">Σ</td>
+              {ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(cls => {
                 const total = counts.filter((c: any) => c.english_class === cls).reduce((a, c) => a + c.count, 0)
-                return <td key={cls} className="text-center px-2 py-2.5 font-bold">{total || '—'}</td>
+                return <td key={cls} className="text-center px-1 py-1.5 font-bold">{total || '—'}</td>
               })}
-              <td className="text-center px-2 py-2.5 font-bold text-gold text-lg">{totalStudents || '—'}</td>
             </tr>
           </tbody>
         </table>
