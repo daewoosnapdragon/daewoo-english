@@ -15,11 +15,12 @@ interface Cell { id?: string; content: string; standard_codes: string[] }
 function renderCellContent(content: string): string {
   if (!content) return ''
   return content
-    .replace(/---/g, '<hr style="border:0;border-top:1px solid #e2e8f0;margin:4px 0">')
-    .replace(/^## (.+)$/gm, '<div style="font-size:13px;font-weight:800;color:#1B2A4A;margin:4px 0 2px">$1</div>')
+    .replace(/---/g, '<hr style="border:0;border-top:1px solid #e2e8f0;margin:3px 0">')
+    .replace(/^## (.+)$/gm, '<div style="font-size:13px;font-weight:800;color:#1B2A4A;margin:3px 0 1px">$1</div>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/^- (.+)$/gm, '<div style="padding-left:12px;position:relative;margin:1px 0"><span style="position:absolute;left:2px">&#8226;</span>$1</div>')
+    .replace(/^- (.+)$/gm, '<div style="padding-left:10px;position:relative;margin:0"><span style="position:absolute;left:1px">&#8226;</span>$1</div>')
+    .replace(/\n\n+/g, '<div style="height:4px"></div>')
     .replace(/\n/g, '<br>')
 }
 
@@ -561,13 +562,18 @@ export default function YearlyPlanView() {
                     </thead>
                     <tbody>
                       {clsTracks.map(track => {
-                        return progGrades.map((g, gi) => {
+                        // Filter to only grades that have content for this track
+                        const gradesWithContent = progGrades.filter(g => {
                           const cellData = allCells[`${cls}::${g}`]
-                          const hasAnyContent = periods.some(p => cellData?.[`${track.id}::${p.id}`]?.content)
+                          return periods.some(p => cellData?.[`${track.id}::${p.id}`]?.content)
+                        })
+                        if (gradesWithContent.length === 0) return null
+                        return gradesWithContent.map((g, gi) => {
+                          const cellData = allCells[`${cls}::${g}`]
                           return (
                             <tr key={`${track.id}-${g}`} className={`${gi === 0 ? 'border-t-2 border-border' : 'border-t border-border/30'}`}>
                               {gi === 0 && (
-                                <td rowSpan={progGrades.length} className="px-3 py-2.5 text-[11px] font-semibold text-navy align-middle bg-surface-alt/20 border-r border-border break-words">
+                                <td rowSpan={gradesWithContent.length} className="px-3 py-2.5 text-[11px] font-semibold text-navy align-middle bg-surface-alt/20 border-r border-border break-words">
                                   {track.name}
                                 </td>
                               )}
@@ -579,12 +585,12 @@ export default function YearlyPlanView() {
                               {periods.map(period => {
                                 const periodCell = cellData?.[`${track.id}::${period.id}`]
                                 return (
-                                  <td key={period.id} className="px-2.5 py-2 border-l border-border/30 align-top" style={{ height: '44px' }}>
+                                  <td key={period.id} className="px-2 py-1.5 border-l border-border/30 align-top">
                                     {periodCell?.content ? (
-                                      <div className="text-[10px] leading-relaxed text-text-primary max-h-[120px] overflow-y-auto break-words whitespace-pre-wrap"
+                                      <div className="text-[10px] leading-snug text-text-primary max-h-[120px] overflow-y-auto break-words whitespace-pre-wrap"
                                         dangerouslySetInnerHTML={{ __html: renderCellContent(periodCell.content) }} />
                                     ) : (
-                                      <span className="text-text-tertiary/40 text-[10px]">--</span>
+                                      <span className="text-text-tertiary/30 text-[9px]">—</span>
                                     )}
                                   </td>
                                 )
