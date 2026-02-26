@@ -1231,7 +1231,7 @@ function ClassOverviewTable() {
             </tr>
           </thead>
           <tbody>
-            {[2,3,4,5].map(grade => (
+            {[1,2,3,4,5].map(grade => (
               <tr key={grade} className="border-t border-border">
                 <td className="px-1.5 py-1.5 font-semibold text-navy">{grade}</td>
                 {ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(cls => {
