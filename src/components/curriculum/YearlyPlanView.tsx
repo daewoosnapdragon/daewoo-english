@@ -589,10 +589,12 @@ export default function YearlyPlanView() {
         // For each track name, check if ANY class has content for it
         const visibleTrackNames = trackNames.filter(name => {
           return activeClasses.some(cls => {
-            const clsTracks = tracks.filter(t => t.english_class === cls && t.name === name)
             return activeGrades.some(g => {
+              const t = tracks.find(t => t.english_class === cls && t.name === name && t.grade === g)
+                || tracks.find(t => t.english_class === cls && t.name === name && !t.grade)
+              if (!t) return false
               const cellData = allCells[`${cls}::${g}`]
-              return clsTracks.some(t => periods.some(p => !isEmptyContent(cellData?.[`${t.id}::${p.id}`]?.content)))
+              return periods.some(p => !isEmptyContent(cellData?.[`${t.id}::${p.id}`]?.content))
             })
           })
         })
@@ -645,17 +647,19 @@ export default function YearlyPlanView() {
                           </div>
                           {/* Class cells */}
                           {activeClasses.map(cls => {
-                            // Find the track for THIS class with this name
-                            const clsTrack = tracks.find(t => t.english_class === cls && t.name === trackName)
-                            // Get best grade match
+                            // Find the track for THIS class with this name, grade-aware
                             let cellContent = ''
                             let cellGrade: Grade = activeGrades[0]
-                            if (clsTrack) {
-                              for (const g of activeGrades) {
-                                const cd = allCells[`${cls}::${g}`]
-                                const c = cd?.[`${clsTrack.id}::${period.id}`]?.content
-                                if (!isEmptyContent(c)) { cellContent = c!; cellGrade = g; break }
-                              }
+                            let clsTrack: Track | undefined
+                            for (const g of activeGrades) {
+                              // Try grade-specific track first, then grade-null (shared) track
+                              const t = tracks.find(t => t.english_class === cls && t.name === trackName && t.grade === g)
+                                || tracks.find(t => t.english_class === cls && t.name === trackName && !t.grade)
+                              if (!t) continue
+                              const cd = allCells[`${cls}::${g}`]
+                              const c = cd?.[`${t.id}::${period.id}`]?.content
+                              if (!isEmptyContent(c)) { cellContent = c!; cellGrade = g; clsTrack = t; break }
+                              if (!clsTrack) clsTrack = t // keep reference even if empty
                             }
 
                             const headings = cellContent ? extractHeadings(cellContent) : []
@@ -744,7 +748,8 @@ export default function YearlyPlanView() {
               <div className="flex-1 overflow-y-auto">
                 <div className="grid divide-x divide-border" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
                   {selectedArr.map(cls => {
-                    const clsTrack = tracks.find(t => t.english_class === cls && t.name === compareModal.trackName)
+                    const clsTrack = tracks.find(t => t.english_class === cls && t.name === compareModal.trackName && t.grade === compareModal.grade)
+                      || tracks.find(t => t.english_class === cls && t.name === compareModal.trackName && !t.grade)
                     const cellData = allCells[`${cls}::${compareModal.grade}`]
                     const cell = clsTrack ? cellData?.[`${clsTrack.id}::${compareModal.periodId}`] : undefined
                     const content = cell?.content || ''
