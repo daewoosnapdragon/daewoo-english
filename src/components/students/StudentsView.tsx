@@ -2122,7 +2122,7 @@ function ScaffoldsTab({ studentId }: { studentId: string }) {
 
   // Determine primary WIDA level for suggestions
   const widaVals = Object.values(widaLevels).filter(v => v > 0)
-  const avgWida = widaVals.length > 0 ? Math.round(widaVals.reduce((a, b) => a + b, 0) / widaVals.length) : null
+  const avgWida = widaVals.length > 0 ? Math.floor(widaVals.reduce((a, b) => a + b, 0) / widaVals.length) : null
   const suggestions = avgWida ? (SUGGESTED_SCAFFOLDS[avgWida] || []) : []
   const activeTexts = new Set(scaffolds.map(s => s.scaffold_text))
 

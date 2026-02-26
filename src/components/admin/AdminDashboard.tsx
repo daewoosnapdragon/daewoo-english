@@ -110,13 +110,13 @@ export default function AdminDashboard() {
       })
       const widaMap: Record<string, number> = {}
       Object.entries(widaByStudentDomain).forEach(([sid, levels]) => {
-        widaMap[sid] = levels.reduce((a, b) => a + b, 0) / levels.length
+        widaMap[sid] = Math.floor((levels.reduce((a, b) => a + b, 0) / levels.length) * 10) / 10
       })
       const widaByClass: Record<string, Record<number, number>> = {}
       ENGLISH_CLASSES.forEach(c => { widaByClass[c] = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 } })
       students.forEach(s => {
         const lvl = widaMap[s.id]
-        if (lvl && widaByClass[s.english_class]) widaByClass[s.english_class][Math.round(lvl)] = (widaByClass[s.english_class][Math.round(lvl)] || 0) + 1
+        if (lvl && widaByClass[s.english_class]) widaByClass[s.english_class][Math.floor(lvl)] = (widaByClass[s.english_class][Math.floor(lvl)] || 0) + 1
       })
 
       // --- Grade averages by class ---
@@ -860,7 +860,7 @@ function WIDACorrelationTab({ data, ko }: { data: any; ko: boolean }) {
           </tr></thead>
           <tbody>{ENGLISH_CLASSES.map((cls: string) => {
             const classStudents = scatterData.filter(s => s.cls === cls)
-            const avgWida = classStudents.length > 0 ? classStudents.reduce((a: number, b: any) => a + b.wida, 0) / classStudents.length : null
+            const avgWida = classStudents.length > 0 ? Math.floor((classStudents.reduce((a: number, b: any) => a + b.wida, 0) / classStudents.length) * 10) / 10 : null
             const withCwpm = classStudents.filter(s => s.cwpm != null)
             const avgCwpm = withCwpm.length > 0 ? withCwpm.reduce((a: number, b: any) => a + b.cwpm, 0) / withCwpm.length : null
             return (

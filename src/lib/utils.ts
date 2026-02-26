@@ -50,7 +50,7 @@ const DEFAULT_SCALE: GradingScaleEntry[] = [
 
 export function percentToLetter(pct: number, scale?: GradingScaleEntry[]): string {
   const s = scale || DEFAULT_SCALE
-  const p = Math.round(pct * 100)
+  const p = Math.round(pct)
   for (const g of s) {
     if (p >= g.min) return g.letter
   }

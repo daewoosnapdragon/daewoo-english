@@ -254,7 +254,7 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
               <span>SC Ratio: <strong>{scRatio}</strong></span>
               <span>Time: <strong>{formatTime(elapsed)}</strong></span>
               <span>CWPM: <strong className="text-navy">{cwpm}</strong></span>
-              <span>Accuracy: <strong className={accuracyRate >= 95 ? 'text-green-600' : accuracyRate >= 90 ? 'text-amber-600' : 'text-red-600'}>{accuracyRate}%</strong></span>
+              <span>Accuracy: <strong className={accuracyRate >= 96 ? 'text-green-600' : accuracyRate >= 90 ? 'text-amber-600' : 'text-red-600'}>{accuracyRate}%</strong></span>
             </div>
             <button onClick={handleComplete}
               className="px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-navy text-white hover:bg-navy-dark transition-all">

@@ -51,8 +51,8 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
 
   // WIDA summary
   const widaVals = data ? Object.values(data.wida).filter(v => v > 0) : []
-  const widaAvg = widaVals.length > 0 ? Math.round((widaVals.reduce((a, b) => a + b, 0) / widaVals.length) * 10) / 10 : null
-  const widaInfo = widaAvg ? WIDA_LEVELS.find(w => w.level === Math.round(widaAvg)) : null
+  const widaAvg = widaVals.length > 0 ? Math.floor((widaVals.reduce((a, b) => a + b, 0) / widaVals.length) * 10) / 10 : null
+  const widaInfo = widaAvg ? WIDA_LEVELS.find(w => w.level === Math.floor(widaAvg)) : null
   const domainLabels: Record<string, string> = { listening: 'L', speaking: 'S', reading: 'R', writing: 'W' }
 
   // Reading trend

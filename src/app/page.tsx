@@ -19,8 +19,7 @@ import CurriculumView from '@/components/curriculum/CurriculumView'
 import TeacherGuidesView from '@/components/guides/TeacherGuidesView'
 import LessonPlanView from '@/components/lessons/LessonPlanView'
 import AdminDashboard from '@/components/admin/AdminDashboard'
-import MeetingNotesView from '@/components/meetings/MeetingNotesView'
-import SemesterChecklistView from '@/components/checklist/SemesterChecklistView'
+
 import { Loader2 } from 'lucide-react'
 
 export default function Home() {
@@ -91,8 +90,7 @@ export default function Home() {
       case 'teacherGuides': return <TeacherGuidesView />
       case 'lessonPlans': return <LessonPlanView />
       case 'adminDashboard': return <AdminDashboard />
-      case 'meetingNotes': return <MeetingNotesView />
-      case 'semesterChecklist': return <SemesterChecklistView />
+
       case 'settings': return <SettingsView />
       default: return <DashboardView />
     }

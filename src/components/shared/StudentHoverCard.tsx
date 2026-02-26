@@ -117,8 +117,8 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
   }, [show])
 
   const widaVals = data?.wida ? Object.values(data.wida).filter((v): v is number => v != null && v > 0) : []
-  const widaAvg = widaVals.length > 0 ? Math.round((widaVals.reduce((a, b) => a + b, 0) / widaVals.length) * 10) / 10 : null
-  const widaRounded = widaAvg != null ? Math.round(widaAvg) : null
+  const widaAvg = widaVals.length > 0 ? Math.floor((widaVals.reduce((a, b) => a + b, 0) / widaVals.length) * 10) / 10 : null
+  const widaRounded = widaAvg != null ? Math.floor(widaAvg) : null
   const widaInfo = widaRounded ? WIDA_LEVELS.find(w => w.level === widaRounded) : null
 
   const readingTrend = data?.reading && data.reading.length >= 2

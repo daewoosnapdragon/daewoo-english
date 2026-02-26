@@ -363,7 +363,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const widaMap: Record<string, number> = {}
     widaLevels.forEach((w: any) => { widaMap[w.domain] = w.wida_level })
     const widaVals = Object.values(widaMap).filter(v => v > 0)
-    const widaAvg = widaVals.length > 0 ? Math.round((widaVals.reduce((a, b) => a + b, 0) / widaVals.length) * 10) / 10 : null
+    const widaAvg = widaVals.length > 0 ? Math.floor((widaVals.reduce((a, b) => a + b, 0) / widaVals.length) * 10) / 10 : null
     const WIDA_NAMES: Record<number, string> = { 1: 'Entering', 2: 'Emerging', 3: 'Developing', 4: 'Expanding', 5: 'Bridging', 6: 'Reaching' }
 
     // Reading
@@ -408,7 +408,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
     // WIDA context
     if (widaAvg != null) {
-      const widaRounded = Math.round(widaAvg)
+      const widaRounded = Math.floor(widaAvg)
       const widaName = WIDA_NAMES[widaRounded] || ''
       if (widaRounded <= 2) {
         parts.push(`As a WIDA Level ${widaRounded} (${widaName}) English learner, ${name} benefits from visual supports, sentence frames, and vocabulary pre-teaching.`)
@@ -675,7 +675,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const readingHtml = r ? `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Words Per Minute</div><div style="font-size:20px;font-weight:800;color:#1e3a5f">${r.cwpm != null ? Math.round(r.cwpm) : '—'}</div></div>
-        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Reading Accuracy</div><div style="font-size:20px;font-weight:800;color:${r.accuracy_rate != null ? (r.accuracy_rate >= 95 ? '#16a34a' : r.accuracy_rate >= 90 ? '#d97706' : '#dc2626') : '#94a3b8'}">${r.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '—'}</div></div>
+        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Reading Accuracy</div><div style="font-size:20px;font-weight:800;color:${r.accuracy_rate != null ? (r.accuracy_rate >= 96 ? '#16a34a' : r.accuracy_rate >= 90 ? '#d97706' : '#dc2626') : '#94a3b8'}">${r.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '—'}</div></div>
         <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Lexile</div><div style="font-size:16px;font-weight:700;color:#475569">${r.reading_level || r.passage_level || '—'}</div></div>
         <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Fluency Rating</div><div style="font-size:16px;font-weight:700;color:#475569">${r.naep_fluency ? r.naep_fluency + ' of 4' : '—'}</div></div>
       </div>` : '<div style="background:#f8f5f1;border:1px solid #e8e0d8;border-radius:8px;padding:14px;text-align:center;font-size:11px;color:#94a3b8">No reading assessments recorded yet.</div>'
@@ -957,7 +957,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                     </div>
                     <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
                       <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Reading Accuracy</div>
-                      <div className={`text-[22px] font-extrabold leading-none ${d.latestReading.accuracy_rate != null ? (d.latestReading.accuracy_rate >= 95 ? 'text-green-600' : d.latestReading.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-500') : 'text-[#94a3b8]'}`}>
+                      <div className={`text-[22px] font-extrabold leading-none ${d.latestReading.accuracy_rate != null ? (d.latestReading.accuracy_rate >= 96 ? 'text-green-600' : d.latestReading.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-500') : 'text-[#94a3b8]'}`}>
                         {d.latestReading.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '—'}
                       </div>
                     </div>

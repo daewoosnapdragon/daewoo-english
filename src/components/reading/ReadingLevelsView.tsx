@@ -532,7 +532,7 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
           {(previewCwpm != null || previewAcc != null) && (
             <div className="flex gap-4 p-3 bg-accent-light rounded-lg text-[12px]">
               {previewCwpm != null && <span>CWPM: <b className="text-navy">{Math.round(previewCwpm)}</b></span>}
-              {previewAcc != null && <span>Accuracy: <b className={previewAcc >= 95 ? 'text-green-600' : previewAcc >= 90 ? 'text-amber-600' : 'text-red-600'}>{previewAcc.toFixed(1)}%</b></span>}
+              {previewAcc != null && <span>Accuracy: <b className={previewAcc >= 96 ? 'text-green-600' : previewAcc >= 90 ? 'text-amber-600' : 'text-red-600'}>{previewAcc.toFixed(1)}%</b></span>}
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
@@ -588,7 +588,7 @@ function CwpmLineChart({ records, classBench }: { records: any[]; classBench: an
   const step = maxY <= 50 ? 10 : maxY <= 100 ? 20 : maxY <= 200 ? 25 : 50
   for (let v = 0; v <= maxY; v += step) yTicks.push(v)
 
-  const dotColor = (acc: number) => acc >= 95 ? '#22C55E' : acc >= 90 ? '#F59E0B' : '#EF4444'
+  const dotColor = (acc: number) => acc >= 96 ? '#22C55E' : acc >= 90 ? '#F59E0B' : '#EF4444'
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 240 }}>
@@ -1130,8 +1130,8 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                 <div><span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">CWPM</span>
                   <p className="text-2xl font-display font-bold text-navy">{Math.round(cwpm)}</p></div>
                 <div><span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Accuracy</span>
-                  <p className={`text-2xl font-display font-bold ${accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{accuracy.toFixed(1)}%</p>
-                  <p className="text-[9px] text-text-tertiary">{accuracy >= 97 ? 'Easy — move up' : accuracy >= 95 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration — move down'}</p></div>
+                  <p className={`text-2xl font-display font-bold ${accuracy >= 96 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{accuracy.toFixed(1)}%</p>
+                  <p className="text-[9px] text-text-tertiary">{accuracy >= 96 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration'}</p></div>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
@@ -1199,7 +1199,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.err} onChange={e => setBatchField(s.id, 'err', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.sc} onChange={e => setBatchField(s.id, 'sc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
                       <td className="py-1.5 px-1 text-center text-[12px] font-bold text-navy">{filled ? bCwpm : ''}</td>
-                      <td className={`py-1.5 px-1 text-center text-[12px] font-bold ${bAcc >= 95 ? 'text-green-600' : bAcc >= 90 ? 'text-amber-600' : filled ? 'text-red-600' : ''}`}>{filled ? `${bAcc}%` : ''}</td>
+                      <td className={`py-1.5 px-1 text-center text-[12px] font-bold ${bAcc >= 96 ? 'text-green-600' : bAcc >= 90 ? 'text-amber-600' : filled ? 'text-red-600' : ''}`}>{filled ? `${bAcc}%` : ''}</td>
                       <td className="py-1.5 px-1"><select value={b.naep || ''} onChange={e => setBatchField(s.id, 'naep', e.target.value)} className="w-full text-center px-0.5 py-1 border border-border rounded text-[11px] outline-none focus:border-navy bg-surface">
                         <option value="">--</option>
                         <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
@@ -1354,7 +1354,7 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
                 </div>
                 <div className="flex items-center gap-5 shrink-0 text-[11px]">
                   <div className="text-center"><span className="text-[16px] font-bold text-navy block">{item.avgCwpm}</span><span className="text-text-tertiary text-[9px]">avg CWPM</span></div>
-                  <div className="text-center"><span className={`text-[16px] font-bold block ${item.avgAcc >= 95 ? 'text-green-600' : item.avgAcc >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{item.avgAcc}%</span><span className="text-text-tertiary text-[9px]">avg Acc</span></div>
+                  <div className="text-center"><span className={`text-[16px] font-bold block ${item.avgAcc >= 96 ? 'text-green-600' : item.avgAcc >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{item.avgAcc}%</span><span className="text-text-tertiary text-[9px]">avg Acc</span></div>
                   {/* Progress bar */}
                   <div className="w-20">
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -1392,7 +1392,7 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
                             <td className="px-2 py-2 text-center text-text-secondary">{r.time_seconds ? `${Math.floor(r.time_seconds / 60)}:${String(r.time_seconds % 60).padStart(2, '0')}` : '—'}</td>
                             <td className="px-2 py-2 text-center text-red-600 font-medium">{r.errors ?? '—'}</td>
                             <td className="px-2 py-2 text-center font-bold text-navy">{r.cwpm ?? '—'}</td>
-                            <td className={`px-2 py-2 text-center font-medium ${(r.accuracy_rate || 0) >= 95 ? 'text-green-600' : (r.accuracy_rate || 0) >= 90 ? 'text-amber-600' : 'text-red-600'}`}>
+                            <td className={`px-2 py-2 text-center font-medium ${(r.accuracy_rate || 0) >= 96 ? 'text-green-600' : (r.accuracy_rate || 0) >= 90 ? 'text-amber-600' : 'text-red-600'}`}>
                               {r.accuracy_rate != null ? `${r.accuracy_rate}%` : '—'}
                             </td>
                             <td className="px-2 py-2 text-center text-text-secondary">{r.naep_fluency || '—'}</td>
