@@ -119,10 +119,19 @@ export default function YearlyPlanView() {
   }
   const [addingTrack, setAddingTrack] = useState(false)
   const [newTrackName, setNewTrackName] = useState('')
+  // Swimlane state
+  const [collapsedTracks, setCollapsedTracks] = useState<Set<string>>(new Set())
+  const [compareModal, setCompareModal] = useState<{ trackName: string; periodId: string; periodName: string; grade: Grade } | null>(null)
+  const [compareClasses, setCompareClasses] = useState<Set<EnglishClass>>(new Set())
   const [renamingTrack, setRenamingTrack] = useState<string | null>(null)
   const [renameText, setRenameText] = useState('')
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
+  const isEmptyContent = (c?: string) => {
+    if (!c) return true
+    const t = c.trim()
+    return !t || t === '-' || t === '--' || t === '—' || t === '---' || t === '***' || t === '___'
+  }
 
   // Drag-to-reorder state for tracks
   const dragTrack = useRef<string | null>(null)
@@ -391,7 +400,7 @@ export default function YearlyPlanView() {
           <>
             <div className="flex gap-1">
               <button onClick={() => setProgClass('all')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${progClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All Classes</button>
-              {ENGLISH_CLASSES.map(c => (
+              {ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(c => (
                 <button key={c} onClick={() => setProgClass(c)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${progClass === c ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`}
                   style={progClass === c ? { backgroundColor: classToColor(c), color: classToTextColor(c) } : {}}>{c}</button>
               ))}
@@ -534,79 +543,197 @@ export default function YearlyPlanView() {
         </div>
       )}
 
-      {/* PROGRAM VIEW -- one row per grade per track for equal spacing */}
-      {viewMode === 'program' && (
-        <div className="space-y-8">
-          {progClasses.map(cls => {
-            const clsTracks = tracks.filter(t => t.english_class === cls)
-            if (clsTracks.length === 0) return null
-            return (
-              <div key={cls}>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex px-3 py-1 rounded-lg text-[12px] font-bold" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>{cls}</span>
-                  {progGrade === 'all' && <span className="text-[10px] text-text-tertiary">Grades {progGrades.join(', ')}</span>}
-                </div>
-                <div className="bg-surface border border-border rounded-xl overflow-auto">
-                  <table className="w-full table-fixed min-w-[900px]">
-                    <colgroup>
-                      <col style={{ width: '120px' }} />
-                      {progGrade === 'all' && <col style={{ width: '40px' }} />}
-                      {periods.map(p => <col key={p.id} />)}
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold bg-surface-alt border-b border-border">Track</th>
-                        {progGrade === 'all' && <th className="text-center px-1 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold bg-surface-alt border-b border-border">Gr</th>}
-                        {periods.map(p => <th key={p.id} className="text-center px-3 py-2.5 text-[11px] font-bold border-b border-border" style={{ backgroundColor: p.color, color: '#1B2A4A' }}>{p.name}</th>)}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {clsTracks.map(track => {
-                        // Filter to only grades that have content for this track
-                        const gradesWithContent = progGrades.filter(g => {
-                          const cellData = allCells[`${cls}::${g}`]
-                          return periods.some(p => cellData?.[`${track.id}::${p.id}`]?.content)
-                        })
-                        if (gradesWithContent.length === 0) return null
-                        return gradesWithContent.map((g, gi) => {
-                          const cellData = allCells[`${cls}::${g}`]
-                          return (
-                            <tr key={`${track.id}-${g}`} className={`${gi === 0 ? 'border-t-2 border-border' : 'border-t border-border/30'}`}>
-                              {gi === 0 && (
-                                <td rowSpan={gradesWithContent.length} className="px-3 py-2.5 text-[11px] font-semibold text-navy align-middle bg-surface-alt/20 border-r border-border break-words">
-                                  {track.name}
-                                </td>
-                              )}
-                              {progGrade === 'all' && (
-                                <td className="px-1 py-2 text-center text-[10px] font-bold text-navy border-r border-border/30">
-                                  G{g}
-                                </td>
-                              )}
-                              {periods.map(period => {
-                                const periodCell = cellData?.[`${track.id}::${period.id}`]
-                                return (
-                                  <td key={period.id} className="px-2 py-1.5 border-l border-border/30 align-top">
-                                    {periodCell?.content ? (
-                                      <div className="text-[10px] leading-snug text-text-primary max-h-[120px] overflow-y-auto break-words whitespace-pre-wrap"
-                                        dangerouslySetInnerHTML={{ __html: renderCellContent(periodCell.content) }} />
+      {/* PROGRAM VIEW — Swimlane: subjects as rows, classes as columns, periods as sub-rows */}
+      {viewMode === 'program' && (() => {
+        // Gather all unique track names across selected classes
+        const activeClasses = progClass === 'all' ? ENGLISH_CLASSES.filter(c => c !== 'Unplaced') : [progClass]
+        const activeGrades = progGrade === 'all' ? GRADES : [progGrade]
+        
+        // Group tracks by name across classes
+        const trackNameSet = new Set<string>()
+        activeClasses.forEach(cls => {
+          tracks.filter(t => t.english_class === cls).forEach(t => trackNameSet.add(t.name))
+        })
+        const trackNames = Array.from(trackNameSet)
+
+        // For each track name, check if ANY class has content for it
+        const visibleTrackNames = trackNames.filter(name => {
+          return activeClasses.some(cls => {
+            const clsTracks = tracks.filter(t => t.english_class === cls && t.name === name)
+            return activeGrades.some(g => {
+              const cellData = allCells[`${cls}::${g}`]
+              return clsTracks.some(t => periods.some(p => !isEmptyContent(cellData?.[`${t.id}::${p.id}`]?.content)))
+            })
+          })
+        })
+
+        const toggleCollapse = (name: string) => setCollapsedTracks(prev => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })
+
+        const openCompare = (trackName: string, periodId: string, periodName: string, grade: Grade, cls: EnglishClass) => {
+          setCompareClasses(new Set([cls]))
+          setCompareModal({ trackName, periodId, periodName, grade })
+        }
+
+        const toggleCompareClass = (cls: EnglishClass) => {
+          setCompareClasses(prev => { const n = new Set(prev); n.has(cls) ? n.delete(cls) : n.add(cls); return n })
+        }
+
+        const gridCols = `80px repeat(${activeClasses.length}, 1fr)`
+
+        return (
+          <div className="space-y-3">
+            {/* Sticky class headers */}
+            <div className="sticky top-0 z-10 bg-bg pt-1 pb-2">
+              <div className="grid gap-1.5" style={{ gridTemplateColumns: gridCols }}>
+                <div />
+                {activeClasses.map(cls => (
+                  <div key={cls} className="text-center py-2 rounded-lg text-[11px] font-bold" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>{cls}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* Subject swimlanes */}
+            {visibleTrackNames.map(trackName => {
+              const isCollapsed = collapsedTracks.has(trackName)
+              return (
+                <div key={trackName} className="bg-surface border border-border rounded-xl overflow-hidden">
+                  {/* Subject header — collapsible */}
+                  <button onClick={() => toggleCollapse(trackName)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 bg-navy text-white hover:bg-navy-dark transition-colors">
+                    <h3 className="font-display text-[13px] font-bold">{trackName}</h3>
+                    <ChevronDown size={14} className={`opacity-60 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                  </button>
+
+                  {!isCollapsed && (
+                    <div>
+                      {/* Period sub-rows */}
+                      {periods.map((period, pi) => (
+                        <div key={period.id} className={`grid ${pi > 0 ? 'border-t border-border/50' : ''}`} style={{ gridTemplateColumns: gridCols }}>
+                          {/* Period label */}
+                          <div className="flex items-start justify-center px-2 py-2.5 text-[9px] font-bold text-text-tertiary uppercase tracking-wider bg-surface-alt/50 border-r border-border/30">
+                            {period.name}
+                          </div>
+                          {/* Class cells */}
+                          {activeClasses.map(cls => {
+                            // Find the track for THIS class with this name
+                            const clsTrack = tracks.find(t => t.english_class === cls && t.name === trackName)
+                            // Get best grade match
+                            let cellContent = ''
+                            let cellGrade: Grade = activeGrades[0]
+                            if (clsTrack) {
+                              for (const g of activeGrades) {
+                                const cd = allCells[`${cls}::${g}`]
+                                const c = cd?.[`${clsTrack.id}::${period.id}`]?.content
+                                if (!isEmptyContent(c)) { cellContent = c!; cellGrade = g; break }
+                              }
+                            }
+
+                            const headings = cellContent ? extractHeadings(cellContent) : []
+                            const hasMore = cellContent ? hasDetail(cellContent) : false
+                            const classColors: Record<string, string> = {
+                              Lily: '#FEF3F3', Camellia: '#FFF8F0', Daisy: '#FFFDE8',
+                              Sunflower: '#F0FAF0', Marigold: '#F0F5FA', Snapdragon: '#F5F0FA',
+                            }
+                            
+                            return (
+                              <div key={cls}
+                                className={`px-2.5 py-2 border-r border-border/20 last:border-r-0 min-h-[52px] cursor-pointer transition-all hover:brightness-[0.97] group/cell relative`}
+                                style={{ backgroundColor: cellContent ? (classColors[cls] || '#FAFAFA') : 'transparent' }}
+                                onClick={() => { if (cellContent && clsTrack) openCompare(trackName, period.id, period.name, cellGrade, cls) }}>
+                                {cellContent ? (
+                                  <>
+                                    {headings.length > 0 ? (
+                                      <div className="space-y-0.5">
+                                        {headings.slice(0, 3).map((h, i) => (
+                                          <p key={i} className={`leading-snug ${h.isTitle ? 'text-[11px] font-extrabold text-navy' : 'text-[10px] font-semibold text-navy/80'}`}>{h.text}</p>
+                                        ))}
+                                        {(hasMore || headings.length > 3) && <span className="text-[9px] text-text-tertiary">···</span>}
+                                      </div>
                                     ) : (
-                                      <span className="text-text-tertiary/30 text-[9px]">—</span>
+                                      <p className="text-[10px] text-text-secondary leading-snug line-clamp-3">{cellContent.replace(/\*\*/g, '').replace(/^- /gm, '• ').slice(0, 80)}</p>
                                     )}
-                                  </td>
-                                )
-                              })}
-                            </tr>
-                          )
-                        })
-                      })}
-                    </tbody>
-                  </table>
+                                    <span className="absolute top-1 right-1 opacity-0 group-hover/cell:opacity-100 transition-opacity text-[8px] text-text-tertiary bg-white/80 px-1 rounded border border-border/50">⤢</span>
+                                  </>
+                                ) : (
+                                  <span className="text-[10px] text-text-tertiary/30">—</span>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
+
+      {/* ─── Compare Modal ─── */}
+      {compareModal && (() => {
+        const activeClasses = progClass === 'all' ? ENGLISH_CLASSES.filter(c => c !== 'Unplaced') : [progClass]
+        const selectedArr = activeClasses.filter(c => compareClasses.has(c))
+        const cols = Math.max(selectedArr.length, 1)
+
+        return (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setCompareModal(null)}>
+            <div className="bg-surface rounded-2xl shadow-xl w-full max-w-[900px] max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h2 className="font-display text-[16px] font-semibold text-navy">{compareModal.trackName}</h2>
+                  <span className="text-[10px] font-bold text-text-secondary bg-surface-alt px-2.5 py-1 rounded-md">{compareModal.periodName}</span>
+                  <span className="text-[10px] text-text-tertiary">Grade {compareModal.grade}</span>
+                </div>
+                <button onClick={() => setCompareModal(null)} className="p-2 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+              </div>
+
+              {/* Class selector bar */}
+              <div className="px-6 py-3 border-b border-border bg-surface-alt/30 flex items-center gap-2 flex-wrap">
+                <span className="text-[9px] font-bold text-text-tertiary uppercase tracking-wider">Compare:</span>
+                {activeClasses.map(cls => (
+                  <button key={cls} onClick={() => toggleCompareClass(cls)}
+                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${compareClasses.has(cls) ? 'ring-2 ring-navy shadow-sm' : 'opacity-60 hover:opacity-80'}`}
+                    style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>
+                    {cls}
+                  </button>
+                ))}
+              </div>
+
+              {/* Compare columns */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="grid divide-x divide-border" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+                  {selectedArr.map(cls => {
+                    const clsTrack = tracks.find(t => t.english_class === cls && t.name === compareModal.trackName)
+                    const cellData = allCells[`${cls}::${compareModal.grade}`]
+                    const cell = clsTrack ? cellData?.[`${clsTrack.id}::${compareModal.periodId}`] : undefined
+                    const content = cell?.content || ''
+
+                    return (
+                      <div key={cls} className="p-5">
+                        <div className="flex items-center gap-2 mb-4 pb-3 border-b-2 border-border">
+                          <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>{cls}</span>
+                          <span className="text-[10px] text-text-tertiary font-medium">Gr {compareModal.grade}</span>
+                        </div>
+                        {content ? (
+                          <div className="text-[12px] leading-relaxed text-text-primary break-words" dangerouslySetInnerHTML={{ __html: renderCellContent(content) }} />
+                        ) : (
+                          <p className="text-[12px] text-text-tertiary italic">No content</p>
+                        )}
+                      </div>
+                    )
+                  })}
+                  {selectedArr.length === 0 && (
+                    <div className="p-8 text-center text-[13px] text-text-tertiary col-span-full">Click a class above to compare</div>
+                  )}
                 </div>
               </div>
-            )
-          })}
-        </div>
-      )}
+            </div>
+          </div>
+        )
+      })()}
       {/* HOVER POPOVER — full content preview */}
       {popover && !editModal && (() => {
         const [trackId, periodId] = popover.key.split('::')
