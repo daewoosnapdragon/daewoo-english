@@ -668,7 +668,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
 
                 {/* Weekly Homework */}
                 <div className="flex items-center gap-3 pt-2">
-                  <label className="text-[11px] font-bold text-amber-700 w-[72px] text-right shrink-0">Weekly HW</label>
+                  <label className="text-[11px] font-bold text-gray-800 w-[72px] text-right shrink-0">Weekly HW</label>
                   <input
                     value={weeklyHomework[getMondayOf(editDate)] || ''}
                     onChange={e => updateHomework(getMondayOf(editDate), e.target.value)}
@@ -704,7 +704,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   )
 }
 
-const SUBJECT_OPTIONS = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Grammar', 'Vocabulary', 'Spelling', 'Listening', 'Review']
+const SUBJECT_OPTIONS = ['Reading', 'Into Reading', 'Phonics', 'Writing', 'Speaking', 'Grammar', 'Vocabulary', 'Spelling', 'Listening', 'Review', 'Thumbs Up']
 
 function SubjectLabelRow({ label, content, onLabelChange, onContentChange, onRemove, autoFocus, onNavigateDay }: {
   label: string; content: string
