@@ -370,22 +370,55 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
 
     // ── TWO-PASS UPDATE to avoid unique constraint collisions ──
     // The unique constraint is (grade, korean_class, class_number).
-    // When students change grade/class/number, updating one-by-one can collide
-    // with students who haven't been updated yet. Fix: clear all slots first,
-    // then write final values.
+    // We need to clear ALL potential collision slots — not just students in
+    // this upload, but any student who currently sits in a slot we need.
     
     const updates = toProcess.filter(r => r.action === 'update' && r.existing)
     const adds = toProcess.filter(r => r.action === 'add')
 
-    // Pass 1: Temporarily set class_number to negative values to free all slots
-    if (updates.length > 0) {
-      const ids = updates.map(r => r.existing!.id)
-      // Batch clear — set class_number to -(index+1) so they're all unique but impossible
-      for (let i = 0; i < ids.length; i += 50) {
-        const batch = ids.slice(i, i + 50)
-        for (let j = 0; j < batch.length; j++) {
-          await supabase.from('students').update({ class_number: -(i + j + 1) }).eq('id', batch[j])
+    // Collect all target slots we need to write to
+    const targetSlots = [...updates, ...adds].map(r => ({
+      grade: r.parsed.grade,
+      korean_class: r.parsed.korean_class,
+      class_number: r.parsed.class_number,
+    }))
+
+    // Pass 1: Clear slots — for students being updated, set class_number negative
+    // Also find and temporarily displace any OTHER students sitting in target slots
+    if (updates.length > 0 || adds.length > 0) {
+      // IDs of students we're updating (they'll all get new values in Pass 2)
+      const updateIds = new Set(updates.map(r => r.existing!.id))
+      
+      // Find other students occupying our target slots
+      const grades = [...new Set(targetSlots.map(s => s.grade))]
+      const { data: potentialBlockers } = await supabase
+        .from('students')
+        .select('id, grade, korean_class, class_number')
+        .eq('is_active', true)
+        .in('grade', grades)
+      
+      const blockerIds: string[] = []
+      if (potentialBlockers) {
+        for (const blocker of potentialBlockers) {
+          if (updateIds.has(blocker.id)) continue // we'll handle these below
+          // Check if this student sits in a slot we need
+          const isBlocking = targetSlots.some(t =>
+            t.grade === blocker.grade && t.korean_class === blocker.korean_class && t.class_number === blocker.class_number
+          )
+          if (isBlocking) blockerIds.push(blocker.id)
         }
+      }
+
+      // Temporarily displace blockers to class_number = -(original_number + 1000)
+      for (const bid of blockerIds) {
+        const b = potentialBlockers!.find(p => p.id === bid)!
+        await supabase.from('students').update({ class_number: -(b.class_number + 1000) }).eq('id', bid)
+      }
+
+      // Temporarily displace all students being updated
+      const ids = updates.map(r => r.existing!.id)
+      for (let i = 0; i < ids.length; i++) {
+        await supabase.from('students').update({ class_number: -(i + 1) }).eq('id', ids[i])
       }
     }
 
@@ -436,6 +469,24 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
       }
       done++
       setProgress({ done, total: totalOps, errors: [...errors] })
+    }
+
+    // Pass 4: Restore any displaced blockers that weren't overwritten
+    // (students who were temporarily moved to negative numbers but aren't in this upload)
+    const { data: stillNegative } = await supabase
+      .from('students')
+      .select('id, class_number')
+      .eq('is_active', true)
+      .lt('class_number', 0)
+    if (stillNegative && stillNegative.length > 0) {
+      for (const s of stillNegative) {
+        // Restore: -(original + 1000) → original
+        const original = s.class_number <= -1000 ? -(s.class_number + 1000) : -s.class_number
+        await supabase.from('students').update({ class_number: original }).eq('id', s.id)
+      }
+      if (stillNegative.length > 0) {
+        errors.push(`Note: ${stillNegative.length} student(s) had slot conflicts and were restored to original numbers. Re-upload their class files to fix.`)
+      }
     }
 
     // Flag skipped students as needs_review so teacher can find them later
