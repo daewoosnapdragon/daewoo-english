@@ -9,16 +9,23 @@ import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, Ale
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
-import OralTestGrades2to5 from '@/components/leveling/OralTestGrades2to5'
+import OralTestGrades2to5 from '@/components/leveling/OralTestEntry25'
+import WrittenTestEntry from '@/components/leveling/WrittenTestEntry'
 import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
 import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
-type Phase = 'setup' | 'scores' | 'anecdotal' | 'results' | 'meeting'
+type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'meeting'
 
 // Written MC total — update here when test format changes
-const WRITTEN_MC_TOTAL = 21
+// Written MC total varies by grade: G2=25, G3=21, G4=28, G5=20
+function getWrittenMcTotal(grade: number | string): number {
+  const g = Number(grade)
+  if (g === 2) return 25; if (g === 3) return 21; if (g === 4) return 28; if (g === 5) return 20
+  return 21 // fallback
+}
+const WRITTEN_MC_TOTAL = 21 // default for backward compat, use getWrittenMcTotal() where grade is known
 
 const DIMS = [
   { key: 'receptive_language', label: 'Receptive Language', desc: 'Listening & reading for their class level',
@@ -97,15 +104,16 @@ export default function LevelingView() {
         {/* Grade 1 Wave 1 (oral only): skip Teacher Ratings. Wave 2 (has written): show all phases. */}
         {(String(selectedTest.grade) === '1'
           ? (['scores', 'results', 'meeting'] as Phase[])
-          : (['scores', 'anecdotal', 'results', 'meeting'] as Phase[])
+          : (['scores', 'written_test', 'anecdotal', 'results', 'meeting'] as Phase[])
         ).map(p => (
           <button key={p} onClick={() => setPhase(p)} className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${phase === p ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface'}`}>
-            {p === 'scores' ? 'Test Scores' : p === 'anecdotal' ? 'Teacher Ratings' : p === 'results' ? 'Results' : 'Leveling Meeting'}
+            {p === 'scores' ? 'Oral Test' : p === 'written_test' ? 'Written Test' : p === 'anecdotal' ? 'Teacher Ratings' : p === 'results' ? 'Results' : 'Leveling Meeting'}
           </button>
         ))}
         <span className={`ml-auto text-[10px] font-bold px-2 py-1 rounded-full ${selectedTest.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{selectedTest.status.toUpperCase()}</span>
       </div>
-      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} onContinue={() => setPhase('anecdotal')} />}
+      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} onContinue={() => setPhase('written_test')} />}
+      {phase === 'written_test' && <WrittenTestPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />}
       {phase === 'anecdotal' && <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />}
       {phase === 'results' && <ResultsPhase levelTest={selectedTest} />}
       {phase === 'meeting' && <MeetingPhase levelTest={selectedTest} onFinalize={() => {
@@ -280,6 +288,16 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin, onContinue }: { lev
 
   // Fallback generic scoring
   return <GenericScoreEntry levelTest={levelTest} teacherClass={teacherClass} isAdmin={isAdmin} onContinue={onContinue} />
+}
+
+// ─── Written Test Phase ──────────────────────────────────────────────
+
+function WrittenTestPhase({ levelTest, teacherClass, isAdmin }: { levelTest: LevelTest; teacherClass: EnglishClass | null; isAdmin: boolean }) {
+  const gradeNum = Number(levelTest.grade)
+  if (gradeNum >= 2 && gradeNum <= 5) {
+    return <WrittenTestEntry levelTest={levelTest} isAdmin={isAdmin} teacherClass={teacherClass} />
+  }
+  return <div className="p-12 text-center text-text-tertiary">Written test entry not available for Grade {levelTest.grade}.</div>
 }
 
 function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { levelTest: LevelTest; teacherClass: EnglishClass | null; isAdmin: boolean; onContinue: () => void }) {
