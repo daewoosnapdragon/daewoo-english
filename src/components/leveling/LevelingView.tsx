@@ -1417,11 +1417,12 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
 }
 
 function suggestClass(row: any, idx: number, total: number): EnglishClass {
+  const PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
   if (row.score.word_reading_correct != null && row.score.word_reading_correct < 4) return 'Lily'
   if (row.wrAcc != null && row.wrAcc < 0.1) return 'Lily'
   const p = total > 1 ? idx / (total - 1) : 0.5
-  const bi = Math.min(Math.floor(p / (1 / ENGLISH_CLASSES.length)), ENGLISH_CLASSES.length - 1)
-  return ENGLISH_CLASSES[bi]
+  const bi = Math.min(Math.floor(p / (1 / PLACEMENT_CLASSES.length)), PLACEMENT_CLASSES.length - 1)
+  return PLACEMENT_CLASSES[bi]
 }
 
 function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, w: { test: number; grades: number; anecdotal: number }): Record<string, EnglishClass> {
@@ -1443,12 +1444,13 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
       : ts * 0.80 + as2 * 0.20
   })
   const sorted = students.map(s => ({ id: s.id, m: metrics[s.id] || 0 })).sort((a, b) => a.m - b.m)
+  const PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
   sorted.forEach((item, idx) => {
     const s = students.find(st => st.id === item.id)!; const sc = scores[s.id]?.raw_scores || {}
     if (sc.word_reading_correct != null && sc.word_reading_correct < 4) { result[item.id] = 'Lily'; return }
     if (sc.word_reading_correct != null && sc.word_reading_attempted > 0 && sc.word_reading_correct / sc.word_reading_attempted < 0.1) { result[item.id] = 'Lily'; return }
     const p = sorted.length > 1 ? idx / (sorted.length - 1) : 0.5
-    result[item.id] = ENGLISH_CLASSES[Math.min(Math.floor(p / (1 / ENGLISH_CLASSES.length)), ENGLISH_CLASSES.length - 1)]
+    result[item.id] = PLACEMENT_CLASSES[Math.min(Math.floor(p / (1 / PLACEMENT_CLASSES.length)), PLACEMENT_CLASSES.length - 1)]
   })
   return result
 }
