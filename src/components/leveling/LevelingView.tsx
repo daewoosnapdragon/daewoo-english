@@ -9,6 +9,7 @@ import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, Ale
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
+import OralTestGrades2to5 from '@/components/leveling/OralTestGrades2to5'
 import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
 import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
@@ -262,12 +263,22 @@ function ScoreEntryPhase({ levelTest, teacherClass, isAdmin, onContinue }: { lev
   if (levelTest.grade === 1 || levelTest.grade === '1' as any) {
     return (
       <div>
-        <Grade1ScoreEntry levelTest={levelTest} isAdmin={isAdmin} />
+        <Grade1ScoreEntry levelTest={levelTest} isAdmin={isAdmin} teacherClass={teacherClass} />
       </div>
     )
   }
 
-  // Generic scoring for other grades (until grade-specific modules are built)
+  // Grades 2-5 use the oral test entry with per-student passage reading
+  const gradeNum = Number(levelTest.grade)
+  if (gradeNum >= 2 && gradeNum <= 5) {
+    return (
+      <div>
+        <OralTestGrades2to5 levelTest={levelTest} isAdmin={isAdmin} teacherClass={teacherClass} />
+      </div>
+    )
+  }
+
+  // Fallback generic scoring
   return <GenericScoreEntry levelTest={levelTest} teacherClass={teacherClass} isAdmin={isAdmin} onContinue={onContinue} />
 }
 

@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Plus, X, Loader2, Trash2, Pencil, Check, Minus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Copy, ClipboardPaste, GripVertical } from 'lucide-react'
+import { Plus, X, Loader2, Trash2, Pencil, Check, Minus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Copy, ClipboardPaste, GripVertical, Printer } from 'lucide-react'
 
 interface Period { id: string; name: string; sort_order: number; color: string }
 interface Track { id: string; english_class: string; grade: number | null; name: string; sort_order: number }
@@ -389,6 +389,57 @@ export default function YearlyPlanView() {
 
   if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
+  const handlePrintYearlyPlan = () => {
+    const pw = window.open('', '_blank')
+    if (!pw) return
+
+    const activeTracks = classTracks
+    const cellsToUse = cells
+
+    let rowsHTML = ''
+    activeTracks.forEach(track => {
+      let cellsHTML = ''
+      periods.forEach(period => {
+        const key = `${track.id}::${period.id}`
+        const cell = cellsToUse[key]
+        const content = cell?.content ? renderCellContent(cell.content) : '<span style="color:#cbd5e1">--</span>'
+        cellsHTML += `<td style="border:1px solid #e2e8f0;padding:8px 10px;vertical-align:top;font-size:10px;line-height:1.5">${content}</td>`
+      })
+      rowsHTML += `<tr><td style="border:1px solid #e2e8f0;padding:8px 10px;vertical-align:top;font-size:11px;font-weight:700;color:#1B2A4A;background:#f8fafc;white-space:nowrap">${track.name}</td>${cellsHTML}</tr>`
+    })
+
+    let periodHeaders = ''
+    periods.forEach(p => {
+      periodHeaders += `<th style="text-align:center;padding:8px 6px;font-size:10px;font-weight:700;border:1px solid #e2e8f0;background:${p.color};color:#1B2A4A">${p.name}</th>`
+    })
+
+    pw.document.write(`<!DOCTYPE html><html><head><title>Yearly Plan - ${selectedClass} Grade ${selectedGrade}</title>
+<style>
+  @page { size: landscape; margin: 8mm 10mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .header { background: #1e3a5f; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+  .header::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #C9A84C, #e8d48b, #C9A84C); }
+  .header h1 { font-size: 20px; font-weight: 700; font-family: Georgia, serif; }
+  .header .sub { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+  .header .right { text-align: right; font-size: 11px; opacity: 0.6; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; margin-top: 2px; }
+  .footer { text-align: center; margin-top: 8px; font-size: 8px; color: #94a3b8; letter-spacing: 1px; }
+</style></head><body>
+  <div class="header">
+    <div><h1>${selectedClass} -- Yearly Plan</h1><div class="sub">Grade ${selectedGrade} -- Daewoo Elementary School English Program</div></div>
+    <div class="right">Daewoo Elementary School<br>English Program</div>
+  </div>
+  <table>
+    <tr><th style="text-align:left;padding:8px 10px;font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;background:#f1f5f9;border:1px solid #e2e8f0">Track</th>${periodHeaders}</tr>
+    ${rowsHTML}
+  </table>
+  <div class="footer">Daewoo Elementary School -- English Program -- Yearly Plan</div>
+</body></html>`)
+    pw.document.close()
+    setTimeout(() => pw.print(), 400)
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-5">
@@ -414,6 +465,7 @@ export default function YearlyPlanView() {
             <div className="flex gap-1">
               {GRADES.map(g => <button key={g} onClick={() => setSelectedGrade(g)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Gr {g}</button>)}
             </div>
+            <button onClick={handlePrintYearlyPlan} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border ml-auto"><Printer size={13} /> Print</button>
           </>
         )}
         {viewMode === 'program' && (

@@ -1220,10 +1220,19 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
     if (!pw) { setPrinting(false); return }
 
     pw.document.write(`<html><head><title>Progress Reports - ${cls} Grade ${students[0]?.grade}</title>
-    <style>body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:white}
-    .card{max-width:680px;margin:20px auto;overflow:visible;page-break-after:always;page-break-inside:avoid}
-    .card:last-child{page-break-after:auto}
-    @media print{@page{size:A4;margin:12mm 10mm}.card{margin:0;box-shadow:none;overflow:visible}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>`)
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: white; }
+      .card { max-width: 680px; margin: 0 auto; overflow: visible; page-break-after: always; page-break-inside: avoid; break-after: page; break-inside: avoid; }
+      .card:last-child { page-break-after: auto; break-after: auto; }
+      @media print {
+        @page { size: A4; margin: 12mm 10mm; }
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .card { margin: 0; box-shadow: none; overflow: visible; page-break-after: always; page-break-inside: avoid; break-after: page; break-inside: avoid; }
+        .card:last-child { page-break-after: auto; break-after: auto; }
+      }
+      @media screen { .card { margin: 20px auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; } }
+    </style></head><body>`)
 
     for (const student of students) {
       // Load data for each student
@@ -1300,8 +1309,8 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
 
     pw.document.write('</body></html>')
     pw.document.close()
-    // Small delay to ensure rendering
-    setTimeout(() => { pw.print(); setPrinting(false) }, 500)
+    // Longer delay for batch rendering to ensure all cards are laid out
+    setTimeout(() => { pw.print(); setPrinting(false) }, 800)
   }
 
   return (

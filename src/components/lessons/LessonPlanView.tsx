@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Printer, X, Loader2, Calendar, AlertCircle, CalendarRange, ClipboardList, Save } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Calendar, AlertCircle, CalendarRange, ClipboardList, Save } from 'lucide-react'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 import YearlyPlanView from '@/components/curriculum/YearlyPlanView'
 
@@ -73,6 +73,8 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   const [dayData, setDayData] = useState<Record<string, DayContent>>({})
   const [weeklyHomework, setWeeklyHomework] = useState<Record<string, string>>({}) // keyed by Monday date
   const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }[]>>({})
+  const [printWeeks, setPrintWeeks] = useState<Set<number>>(new Set()) // selected week indices for printing; empty = all
+  const [showPrintOptions, setShowPrintOptions] = useState(false)
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
 
@@ -181,9 +183,18 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
     setDayData(dd)
 
     // Load weekly homework (stored as class_hw entries keyed by Monday date)
+    // Extend range to cover Mondays that might fall in adjacent months
+    // (e.g. a Monday in late March is the hw key for first week shown in April)
+    const hwFirstDay = getMondayOf(firstDay)
+    const hwLastDay = (() => {
+      // Get the Monday of the last day of the month, then add 6 days to cover full week
+      const lastDayDate = new Date(year, month + 1, 0)
+      const mon = getMondayOf(`${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayDate.getDate()).padStart(2, '0')}`)
+      return mon
+    })()
     const hwRes = await supabase.from('parent_calendar').select('date, content')
       .eq('english_class', selectedClass + '_hw').eq('grade', selectedGrade)
-      .gte('date', firstDay).lte('date', lastDay)
+      .gte('date', hwFirstDay).lte('date', hwLastDay)
     const hw: Record<string, string> = {}
     if (hwRes.data) {
       hwRes.data.forEach((row: any) => {
@@ -347,12 +358,16 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   }
 
   // Print full month
-  const handlePrint = () => {
+  const handlePrint = (selectedWeekIndices?: Set<number>) => {
     const pw = window.open('', '_blank'); if (!pw) return
     const mn = MONTH_NAMES[month]
+    const weeksToPrint = selectedWeekIndices && selectedWeekIndices.size > 0
+      ? weeks.filter((_, i) => selectedWeekIndices.has(i))
+      : weeks
+    const isPartial = selectedWeekIndices && selectedWeekIndices.size > 0 && selectedWeekIndices.size < weeks.length
 
     let weeksHTML = ''
-    weeks.forEach(week => {
+    weeksToPrint.forEach(week => {
       const fw: (typeof monthDays[0] | null)[] = [null, null, null, null, null]
       week.forEach(d => { fw[d.dayOfWeek - 1] = d })
 
@@ -420,7 +435,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   .footer { text-align: center; margin-top: 8px; font-size: 8px; color: #94a3b8; letter-spacing: 1px; }
 </style></head><body>
   <div class="header">
-    <div><h1>${selectedClass} -- ${mn} ${year}</h1><div class="sub">Grade ${selectedGrade} -- Daewoo Elementary School English Program</div></div>
+    <div><h1>${selectedClass} -- ${mn} ${year}${isPartial ? ' (Selected Weeks)' : ''}</h1><div class="sub">Grade ${selectedGrade} -- Daewoo Elementary School English Program</div></div>
     <div class="right">Daewoo Elementary School<br>English Program</div>
   </div>
   <table>
@@ -464,7 +479,40 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
             <p className="text-[13px] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print Month</button>
+            <div className="relative">
+              <div className="flex">
+                <button onClick={() => handlePrint()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print Month</button>
+                <button onClick={() => setShowPrintOptions(!showPrintOptions)} className="px-2 py-2 rounded-r-lg text-white bg-navy hover:bg-navy-dark border-l border-white/20"><ChevronDown size={14} /></button>
+              </div>
+              {showPrintOptions && (
+                <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-50 p-3 min-w-[220px]">
+                  <p className="text-[11px] font-semibold text-navy mb-2">Print Selected Weeks</p>
+                  <div className="space-y-1.5 mb-3">
+                    {weeks.map((week, i) => {
+                      const firstDay = week[0]; const lastDay = week[week.length - 1]
+                      const label = firstDay && lastDay ? `${month + 1}/${firstDay.dayNum} - ${month + 1}/${lastDay.dayNum}` : `Week ${i + 1}`
+                      return (
+                        <label key={i} className="flex items-center gap-2 text-[11px] text-text-primary cursor-pointer hover:bg-surface-alt rounded px-1.5 py-1">
+                          <input type="checkbox" checked={printWeeks.has(i)}
+                            onChange={() => setPrintWeeks(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n })}
+                            className="rounded border-border text-navy" />
+                          Week {i + 1}: {label}
+                        </label>
+                      )
+                    })}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => { handlePrint(printWeeks); setShowPrintOptions(false); setPrintWeeks(new Set()) }}
+                      disabled={printWeeks.size === 0}
+                      className="flex-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                      Print {printWeeks.size > 0 ? `${printWeeks.size} Week${printWeeks.size > 1 ? 's' : ''}` : '(select weeks)'}
+                    </button>
+                    <button onClick={() => { setShowPrintOptions(false); setPrintWeeks(new Set()) }}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
             {canEdit && (
               <button onClick={saveAll} disabled={saving}
                 className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-semibold bg-gold text-navy-dark hover:bg-gold/90 disabled:opacity-50">
@@ -828,8 +876,10 @@ function TeacherWeeklyPlans() {
     return dow >= 1 && dow <= 5 ? dow - 1 : 0
   })
   const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }>>({})
+  const [parentCalData, setParentCalData] = useState<Record<string, { subjects: { label: string; content: string }[]; objective: string }>>({})
+  const [showParentCal, setShowParentCal] = useState(true)
 
-  // Load calendar events for this week
+  // Load calendar events and parent calendar data for this week
   useEffect(() => {
     if (weekDates.length < 5) return
     supabase.from('calendar_events').select('date, title, type')
@@ -839,7 +889,23 @@ function TeacherWeeklyPlans() {
         data?.forEach((ev: any) => { ce[ev.date] = { title: ev.title, type: ev.type } })
         setCalEvents(ce)
       }).catch(() => {})
-  }, [weekDates])
+    // Load parent calendar entries for the same class/grade/week
+    supabase.from('parent_calendar').select('date, content')
+      .eq('english_class', selectedClass).eq('grade', selectedGrade)
+      .gte('date', weekDates[0]).lte('date', weekDates[4])
+      .then(({ data }) => {
+        const pc: Record<string, { subjects: { label: string; content: string }[]; objective: string }> = {}
+        data?.forEach((row: any) => {
+          try {
+            const parsed = typeof row.content === 'string' ? JSON.parse(row.content) : row.content
+            if (parsed?.subjects || parsed?.objective) {
+              pc[row.date] = { subjects: parsed.subjects || [], objective: parsed.objective || '' }
+            }
+          } catch {}
+        })
+        setParentCalData(pc)
+      }).catch(() => {})
+  }, [weekDates, selectedClass, selectedGrade])
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
 
@@ -1096,6 +1162,10 @@ function TeacherWeeklyPlans() {
           <button onClick={() => setViewMode('week')} className={`px-3 py-1 rounded-md text-[10px] font-semibold ${viewMode === 'week' ? 'bg-navy text-white' : 'text-text-tertiary hover:text-text-secondary'}`}>Week</button>
           <button onClick={() => setViewMode('day')} className={`px-3 py-1 rounded-md text-[10px] font-semibold ${viewMode === 'day' ? 'bg-navy text-white' : 'text-text-tertiary hover:text-text-secondary'}`}>Day</button>
         </div>
+        <button onClick={() => setShowParentCal(!showParentCal)}
+          className={`ml-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-semibold transition-all ${showParentCal ? 'bg-gold/20 text-navy border border-gold/40' : 'bg-surface-alt text-text-tertiary hover:text-text-secondary'}`}>
+          <Calendar size={12} /> Parent Cal
+        </button>
       </div>
 
       <LessonScaffoldBanner englishClass={selectedClass} grade={selectedGrade} onGradeChange={setSelectedGrade} />
@@ -1148,6 +1218,20 @@ function TeacherWeeklyPlans() {
                     {calEvents[weekDates[selectedDayIdx]].type && <span className="text-[9px] text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">{calEvents[weekDates[selectedDayIdx]].type}</span>}
                   </div>
                 )}
+                {showParentCal && parentCalData[weekDates[selectedDayIdx]] && (
+                  <div className="px-4 py-2.5 bg-gold/5 border-b border-gold/20">
+                    <p className="text-[9px] font-bold text-navy/60 uppercase tracking-wider mb-1">Parent Calendar</p>
+                    {parentCalData[weekDates[selectedDayIdx]].subjects.filter(s => s.content?.trim()).map((s, si) => (
+                      <div key={si} className="text-[11px] leading-snug">
+                        {s.label && <span className="font-bold text-navy/70">{s.label}: </span>}
+                        <span className="text-text-secondary">{s.content}</span>
+                      </div>
+                    ))}
+                    {parentCalData[weekDates[selectedDayIdx]].objective && (
+                      <div className="text-[10px] text-text-tertiary italic mt-1">Obj: {parentCalData[weekDates[selectedDayIdx]].objective}</div>
+                    )}
+                  </div>
+                )}
                 <textarea
                   value={plans[weekDates[selectedDayIdx]] || ''}
                   onChange={e => updateDay(weekDates[selectedDayIdx], e.target.value)}
@@ -1176,6 +1260,19 @@ function TeacherWeeklyPlans() {
                       <div className="px-2 py-1.5 bg-slate-100 border-b border-slate-200 flex items-center gap-1.5">
                         <AlertCircle size={10} className="text-slate-600 shrink-0" />
                         <span className="text-[9px] font-semibold text-slate-700 truncate">{calEvents[date].title}</span>
+                      </div>
+                    )}
+                    {showParentCal && parentCalData[date] && (
+                      <div className="px-2 py-1.5 bg-gold/5 border-b border-gold/20">
+                        {parentCalData[date].subjects.filter(s => s.content?.trim()).map((s, si) => (
+                          <div key={si} className="text-[9px] leading-snug">
+                            {s.label && <span className="font-bold text-navy/70">{s.label}: </span>}
+                            <span className="text-text-secondary">{s.content}</span>
+                          </div>
+                        ))}
+                        {parentCalData[date].objective && (
+                          <div className="text-[8px] text-text-tertiary italic mt-0.5">Obj: {parentCalData[date].objective}</div>
+                        )}
                       </div>
                     )}
                     <textarea

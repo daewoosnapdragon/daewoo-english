@@ -511,9 +511,10 @@ function suggestG1Class(
 // MAIN COMPONENT: Grade1ScoreEntry
 // ============================================================================
 
-export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
+export default function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   levelTest: LevelTest
   isAdmin: boolean
+  teacherClass?: EnglishClass | null
 }) {
   const { showToast, currentTeacher } = useApp()
   const [students, setStudents] = useState<Student[]>([])
@@ -523,6 +524,7 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
   const [activeTab, setActiveTab] = useState<'written' | 'oral' | 'ratings' | 'results'>('oral')
   const [selectedStudentIdx, setSelectedStudentIdx] = useState(0)
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'complete'>('all')
+  const [activeClass, setActiveClass] = useState<EnglishClass>(teacherClass || 'Lily')
 
   // Load students and existing scores
   useEffect(() => {
@@ -597,15 +599,33 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
     setSaving(false)
   }, [scores, levelTest.id, currentTeacher?.id, showToast])
 
-  // Completion stats
+  // Class filtering
+  const availableClasses = isAdmin ? ENGLISH_CLASSES : (teacherClass ? [teacherClass] : ENGLISH_CLASSES)
+  const classStudents = useMemo(() => students.filter(s => s.english_class === activeClass), [students, activeClass])
+
+  // Completion stats - based on filtered students
   const completionStats = useMemo(() => {
     let writtenDone = 0, oralDone = 0
-    students.forEach(s => {
+    classStudents.forEach(s => {
       const sc = scores[s.id] || {}
       if (sc.w_letter_names != null || sc.w_letter_sounds != null || sc.w_word_picture != null) writtenDone++
       if (sc.o_passage_level) oralDone++
     })
-    return { writtenDone, oralDone, total: students.length }
+    return { writtenDone, oralDone, total: classStudents.length }
+  }, [classStudents, scores])
+
+  // Class counts for tab badges
+  const classCounts = useMemo(() => {
+    const counts: Record<string, { total: number; done: number }> = {}
+    ENGLISH_CLASSES.forEach(cls => {
+      const s = students.filter(st => st.english_class === cls)
+      const done = s.filter(st => {
+        const sc = scores[st.id] || {}
+        return sc.o_passage_level != null
+      })
+      counts[cls] = { total: s.length, done: done.length }
+    })
+    return counts
   }, [students, scores])
 
   if (loading) return (
@@ -616,8 +636,32 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
 
   return (
     <div className="animate-fade-in">
-      {/* Flat Tab Bar - No Wave Selector */}
-      <div className="px-10 pt-4 bg-surface border-b border-border">
+      {/* Class Tabs */}
+      <div className="px-10 pt-4 pb-2">
+        <div className="flex flex-wrap gap-1.5">
+          {ENGLISH_CLASSES.map(cls => {
+            const ct = classCounts[cls] || { total: 0, done: 0 }
+            const isAvail = availableClasses.includes(cls)
+            if (ct.total === 0 && !isAvail) return null
+            return (
+              <button key={cls} onClick={() => { if (isAvail) { setActiveClass(cls); setSelectedStudentIdx(0) } }} disabled={!isAvail}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1.5 ${
+                  activeClass === cls ? 'text-white shadow-sm' : isAvail ? 'text-text-secondary hover:bg-surface-alt' : 'text-text-tertiary/40 cursor-not-allowed'
+                }`} style={activeClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>
+                {cls}
+                {ct.total > 0 && (
+                  <span className={`text-[9px] px-1 rounded ${activeClass === cls ? 'bg-white/20' : 'bg-surface-alt'}`}>
+                    {ct.done}/{ct.total}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Flat Tab Bar */}
+      <div className="px-10 bg-surface border-b border-border">
         <div className="flex items-center gap-2 pb-3">
           {[
             { key: 'oral' as const, icon: Mic, label: 'Oral Test', sub: `${completionStats.oralDone}/${completionStats.total}` },
@@ -637,32 +681,38 @@ export default function Grade1ScoreEntry({ levelTest, isAdmin }: {
       </div>
 
       {/* Content */}
-      {activeTab === 'oral' && (
-        <OralTestEntry
-          students={students}
-          scores={scores}
-          updateScore={updateScore}
-          onSave={saveScores}
-          saving={saving}
-          selectedIdx={selectedStudentIdx}
-          onSelectIdx={setSelectedStudentIdx}
-          activeWave={1}
-        />
-      )}
-      {activeTab === 'written' && (
-        <WrittenTestEntry
-          students={students}
-          scores={scores}
-          updateScore={updateScore}
-          onSave={saveScores}
-          saving={saving}
-        />
-      )}
-      {activeTab === 'ratings' && (
-        <G1TeacherRatings
-          students={students}
-          levelTestId={levelTest.id}
-        />
+      {classStudents.length === 0 ? (
+        <div className="text-center py-12 text-text-tertiary text-[13px]">No students in {activeClass}</div>
+      ) : (
+        <>
+          {activeTab === 'oral' && (
+            <OralTestEntry
+              students={classStudents}
+              scores={scores}
+              updateScore={updateScore}
+              onSave={saveScores}
+              saving={saving}
+              selectedIdx={selectedStudentIdx}
+              onSelectIdx={setSelectedStudentIdx}
+              activeWave={1}
+            />
+          )}
+          {activeTab === 'written' && (
+            <WrittenTestEntry
+              students={classStudents}
+              scores={scores}
+              updateScore={updateScore}
+              onSave={saveScores}
+              saving={saving}
+            />
+          )}
+          {activeTab === 'ratings' && (
+            <G1TeacherRatings
+              students={classStudents}
+              levelTestId={levelTest.id}
+            />
+          )}
+        </>
       )}
     </div>
   )

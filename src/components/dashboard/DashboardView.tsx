@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
@@ -843,11 +843,15 @@ function SharedCalendar() {
   const today = getKSTDateString()
 
   const [tableError, setTableError] = useState(false)
+  const loadRef = useRef(0)
 
   const load = useCallback(async () => {
+    const token = ++loadRef.current
+    setLoading(true)
     const s = `${y}-${String(m+1).padStart(2,'0')}-01`
-    const e = `${y}-${String(m+1).padStart(2,'0')}-${days}`
+    const e = `${y}-${String(m+1).padStart(2,'0')}-${String(days).padStart(2,'0')}`
     const { data, error } = await supabase.from('calendar_events').select('*').gte('date', s).lte('date', e).order('date')
+    if (token !== loadRef.current) return // stale request, discard
     if (error) {
       console.warn('Calendar table error:', error.message)
       setTableError(true)
