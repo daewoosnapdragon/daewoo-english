@@ -597,12 +597,12 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
         setStudents(studs)
         const ids = studs.map((s: Student) => s.id)
         const [{ data: sg }, { data: rd }] = await Promise.all([
-          supabase.from('semester_grades').select('*, semesters(name)').in('student_id', ids),
+          supabase.from('semester_grades').select('*, semesters(name, type)').in('student_id', ids),
           supabase.from('reading_assessments').select('*').in('student_id', ids).order('date', { ascending: false }),
         ])
         const dm: Record<string, { grades: any[]; reading: any[]; scores: any }> = {}
         studs.forEach((s: Student) => { dm[s.id] = { grades: [], reading: [], scores: null } })
-        sg?.forEach((g: any) => { if (dm[g.student_id]) dm[g.student_id].grades.push(g) })
+        sg?.forEach((g: any) => { if (dm[g.student_id]) dm[g.student_id].grades.push({ ...g, score: g.final_grade ?? g.calculated_grade ?? null }) })
         rd?.forEach((r: any) => { if (dm[r.student_id]) dm[r.student_id].reading.push(r) })
         testScores?.forEach((ts: any) => { if (dm[ts.student_id]) dm[ts.student_id].scores = ts.raw_scores })
         setStudentData(dm)
@@ -928,8 +928,8 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
       ])
       if (studs) {
         setStudents(studs)
-        const { data: sg } = await supabase.from('semester_grades').select('*').in('student_id', studs.map((s: Student) => s.id))
-        const sgm: Record<string, any[]> = {}; sg?.forEach((g: any) => { if (!sgm[g.student_id]) sgm[g.student_id] = []; sgm[g.student_id].push(g) }); setSemGrades(sgm)
+        const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').in('student_id', studs.map((s: Student) => s.id))
+        const sgm: Record<string, any[]> = {}; sg?.forEach((g: any) => { if (!sgm[g.student_id]) sgm[g.student_id] = []; sgm[g.student_id].push({ ...g, score: g.final_grade ?? g.calculated_grade ?? null, semester_name: g.semesters?.name || '' }) }); setSemGrades(sgm)
       }
       const sm: Record<string, any> = {}; sd?.forEach((s: any) => { sm[s.student_id] = s }); setScores(sm)
       const am: Record<string, any> = {}; ad?.forEach((a: any) => { am[a.student_id] = a }); setAnecdotals(am)
@@ -1069,8 +1069,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
       const sm: Record<string, any> = {}; sd?.forEach((s: any) => { sm[s.student_id] = s }); setScores(sm)
       const am: Record<string, any> = {}; ad?.forEach((a: any) => { am[a.student_id] = a }); setAnecdotals(am)
       if (studs) {
-        const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name)').in('student_id', studs.map((s: any) => s.id))
-        const sgm: Record<string, any[]> = {}; sg?.forEach((g: any) => { const gWithName = { ...g, semester_name: g.semesters?.name || '' }; if (!sgm[g.student_id]) sgm[g.student_id] = []; sgm[g.student_id].push(gWithName) }); setSemGrades(sgm)
+        const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').in('student_id', studs.map((s: any) => s.id))
+        const sgm: Record<string, any[]> = {}; sg?.forEach((g: any) => { const gWithName = { ...g, semester_name: g.semesters?.name || '', score: g.final_grade ?? g.calculated_grade ?? null }; if (!sgm[g.student_id]) sgm[g.student_id] = []; sgm[g.student_id].push(gWithName) }); setSemGrades(sgm)
         const auto = calcAuto(studs, sm, am, bm, sgm, { test: 0.3, grades: 0.4, anecdotal: 0.3 })
         setAutoPlacements(auto)
         const pm: Record<string, EnglishClass> = {}
@@ -1403,7 +1403,7 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
   const testRatios = [cwpmRatio, writingRatio, mcPct, wrAcc].filter(v => v != null) as number[]
   const testScore = testRatios.length > 0 ? testRatios.reduce((a, b) => a + b, 0) / testRatios.length : 0.5
-  const gv = grades.filter((g: any) => g.score != null && g.semester_name?.toLowerCase().includes('fall')); const gradeScore = gv.length > 0 ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length / 100 : null
+  const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall'))); const gradeScore = gv.length > 0 ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length / 100 : null
   const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
   const anecScore = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
   // Composite: if student has grades, use test 30% + grades 40% + anecdotal 30%
@@ -1432,7 +1432,7 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
     const tr: number[] = []; if (sc.passage_cwpm != null && bench.cwpm_end > 0) tr.push(sc.passage_cwpm / bench.cwpm_end); if (sc.writing != null && bench.writing_end > 0) tr.push(sc.writing / bench.writing_end); if (sc.written_mc != null) tr.push(sc.written_mc / WRITTEN_MC_TOTAL); if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) tr.push(sc.word_reading_correct / sc.word_reading_attempted)
     const ts = tr.length > 0 ? tr.reduce((a, b) => a + b, 0) / tr.length : 0.5
     // Filter to fall semester grades only (matches computeRow behavior)
-    const gv = grades.filter((g: any) => g.score != null && g.semester_name?.toLowerCase().includes('fall'))
+    const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall')))
     const hasGrades = gv.length > 0
     const gs = hasGrades ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length / 100 : 0.5
     const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
