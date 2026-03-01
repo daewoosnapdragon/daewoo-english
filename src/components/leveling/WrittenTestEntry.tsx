@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { supabase } from '@/lib/supabase'
 import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -300,7 +300,6 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
 }) {
   const grade = Number(levelTest.grade)
   const config = getGradeConfig(grade)
-  const supabase = createClientComponentClient()
 
   const [students, setStudents] = useState<any[]>([])
   const [scores, setScores] = useState<Record<string, StudentScores>>({})
@@ -319,8 +318,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     async function load() {
       setLoading(true)
       const [studRes, scoreRes] = await Promise.all([
-        supabase.from('students').select('id, english_name, korean_name, english_class, student_grade')
-          .eq('student_grade', grade).eq('is_active', true).order('english_class').order('english_name'),
+        supabase.from('students').select('*').eq('grade', grade).eq('is_active', true).order('english_class').order('english_name'),
         supabase.from('level_test_scores').select('student_id, raw_scores').eq('level_test_id', levelTest.id),
       ])
       const studs = studRes.data || []
