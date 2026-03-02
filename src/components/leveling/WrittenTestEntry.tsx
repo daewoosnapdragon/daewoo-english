@@ -34,152 +34,169 @@ interface WritingCategory {
 // Rubric descriptors per grade — keyed by category key, then score level
 type RubricDescriptors = Record<string, string[]>  // key -> [level0, level1, level2, ...]
 
+// Multi-grade CCSS standard expansion
+// Grade 2 → K/1/2, Grade 3 → 1/2/3, Grade 4 → 2/3/4, Grade 5 → 3/4/5
+function expandStandard(standard: string, grade: number): string {
+  // Parse standard format: "RI.5.1", "L.3.1d", "SL.4.2", "RF.2.3", "W.K.2"
+  const match = standard.match(/^([A-Z]+)\.(\w+)\.(.+)$/)
+  if (!match) return standard
+  const [, domain, , suffix] = match
+  
+  // Determine grade range: current and 2 below (min K)
+  const gradeLabels: string[] = []
+  for (let g = Math.max(0, grade - 2); g <= grade; g++) {
+    gradeLabels.push(g === 0 ? 'K' : String(g))
+  }
+  
+  return gradeLabels.map(g => `${domain}.${g}.${suffix}`).join(' · ')
+}
+
 const GRADE_2_RUBRIC_DESC: RubricDescriptors = {
   completeness: [
     'No writing attempted or no English.',
-    'Addresses 1 question only.',
-    'Addresses 2 of the 4 questions.',
-    'Addresses 3 of the 4 questions.',
-    'Addresses all 4 questions but some lack detail.',
-    'Fully addresses all 4 questions with detail.',
+    'Writing attempts to address 1 question only.',
+    'Writing addresses 2 of the 4 questions.',
+    'Writing addresses 3 of the 4 questions.',
+    'Writing addresses all 4 questions but some lack detail.',
+    'Writing fully addresses all 4 questions (what animal, appearance, habitat, and reason) with detail.',
   ],
   content: [
     'No written sentences.',
-    '1–2 basic sentences. Names animal with little detail.',
-    '3–4 sentences. Basic description, limited detail.',
-    '5+ sentences. Some descriptive detail or gives a reason.',
-    '5+ good sentences. Good detail about appearance, habitat, reason.',
-    '5+ great sentences. Rich, specific detail beyond basic description.',
+    '1–2 basic sentences. Names the animal with little or no detail.',
+    '3–4 basic sentences. Basic description with limited detail (e.g., "It is big. It is brown.").',
+    '5+ basic sentences. Includes some descriptive detail or gives a reason with explanation.',
+    '5+ good sentences. Good detail about appearance, habitat, and reason. Some facts or personal connection.',
+    '5+ great sentences. Rich, specific detail. Goes beyond basic description (e.g., facts, comparisons, feelings, personal experiences).',
   ],
   language: [
     'No intelligible English sentences.',
-    'Significant errors make meaning difficult.',
-    'Frequent errors sometimes interfere. Repetitive patterns.',
-    'Some errors but meaning always clear. Attempts variety.',
-    'Mostly correct grammar. Some varied structures.',
-    'Strong grammar. Varied sentences. Confident English use.',
+    'Significant errors make meaning difficult. Some English structure present.',
+    'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("I like...", "It is...").',
+    'Some errors but meaning is always clear. Attempts some sentence variety.',
+    'Mostly correct grammar. Some varied structures. Consistent subject-verb agreement.',
+    'Strong grammar for grade level. Varied sentence structures. Confident use of English.',
   ],
   mechanics: [
-    'No capitalization, punctuation, or recognizable spelling.',
-    'Minimal punctuation/capitalization. Many misspellings.',
-    'Some capitalization and punctuation but inconsistent.',
-    'Capitalization and end punctuation on most sentences.',
-    'Consistent capitalization/punctuation. High-frequency words correct.',
-    'Strong control of mechanics. Correct grade-level spelling.',
+    'No evidence of capitalization, punctuation, or recognizable spelling.',
+    'Minimal punctuation/capitalization. Many misspellings, but words recognizable.',
+    'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled.',
+    'Capitalization and end punctuation present on most sentences. A few common words misspelled.',
+    'Consistent capitalization and end punctuation. High-frequency words correct. Phonetic attempts at harder words acceptable.',
+    'Strong control of mechanics. Correct spelling of grade-level words. Punctuation used accurately throughout.',
   ],
 }
 
 const GRADE_3_RUBRIC_DESC: RubricDescriptors = {
   brainstorm: [
     'Blank or no English attempted.',
-    '1–2 fields filled with single words, may be unrelated.',
-    'Some fields filled. Basic words/phrases connect to picture.',
-    'Most fields completed with relevant ideas.',
-    'All fields completed with relevant, detailed ideas.',
+    '1–2 fields filled with single English words, may be unrelated to picture.',
+    'Some fields filled. Basic English words or short phrases that connect to the picture.',
+    'Most fields completed with relevant ideas. Shows understanding of story elements.',
+    'All fields completed with relevant, detailed ideas. Characters, setting, events, feelings, and ending all connect to the picture.',
   ],
   structure: [
-    'No sentences written.',
-    'Writing present but no identifiable structure.',
-    'Attempts beginning and middle but no clear ending.',
-    'Has beginning, middle, and end; one part is weak.',
-    'Clear beginning, middle, end. Logically sequenced.',
+    'No sentences written (brainstorm only or blank).',
+    'Writing present but no identifiable structure — random sentences or list of observations.',
+    'Attempts beginning and middle but no clear ending, OR events are out of order.',
+    'Has beginning, middle, and end, but one part is weak or has a minor gap.',
+    'Clear beginning, middle, and end. Events are sequenced logically. Easy to follow.',
   ],
   content: [
     'No written sentences.',
-    '1–3 sentences. Minimal content — labels or simple observations.',
-    '4–5 sentences. Basic description with limited development.',
-    '6–7 sentences. Most story elements. Some detail beyond picture.',
-    '8+ sentences. Characters, setting, actions, feelings. Imaginative.',
+    '1–3 sentences. Minimal content — labels or very simple observations.',
+    '4–5 sentences. Basic description of picture with limited story development.',
+    '6–7 sentences. Most story elements present. Some detail beyond the picture.',
+    '8+ sentences. Includes characters, setting, actions, and feelings. Imaginative detail beyond the picture.',
   ],
   language: [
     'No intelligible English sentences.',
-    'Significant errors make meaning difficult.',
-    'Frequent errors sometimes interfere. Repetitive patterns.',
-    'Some errors but meaning always clear. Attempts variety.',
-    'Mostly correct grammar. Varied structures. Consistent SVA.',
+    'Significant errors make meaning difficult. Some English structure present.',
+    'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("I see…").',
+    'Some errors but meaning is always clear. Attempts sentence variety.',
+    'Mostly correct grammar. Varied sentence structures. Consistent subject-verb agreement and verb tenses.',
   ],
   mechanics: [
-    'No capitalization, punctuation, or recognizable spelling.',
-    'Minimal punctuation/capitalization. Many misspellings.',
-    'Some capitalization/punctuation but inconsistent.',
-    'Minor inconsistencies. A few common words misspelled.',
-    'Consistent capitalization/punctuation. HF words correct.',
+    'No evidence of capitalization, punctuation, or recognizable spelling.',
+    'Minimal punctuation/capitalization. Many misspellings, but words recognizable.',
+    'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled.',
+    'Minor inconsistencies — occasional missing capitals or periods. A few common words misspelled.',
+    'Consistent capitalization and end punctuation. High-frequency words spelled correctly. Phonetic attempts at harder words are acceptable.',
   ],
 }
 
 const GRADE_4_RUBRIC_DESC: RubricDescriptors = {
   brainstorm: [
     'Blank or no English attempted.',
-    '1–2 fields filled, may be unrelated to pictures.',
-    'Some fields filled. Basic words/phrases connect to pictures.',
-    'Most fields completed. Understands story across 3 pictures.',
-    'All fields completed. Characters, setting, events, feelings, ending.',
+    '1–2 fields filled with single English words, may be unrelated to pictures.',
+    'Some fields filled. Basic English words or short phrases that connect to the pictures.',
+    'Most fields completed with relevant ideas. Shows understanding of story elements across the three pictures.',
+    'All fields completed with relevant, detailed ideas. Characters, setting, events, feelings, and ending all connect to the pictures.',
   ],
   structure: [
-    'No sentences written.',
-    'No identifiable structure — random sentences or list.',
-    'Attempts beginning/middle but no ending or out of order.',
-    'Beginning, middle, end follow 3 pictures; one part weak.',
-    'Clear beginning, middle, end logically follow pictures.',
+    'No sentences written (brainstorm only or blank).',
+    'Writing present but no identifiable structure — random sentences or list of observations about the pictures.',
+    'Attempts beginning and middle but no clear ending, OR events are out of order. Pictures not clearly connected.',
+    'Has beginning, middle, and end that follow the three pictures, but one part is weak or has a gap.',
+    'Clear beginning, middle, and end that logically follow the three pictures. Events are well-sequenced. Easy to follow.',
   ],
   content: [
     'No written sentences.',
-    '1–4 sentences. Labels or simple observations about pictures.',
-    '5–7 sentences. Basic description, mostly tells what is seen.',
-    '8–9 sentences. Some detail beyond pictures (dialogue, feelings).',
-    '10+ sentences. Characters, actions, feelings, dialogue. Imaginative.',
+    '1–4 sentences. Minimal content — labels or very simple observations about the pictures.',
+    '5–7 sentences. Basic description of the pictures with limited story development. Mostly tells what is seen.',
+    '8–9 sentences. Most story elements present. Some detail beyond the pictures (dialogue, feelings, names).',
+    '10+ sentences. Includes characters, setting, actions, feelings, and dialogue. Imaginative detail beyond the pictures (inner thoughts, backstory, creative additions).',
   ],
   language: [
     'No intelligible English sentences.',
-    'Significant errors make meaning difficult.',
-    'Frequent errors sometimes interfere. Repetitive patterns.',
-    'Some errors but meaning clear. Attempts compound sentences.',
-    'Mostly correct. Varied structures. Consistent tenses/SVA.',
+    'Significant errors make meaning difficult. Some English structure present.',
+    'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("They go...", "They are...").',
+    'Some errors but meaning is always clear. Attempts sentence variety (compound sentences, dialogue, different starters).',
+    'Mostly correct grammar. Varied sentence structures including compound/complex sentences. Consistent verb tenses and subject-verb agreement. Dialogue punctuated correctly or nearly so.',
   ],
   mechanics: [
-    'No capitalization, punctuation, or recognizable spelling.',
-    'Minimal punctuation/capitalization. Many misspellings.',
-    'Some capitalization/punctuation but inconsistent.',
-    'Minor inconsistencies. A few common words misspelled.',
-    'Consistent capitalization/punctuation. Quotation marks attempted.',
+    'No evidence of capitalization, punctuation, or recognizable spelling.',
+    'Minimal punctuation/capitalization. Many misspellings, but words recognizable.',
+    'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled.',
+    'Minor inconsistencies — occasional missing capitals or periods. A few common words misspelled.',
+    'Consistent capitalization and end punctuation. High-frequency words spelled correctly. Attempted to use quotation marks for dialogue. More advanced diction.',
   ],
 }
 
 const GRADE_5_RUBRIC_DESC: RubricDescriptors = {
   brainstorm: [
     'Blank or no English attempted.',
-    '1–2 fields with single words, may be unrelated to prompt.',
-    'Some fields filled. Basic words/phrases connect to trip prompt.',
-    'Most fields completed. Understands story elements.',
-    'All fields completed. Destination, travel, activities, ending planned.',
+    '1–2 fields filled with single English words, may be unrelated to prompt.',
+    'Some fields filled. Basic English words or short phrases that connect to the trip prompt.',
+    'Most fields completed with relevant ideas. Shows understanding of story elements (where, how, what happened, ending).',
+    'All fields completed with relevant, detailed ideas. Destination, travel, activities, highlights, and ending all clearly planned.',
   ],
   structure: [
-    'No sentences written.',
-    'No identifiable structure — random or unconnected ideas.',
-    'Attempts beginning/middle but no ending. Trip sequence unclear.',
-    'Beginning, middle, end follow a logical trip sequence.',
-    'Clear beginning, middle, end. Well-sequenced trip timeline.',
+    'No sentences written (brainstorm only or blank).',
+    'Writing present but no identifiable structure — random sentences or unconnected ideas about travel.',
+    'Attempts beginning and middle but no clear ending, OR events are out of order. Trip sequence is unclear.',
+    'Has beginning, middle, and end that follow a logical trip sequence.',
+    'Clear beginning, middle, and end. Events are well-sequenced and follow a natural trip timeline. Easy to follow.',
   ],
   content: [
     'No written sentences.',
-    '1–4 sentences. Names a place but little else.',
-    '5–7 sentences. Basic description. Mostly tells without detail.',
-    '8–9 sentences. Prompt questions addressed. Some vivid detail.',
-    '10+ sentences. Rich detail. Sensory descriptions, personal reactions.',
+    '1–4 sentences. Minimal content — names a place but provides little else.',
+    '5–7 sentences. Basic description of the trip with limited development. Mostly tells what happened without sensory or emotional detail.',
+    '8–9 sentences. Most prompt questions addressed (where, how, best part). Some vivid detail (descriptions, feelings, specific moments).',
+    '10+ sentences. All prompt questions addressed with rich detail. Includes sensory descriptions, personal reactions, dialogue, or specific moments that make the trip come alive.',
   ],
   language: [
     'No intelligible English sentences.',
-    'Significant errors make meaning difficult.',
-    'Frequent errors sometimes interfere. Repetitive patterns.',
-    'Some errors but meaning clear. Attempts compound sentences.',
-    'Mostly correct. Varied structures. Consistent past tense. Transitions.',
+    'Significant errors make meaning difficult. Some English structure present.',
+    'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("We go…", "It was…").',
+    'Some errors but meaning is always clear. Attempts sentence variety (compound sentences, transitions, different starters).',
+    'Mostly correct grammar. Varied sentence structures including compound/complex sentences. Consistent verb tenses (especially past tense). Transitions between events (then, after that, finally).',
   ],
   mechanics: [
-    'No capitalization, punctuation, or recognizable spelling.',
-    'Minimal punctuation/capitalization. Many misspellings.',
-    'Some capitalization/punctuation but inconsistent. Proper nouns may not be capitalized.',
-    'Minor inconsistencies. Proper nouns mostly capitalized.',
-    'Consistent capitalization/punctuation. Commas in lists. HF words correct.',
+    'No evidence of capitalization, punctuation, or recognizable spelling.',
+    'Minimal punctuation/capitalization. Many misspellings, but words recognizable.',
+    'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled. Proper nouns (place names) may not be capitalized.',
+    'Minor inconsistencies — occasional missing capitals or periods. A few common words misspelled. Proper nouns mostly capitalized.',
+    'Consistent capitalization and end punctuation. High-frequency words spelled correctly. Proper nouns capitalized. Commas used in lists and compound sentences. Phonetic attempts at harder words are acceptable.',
   ],
 }
 
@@ -235,10 +252,10 @@ const GRADE_2_QUESTIONS: QuestionDef[] = [
 ]
 
 const GRADE_2_WRITING: WritingCategory[] = [
-  { key: 'completeness', label: 'Completeness', max: 5, standard: 'W.2.2', standardDesc: 'Informative texts - name topic' },
-  { key: 'content', label: 'Content & Detail', max: 5, standard: 'W.2.2', standardDesc: 'Informative texts with detail' },
-  { key: 'language', label: 'Language & Grammar', max: 5, standard: 'L.2.1', standardDesc: 'Standard English grammar' },
-  { key: 'mechanics', label: 'Mechanics', max: 5, standard: 'L.2.2', standardDesc: 'Capitalization/punctuation/spelling' },
+  { key: 'completeness', label: 'Completeness', max: 5, standard: 'W.K.2 · W.1.2 · W.2.2', standardDesc: 'Informative texts - name topic' },
+  { key: 'content', label: 'Content & Detail', max: 5, standard: 'W.K.2 · W.1.2 · W.2.2', standardDesc: 'Informative texts with detail' },
+  { key: 'language', label: 'Language & Grammar', max: 5, standard: 'L.K.1 · L.1.1 · L.2.1', standardDesc: 'Standard English grammar' },
+  { key: 'mechanics', label: 'Mechanics', max: 5, standard: 'L.K.2 · L.1.2 · L.2.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -274,11 +291,11 @@ const GRADE_3_QUESTIONS: QuestionDef[] = [
 ]
 
 const GRADE_3_WRITING: WritingCategory[] = [
-  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.3.5', standardDesc: 'Planning/prewriting' },
-  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.3.3a', standardDesc: 'Orient reader, organize events' },
-  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.3.3b', standardDesc: 'Narrative techniques' },
-  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.3.1', standardDesc: 'Standard English grammar' },
-  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.3.2', standardDesc: 'Capitalization/punctuation/spelling' },
+  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.1.5 · W.2.5 · W.3.5', standardDesc: 'Planning/prewriting' },
+  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.1.3 · W.2.3 · W.3.3a', standardDesc: 'Orient reader, organize events' },
+  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.1.3 · W.2.3 · W.3.3b', standardDesc: 'Narrative techniques' },
+  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.1.1 · L.2.1 · L.3.1', standardDesc: 'Standard English grammar' },
+  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.1.2 · L.2.2 · L.3.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -322,11 +339,11 @@ const GRADE_4_QUESTIONS: QuestionDef[] = [
 ]
 
 const GRADE_4_WRITING: WritingCategory[] = [
-  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.4.5', standardDesc: 'Planning/prewriting' },
-  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.4.3a', standardDesc: 'Orient reader, organize events' },
-  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.4.3b', standardDesc: 'Dialogue and description' },
-  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.4.1', standardDesc: 'Standard English grammar' },
-  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.4.2', standardDesc: 'Capitalization/punctuation/spelling' },
+  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.2.5 · W.3.5 · W.4.5', standardDesc: 'Planning/prewriting' },
+  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.2.3 · W.3.3a · W.4.3a', standardDesc: 'Orient reader, organize events' },
+  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.2.3 · W.3.3b · W.4.3b', standardDesc: 'Dialogue and description' },
+  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.2.1 · L.3.1 · L.4.1', standardDesc: 'Standard English grammar' },
+  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.2.2 · L.3.2 · L.4.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -367,11 +384,11 @@ const GRADE_5_QUESTIONS: QuestionDef[] = [
 ]
 
 const GRADE_5_WRITING: WritingCategory[] = [
-  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.5.5', standardDesc: 'Planning/prewriting' },
-  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.5.3a', standardDesc: 'Orient reader, organize events' },
-  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.5.3b', standardDesc: 'Narrative techniques' },
-  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.5.1', standardDesc: 'Standard English grammar' },
-  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.5.2', standardDesc: 'Capitalization/punctuation/spelling' },
+  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.3.5 · W.4.5 · W.5.5', standardDesc: 'Planning/prewriting' },
+  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.3.3a · W.4.3a · W.5.3a', standardDesc: 'Orient reader, organize events' },
+  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.3.3b · W.4.3b · W.5.3b', standardDesc: 'Narrative techniques' },
+  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.3.1 · L.4.1 · L.5.1', standardDesc: 'Standard English grammar' },
+  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.3.2 · L.4.2 · L.5.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -825,7 +842,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                       })}
                     </div>
                     <span className="flex-1 text-[10px] text-text-tertiary truncate">{q.text}</span>
-                    <span className="text-[9px] text-text-tertiary/60 font-mono w-14 text-right">{q.standard}</span>
+                    <span className="text-[9px] text-text-tertiary/60 font-mono text-right whitespace-nowrap">{expandStandard(q.standard, config.grade)}</span>
                     {chosen && (isCorrect
                       ? <Check size={12} className="text-green-500" />
                       : <X size={12} className="text-red-400" />
@@ -838,7 +855,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         )
       })}
 
-      {/* Writing Rubric with Inline Descriptors */}
+      {/* Writing Rubric — Full Table */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-[13px] font-semibold text-navy">Writing Rubric</h4>
@@ -849,30 +866,46 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             const val = sc.writing[cat.key] || 0
             const descriptors = config.rubricDesc[cat.key] || []
             return (
-              <div key={cat.key} className={`px-3 py-2.5 ${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${ci < config.writingCategories.length - 1 ? 'border-b border-border/50' : ''}`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-40 flex-shrink-0">
-                    <div className="text-[12px] font-medium">{cat.label}</div>
+              <div key={cat.key} className={`${ci < config.writingCategories.length - 1 ? 'border-b border-border' : ''}`}>
+                {/* Category header with score buttons */}
+                <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50/80">
+                  <div className="w-44 flex-shrink-0">
+                    <div className="text-[12px] font-semibold">{cat.label}</div>
                     <div className="text-[9px] text-text-tertiary">{cat.standard}</div>
                   </div>
                   <div className="flex gap-1">
                     {Array.from({ length: cat.max + 1 }, (_, i) => (
                       <button key={i} onClick={() => setWritingScore(cat.key, i)}
                         className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${
-                          val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'
+                          val === i ? 'bg-navy border-navy text-white shadow-sm' : 'bg-white border-gray-200 hover:border-navy/40'
                         }`}>
                         {i}
                       </button>
                     ))}
                   </div>
-                  <span className="text-[12px] font-bold text-navy ml-2">{val}/{cat.max}</span>
+                  <span className="text-[13px] font-bold text-navy ml-2">{val}/{cat.max}</span>
                 </div>
-                {/* Inline descriptor for selected score */}
-                {descriptors[val] && (
-                  <div className="mt-1.5 ml-[172px] text-[10px] text-text-secondary leading-relaxed bg-blue-50/60 rounded px-2 py-1 border border-blue-100">
-                    <span className="font-semibold text-navy">Level {val}:</span> {descriptors[val]}
+                {/* Full rubric descriptors grid */}
+                <div className="px-3 py-2 bg-white">
+                  <div className="grid gap-1">
+                    {descriptors.map((desc, level) => (
+                      <div key={level}
+                        onClick={() => setWritingScore(cat.key, level)}
+                        className={`flex gap-2 px-2 py-1.5 rounded cursor-pointer transition-all ${
+                          val === level
+                            ? 'bg-blue-50 border border-blue-200 shadow-sm'
+                            : 'hover:bg-gray-50 border border-transparent'
+                        }`}>
+                        <span className={`text-[10px] font-bold w-4 flex-shrink-0 pt-px ${
+                          val === level ? 'text-navy' : 'text-text-tertiary'
+                        }`}>{level}</span>
+                        <span className={`text-[10px] leading-relaxed ${
+                          val === level ? 'text-navy font-medium' : 'text-text-secondary'
+                        }`}>{desc}</span>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
               </div>
             )
           })}
@@ -928,7 +961,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
       {/* Item Difficulty Table */}
       <h4 className="text-[14px] font-semibold text-navy mb-3">Item Analysis</h4>
       <div className="border border-border rounded-lg overflow-hidden mb-6">
-        <div className="grid grid-cols-[40px_1fr_60px_80px_60px_60px_60px_60px_40px] bg-gray-50 px-3 py-1.5 text-[10px] font-semibold text-text-tertiary border-b border-border">
+        <div className="grid grid-cols-[40px_1fr_140px_80px_60px_60px_60px_60px_40px] bg-gray-50 px-3 py-1.5 text-[10px] font-semibold text-text-tertiary border-b border-border">
           <span>#</span><span>Question</span><span>Standard</span><span>Domain</span>
           <span className="text-center">A</span><span className="text-center">B</span><span className="text-center">C</span><span className="text-center">D</span>
           <span className="text-center">%</span>
@@ -940,10 +973,10 @@ function AnalyticsView({ config, analytics, scores, students }: {
           return (
             <div key={q.qNum}>
               <button onClick={() => setExpandedQ(expandedQ === q.qNum ? null : q.qNum)}
-                className={`w-full grid grid-cols-[40px_1fr_60px_80px_60px_60px_60px_60px_40px] px-3 py-1.5 text-[11px] border-b border-border/50 hover:bg-gray-50 ${bgColor}`}>
+                className={`w-full grid grid-cols-[40px_1fr_140px_80px_60px_60px_60px_60px_40px] px-3 py-1.5 text-[11px] border-b border-border/50 hover:bg-gray-50 ${bgColor}`}>
                 <span className="font-mono">{q.qNum}</span>
                 <span className="text-left truncate">{q.text}</span>
-                <span className="font-mono text-text-tertiary">{q.standard}</span>
+                <span className="font-mono text-text-tertiary">{expandStandard(q.standard, config.grade)}</span>
                 <span className="text-text-tertiary truncate">{q.domain.replace('Comprehension', 'Comp.').replace('Language/', '')}</span>
                 {['a', 'b', 'c', 'd'].map(letter => {
                   const count = item.distractors[letter] || 0
@@ -962,7 +995,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
               {expandedQ === q.qNum && (
                 <div className="px-6 py-3 bg-blue-50/50 border-b border-border text-[11px]">
                   <div className="grid grid-cols-2 gap-x-8 gap-y-1">
-                    <div><span className="text-text-tertiary">Standard:</span> <span className="font-medium">{q.standard} -- {q.standardDesc}</span></div>
+                    <div><span className="text-text-tertiary">Standard:</span> <span className="font-medium">{expandStandard(q.standard, config.grade)} -- {q.standardDesc}</span></div>
                     <div><span className="text-text-tertiary">DOK Level:</span> <span className="font-medium">{q.dok}</span></div>
                     <div><span className="text-text-tertiary">Correct Answer:</span> <span className="font-bold text-green-700">{q.correct.toUpperCase()}</span></div>
                     <div><span className="text-text-tertiary">Students answered:</span> <span className="font-medium">{item.total}</span></div>
@@ -1014,7 +1047,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
               <div key={q.qNum} className="flex items-center gap-3 px-3 py-2 border-b border-border/50">
                 <span className="text-[11px] font-mono text-text-tertiary w-5">Q{q.qNum}</span>
                 <span className="text-[11px] flex-1">{q.text}</span>
-                <span className="text-[9px] font-mono text-text-tertiary">{q.standard}</span>
+                <span className="text-[9px] font-mono text-text-tertiary">{expandStandard(q.standard, config.grade)}</span>
                 <span className="text-[11px] font-bold text-red-600 w-10 text-right">{pct}%</span>
                 {topWrong && topWrong[1] > 0 && (
                   <span className="text-[9px] text-red-400">
