@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye, Keyboard } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════
 // TYPES
@@ -782,6 +782,64 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
   mcCorrect: number; writingTotal: number; setAnswer: (q: number, l: string) => void; setWritingScore: (k: string, v: number) => void
   clearStudent: () => void; studentHasData: boolean; selectedIdx: number; setSelectedIdx: (i: number) => void; totalStudents: number
 }) {
+  const [keyboardMode, setKeyboardMode] = useState(false)
+  const [focusedQ, setFocusedQ] = useState(1)
+  const allQuestions = useMemo(() => sectionKeys.flatMap(k => sections[k]), [sections, sectionKeys])
+  const focusRef = useRef<HTMLDivElement>(null)
+
+  // Scroll focused question into view
+  useEffect(() => {
+    if (keyboardMode && focusRef.current) {
+      focusRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [focusedQ, keyboardMode])
+
+  // Keyboard listener
+  useEffect(() => {
+    if (!keyboardMode || !student) return
+    const handler = (e: KeyboardEvent) => {
+      // Ignore if typing in an input/textarea
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+      const key = e.key.toLowerCase()
+      if (['a', 'b', 'c', 'd'].includes(key)) {
+        e.preventDefault()
+        const q = allQuestions.find(q => q.qNum === focusedQ)
+        if (q) {
+          setAnswer(q.qNum, key)
+          // Auto-advance to next question
+          const nextQ = allQuestions.find(q => q.qNum > focusedQ)
+          if (nextQ) setFocusedQ(nextQ.qNum)
+        }
+      } else if (key === 'arrowdown' || key === 'j') {
+        e.preventDefault()
+        const nextQ = allQuestions.find(q => q.qNum > focusedQ)
+        if (nextQ) setFocusedQ(nextQ.qNum)
+      } else if (key === 'arrowup' || key === 'k') {
+        e.preventDefault()
+        const prevQs = allQuestions.filter(q => q.qNum < focusedQ)
+        if (prevQs.length > 0) setFocusedQ(prevQs[prevQs.length - 1].qNum)
+      } else if (key === 'backspace' || key === 'delete') {
+        e.preventDefault()
+        const q = allQuestions.find(q => q.qNum === focusedQ)
+        if (q) setAnswer(q.qNum, '')
+      } else if (key === 'escape') {
+        setKeyboardMode(false)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [keyboardMode, focusedQ, student, allQuestions, setAnswer])
+
+  // Reset focused question when student changes
+  useEffect(() => {
+    if (student) {
+      const firstUnanswered = allQuestions.find(q => !sc.answers[q.qNum])
+      setFocusedQ(firstUnanswered?.qNum || 1)
+    }
+  }, [student?.id])
+
   if (!student) return <div className="p-12 text-center text-text-tertiary">Select a student from the sidebar</div>
 
   return (
@@ -820,6 +878,31 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         </div>
       </div>
 
+      {/* Keyboard mode toggle */}
+      <div className="mb-4 flex items-center gap-3">
+        <button onClick={() => { setKeyboardMode(!keyboardMode); if (!keyboardMode) { const firstUn = allQuestions.find(q => !sc.answers[q.qNum]); setFocusedQ(firstUn?.qNum || 1) } }}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+            keyboardMode
+              ? 'bg-green-500 text-white shadow-sm'
+              : 'bg-surface border border-border text-text-secondary hover:border-navy/40'
+          }`}>
+          <Keyboard size={13} />
+          {keyboardMode ? 'Keyboard Mode ON' : 'Keyboard Mode'}
+        </button>
+        {keyboardMode && (
+          <span className="text-[10px] text-text-tertiary">
+            Press <kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold">A</kbd>
+            <kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold ml-0.5">B</kbd>
+            <kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold ml-0.5">C</kbd>
+            <kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold ml-0.5">D</kbd> to answer
+            {' \u00B7 '}<kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold">\u2191</kbd>
+            <kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold ml-0.5">\u2193</kbd> to navigate
+            {' \u00B7 '}<kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold">Del</kbd> to clear
+            {' \u00B7 '}<kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold">Esc</kbd> to exit
+          </span>
+        )}
+      </div>
+
       {/* MC Bubble Sheet */}
       {sectionKeys.map(sKey => {
         const qs = sections[sKey]
@@ -835,9 +918,16 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
               {qs.map((q, qi) => {
                 const chosen = sc.answers[q.qNum]
                 const isCorrect = chosen === q.correct
+                const isFocused = keyboardMode && focusedQ === q.qNum
                 return (
-                  <div key={q.qNum} className={`flex items-center gap-3 px-3 py-1.5 ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''}`}>
-                    <span className="w-5 text-[11px] text-text-tertiary text-right font-mono">{q.qNum}</span>
+                  <div key={q.qNum}
+                    ref={isFocused ? focusRef : undefined}
+                    onClick={() => keyboardMode && setFocusedQ(q.qNum)}
+                    className={`flex items-center gap-3 px-3 py-1.5 transition-all ${
+                      isFocused ? 'bg-blue-50 ring-2 ring-inset ring-blue-400' :
+                      qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                    } ${chosen && !isCorrect && !isFocused ? 'bg-red-50/40' : ''} ${keyboardMode ? 'cursor-pointer' : ''}`}>
+                    <span className={`w-5 text-[11px] text-right font-mono ${isFocused ? 'text-blue-600 font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
                     <div className="flex gap-1">
                       {['a', 'b', 'c', 'd'].map(letter => {
                         const isChosen = chosen === letter
@@ -847,7 +937,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                         else if (isChosen && !isCorrect) bg = 'bg-red-400 border-red-400 text-white'
                         else if (chosen && isCorrectAnswer) bg = 'bg-green-100 border-green-300 text-green-700'
                         return (
-                          <button key={letter} onClick={() => setAnswer(q.qNum, isChosen ? '' : letter)}
+                          <button key={letter} onClick={(e) => { e.stopPropagation(); setAnswer(q.qNum, isChosen ? '' : letter); if (keyboardMode) { const nextQ = allQuestions.find(nq => nq.qNum > q.qNum); if (nextQ) setFocusedQ(nextQ.qNum) } }}
                             className={`w-7 h-7 rounded-full text-[11px] font-bold border-2 transition-all ${bg}`}>
                             {letter.toUpperCase()}
                           </button>
