@@ -605,6 +605,17 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         }
       })
 
+      // DOK-weighted MC score (#2: higher DOK questions worth more)
+      // DOK 1 = 1.0×, DOK 2 = 1.5×, DOK 3+ = 2.0×
+      const DOK_WEIGHTS: Record<number, number> = { 1: 1.0, 2: 1.5, 3: 2.0, 4: 2.0 }
+      let dokWeightedCorrect = 0, dokWeightedMax = 0
+      config.questions.forEach(q => {
+        const w = DOK_WEIGHTS[q.dok] || 1.0
+        dokWeightedMax += w
+        if (sc.answers[q.qNum] === q.correct) dokWeightedCorrect += w
+      })
+      const dokWeightedPct = dokWeightedMax > 0 ? dokWeightedCorrect / dokWeightedMax : 0
+
       // Standards mastery
       const standardsMastery: Record<string, { met: number; total: number }> = {}
       config.questions.forEach(q => {
@@ -633,6 +644,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           written_answers: sc.answers,
           written_rubric: sc.writing,
           written_mc: mcTotal,
+          written_mc_dok_weighted: dokWeightedPct,
           writing: wTotal,
         },
         calculated_metrics: {
@@ -640,6 +652,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           written_mc_total: mcTotal,
           written_mc_max: config.totalMC,
           written_mc_pct: Math.round((mcTotal / config.totalMC) * 100),
+          written_mc_dok_weighted_pct: Math.round(dokWeightedPct * 100),
           writing_total: wTotal,
           writing_max: config.writingMax,
           written_domain_scores: domainScores,

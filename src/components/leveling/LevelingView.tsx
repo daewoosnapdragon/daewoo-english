@@ -34,7 +34,7 @@ const DIMS = [
     levels: ['Minimal output at class level, relies heavily on L1 or gestures', 'Produces some output with scaffolding, limited independence', 'Produces expected output for class level with developing control', 'Output exceeds class expectations, showing readiness for next level'] },
   { key: 'engagement_pace', label: 'Engagement & Learning Pace', desc: 'Progress relative to class pace',
     levels: ['Disengaged or overwhelmed, not making visible progress', 'Engaged but progressing slowly relative to class pace', 'Keeping pace with class, steady progress', 'Progressing faster than class pace, needs more challenge'] },
-  { key: 'placement_recommendation', label: 'Placement Recommendation', desc: 'Overall placement readiness',
+  { key: 'placement_recommendation', label: 'Placement Recommendation', desc: 'Overall placement readiness (display-only — not factored into composite score)',
     levels: ['Consider moving down', 'Keep in current class (still building)', 'Keep in current class (solid fit)', 'Consider moving up'] },
 ]
 
@@ -112,10 +112,23 @@ export default function LevelingView() {
         ))}
         <span className={`ml-auto text-[10px] font-bold px-2 py-1 rounded-full ${selectedTest.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{selectedTest.status.toUpperCase()}</span>
       </div>
-      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} onContinue={() => setPhase('written_test')} />}
-      {phase === 'written_test' && <WrittenTestPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />}
-      {phase === 'anecdotal' && <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />}
-      {phase === 'results' && <ResultsPhase levelTest={selectedTest} />}
+      {/* Phase content — all mounted, display-toggled to preserve unsaved state */}
+      <div style={{ display: phase === 'scores' ? 'block' : 'none' }}>
+        <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} onContinue={() => setPhase('written_test')} />
+      </div>
+      {(String(selectedTest.grade) !== '1') && (
+        <div style={{ display: phase === 'written_test' ? 'block' : 'none' }}>
+          <WrittenTestPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />
+        </div>
+      )}
+      {(String(selectedTest.grade) !== '1') && (
+        <div style={{ display: phase === 'anecdotal' ? 'block' : 'none' }}>
+          <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />
+        </div>
+      )}
+      <div style={{ display: phase === 'results' ? 'block' : 'none' }}>
+        <ResultsPhase levelTest={selectedTest} />
+      </div>
       {phase === 'meeting' && <MeetingPhase levelTest={selectedTest} onFinalize={() => {
         setSelectedTest({ ...selectedTest, status: 'finalized' }); setLevelTests(prev => prev.map(t => t.id === selectedTest.id ? { ...t, status: 'finalized' } : t))
       }} />}
@@ -939,7 +952,9 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   }, [levelTest.id, levelTest.grade])
 
   const rows = useMemo(() => {
-    const r = students.map(s => computeRow(s, scores, anecdotals, benchmarks, semGrades))
+    const medCwpm = computeGradeMedianCwpm(scores)
+    const medWriting = computeGradeMedianWriting(scores)
+    const r = students.map(s => computeRow(s, scores, anecdotals, benchmarks, semGrades, medCwpm, medWriting))
     const sorted = [...r].sort((a, b) => a.composite - b.composite)
     return sorted.map((row, idx) => ({
       ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
@@ -1047,7 +1062,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   const [profileStudent, setProfileStudent] = useState<Student | null>(null)
   const [profileData, setProfileData] = useState<any>(null)
-  const [weights, setWeights] = useState({ test: 30, grades: 40, anecdotal: 30 })
+  const [weights, setWeights] = useState({ test: 45, grades: 25, anecdotal: 30 })
   const [showWeights, setShowWeights] = useState(false)
   const [compareStudents, setCompareStudents] = useState<string[]>([])
   const [showCompare, setShowCompare] = useState(false)
@@ -1071,7 +1086,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
       if (studs) {
         const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').in('student_id', studs.map((s: any) => s.id))
         const sgm: Record<string, any[]> = {}; sg?.forEach((g: any) => { const gWithName = { ...g, semester_name: g.semesters?.name || '', score: g.final_grade ?? g.calculated_grade ?? null }; if (!sgm[g.student_id]) sgm[g.student_id] = []; sgm[g.student_id].push(gWithName) }); setSemGrades(sgm)
-        const auto = calcAuto(studs, sm, am, bm, sgm, { test: 0.3, grades: 0.4, anecdotal: 0.3 })
+        const auto = calcAuto(studs, sm, am, bm, sgm, { test: 0.45, grades: 0.25, anecdotal: 0.30 })
         setAutoPlacements(auto)
         const pm: Record<string, EnglishClass> = {}
         if (pd?.length) pd.forEach((p: any) => { pm[p.student_id] = p.final_placement })
@@ -1178,7 +1193,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                       const writing = sc?.raw_scores?.writing || 0
                       const mc = sc?.raw_scores?.written_mc || 0
                       const gradeAvg = sg.length > 0 ? sg.reduce((sum: number, g: any) => sum + (g.score || 0), 0) / sg.length : 0
-                      const anAvg = an ? ([an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / Math.max(1, [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null).length) : 0
+                      const anAvg = an ? ([an.receptive_language, an.productive_language, an.engagement_pace].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / Math.max(1, [an.receptive_language, an.productive_language, an.engagement_pace].filter((v: any) => v != null).length) : 0
                       return [Math.min(1, cwpmRaw / 150), writing / 20, mc / WRITTEN_MC_TOTAL, gradeAvg / 100, anAvg / 4]
                     })
                     const angleStep = (Math.PI * 2) / n
@@ -1245,7 +1260,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                       <div className="flex justify-between"><span className="text-text-tertiary">Writing</span><span className="font-bold text-navy">{sc?.raw_scores?.writing ?? '—'}/20</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">MC</span><span className="font-bold text-navy">{sc?.raw_scores?.written_mc ?? '—'}/{WRITTEN_MC_TOTAL}</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">Grade Avg</span><span className={`font-bold ${gradeAvg != null ? (gradeAvg >= 80 ? 'text-green-600' : gradeAvg >= 60 ? 'text-amber-600' : 'text-red-600') : ''}`}>{gradeAvg != null ? `${gradeAvg.toFixed(0)}%` : '—'}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Anecdotal Avg</span><span className="font-bold text-navy">{an ? ((([an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null).length) || 0).toFixed(1) : '—'}/4</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">Anecdotal Avg</span><span className="font-bold text-navy">{an ? ((([an.receptive_language, an.productive_language, an.engagement_pace].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / [an.receptive_language, an.productive_language, an.engagement_pace].filter((v: any) => v != null).length) || 0).toFixed(1) : '—'}/4</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">Placement Rec</span><span className="font-bold text-text-secondary">{an?.placement_recommendation != null ? `${an.placement_recommendation}/4` : '—'}</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">Teacher Rec</span><span className={`font-bold text-[10px] ${an?.teacher_recommends === 'move_up' ? 'text-green-600' : an?.teacher_recommends === 'move_down' ? 'text-red-600' : 'text-blue-600'}`}>{an?.teacher_recommends === 'keep' ? 'KEEP' : an?.teacher_recommends === 'move_up' ? 'MOVE UP' : an?.teacher_recommends === 'move_down' ? 'MOVE DOWN' : '—'}</span></div>
                       {an?.notes && <p className="text-[10px] text-text-secondary bg-surface-alt rounded px-2 py-1 mt-1 italic">{an.notes}</p>}
                     </div>
@@ -1395,25 +1411,113 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   )
 }
 
-function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>) {
+// ─── Passage Level Multipliers (#3: factor passage difficulty into CWPM) ─────
+const PASSAGE_LEVEL_MULTIPLIERS: Record<string, number> = { A: 0.70, B: 0.85, C: 1.00, D: 1.15, E: 1.30, F: 1.40 }
+
+// ─── Helper: compute grade-level median CWPM from all students (#1: blended ratio) ──
+function computeGradeMedianCwpm(allScores: Record<string, any>): number {
+  const cwpms = Object.values(allScores)
+    .map((s: any) => s?.raw_scores?.passage_cwpm)
+    .filter((v: any) => v != null && v > 0) as number[]
+  if (cwpms.length === 0) return 60 // reasonable fallback
+  cwpms.sort((a, b) => a - b)
+  const mid = Math.floor(cwpms.length / 2)
+  return cwpms.length % 2 === 0 ? (cwpms[mid - 1] + cwpms[mid]) / 2 : cwpms[mid]
+}
+function computeGradeMedianWriting(allScores: Record<string, any>): number {
+  const vals = Object.values(allScores)
+    .map((s: any) => s?.raw_scores?.writing)
+    .filter((v: any) => v != null && v > 0) as number[]
+  if (vals.length === 0) return 10
+  vals.sort((a, b) => a - b)
+  const mid = Math.floor(vals.length / 2)
+  return vals.length % 2 === 0 ? (vals[mid - 1] + vals[mid]) / 2 : vals[mid]
+}
+
+// ─── Helper: get comprehension total from raw_scores (handles both formats) ──
+function getCompTotal(sc: Record<string, any>): number | null {
+  // OralTestGrades2to5 format: comp_1..comp_5
+  const compFields = [sc.comp_1, sc.comp_2, sc.comp_3, sc.comp_4, sc.comp_5]
+  if (compFields.some(v => v != null)) {
+    return compFields.reduce((a: number, b: any) => a + (b || 0), 0)
+  }
+  // GenericScoreEntry format: single comprehension field
+  if (sc.comprehension != null) return sc.comprehension
+  return null
+}
+function getCompMax(sc: Record<string, any>): number {
+  // If comp_1..comp_5 format, max is 15 (5 questions × 3 pts)
+  if ([sc.comp_1, sc.comp_2, sc.comp_3, sc.comp_4, sc.comp_5].some(v => v != null)) return 15
+  // GenericScoreEntry: max is typically 5 or 10
+  return sc.comprehension != null ? 5 : 15
+}
+
+// ─── Helper: recency-weighted fall grades (#6: fall_final weighted 2×) ─────
+function computeWeightedGradeScore(grades: any[]): number | null {
+  const fallGrades = grades.filter((g: any) => g.score != null && (
+    g.semester_name?.toLowerCase().includes('fall') ||
+    g.semesters?.name?.toLowerCase().includes('fall') ||
+    g.semesters?.type?.startsWith('fall')
+  ))
+  if (fallGrades.length === 0) return null
+  let weightedSum = 0, totalWeight = 0
+  fallGrades.forEach((g: any) => {
+    const isFinal = g.semester_name?.toLowerCase().includes('final') ||
+      g.semesters?.name?.toLowerCase().includes('final') ||
+      g.semesters?.type?.includes('final')
+    const w = isFinal ? 2 : 1
+    weightedSum += g.score * w
+    totalWeight += w
+  })
+  return totalWeight > 0 ? weightedSum / totalWeight / 100 : null
+}
+
+function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, gradeMedianCwpm: number, gradeMedianWriting: number) {
   const sc = scores[s.id]?.raw_scores || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
-  const cwpmRatio = sc.passage_cwpm != null && bench.cwpm_end > 0 ? sc.passage_cwpm / bench.cwpm_end : null
-  const writingRatio = sc.writing != null && bench.writing_end > 0 ? sc.writing / bench.writing_end : null
-  const mcPct = sc.written_mc != null ? sc.written_mc / WRITTEN_MC_TOTAL : null
+
+  // #3: Passage level multiplier for CWPM
+  const passageMult = sc.passage_level ? (PASSAGE_LEVEL_MULTIPLIERS[sc.passage_level] || 1.0) : 1.0
+  const adjustedCwpm = sc.passage_cwpm != null ? sc.passage_cwpm * passageMult : null
+
+  // #1: Blended CWPM ratio (50% benchmark-relative + 50% grade-absolute)
+  const benchRatio = adjustedCwpm != null && bench.cwpm_end > 0 ? adjustedCwpm / bench.cwpm_end : null
+  const absRatio = adjustedCwpm != null && gradeMedianCwpm > 0 ? adjustedCwpm / gradeMedianCwpm : null
+  const cwpmRatio = benchRatio != null && absRatio != null ? benchRatio * 0.5 + absRatio * 0.5
+    : benchRatio ?? absRatio ?? null
+
+  // #1: Blended writing ratio
+  const benchWritingRatio = sc.writing != null && bench.writing_end > 0 ? sc.writing / bench.writing_end : null
+  const absWritingRatio = sc.writing != null && gradeMedianWriting > 0 ? sc.writing / gradeMedianWriting : null
+  const writingRatio = benchWritingRatio != null && absWritingRatio != null ? benchWritingRatio * 0.5 + absWritingRatio * 0.5
+    : benchWritingRatio ?? absWritingRatio ?? null
+
+  // #2: DOK-weighted MC (use dok-weighted if available, fall back to raw percentage)
+  const mcPct = sc.written_mc_dok_weighted != null ? sc.written_mc_dok_weighted
+    : sc.written_mc != null ? sc.written_mc / WRITTEN_MC_TOTAL : null
   const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
-  const testRatios = [cwpmRatio, writingRatio, mcPct, wrAcc].filter(v => v != null) as number[]
+
+  // #5: Add comprehension ratio to test score
+  const compTotal = getCompTotal(sc)
+  const compMax = getCompMax(sc)
+  const compRatio = compTotal != null && compMax > 0 ? compTotal / compMax : null
+
+  const testRatios = [cwpmRatio, writingRatio, mcPct, wrAcc, compRatio].filter(v => v != null) as number[]
   const testScore = testRatios.length > 0 ? testRatios.reduce((a, b) => a + b, 0) / testRatios.length : 0.5
-  const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall'))); const gradeScore = gv.length > 0 ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length / 100 : null
-  const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
+
+  // #6: Recency-weighted fall grades (fall_final at 2×)
+  const gradeScore = computeWeightedGradeScore(grades)
+
+  // #4: Drop placement_recommendation from anecdotal composite (display-only)
+  const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace].filter((v: any) => v != null) as number[]
   const anecScore = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
-  // Composite: if student has grades, use test 30% + grades 40% + anecdotal 30%
-  // If no grades (transfer, etc.): test 40% + anecdotal 20% (heavier on test)
+
+  // Updated weights: Test 45% / Grades 25% / Anecdotal 30%
   const hasGrades = gradeScore != null
   const gScore = gradeScore ?? 0.5
   const composite = hasGrades
-    ? testScore * 0.30 + gScore * 0.40 + anecScore * 0.30
+    ? testScore * 0.45 + gScore * 0.25 + anecScore * 0.30
     : testScore * 0.80 + anecScore * 0.20
-  return { student: s, score: sc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, testScore, gradeScore: gScore, anecScore, composite, rawCwpm: sc.passage_cwpm ?? null, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, hasGrades }
+  return { student: s, score: sc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, gradeScore: gScore, anecScore, composite, rawCwpm: sc.passage_cwpm ?? null, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, hasGrades, passageLevel: sc.passage_level || null, compTotal }
 }
 
 function suggestClass(row: any, idx: number, total: number): EnglishClass {
@@ -1428,19 +1532,58 @@ function suggestClass(row: any, idx: number, total: number): EnglishClass {
 function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, w: { test: number; grades: number; anecdotal: number }): Record<string, EnglishClass> {
   const result: Record<string, EnglishClass> = {}
   const metrics: Record<string, number> = {}
+
+  // Pre-compute grade medians (#1)
+  const medianCwpm = computeGradeMedianCwpm(scores)
+  const medianWriting = computeGradeMedianWriting(scores)
+
   students.forEach(s => {
     const sc = scores[s.id]?.raw_scores || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
-    const tr: number[] = []; if (sc.passage_cwpm != null && bench.cwpm_end > 0) tr.push(sc.passage_cwpm / bench.cwpm_end); if (sc.writing != null && bench.writing_end > 0) tr.push(sc.writing / bench.writing_end); if (sc.written_mc != null) tr.push(sc.written_mc / WRITTEN_MC_TOTAL); if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) tr.push(sc.word_reading_correct / sc.word_reading_attempted)
+
+    // #3: Passage level multiplier
+    const passageMult = sc.passage_level ? (PASSAGE_LEVEL_MULTIPLIERS[sc.passage_level] || 1.0) : 1.0
+    const adjCwpm = sc.passage_cwpm != null ? sc.passage_cwpm * passageMult : null
+
+    // #1: Blended CWPM and writing ratios
+    const tr: number[] = []
+    if (adjCwpm != null) {
+      const benchR = bench.cwpm_end > 0 ? adjCwpm / bench.cwpm_end : null
+      const absR = medianCwpm > 0 ? adjCwpm / medianCwpm : null
+      if (benchR != null && absR != null) tr.push(benchR * 0.5 + absR * 0.5)
+      else if (benchR != null) tr.push(benchR)
+      else if (absR != null) tr.push(absR)
+    }
+    if (sc.writing != null) {
+      const benchW = bench.writing_end > 0 ? sc.writing / bench.writing_end : null
+      const absW = medianWriting > 0 ? sc.writing / medianWriting : null
+      if (benchW != null && absW != null) tr.push(benchW * 0.5 + absW * 0.5)
+      else if (benchW != null) tr.push(benchW)
+      else if (absW != null) tr.push(absW)
+    }
+    // #2: DOK-weighted MC
+    if (sc.written_mc_dok_weighted != null) tr.push(sc.written_mc_dok_weighted)
+    else if (sc.written_mc != null) tr.push(sc.written_mc / WRITTEN_MC_TOTAL)
+    if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) tr.push(sc.word_reading_correct / sc.word_reading_attempted)
+
+    // #5: Comprehension ratio
+    const compTotal = getCompTotal(sc)
+    const compMax = getCompMax(sc)
+    if (compTotal != null && compMax > 0) tr.push(compTotal / compMax)
+
     const ts = tr.length > 0 ? tr.reduce((a, b) => a + b, 0) / tr.length : 0.5
-    // Filter to fall semester grades only (matches computeRow behavior)
-    const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall')))
-    const hasGrades = gv.length > 0
-    const gs = hasGrades ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length / 100 : 0.5
-    const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
+
+    // #6: Recency-weighted grades
+    const gs = computeWeightedGradeScore(grades)
+    const hasGrades = gs != null
+    const gsFinal = gs ?? 0.5
+
+    // #4: Drop placement_recommendation from anecdotal
+    const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace].filter((v: any) => v != null) as number[]
     const as2 = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
-    // When student has no grades, weight heavier on test (matches computeRow fallback)
+
+    // When student has no grades, weight heavier on test
     metrics[s.id] = hasGrades
-      ? ts * w.test + gs * w.grades + as2 * w.anecdotal
+      ? ts * w.test + gsFinal * w.grades + as2 * w.anecdotal
       : ts * 0.80 + as2 * 0.20
   })
   const sorted = students.map(s => ({ id: s.id, m: metrics[s.id] || 0 })).sort((a, b) => a.m - b.m)
