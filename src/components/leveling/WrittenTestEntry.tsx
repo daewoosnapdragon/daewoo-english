@@ -31,12 +31,165 @@ interface WritingCategory {
   standardDesc: string
 }
 
+// Rubric descriptors per grade — keyed by category key, then score level
+type RubricDescriptors = Record<string, string[]>  // key -> [level0, level1, level2, ...]
+
+const GRADE_2_RUBRIC_DESC: RubricDescriptors = {
+  completeness: [
+    'No writing attempted or no English.',
+    'Addresses 1 question only.',
+    'Addresses 2 of the 4 questions.',
+    'Addresses 3 of the 4 questions.',
+    'Addresses all 4 questions but some lack detail.',
+    'Fully addresses all 4 questions with detail.',
+  ],
+  content: [
+    'No written sentences.',
+    '1–2 basic sentences. Names animal with little detail.',
+    '3–4 sentences. Basic description, limited detail.',
+    '5+ sentences. Some descriptive detail or gives a reason.',
+    '5+ good sentences. Good detail about appearance, habitat, reason.',
+    '5+ great sentences. Rich, specific detail beyond basic description.',
+  ],
+  language: [
+    'No intelligible English sentences.',
+    'Significant errors make meaning difficult.',
+    'Frequent errors sometimes interfere. Repetitive patterns.',
+    'Some errors but meaning always clear. Attempts variety.',
+    'Mostly correct grammar. Some varied structures.',
+    'Strong grammar. Varied sentences. Confident English use.',
+  ],
+  mechanics: [
+    'No capitalization, punctuation, or recognizable spelling.',
+    'Minimal punctuation/capitalization. Many misspellings.',
+    'Some capitalization and punctuation but inconsistent.',
+    'Capitalization and end punctuation on most sentences.',
+    'Consistent capitalization/punctuation. High-frequency words correct.',
+    'Strong control of mechanics. Correct grade-level spelling.',
+  ],
+}
+
+const GRADE_3_RUBRIC_DESC: RubricDescriptors = {
+  brainstorm: [
+    'Blank or no English attempted.',
+    '1–2 fields filled with single words, may be unrelated.',
+    'Some fields filled. Basic words/phrases connect to picture.',
+    'Most fields completed with relevant ideas.',
+    'All fields completed with relevant, detailed ideas.',
+  ],
+  structure: [
+    'No sentences written.',
+    'Writing present but no identifiable structure.',
+    'Attempts beginning and middle but no clear ending.',
+    'Has beginning, middle, and end; one part is weak.',
+    'Clear beginning, middle, end. Logically sequenced.',
+  ],
+  content: [
+    'No written sentences.',
+    '1–3 sentences. Minimal content — labels or simple observations.',
+    '4–5 sentences. Basic description with limited development.',
+    '6–7 sentences. Most story elements. Some detail beyond picture.',
+    '8+ sentences. Characters, setting, actions, feelings. Imaginative.',
+  ],
+  language: [
+    'No intelligible English sentences.',
+    'Significant errors make meaning difficult.',
+    'Frequent errors sometimes interfere. Repetitive patterns.',
+    'Some errors but meaning always clear. Attempts variety.',
+    'Mostly correct grammar. Varied structures. Consistent SVA.',
+  ],
+  mechanics: [
+    'No capitalization, punctuation, or recognizable spelling.',
+    'Minimal punctuation/capitalization. Many misspellings.',
+    'Some capitalization/punctuation but inconsistent.',
+    'Minor inconsistencies. A few common words misspelled.',
+    'Consistent capitalization/punctuation. HF words correct.',
+  ],
+}
+
+const GRADE_4_RUBRIC_DESC: RubricDescriptors = {
+  brainstorm: [
+    'Blank or no English attempted.',
+    '1–2 fields filled, may be unrelated to pictures.',
+    'Some fields filled. Basic words/phrases connect to pictures.',
+    'Most fields completed. Understands story across 3 pictures.',
+    'All fields completed. Characters, setting, events, feelings, ending.',
+  ],
+  structure: [
+    'No sentences written.',
+    'No identifiable structure — random sentences or list.',
+    'Attempts beginning/middle but no ending or out of order.',
+    'Beginning, middle, end follow 3 pictures; one part weak.',
+    'Clear beginning, middle, end logically follow pictures.',
+  ],
+  content: [
+    'No written sentences.',
+    '1–4 sentences. Labels or simple observations about pictures.',
+    '5–7 sentences. Basic description, mostly tells what is seen.',
+    '8–9 sentences. Some detail beyond pictures (dialogue, feelings).',
+    '10+ sentences. Characters, actions, feelings, dialogue. Imaginative.',
+  ],
+  language: [
+    'No intelligible English sentences.',
+    'Significant errors make meaning difficult.',
+    'Frequent errors sometimes interfere. Repetitive patterns.',
+    'Some errors but meaning clear. Attempts compound sentences.',
+    'Mostly correct. Varied structures. Consistent tenses/SVA.',
+  ],
+  mechanics: [
+    'No capitalization, punctuation, or recognizable spelling.',
+    'Minimal punctuation/capitalization. Many misspellings.',
+    'Some capitalization/punctuation but inconsistent.',
+    'Minor inconsistencies. A few common words misspelled.',
+    'Consistent capitalization/punctuation. Quotation marks attempted.',
+  ],
+}
+
+const GRADE_5_RUBRIC_DESC: RubricDescriptors = {
+  brainstorm: [
+    'Blank or no English attempted.',
+    '1–2 fields with single words, may be unrelated to prompt.',
+    'Some fields filled. Basic words/phrases connect to trip prompt.',
+    'Most fields completed. Understands story elements.',
+    'All fields completed. Destination, travel, activities, ending planned.',
+  ],
+  structure: [
+    'No sentences written.',
+    'No identifiable structure — random or unconnected ideas.',
+    'Attempts beginning/middle but no ending. Trip sequence unclear.',
+    'Beginning, middle, end follow a logical trip sequence.',
+    'Clear beginning, middle, end. Well-sequenced trip timeline.',
+  ],
+  content: [
+    'No written sentences.',
+    '1–4 sentences. Names a place but little else.',
+    '5–7 sentences. Basic description. Mostly tells without detail.',
+    '8–9 sentences. Prompt questions addressed. Some vivid detail.',
+    '10+ sentences. Rich detail. Sensory descriptions, personal reactions.',
+  ],
+  language: [
+    'No intelligible English sentences.',
+    'Significant errors make meaning difficult.',
+    'Frequent errors sometimes interfere. Repetitive patterns.',
+    'Some errors but meaning clear. Attempts compound sentences.',
+    'Mostly correct. Varied structures. Consistent past tense. Transitions.',
+  ],
+  mechanics: [
+    'No capitalization, punctuation, or recognizable spelling.',
+    'Minimal punctuation/capitalization. Many misspellings.',
+    'Some capitalization/punctuation but inconsistent. Proper nouns may not be capitalized.',
+    'Minor inconsistencies. Proper nouns mostly capitalized.',
+    'Consistent capitalization/punctuation. Commas in lists. HF words correct.',
+  ],
+}
+
 interface GradeConfig {
   grade: number
   totalMC: number
   questions: QuestionDef[]
   writingCategories: WritingCategory[]
   writingMax: number
+  rubricDesc: RubricDescriptors
 }
 
 interface StudentScores {
@@ -54,7 +207,7 @@ const GRADE_2_QUESTIONS: QuestionDef[] = [
   { qNum: 2, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'Where does the story happen?', correct: 'b', standard: 'SL.2.2', standardDesc: 'Key ideas from text read aloud', dok: 1, domain: 'Listening Comprehension' },
   { qNum: 3, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What can you NOT do at the park?', correct: 'd', standard: 'RI.2.1', standardDesc: 'Ask/answer who, what, where, when', dok: 2, domain: 'Listening Comprehension' },
   { qNum: 4, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What can you make in the sandbox?', correct: 'a', standard: 'SL.2.2', standardDesc: 'Key ideas from text read aloud', dok: 1, domain: 'Listening Comprehension' },
-  { qNum: 5, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What does "swing" mean?', correct: 'b', standard: 'L.2.4a', standardDesc: 'Context clue to word meaning', dok: 2, domain: 'Vocabulary' },
+  { qNum: 5, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What does "swing" mean?', correct: 'a', standard: 'L.2.4a', standardDesc: 'Context clue to word meaning', dok: 2, domain: 'Vocabulary' },
   // Reading 1 (Q6-9) — "Kate's Cake"
   { qNum: 6, section: 'reading1', sectionLabel: 'Reading: Kate\'s Cake', text: 'What is this story about?', correct: 'a', standard: 'RL.2.2', standardDesc: 'Determine central message', dok: 2, domain: 'Reading Comprehension' },
   { qNum: 7, section: 'reading1', sectionLabel: 'Reading: Kate\'s Cake', text: 'What happens last?', correct: 'd', standard: 'RL.2.5', standardDesc: 'Describe overall structure', dok: 2, domain: 'Reading Comprehension' },
@@ -70,7 +223,7 @@ const GRADE_2_QUESTIONS: QuestionDef[] = [
   // Language 1: Cloze (Q16-20)
   { qNum: 16, section: 'language1', sectionLabel: 'Language: Cloze', text: 'Today is ___ dad\'s birthday', correct: 'a', standard: 'L.2.1d', standardDesc: 'Possessive pronouns', dok: 1, domain: 'Language/Grammar' },
   { qNum: 17, section: 'language1', sectionLabel: 'Language: Cloze', text: 'I will ___ him a birthday cake', correct: 'b', standard: 'L.2.1', standardDesc: 'Verb forms (future)', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 18, section: 'language1', sectionLabel: 'Language: Cloze', text: 'Next, I ___ three eggs', correct: 'c', standard: 'L.2.1d', standardDesc: 'Past tense verbs', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 18, section: 'language1', sectionLabel: 'Language: Cloze', text: 'Next, I ___ three eggs', correct: 'a', standard: 'L.2.1d', standardDesc: 'Verb forms (present simple)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 19, section: 'language1', sectionLabel: 'Language: Cloze', text: '___ sugar, and baking powder', correct: 'b', standard: 'L.2.1e', standardDesc: 'Adjectives/determiners', dok: 1, domain: 'Language/Grammar' },
   { qNum: 20, section: 'language1', sectionLabel: 'Language: Cloze', text: 'put in a pan ___ put it in a hot oven', correct: 'c', standard: 'L.2.1f', standardDesc: 'Conjunctions', dok: 1, domain: 'Language/Grammar' },
   // Language 2: Correct Sentence (Q21-25)
@@ -101,13 +254,13 @@ const GRADE_3_QUESTIONS: QuestionDef[] = [
   { qNum: 5, section: 'listening', sectionLabel: 'Listening: The Beach', text: 'What is the most important rule?', correct: 'b', standard: 'SL.3.2', standardDesc: 'Determine main ideas', dok: 2, domain: 'Listening Comprehension' },
   // Language Standards (Q6-13)
   { qNum: 6, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'What are they going to do?', correct: 'b', standard: 'L.3.1e', standardDesc: 'Verb tenses (future)', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 7, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'Will they do laundry?', correct: 'd', standard: 'L.3.1', standardDesc: 'Negative future tense', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 7, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'Will they do laundry?', correct: 'b', standard: 'L.3.1', standardDesc: 'Negative future tense', dok: 1, domain: 'Language/Grammar' },
   { qNum: 8, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'Are they washing the dishes?', correct: 'b', standard: 'L.3.1', standardDesc: 'Present progressive/SVA', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 9, section: 'language1', sectionLabel: 'Language: Grammar', text: 'Has Tom ___ his homework?', correct: 'b', standard: 'L.3.1d', standardDesc: 'Irregular verbs (present perfect)', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 9, section: 'language1', sectionLabel: 'Language: Grammar', text: 'Has Tom ___ his homework?', correct: 'a', standard: 'L.3.1d', standardDesc: 'Irregular verbs (present perfect)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 10, section: 'language1', sectionLabel: 'Language: Grammar', text: 'How long has Mr. Smith ___ English?', correct: 'd', standard: 'L.3.1d', standardDesc: 'Irregular verbs (present perfect)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 11, section: 'language1', sectionLabel: 'Language: Grammar', text: 'My sister ___ practice piano', correct: 'b', standard: 'L.3.1', standardDesc: 'Modal/helping verbs', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 12, section: 'language1', sectionLabel: 'Language: Grammar', text: 'An elephant is ___ than a cat', correct: 'b', standard: 'L.3.1g', standardDesc: 'Comparative adjectives', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 13, section: 'language1', sectionLabel: 'Language: Grammar', text: 'The ___ toys were all over the floor', correct: 'b', standard: 'L.3.2d', standardDesc: 'Irregular possessives', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 12, section: 'language1', sectionLabel: 'Language: Grammar', text: 'An elephant is ___ than a cat', correct: 'd', standard: 'L.3.1g', standardDesc: 'Comparative adjectives', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 13, section: 'language1', sectionLabel: 'Language: Grammar', text: 'The ___ toys were all over the floor', correct: 'c', standard: 'L.3.2d', standardDesc: 'Irregular possessives', dok: 1, domain: 'Language/Grammar' },
   // Reading: "Changing Seasons" (Q14-16)
   { qNum: 14, section: 'reading1', sectionLabel: 'Reading: Changing Seasons', text: 'What happens in fall?', correct: 'd', standard: 'RI.3.1', standardDesc: 'Questions referring to text', dok: 1, domain: 'Reading Comprehension' },
   { qNum: 15, section: 'reading1', sectionLabel: 'Reading: Changing Seasons', text: 'When should you wear a heavy coat?', correct: 'b', standard: 'RI.3.1', standardDesc: 'Questions referring to text', dok: 1, domain: 'Reading Comprehension' },
@@ -136,7 +289,7 @@ const GRADE_4_QUESTIONS: QuestionDef[] = [
   // Listening (Q1-5) — "Crocodiles and Alligators"
   { qNum: 1, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'Main idea of this passage?', correct: 'b', standard: 'SL.4.2', standardDesc: 'Paraphrase text read aloud', dok: 2, domain: 'Listening Comprehension' },
   { qNum: 2, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'One way crocs and gators are the same?', correct: 'c', standard: 'SL.4.2', standardDesc: 'Key details from text read aloud', dok: 1, domain: 'Listening Comprehension' },
-  { qNum: 3, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'One way to tell a croc from a gator?', correct: 'c', standard: 'SL.4.3', standardDesc: 'Speaker\'s reasons/evidence', dok: 1, domain: 'Listening Comprehension' },
+  { qNum: 3, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'One way to tell a croc from a gator?', correct: 'a', standard: 'SL.4.3', standardDesc: 'Speaker\'s reasons/evidence', dok: 1, domain: 'Listening Comprehension' },
   { qNum: 4, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'Which is NOT true?', correct: 'c', standard: 'RI.4.1', standardDesc: 'Refer to details', dok: 2, domain: 'Listening Comprehension' },
   { qNum: 5, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'Best title for this story?', correct: 'd', standard: 'RI.4.2', standardDesc: 'Determine main idea/summarize', dok: 2, domain: 'Listening Comprehension' },
   // Reading: "Spider and the Watermelon" (Q6-11)
@@ -160,7 +313,7 @@ const GRADE_4_QUESTIONS: QuestionDef[] = [
   { qNum: 21, section: 'reading2', sectionLabel: 'Reading: Enormous Insects', text: 'What is NOT true about Goliath beetles?', correct: 'b', standard: 'RI.4.1', standardDesc: 'Refer to details/examples', dok: 2, domain: 'Reading Comprehension' },
   { qNum: 22, section: 'reading2', sectionLabel: 'Reading: Enormous Insects', text: 'Another word for "blend in with"?', correct: 'a', standard: 'L.4.4a', standardDesc: 'Context clue to word meaning', dok: 2, domain: 'Vocabulary' },
   // Language Standards 2 (Q23-28)
-  { qNum: 23, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'The ___ belt is expensive', correct: 'a', standard: 'L.4.1', standardDesc: 'Superlative adjectives', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 23, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'The ___ belt is expensive', correct: 'b', standard: 'L.4.1', standardDesc: 'Comparative adjectives', dok: 1, domain: 'Language/Grammar' },
   { qNum: 24, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'I like to ___ books', correct: 'a', standard: 'L.4.1', standardDesc: 'Infinitive verb forms', dok: 1, domain: 'Language/Grammar' },
   { qNum: 25, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'I am ___ watch the magic show', correct: 'd', standard: 'L.4.1', standardDesc: 'Future tense (going to)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 26, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'Mike ___ when he won the award', correct: 'b', standard: 'L.4.1', standardDesc: 'Irregular past tense/linking verbs', dok: 1, domain: 'Language/Grammar' },
@@ -205,6 +358,12 @@ const GRADE_5_QUESTIONS: QuestionDef[] = [
   { qNum: 18, section: 'reading1', sectionLabel: 'Reading: Mount Everest', text: 'How many people reached the summit?', correct: 'c', standard: 'RI.5.1', standardDesc: 'Quote accurately from text', dok: 1, domain: 'Reading Comprehension' },
   { qNum: 19, section: 'reading1', sectionLabel: 'Reading: Mount Everest', text: 'People\'s attitude toward climbing?', correct: 'c', standard: 'RI.5.3', standardDesc: 'Relationships between concepts', dok: 2, domain: 'Reading Comprehension' },
   { qNum: 20, section: 'reading1', sectionLabel: 'Reading: Mount Everest', text: 'How does author support main idea?', correct: 'c', standard: 'RI.5.5', standardDesc: 'Text structure analysis', dok: 3, domain: 'Reading Comprehension' },
+  // Reading: "Monarch Butterflies" (Q21-25)
+  { qNum: 21, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'Main purpose of this passage?', correct: 'b', standard: 'RI.5.2', standardDesc: 'Determine main idea/summarize', dok: 2, domain: 'Reading Comprehension' },
+  { qNum: 22, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'Why do migrating monarchs live longer?', correct: 'c', standard: 'RI.5.1', standardDesc: 'Quote accurately from text', dok: 2, domain: 'Reading Comprehension' },
+  { qNum: 23, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'Which is a threat to the migration?', correct: 'c', standard: 'RI.5.1', standardDesc: 'Refer to details in text', dok: 1, domain: 'Reading Comprehension' },
+  { qNum: 24, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'How does author show monarchs are remarkable?', correct: 'b', standard: 'RI.5.3', standardDesc: 'Relationships between concepts', dok: 2, domain: 'Reading Comprehension' },
+  { qNum: 25, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'What can be inferred about monarchs?', correct: 'b', standard: 'RI.5.1', standardDesc: 'Draw inferences from text', dok: 3, domain: 'Reading Comprehension' },
 ]
 
 const GRADE_5_WRITING: WritingCategory[] = [
@@ -221,10 +380,10 @@ const GRADE_5_WRITING: WritingCategory[] = [
 
 function getGradeConfig(grade: number): GradeConfig | null {
   switch (grade) {
-    case 2: return { grade: 2, totalMC: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20 }
-    case 3: return { grade: 3, totalMC: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20 }
-    case 4: return { grade: 4, totalMC: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20 }
-    case 5: return { grade: 5, totalMC: 20, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20 }
+    case 2: return { grade: 2, totalMC: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20, rubricDesc: GRADE_2_RUBRIC_DESC }
+    case 3: return { grade: 3, totalMC: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20, rubricDesc: GRADE_3_RUBRIC_DESC }
+    case 4: return { grade: 4, totalMC: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20, rubricDesc: GRADE_4_RUBRIC_DESC }
+    case 5: return { grade: 5, totalMC: 25, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20, rubricDesc: GRADE_5_RUBRIC_DESC }
     default: return null
   }
 }
@@ -679,7 +838,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         )
       })}
 
-      {/* Writing Rubric */}
+      {/* Writing Rubric with Inline Descriptors */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-[13px] font-semibold text-navy">Writing Rubric</h4>
@@ -688,23 +847,32 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         <div className="border border-border rounded-lg overflow-hidden">
           {config.writingCategories.map((cat, ci) => {
             const val = sc.writing[cat.key] || 0
+            const descriptors = config.rubricDesc[cat.key] || []
             return (
-              <div key={cat.key} className={`flex items-center gap-3 px-3 py-2 ${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                <div className="w-40">
-                  <div className="text-[12px] font-medium">{cat.label}</div>
-                  <div className="text-[9px] text-text-tertiary">{cat.standard} -- {cat.standardDesc}</div>
+              <div key={cat.key} className={`px-3 py-2.5 ${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${ci < config.writingCategories.length - 1 ? 'border-b border-border/50' : ''}`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-40 flex-shrink-0">
+                    <div className="text-[12px] font-medium">{cat.label}</div>
+                    <div className="text-[9px] text-text-tertiary">{cat.standard}</div>
+                  </div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: cat.max + 1 }, (_, i) => (
+                      <button key={i} onClick={() => setWritingScore(cat.key, i)}
+                        className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${
+                          val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'
+                        }`}>
+                        {i}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-[12px] font-bold text-navy ml-2">{val}/{cat.max}</span>
                 </div>
-                <div className="flex gap-1">
-                  {Array.from({ length: cat.max + 1 }, (_, i) => (
-                    <button key={i} onClick={() => setWritingScore(cat.key, i)}
-                      className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${
-                        val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'
-                      }`}>
-                      {i}
-                    </button>
-                  ))}
-                </div>
-                <span className="text-[12px] font-bold text-navy ml-2">{val}/{cat.max}</span>
+                {/* Inline descriptor for selected score */}
+                {descriptors[val] && (
+                  <div className="mt-1.5 ml-[172px] text-[10px] text-text-secondary leading-relaxed bg-blue-50/60 rounded px-2 py-1 border border-blue-100">
+                    <span className="font-semibold text-navy">Level {val}:</span> {descriptors[val]}
+                  </div>
+                )}
               </div>
             )
           })}
