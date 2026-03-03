@@ -532,7 +532,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
           </div>
           <div className="w-px h-6 bg-border" />
           <div className="flex gap-1">
-            {GRADES.map(g => <button key={g} onClick={() => { if (g !== selectedGrade) { setEditDate(null); if (autosaveTimer.current) clearTimeout(autosaveTimer.current); setDayData({}); setWeeklyHomework({}); setSelectedGrade(g) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Grade {g}</button>)}
+            {GRADES.map(g => <button key={g} onClick={() => { if (g !== selectedGrade) { setEditDate(null); if (autosaveTimer.current) clearTimeout(autosaveTimer.current); lastSavedRef.current = ''; setDayData({}); setWeeklyHomework({}); setSelectedGrade(g) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Grade {g}</button>)}
           </div>
         </div>
       </div>
@@ -1099,7 +1099,19 @@ function TeacherWeeklyPlans() {
               <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Class</label>
               <div className="flex gap-1">
                 {ENGLISH_CLASSES.map(c => (
-                  <button key={c} onClick={() => { if (c !== selectedClass) { setHasChanges(false); setSelectedClass(c) } }}
+                  <button key={c} onClick={async () => { if (c !== selectedClass) {
+                    if (hasChanges && changedDays.current.size > 0) {
+                      if (teacherAutosaveTimer.current) clearTimeout(teacherAutosaveTimer.current)
+                      for (const date of weekDates) {
+                        if (!changedDays.current.has(date)) continue
+                        await supabase.from('teacher_daily_plans').upsert({
+                          date, english_class: selectedClass, grade: selectedGrade, plan_text: plans[date] || '',
+                          updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+                        }, { onConflict: 'date,english_class,grade' })
+                      }
+                    } else { if (teacherAutosaveTimer.current) clearTimeout(teacherAutosaveTimer.current) }
+                    changedDays.current.clear(); setHasChanges(false); setPlans({}); setSelectedClass(c)
+                  } }}
                     className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${selectedClass === c ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`}
                     style={selectedClass === c ? { backgroundColor: classToColor(c), color: classToTextColor(c) } : {}}>
                     {c}
@@ -1112,7 +1124,32 @@ function TeacherWeeklyPlans() {
             <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade</label>
             <div className="flex gap-1">
               {GRADES.map(g => (
-                <button key={g} onClick={() => { if (g !== selectedGrade) { if (teacherAutosaveTimer.current) clearTimeout(teacherAutosaveTimer.current); changedDays.current.clear(); setHasChanges(false); setPlans({}); setSelectedGrade(g) } }}
+                <button key={g} onClick={async () => { if (g !== selectedGrade) {
+                  // Save pending changes before switching grades
+                  if (hasChanges && changedDays.current.size > 0) {
+                    if (teacherAutosaveTimer.current) clearTimeout(teacherAutosaveTimer.current)
+                    let errors = 0
+                    for (const date of weekDates) {
+                      if (!changedDays.current.has(date)) continue
+                      const text = plans[date] || ''
+                      const { error } = await supabase.from('teacher_daily_plans').upsert({
+                        date, english_class: selectedClass, grade: selectedGrade, plan_text: text,
+                        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+                      }, { onConflict: 'date,english_class,grade' })
+                      if (error) errors++
+                    }
+                    if (changedDays.current.has('_reflection') && plans['_reflection'] !== undefined) {
+                      await supabase.from('teacher_daily_plans').upsert({
+                        date: weekDates[0], english_class: selectedClass + '_refl', grade: selectedGrade,
+                        plan_text: plans['_reflection'] || '',
+                        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+                      }, { onConflict: 'date,english_class,grade' })
+                    }
+                  } else {
+                    if (teacherAutosaveTimer.current) clearTimeout(teacherAutosaveTimer.current)
+                  }
+                  changedDays.current.clear(); setHasChanges(false); setPlans({}); setSelectedGrade(g)
+                } }}
                   className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>
                   Gr {g}
                 </button>
