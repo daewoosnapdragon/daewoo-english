@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye, Keyboard } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════
 // TYPES
@@ -31,182 +31,12 @@ interface WritingCategory {
   standardDesc: string
 }
 
-// Rubric descriptors per grade — keyed by category key, then score level
-type RubricDescriptors = Record<string, string[]>  // key -> [level0, level1, level2, ...]
-
-// Multi-grade CCSS standard expansion
-// Grade 2 → K/1/2, Grade 3 → 1/2/3, Grade 4 → 2/3/4, Grade 5 → 3/4/5
-function expandStandard(standard: string, grade: number): string {
-  // Parse standard format: "RI.5.1", "L.3.1d", "SL.4.2", "RF.2.3", "W.K.2"
-  const match = standard.match(/^([A-Z]+)\.(\w+)\.(.+)$/)
-  if (!match) return standard
-  const [, domain, , suffix] = match
-  
-  // Determine grade range: current and 2 below (min K)
-  const gradeLabels: string[] = []
-  for (let g = Math.max(0, grade - 2); g <= grade; g++) {
-    gradeLabels.push(g === 0 ? 'K' : String(g))
-  }
-  
-  return gradeLabels.map(g => `${domain}.${g}.${suffix}`).join(' · ')
-}
-
-const GRADE_2_RUBRIC_DESC: RubricDescriptors = {
-  completeness: [
-    'No writing attempted or no English.',
-    'Writing attempts to address 1 question only.',
-    'Writing addresses 2 of the 4 questions.',
-    'Writing addresses 3 of the 4 questions.',
-    'Writing addresses all 4 questions but some lack detail.',
-    'Writing fully addresses all 4 questions (what animal, appearance, habitat, and reason) with detail.',
-  ],
-  content: [
-    'No written sentences.',
-    '1–2 basic sentences. Names the animal with little or no detail.',
-    '3–4 basic sentences. Basic description with limited detail (e.g., "It is big. It is brown.").',
-    '5+ basic sentences. Includes some descriptive detail or gives a reason with explanation.',
-    '5+ good sentences. Good detail about appearance, habitat, and reason. Some facts or personal connection.',
-    '5+ great sentences. Rich, specific detail. Goes beyond basic description (e.g., facts, comparisons, feelings, personal experiences).',
-  ],
-  language: [
-    'No intelligible English sentences.',
-    'Significant errors make meaning difficult. Some English structure present.',
-    'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("I like...", "It is...").',
-    'Some errors but meaning is always clear. Attempts some sentence variety.',
-    'Mostly correct grammar. Some varied structures. Consistent subject-verb agreement.',
-    'Strong grammar for grade level. Varied sentence structures. Confident use of English.',
-  ],
-  mechanics: [
-    'No evidence of capitalization, punctuation, or recognizable spelling.',
-    'Minimal punctuation/capitalization. Many misspellings, but words recognizable.',
-    'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled.',
-    'Capitalization and end punctuation present on most sentences. A few common words misspelled.',
-    'Consistent capitalization and end punctuation. High-frequency words correct. Phonetic attempts at harder words acceptable.',
-    'Strong control of mechanics. Correct spelling of grade-level words. Punctuation used accurately throughout.',
-  ],
-}
-
-const GRADE_3_RUBRIC_DESC: RubricDescriptors = {
-  brainstorm: [
-    'Blank or no English attempted.',
-    '1–2 fields filled with single English words, may be unrelated to picture.',
-    'Some fields filled. Basic English words or short phrases that connect to the picture.',
-    'Most fields completed with relevant ideas. Shows understanding of story elements.',
-    'All fields completed with relevant, detailed ideas. Characters, setting, events, feelings, and ending all connect to the picture.',
-  ],
-  structure: [
-    'No sentences written (brainstorm only or blank).',
-    'Writing present but no identifiable structure — random sentences or list of observations.',
-    'Attempts beginning and middle but no clear ending, OR events are out of order.',
-    'Has beginning, middle, and end, but one part is weak or has a minor gap.',
-    'Clear beginning, middle, and end. Events are sequenced logically. Easy to follow.',
-  ],
-  content: [
-    'No written sentences.',
-    '1–3 sentences. Minimal content — labels or very simple observations.',
-    '4–5 sentences. Basic description of picture with limited story development.',
-    '6–7 sentences. Most story elements present. Some detail beyond the picture.',
-    '8+ sentences. Includes characters, setting, actions, and feelings. Imaginative detail beyond the picture.',
-  ],
-  language: [
-    'No intelligible English sentences.',
-    'Significant errors make meaning difficult. Some English structure present.',
-    'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("I see…").',
-    'Some errors but meaning is always clear. Attempts sentence variety.',
-    'Mostly correct grammar. Varied sentence structures. Consistent subject-verb agreement and verb tenses.',
-  ],
-  mechanics: [
-    'No evidence of capitalization, punctuation, or recognizable spelling.',
-    'Minimal punctuation/capitalization. Many misspellings, but words recognizable.',
-    'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled.',
-    'Minor inconsistencies — occasional missing capitals or periods. A few common words misspelled.',
-    'Consistent capitalization and end punctuation. High-frequency words spelled correctly. Phonetic attempts at harder words are acceptable.',
-  ],
-}
-
-const GRADE_4_RUBRIC_DESC: RubricDescriptors = {
-  brainstorm: [
-    'Blank or no English attempted.',
-    '1–2 fields filled with single English words, may be unrelated to pictures.',
-    'Some fields filled. Basic English words or short phrases that connect to the pictures.',
-    'Most fields completed with relevant ideas. Shows understanding of story elements across the three pictures.',
-    'All fields completed with relevant, detailed ideas. Characters, setting, events, feelings, and ending all connect to the pictures.',
-  ],
-  structure: [
-    'No sentences written (brainstorm only or blank).',
-    'Writing present but no identifiable structure — random sentences or list of observations about the pictures.',
-    'Attempts beginning and middle but no clear ending, OR events are out of order. Pictures not clearly connected.',
-    'Has beginning, middle, and end that follow the three pictures, but one part is weak or has a gap.',
-    'Clear beginning, middle, and end that logically follow the three pictures. Events are well-sequenced. Easy to follow.',
-  ],
-  content: [
-    'No written sentences.',
-    '1–4 sentences. Minimal content — labels or very simple observations about the pictures.',
-    '5–7 sentences. Basic description of the pictures with limited story development. Mostly tells what is seen.',
-    '8–9 sentences. Most story elements present. Some detail beyond the pictures (dialogue, feelings, names).',
-    '10+ sentences. Includes characters, setting, actions, feelings, and dialogue. Imaginative detail beyond the pictures (inner thoughts, backstory, creative additions).',
-  ],
-  language: [
-    'No intelligible English sentences.',
-    'Significant errors make meaning difficult. Some English structure present.',
-    'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("They go...", "They are...").',
-    'Some errors but meaning is always clear. Attempts sentence variety (compound sentences, dialogue, different starters).',
-    'Mostly correct grammar. Varied sentence structures including compound/complex sentences. Consistent verb tenses and subject-verb agreement. Dialogue punctuated correctly or nearly so.',
-  ],
-  mechanics: [
-    'No evidence of capitalization, punctuation, or recognizable spelling.',
-    'Minimal punctuation/capitalization. Many misspellings, but words recognizable.',
-    'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled.',
-    'Minor inconsistencies — occasional missing capitals or periods. A few common words misspelled.',
-    'Consistent capitalization and end punctuation. High-frequency words spelled correctly. Attempted to use quotation marks for dialogue. More advanced diction.',
-  ],
-}
-
-const GRADE_5_RUBRIC_DESC: RubricDescriptors = {
-  brainstorm: [
-    'Blank or no English attempted.',
-    '1–2 fields filled with single English words, may be unrelated to prompt.',
-    'Some fields filled. Basic English words or short phrases that connect to the trip prompt.',
-    'Most fields completed with relevant ideas. Shows understanding of story elements (where, how, what happened, ending).',
-    'All fields completed with relevant, detailed ideas. Destination, travel, activities, highlights, and ending all clearly planned.',
-  ],
-  structure: [
-    'No sentences written (brainstorm only or blank).',
-    'Writing present but no identifiable structure — random sentences or unconnected ideas about travel.',
-    'Attempts beginning and middle but no clear ending, OR events are out of order. Trip sequence is unclear.',
-    'Has beginning, middle, and end that follow a logical trip sequence.',
-    'Clear beginning, middle, and end. Events are well-sequenced and follow a natural trip timeline. Easy to follow.',
-  ],
-  content: [
-    'No written sentences.',
-    '1–4 sentences. Minimal content — names a place but provides little else.',
-    '5–7 sentences. Basic description of the trip with limited development. Mostly tells what happened without sensory or emotional detail.',
-    '8–9 sentences. Most prompt questions addressed (where, how, best part). Some vivid detail (descriptions, feelings, specific moments).',
-    '10+ sentences. All prompt questions addressed with rich detail. Includes sensory descriptions, personal reactions, dialogue, or specific moments that make the trip come alive.',
-  ],
-  language: [
-    'No intelligible English sentences.',
-    'Significant errors make meaning difficult. Some English structure present.',
-    'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("We go…", "It was…").',
-    'Some errors but meaning is always clear. Attempts sentence variety (compound sentences, transitions, different starters).',
-    'Mostly correct grammar. Varied sentence structures including compound/complex sentences. Consistent verb tenses (especially past tense). Transitions between events (then, after that, finally).',
-  ],
-  mechanics: [
-    'No evidence of capitalization, punctuation, or recognizable spelling.',
-    'Minimal punctuation/capitalization. Many misspellings, but words recognizable.',
-    'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled. Proper nouns (place names) may not be capitalized.',
-    'Minor inconsistencies — occasional missing capitals or periods. A few common words misspelled. Proper nouns mostly capitalized.',
-    'Consistent capitalization and end punctuation. High-frequency words spelled correctly. Proper nouns capitalized. Commas used in lists and compound sentences. Phonetic attempts at harder words are acceptable.',
-  ],
-}
-
 interface GradeConfig {
   grade: number
   totalMC: number
   questions: QuestionDef[]
   writingCategories: WritingCategory[]
   writingMax: number
-  rubricDesc: RubricDescriptors
 }
 
 interface StudentScores {
@@ -224,7 +54,7 @@ const GRADE_2_QUESTIONS: QuestionDef[] = [
   { qNum: 2, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'Where does the story happen?', correct: 'b', standard: 'SL.2.2', standardDesc: 'Key ideas from text read aloud', dok: 1, domain: 'Listening Comprehension' },
   { qNum: 3, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What can you NOT do at the park?', correct: 'd', standard: 'RI.2.1', standardDesc: 'Ask/answer who, what, where, when', dok: 2, domain: 'Listening Comprehension' },
   { qNum: 4, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What can you make in the sandbox?', correct: 'a', standard: 'SL.2.2', standardDesc: 'Key ideas from text read aloud', dok: 1, domain: 'Listening Comprehension' },
-  { qNum: 5, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What does "swing" mean?', correct: 'a', standard: 'L.2.4a', standardDesc: 'Context clue to word meaning', dok: 2, domain: 'Vocabulary' },
+  { qNum: 5, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What does "swing" mean?', correct: 'b', standard: 'L.2.4a', standardDesc: 'Context clue to word meaning', dok: 2, domain: 'Vocabulary' },
   // Reading 1 (Q6-9) — "Kate's Cake"
   { qNum: 6, section: 'reading1', sectionLabel: 'Reading: Kate\'s Cake', text: 'What is this story about?', correct: 'a', standard: 'RL.2.2', standardDesc: 'Determine central message', dok: 2, domain: 'Reading Comprehension' },
   { qNum: 7, section: 'reading1', sectionLabel: 'Reading: Kate\'s Cake', text: 'What happens last?', correct: 'd', standard: 'RL.2.5', standardDesc: 'Describe overall structure', dok: 2, domain: 'Reading Comprehension' },
@@ -240,7 +70,7 @@ const GRADE_2_QUESTIONS: QuestionDef[] = [
   // Language 1: Cloze (Q16-20)
   { qNum: 16, section: 'language1', sectionLabel: 'Language: Cloze', text: 'Today is ___ dad\'s birthday', correct: 'a', standard: 'L.2.1d', standardDesc: 'Possessive pronouns', dok: 1, domain: 'Language/Grammar' },
   { qNum: 17, section: 'language1', sectionLabel: 'Language: Cloze', text: 'I will ___ him a birthday cake', correct: 'b', standard: 'L.2.1', standardDesc: 'Verb forms (future)', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 18, section: 'language1', sectionLabel: 'Language: Cloze', text: 'Next, I ___ three eggs', correct: 'a', standard: 'L.2.1d', standardDesc: 'Verb forms (present simple)', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 18, section: 'language1', sectionLabel: 'Language: Cloze', text: 'Next, I ___ three eggs', correct: 'c', standard: 'L.2.1d', standardDesc: 'Past tense verbs', dok: 1, domain: 'Language/Grammar' },
   { qNum: 19, section: 'language1', sectionLabel: 'Language: Cloze', text: '___ sugar, and baking powder', correct: 'b', standard: 'L.2.1e', standardDesc: 'Adjectives/determiners', dok: 1, domain: 'Language/Grammar' },
   { qNum: 20, section: 'language1', sectionLabel: 'Language: Cloze', text: 'put in a pan ___ put it in a hot oven', correct: 'c', standard: 'L.2.1f', standardDesc: 'Conjunctions', dok: 1, domain: 'Language/Grammar' },
   // Language 2: Correct Sentence (Q21-25)
@@ -252,10 +82,10 @@ const GRADE_2_QUESTIONS: QuestionDef[] = [
 ]
 
 const GRADE_2_WRITING: WritingCategory[] = [
-  { key: 'completeness', label: 'Completeness', max: 5, standard: 'W.K.2 · W.1.2 · W.2.2', standardDesc: 'Informative texts - name topic' },
-  { key: 'content', label: 'Content & Detail', max: 5, standard: 'W.K.2 · W.1.2 · W.2.2', standardDesc: 'Informative texts with detail' },
-  { key: 'language', label: 'Language & Grammar', max: 5, standard: 'L.K.1 · L.1.1 · L.2.1', standardDesc: 'Standard English grammar' },
-  { key: 'mechanics', label: 'Mechanics', max: 5, standard: 'L.K.2 · L.1.2 · L.2.2', standardDesc: 'Capitalization/punctuation/spelling' },
+  { key: 'completeness', label: 'Completeness', max: 5, standard: 'W.2.2', standardDesc: 'Informative texts - name topic' },
+  { key: 'content', label: 'Content & Detail', max: 5, standard: 'W.2.2', standardDesc: 'Informative texts with detail' },
+  { key: 'language', label: 'Language & Grammar', max: 5, standard: 'L.2.1', standardDesc: 'Standard English grammar' },
+  { key: 'mechanics', label: 'Mechanics', max: 5, standard: 'L.2.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -271,13 +101,13 @@ const GRADE_3_QUESTIONS: QuestionDef[] = [
   { qNum: 5, section: 'listening', sectionLabel: 'Listening: The Beach', text: 'What is the most important rule?', correct: 'b', standard: 'SL.3.2', standardDesc: 'Determine main ideas', dok: 2, domain: 'Listening Comprehension' },
   // Language Standards (Q6-13)
   { qNum: 6, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'What are they going to do?', correct: 'b', standard: 'L.3.1e', standardDesc: 'Verb tenses (future)', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 7, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'Will they do laundry?', correct: 'b', standard: 'L.3.1', standardDesc: 'Negative future tense', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 7, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'Will they do laundry?', correct: 'd', standard: 'L.3.1', standardDesc: 'Negative future tense', dok: 1, domain: 'Language/Grammar' },
   { qNum: 8, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'Are they washing the dishes?', correct: 'b', standard: 'L.3.1', standardDesc: 'Present progressive/SVA', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 9, section: 'language1', sectionLabel: 'Language: Grammar', text: 'Has Tom ___ his homework?', correct: 'a', standard: 'L.3.1d', standardDesc: 'Irregular verbs (present perfect)', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 9, section: 'language1', sectionLabel: 'Language: Grammar', text: 'Has Tom ___ his homework?', correct: 'b', standard: 'L.3.1d', standardDesc: 'Irregular verbs (present perfect)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 10, section: 'language1', sectionLabel: 'Language: Grammar', text: 'How long has Mr. Smith ___ English?', correct: 'd', standard: 'L.3.1d', standardDesc: 'Irregular verbs (present perfect)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 11, section: 'language1', sectionLabel: 'Language: Grammar', text: 'My sister ___ practice piano', correct: 'b', standard: 'L.3.1', standardDesc: 'Modal/helping verbs', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 12, section: 'language1', sectionLabel: 'Language: Grammar', text: 'An elephant is ___ than a cat', correct: 'd', standard: 'L.3.1g', standardDesc: 'Comparative adjectives', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 13, section: 'language1', sectionLabel: 'Language: Grammar', text: 'The ___ toys were all over the floor', correct: 'c', standard: 'L.3.2d', standardDesc: 'Irregular possessives', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 12, section: 'language1', sectionLabel: 'Language: Grammar', text: 'An elephant is ___ than a cat', correct: 'b', standard: 'L.3.1g', standardDesc: 'Comparative adjectives', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 13, section: 'language1', sectionLabel: 'Language: Grammar', text: 'The ___ toys were all over the floor', correct: 'b', standard: 'L.3.2d', standardDesc: 'Irregular possessives', dok: 1, domain: 'Language/Grammar' },
   // Reading: "Changing Seasons" (Q14-16)
   { qNum: 14, section: 'reading1', sectionLabel: 'Reading: Changing Seasons', text: 'What happens in fall?', correct: 'd', standard: 'RI.3.1', standardDesc: 'Questions referring to text', dok: 1, domain: 'Reading Comprehension' },
   { qNum: 15, section: 'reading1', sectionLabel: 'Reading: Changing Seasons', text: 'When should you wear a heavy coat?', correct: 'b', standard: 'RI.3.1', standardDesc: 'Questions referring to text', dok: 1, domain: 'Reading Comprehension' },
@@ -291,11 +121,11 @@ const GRADE_3_QUESTIONS: QuestionDef[] = [
 ]
 
 const GRADE_3_WRITING: WritingCategory[] = [
-  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.1.5 · W.2.5 · W.3.5', standardDesc: 'Planning/prewriting' },
-  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.1.3 · W.2.3 · W.3.3a', standardDesc: 'Orient reader, organize events' },
-  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.1.3 · W.2.3 · W.3.3b', standardDesc: 'Narrative techniques' },
-  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.1.1 · L.2.1 · L.3.1', standardDesc: 'Standard English grammar' },
-  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.1.2 · L.2.2 · L.3.2', standardDesc: 'Capitalization/punctuation/spelling' },
+  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.3.5', standardDesc: 'Planning/prewriting' },
+  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.3.3a', standardDesc: 'Orient reader, organize events' },
+  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.3.3b', standardDesc: 'Narrative techniques' },
+  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.3.1', standardDesc: 'Standard English grammar' },
+  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.3.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -306,7 +136,7 @@ const GRADE_4_QUESTIONS: QuestionDef[] = [
   // Listening (Q1-5) — "Crocodiles and Alligators"
   { qNum: 1, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'Main idea of this passage?', correct: 'b', standard: 'SL.4.2', standardDesc: 'Paraphrase text read aloud', dok: 2, domain: 'Listening Comprehension' },
   { qNum: 2, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'One way crocs and gators are the same?', correct: 'c', standard: 'SL.4.2', standardDesc: 'Key details from text read aloud', dok: 1, domain: 'Listening Comprehension' },
-  { qNum: 3, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'One way to tell a croc from a gator?', correct: 'a', standard: 'SL.4.3', standardDesc: 'Speaker\'s reasons/evidence', dok: 1, domain: 'Listening Comprehension' },
+  { qNum: 3, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'One way to tell a croc from a gator?', correct: 'c', standard: 'SL.4.3', standardDesc: 'Speaker\'s reasons/evidence', dok: 1, domain: 'Listening Comprehension' },
   { qNum: 4, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'Which is NOT true?', correct: 'c', standard: 'RI.4.1', standardDesc: 'Refer to details', dok: 2, domain: 'Listening Comprehension' },
   { qNum: 5, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'Best title for this story?', correct: 'd', standard: 'RI.4.2', standardDesc: 'Determine main idea/summarize', dok: 2, domain: 'Listening Comprehension' },
   // Reading: "Spider and the Watermelon" (Q6-11)
@@ -330,7 +160,7 @@ const GRADE_4_QUESTIONS: QuestionDef[] = [
   { qNum: 21, section: 'reading2', sectionLabel: 'Reading: Enormous Insects', text: 'What is NOT true about Goliath beetles?', correct: 'b', standard: 'RI.4.1', standardDesc: 'Refer to details/examples', dok: 2, domain: 'Reading Comprehension' },
   { qNum: 22, section: 'reading2', sectionLabel: 'Reading: Enormous Insects', text: 'Another word for "blend in with"?', correct: 'a', standard: 'L.4.4a', standardDesc: 'Context clue to word meaning', dok: 2, domain: 'Vocabulary' },
   // Language Standards 2 (Q23-28)
-  { qNum: 23, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'The ___ belt is expensive', correct: 'b', standard: 'L.4.1', standardDesc: 'Comparative adjectives', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 23, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'The ___ belt is expensive', correct: 'a', standard: 'L.4.1', standardDesc: 'Superlative adjectives', dok: 1, domain: 'Language/Grammar' },
   { qNum: 24, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'I like to ___ books', correct: 'a', standard: 'L.4.1', standardDesc: 'Infinitive verb forms', dok: 1, domain: 'Language/Grammar' },
   { qNum: 25, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'I am ___ watch the magic show', correct: 'd', standard: 'L.4.1', standardDesc: 'Future tense (going to)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 26, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'Mike ___ when he won the award', correct: 'b', standard: 'L.4.1', standardDesc: 'Irregular past tense/linking verbs', dok: 1, domain: 'Language/Grammar' },
@@ -339,11 +169,11 @@ const GRADE_4_QUESTIONS: QuestionDef[] = [
 ]
 
 const GRADE_4_WRITING: WritingCategory[] = [
-  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.2.5 · W.3.5 · W.4.5', standardDesc: 'Planning/prewriting' },
-  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.2.3 · W.3.3a · W.4.3a', standardDesc: 'Orient reader, organize events' },
-  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.2.3 · W.3.3b · W.4.3b', standardDesc: 'Dialogue and description' },
-  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.2.1 · L.3.1 · L.4.1', standardDesc: 'Standard English grammar' },
-  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.2.2 · L.3.2 · L.4.2', standardDesc: 'Capitalization/punctuation/spelling' },
+  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.4.5', standardDesc: 'Planning/prewriting' },
+  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.4.3a', standardDesc: 'Orient reader, organize events' },
+  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.4.3b', standardDesc: 'Dialogue and description' },
+  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.4.1', standardDesc: 'Standard English grammar' },
+  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.4.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -375,20 +205,14 @@ const GRADE_5_QUESTIONS: QuestionDef[] = [
   { qNum: 18, section: 'reading1', sectionLabel: 'Reading: Mount Everest', text: 'How many people reached the summit?', correct: 'c', standard: 'RI.5.1', standardDesc: 'Quote accurately from text', dok: 1, domain: 'Reading Comprehension' },
   { qNum: 19, section: 'reading1', sectionLabel: 'Reading: Mount Everest', text: 'People\'s attitude toward climbing?', correct: 'c', standard: 'RI.5.3', standardDesc: 'Relationships between concepts', dok: 2, domain: 'Reading Comprehension' },
   { qNum: 20, section: 'reading1', sectionLabel: 'Reading: Mount Everest', text: 'How does author support main idea?', correct: 'c', standard: 'RI.5.5', standardDesc: 'Text structure analysis', dok: 3, domain: 'Reading Comprehension' },
-  // Reading: "Monarch Butterflies" (Q21-25)
-  { qNum: 21, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'Main purpose of this passage?', correct: 'b', standard: 'RI.5.2', standardDesc: 'Determine main idea/summarize', dok: 2, domain: 'Reading Comprehension' },
-  { qNum: 22, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'Why do migrating monarchs live longer?', correct: 'c', standard: 'RI.5.1', standardDesc: 'Quote accurately from text', dok: 2, domain: 'Reading Comprehension' },
-  { qNum: 23, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'Which is a threat to the migration?', correct: 'c', standard: 'RI.5.1', standardDesc: 'Refer to details in text', dok: 1, domain: 'Reading Comprehension' },
-  { qNum: 24, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'How does author show monarchs are remarkable?', correct: 'b', standard: 'RI.5.3', standardDesc: 'Relationships between concepts', dok: 2, domain: 'Reading Comprehension' },
-  { qNum: 25, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'What can be inferred about monarchs?', correct: 'b', standard: 'RI.5.1', standardDesc: 'Draw inferences from text', dok: 3, domain: 'Reading Comprehension' },
 ]
 
 const GRADE_5_WRITING: WritingCategory[] = [
-  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.3.5 · W.4.5 · W.5.5', standardDesc: 'Planning/prewriting' },
-  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.3.3a · W.4.3a · W.5.3a', standardDesc: 'Orient reader, organize events' },
-  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.3.3b · W.4.3b · W.5.3b', standardDesc: 'Narrative techniques' },
-  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.3.1 · L.4.1 · L.5.1', standardDesc: 'Standard English grammar' },
-  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.3.2 · L.4.2 · L.5.2', standardDesc: 'Capitalization/punctuation/spelling' },
+  { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.5.5', standardDesc: 'Planning/prewriting' },
+  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.5.3a', standardDesc: 'Orient reader, organize events' },
+  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.5.3b', standardDesc: 'Narrative techniques' },
+  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.5.1', standardDesc: 'Standard English grammar' },
+  { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.5.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -397,10 +221,10 @@ const GRADE_5_WRITING: WritingCategory[] = [
 
 function getGradeConfig(grade: number): GradeConfig | null {
   switch (grade) {
-    case 2: return { grade: 2, totalMC: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20, rubricDesc: GRADE_2_RUBRIC_DESC }
-    case 3: return { grade: 3, totalMC: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20, rubricDesc: GRADE_3_RUBRIC_DESC }
-    case 4: return { grade: 4, totalMC: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20, rubricDesc: GRADE_4_RUBRIC_DESC }
-    case 5: return { grade: 5, totalMC: 25, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20, rubricDesc: GRADE_5_RUBRIC_DESC }
+    case 2: return { grade: 2, totalMC: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20 }
+    case 3: return { grade: 3, totalMC: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20 }
+    case 4: return { grade: 4, totalMC: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20 }
+    case 5: return { grade: 5, totalMC: 20, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20 }
     default: return null
   }
 }
@@ -605,17 +429,6 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         }
       })
 
-      // DOK-weighted MC score (#2: higher DOK questions worth more)
-      // DOK 1 = 1.0×, DOK 2 = 1.5×, DOK 3+ = 2.0×
-      const DOK_WEIGHTS: Record<number, number> = { 1: 1.0, 2: 1.5, 3: 2.0, 4: 2.0 }
-      let dokWeightedCorrect = 0, dokWeightedMax = 0
-      config.questions.forEach(q => {
-        const w = DOK_WEIGHTS[q.dok] || 1.0
-        dokWeightedMax += w
-        if (sc.answers[q.qNum] === q.correct) dokWeightedCorrect += w
-      })
-      const dokWeightedPct = dokWeightedMax > 0 ? dokWeightedCorrect / dokWeightedMax : 0
-
       // Standards mastery
       const standardsMastery: Record<string, { met: number; total: number }> = {}
       config.questions.forEach(q => {
@@ -644,7 +457,6 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           written_answers: sc.answers,
           written_rubric: sc.writing,
           written_mc: mcTotal,
-          written_mc_dok_weighted: dokWeightedPct,
           writing: wTotal,
         },
         calculated_metrics: {
@@ -652,7 +464,6 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           written_mc_total: mcTotal,
           written_mc_max: config.totalMC,
           written_mc_pct: Math.round((mcTotal / config.totalMC) * 100),
-          written_mc_dok_weighted_pct: Math.round(dokWeightedPct * 100),
           writing_total: wTotal,
           writing_max: config.writingMax,
           written_domain_scores: domainScores,
@@ -782,64 +593,6 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
   mcCorrect: number; writingTotal: number; setAnswer: (q: number, l: string) => void; setWritingScore: (k: string, v: number) => void
   clearStudent: () => void; studentHasData: boolean; selectedIdx: number; setSelectedIdx: (i: number) => void; totalStudents: number
 }) {
-  const [keyboardMode, setKeyboardMode] = useState(false)
-  const [focusedQ, setFocusedQ] = useState(1)
-  const allQuestions = useMemo(() => sectionKeys.flatMap(k => sections[k]), [sections, sectionKeys])
-  const focusRef = useRef<HTMLDivElement>(null)
-
-  // Scroll focused question into view
-  useEffect(() => {
-    if (keyboardMode && focusRef.current) {
-      focusRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-  }, [focusedQ, keyboardMode])
-
-  // Keyboard listener
-  useEffect(() => {
-    if (!keyboardMode || !student) return
-    const handler = (e: KeyboardEvent) => {
-      // Ignore if typing in an input/textarea
-      const tag = (e.target as HTMLElement).tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-
-      const key = e.key.toLowerCase()
-      if (['a', 'b', 'c', 'd'].includes(key)) {
-        e.preventDefault()
-        const q = allQuestions.find(q => q.qNum === focusedQ)
-        if (q) {
-          setAnswer(q.qNum, key)
-          // Auto-advance to next question
-          const nextQ = allQuestions.find(q => q.qNum > focusedQ)
-          if (nextQ) setFocusedQ(nextQ.qNum)
-        }
-      } else if (key === 'arrowdown' || key === 'j') {
-        e.preventDefault()
-        const nextQ = allQuestions.find(q => q.qNum > focusedQ)
-        if (nextQ) setFocusedQ(nextQ.qNum)
-      } else if (key === 'arrowup' || key === 'k') {
-        e.preventDefault()
-        const prevQs = allQuestions.filter(q => q.qNum < focusedQ)
-        if (prevQs.length > 0) setFocusedQ(prevQs[prevQs.length - 1].qNum)
-      } else if (key === 'backspace' || key === 'delete') {
-        e.preventDefault()
-        const q = allQuestions.find(q => q.qNum === focusedQ)
-        if (q) setAnswer(q.qNum, '')
-      } else if (key === 'escape') {
-        setKeyboardMode(false)
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [keyboardMode, focusedQ, student, allQuestions, setAnswer])
-
-  // Reset focused question when student changes
-  useEffect(() => {
-    if (student) {
-      const firstUnanswered = allQuestions.find(q => !sc.answers[q.qNum])
-      setFocusedQ(firstUnanswered?.qNum || 1)
-    }
-  }, [student?.id])
-
   if (!student) return <div className="p-12 text-center text-text-tertiary">Select a student from the sidebar</div>
 
   return (
@@ -878,31 +631,6 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         </div>
       </div>
 
-      {/* Keyboard mode toggle */}
-      <div className="mb-4 flex items-center gap-3">
-        <button onClick={() => { setKeyboardMode(!keyboardMode); if (!keyboardMode) { const firstUn = allQuestions.find(q => !sc.answers[q.qNum]); setFocusedQ(firstUn?.qNum || 1) } }}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
-            keyboardMode
-              ? 'bg-green-500 text-white shadow-sm'
-              : 'bg-surface border border-border text-text-secondary hover:border-navy/40'
-          }`}>
-          <Keyboard size={13} />
-          {keyboardMode ? 'Keyboard Mode ON' : 'Keyboard Mode'}
-        </button>
-        {keyboardMode && (
-          <span className="text-[10px] text-text-tertiary">
-            Press <kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold">A</kbd>
-            <kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold ml-0.5">B</kbd>
-            <kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold ml-0.5">C</kbd>
-            <kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold ml-0.5">D</kbd> to answer
-            {' \u00B7 '}<kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold">\u2191</kbd>
-            <kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold ml-0.5">\u2193</kbd> to navigate
-            {' \u00B7 '}<kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold">Del</kbd> to clear
-            {' \u00B7 '}<kbd className="px-1 py-0.5 bg-surface-alt border border-border rounded text-[9px] font-mono font-bold">Esc</kbd> to exit
-          </span>
-        )}
-      </div>
-
       {/* MC Bubble Sheet */}
       {sectionKeys.map(sKey => {
         const qs = sections[sKey]
@@ -918,16 +646,9 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
               {qs.map((q, qi) => {
                 const chosen = sc.answers[q.qNum]
                 const isCorrect = chosen === q.correct
-                const isFocused = keyboardMode && focusedQ === q.qNum
                 return (
-                  <div key={q.qNum}
-                    ref={isFocused ? focusRef : undefined}
-                    onClick={() => keyboardMode && setFocusedQ(q.qNum)}
-                    className={`flex items-center gap-3 px-3 py-1.5 transition-all ${
-                      isFocused ? 'bg-blue-50 ring-2 ring-inset ring-blue-400' :
-                      qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
-                    } ${chosen && !isCorrect && !isFocused ? 'bg-red-50/40' : ''} ${keyboardMode ? 'cursor-pointer' : ''}`}>
-                    <span className={`w-5 text-[11px] text-right font-mono ${isFocused ? 'text-blue-600 font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
+                  <div key={q.qNum} className={`flex items-center gap-3 px-3 py-1.5 ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''}`}>
+                    <span className="w-5 text-[11px] text-text-tertiary text-right font-mono">{q.qNum}</span>
                     <div className="flex gap-1">
                       {['a', 'b', 'c', 'd'].map(letter => {
                         const isChosen = chosen === letter
@@ -937,7 +658,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                         else if (isChosen && !isCorrect) bg = 'bg-red-400 border-red-400 text-white'
                         else if (chosen && isCorrectAnswer) bg = 'bg-green-100 border-green-300 text-green-700'
                         return (
-                          <button key={letter} onClick={(e) => { e.stopPropagation(); setAnswer(q.qNum, isChosen ? '' : letter); if (keyboardMode) { const nextQ = allQuestions.find(nq => nq.qNum > q.qNum); if (nextQ) setFocusedQ(nextQ.qNum) } }}
+                          <button key={letter} onClick={() => setAnswer(q.qNum, isChosen ? '' : letter)}
                             className={`w-7 h-7 rounded-full text-[11px] font-bold border-2 transition-all ${bg}`}>
                             {letter.toUpperCase()}
                           </button>
@@ -945,7 +666,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                       })}
                     </div>
                     <span className="flex-1 text-[10px] text-text-tertiary truncate">{q.text}</span>
-                    <span className="text-[9px] text-text-tertiary/60 font-mono text-right whitespace-nowrap">{expandStandard(q.standard, config.grade)}</span>
+                    <span className="text-[9px] text-text-tertiary/60 font-mono w-14 text-right">{q.standard}</span>
                     {chosen && (isCorrect
                       ? <Check size={12} className="text-green-500" />
                       : <X size={12} className="text-red-400" />
@@ -958,7 +679,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         )
       })}
 
-      {/* Writing Rubric — Full Table */}
+      {/* Writing Rubric */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-[13px] font-semibold text-navy">Writing Rubric</h4>
@@ -967,48 +688,23 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         <div className="border border-border rounded-lg overflow-hidden">
           {config.writingCategories.map((cat, ci) => {
             const val = sc.writing[cat.key] || 0
-            const descriptors = config.rubricDesc[cat.key] || []
             return (
-              <div key={cat.key} className={`${ci < config.writingCategories.length - 1 ? 'border-b border-border' : ''}`}>
-                {/* Category header with score buttons */}
-                <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50/80">
-                  <div className="w-44 flex-shrink-0">
-                    <div className="text-[12px] font-semibold">{cat.label}</div>
-                    <div className="text-[9px] text-text-tertiary">{cat.standard}</div>
-                  </div>
-                  <div className="flex gap-1">
-                    {Array.from({ length: cat.max + 1 }, (_, i) => (
-                      <button key={i} onClick={() => setWritingScore(cat.key, i)}
-                        className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${
-                          val === i ? 'bg-navy border-navy text-white shadow-sm' : 'bg-white border-gray-200 hover:border-navy/40'
-                        }`}>
-                        {i}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="text-[13px] font-bold text-navy ml-2">{val}/{cat.max}</span>
+              <div key={cat.key} className={`flex items-center gap-3 px-3 py-2 ${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                <div className="w-40">
+                  <div className="text-[12px] font-medium">{cat.label}</div>
+                  <div className="text-[9px] text-text-tertiary">{cat.standard} -- {cat.standardDesc}</div>
                 </div>
-                {/* Full rubric descriptors grid */}
-                <div className="px-3 py-2 bg-white">
-                  <div className="grid gap-1">
-                    {descriptors.map((desc, level) => (
-                      <div key={level}
-                        onClick={() => setWritingScore(cat.key, level)}
-                        className={`flex gap-2 px-2 py-1.5 rounded cursor-pointer transition-all ${
-                          val === level
-                            ? 'bg-blue-50 border border-blue-200 shadow-sm'
-                            : 'hover:bg-gray-50 border border-transparent'
-                        }`}>
-                        <span className={`text-[10px] font-bold w-4 flex-shrink-0 pt-px ${
-                          val === level ? 'text-navy' : 'text-text-tertiary'
-                        }`}>{level}</span>
-                        <span className={`text-[10px] leading-relaxed ${
-                          val === level ? 'text-navy font-medium' : 'text-text-secondary'
-                        }`}>{desc}</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="flex gap-1">
+                  {Array.from({ length: cat.max + 1 }, (_, i) => (
+                    <button key={i} onClick={() => setWritingScore(cat.key, i)}
+                      className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${
+                        val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'
+                      }`}>
+                      {i}
+                    </button>
+                  ))}
                 </div>
+                <span className="text-[12px] font-bold text-navy ml-2">{val}/{cat.max}</span>
               </div>
             )
           })}
@@ -1064,7 +760,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
       {/* Item Difficulty Table */}
       <h4 className="text-[14px] font-semibold text-navy mb-3">Item Analysis</h4>
       <div className="border border-border rounded-lg overflow-hidden mb-6">
-        <div className="grid grid-cols-[40px_1fr_140px_80px_60px_60px_60px_60px_40px] bg-gray-50 px-3 py-1.5 text-[10px] font-semibold text-text-tertiary border-b border-border">
+        <div className="grid grid-cols-[40px_1fr_60px_80px_60px_60px_60px_60px_40px] bg-gray-50 px-3 py-1.5 text-[10px] font-semibold text-text-tertiary border-b border-border">
           <span>#</span><span>Question</span><span>Standard</span><span>Domain</span>
           <span className="text-center">A</span><span className="text-center">B</span><span className="text-center">C</span><span className="text-center">D</span>
           <span className="text-center">%</span>
@@ -1076,10 +772,10 @@ function AnalyticsView({ config, analytics, scores, students }: {
           return (
             <div key={q.qNum}>
               <button onClick={() => setExpandedQ(expandedQ === q.qNum ? null : q.qNum)}
-                className={`w-full grid grid-cols-[40px_1fr_140px_80px_60px_60px_60px_60px_40px] px-3 py-1.5 text-[11px] border-b border-border/50 hover:bg-gray-50 ${bgColor}`}>
+                className={`w-full grid grid-cols-[40px_1fr_60px_80px_60px_60px_60px_60px_40px] px-3 py-1.5 text-[11px] border-b border-border/50 hover:bg-gray-50 ${bgColor}`}>
                 <span className="font-mono">{q.qNum}</span>
                 <span className="text-left truncate">{q.text}</span>
-                <span className="font-mono text-text-tertiary">{expandStandard(q.standard, config.grade)}</span>
+                <span className="font-mono text-text-tertiary">{q.standard}</span>
                 <span className="text-text-tertiary truncate">{q.domain.replace('Comprehension', 'Comp.').replace('Language/', '')}</span>
                 {['a', 'b', 'c', 'd'].map(letter => {
                   const count = item.distractors[letter] || 0
@@ -1098,7 +794,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
               {expandedQ === q.qNum && (
                 <div className="px-6 py-3 bg-blue-50/50 border-b border-border text-[11px]">
                   <div className="grid grid-cols-2 gap-x-8 gap-y-1">
-                    <div><span className="text-text-tertiary">Standard:</span> <span className="font-medium">{expandStandard(q.standard, config.grade)} -- {q.standardDesc}</span></div>
+                    <div><span className="text-text-tertiary">Standard:</span> <span className="font-medium">{q.standard} -- {q.standardDesc}</span></div>
                     <div><span className="text-text-tertiary">DOK Level:</span> <span className="font-medium">{q.dok}</span></div>
                     <div><span className="text-text-tertiary">Correct Answer:</span> <span className="font-bold text-green-700">{q.correct.toUpperCase()}</span></div>
                     <div><span className="text-text-tertiary">Students answered:</span> <span className="font-medium">{item.total}</span></div>
@@ -1150,7 +846,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
               <div key={q.qNum} className="flex items-center gap-3 px-3 py-2 border-b border-border/50">
                 <span className="text-[11px] font-mono text-text-tertiary w-5">Q{q.qNum}</span>
                 <span className="text-[11px] flex-1">{q.text}</span>
-                <span className="text-[9px] font-mono text-text-tertiary">{expandStandard(q.standard, config.grade)}</span>
+                <span className="text-[9px] font-mono text-text-tertiary">{q.standard}</span>
                 <span className="text-[11px] font-bold text-red-600 w-10 text-right">{pct}%</span>
                 {topWrong && topWrong[1] > 0 && (
                   <span className="text-[9px] text-red-400">

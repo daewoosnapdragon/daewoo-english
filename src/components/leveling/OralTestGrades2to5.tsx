@@ -68,48 +68,10 @@ interface OralScores {
   comp_3?: number | null
   comp_4?: number | null
   comp_5?: number | null
-  // Prompting level per comp question (metadata only, does not affect score)
-  prompt_1?: string | null  // 'none' | 'low' | 'medium' | 'high'
-  prompt_2?: string | null
-  prompt_3?: string | null
-  prompt_4?: string | null
-  prompt_5?: string | null
-  // Observation checklist (1=Weak, 2=Developing, 3=Strong)
-  obs_print_tracking?: number | null
-  obs_error_quality?: number | null
-  obs_self_correction?: number | null
-  obs_word_attack?: number | null
-  obs_fluency_vs_wordcalling?: number | null
-  obs_pause_patterns?: number | null
-  obs_expression?: number | null
-  // Teacher notes (kept for freeform additions)
+  // Teacher notes
   notes?: string | null
   [key: string]: number | string | null | undefined
 }
-
-// Observation checklist items
-const OBS_ITEMS: { key: string; label: string; desc: string }[] = [
-  { key: 'obs_print_tracking', label: 'Print Tracking', desc: 'Directionality, return sweep, finger/eye tracking' },
-  { key: 'obs_error_quality', label: 'Error Quality', desc: 'Contextual errors (meaning-based) vs. random errors' },
-  { key: 'obs_self_correction', label: 'Self-Correction', desc: 'Monitors for meaning and self-corrects errors' },
-  { key: 'obs_word_attack', label: 'Word Attack Strategies', desc: 'Uses phonics, chunking, context clues for unknown words' },
-  { key: 'obs_fluency_vs_wordcalling', label: 'Fluency vs. Word-Calling', desc: 'Reads for meaning vs. just decoding words without comprehension' },
-  { key: 'obs_pause_patterns', label: 'Pause Frequency / Length', desc: 'Long or frequent pauses, hesitations at unfamiliar words' },
-  { key: 'obs_expression', label: 'Expression & Intonation', desc: 'Adjusts voice for punctuation, dialogue, mood of text' },
-]
-
-const OBS_SCALE: { value: number; label: string; color: string; bg: string }[] = [
-  { value: 1, label: 'Weak', color: 'text-red-600', bg: 'bg-red-500 text-white' },
-  { value: 2, label: 'Developing', color: 'text-amber-600', bg: 'bg-amber-500 text-white' },
-  { value: 3, label: 'Strong', color: 'text-green-600', bg: 'bg-green-500 text-white' },
-]
-
-const PROMPT_LEVELS = [
-  { value: 'none', label: 'None', short: '—', color: 'text-green-600', bg: 'bg-green-100 text-green-700 border-green-200' },
-  { value: 'low', label: 'Low', short: 'L', color: 'text-blue-600', bg: 'bg-blue-100 text-blue-700 border-blue-200' },
-  { value: 'medium', label: 'Med', short: 'M', color: 'text-amber-600', bg: 'bg-amber-100 text-amber-700 border-amber-200' },
-  { value: 'high', label: 'High', short: 'H', color: 'text-red-600', bg: 'bg-red-100 text-red-700 border-red-200' },
-]
 
 // ============================================================================
 // NAEP SCALE
@@ -414,14 +376,12 @@ const GRADE_CONFIGS: Record<number, GradeTestConfig> = {
 // PASSAGE READER MODAL
 // ============================================================================
 
-function PassageReaderModal({ passage, level, onSave, onClose, initialData, initialObs, obsItems }: {
+function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
   passage: PassageData
   level: PassageLevel
-  onSave: (data: { wordsRead: number; errors: number; timeSeconds: number; observations?: Record<string, number | null> }) => void
+  onSave: (data: { wordsRead: number; errors: number; timeSeconds: number }) => void
   onClose: () => void
   initialData?: { wordsRead?: number | null; errors?: number | null; timeSeconds?: number | null }
-  initialObs?: Record<string, number | null>
-  obsItems?: { key: string; label: string; desc: string }[]
 }) {
   const words = passage.text.split(/\s+/)
   const [wordMarks, setWordMarks] = useState<Record<number, 'error' | 'self_correct' | null>>({})
@@ -431,7 +391,6 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData, init
   const [finished, setFinished] = useState(false)
   const startRef = useRef<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const [obs, setObs] = useState<Record<string, number | null>>(initialObs || {})
 
   // Initialize from saved data
   useEffect(() => {
@@ -479,7 +438,7 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData, init
   }
 
   const handleSaveAndClose = () => {
-    onSave({ wordsRead: wRead, errors: errCount, timeSeconds: elapsed, observations: obs })
+    onSave({ wordsRead: wRead, errors: errCount, timeSeconds: elapsed })
     onClose()
   }
 
@@ -599,44 +558,6 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData, init
           </div>
         </div>
 
-        {/* Observation Checklist (inside modal) */}
-        {obsItems && obsItems.length > 0 && (
-          <div className="px-6 py-3 border-t border-border bg-amber-50/30 shrink-0">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-[12px] font-semibold text-navy">Reading Observations <span className="text-[10px] font-normal text-text-tertiary ml-1">(optional)</span></h4>
-              {Object.values(obs).some(v => v != null) && (
-                <span className="text-[9px] text-text-tertiary">{Object.values(obs).filter(v => v != null).length}/{obsItems.length} rated</span>
-              )}
-            </div>
-            <div className="grid grid-cols-1 gap-1">
-              {obsItems.map(item => {
-                const val = obs[item.key]
-                return (
-                  <div key={item.key} className="flex items-center gap-2 px-2 py-1.5 rounded bg-white/60">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-[10px] font-medium">{item.label}</span>
-                      <span className="text-[8px] text-text-tertiary ml-1">{item.desc}</span>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      {[{ value: 1, label: 'W', bg: 'bg-red-100 text-red-700 border-red-300' },
-                        { value: 2, label: 'D', bg: 'bg-amber-100 text-amber-700 border-amber-300' },
-                        { value: 3, label: 'S', bg: 'bg-green-100 text-green-700 border-green-300' }
-                      ].map(s => (
-                        <button key={s.value} onClick={() => setObs(prev => ({ ...prev, [item.key]: val === s.value ? null : s.value }))}
-                          className={`w-6 h-6 rounded text-[9px] font-bold border transition-all ${
-                            val === s.value ? s.bg : 'bg-white border-gray-200 text-text-tertiary hover:border-navy/30'
-                          }`}>
-                          {s.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Footer */}
         <div className="px-6 py-3 border-t border-border bg-surface-alt flex items-center justify-between shrink-0">
           <div className="text-[10px] text-text-tertiary">
@@ -719,88 +640,14 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     const toSave = sids || classStudents.map(s => s.id)
     let errors = 0
     for (const sid of toSave) {
-      const studentScores = scores[sid] || {}
       const { error } = await supabase.from('level_test_scores').upsert({
         level_test_id: levelTest.id,
         student_id: sid,
-        raw_scores: studentScores,
+        raw_scores: scores[sid] || {},
         previous_class: students.find(s => s.id === sid)?.english_class || null,
         entered_by: currentTeacher?.id || null,
       }, { onConflict: 'level_test_id,student_id' })
       if (error) errors++
-
-      // Auto-sync to reading_assessments if ORF data exists
-      if (studentScores.passage_level && studentScores.orf_words_read != null && studentScores.orf_time_seconds) {
-        const passageLvl = studentScores.passage_level as PassageLevel
-        const passageInfo = config?.passages[passageLvl]
-        const errCount = studentScores.orf_errors || 0
-        const wRead = studentScores.orf_words_read || 0
-        const timeSec = studentScores.orf_time_seconds || 60
-        const calcCwpm = Math.round(((wRead - errCount) / timeSec) * 60)
-        const calcAccuracy = wRead > 0 ? Math.round(((wRead - errCount) / wRead) * 1000) / 10 : 0
-        const compScores = [studentScores.comp_1, studentScores.comp_2, studentScores.comp_3, studentScores.comp_4, studentScores.comp_5]
-        const compSum = compScores.reduce((a: number, b) => a + (b || 0), 0)
-
-        // Build observation summary for notes
-        const obsSummary = OBS_ITEMS
-          .filter(item => studentScores[item.key] != null)
-          .map(item => {
-            const val = studentScores[item.key] as number
-            const label = OBS_SCALE.find(s => s.value === val)?.label || ''
-            return `${item.label}: ${label}`
-          }).join('; ')
-
-        const syncNotes = [
-          `Level Test: ${levelTest.name}`,
-          `Passage: Level ${passageLvl} - ${passageInfo?.title || ''}`,
-          studentScores.naep ? `NAEP: ${NAEP_LABELS[studentScores.naep]?.label}` : null,
-          `Comprehension: ${compSum}/15`,
-          obsSummary ? `Observations: ${obsSummary}` : null,
-          studentScores.notes || null,
-        ].filter(Boolean).join(' | ')
-
-        // Upsert by checking if a record for this test already exists
-        const dateStr = new Date().toISOString().split('T')[0]
-        const { data: existingRA } = await supabase.from('reading_assessments')
-          .select('id')
-          .eq('student_id', sid)
-          .like('notes', `%Level Test: ${levelTest.name}%`)
-          .maybeSingle()
-
-        if (existingRA) {
-          await supabase.from('reading_assessments').update({
-            passage_title: passageInfo?.title || null,
-            passage_level: passageLvl,
-            word_count: wRead,
-            time_seconds: timeSec,
-            errors: errCount,
-            self_corrections: 0,
-            cwpm: calcCwpm,
-            accuracy_rate: calcAccuracy,
-            reading_level: passageInfo?.lexile || null,
-            naep_fluency: studentScores.naep || null,
-            notes: syncNotes,
-            assessed_by: currentTeacher?.id || null,
-          }).eq('id', existingRA.id)
-        } else {
-          await supabase.from('reading_assessments').insert({
-            student_id: sid,
-            date: dateStr,
-            passage_title: passageInfo?.title || null,
-            passage_level: passageLvl,
-            word_count: wRead,
-            time_seconds: timeSec,
-            errors: errCount,
-            self_corrections: 0,
-            cwpm: calcCwpm,
-            accuracy_rate: calcAccuracy,
-            reading_level: passageInfo?.lexile || null,
-            naep_fluency: studentScores.naep || null,
-            notes: syncNotes,
-            assessed_by: currentTeacher?.id || null,
-          })
-        }
-      }
     }
     setSaving(false)
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved (${toSave.length} student${toSave.length === 1 ? '' : 's'})`)
@@ -1170,9 +1017,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     <div className="space-y-4">
                       {compQuestions.map((cq, qi) => {
                         const key = `comp_${qi + 1}` as keyof OralScores
-                        const promptKey = `prompt_${qi + 1}` as keyof OralScores
                         const val = sc[key] as number | null | undefined
-                        const promptVal = (sc[promptKey] as string | null | undefined) || 'none'
                         return (
                           <div key={qi} className="bg-surface-alt/50 rounded-lg p-3.5">
                             <div className="flex items-start gap-2 mb-2">
@@ -1185,33 +1030,17 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                                   Expected: {cq.expected}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                {/* Prompting level */}
-                                <div className="flex gap-0.5">
-                                  {PROMPT_LEVELS.map(pl => (
-                                    <button key={pl.value} onClick={() => updateScore(student.id, promptKey as string, promptVal === pl.value ? 'none' : pl.value)}
-                                      title={`Prompting: ${pl.label}`}
-                                      className={`w-6 h-6 rounded text-[9px] font-bold border transition-all ${
-                                        promptVal === pl.value ? pl.bg + ' border-current' : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'
-                                      }`}>
-                                      {pl.short}
-                                    </button>
-                                  ))}
-                                </div>
-                                <div className="w-px h-6 bg-border" />
-                                {/* Score */}
-                                <div className="flex gap-1">
-                                  {[0, 1, 2, 3].map(score => (
-                                    <button key={score} onClick={() => updateScore(student.id, key as string, val === score ? null : score)}
-                                      className={`w-8 h-8 rounded-lg text-[12px] font-bold transition-all ${
-                                        val === score
-                                          ? score === 0 ? 'bg-red-500 text-white' : score === 1 ? 'bg-amber-500 text-white' : score === 2 ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'
-                                          : 'bg-surface border border-border text-text-secondary hover:bg-surface-alt'
-                                      }`}>
-                                      {score}
-                                    </button>
-                                  ))}
-                                </div>
+                              <div className="flex gap-1 shrink-0">
+                                {[0, 1, 2, 3].map(score => (
+                                  <button key={score} onClick={() => updateScore(student.id, key as string, val === score ? null : score)}
+                                    className={`w-8 h-8 rounded-lg text-[12px] font-bold transition-all ${
+                                      val === score
+                                        ? score === 0 ? 'bg-red-500 text-white' : score === 1 ? 'bg-amber-500 text-white' : score === 2 ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'
+                                        : 'bg-surface border border-border text-text-secondary hover:bg-surface-alt'
+                                    }`}>
+                                    {score}
+                                  </button>
+                                ))}
                               </div>
                             </div>
                           </div>
@@ -1224,55 +1053,19 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                         {compTotal >= 12 ? 'Strong comprehension' : compTotal >= 8 ? 'Adequate comprehension' : compTotal > 0 ? 'Below expectations' : ''}
                       </span>
                     </div>
-                    <div className="mt-2 flex items-center gap-3 text-[9px] text-text-tertiary">
-                      <span className="font-medium">Prompting:</span>
-                      {PROMPT_LEVELS.map(pl => (
-                        <span key={pl.value} className={`${pl.color}`}>{pl.short} = {pl.label}</span>
-                      ))}
-                      <span className="opacity-60 ml-1">(does not affect score)</span>
-                    </div>
                   </div>
                 )}
 
-                {/* Observation Checklist */}
+                {/* Teacher Notes */}
                 {passage && (
                   <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-                    <h4 className="text-[13px] font-semibold text-navy mb-1">Reading Observation Checklist <span className="text-[10px] font-normal text-text-tertiary ml-1">(optional — use at teacher discretion)</span></h4>
-                    <p className="text-[10px] text-text-tertiary mb-3">Rate behaviors as needed. Skip items that aren't relevant for this student.</p>
-                    <div className="border border-border rounded-lg overflow-hidden">
-                      {OBS_ITEMS.map((item, oi) => {
-                        const val = sc[item.key] as number | null | undefined
-                        return (
-                          <div key={item.key} className={`flex items-center gap-3 px-3 py-2.5 ${oi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${oi < OBS_ITEMS.length - 1 ? 'border-b border-border/50' : ''}`}>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-[11px] font-medium">{item.label}</div>
-                              <div className="text-[9px] text-text-tertiary">{item.desc}</div>
-                            </div>
-                            <div className="flex gap-1 shrink-0">
-                              {OBS_SCALE.map(s => (
-                                <button key={s.value} onClick={() => updateScore(student.id, item.key, val === s.value ? null : s.value)}
-                                  className={`px-2.5 py-1.5 rounded text-[10px] font-semibold transition-all ${
-                                    val === s.value ? s.bg : 'bg-surface border border-border text-text-tertiary hover:bg-surface-alt'
-                                  }`}>
-                                  {s.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                    {/* Compact additional notes */}
-                    <div className="mt-3">
-                      <label className="text-[10px] font-medium text-text-tertiary block mb-1">Additional Notes (optional)</label>
-                      <textarea
-                        value={sc.notes || ''}
-                        onChange={e => updateScore(student.id, 'notes', e.target.value || null)}
-                        placeholder="Any additional observations..."
-                        rows={2}
-                        className="w-full px-3 py-2 border border-border rounded-lg text-[11px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-surface resize-y placeholder:text-text-tertiary/50"
-                      />
-                    </div>
+                    <h4 className="text-[13px] font-semibold text-navy mb-2">Teacher Notes</h4>
+                    <textarea
+                      value={sc.notes || ''}
+                      onChange={e => updateScore(student.id, 'notes', e.target.value || null)}
+                      placeholder="Observations, reading behaviors, error patterns, intervention notes..."
+                      className="w-full min-h-[60px] px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-surface resize-y placeholder:text-text-tertiary/50"
+                    />
                   </div>
                 )}
 
@@ -1328,18 +1121,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           passage={passage}
           level={passageLevel as PassageLevel}
           initialData={{ wordsRead: sc.orf_words_read, errors: sc.orf_errors, timeSeconds: sc.orf_time_seconds }}
-          initialObs={OBS_ITEMS.reduce((acc, item) => ({ ...acc, [item.key]: sc[item.key] as number | null | undefined ?? null }), {} as Record<string, number | null>)}
-          obsItems={OBS_ITEMS}
           onSave={(data) => {
             updateScore(student.id, 'orf_words_read', data.wordsRead)
             updateScore(student.id, 'orf_errors', data.errors)
             updateScore(student.id, 'orf_time_seconds', data.timeSeconds)
-            // Save observation data
-            if (data.observations) {
-              Object.entries(data.observations).forEach(([key, val]) => {
-                updateScore(student.id, key, val)
-              })
-            }
           }}
           onClose={() => setShowPassageReader(false)}
         />
