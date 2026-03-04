@@ -714,10 +714,11 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const [activeClass, setActiveClass] = useState<EnglishClass>(teacherClass || 'Lily')
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [showPassageReader, setShowPassageReader] = useState(false)
-  const [activeSection, setActiveSection] = useState<'phonics' | 'sentences' | 'passage'>(config?.hasPhonics ? 'phonics' : 'passage')
 
   const grade = typeof levelTest.grade === 'string' ? parseInt(levelTest.grade) : levelTest.grade
   const config = GRADE_CONFIGS[grade]
+
+  const [activeSection, setActiveSection] = useState<'phonics' | 'sentences' | 'passage'>(config?.hasPhonics ? 'phonics' : 'passage')
 
   // Load students and existing scores
   useEffect(() => {
@@ -946,8 +947,6 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const phonicsTotal = [sc.phonics_row1, sc.phonics_row2, sc.phonics_row3, sc.phonics_row4, sc.phonics_row5].reduce((a: number, b) => a + (b || 0), 0)
   const sentTotal = [sc.sent_1, sc.sent_2, sc.sent_3, sc.sent_4, sc.sent_5].reduce((a: number, b) => a + (b || 0), 0)
 
-  // Set default section
-  const defaultSection = config.hasPhonics ? 'phonics' : 'passage'
 
   return (
     <div className="flex h-[calc(100vh-220px)]">
