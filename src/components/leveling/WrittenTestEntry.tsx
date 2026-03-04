@@ -464,6 +464,82 @@ function getRubricDescriptors(key: string, grade: number): Record<number, string
   return WRITING_RUBRIC_BY_GRADE[grade]?.[key]
 }
 
+// ── CCSS Standard Progressions (Grades 2-5) ──────────────────────
+// Maps standard family (e.g., 'RI._.2') to grade-level descriptions
+// Used for hover cards showing how a skill progresses across grade bands
+const CCSS_PROGRESSIONS: Record<string, Record<number, string>> = {
+  // Reading: Literature
+  'RL._.1': { 2: 'Ask and answer who, what, where, when, why, how about key details', 3: 'Ask and answer questions referring explicitly to the text', 4: 'Refer to details and examples when explaining what the text says', 5: 'Quote accurately from a text when explaining what it says' },
+  'RL._.2': { 2: 'Recount stories; determine central message, lesson, or moral', 3: 'Recount stories; determine central message, lesson, or moral', 4: 'Determine theme from details; summarize the text', 5: 'Determine theme from details; summarize the text' },
+  'RL._.3': { 2: 'Describe how characters respond to major events/challenges', 3: 'Describe characters and explain how their actions contribute to events', 4: 'Describe a character, setting, or event using specific details', 5: 'Compare and contrast two or more characters, settings, or events' },
+  'RL._.5': { 2: 'Describe overall structure (beginning, middle, end)', 3: 'Refer to parts of stories; describe how parts build on each other', 4: 'Explain structural differences between poems, drama, and prose', 5: 'Explain how chapters, scenes, or stanzas fit together' },
+  // Reading: Informational
+  'RI._.1': { 2: 'Ask and answer who, what, where, when, why, how', 3: 'Ask and answer questions referring explicitly to the text', 4: 'Refer to details and examples when explaining what the text says', 5: 'Quote accurately from a text when explaining what it says' },
+  'RI._.2': { 2: 'Identify the main topic of a multi-paragraph text', 3: 'Determine the main idea; recount key details that support it', 4: 'Determine main idea; explain how supported by key details', 5: 'Determine two or more main ideas; explain how supported by key details' },
+  'RI._.3': { 2: 'Describe the connection between a series of steps or events', 3: 'Describe relationship between events, ideas, or concepts', 4: 'Explain events, procedures, ideas, or concepts based on the text', 5: 'Explain relationships between concepts, ideas, or steps' },
+  'RI._.5': { 2: 'Know and use text features (captions, headings, glossaries)', 3: 'Use text features to locate information', 4: 'Describe overall structure (chronology, comparison, cause/effect)', 5: 'Compare and contrast the overall structure of events/ideas in texts' },
+  // Speaking & Listening
+  'SL._.2': { 2: 'Recount or describe key ideas from a text read aloud', 3: 'Determine main ideas and supporting details from a text read aloud', 4: 'Paraphrase portions of a text read aloud', 5: 'Summarize a written text read aloud or information presented' },
+  'SL._.3': { 3: 'Ask and answer questions about what a speaker says', 4: 'Identify reasons and evidence a speaker provides', 5: 'Summarize points a speaker makes and explain their reasoning' },
+  // Language: Grammar
+  'L._.1': { 2: 'Demonstrate command of standard English grammar (nouns, verbs, adjectives)', 3: 'Explain function of nouns, pronouns, verbs, adjectives, adverbs', 4: 'Use relative pronouns, progressive verb tenses, modal auxiliaries', 5: 'Explain function of conjunctions, prepositions, interjections; use verb tenses' },
+  'L._.1b': { 2: 'Form and use frequently occurring irregular plural nouns', 3: 'Form and use regular and irregular plural nouns', 4: 'Form and use progressive verb tenses', 5: 'Form and use perfect verb tenses' },
+  'L._.1d': { 2: 'Form and use past tense of frequently occurring irregular verbs', 3: 'Form and use regular and irregular verbs', 4: 'Order adjectives within sentences', 5: 'Recognize and correct inappropriate shifts in verb tense' },
+  'L._.1e': { 2: 'Use adjectives and adverbs, choose between them', 3: 'Form and use simple verb tenses', 4: 'Use prepositional phrases', 5: 'Use correlative conjunctions' },
+  'L._.1f': { 2: 'Produce and expand complete sentences', 3: 'Ensure subject-verb and pronoun-antecedent agreement', 4: 'Produce complete sentences; correct fragments and run-ons', 5: 'Produce complete sentences; correct inappropriate fragments' },
+  'L._.1g': { 3: 'Form and use comparative and superlative adjectives/adverbs', 4: 'Correctly use frequently confused words', 5: 'Correctly use frequently confused words' },
+  // Language: Mechanics
+  'L._.2': { 2: 'Demonstrate command of capitalization, punctuation, spelling', 3: 'Capitalize appropriate words in titles', 4: 'Use correct capitalization', 5: 'Use punctuation to separate items in a series; use commas' },
+  'L._.2a': { 2: 'Capitalize holidays, product names, geographic names', 3: 'Use commas in addresses; use commas and quotation marks in dialogue', 4: 'Use commas and quotation marks to mark direct speech', 5: 'Use punctuation to separate items in a series' },
+  'L._.2d': { 3: 'Form and use possessives', 4: 'Spell grade-appropriate words correctly', 5: 'Spell grade-appropriate words correctly' },
+  // Language: Vocabulary
+  'L._.4a': { 2: 'Use sentence-level context to determine word meaning', 3: 'Use sentence-level context to determine word meaning', 4: 'Use context as a clue to the meaning of a word or phrase', 5: 'Use context as a clue to the meaning of a word or phrase' },
+  'L._.5a': { 2: 'Identify real-life connections between words and their use', 3: 'Distinguish literal from nonliteral meanings', 4: 'Explain the meaning of simple similes and metaphors', 5: 'Interpret figurative language including similes and metaphors' },
+  // Reading: Foundational
+  'RF._.3': { 2: 'Know and apply grade-level phonics and word analysis', 3: 'Know and apply grade-level phonics and word analysis', 4: 'Know and apply grade-level phonics and word analysis', 5: 'Know and apply grade-level phonics and word analysis' },
+}
+
+function getStandardFamily(code: string): string | null {
+  const m = code.match(/^([A-Z]+)\.(\d+)\.(.+)$/)
+  if (!m) return null
+  return `${m[1]}._.${m[3]}`
+}
+
+function StandardBadge({ code, description }: { code: string; description: string }) {
+  const [showHover, setShowHover] = useState(false)
+  const family = getStandardFamily(code)
+  const progression = family ? CCSS_PROGRESSIONS[family] : null
+  const currentGrade = code.match(/\.(\d+)\./)?.[1]
+
+  return (
+    <span className="relative" onMouseEnter={() => setShowHover(true)} onMouseLeave={() => setShowHover(false)}>
+      <span className="text-[9px] text-text-tertiary/60 font-mono w-14 text-right cursor-help underline decoration-dotted decoration-text-tertiary/30">{code}</span>
+      {showHover && (
+        <div className="absolute right-0 bottom-full mb-1 w-72 bg-white border border-border rounded-lg shadow-lg p-3 z-50 text-left" onClick={e => e.stopPropagation()}>
+          <p className="text-[11px] font-semibold text-navy mb-1">{code}</p>
+          <p className="text-[10px] text-text-secondary mb-2">{description}</p>
+          {progression && (
+            <div className="border-t border-border pt-2 space-y-1">
+              <p className="text-[8px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Skill Progression</p>
+              {[2, 3, 4, 5].map(g => {
+                if (!progression[g]) return null
+                const gCode = code.replace(/\.\d+\./, `.${g}.`)
+                const isCurrent = String(g) === currentGrade
+                return (
+                  <div key={g} className={`text-[9px] flex gap-2 ${isCurrent ? 'text-navy font-semibold bg-blue-50 -mx-1 px-1 py-0.5 rounded' : 'text-text-tertiary'}`}>
+                    <span className="font-mono w-12 shrink-0">{gCode}</span>
+                    <span>{progression[g]}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </span>
+  )
+}
+
 function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
   student: any; config: GradeConfig; sc: StudentScores; sections: Record<string, QuestionDef[]>; sectionKeys: string[]
   mcCorrect: number; writingTotal: number; setAnswer: (q: number, l: string) => void; setWritingScore: (k: string, v: number) => void
@@ -577,7 +653,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
               <h4 className="text-[13px] font-semibold text-navy">{sectionLabel}</h4>
               <span className="text-[11px] text-text-tertiary">{sCorrect}/{sMax}</span>
             </div>
-            <div className="border border-border rounded-lg overflow-hidden">
+            <div className="border border-border rounded-lg">
               {qs.map((q, qi) => {
                 const chosen = sc.answers[q.qNum]
                 const isCorrect = chosen === q.correct
@@ -586,8 +662,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                   <div key={q.qNum} id={`q-row-${q.qNum}`}
                     onClick={() => setFocusedQ(q.qNum)}
                     className={`flex items-center gap-3 px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-blue-50/30' : ''}`}>
-                    <span className={`w-5 text-[11px] text-right font-mono ${isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
-                    {q.dok >= 2 && <span className="text-[8px] font-bold text-amber-600 bg-amber-50 px-1 rounded">×2</span>}
+                    <span className={`w-5 text-[11px] text-right font-mono ${q.dok >= 2 ? 'text-amber-600 font-bold' : isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
                     <div className="flex gap-1">
                       {['a', 'b', 'c', 'd'].map(letter => {
                         const isChosen = chosen === letter
@@ -605,7 +680,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                       })}
                     </div>
                     <span className="flex-1 text-[10px] text-text-tertiary truncate">{q.text}</span>
-                    <span className="text-[9px] text-text-tertiary/60 font-mono w-14 text-right">{q.standard}</span>
+                    <StandardBadge code={q.standard} description={q.standardDesc} />
                     {chosen && (isCorrect
                       ? <Check size={12} className="text-green-500" />
                       : <X size={12} className="text-red-400" />
@@ -720,7 +795,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
 
       {/* Item Difficulty Table */}
       <h4 className="text-[14px] font-semibold text-navy mb-3">Item Analysis</h4>
-      <div className="border border-border rounded-lg overflow-hidden mb-6">
+      <div className="border border-border rounded-lg mb-6">
         <div className="grid grid-cols-[40px_1fr_60px_80px_60px_60px_60px_60px_40px] bg-gray-50 px-3 py-1.5 text-[10px] font-semibold text-text-tertiary border-b border-border">
           <span>#</span><span>Question</span><span>Standard</span><span>Domain</span>
           <span className="text-center">A</span><span className="text-center">B</span><span className="text-center">C</span><span className="text-center">D</span>
@@ -736,7 +811,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
                 className={`w-full grid grid-cols-[40px_1fr_60px_80px_60px_60px_60px_60px_40px] px-3 py-1.5 text-[11px] border-b border-border/50 hover:bg-gray-50 ${bgColor}`}>
                 <span className="font-mono">{q.qNum}</span>
                 <span className="text-left truncate">{q.text}</span>
-                <span className="font-mono text-text-tertiary">{q.standard}</span>
+                <StandardBadge code={q.standard} description={q.standardDesc} />
                 <span className="text-text-tertiary truncate">{q.domain.replace('Comprehension', 'Comp.').replace('Language/', '')}</span>
                 {['a', 'b', 'c', 'd'].map(letter => {
                   const count = item.distractors[letter] || 0
@@ -783,7 +858,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
 
       {/* Most Missed Questions */}
       <h4 className="text-[14px] font-semibold text-navy mb-3">Instructional Priorities (Most Missed)</h4>
-      <div className="border border-border rounded-lg overflow-hidden mb-6">
+      <div className="border border-border rounded-lg mb-6">
         {config.questions
           .filter(q => {
             const item = itemDifficulty[q.qNum]
@@ -807,7 +882,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
               <div key={q.qNum} className="flex items-center gap-3 px-3 py-2 border-b border-border/50">
                 <span className="text-[11px] font-mono text-text-tertiary w-5">Q{q.qNum}</span>
                 <span className="text-[11px] flex-1">{q.text}</span>
-                <span className="text-[9px] font-mono text-text-tertiary">{q.standard}</span>
+                <StandardBadge code={q.standard} description={q.standardDesc} />
                 <span className="text-[11px] font-bold text-red-600 w-10 text-right">{pct}%</span>
                 {topWrong && topWrong[1] > 0 && (
                   <span className="text-[9px] text-red-400">
