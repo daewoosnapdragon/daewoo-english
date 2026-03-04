@@ -43,7 +43,7 @@ const DIMS = [
 
 // ─── Main View ──────────────────────────────────────────────────────
 
-export default function LevelingView() {
+function LevelingView() {
   const { showToast, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
   const isLeadTeacher = isAdmin || currentTeacher?.is_head_teacher || currentTeacher?.english_class === 'Snapdragon'
@@ -1741,3 +1741,5 @@ function WIDADetail({ studentId }: { studentId: string }) {
     </div>
   )
 }
+
+export default LevelingView
