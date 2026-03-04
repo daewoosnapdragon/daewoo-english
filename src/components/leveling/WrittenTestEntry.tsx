@@ -295,432 +295,167 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════
 
-export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
-  levelTest: LevelTest; isAdmin: boolean; teacherClass: EnglishClass | null
-}) {
-  const grade = Number(levelTest.grade)
-  const config = getGradeConfig(grade)
-
-  const [students, setStudents] = useState<any[]>([])
-  const [scores, setScores] = useState<Record<string, StudentScores>>({})
-  const [savedSnapshot, setSavedSnapshot] = useState<Record<string, StudentScores>>({})
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [selectedIdx, setSelectedIdx] = useState(0)
-  const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>(teacherClass || 'all')
-  const [view, setView] = useState<'entry' | 'analytics'>('entry')
-  const [toast, setToast] = useState('')
-
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
-
-  // Load students and existing scores
-  useEffect(() => {
-    if (!config) return
-    async function load() {
-      setLoading(true)
-      const [studRes, scoreRes] = await Promise.all([
-        supabase.from('students').select('*').eq('grade', grade).eq('is_active', true).order('english_class').order('english_name'),
-        supabase.from('level_test_scores').select('student_id, raw_scores').eq('level_test_id', levelTest.id),
-      ])
-      const studs = studRes.data || []
-      setStudents(studs)
-
-      // Hydrate existing written test data
-      const map: Record<string, StudentScores> = {}
-      studs.forEach(s => { map[s.id] = { answers: {}, writing: {} } })
-      ;(scoreRes.data || []).forEach((row: any) => {
-        if (row.raw_scores?.written_answers) {
-          map[row.student_id] = {
-            answers: row.raw_scores.written_answers || {},
-            writing: row.raw_scores.written_rubric || {},
-          }
-        }
-      })
-      setScores(map)
-      setSavedSnapshot(JSON.parse(JSON.stringify(map)))
-      setLoading(false)
-    }
-    load()
-  }, [levelTest.id, grade])
-
-  // Filter students by class
-  const classStudents = useMemo(() => {
-    if (filterClass === 'all') return students
-    return students.filter(s => s.english_class === filterClass)
-  }, [students, filterClass])
-
-  // Warn before leaving with unsaved data
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (hasDirtyData) { e.preventDefault(); e.returnValue = '' }
-    }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [hasDirtyData])
-
-  const classes = useMemo(() => {
-    const set = new Set<string>()
-    students.forEach(s => { if (s.english_class) set.add(s.english_class) })
-    return Array.from(set).sort()
-  }, [students])
-
-  // Current student
-  const student = classStudents[selectedIdx]
-  const sc = student ? (scores[student.id] || { answers: {}, writing: {} }) : { answers: {}, writing: {} }
-
-  // Set answer for current student
-  const setAnswer = useCallback((qNum: number, letter: string) => {
-    if (!student) return
-    setScores(prev => ({
-      ...prev,
-      [student.id]: {
-        ...prev[student.id] || { answers: {}, writing: {} },
-        answers: { ...(prev[student.id]?.answers || {}), [qNum]: letter },
-      }
-    }))
-  }, [student])
-
-  // Set writing score
-  const setWritingScore = useCallback((key: string, val: number) => {
-    if (!student) return
-    setScores(prev => ({
-      ...prev,
-      [student.id]: {
-        ...prev[student.id] || { answers: {}, writing: {} },
-        writing: { ...(prev[student.id]?.writing || {}), [key]: val },
-      }
-    }))
-  }, [student])
-
-  // Clear student — clears local state AND removes written data from DB (preserves oral data)
-  const clearStudent = useCallback(async () => {
-    if (!student) return
-    if (!confirm(`Clear all written test scores for ${student.english_name || student.korean_name}? This cannot be undone.`)) return
-    setScores(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
-    // Remove written-specific fields from DB while preserving oral test data
-    try {
-      const { data: existing } = await supabase.from('level_test_scores')
-        .select('raw_scores, calculated_metrics')
-        .eq('level_test_id', levelTest.id)
-        .eq('student_id', student.id)
-        .maybeSingle()
-      if (existing) {
-        const raw = { ...(existing.raw_scores || {}) }
-        const calc = { ...(existing.calculated_metrics || {}) }
-        // Remove written-specific keys
-        delete raw.written_answers; delete raw.written_rubric; delete raw.written_mc; delete raw.writing
-        delete calc.written_mc_total; delete calc.written_mc_max; delete calc.written_mc_pct
-        delete calc.writing_total; delete calc.writing_max; delete calc.written_domain_scores; delete calc.written_standards_mastery
-        // Check if anything remains (oral data)
-        const hasOralData = Object.keys(raw).some(k => !k.startsWith('written'))
-        if (hasOralData) {
-          await supabase.from('level_test_scores').update({ raw_scores: raw, calculated_metrics: calc })
-            .eq('level_test_id', levelTest.id).eq('student_id', student.id)
-        } else {
-          await supabase.from('level_test_scores').delete()
-            .eq('level_test_id', levelTest.id).eq('student_id', student.id)
-        }
-      }
-    } catch (e) { console.error('Clear DB error:', e) }
-    // Update saved snapshot to match cleared state
-    setSavedSnapshot(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
-    showToast('Cleared written test scores')
-  }, [student, levelTest.id])
-
-  // Count correct for current student
-  const mcCorrect = useMemo(() => {
-    if (!config) return 0
-    return config.questions.filter(q => sc.answers[q.qNum] === q.correct).length
-  }, [sc, config])
-
-  const writingTotal = useMemo(() => {
-    if (!config) return 0
-    return config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
-  }, [sc, config])
-
-  // Student has data?
-  const studentHasData = (sid: string) => {
-    const s = scores[sid]
-    if (!s) return false
-    return Object.keys(s.answers).length > 0 || Object.values(s.writing).some((v: any) => v > 0)
-  }
-
-  // Track which students have unsaved changes (changed since last save/load)
-  const hasDirtyData = useMemo(() => {
-    return students.some(s => {
-      const current = scores[s.id]
-      const saved = savedSnapshot[s.id]
-      if (!current || !saved) return studentHasData(s.id) && JSON.stringify(current) !== JSON.stringify(saved)
-      return JSON.stringify(current) !== JSON.stringify(saved)
-    })
-  }, [scores, savedSnapshot, students])
-
-  // Save — saves ALL students with data across ALL classes (not just current filter)
-  const handleSave = async () => {
-    if (!config) return
-    setSaving(true)
-    let errors = 0
-    const toSave = students.filter(s => studentHasData(s.id))
-
-    for (const stu of toSave) {
-      const sc = scores[stu.id]
-      const mcTotal = config.questions.filter(q => sc.answers[q.qNum] === q.correct).length
-      const wTotal = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
-
-      // Domain breakdown
-      const domainScores: Record<string, { correct: number; total: number }> = {}
-      config.questions.forEach(q => {
-        if (sc.answers[q.qNum]) {
-          if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }
-          domainScores[q.domain].total++
-          if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct++
-        }
-      })
-
-      // Standards mastery
-      const standardsMastery: Record<string, { met: number; total: number }> = {}
-      config.questions.forEach(q => {
-        if (sc.answers[q.qNum]) {
-          if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }
-          standardsMastery[q.standard].total++
-          if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met++
-        }
-      })
-
-      // Merge with existing raw_scores (preserve oral test data)
-      const existingRes = await supabase.from('level_test_scores')
-        .select('raw_scores, calculated_metrics')
-        .eq('level_test_id', levelTest.id)
-        .eq('student_id', stu.id)
-        .maybeSingle()
-
-      const existingRaw = existingRes.data?.raw_scores || {}
-      const existingCalc = existingRes.data?.calculated_metrics || {}
-
-      const { error } = await supabase.from('level_test_scores').upsert({
-        level_test_id: levelTest.id,
-        student_id: stu.id,
-        raw_scores: {
-          ...existingRaw,
-          written_answers: sc.answers,
-          written_rubric: sc.writing,
-          written_mc: mcTotal,
-          writing: wTotal,
-        },
-        calculated_metrics: {
-          ...existingCalc,
-          written_mc_total: mcTotal,
-          written_mc_max: config.totalMC,
-          written_mc_pct: Math.round((mcTotal / config.totalMC) * 100),
-          writing_total: wTotal,
-          writing_max: config.writingMax,
-          written_domain_scores: domainScores,
-          written_standards_mastery: standardsMastery,
-        },
-        previous_class: stu.english_class || null,
-      }, { onConflict: 'level_test_id,student_id' })
-      if (error) errors++
-    }
-
-    setSaving(false)
-    if (errors === 0) setSavedSnapshot(JSON.parse(JSON.stringify(scores))) // Update clean snapshot
-    showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved ${toSave.length} student${toSave.length === 1 ? '' : 's'}`)
-  }
-
-  // Analytics
-  const analytics = useMemo(() => {
-    if (!config) return null
-    return computeAnalytics(scores, config)
-  }, [scores, config])
-
-  // ─── Render ─────────────────────────────────────────────────
-
-  if (!config) return <div className="p-12 text-center text-text-tertiary">No written test configuration for Grade {grade}.</div>
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
-
-  // Group questions by section
-  const sections = config.questions.reduce<Record<string, QuestionDef[]>>((acc, q) => {
-    if (!acc[q.section]) acc[q.section] = []
-    acc[q.section].push(q)
-    return acc
-  }, {})
-  const sectionKeys = Object.keys(sections)
-
-  return (
-    <div className="flex h-[calc(100vh-160px)]">
-      {/* ─── Sidebar ─── */}
-      <div className="w-[220px] bg-surface border-r border-border flex flex-col">
-        {/* View toggle */}
-        <div className="p-3 border-b border-border flex gap-1">
-          <button onClick={() => setView('entry')} className={`flex-1 text-[11px] py-1.5 rounded font-medium ${view === 'entry' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
-            <BookOpen size={12} className="inline mr-1" />Entry
-          </button>
-          <button onClick={() => setView('analytics')} className={`flex-1 text-[11px] py-1.5 rounded font-medium ${view === 'analytics' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
-            <BarChart3 size={12} className="inline mr-1" />Analytics
-          </button>
-        </div>
-
-        {/* Class filter */}
-        <div className="px-3 py-2 border-b border-border flex flex-wrap gap-1">
-          <button onClick={() => { setFilterClass('all'); setSelectedIdx(0) }} className={`text-[10px] px-2 py-1 rounded ${filterClass === 'all' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt'}`}>All</button>
-          {classes.map(cls => (
-            <button key={cls} onClick={() => { setFilterClass(cls as EnglishClass); setSelectedIdx(0) }}
-              className={`text-[10px] px-2 py-1 rounded font-medium`}
-              style={filterClass === cls ? { backgroundColor: classToColor(cls), color: '#fff' } : { color: classToColor(cls) }}>
-              {cls}
-            </button>
-          ))}
-        </div>
-
-        {/* Student list */}
-        <div className="flex-1 overflow-y-auto">
-          {classStudents.map((s, idx) => {
-            const hasData = studentHasData(s.id)
-            const sAnswered = Object.keys(scores[s.id]?.answers || {}).length
-            return (
-              <button key={s.id} onClick={() => setSelectedIdx(idx)}
-                className={`w-full text-left px-3 py-2 border-b border-border/50 flex items-center gap-2 transition-colors ${idx === selectedIdx ? 'bg-blue-50' : 'hover:bg-surface-alt'}`}>
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: classToColor(s.english_class) }} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-medium truncate">{s.english_name || s.korean_name}</div>
-                  {hasData && <div className="text-[9px] text-text-tertiary">{sAnswered}/{config.totalMC} MC</div>}
-                </div>
-                {hasData && <Check size={12} className="text-green-500 flex-shrink-0" />}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Save button */}
-        <div className="p-3 border-t border-border">
-          {hasDirtyData && <p className="text-[9px] text-amber-600 font-medium text-center mb-1">Unsaved changes</p>}
-          <button onClick={handleSave} disabled={saving}
-            className={`w-full py-2 rounded-lg text-[12px] font-medium flex items-center justify-center gap-2 disabled:opacity-50 ${hasDirtyData ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse' : 'bg-navy text-white hover:bg-navy/90'}`}>
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            Save All
-          </button>
-        </div>
-      </div>
-
-      {/* ─── Main Content ─── */}
-      <div className="flex-1 overflow-y-auto bg-white">
-        {view === 'entry' ? (
-          <EntryView
-            student={student}
-            config={config}
-            sc={sc}
-            sections={sections}
-            sectionKeys={sectionKeys}
-            mcCorrect={mcCorrect}
-            writingTotal={writingTotal}
-            setAnswer={setAnswer}
-            setWritingScore={setWritingScore}
-            clearStudent={clearStudent}
-            studentHasData={student ? studentHasData(student.id) : false}
-            selectedIdx={selectedIdx}
-            setSelectedIdx={setSelectedIdx}
-            totalStudents={classStudents.length}
-          />
-        ) : (
-          <AnalyticsView config={config} analytics={analytics} scores={scores} students={students} />
-        )}
-      </div>
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 bg-navy text-white px-4 py-2 rounded-lg shadow-lg text-[13px] animate-fade-in z-50">{toast}</div>
-      )}
-    </div>
-  )
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // ENTRY VIEW
 // ═══════════════════════════════════════════════════════════════════════
 
-// ── Writing Rubric Descriptors (per grade) ────────────────────────
-// Grade 2: 0-5 scale per category (informative writing)
-// Grades 3-5: 0-4 scale per category (narrative writing)
-const WRITING_RUBRIC_DESCRIPTORS: Record<string, Record<number, string>> = {
-  // Grade 2 (0-5 scale) — informative writing
-  completeness: {
-    0: 'No response or off-topic',
-    1: 'Attempts to name a topic but unclear',
-    2: 'Names the topic; minimal content',
-    3: 'Names topic; provides some relevant info',
-    4: 'Clear topic; organized with supporting details',
-    5: 'Strong topic sentence; well-organized with elaborated details',
+// ── Writing Rubric Descriptors (from actual test rubrics) ─────────
+// Grade 2: 0-5 scale (informative writing — animal report)
+// Grades 3-5: 0-4 scale (narrative writing — picture/prompt based)
+// Each grade has its own descriptors keyed by grade number + category key
+
+const WRITING_RUBRIC_BY_GRADE: Record<number, Record<string, Record<number, string>>> = {
+  2: {
+    completeness: {
+      0: 'No writing attempted or no English',
+      1: 'Writing attempts to address 1 question only',
+      2: 'Writing addresses 2 of the 4 questions',
+      3: 'Writing addresses 3 of the 4 questions',
+      4: 'Writing addresses all 4 questions but some lack detail',
+      5: 'Writing fully addresses all 4 questions (what animal, appearance, habitat, and reason) with detail',
+    },
+    content: {
+      0: 'No written sentences',
+      1: '1-2 basic sentences. Names the animal with little or no detail',
+      2: '3-4 basic sentences. Basic description with limited detail (e.g., "It is big. It is brown.")',
+      3: '5+ basic sentences. Includes some descriptive detail or gives a reason with explanation',
+      4: '5+ good sentences. Good detail about appearance, habitat, and reason. Some facts or personal connection',
+      5: '5+ great sentences. Rich, specific detail. Goes beyond basic description (e.g., facts, comparisons, feelings, personal experiences)',
+    },
+    language: {
+      0: 'No intelligible English sentences',
+      1: 'Significant errors make meaning difficult. Some English structure present',
+      2: 'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("I like...", "It is...")',
+      3: 'Some errors but meaning is always clear. Attempts some sentence variety',
+      4: 'Mostly correct grammar. Some varied structures. Consistent subject-verb agreement',
+      5: 'Strong grammar for grade level. Varied sentence structures. Confident use of English',
+    },
+    mechanics: {
+      0: 'No evidence of capitalization, punctuation, or recognizable spelling',
+      1: 'Minimal punctuation/capitalization. Many misspellings, but words recognizable',
+      2: 'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled',
+      3: 'Capitalization and end punctuation present on most sentences. A few common words misspelled',
+      4: 'Consistent capitalization and end punctuation. High-frequency words correct. Phonetic attempts at harder words acceptable',
+      5: 'Strong control of mechanics. Correct spelling of grade-level words. Punctuation used accurately throughout',
+    },
   },
-  content_g2: {
-    0: 'No details provided',
-    1: 'One vague or irrelevant detail',
-    2: 'Two details with limited relevance',
-    3: 'Several relevant details; some elaboration',
-    4: 'Well-developed details that support the topic',
-    5: 'Rich, specific details with clear connections to topic',
+  3: {
+    brainstorm: {
+      0: 'Blank or no English attempted',
+      1: '1-2 fields filled with single English words, may be unrelated to picture',
+      2: 'Some fields filled. Basic English words or short phrases that connect to the picture',
+      3: 'Most fields completed with relevant ideas. Shows understanding of story elements',
+      4: 'All fields completed with relevant, detailed ideas. Characters, setting, events, feelings, and ending all connect to the picture',
+    },
+    structure: {
+      0: 'No sentences written (brainstorm only or blank)',
+      1: 'Writing present but no identifiable structure — random sentences or list of observations',
+      2: 'Attempts beginning and middle but no clear ending, OR events are out of order',
+      3: 'Has beginning, middle, and end, but one part is weak or has a minor gap',
+      4: 'Clear beginning, middle, and end. Events are sequenced logically. Easy to follow',
+    },
+    content: {
+      0: 'No sentences written (brainstorm only or blank)',
+      1: '1-3 sentences. Minimal content — labels or very simple observations',
+      2: '4-5 sentences. Basic description of picture with limited story development',
+      3: '6-7 sentences. Most story elements present. Some detail beyond the picture',
+      4: '8+ sentences. Includes characters, setting, actions, and feelings. Imaginative detail beyond the picture',
+    },
+    language: {
+      0: 'No sentences written (brainstorm only or blank)',
+      1: 'Significant errors make meaning difficult. Some English structure present',
+      2: 'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("I see...")',
+      3: 'Some errors but meaning is always clear. Attempts sentence variety',
+      4: 'Mostly correct grammar. Varied sentence structures. Consistent subject-verb agreement and verb tenses',
+    },
+    mechanics: {
+      0: 'No sentences written (brainstorm only or blank)',
+      1: 'Minimal punctuation/capitalization. Many misspellings, but words recognizable',
+      2: 'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled',
+      3: 'Minor inconsistencies — occasional missing capitals or periods. A few common words misspelled',
+      4: 'Consistent capitalization and end punctuation. High-frequency words spelled correctly. Phonetic attempts at harder words are acceptable',
+    },
   },
-  language_g2: {
-    0: 'No recognizable sentence structure',
-    1: 'Fragments or heavily L1-influenced structures',
-    2: 'Simple sentences with frequent errors',
-    3: 'Mostly correct simple sentences; attempts complex',
-    4: 'Varied sentence types; minor errors only',
-    5: 'Fluent, varied structures; near-native grammar',
+  4: {
+    brainstorm: {
+      0: 'Blank or no English attempted',
+      1: '1-2 fields filled with single English words, may be unrelated to pictures',
+      2: 'Some fields filled. Basic English words or short phrases that connect to the pictures',
+      3: 'Most fields completed with relevant ideas. Shows understanding of story elements across the three pictures',
+      4: 'All fields completed with relevant, detailed ideas. Characters, setting, events, feelings, and ending all connect to the pictures',
+    },
+    structure: {
+      0: 'No sentences written (brainstorm only or blank)',
+      1: 'Writing present but no identifiable structure — random sentences or list of observations about the pictures',
+      2: 'Attempts beginning and middle but no clear ending, OR events are out of order. Pictures not clearly connected',
+      3: 'Has beginning, middle, and end that follow the three pictures, but one part is weak or has a gap',
+      4: 'Clear beginning, middle, and end that logically follow the three pictures. Events are well-sequenced. Easy to follow',
+    },
+    content: {
+      0: 'No written sentences',
+      1: '1-4 sentences. Minimal content — labels or very simple observations about the pictures',
+      2: '5-7 sentences. Basic description of the pictures with limited story development. Mostly tells what is seen',
+      3: '8-9 sentences. Most story elements present. Some detail beyond the pictures (dialogue, feelings, names)',
+      4: '10+ sentences. Includes characters, setting, actions, feelings, and dialogue. Imaginative detail beyond the pictures (inner thoughts, backstory, creative additions)',
+    },
+    language: {
+      0: 'No intelligible English sentences',
+      1: 'Significant errors make meaning difficult. Some English structure present',
+      2: 'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("They go...", "They are...")',
+      3: 'Some errors but meaning is always clear. Attempts sentence variety (compound sentences, dialogue, different starters)',
+      4: 'Mostly correct grammar. Varied sentence structures including compound/complex sentences. Consistent verb tenses and subject-verb agreement. Dialogue punctuated correctly or nearly so',
+    },
+    mechanics: {
+      0: 'No evidence of capitalization, punctuation, or recognizable spelling',
+      1: 'Minimal punctuation/capitalization. Many misspellings, but words recognizable',
+      2: 'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled',
+      3: 'Minor inconsistencies — occasional missing capitals or periods. A few common words misspelled',
+      4: 'Consistent capitalization and end punctuation. High-frequency words spelled correctly. Attempted to use quotation marks used for dialogue. More advanced diction',
+    },
   },
-  mechanics_g2: {
-    0: 'No capitalization, punctuation, or spelling',
-    1: 'Minimal use of conventions; many errors',
-    2: 'Some capitals and periods; phonetic spelling',
-    3: 'Mostly correct basic mechanics; common words spelled correctly',
-    4: 'Consistent mechanics; occasional spelling errors',
-    5: 'Strong command of capitalization, punctuation, and spelling',
-  },
-  // Grade 3-5 (0-4 scale) — narrative writing
-  brainstorm: {
-    0: 'No planning evident',
-    1: 'Minimal planning; few ideas listed',
-    2: 'Some brainstorming; ideas loosely organized',
-    3: 'Clear planning with organized ideas',
-    4: 'Thorough planning with detailed outline and organized ideas',
-  },
-  structure: {
-    0: 'No story structure',
-    1: 'Attempts beginning but no middle/end',
-    2: 'Has beginning and end; weak middle',
-    3: 'Clear beginning, middle, end with some transitions',
-    4: 'Strong narrative arc with effective transitions throughout',
-  },
-  content_g35: {
-    0: 'No narrative details or description',
-    1: 'Minimal details; tells rather than shows',
-    2: 'Some details or dialogue; limited description',
-    3: 'Uses dialogue and description to develop events',
-    4: 'Rich dialogue, sensory details, and pacing that bring the story to life',
-  },
-  language_g35: {
-    0: 'No recognizable sentence structure',
-    1: 'Fragments or heavily L1-influenced; hard to follow',
-    2: 'Simple sentences with noticeable errors; limited variety',
-    3: 'Mostly correct; some sentence variety and temporal words',
-    4: 'Varied, fluent sentences; effective use of transitions and temporal words',
-  },
-  mechanics_g35: {
-    0: 'No capitalization, punctuation, or spelling',
-    1: 'Minimal conventions; frequent errors interfere with meaning',
-    2: 'Basic capitals and periods present; phonetic spelling of harder words',
-    3: 'Mostly correct mechanics; grade-level words spelled correctly',
-    4: 'Consistent command of grade-level conventions; rare errors',
+  5: {
+    brainstorm: {
+      0: 'Blank or no English attempted',
+      1: '1-2 fields filled with single English words, may be unrelated to prompt',
+      2: 'Some fields filled. Basic English words or short phrases that connect to the trip prompt',
+      3: 'Most fields completed with relevant ideas. Shows understanding of story elements (where, how, what happened, ending)',
+      4: 'All fields completed with relevant, detailed ideas. Destination, travel, activities, highlights, and ending all clearly planned',
+    },
+    structure: {
+      0: 'No sentences written (brainstorm only or blank)',
+      1: 'Writing present but no identifiable structure — random sentences or unconnected ideas about travel. Trip sequence is unclear',
+      2: 'Attempts beginning and middle but no clear ending, OR events are out of order. Trip sequence is unclear',
+      3: 'Has beginning, middle, and end that follow a logical trip sequence',
+      4: 'Clear beginning, middle, and end. Events are well-sequenced and follow a natural trip timeline. Easy to follow',
+    },
+    content: {
+      0: 'No written sentences',
+      1: '1-4 sentences. Minimal content — names a place but provides little else',
+      2: '5-7 sentences. Basic description of the trip with limited development. Mostly tells what happened without sensory or emotional detail',
+      3: '8-9 sentences. Most prompt questions addressed (where, how, best part). Some vivid detail (descriptions, feelings, specific moments)',
+      4: '10+ sentences. All prompt questions addressed with rich detail. Includes sensory descriptions, personal reactions, dialogue, or specific moments that make the trip come alive',
+    },
+    language: {
+      0: 'No intelligible English sentences',
+      1: 'Significant errors make meaning difficult. Some English structure present',
+      2: 'Frequent errors that sometimes interfere with meaning. Repetitive patterns ("We go...", "It was...")',
+      3: 'Some errors but meaning is always clear. Attempts sentence variety (compound sentences, transitions, different starters)',
+      4: 'Mostly correct grammar. Varied sentence structures including compound/complex sentences. Consistent verb tenses (especially past tense). Transitions between events (then, after that, finally)',
+    },
+    mechanics: {
+      0: 'No evidence of capitalization, punctuation, or recognizable spelling',
+      1: 'Minimal punctuation/capitalization. Many misspellings, but words recognizable',
+      2: 'Some capitalization and punctuation but inconsistent. Several high-frequency words misspelled. Proper nouns (place names) may not be capitalized',
+      3: 'Minor inconsistencies — occasional missing capitals or periods. A few common words misspelled. Proper nouns mostly capitalized',
+      4: 'Consistent capitalization and end punctuation. High-frequency words spelled correctly. Proper nouns capitalized. Commas used in lists and compound sentences. Phonetic attempts at harder words are acceptable',
+    },
   },
 }
 
 // Grade-aware rubric descriptor lookup
 function getRubricDescriptors(key: string, grade: number): Record<number, string> | undefined {
-  if (grade === 2) {
-    // Grade 2 uses _g2 suffix for shared keys, or direct key for unique ones
-    return WRITING_RUBRIC_DESCRIPTORS[key + '_g2'] || WRITING_RUBRIC_DESCRIPTORS[key]
-  }
-  // Grades 3-5: use _g35 suffix for shared keys, or direct key for unique ones
-  return WRITING_RUBRIC_DESCRIPTORS[key + '_g35'] || WRITING_RUBRIC_DESCRIPTORS[key]
+  return WRITING_RUBRIC_BY_GRADE[grade]?.[key]
 }
 
 function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
@@ -1104,6 +839,350 @@ function AnalyticsView({ config, analytics, scores, students }: {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT (export default)
+// ═══════════════════════════════════════════════════════════════════════
+
+export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
+  levelTest: LevelTest; isAdmin: boolean; teacherClass: EnglishClass | null
+}) {
+  const grade = Number(levelTest.grade)
+  const config = getGradeConfig(grade)
+
+  const [students, setStudents] = useState<any[]>([])
+  const [scores, setScores] = useState<Record<string, StudentScores>>({})
+  const [savedSnapshot, setSavedSnapshot] = useState<Record<string, StudentScores>>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [selectedIdx, setSelectedIdx] = useState(0)
+  const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>(teacherClass || 'all')
+  const [view, setView] = useState<'entry' | 'analytics'>('entry')
+  const [toast, setToast] = useState('')
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
+
+  // Load students and existing scores
+  useEffect(() => {
+    if (!config) return
+    async function load() {
+      setLoading(true)
+      const [studRes, scoreRes] = await Promise.all([
+        supabase.from('students').select('*').eq('grade', grade).eq('is_active', true).order('english_class').order('english_name'),
+        supabase.from('level_test_scores').select('student_id, raw_scores').eq('level_test_id', levelTest.id),
+      ])
+      const studs = studRes.data || []
+      setStudents(studs)
+
+      // Hydrate existing written test data
+      const map: Record<string, StudentScores> = {}
+      studs.forEach(s => { map[s.id] = { answers: {}, writing: {} } })
+      ;(scoreRes.data || []).forEach((row: any) => {
+        if (row.raw_scores?.written_answers) {
+          map[row.student_id] = {
+            answers: row.raw_scores.written_answers || {},
+            writing: row.raw_scores.written_rubric || {},
+          }
+        }
+      })
+      setScores(map)
+      setSavedSnapshot(JSON.parse(JSON.stringify(map)))
+      setLoading(false)
+    }
+    load()
+  }, [levelTest.id, grade])
+
+  // Filter students by class
+  const classStudents = useMemo(() => {
+    if (filterClass === 'all') return students
+    return students.filter(s => s.english_class === filterClass)
+  }, [students, filterClass])
+
+  // Warn before leaving with unsaved data
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasDirtyData) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasDirtyData])
+
+  const classes = useMemo(() => {
+    const set = new Set<string>()
+    students.forEach(s => { if (s.english_class) set.add(s.english_class) })
+    return Array.from(set).sort()
+  }, [students])
+
+  // Current student
+  const student = classStudents[selectedIdx]
+  const sc = student ? (scores[student.id] || { answers: {}, writing: {} }) : { answers: {}, writing: {} }
+
+  // Set answer for current student
+  const setAnswer = useCallback((qNum: number, letter: string) => {
+    if (!student) return
+    setScores(prev => ({
+      ...prev,
+      [student.id]: {
+        ...prev[student.id] || { answers: {}, writing: {} },
+        answers: { ...(prev[student.id]?.answers || {}), [qNum]: letter },
+      }
+    }))
+  }, [student])
+
+  // Set writing score
+  const setWritingScore = useCallback((key: string, val: number) => {
+    if (!student) return
+    setScores(prev => ({
+      ...prev,
+      [student.id]: {
+        ...prev[student.id] || { answers: {}, writing: {} },
+        writing: { ...(prev[student.id]?.writing || {}), [key]: val },
+      }
+    }))
+  }, [student])
+
+  // Clear student — clears local state AND removes written data from DB (preserves oral data)
+  const clearStudent = useCallback(async () => {
+    if (!student) return
+    if (!confirm(`Clear all written test scores for ${student.english_name || student.korean_name}? This cannot be undone.`)) return
+    setScores(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
+    // Remove written-specific fields from DB while preserving oral test data
+    try {
+      const { data: existing } = await supabase.from('level_test_scores')
+        .select('raw_scores, calculated_metrics')
+        .eq('level_test_id', levelTest.id)
+        .eq('student_id', student.id)
+        .maybeSingle()
+      if (existing) {
+        const raw = { ...(existing.raw_scores || {}) }
+        const calc = { ...(existing.calculated_metrics || {}) }
+        // Remove written-specific keys
+        delete raw.written_answers; delete raw.written_rubric; delete raw.written_mc; delete raw.writing
+        delete calc.written_mc_total; delete calc.written_mc_max; delete calc.written_mc_pct
+        delete calc.writing_total; delete calc.writing_max; delete calc.written_domain_scores; delete calc.written_standards_mastery
+        // Check if anything remains (oral data)
+        const hasOralData = Object.keys(raw).some(k => !k.startsWith('written'))
+        if (hasOralData) {
+          await supabase.from('level_test_scores').update({ raw_scores: raw, calculated_metrics: calc })
+            .eq('level_test_id', levelTest.id).eq('student_id', student.id)
+        } else {
+          await supabase.from('level_test_scores').delete()
+            .eq('level_test_id', levelTest.id).eq('student_id', student.id)
+        }
+      }
+    } catch (e) { console.error('Clear DB error:', e) }
+    // Update saved snapshot to match cleared state
+    setSavedSnapshot(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
+    showToast('Cleared written test scores')
+  }, [student, levelTest.id])
+
+  // Count correct for current student
+  const mcCorrect = useMemo(() => {
+    if (!config) return 0
+    return config.questions.filter(q => sc.answers[q.qNum] === q.correct).length
+  }, [sc, config])
+
+  const writingTotal = useMemo(() => {
+    if (!config) return 0
+    return config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
+  }, [sc, config])
+
+  // Student has data?
+  const studentHasData = (sid: string) => {
+    const s = scores[sid]
+    if (!s) return false
+    return Object.keys(s.answers).length > 0 || Object.values(s.writing).some((v: any) => v > 0)
+  }
+
+  // Track which students have unsaved changes (changed since last save/load)
+  const hasDirtyData = useMemo(() => {
+    return students.some(s => {
+      const current = scores[s.id]
+      const saved = savedSnapshot[s.id]
+      if (!current || !saved) return studentHasData(s.id) && JSON.stringify(current) !== JSON.stringify(saved)
+      return JSON.stringify(current) !== JSON.stringify(saved)
+    })
+  }, [scores, savedSnapshot, students])
+
+  // Save — saves ALL students with data across ALL classes (not just current filter)
+  const handleSave = async () => {
+    if (!config) return
+    setSaving(true)
+    let errors = 0
+    const toSave = students.filter(s => studentHasData(s.id))
+
+    for (const stu of toSave) {
+      const sc = scores[stu.id]
+      const mcTotal = config.questions.filter(q => sc.answers[q.qNum] === q.correct).length
+      const wTotal = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
+
+      // Domain breakdown
+      const domainScores: Record<string, { correct: number; total: number }> = {}
+      config.questions.forEach(q => {
+        if (sc.answers[q.qNum]) {
+          if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }
+          domainScores[q.domain].total++
+          if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct++
+        }
+      })
+
+      // Standards mastery
+      const standardsMastery: Record<string, { met: number; total: number }> = {}
+      config.questions.forEach(q => {
+        if (sc.answers[q.qNum]) {
+          if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }
+          standardsMastery[q.standard].total++
+          if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met++
+        }
+      })
+
+      // Merge with existing raw_scores (preserve oral test data)
+      const existingRes = await supabase.from('level_test_scores')
+        .select('raw_scores, calculated_metrics')
+        .eq('level_test_id', levelTest.id)
+        .eq('student_id', stu.id)
+        .maybeSingle()
+
+      const existingRaw = existingRes.data?.raw_scores || {}
+      const existingCalc = existingRes.data?.calculated_metrics || {}
+
+      const { error } = await supabase.from('level_test_scores').upsert({
+        level_test_id: levelTest.id,
+        student_id: stu.id,
+        raw_scores: {
+          ...existingRaw,
+          written_answers: sc.answers,
+          written_rubric: sc.writing,
+          written_mc: mcTotal,
+          writing: wTotal,
+        },
+        calculated_metrics: {
+          ...existingCalc,
+          written_mc_total: mcTotal,
+          written_mc_max: config.totalMC,
+          written_mc_pct: Math.round((mcTotal / config.totalMC) * 100),
+          writing_total: wTotal,
+          writing_max: config.writingMax,
+          written_domain_scores: domainScores,
+          written_standards_mastery: standardsMastery,
+        },
+        previous_class: stu.english_class || null,
+      }, { onConflict: 'level_test_id,student_id' })
+      if (error) errors++
+    }
+
+    setSaving(false)
+    if (errors === 0) setSavedSnapshot(JSON.parse(JSON.stringify(scores))) // Update clean snapshot
+    showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved ${toSave.length} student${toSave.length === 1 ? '' : 's'}`)
+  }
+
+  // Analytics
+  const analytics = useMemo(() => {
+    if (!config) return null
+    return computeAnalytics(scores, config)
+  }, [scores, config])
+
+  // ─── Render ─────────────────────────────────────────────────
+
+  if (!config) return <div className="p-12 text-center text-text-tertiary">No written test configuration for Grade {grade}.</div>
+  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+
+  // Group questions by section
+  const sections = config.questions.reduce<Record<string, QuestionDef[]>>((acc, q) => {
+    if (!acc[q.section]) acc[q.section] = []
+    acc[q.section].push(q)
+    return acc
+  }, {})
+  const sectionKeys = Object.keys(sections)
+
+  return (
+    <div className="flex h-[calc(100vh-160px)]">
+      {/* ─── Sidebar ─── */}
+      <div className="w-[220px] bg-surface border-r border-border flex flex-col">
+        {/* View toggle */}
+        <div className="p-3 border-b border-border flex gap-1">
+          <button onClick={() => setView('entry')} className={`flex-1 text-[11px] py-1.5 rounded font-medium ${view === 'entry' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
+            <BookOpen size={12} className="inline mr-1" />Entry
+          </button>
+          <button onClick={() => setView('analytics')} className={`flex-1 text-[11px] py-1.5 rounded font-medium ${view === 'analytics' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
+            <BarChart3 size={12} className="inline mr-1" />Analytics
+          </button>
+        </div>
+
+        {/* Class filter */}
+        <div className="px-3 py-2 border-b border-border flex flex-wrap gap-1">
+          <button onClick={() => { setFilterClass('all'); setSelectedIdx(0) }} className={`text-[10px] px-2 py-1 rounded ${filterClass === 'all' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt'}`}>All</button>
+          {classes.map(cls => (
+            <button key={cls} onClick={() => { setFilterClass(cls as EnglishClass); setSelectedIdx(0) }}
+              className={`text-[10px] px-2 py-1 rounded font-medium`}
+              style={filterClass === cls ? { backgroundColor: classToColor(cls), color: '#fff' } : { color: classToColor(cls) }}>
+              {cls}
+            </button>
+          ))}
+        </div>
+
+        {/* Student list */}
+        <div className="flex-1 overflow-y-auto">
+          {classStudents.map((s, idx) => {
+            const hasData = studentHasData(s.id)
+            const sAnswered = Object.keys(scores[s.id]?.answers || {}).length
+            return (
+              <button key={s.id} onClick={() => setSelectedIdx(idx)}
+                className={`w-full text-left px-3 py-2 border-b border-border/50 flex items-center gap-2 transition-colors ${idx === selectedIdx ? 'bg-blue-50' : 'hover:bg-surface-alt'}`}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: classToColor(s.english_class) }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-medium truncate">{s.english_name || s.korean_name}</div>
+                  {hasData && <div className="text-[9px] text-text-tertiary">{sAnswered}/{config.totalMC} MC</div>}
+                </div>
+                {hasData && <Check size={12} className="text-green-500 flex-shrink-0" />}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Save button */}
+        <div className="p-3 border-t border-border">
+          {hasDirtyData && <p className="text-[9px] text-amber-600 font-medium text-center mb-1">Unsaved changes</p>}
+          <button onClick={handleSave} disabled={saving}
+            className={`w-full py-2 rounded-lg text-[12px] font-medium flex items-center justify-center gap-2 disabled:opacity-50 ${hasDirtyData ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse' : 'bg-navy text-white hover:bg-navy/90'}`}>
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            Save All
+          </button>
+        </div>
+      </div>
+
+      {/* ─── Main Content ─── */}
+      <div className="flex-1 overflow-y-auto bg-white">
+        {view === 'entry' ? (
+          <EntryView
+            student={student}
+            config={config}
+            sc={sc}
+            sections={sections}
+            sectionKeys={sectionKeys}
+            mcCorrect={mcCorrect}
+            writingTotal={writingTotal}
+            setAnswer={setAnswer}
+            setWritingScore={setWritingScore}
+            clearStudent={clearStudent}
+            studentHasData={student ? studentHasData(student.id) : false}
+            selectedIdx={selectedIdx}
+            setSelectedIdx={setSelectedIdx}
+            totalStudents={classStudents.length}
+          />
+        ) : (
+          <AnalyticsView config={config} analytics={analytics} scores={scores} students={students} />
+        )}
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-navy text-white px-4 py-2 rounded-lg shadow-lg text-[13px] animate-fade-in z-50">{toast}</div>
+      )}
     </div>
   )
 }

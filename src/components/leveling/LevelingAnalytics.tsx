@@ -61,6 +61,118 @@ function computeStats(values: number[]): { median: number; q1: number; q3: numbe
 
 // ── Main Component ─────────────────────────────────────────────────
 
+
+function ClassBar({ cls, stats, maxVal, unit, prevMedian }: { cls: EnglishClass; stats: ClassMetrics['oral']; maxVal: number; unit: string; prevMedian: number | null }) {
+  if (!stats.hasData) return (
+    <div className="flex items-center gap-2 mb-2">
+      <span className="w-20 text-[10px] font-semibold text-right" style={{ color: classToTextColor(cls) }}>{cls}</span>
+      <span className="text-[10px] text-text-tertiary italic">No data</span>
+    </div>
+  )
+
+  const scale = maxVal > 0 ? maxVal : stats.max
+  const barMax = scale > 0 ? scale * 1.1 : 1 // add 10% headroom
+  const q1Pct = (stats.q1 / barMax) * 100
+  const q3Pct = (stats.q3 / barMax) * 100
+  const medPct = (stats.median / barMax) * 100
+
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <span className="w-20 text-[10px] font-semibold text-right shrink-0" style={{ color: classToTextColor(cls) }}>{cls}</span>
+      <div className="flex-1 h-5 relative bg-gray-100 rounded-full overflow-hidden">
+        {/* Q1-Q3 range */}
+        <div className="absolute h-full rounded-full opacity-30" style={{ left: `${q1Pct}%`, width: `${q3Pct - q1Pct}%`, backgroundColor: classToColor(cls) }} />
+        {/* Median marker */}
+        <div className="absolute h-full w-1 rounded-full" style={{ left: `${medPct}%`, backgroundColor: classToColor(cls) }} />
+        {/* Previous median marker */}
+        {prevMedian != null && <div className="absolute h-full w-0.5 border-l-2 border-dashed opacity-40" style={{ left: `${(prevMedian / barMax) * 100}%`, borderColor: classToColor(cls) }} />}
+      </div>
+      <span className="w-12 text-[10px] font-bold text-navy text-right shrink-0">{Math.round(stats.median)}{unit}</span>
+      {prevMedian != null && (
+        <span className={`text-[9px] font-bold w-8 text-right ${stats.median > prevMedian ? 'text-green-600' : stats.median < prevMedian ? 'text-red-600' : 'text-text-tertiary'}`}>
+          {stats.median > prevMedian ? '↑' : stats.median < prevMedian ? '↓' : '→'}{Math.abs(Math.round(stats.median - prevMedian))}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function HeatmapCell({ value, label }: { value: number | null; label: string }) {
+  if (value == null) return <td className="px-3 py-2.5 text-center text-text-tertiary">—</td>
+  // Color scale: <50 red, 50-70 amber, 70-90 green, >90 deep green
+  let bg = 'bg-gray-50'; let text = 'text-gray-400'
+  if (value >= 90) { bg = 'bg-green-100'; text = 'text-green-800' }
+  else if (value >= 70) { bg = 'bg-green-50'; text = 'text-green-700' }
+  else if (value >= 50) { bg = 'bg-amber-50'; text = 'text-amber-700' }
+  else { bg = 'bg-red-50'; text = 'text-red-700' }
+
+  return (
+    <td className="px-3 py-2.5 text-center">
+      <span className={`inline-block px-2 py-1 rounded-md text-[10px] font-bold ${bg} ${text}`}>{label}</span>
+    </td>
+  )
+}
+
+function DotPlot({ title, data, maxVal, outliers, students }: { title: string; data: { value: number | null; cls: EnglishClass; name: string }[]; maxVal: number | null; outliers: any[]; students: Student[] }) {
+  const valid = data.filter(d => d.value != null) as { value: number; cls: EnglishClass; name: string }[]
+  if (valid.length === 0) return null
+
+  const actualMax = maxVal ?? Math.max(...valid.map(d => d.value))
+  const scale = actualMax > 0 ? actualMax * 1.1 : 1
+  const outlierIds = new Set(outliers.map(o => o.studentId))
+
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">{title}</p>
+      <div className="relative h-12 bg-gray-50 rounded-lg border border-border overflow-hidden">
+        {/* Axis ticks */}
+        {[0, 0.25, 0.5, 0.75, 1].map(pct => (
+          <div key={pct} className="absolute top-0 h-full border-l border-gray-200" style={{ left: `${pct * 100}%` }}>
+            <span className="absolute -bottom-4 -translate-x-1/2 text-[8px] text-text-tertiary">{Math.round(pct * scale)}</span>
+          </div>
+        ))}
+        {/* Dots */}
+        {valid.map((d, i) => {
+          const student = students.find(s => s.english_name === d.name)
+          const isOutlier = student ? outlierIds.has(student.id) : false
+          const leftPct = (d.value / scale) * 100
+          return (
+            <div key={i} className="absolute top-1/2 -translate-y-1/2 group" style={{ left: `${leftPct}%` }}>
+              <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${isOutlier ? 'ring-2 ring-red-400' : ''}`} style={{ backgroundColor: classToColor(d.cls) }} />
+              <div className="hidden group-hover:block absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-navy text-white text-[9px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-50">
+                {d.name} ({d.cls}): {d.value}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div className="h-5" /> {/* Space for axis labels */}
+    </div>
+  )
+}
+
+function GrowthCell({ current, previous }: { current: number | null; previous: number | null }) {
+  if (current == null && previous == null) return <><td className="px-3 py-2.5 text-center text-text-tertiary" colSpan={1}>—</td></>
+  if (current == null) return <><td className="px-3 py-2.5 text-center text-text-tertiary" colSpan={1}>— <span className="text-[9px]">(was {Math.round(previous!)})</span></td></>
+  if (previous == null) return <><td className="px-3 py-2.5 text-center font-bold text-navy" colSpan={1}>{Math.round(current)} <span className="text-[9px] text-text-tertiary font-normal">new</span></td></>
+
+  const diff = current - previous
+  const color = diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-text-tertiary'
+  const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→'
+
+  return (
+    <td className="px-3 py-2.5 text-center" colSpan={1}>
+      <span className="font-bold text-navy">{Math.round(current)}</span>
+      <span className={`ml-1.5 text-[10px] font-bold ${color}`}>{arrow}{Math.abs(Math.round(diff))}</span>
+      <span className="text-[9px] text-text-tertiary ml-1">(was {Math.round(previous)})</span>
+    </td>
+  )
+}
+
+
+
+// ── Sub-components ─────────────────────────────────────────────────
+
 export default function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
   const { showToast } = useApp()
   const [loading, setLoading] = useState(true)
@@ -518,114 +630,5 @@ export default function LevelingAnalytics({ levelTest }: { levelTest: LevelTest 
         </section>
       )}
     </div>
-  )
-}
-
-// ── Sub-components ─────────────────────────────────────────────────
-
-function ClassBar({ cls, stats, maxVal, unit, prevMedian }: { cls: EnglishClass; stats: ClassMetrics['oral']; maxVal: number; unit: string; prevMedian: number | null }) {
-  if (!stats.hasData) return (
-    <div className="flex items-center gap-2 mb-2">
-      <span className="w-20 text-[10px] font-semibold text-right" style={{ color: classToTextColor(cls) }}>{cls}</span>
-      <span className="text-[10px] text-text-tertiary italic">No data</span>
-    </div>
-  )
-
-  const scale = maxVal > 0 ? maxVal : stats.max
-  const barMax = scale > 0 ? scale * 1.1 : 1 // add 10% headroom
-  const q1Pct = (stats.q1 / barMax) * 100
-  const q3Pct = (stats.q3 / barMax) * 100
-  const medPct = (stats.median / barMax) * 100
-
-  return (
-    <div className="flex items-center gap-2 mb-2">
-      <span className="w-20 text-[10px] font-semibold text-right shrink-0" style={{ color: classToTextColor(cls) }}>{cls}</span>
-      <div className="flex-1 h-5 relative bg-gray-100 rounded-full overflow-hidden">
-        {/* Q1-Q3 range */}
-        <div className="absolute h-full rounded-full opacity-30" style={{ left: `${q1Pct}%`, width: `${q3Pct - q1Pct}%`, backgroundColor: classToColor(cls) }} />
-        {/* Median marker */}
-        <div className="absolute h-full w-1 rounded-full" style={{ left: `${medPct}%`, backgroundColor: classToColor(cls) }} />
-        {/* Previous median marker */}
-        {prevMedian != null && <div className="absolute h-full w-0.5 border-l-2 border-dashed opacity-40" style={{ left: `${(prevMedian / barMax) * 100}%`, borderColor: classToColor(cls) }} />}
-      </div>
-      <span className="w-12 text-[10px] font-bold text-navy text-right shrink-0">{Math.round(stats.median)}{unit}</span>
-      {prevMedian != null && (
-        <span className={`text-[9px] font-bold w-8 text-right ${stats.median > prevMedian ? 'text-green-600' : stats.median < prevMedian ? 'text-red-600' : 'text-text-tertiary'}`}>
-          {stats.median > prevMedian ? '↑' : stats.median < prevMedian ? '↓' : '→'}{Math.abs(Math.round(stats.median - prevMedian))}
-        </span>
-      )}
-    </div>
-  )
-}
-
-function HeatmapCell({ value, label }: { value: number | null; label: string }) {
-  if (value == null) return <td className="px-3 py-2.5 text-center text-text-tertiary">—</td>
-  // Color scale: <50 red, 50-70 amber, 70-90 green, >90 deep green
-  let bg = 'bg-gray-50'; let text = 'text-gray-400'
-  if (value >= 90) { bg = 'bg-green-100'; text = 'text-green-800' }
-  else if (value >= 70) { bg = 'bg-green-50'; text = 'text-green-700' }
-  else if (value >= 50) { bg = 'bg-amber-50'; text = 'text-amber-700' }
-  else { bg = 'bg-red-50'; text = 'text-red-700' }
-
-  return (
-    <td className="px-3 py-2.5 text-center">
-      <span className={`inline-block px-2 py-1 rounded-md text-[10px] font-bold ${bg} ${text}`}>{label}</span>
-    </td>
-  )
-}
-
-function DotPlot({ title, data, maxVal, outliers, students }: { title: string; data: { value: number | null; cls: EnglishClass; name: string }[]; maxVal: number | null; outliers: any[]; students: Student[] }) {
-  const valid = data.filter(d => d.value != null) as { value: number; cls: EnglishClass; name: string }[]
-  if (valid.length === 0) return null
-
-  const actualMax = maxVal ?? Math.max(...valid.map(d => d.value))
-  const scale = actualMax > 0 ? actualMax * 1.1 : 1
-  const outlierIds = new Set(outliers.map(o => o.studentId))
-
-  return (
-    <div>
-      <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">{title}</p>
-      <div className="relative h-12 bg-gray-50 rounded-lg border border-border overflow-hidden">
-        {/* Axis ticks */}
-        {[0, 0.25, 0.5, 0.75, 1].map(pct => (
-          <div key={pct} className="absolute top-0 h-full border-l border-gray-200" style={{ left: `${pct * 100}%` }}>
-            <span className="absolute -bottom-4 -translate-x-1/2 text-[8px] text-text-tertiary">{Math.round(pct * scale)}</span>
-          </div>
-        ))}
-        {/* Dots */}
-        {valid.map((d, i) => {
-          const student = students.find(s => s.english_name === d.name)
-          const isOutlier = student ? outlierIds.has(student.id) : false
-          const leftPct = (d.value / scale) * 100
-          return (
-            <div key={i} className="absolute top-1/2 -translate-y-1/2 group" style={{ left: `${leftPct}%` }}>
-              <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${isOutlier ? 'ring-2 ring-red-400' : ''}`} style={{ backgroundColor: classToColor(d.cls) }} />
-              <div className="hidden group-hover:block absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-navy text-white text-[9px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-50">
-                {d.name} ({d.cls}): {d.value}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-      <div className="h-5" /> {/* Space for axis labels */}
-    </div>
-  )
-}
-
-function GrowthCell({ current, previous }: { current: number | null; previous: number | null }) {
-  if (current == null && previous == null) return <><td className="px-3 py-2.5 text-center text-text-tertiary" colSpan={1}>—</td></>
-  if (current == null) return <><td className="px-3 py-2.5 text-center text-text-tertiary" colSpan={1}>— <span className="text-[9px]">(was {Math.round(previous!)})</span></td></>
-  if (previous == null) return <><td className="px-3 py-2.5 text-center font-bold text-navy" colSpan={1}>{Math.round(current)} <span className="text-[9px] text-text-tertiary font-normal">new</span></td></>
-
-  const diff = current - previous
-  const color = diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-text-tertiary'
-  const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→'
-
-  return (
-    <td className="px-3 py-2.5 text-center" colSpan={1}>
-      <span className="font-bold text-navy">{Math.round(current)}</span>
-      <span className={`ml-1.5 text-[10px] font-bold ${color}`}>{arrow}{Math.abs(Math.round(diff))}</span>
-      <span className="text-[9px] text-text-tertiary ml-1">(was {Math.round(previous)})</span>
-    </td>
   )
 }
