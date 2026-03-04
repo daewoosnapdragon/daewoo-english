@@ -769,11 +769,20 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       const pTotal = [raw.phonics_row1, raw.phonics_row2, raw.phonics_row3, raw.phonics_row4, raw.phonics_row5].reduce((a: number, b) => a + ((b as number) || 0), 0)
       const sTotal = [raw.sent_1, raw.sent_2, raw.sent_3, raw.sent_4, raw.sent_5].reduce((a: number, b) => a + ((b as number) || 0), 0)
 
+      // Merge with existing calculated_metrics (preserve written test data)
+      const existingRes = await supabase.from('level_test_scores')
+        .select('calculated_metrics')
+        .eq('level_test_id', levelTest.id)
+        .eq('student_id', sid)
+        .maybeSingle()
+      const existingCalc = existingRes.data?.calculated_metrics || {}
+
       const { error } = await supabase.from('level_test_scores').upsert({
         level_test_id: levelTest.id,
         student_id: sid,
         raw_scores: raw,
         calculated_metrics: {
+          ...existingCalc,
           passage_level: raw.passage_level || null,
           cwpm: calcCwpm,
           weighted_cwpm: wCwpm,
