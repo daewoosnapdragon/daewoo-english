@@ -1205,9 +1205,9 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${move ? 'bg-amber-50/30' : ''} ${flags.length > 0 ? 'bg-red-50/20' : ''}`}>
                 <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" title={`Outlier: ${flags.join(', ')}`} />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span></td>
                 <td className="px-2 py-2 text-center"><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass) + '40', color: classToTextColor(row.student.english_class as EnglishClass) }}>{row.student.english_class}</span></td>
-                <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}>{row.rawCwpm != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(row.rawCwpm)} <span className="text-text-tertiary text-[9px]">({row.cwpmRatio != null ? (row.cwpmRatio * 100).toFixed(0) + '%' : '—'})</span></span> : '—'}</td>
-                <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.rawWriting != null ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawWriting} <span className="text-text-tertiary text-[9px]">({row.writingRatio != null ? (row.writingRatio * 100).toFixed(0) + '%' : '—'})</span></span> : '—'}</td>
-                <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.rawMc != null ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawMc}/{WRITTEN_MC_TOTAL}</span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}>{row.rawCwpm != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(row.rawCwpm)}</span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.rawWriting != null ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawWriting}<span className="text-text-tertiary/50">/20</span></span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.rawMc != null ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawMc}<span className="text-text-tertiary/50">/{WRITTEN_MC_TOTAL}</span></span> : '—'}</td>
                 <td className="px-2 py-2 text-center">{row.gradeScore !== 0.5 ? `${(row.gradeScore * 100).toFixed(0)}%` : '—'}</td>
                 <td className="px-2 py-2 text-center">{row.anecScore !== 0.5 ? (row.anecScore * 4).toFixed(1) : '—'}</td>
                 <td className="px-2 py-2 text-center font-bold text-navy">{(row.composite * 100).toFixed(0)}</td>
@@ -1217,7 +1217,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Benchmark-relative % shown in parentheses (100% = at class median). Composite = 30% test + 40% grades + 30% anecdotal. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 30% test + 40% grades + 30% anecdotal. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
     </div>
   )
 }

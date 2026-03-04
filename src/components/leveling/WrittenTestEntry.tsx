@@ -1091,6 +1091,74 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasDirtyData])
 
+  // Refs for auto-save (so effects always have latest values)
+  const scoresRef = useRef(scores)
+  const savedSnapshotRef = useRef(savedSnapshot)
+  const savingRef = useRef(false)
+  useEffect(() => { scoresRef.current = scores }, [scores])
+  useEffect(() => { savedSnapshotRef.current = savedSnapshot }, [savedSnapshot])
+
+  // Auto-save function (saves all dirty students silently)
+  const autoSave = useCallback(async () => {
+    if (!config || savingRef.current) return
+    const currentScores = scoresRef.current
+    const snapshot = savedSnapshotRef.current
+    const dirty = students.filter(s => {
+      const cur = currentScores[s.id]
+      const sav = snapshot[s.id]
+      if (!cur) return false
+      const hasData = Object.keys(cur.answers).length > 0 || Object.values(cur.writing).some((v: any) => v > 0)
+      if (!hasData) return false
+      return JSON.stringify(cur) !== JSON.stringify(sav)
+    })
+    if (dirty.length === 0) return
+
+    savingRef.current = true
+    let errors = 0
+    for (const stu of dirty) {
+      const sc = currentScores[stu.id]
+      const mcTotal = config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? dokWeight(q.dok) : 0), 0)
+      const wTotal = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
+      const domainScores: Record<string, { correct: number; total: number }> = {}
+      config.questions.forEach(q => { if (sc.answers[q.qNum]) { const w = dokWeight(q.dok); if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }; domainScores[q.domain].total += w; if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct += w } })
+      const standardsMastery: Record<string, { met: number; total: number }> = {}
+      config.questions.forEach(q => { if (sc.answers[q.qNum]) { const w = dokWeight(q.dok); if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }; standardsMastery[q.standard].total += w; if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met += w } })
+      const existingRes = await supabase.from('level_test_scores').select('raw_scores, calculated_metrics').eq('level_test_id', levelTest.id).eq('student_id', stu.id).maybeSingle()
+      const existingRaw = existingRes.data?.raw_scores || {}
+      const existingCalc = existingRes.data?.calculated_metrics || {}
+      const { error } = await supabase.from('level_test_scores').upsert({
+        level_test_id: levelTest.id, student_id: stu.id,
+        raw_scores: { ...existingRaw, written_answers: sc.answers, written_rubric: sc.writing, written_mc: mcTotal, writing: wTotal },
+        calculated_metrics: { ...existingCalc, written_mc_total: mcTotal, written_mc_max: config.totalMC, written_mc_pct: Math.round((mcTotal / config.totalMC) * 100), writing_total: wTotal, writing_max: config.writingMax, written_domain_scores: domainScores, written_standards_mastery: standardsMastery },
+        previous_class: students.find(s => s.id === stu.id)?.english_class || null, entered_by: null,
+      }, { onConflict: 'level_test_id,student_id' })
+      if (error) errors++
+    }
+    savingRef.current = false
+    if (errors === 0) {
+      setSavedSnapshot(JSON.parse(JSON.stringify(scoresRef.current)))
+      showToast(`Auto-saved ${dirty.length} student${dirty.length === 1 ? '' : 's'}`)
+    }
+  }, [config, students, levelTest.id])
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    const timer = setInterval(() => { autoSave() }, 30000)
+    return () => clearInterval(timer)
+  }, [autoSave])
+
+  // Auto-save on tab visibility change (teacher switches tabs)
+  useEffect(() => {
+    const handler = () => { if (document.hidden) autoSave() }
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [autoSave])
+
+  // Auto-save on unmount (teacher switches phases)
+  useEffect(() => {
+    return () => { autoSave() }
+  }, [autoSave])
+
   // Save — saves ALL students with data across ALL classes (not just current filter)
   const handleSave = async () => {
     if (!config) return

@@ -728,9 +728,24 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       if (existing) existing.forEach((s: any) => { map[s.student_id] = s.raw_scores || {} })
       if (studs) studs.forEach(s => { if (!map[s.id]) map[s.id] = {} })
       setScores(map)
+      setSavedSnapshot(JSON.parse(JSON.stringify(map)))
       setLoading(false)
     })()
   }, [levelTest.id, levelTest.grade])
+
+  // Track saved state for dirty detection
+  const [savedSnapshot, setSavedSnapshot] = useState<Record<string, OralScores>>({})
+  const scoresRef = useRef(scores)
+  const savedSnapshotRef = useRef(savedSnapshot)
+  useEffect(() => { scoresRef.current = scores }, [scores])
+  useEffect(() => { savedSnapshotRef.current = savedSnapshot }, [savedSnapshot])
+
+  const isStudentDirty = useCallback((sid: string) => {
+    return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
+  }, [])
+
+  // Auto-save: saves dirty students via existing handleSave, then updates snapshot
+  const autoSaveRef = useRef<(() => Promise<void>) | null>(null)
 
   // Filter students by class
   const availableClasses = isAdmin ? ENGLISH_CLASSES : (teacherClass ? [teacherClass] : ENGLISH_CLASSES)
@@ -801,7 +816,52 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     }
     setSaving(false)
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved (${toSave.length} student${toSave.length === 1 ? '' : 's'})`)
+    if (errors === 0) setSavedSnapshot(JSON.parse(JSON.stringify(scoresRef.current)))
   }
+
+  // Auto-save function for timer/unmount/visibility (silent, no toast for timer)
+  const autoSave = useCallback(async (silent = true) => {
+    const currentScores = scoresRef.current
+    const snapshot = savedSnapshotRef.current
+    const dirty = students.filter(s => {
+      const cur = currentScores[s.id]
+      if (!cur || Object.keys(cur).length === 0) return false
+      return JSON.stringify(cur) !== JSON.stringify(snapshot[s.id] || {})
+    })
+    if (dirty.length === 0) return
+    await handleSave(dirty.map(s => s.id))
+  }, [students, handleSave])
+
+  useEffect(() => { autoSaveRef.current = autoSave }, [autoSave])
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    const timer = setInterval(() => { autoSaveRef.current?.() }, 30000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Auto-save on tab visibility change
+  useEffect(() => {
+    const handler = () => { if (document.hidden) autoSaveRef.current?.() }
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [])
+
+  // Auto-save on unmount (teacher switches phases)
+  useEffect(() => {
+    return () => { autoSaveRef.current?.() }
+  }, [])
+
+  // Warn before leaving with unsaved data
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      const cur = scoresRef.current; const snap = savedSnapshotRef.current
+      const dirty = students.some(s => JSON.stringify(cur[s.id] || {}) !== JSON.stringify(snap[s.id] || {}))
+      if (dirty) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [students])
 
   // Clear oral data — clears local state AND removes oral data from DB (preserves written data)
   const clearStudent = async (sid: string, name: string) => {
