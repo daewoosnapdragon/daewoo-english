@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye } from 'lucide-react'
 
@@ -588,15 +588,118 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
 // ENTRY VIEW
 // ═══════════════════════════════════════════════════════════════════════
 
+// ── Writing Rubric Descriptors (per grade) ────────────────────────
+// Grade 2: 0-5 scale per category
+const WRITING_RUBRIC_DESCRIPTORS: Record<string, Record<number, string>> = {
+  // Grade 2 (0-5 scale)
+  completeness: {
+    0: 'No response or off-topic',
+    1: 'Attempts to name a topic but unclear',
+    2: 'Names the topic; minimal content',
+    3: 'Names topic; provides some relevant info',
+    4: 'Clear topic; organized with supporting details',
+    5: 'Strong topic sentence; well-organized with elaborated details',
+  },
+  content: {
+    0: 'No details provided',
+    1: 'One vague or irrelevant detail',
+    2: 'Two details with limited relevance',
+    3: 'Several relevant details; some elaboration',
+    4: 'Well-developed details that support the topic',
+    5: 'Rich, specific details with clear connections to topic',
+  },
+  language: {
+    0: 'No recognizable sentence structure',
+    1: 'Fragments or heavily L1-influenced structures',
+    2: 'Simple sentences with frequent errors',
+    3: 'Mostly correct simple sentences; attempts complex',
+    4: 'Varied sentence types; minor errors only',
+    5: 'Fluent, varied structures; near-native grammar',
+  },
+  mechanics: {
+    0: 'No capitalization, punctuation, or spelling',
+    1: 'Minimal use of conventions; many errors',
+    2: 'Some capitals and periods; phonetic spelling',
+    3: 'Mostly correct basic mechanics; common words spelled correctly',
+    4: 'Consistent mechanics; occasional spelling errors',
+    5: 'Strong command of capitalization, punctuation, and spelling',
+  },
+  // Grade 3-5 (0-4 scale)
+  brainstorm: {
+    0: 'No planning evident',
+    1: 'Minimal planning; few ideas listed',
+    2: 'Some brainstorming; ideas loosely organized',
+    3: 'Clear planning with organized ideas',
+    4: 'Thorough planning with detailed outline and organized ideas',
+  },
+  structure: {
+    0: 'No story structure',
+    1: 'Attempts beginning but no middle/end',
+    2: 'Has beginning and end; weak middle',
+    3: 'Clear beginning, middle, end with some transitions',
+    4: 'Strong narrative arc with effective transitions throughout',
+  },
+}
+
 function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
   student: any; config: GradeConfig; sc: StudentScores; sections: Record<string, QuestionDef[]>; sectionKeys: string[]
   mcCorrect: number; writingTotal: number; setAnswer: (q: number, l: string) => void; setWritingScore: (k: string, v: number) => void
   clearStudent: () => void; studentHasData: boolean; selectedIdx: number; setSelectedIdx: (i: number) => void; totalStudents: number
 }) {
+  const [focusedQ, setFocusedQ] = useState<number | null>(null)
+  const [showRubricGuide, setShowRubricGuide] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const allQNums = useMemo(() => config.questions.map(q => q.qNum), [config])
+
+  // Keyboard handler for MC scoring
+  useEffect(() => {
+    if (!student) return
+    const handler = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase()
+      // a/b/c/d to select answer for focused question
+      if (['a', 'b', 'c', 'd'].includes(key) && focusedQ != null) {
+        e.preventDefault()
+        const currentAnswer = sc.answers[focusedQ]
+        setAnswer(focusedQ, currentAnswer === key ? '' : key)
+        // Auto-advance to next question after selection
+        const idx = allQNums.indexOf(focusedQ)
+        if (idx < allQNums.length - 1) {
+          setTimeout(() => setFocusedQ(allQNums[idx + 1]), 100)
+        }
+        return
+      }
+      // Arrow keys to navigate questions
+      if ((key === 'arrowdown' || key === 'arrowup') && focusedQ != null) {
+        e.preventDefault()
+        const idx = allQNums.indexOf(focusedQ)
+        if (key === 'arrowdown' && idx < allQNums.length - 1) setFocusedQ(allQNums[idx + 1])
+        else if (key === 'arrowup' && idx > 0) setFocusedQ(allQNums[idx - 1])
+        return
+      }
+      // Number keys 1-9 to jump to question (with shift held)
+      if (e.shiftKey && key >= '1' && key <= '9') {
+        const qNum = parseInt(key)
+        if (allQNums.includes(qNum)) { e.preventDefault(); setFocusedQ(qNum) }
+        return
+      }
+      // Escape to unfocus
+      if (key === 'escape') { setFocusedQ(null); return }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [student, focusedQ, sc.answers, allQNums, setAnswer])
+
+  // Scroll focused question into view
+  useEffect(() => {
+    if (focusedQ == null) return
+    const el = document.getElementById(`q-row-${focusedQ}`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [focusedQ])
+
   if (!student) return <div className="p-12 text-center text-text-tertiary">Select a student from the sidebar</div>
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-6 max-w-4xl" ref={containerRef}>
       {/* Student header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -631,6 +734,14 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         </div>
       </div>
 
+      {/* Keyboard hint */}
+      <div className="mb-3 flex items-center gap-3 text-[10px] text-text-tertiary bg-surface-alt/60 rounded-lg px-3 py-1.5">
+        <span className="font-semibold">Keyboard:</span>
+        <span>Click a row to focus, then press <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">A</kbd> <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">B</kbd> <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">C</kbd> <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">D</kbd> to answer</span>
+        <span><kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">↑↓</kbd> to navigate</span>
+        <span><kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">Esc</kbd> to unfocus</span>
+      </div>
+
       {/* MC Bubble Sheet */}
       {sectionKeys.map(sKey => {
         const qs = sections[sKey]
@@ -646,9 +757,12 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
               {qs.map((q, qi) => {
                 const chosen = sc.answers[q.qNum]
                 const isCorrect = chosen === q.correct
+                const isFocused = focusedQ === q.qNum
                 return (
-                  <div key={q.qNum} className={`flex items-center gap-3 px-3 py-1.5 ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''}`}>
-                    <span className="w-5 text-[11px] text-text-tertiary text-right font-mono">{q.qNum}</span>
+                  <div key={q.qNum} id={`q-row-${q.qNum}`}
+                    onClick={() => setFocusedQ(q.qNum)}
+                    className={`flex items-center gap-3 px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-blue-50/30' : ''}`}>
+                    <span className={`w-5 text-[11px] text-right font-mono ${isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
                     <div className="flex gap-1">
                       {['a', 'b', 'c', 'd'].map(letter => {
                         const isChosen = chosen === letter
@@ -658,7 +772,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                         else if (isChosen && !isCorrect) bg = 'bg-red-400 border-red-400 text-white'
                         else if (chosen && isCorrectAnswer) bg = 'bg-green-100 border-green-300 text-green-700'
                         return (
-                          <button key={letter} onClick={() => setAnswer(q.qNum, isChosen ? '' : letter)}
+                          <button key={letter} onClick={(e) => { e.stopPropagation(); setAnswer(q.qNum, isChosen ? '' : letter); setFocusedQ(q.qNum) }}
                             className={`w-7 h-7 rounded-full text-[11px] font-bold border-2 transition-all ${bg}`}>
                             {letter.toUpperCase()}
                           </button>
@@ -682,29 +796,51 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
       {/* Writing Rubric */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[13px] font-semibold text-navy">Writing Rubric</h4>
+          <div className="flex items-center gap-2">
+            <h4 className="text-[13px] font-semibold text-navy">Writing Rubric</h4>
+            <button onClick={() => setShowRubricGuide(!showRubricGuide)}
+              className={`text-[10px] px-2 py-0.5 rounded-full transition-all flex items-center gap-1 ${showRubricGuide ? 'bg-navy text-white' : 'bg-surface-alt text-text-tertiary hover:bg-border'}`}>
+              <Eye size={10} /> {showRubricGuide ? 'Hide Guide' : 'Show Guide'}
+            </button>
+          </div>
           <span className="text-[11px] text-text-tertiary">{writingTotal}/{config.writingMax}</span>
         </div>
         <div className="border border-border rounded-lg overflow-hidden">
           {config.writingCategories.map((cat, ci) => {
             const val = sc.writing[cat.key] || 0
+            const descriptors = WRITING_RUBRIC_DESCRIPTORS[cat.key]
             return (
-              <div key={cat.key} className={`flex items-center gap-3 px-3 py-2 ${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                <div className="w-40">
-                  <div className="text-[12px] font-medium">{cat.label}</div>
-                  <div className="text-[9px] text-text-tertiary">{cat.standard} -- {cat.standardDesc}</div>
+              <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                <div className="flex items-center gap-3 px-3 py-2">
+                  <div className="w-40">
+                    <div className="text-[12px] font-medium">{cat.label}</div>
+                    <div className="text-[9px] text-text-tertiary">{cat.standard} -- {cat.standardDesc}</div>
+                  </div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: cat.max + 1 }, (_, i) => (
+                      <button key={i} onClick={() => setWritingScore(cat.key, i)}
+                        title={descriptors?.[i] || ''}
+                        className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${
+                          val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'
+                        }`}>
+                        {i}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-[12px] font-bold text-navy ml-2">{val}/{cat.max}</span>
                 </div>
-                <div className="flex gap-1">
-                  {Array.from({ length: cat.max + 1 }, (_, i) => (
-                    <button key={i} onClick={() => setWritingScore(cat.key, i)}
-                      className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${
-                        val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'
-                      }`}>
-                      {i}
-                    </button>
-                  ))}
-                </div>
-                <span className="text-[12px] font-bold text-navy ml-2">{val}/{cat.max}</span>
+                {/* Rubric guide row */}
+                {showRubricGuide && descriptors && (
+                  <div className="px-3 pb-2">
+                    <div className="bg-surface-alt/60 rounded-lg px-3 py-2 grid gap-1" style={{ gridTemplateColumns: `repeat(${cat.max + 1}, 1fr)` }}>
+                      {Array.from({ length: cat.max + 1 }, (_, i) => (
+                        <div key={i} className={`text-[8px] leading-tight px-1 py-1 rounded ${val === i ? 'bg-navy/10 font-semibold text-navy' : 'text-text-tertiary'}`}>
+                          <span className="font-bold text-[9px]">{i}:</span> {descriptors[i] || '—'}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })}

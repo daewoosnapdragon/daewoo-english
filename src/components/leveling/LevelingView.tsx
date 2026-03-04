@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
@@ -585,6 +585,14 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<EnglishClass>(teacherClass || 'Lily')
   const [modalIdx, setModalIdx] = useState<number | null>(null)
+  const [editingManualGrades, setEditingManualGrades] = useState(false)
+  const [allSemesters, setAllSemesters] = useState<any[]>([])
+  const [manualGradeSemId, setManualGradeSemId] = useState<string>('')
+  const [manualGradeValues, setManualGradeValues] = useState<Record<string, string>>({})
+  const GRADE_DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language'] as const
+  const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set())
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     (async () => {
@@ -615,22 +623,113 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
     })()
   }, [levelTest.id, levelTest.grade])
 
+  // Track dirty state when ratings change
+  const updateRating = useCallback((sid: string, updates: Partial<TeacherAnecdotalRating>) => {
+    setRatings(prev => ({ ...prev, [sid]: { ...prev[sid], ...updates } }))
+    setDirtyIds(prev => { const next = new Set(prev); next.add(sid); return next })
+  }, [])
+
+  // Auto-save: debounce 3 seconds after last change
+  useEffect(() => {
+    if (dirtyIds.size === 0) return
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(async () => {
+      const idsToSave = Array.from(dirtyIds)
+      let errors = 0
+      for (const sid of idsToSave) {
+        const r = ratings[sid] || {}
+        const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({
+          level_test_id: levelTest.id, student_id: sid, teacher_id: currentTeacher?.id || null,
+          receptive_language: r.receptive_language ?? null, productive_language: r.productive_language ?? null,
+          engagement_pace: r.engagement_pace ?? null, placement_recommendation: r.placement_recommendation ?? null,
+          notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null,
+        }, { onConflict: 'level_test_id,student_id' })
+        if (error) errors++
+      }
+      setDirtyIds(new Set())
+      setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+      if (errors > 0) showToast(`Auto-save: ${errors} error(s)`)
+    }, 3000)
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
+  }, [dirtyIds, ratings, levelTest.id, currentTeacher?.id])
+
+  // Warn before leaving with unsaved data
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (dirtyIds.size > 0) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [dirtyIds])
+
   const saveOne = async (sid: string) => {
     const r = ratings[sid] || {}
     const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({
       level_test_id: levelTest.id, student_id: sid, teacher_id: currentTeacher?.id || null,
-      receptive_language: r.receptive_language || null, productive_language: r.productive_language || null,
-      engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null,
+      receptive_language: r.receptive_language ?? null, productive_language: r.productive_language ?? null,
+      engagement_pace: r.engagement_pace ?? null, placement_recommendation: r.placement_recommendation ?? null,
       notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null,
     }, { onConflict: 'level_test_id,student_id' })
-    if (error) showToast(`Error: ${error.message}`); else showToast('Saved')
+    if (error) { showToast(`Error: ${error.message}`); return false }
+    setDirtyIds(prev => { const next = new Set(prev); next.delete(sid); return next })
+    setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+    showToast('Saved')
+    return true
   }
 
   const saveAll = async () => {
     setSaving(true)
     const cs = students.filter(s => s.english_class === activeTab); let errors = 0
-    for (const s of cs) { const r = ratings[s.id] || {}; const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({ level_test_id: levelTest.id, student_id: s.id, teacher_id: currentTeacher?.id || null, receptive_language: r.receptive_language || null, productive_language: r.productive_language || null, engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null, notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null }, { onConflict: 'level_test_id,student_id' }); if (error) errors++ }
+    for (const s of cs) { const r = ratings[s.id] || {}; const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({ level_test_id: levelTest.id, student_id: s.id, teacher_id: currentTeacher?.id || null, receptive_language: r.receptive_language ?? null, productive_language: r.productive_language ?? null, engagement_pace: r.engagement_pace ?? null, placement_recommendation: r.placement_recommendation ?? null, notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null }, { onConflict: 'level_test_id,student_id' }); if (error) errors++ }
+    setDirtyIds(prev => { const next = new Set(prev); cs.forEach(s => next.delete(s.id)); return next })
+    setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
     setSaving(false); showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved all ${activeTab} ratings`)
+  }
+
+  // ── Manual Grade Entry ────────────────────────────────────────────
+  const openGradeEditor = async (studentId: string) => {
+    setEditingManualGrades(true)
+    if (allSemesters.length === 0) {
+      const { data } = await supabase.from('semesters').select('id, name, type').order('created_at', { ascending: false })
+      if (data) setAllSemesters(data)
+    }
+    // Pre-load existing grades for this student to populate values
+    setManualGradeSemId('')
+    setManualGradeValues({})
+  }
+
+  const loadExistingGrades = async (studentId: string, semesterId: string) => {
+    setManualGradeSemId(semesterId)
+    const { data } = await supabase.from('semester_grades').select('domain, final_grade, calculated_grade').eq('student_id', studentId).eq('semester_id', semesterId)
+    const vals: Record<string, string> = {}
+    data?.forEach((g: any) => {
+      const score = g.final_grade ?? g.calculated_grade ?? null
+      if (score != null) vals[g.domain] = String(Math.round(score * 10) / 10)
+    })
+    setManualGradeValues(vals)
+  }
+
+  const saveManualGrades = async (studentId: string) => {
+    const student = students.find(s => s.id === studentId)
+    if (!manualGradeSemId) { showToast('Select a semester first'); return }
+    let saved = 0
+    for (const dom of GRADE_DOMAINS) {
+      const val = parseFloat(manualGradeValues[dom] || '')
+      if (!isNaN(val)) {
+        const { error } = await supabase.from('semester_grades').upsert({
+          student_id: studentId, semester_id: manualGradeSemId, domain: dom, final_grade: val,
+          english_class: student?.english_class || activeTab, grade: student?.grade,
+        }, { onConflict: 'student_id,semester_id,domain' })
+        if (!error) saved++
+      }
+    }
+    showToast(`Saved ${saved} grade(s)`)
+    setEditingManualGrades(false)
+    // Refresh student data
+    const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').eq('student_id', studentId)
+    if (sg && studentData[studentId]) {
+      studentData[studentId].grades = sg.map((g: any) => ({ ...g, score: g.final_grade ?? g.calculated_grade ?? null }))
+    }
   }
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
@@ -647,10 +746,31 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
   return (
     <div className="px-10 py-6">
       <div className="flex items-center justify-between">
-        <ClassTabs active={activeTab} onSelect={c => { setActiveTab(c); setModalIdx(null) }} counts={classCounts} available={available} />
-        <button onClick={saveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 mb-4">
-          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save All {activeTab}
-        </button>
+        <ClassTabs active={activeTab} onSelect={c => {
+          if (dirtyIds.size > 0) {
+            // Auto-save before switching tabs
+            saveAll().then(() => setActiveTab(c))
+          } else {
+            setActiveTab(c); setModalIdx(null); setEditingManualGrades(false)
+          }
+        }} counts={classCounts} available={available} />
+        <div className="flex items-center gap-3 mb-4">
+          {/* Auto-save indicator */}
+          {dirtyIds.size > 0 && (
+            <span className="text-[10px] text-amber-600 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              {dirtyIds.size} unsaved
+            </span>
+          )}
+          {dirtyIds.size === 0 && lastSavedAt && (
+            <span className="text-[10px] text-green-600 flex items-center gap-1">
+              <Check size={10} /> Saved {lastSavedAt}
+            </span>
+          )}
+          <button onClick={saveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save All {activeTab}
+          </button>
+        </div>
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
@@ -728,7 +848,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                   <span className="ml-2">{modalIdx + 1} of {classStudents.length}</span>
                 </p>
               </div>
-              <button onClick={() => setModalIdx(null)} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+              <button onClick={() => { setModalIdx(null); setEditingManualGrades(false) }} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
             </div>
 
             {/* Student data */}
@@ -739,15 +859,48 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                     <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Level Test Scores</p>
                     {studentData[modalStudent.id]?.scores ? (
                       <div className="space-y-0.5">
-                        {studentData[modalStudent.id].scores.passage_cwpm != null && <p>CWPM: <span className="font-bold text-navy">{Math.round(studentData[modalStudent.id].scores.passage_cwpm)}</span></p>}
+                        {(studentData[modalStudent.id].scores.passage_cwpm ?? studentData[modalStudent.id].scores.orf_cwpm) != null && <p>Oral: <span className="font-bold text-navy">{Math.round(studentData[modalStudent.id].scores.passage_cwpm ?? studentData[modalStudent.id].scores.orf_cwpm)}</span></p>}
                         {studentData[modalStudent.id].scores.writing != null && <p>Writing: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.writing}/20</span></p>}
                         {studentData[modalStudent.id].scores.written_mc != null && <p>MC: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.written_mc}/{WRITTEN_MC_TOTAL}</span></p>}
                         {studentData[modalStudent.id].scores.word_reading_correct != null && <p>WR: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.word_reading_correct}{studentData[modalStudent.id].scores.word_reading_attempted ? `/${studentData[modalStudent.id].scores.word_reading_attempted}` : ''}</span></p>}
                       </div>) : <p className="text-text-tertiary italic">No scores yet</p>}
                   </div>
                   <div>
-                    <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Semester Grades</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold">Semester Grades</p>
+                      <button onClick={() => editingManualGrades ? setEditingManualGrades(false) : openGradeEditor(modalStudent.id)}
+                        className="text-[10px] text-navy hover:text-navy-dark font-medium flex items-center gap-0.5">
+                        {editingManualGrades ? '✕ Close' : '✏️ Add/Edit'}
+                      </button>
+                    </div>
                     {studentData[modalStudent.id]?.grades.length > 0 ? <div className="space-y-0.5">{studentData[modalStudent.id].grades.slice(0, 5).map((g: any, i: number) => <p key={i}>{domainLabel(g.domain)}: <span className="font-bold text-navy">{g.score?.toFixed(0)}%</span> <span className="text-text-tertiary">({g.semesters?.name})</span></p>)}</div> : <p className="text-text-tertiary italic">No grades</p>}
+                    {editingManualGrades && (
+                      <div className="mt-2 p-2 bg-blue-50/50 rounded-lg border border-blue-200/50 space-y-2">
+                        <select value={manualGradeSemId} onChange={e => loadExistingGrades(modalStudent.id, e.target.value)}
+                          className="w-full text-[11px] px-2 py-1.5 rounded-md border border-border bg-white">
+                          <option value="">Select semester…</option>
+                          {allSemesters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                        {manualGradeSemId && (
+                          <>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {GRADE_DOMAINS.map(dom => (
+                                <div key={dom} className="flex items-center gap-1">
+                                  <label className="text-[10px] text-text-secondary w-16 capitalize">{dom}</label>
+                                  <input type="number" min="0" max="100" step="0.1" placeholder="—"
+                                    value={manualGradeValues[dom] || ''} onChange={e => setManualGradeValues(prev => ({ ...prev, [dom]: e.target.value }))}
+                                    className="flex-1 text-[11px] px-1.5 py-1 rounded border border-border w-full" />
+                                </div>
+                              ))}
+                            </div>
+                            <button onClick={() => saveManualGrades(modalStudent.id)}
+                              className="w-full py-1.5 rounded-md text-[11px] font-semibold bg-navy text-white hover:bg-navy-dark">
+                              Save Grades
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Recent Reading</p>
@@ -772,7 +925,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                     <p className="text-[11px] text-text-tertiary mb-2">{dim.desc}</p>
                     <div className="grid grid-cols-4 gap-2">
                       {[1,2,3,4].map(val => (
-                        <button key={val} onClick={() => setRatings(prev => ({ ...prev, [modalStudent.id]: { ...prev[modalStudent.id], [dim.key]: cur === val ? null : val } }))}
+                        <button key={val} onClick={() => updateRating(modalStudent.id, { [dim.key]: cur === val ? null : val })}
                           className={`p-2.5 rounded-lg text-left transition-all border-2 ${cur === val ? (val <= 1 ? 'border-red-400 bg-red-50' : val === 2 ? 'border-amber-400 bg-amber-50' : val === 3 ? 'border-blue-400 bg-blue-50' : 'border-green-400 bg-green-50') : 'border-transparent bg-surface-alt hover:bg-surface-alt/80'}`}>
                           <span className={`text-[12px] font-bold ${cur === val ? (val <= 1 ? 'text-red-700' : val === 2 ? 'text-amber-700' : val === 3 ? 'text-blue-700' : 'text-green-700') : 'text-text-secondary'}`}>{val}</span>
                           <p className="text-[9px] text-text-tertiary mt-0.5 leading-tight">{dim.levels[val - 1]}</p>
@@ -786,20 +939,20 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
               {/* Watchlist + Rec */}
               <div className="flex items-center gap-4 pt-2 border-t border-border">
                 <label className="flex items-center gap-2 text-[12px] cursor-pointer">
-                  <input type="checkbox" checked={ratings[modalStudent.id]?.is_watchlist || false} onChange={e => setRatings(prev => ({ ...prev, [modalStudent.id]: { ...prev[modalStudent.id], is_watchlist: e.target.checked } }))} className="w-4 h-4 rounded" />
+                  <input type="checkbox" checked={ratings[modalStudent.id]?.is_watchlist || false} onChange={e => updateRating(modalStudent.id, { is_watchlist: e.target.checked })} className="w-4 h-4 rounded" />
                   <Star size={14} className="text-amber-500" /> Watchlist
                 </label>
                 <div className="flex items-center gap-2 text-[12px]">
                   <span className="text-text-secondary">Recommends:</span>
                   {(['keep', 'move_up', 'move_down'] as const).map(opt => (
-                    <button key={opt} onClick={() => setRatings(prev => ({ ...prev, [modalStudent.id]: { ...prev[modalStudent.id], teacher_recommends: prev[modalStudent.id]?.teacher_recommends === opt ? null : opt } }))}
+                    <button key={opt} onClick={() => updateRating(modalStudent.id, { teacher_recommends: ratings[modalStudent.id]?.teacher_recommends === opt ? null : opt })}
                       className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${ratings[modalStudent.id]?.teacher_recommends === opt ? (opt === 'keep' ? 'bg-blue-500 text-white' : opt === 'move_up' ? 'bg-green-500 text-white' : 'bg-red-500 text-white') : 'bg-surface-alt text-text-secondary'}`}>
                       {opt === 'keep' ? 'Keep' : opt === 'move_up' ? 'Move Up' : 'Move Down'}
                     </button>
                   ))}
                 </div>
               </div>
-              <textarea value={ratings[modalStudent.id]?.notes || ''} onChange={e => setRatings(prev => ({ ...prev, [modalStudent.id]: { ...prev[modalStudent.id], notes: e.target.value } }))}
+              <textarea value={ratings[modalStudent.id]?.notes || ''} onChange={e => updateRating(modalStudent.id, { notes: e.target.value })}
                 placeholder="Optional notes for the leveling meeting..." className="w-full px-3 py-2.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface resize-none h-20" />
             </div>
 
@@ -895,7 +1048,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           <thead><tr style="background:#f1f5f9">
             <th style="padding:6px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">#</th>
             <th style="padding:6px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Student</th>
-            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">CWPM</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Oral</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Writing</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">MC</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Grades</th>
@@ -971,7 +1124,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           {ENGLISH_CLASSES.map(cls => <button key={cls} onClick={() => setFilterClass(cls)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === cls ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`} style={filterClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>{cls}</button>)}
         </div>
         <select value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[11px] bg-surface">
-          <option value="composite">Sort: Composite</option><option value="percentile">Sort: %ILE</option><option value="cwpm">Sort: CWPM</option><option value="writing">Sort: Writing</option><option value="name">Sort: Name</option>
+          <option value="composite">Sort: Composite</option><option value="percentile">Sort: %ILE</option><option value="cwpm">Sort: Oral</option><option value="writing">Sort: Writing</option><option value="name">Sort: Name</option>
         </select>
         <button onClick={() => setShowBorderline(!showBorderline)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showBorderline ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}>
           <AlertTriangle size={12} /> Borderline
@@ -981,7 +1134,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
         </button>
         <button onClick={() => {
           exportToCSV(`leveling-G${levelTest.grade}`,
-            ['Student', 'Korean Name', 'Current Class', 'CWPM', 'Writing', 'MC', 'Grade Avg%', 'Anecdotal', 'Composite', 'Percentile', 'Suggested'],
+            ['Student', 'Korean Name', 'Current Class', 'Oral', 'Writing', 'MC', 'Grade Avg%', 'Anecdotal', 'Composite', 'Percentile', 'Suggested'],
             displayed.map(r => [r.student.english_name, r.student.korean_name, r.student.english_class,
               r.rawCwpm != null ? Math.round(r.rawCwpm) : '', r.rawWriting ?? '', r.rawMc ?? '',
               (r.gradeScore * 100).toFixed(0), (r.anecScore * 100).toFixed(0), (r.composite * 100).toFixed(0),
@@ -996,7 +1149,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           <thead><tr className="bg-surface-alt">
             <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px]">Student</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Current</th>
-            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Oral</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Grade Avg</th>
@@ -1168,7 +1321,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                 <div className="flex justify-center">
                   {(() => {
                     const size = 240, cx = size / 2, cy = size / 2, r = 90
-                    const axes = ['CWPM', 'Writing', 'MC', 'Grades', 'Anecdotal']
+                    const axes = ['Oral', 'Writing', 'MC', 'Grades', 'Anecdotal']
                     const n = axes.length
                     const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b']
                     // Normalize data to 0-1
@@ -1241,7 +1394,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                     </div>
                     <div className="space-y-1.5 text-[11px]">
                       <div className="flex justify-between"><span className="text-text-tertiary">Current</span><span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) + '40', color: classToTextColor(s.english_class as EnglishClass) }}>{s.english_class}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">CWPM</span><span className="font-bold text-navy">{sc?.raw_scores?.passage_cwpm != null ? Math.round(sc.raw_scores.passage_cwpm) : '—'}</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">Oral</span><span className="font-bold text-navy">{(sc?.raw_scores?.passage_cwpm ?? sc?.raw_scores?.orf_cwpm ?? sc?.calculated_metrics?.weighted_cwpm) != null ? Math.round(sc.raw_scores.passage_cwpm ?? sc.raw_scores.orf_cwpm ?? sc.calculated_metrics?.weighted_cwpm) : '—'}</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">Writing</span><span className="font-bold text-navy">{sc?.raw_scores?.writing ?? '—'}/20</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">MC</span><span className="font-bold text-navy">{sc?.raw_scores?.written_mc ?? '—'}/{WRITTEN_MC_TOTAL}</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">Grade Avg</span><span className={`font-bold ${gradeAvg != null ? (gradeAvg >= 80 ? 'text-green-600' : gradeAvg >= 60 ? 'text-amber-600' : 'text-red-600') : ''}`}>{gradeAvg != null ? `${gradeAvg.toFixed(0)}%` : '—'}</span></div>
@@ -1294,7 +1447,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                         {anec?.is_watchlist && <Star size={9} className="text-amber-500 fill-amber-500" />}{isOvr && <AlertTriangle size={9} className="text-amber-500" />}
                       </div>
                     </div>
-                    {score?.raw_scores && <div className="flex gap-1 mt-1 text-[8px] text-text-tertiary">{score.raw_scores.passage_cwpm != null && <span>C:{Math.round(score.raw_scores.passage_cwpm)}</span>}{score.raw_scores.writing != null && <span>W:{score.raw_scores.writing}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
+                    {score?.raw_scores && <div className="flex gap-1 mt-1 text-[8px] text-text-tertiary">{(score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm ?? score.calculated_metrics?.weighted_cwpm) != null && <span>O:{Math.round(score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm ?? score.calculated_metrics?.weighted_cwpm)}</span>}{score.raw_scores.writing != null && <span>W:{score.raw_scores.writing}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
                     {anec && <div className="flex gap-0.5 mt-1">{DIMS.map(d => { const v = anec[d.key]; const c = !v ? '#e5e7eb' : v <= 1 ? '#ef4444' : v === 2 ? '#f59e0b' : v === 3 ? '#3b82f6' : '#22c55e'; return <div key={d.key} className="w-3 h-3 rounded-sm flex items-center justify-center" style={{ backgroundColor: c, color: v ? '#fff' : '#d1d5db', fontSize: '7px', fontWeight: 700 }}>{v || '—'}</div> })}</div>}
                     {anec?.teacher_recommends && <p className={`text-[7px] font-bold mt-0.5 ${anec.teacher_recommends === 'keep' ? 'text-blue-600' : anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{anec.teacher_recommends === 'keep' ? 'KEEP' : anec.teacher_recommends === 'move_up' ? 'UP' : 'DOWN'}</p>}
                     {expandedCard === student.id && (
@@ -1396,8 +1549,11 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
 }
 
 function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>) {
-  const sc = scores[s.id]?.raw_scores || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
-  const cwpmRatio = sc.passage_cwpm != null && bench.cwpm_end > 0 ? sc.passage_cwpm / bench.cwpm_end : null
+  const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
+  // CWPM: check both old key (passage_cwpm from GenericEntry) and new key (orf_cwpm from OralTestEntry25)
+  // Also check calculated_metrics.weighted_cwpm which includes NAEP adjustment
+  const rawCwpmValue = sc.passage_cwpm ?? sc.orf_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? null
+  const cwpmRatio = rawCwpmValue != null && bench.cwpm_end > 0 ? rawCwpmValue / bench.cwpm_end : null
   const writingRatio = sc.writing != null && bench.writing_end > 0 ? sc.writing / bench.writing_end : null
   const mcPct = sc.written_mc != null ? sc.written_mc / WRITTEN_MC_TOTAL : null
   const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
@@ -1413,7 +1569,7 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   const composite = hasGrades
     ? testScore * 0.30 + gScore * 0.40 + anecScore * 0.30
     : testScore * 0.80 + anecScore * 0.20
-  return { student: s, score: sc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, testScore, gradeScore: gScore, anecScore, composite, rawCwpm: sc.passage_cwpm ?? null, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, hasGrades }
+  return { student: s, score: sc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, testScore, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, hasGrades }
 }
 
 function suggestClass(row: any, idx: number, total: number): EnglishClass {
@@ -1429,8 +1585,9 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
   const result: Record<string, EnglishClass> = {}
   const metrics: Record<string, number> = {}
   students.forEach(s => {
-    const sc = scores[s.id]?.raw_scores || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
-    const tr: number[] = []; if (sc.passage_cwpm != null && bench.cwpm_end > 0) tr.push(sc.passage_cwpm / bench.cwpm_end); if (sc.writing != null && bench.writing_end > 0) tr.push(sc.writing / bench.writing_end); if (sc.written_mc != null) tr.push(sc.written_mc / WRITTEN_MC_TOTAL); if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) tr.push(sc.word_reading_correct / sc.word_reading_attempted)
+    const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
+    const rawCwpmValue = sc.passage_cwpm ?? sc.orf_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? null
+    const tr: number[] = []; if (rawCwpmValue != null && bench.cwpm_end > 0) tr.push(rawCwpmValue / bench.cwpm_end); if (sc.writing != null && bench.writing_end > 0) tr.push(sc.writing / bench.writing_end); if (sc.written_mc != null) tr.push(sc.written_mc / WRITTEN_MC_TOTAL); if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) tr.push(sc.word_reading_correct / sc.word_reading_attempted)
     const ts = tr.length > 0 ? tr.reduce((a, b) => a + b, 0) / tr.length : 0.5
     // Filter to fall semester grades only (matches computeRow behavior)
     const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall')))
