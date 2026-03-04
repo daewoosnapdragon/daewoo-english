@@ -303,6 +303,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
 
   const [students, setStudents] = useState<any[]>([])
   const [scores, setScores] = useState<Record<string, StudentScores>>({})
+  const [savedSnapshot, setSavedSnapshot] = useState<Record<string, StudentScores>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [selectedIdx, setSelectedIdx] = useState(0)
@@ -336,6 +337,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         }
       })
       setScores(map)
+      setSavedSnapshot(JSON.parse(JSON.stringify(map)))
       setLoading(false)
     }
     load()
@@ -346,6 +348,15 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     if (filterClass === 'all') return students
     return students.filter(s => s.english_class === filterClass)
   }, [students, filterClass])
+
+  // Warn before leaving with unsaved data
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasDirtyData) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasDirtyData])
 
   const classes = useMemo(() => {
     const set = new Set<string>()
@@ -381,13 +392,40 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     }))
   }, [student])
 
-  // Clear student
-  const clearStudent = useCallback(() => {
+  // Clear student — clears local state AND removes written data from DB (preserves oral data)
+  const clearStudent = useCallback(async () => {
     if (!student) return
     if (!confirm(`Clear all written test scores for ${student.english_name || student.korean_name}? This cannot be undone.`)) return
     setScores(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
-    showToast('Cleared')
-  }, [student])
+    // Remove written-specific fields from DB while preserving oral test data
+    try {
+      const { data: existing } = await supabase.from('level_test_scores')
+        .select('raw_scores, calculated_metrics')
+        .eq('level_test_id', levelTest.id)
+        .eq('student_id', student.id)
+        .maybeSingle()
+      if (existing) {
+        const raw = { ...(existing.raw_scores || {}) }
+        const calc = { ...(existing.calculated_metrics || {}) }
+        // Remove written-specific keys
+        delete raw.written_answers; delete raw.written_rubric; delete raw.written_mc; delete raw.writing
+        delete calc.written_mc_total; delete calc.written_mc_max; delete calc.written_mc_pct
+        delete calc.writing_total; delete calc.writing_max; delete calc.written_domain_scores; delete calc.written_standards_mastery
+        // Check if anything remains (oral data)
+        const hasOralData = Object.keys(raw).some(k => !k.startsWith('written'))
+        if (hasOralData) {
+          await supabase.from('level_test_scores').update({ raw_scores: raw, calculated_metrics: calc })
+            .eq('level_test_id', levelTest.id).eq('student_id', student.id)
+        } else {
+          await supabase.from('level_test_scores').delete()
+            .eq('level_test_id', levelTest.id).eq('student_id', student.id)
+        }
+      }
+    } catch (e) { console.error('Clear DB error:', e) }
+    // Update saved snapshot to match cleared state
+    setSavedSnapshot(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
+    showToast('Cleared written test scores')
+  }, [student, levelTest.id])
 
   // Count correct for current student
   const mcCorrect = useMemo(() => {
@@ -407,12 +445,22 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     return Object.keys(s.answers).length > 0 || Object.values(s.writing).some((v: any) => v > 0)
   }
 
-  // Save
+  // Track which students have unsaved changes (changed since last save/load)
+  const hasDirtyData = useMemo(() => {
+    return students.some(s => {
+      const current = scores[s.id]
+      const saved = savedSnapshot[s.id]
+      if (!current || !saved) return studentHasData(s.id) && JSON.stringify(current) !== JSON.stringify(saved)
+      return JSON.stringify(current) !== JSON.stringify(saved)
+    })
+  }, [scores, savedSnapshot, students])
+
+  // Save — saves ALL students with data across ALL classes (not just current filter)
   const handleSave = async () => {
     if (!config) return
     setSaving(true)
     let errors = 0
-    const toSave = classStudents.filter(s => studentHasData(s.id))
+    const toSave = students.filter(s => studentHasData(s.id))
 
     for (const stu of toSave) {
       const sc = scores[stu.id]
@@ -475,6 +523,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     }
 
     setSaving(false)
+    if (errors === 0) setSavedSnapshot(JSON.parse(JSON.stringify(scores))) // Update clean snapshot
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved ${toSave.length} student${toSave.length === 1 ? '' : 's'}`)
   }
 
@@ -544,8 +593,9 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
 
         {/* Save button */}
         <div className="p-3 border-t border-border">
+          {hasDirtyData && <p className="text-[9px] text-amber-600 font-medium text-center mb-1">Unsaved changes</p>}
           <button onClick={handleSave} disabled={saving}
-            className="w-full py-2 bg-navy text-white rounded-lg text-[12px] font-medium flex items-center justify-center gap-2 hover:bg-navy/90 disabled:opacity-50">
+            className={`w-full py-2 rounded-lg text-[12px] font-medium flex items-center justify-center gap-2 disabled:opacity-50 ${hasDirtyData ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse' : 'bg-navy text-white hover:bg-navy/90'}`}>
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Save All
           </button>
@@ -589,9 +639,10 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
 // ═══════════════════════════════════════════════════════════════════════
 
 // ── Writing Rubric Descriptors (per grade) ────────────────────────
-// Grade 2: 0-5 scale per category
+// Grade 2: 0-5 scale per category (informative writing)
+// Grades 3-5: 0-4 scale per category (narrative writing)
 const WRITING_RUBRIC_DESCRIPTORS: Record<string, Record<number, string>> = {
-  // Grade 2 (0-5 scale)
+  // Grade 2 (0-5 scale) — informative writing
   completeness: {
     0: 'No response or off-topic',
     1: 'Attempts to name a topic but unclear',
@@ -600,7 +651,7 @@ const WRITING_RUBRIC_DESCRIPTORS: Record<string, Record<number, string>> = {
     4: 'Clear topic; organized with supporting details',
     5: 'Strong topic sentence; well-organized with elaborated details',
   },
-  content: {
+  content_g2: {
     0: 'No details provided',
     1: 'One vague or irrelevant detail',
     2: 'Two details with limited relevance',
@@ -608,7 +659,7 @@ const WRITING_RUBRIC_DESCRIPTORS: Record<string, Record<number, string>> = {
     4: 'Well-developed details that support the topic',
     5: 'Rich, specific details with clear connections to topic',
   },
-  language: {
+  language_g2: {
     0: 'No recognizable sentence structure',
     1: 'Fragments or heavily L1-influenced structures',
     2: 'Simple sentences with frequent errors',
@@ -616,7 +667,7 @@ const WRITING_RUBRIC_DESCRIPTORS: Record<string, Record<number, string>> = {
     4: 'Varied sentence types; minor errors only',
     5: 'Fluent, varied structures; near-native grammar',
   },
-  mechanics: {
+  mechanics_g2: {
     0: 'No capitalization, punctuation, or spelling',
     1: 'Minimal use of conventions; many errors',
     2: 'Some capitals and periods; phonetic spelling',
@@ -624,7 +675,7 @@ const WRITING_RUBRIC_DESCRIPTORS: Record<string, Record<number, string>> = {
     4: 'Consistent mechanics; occasional spelling errors',
     5: 'Strong command of capitalization, punctuation, and spelling',
   },
-  // Grade 3-5 (0-4 scale)
+  // Grade 3-5 (0-4 scale) — narrative writing
   brainstorm: {
     0: 'No planning evident',
     1: 'Minimal planning; few ideas listed',
@@ -639,6 +690,37 @@ const WRITING_RUBRIC_DESCRIPTORS: Record<string, Record<number, string>> = {
     3: 'Clear beginning, middle, end with some transitions',
     4: 'Strong narrative arc with effective transitions throughout',
   },
+  content_g35: {
+    0: 'No narrative details or description',
+    1: 'Minimal details; tells rather than shows',
+    2: 'Some details or dialogue; limited description',
+    3: 'Uses dialogue and description to develop events',
+    4: 'Rich dialogue, sensory details, and pacing that bring the story to life',
+  },
+  language_g35: {
+    0: 'No recognizable sentence structure',
+    1: 'Fragments or heavily L1-influenced; hard to follow',
+    2: 'Simple sentences with noticeable errors; limited variety',
+    3: 'Mostly correct; some sentence variety and temporal words',
+    4: 'Varied, fluent sentences; effective use of transitions and temporal words',
+  },
+  mechanics_g35: {
+    0: 'No capitalization, punctuation, or spelling',
+    1: 'Minimal conventions; frequent errors interfere with meaning',
+    2: 'Basic capitals and periods present; phonetic spelling of harder words',
+    3: 'Mostly correct mechanics; grade-level words spelled correctly',
+    4: 'Consistent command of grade-level conventions; rare errors',
+  },
+}
+
+// Grade-aware rubric descriptor lookup
+function getRubricDescriptors(key: string, grade: number): Record<number, string> | undefined {
+  if (grade === 2) {
+    // Grade 2 uses _g2 suffix for shared keys, or direct key for unique ones
+    return WRITING_RUBRIC_DESCRIPTORS[key + '_g2'] || WRITING_RUBRIC_DESCRIPTORS[key]
+  }
+  // Grades 3-5: use _g35 suffix for shared keys, or direct key for unique ones
+  return WRITING_RUBRIC_DESCRIPTORS[key + '_g35'] || WRITING_RUBRIC_DESCRIPTORS[key]
 }
 
 function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
@@ -808,7 +890,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         <div className="border border-border rounded-lg overflow-hidden">
           {config.writingCategories.map((cat, ci) => {
             const val = sc.writing[cat.key] || 0
-            const descriptors = WRITING_RUBRIC_DESCRIPTORS[cat.key]
+            const descriptors = getRubricDescriptors(cat.key, config.grade)
             return (
               <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                 <div className="flex items-center gap-3 px-3 py-2">

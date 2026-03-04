@@ -1116,10 +1116,14 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
         writing_end: manual.writing_end > 0 ? manual.writing_end : (writings.length > 0 ? med(writings) : 0),
         mc_end: manual.mc_end > 0 ? manual.mc_end : (mcs.length > 0 ? med(mcs) : 0),
         cwpm_end: manual.cwpm_end > 0 ? manual.cwpm_end : (orals.length > 0 ? med(orals) : 0),
-        // Store medians for outlier detection
+        // Store medians and counts for outlier detection
         _auto_writing_median: writings.length > 0 ? med(writings) : 0,
         _auto_mc_median: mcs.length > 0 ? med(mcs) : 0,
         _auto_oral_median: orals.length > 0 ? med(orals) : 0,
+        _auto_writing_count: writings.length,
+        _auto_mc_count: mcs.length,
+        _auto_oral_count: orals.length,
+        _class_size: classStudents.length,
       }
     })
     return eb
@@ -1619,10 +1623,14 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
     ? testScore * 0.30 + gScore * 0.40 + anecScore * 0.30
     : testScore * 0.80 + anecScore * 0.20
   // Outlier flags: score is 0 or below 10% of class auto-median
+  // Only flag when enough classmates have data for that component (>=3 or >=50% of class) to make the median meaningful
   const outlierFlags: string[] = []
-  if (rawCwpmValue != null && (rawCwpmValue === 0 || (bench._auto_oral_median > 0 && rawCwpmValue < bench._auto_oral_median * 0.1))) outlierFlags.push('oral')
-  if (sc.writing != null && (sc.writing === 0 || (bench._auto_writing_median > 0 && sc.writing < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
-  if (sc.written_mc != null && (sc.written_mc === 0 || (bench._auto_mc_median > 0 && sc.written_mc < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
+  const oralReliable = bench._auto_oral_count >= 3 && bench._auto_oral_count >= (bench._class_size || 1) * 0.5
+  const writingReliable = bench._auto_writing_count >= 3 && bench._auto_writing_count >= (bench._class_size || 1) * 0.5
+  const mcReliable = bench._auto_mc_count >= 3 && bench._auto_mc_count >= (bench._class_size || 1) * 0.5
+  if (oralReliable && rawCwpmValue != null && (rawCwpmValue === 0 || (bench._auto_oral_median > 0 && rawCwpmValue < bench._auto_oral_median * 0.1))) outlierFlags.push('oral')
+  if (writingReliable && sc.writing != null && (sc.writing === 0 || (bench._auto_writing_median > 0 && sc.writing < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
+  if (mcReliable && sc.written_mc != null && (sc.written_mc === 0 || (bench._auto_mc_median > 0 && sc.written_mc < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
   return { student: s, score: sc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, testScore, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, hasGrades, outlierFlags }
 }
 

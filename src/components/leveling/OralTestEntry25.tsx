@@ -794,6 +794,37 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved (${toSave.length} student${toSave.length === 1 ? '' : 's'})`)
   }
 
+  // Clear oral data — clears local state AND removes oral data from DB (preserves written data)
+  const clearStudent = async (sid: string, name: string) => {
+    if (!confirm(`Clear all oral test scores for ${name}? This cannot be undone.`)) return
+    setScores(prev => ({ ...prev, [sid]: {} }))
+    try {
+      const { data: existing } = await supabase.from('level_test_scores')
+        .select('raw_scores, calculated_metrics')
+        .eq('level_test_id', levelTest.id)
+        .eq('student_id', sid)
+        .maybeSingle()
+      if (existing) {
+        const raw = existing.raw_scores || {}
+        const calc = existing.calculated_metrics || {}
+        // Keep only written-specific keys
+        const writtenRaw: Record<string, any> = {}
+        const writtenCalc: Record<string, any> = {}
+        ;['written_answers', 'written_rubric', 'written_mc', 'writing'].forEach(k => { if (raw[k] != null) writtenRaw[k] = raw[k] })
+        ;['written_mc_total', 'written_mc_max', 'written_mc_pct', 'writing_total', 'writing_max', 'written_domain_scores', 'written_standards_mastery'].forEach(k => { if (calc[k] != null) writtenCalc[k] = calc[k] })
+        const hasWrittenData = Object.keys(writtenRaw).length > 0
+        if (hasWrittenData) {
+          await supabase.from('level_test_scores').update({ raw_scores: writtenRaw, calculated_metrics: writtenCalc })
+            .eq('level_test_id', levelTest.id).eq('student_id', sid)
+        } else {
+          await supabase.from('level_test_scores').delete()
+            .eq('level_test_id', levelTest.id).eq('student_id', sid)
+        }
+      }
+    } catch (e) { console.error('Clear DB error:', e) }
+    showToast(`Cleared oral scores for ${name}`)
+  }
+
   if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
   if (!config) return <div className="p-12 text-center text-text-tertiary">No oral test configuration for Grade {grade}.</div>
 
@@ -896,12 +927,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
               <div className="flex items-center gap-2">
                 {/* Clear Student */}
                 {studentHasData(student.id) && (
-                  <button onClick={() => {
-                    if (confirm(`Clear all scores for ${student.english_name}? This cannot be undone.`)) {
-                      setScores(prev => ({ ...prev, [student.id]: {} }))
-                      showToast(`Cleared scores for ${student.english_name}`)
-                    }
-                  }}
+                  <button onClick={() => clearStudent(student.id, student.english_name)}
                     className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-medium text-red-500 hover:bg-red-50 border border-red-200">
                     <RotateCcw size={12} /> Clear
                   </button>

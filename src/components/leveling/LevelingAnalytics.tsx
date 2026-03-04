@@ -259,14 +259,18 @@ export default function LevelingAnalytics({ levelTest }: { levelTest: LevelTest 
     ENGLISH_CLASSES.forEach(cls => {
       const cm = classMetrics.find(m => m.cls === cls)
       if (!cm || cm.count < 3) return
+      // Only flag outliers for a component when >=50% of class has data (prevents false positives during incomplete test phases)
+      const oralReliable = cm.oral.values.length >= 3 && cm.oral.values.length >= cm.count * 0.5
+      const writingReliable = cm.writing.values.length >= 3 && cm.writing.values.length >= cm.count * 0.5
+      const mcReliable = cm.mc.values.length >= 3 && cm.mc.values.length >= cm.count * 0.5
       students.filter(s => s.english_class === cls).forEach(s => {
         const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}
         const oral = sc.passage_cwpm ?? sc.orf_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? null
-        if (oral != null && cm.oral.hasData && (oral === 0 || (cm.oral.median > 0 && oral < cm.oral.median * 0.1)))
+        if (oralReliable && oral != null && cm.oral.hasData && (oral === 0 || (cm.oral.median > 0 && oral < cm.oral.median * 0.1)))
           flagged.push({ studentId: s.id, metric: 'oral', value: oral, classMedian: cm.oral.median })
-        if (sc.writing != null && cm.writing.hasData && (sc.writing === 0 || (cm.writing.median > 0 && sc.writing < cm.writing.median * 0.1)))
+        if (writingReliable && sc.writing != null && cm.writing.hasData && (sc.writing === 0 || (cm.writing.median > 0 && sc.writing < cm.writing.median * 0.1)))
           flagged.push({ studentId: s.id, metric: 'writing', value: sc.writing, classMedian: cm.writing.median })
-        if (sc.written_mc != null && cm.mc.hasData && (sc.written_mc === 0 || (cm.mc.median > 0 && sc.written_mc < cm.mc.median * 0.1)))
+        if (mcReliable && sc.written_mc != null && cm.mc.hasData && (sc.written_mc === 0 || (cm.mc.median > 0 && sc.written_mc < cm.mc.median * 0.1)))
           flagged.push({ studentId: s.id, metric: 'mc', value: sc.written_mc, classMedian: cm.mc.median })
       })
     })
