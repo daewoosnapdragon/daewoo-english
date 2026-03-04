@@ -23,11 +23,12 @@ type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'an
 // Written MC total — update here when test format changes
 // Written MC total varies by grade: G2=25, G3=21, G4=28, G5=20
 function getWrittenMcTotal(grade: number | string): number {
+  // DOK-weighted: DOK1=1pt, DOK2+=2pt
   const g = Number(grade)
-  if (g === 2) return 25; if (g === 3) return 21; if (g === 4) return 28; if (g === 5) return 20
-  return 21 // fallback
+  if (g === 2) return 32; if (g === 3) return 26; if (g === 4) return 40; if (g === 5) return 28
+  return 26 // fallback
 }
-const WRITTEN_MC_TOTAL = 21 // default for backward compat, use getWrittenMcTotal() where grade is known
+const WRITTEN_MC_TOTAL = 26 // default for backward compat, use getWrittenMcTotal() where grade is known
 
 const DIMS = [
   { key: 'receptive_language', label: 'Receptive Language', desc: 'Listening & reading for their class level',

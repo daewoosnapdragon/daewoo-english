@@ -33,11 +33,15 @@ interface WritingCategory {
 
 interface GradeConfig {
   grade: number
-  totalMC: number
+  totalMC: number       // weighted max (DOK1=1pt, DOK2+=2pt)
+  questionCount: number  // raw question count (for progress tracking)
   questions: QuestionDef[]
   writingCategories: WritingCategory[]
   writingMax: number
 }
+
+// DOK weighting: DOK 1 = 1 point, DOK 2+ = 2 points
+function dokWeight(dok: number): number { return dok >= 2 ? 2 : 1 }
 
 interface StudentScores {
   answers: Record<number, string>   // qNum -> 'a'|'b'|'c'|'d'
@@ -221,10 +225,10 @@ const GRADE_5_WRITING: WritingCategory[] = [
 
 function getGradeConfig(grade: number): GradeConfig | null {
   switch (grade) {
-    case 2: return { grade: 2, totalMC: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20 }
-    case 3: return { grade: 3, totalMC: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20 }
-    case 4: return { grade: 4, totalMC: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20 }
-    case 5: return { grade: 5, totalMC: 20, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20 }
+    case 2: return { grade: 2, totalMC: 32, questionCount: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20 }
+    case 3: return { grade: 3, totalMC: 26, questionCount: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20 }
+    case 4: return { grade: 4, totalMC: 40, questionCount: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20 }
+    case 5: return { grade: 5, totalMC: 28, questionCount: 20, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20 }
     default: return null
   }
 }
@@ -261,29 +265,31 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
     })
   })
 
-  // Domain averages
+  // Domain averages (DOK-weighted)
   const domains: Record<string, { correct: number; total: number }> = {}
   studentIds.forEach(sid => {
     const ans = allScores[sid].answers
     config.questions.forEach(q => {
       if (ans[q.qNum]) {
+        const w = dokWeight(q.dok)
         if (!domains[q.domain]) domains[q.domain] = { correct: 0, total: 0 }
-        domains[q.domain].total++
-        if (ans[q.qNum] === q.correct) domains[q.domain].correct++
+        domains[q.domain].total += w
+        if (ans[q.qNum] === q.correct) domains[q.domain].correct += w
       }
     })
   })
 
-  // Standards mastery per student
+  // Standards mastery per student (DOK-weighted)
   const studentStandards: Record<string, Record<string, { met: number; total: number }>> = {}
   studentIds.forEach(sid => {
     studentStandards[sid] = {}
     const ans = allScores[sid].answers
     config.questions.forEach(q => {
       if (ans[q.qNum]) {
+        const w = dokWeight(q.dok)
         if (!studentStandards[sid][q.standard]) studentStandards[sid][q.standard] = { met: 0, total: 0 }
-        studentStandards[sid][q.standard].total++
-        if (ans[q.qNum] === q.correct) studentStandards[sid][q.standard].met++
+        studentStandards[sid][q.standard].total += w
+        if (ans[q.qNum] === q.correct) studentStandards[sid][q.standard].met += w
       }
     })
   })
@@ -563,12 +569,13 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
       {sectionKeys.map(sKey => {
         const qs = sections[sKey]
         const sectionLabel = qs[0].sectionLabel
-        const sCorrect = qs.filter(q => sc.answers[q.qNum] === q.correct).length
+        const sCorrect = qs.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? dokWeight(q.dok) : 0), 0)
+        const sMax = qs.reduce((sum, q) => sum + dokWeight(q.dok), 0)
         return (
           <div key={sKey} className="mb-5">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-[13px] font-semibold text-navy">{sectionLabel}</h4>
-              <span className="text-[11px] text-text-tertiary">{sCorrect}/{qs.length}</span>
+              <span className="text-[11px] text-text-tertiary">{sCorrect}/{sMax}</span>
             </div>
             <div className="border border-border rounded-lg overflow-hidden">
               {qs.map((q, qi) => {
@@ -580,6 +587,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                     onClick={() => setFocusedQ(q.qNum)}
                     className={`flex items-center gap-3 px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-blue-50/30' : ''}`}>
                     <span className={`w-5 text-[11px] text-right font-mono ${isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
+                    {q.dok >= 2 && <span className="text-[8px] font-bold text-amber-600 bg-amber-50 px-1 rounded">×2</span>}
                     <div className="flex gap-1">
                       {['a', 'b', 'c', 'd'].map(letter => {
                         const isChosen = chosen === letter
@@ -971,10 +979,10 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     showToast('Cleared written test scores')
   }, [student, levelTest.id])
 
-  // Count correct for current student
+  // Count weighted score for current student (DOK1=1pt, DOK2+=2pt)
   const mcCorrect = useMemo(() => {
     if (!config) return 0
-    return config.questions.filter(q => sc.answers[q.qNum] === q.correct).length
+    return config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? dokWeight(q.dok) : 0), 0)
   }, [sc, config])
 
   const writingTotal = useMemo(() => {
@@ -1017,26 +1025,28 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
 
     for (const stu of toSave) {
       const sc = scores[stu.id]
-      const mcTotal = config.questions.filter(q => sc.answers[q.qNum] === q.correct).length
+      const mcTotal = config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? dokWeight(q.dok) : 0), 0)
       const wTotal = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
 
-      // Domain breakdown
+      // Domain breakdown (weighted)
       const domainScores: Record<string, { correct: number; total: number }> = {}
       config.questions.forEach(q => {
         if (sc.answers[q.qNum]) {
+          const w = dokWeight(q.dok)
           if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }
-          domainScores[q.domain].total++
-          if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct++
+          domainScores[q.domain].total += w
+          if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct += w
         }
       })
 
-      // Standards mastery
+      // Standards mastery (weighted)
       const standardsMastery: Record<string, { met: number; total: number }> = {}
       config.questions.forEach(q => {
         if (sc.answers[q.qNum]) {
+          const w = dokWeight(q.dok)
           if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }
-          standardsMastery[q.standard].total++
-          if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met++
+          standardsMastery[q.standard].total += w
+          if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met += w
         }
       })
 
@@ -1136,7 +1146,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: classToColor(s.english_class) }} />
                 <div className="flex-1 min-w-0">
                   <div className="text-[12px] font-medium truncate">{s.english_name || s.korean_name}</div>
-                  {hasData && <div className="text-[9px] text-text-tertiary">{sAnswered}/{config.totalMC} MC</div>}
+                  {hasData && <div className="text-[9px] text-text-tertiary">{sAnswered}/{config.questionCount} MC</div>}
                 </div>
                 {hasData && <Check size={12} className="text-green-500 flex-shrink-0" />}
               </button>

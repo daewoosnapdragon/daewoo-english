@@ -10,9 +10,10 @@ import { Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, BarChart3, Arr
 // ── Helpers ────────────────────────────────────────────────────────
 
 function getWrittenMcTotal(grade: number | string): number {
+  // DOK-weighted: DOK1=1pt, DOK2+=2pt
   const g = Number(grade)
-  if (g === 2) return 25; if (g === 3) return 21; if (g === 4) return 28; if (g === 5) return 20
-  return 21
+  if (g === 2) return 32; if (g === 3) return 26; if (g === 4) return 40; if (g === 5) return 28
+  return 26
 }
 
 function median(arr: number[]): number {
