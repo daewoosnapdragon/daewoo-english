@@ -902,15 +902,6 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     return students.filter(s => s.english_class === filterClass)
   }, [students, filterClass])
 
-  // Warn before leaving with unsaved data
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (hasDirtyData) { e.preventDefault(); e.returnValue = '' }
-    }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [hasDirtyData])
-
   const classes = useMemo(() => {
     const set = new Set<string>()
     students.forEach(s => { if (s.english_class) set.add(s.english_class) })
@@ -1007,6 +998,15 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       return JSON.stringify(current) !== JSON.stringify(saved)
     })
   }, [scores, savedSnapshot, students])
+
+  // Warn before leaving with unsaved data
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasDirtyData) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasDirtyData])
 
   // Save — saves ALL students with data across ALL classes (not just current filter)
   const handleSave = async () => {
