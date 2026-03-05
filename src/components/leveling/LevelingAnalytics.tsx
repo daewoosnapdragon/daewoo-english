@@ -252,14 +252,13 @@ export default function LevelingAnalytics({ levelTest }: { levelTest: LevelTest 
       const writing = sc.writing ?? null
       const mcRaw = sc.written_mc ?? null
 
-      // Benchmark-relative ratios with auto-benchmark fallback
+      // Oral: benchmark-relative (different classes read different passages)
       const oralBench = bench.cwpm_end > 0 ? bench.cwpm_end : (ab.oral_median > 0 ? ab.oral_median : null)
-      const writingBench = bench.writing_end > 0 ? bench.writing_end : (ab.writing_median > 0 ? ab.writing_median : null)
-      const mcBench = ab.mc_median > 0 ? ab.mc_median : null
 
       const oralRatio = oral != null && oralBench ? oral / oralBench : null
-      const writingRatio = writing != null && writingBench ? writing / writingBench : null
-      const mcRatio = mcRaw != null && mcBench ? mcRaw / mcBench : (mcRaw != null ? mcRaw / WRITTEN_MC_TOTAL : null)
+      // Written: raw % of max possible (same test for all students in grade)
+      const writingRatio = writing != null ? writing / 20 : null
+      const mcRatio = mcRaw != null ? mcRaw / WRITTEN_MC_TOTAL : null
       const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
 
       const testRatios = [oralRatio, writingRatio, mcRatio, wrAcc].filter(v => v != null) as number[]

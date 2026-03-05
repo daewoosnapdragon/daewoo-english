@@ -1629,11 +1629,13 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
   const gradeMcTotal = getWrittenMcTotal(grade)
   // CWPM: prefer weighted_cwpm (includes passage + NAEP adjustment), fallback to raw
+  // Oral uses benchmark-relative scoring because different classes read different-difficulty passages
   const rawCwpmValue = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
   const cwpmRatio = rawCwpmValue != null && bench.cwpm_end > 0 ? rawCwpmValue / bench.cwpm_end : null
-  const writingRatio = sc.writing != null && bench.writing_end > 0 ? sc.writing / bench.writing_end : null
-  const mcBench = bench.mc_end > 0 ? bench.mc_end : gradeMcTotal
-  const mcPct = sc.written_mc != null ? sc.written_mc / mcBench : null
+  // Written test: ALL students take the SAME test, so use raw % of max possible (not class benchmarks)
+  // This ensures cross-class comparability — a 20/40 MC is 50% regardless of which class the student is in
+  const writingRatio = sc.writing != null ? sc.writing / 20 : null
+  const mcPct = sc.written_mc != null ? sc.written_mc / gradeMcTotal : null
   const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
   // Comprehension: comp_total / 15 (5 questions × 0-3 scale)
   const compRatio = calc.comp_total != null && calc.comp_total > 0 ? calc.comp_total / (calc.comp_max || 15) : null
@@ -1709,11 +1711,10 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
     if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) oralRatios.push(sc.word_reading_correct / sc.word_reading_attempted)
     if (calc.comp_total != null && calc.comp_total > 0) oralRatios.push(calc.comp_total / (calc.comp_max || 15))
     const oralScore = oralRatios.length > 0 ? oralRatios.reduce((a, b) => a + b, 0) / oralRatios.length : null
-    // Written components
+    // Written components - use raw % of max (same test for all students in grade)
     const writtenRatios: number[] = []
-    if (sc.writing != null && bench.writing_end > 0) writtenRatios.push(sc.writing / bench.writing_end)
-    const mcBench = bench.mc_end > 0 ? bench.mc_end : gradeMcTotal
-    if (sc.written_mc != null) writtenRatios.push(sc.written_mc / mcBench)
+    if (sc.writing != null) writtenRatios.push(sc.writing / 20)
+    if (sc.written_mc != null) writtenRatios.push(sc.written_mc / gradeMcTotal)
     const sg = Number(s.grade); if (sg === 2 && calc.phonics_total != null && calc.phonics_total > 0) writtenRatios.push(calc.phonics_total / 25); if (sg === 2 && calc.sentence_total != null && calc.sentence_total > 0) writtenRatios.push(calc.sentence_total / 35)
     const writtenScore = writtenRatios.length > 0 ? writtenRatios.reduce((a, b) => a + b, 0) / writtenRatios.length : null
     // Teacher rating
