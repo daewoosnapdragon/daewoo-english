@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, 
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════
 
-type EnglishClass = 'Lily' | 'Daisy' | 'Rose' | 'Tulip' | 'Iris' | 'Snapdragon'
+type EnglishClass = 'Lily' | 'Camellia' | 'Daisy' | 'Sunflower' | 'Marigold' | 'Snapdragon'
 
 interface LevelTest { id: string; grade: number | string; name: string; status: string; semester: string }
 
@@ -58,7 +58,7 @@ const GRADE_2_QUESTIONS: QuestionDef[] = [
   { qNum: 2, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'Where does the story happen?', correct: 'b', standard: 'SL.2.2', standardDesc: 'Key ideas from text read aloud', dok: 1, domain: 'Listening Comprehension' },
   { qNum: 3, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What can you NOT do at the park?', correct: 'd', standard: 'RI.2.1', standardDesc: 'Ask/answer who, what, where, when', dok: 2, domain: 'Listening Comprehension' },
   { qNum: 4, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What can you make in the sandbox?', correct: 'a', standard: 'SL.2.2', standardDesc: 'Key ideas from text read aloud', dok: 1, domain: 'Listening Comprehension' },
-  { qNum: 5, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What does "swing" mean?', correct: 'b', standard: 'L.2.4a', standardDesc: 'Context clue to word meaning', dok: 2, domain: 'Vocabulary' },
+  { qNum: 5, section: 'listening', sectionLabel: 'Listening: Kids at the Park', text: 'What does "swing" mean?', correct: 'a', standard: 'L.2.4a', standardDesc: 'Context clue to word meaning', dok: 2, domain: 'Vocabulary' },
   // Reading 1 (Q6-9) — "Kate's Cake"
   { qNum: 6, section: 'reading1', sectionLabel: 'Reading: Kate\'s Cake', text: 'What is this story about?', correct: 'a', standard: 'RL.2.2', standardDesc: 'Determine central message', dok: 2, domain: 'Reading Comprehension' },
   { qNum: 7, section: 'reading1', sectionLabel: 'Reading: Kate\'s Cake', text: 'What happens last?', correct: 'd', standard: 'RL.2.5', standardDesc: 'Describe overall structure', dok: 2, domain: 'Reading Comprehension' },
@@ -74,7 +74,7 @@ const GRADE_2_QUESTIONS: QuestionDef[] = [
   // Language 1: Cloze (Q16-20)
   { qNum: 16, section: 'language1', sectionLabel: 'Language: Cloze', text: 'Today is ___ dad\'s birthday', correct: 'a', standard: 'L.2.1d', standardDesc: 'Possessive pronouns', dok: 1, domain: 'Language/Grammar' },
   { qNum: 17, section: 'language1', sectionLabel: 'Language: Cloze', text: 'I will ___ him a birthday cake', correct: 'b', standard: 'L.2.1', standardDesc: 'Verb forms (future)', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 18, section: 'language1', sectionLabel: 'Language: Cloze', text: 'Next, I ___ three eggs', correct: 'c', standard: 'L.2.1d', standardDesc: 'Past tense verbs', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 18, section: 'language1', sectionLabel: 'Language: Cloze', text: 'Next, I ___ three eggs', correct: 'a', standard: 'L.2.1d', standardDesc: 'Past tense verbs', dok: 1, domain: 'Language/Grammar' },
   { qNum: 19, section: 'language1', sectionLabel: 'Language: Cloze', text: '___ sugar, and baking powder', correct: 'b', standard: 'L.2.1e', standardDesc: 'Adjectives/determiners', dok: 1, domain: 'Language/Grammar' },
   { qNum: 20, section: 'language1', sectionLabel: 'Language: Cloze', text: 'put in a pan ___ put it in a hot oven', correct: 'c', standard: 'L.2.1f', standardDesc: 'Conjunctions', dok: 1, domain: 'Language/Grammar' },
   // Language 2: Correct Sentence (Q21-25)
@@ -107,11 +107,11 @@ const GRADE_3_QUESTIONS: QuestionDef[] = [
   { qNum: 6, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'What are they going to do?', correct: 'b', standard: 'L.3.1e', standardDesc: 'Verb tenses (future)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 7, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'Will they do laundry?', correct: 'd', standard: 'L.3.1', standardDesc: 'Negative future tense', dok: 1, domain: 'Language/Grammar' },
   { qNum: 8, section: 'language1', sectionLabel: 'Language: Picture Grammar', text: 'Are they washing the dishes?', correct: 'b', standard: 'L.3.1', standardDesc: 'Present progressive/SVA', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 9, section: 'language1', sectionLabel: 'Language: Grammar', text: 'Has Tom ___ his homework?', correct: 'b', standard: 'L.3.1d', standardDesc: 'Irregular verbs (present perfect)', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 9, section: 'language1', sectionLabel: 'Language: Grammar', text: 'Has Tom ___ his homework?', correct: 'a', standard: 'L.3.1d', standardDesc: 'Irregular verbs (present perfect)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 10, section: 'language1', sectionLabel: 'Language: Grammar', text: 'How long has Mr. Smith ___ English?', correct: 'd', standard: 'L.3.1d', standardDesc: 'Irregular verbs (present perfect)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 11, section: 'language1', sectionLabel: 'Language: Grammar', text: 'My sister ___ practice piano', correct: 'b', standard: 'L.3.1', standardDesc: 'Modal/helping verbs', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 12, section: 'language1', sectionLabel: 'Language: Grammar', text: 'An elephant is ___ than a cat', correct: 'b', standard: 'L.3.1g', standardDesc: 'Comparative adjectives', dok: 1, domain: 'Language/Grammar' },
-  { qNum: 13, section: 'language1', sectionLabel: 'Language: Grammar', text: 'The ___ toys were all over the floor', correct: 'b', standard: 'L.3.2d', standardDesc: 'Irregular possessives', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 12, section: 'language1', sectionLabel: 'Language: Grammar', text: 'An elephant is ___ than a cat', correct: 'd', standard: 'L.3.1g', standardDesc: 'Comparative adjectives', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 13, section: 'language1', sectionLabel: 'Language: Grammar', text: 'The ___ toys were all over the floor', correct: 'c', standard: 'L.3.2d', standardDesc: 'Irregular possessives', dok: 1, domain: 'Language/Grammar' },
   // Reading: "Changing Seasons" (Q14-16)
   { qNum: 14, section: 'reading1', sectionLabel: 'Reading: Changing Seasons', text: 'What happens in fall?', correct: 'd', standard: 'RI.3.1', standardDesc: 'Questions referring to text', dok: 1, domain: 'Reading Comprehension' },
   { qNum: 15, section: 'reading1', sectionLabel: 'Reading: Changing Seasons', text: 'When should you wear a heavy coat?', correct: 'b', standard: 'RI.3.1', standardDesc: 'Questions referring to text', dok: 1, domain: 'Reading Comprehension' },
@@ -140,7 +140,7 @@ const GRADE_4_QUESTIONS: QuestionDef[] = [
   // Listening (Q1-5) — "Crocodiles and Alligators"
   { qNum: 1, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'Main idea of this passage?', correct: 'b', standard: 'SL.4.2', standardDesc: 'Paraphrase text read aloud', dok: 2, domain: 'Listening Comprehension' },
   { qNum: 2, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'One way crocs and gators are the same?', correct: 'c', standard: 'SL.4.2', standardDesc: 'Key details from text read aloud', dok: 1, domain: 'Listening Comprehension' },
-  { qNum: 3, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'One way to tell a croc from a gator?', correct: 'c', standard: 'SL.4.3', standardDesc: 'Speaker\'s reasons/evidence', dok: 1, domain: 'Listening Comprehension' },
+  { qNum: 3, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'One way to tell a croc from a gator?', correct: 'a', standard: 'SL.4.3', standardDesc: 'Speaker\'s reasons/evidence', dok: 1, domain: 'Listening Comprehension' },
   { qNum: 4, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'Which is NOT true?', correct: 'c', standard: 'RI.4.1', standardDesc: 'Refer to details', dok: 2, domain: 'Listening Comprehension' },
   { qNum: 5, section: 'listening', sectionLabel: 'Listening: Crocs & Gators', text: 'Best title for this story?', correct: 'd', standard: 'RI.4.2', standardDesc: 'Determine main idea/summarize', dok: 2, domain: 'Listening Comprehension' },
   // Reading: "Spider and the Watermelon" (Q6-11)
@@ -164,7 +164,7 @@ const GRADE_4_QUESTIONS: QuestionDef[] = [
   { qNum: 21, section: 'reading2', sectionLabel: 'Reading: Enormous Insects', text: 'What is NOT true about Goliath beetles?', correct: 'b', standard: 'RI.4.1', standardDesc: 'Refer to details/examples', dok: 2, domain: 'Reading Comprehension' },
   { qNum: 22, section: 'reading2', sectionLabel: 'Reading: Enormous Insects', text: 'Another word for "blend in with"?', correct: 'a', standard: 'L.4.4a', standardDesc: 'Context clue to word meaning', dok: 2, domain: 'Vocabulary' },
   // Language Standards 2 (Q23-28)
-  { qNum: 23, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'The ___ belt is expensive', correct: 'a', standard: 'L.4.1', standardDesc: 'Superlative adjectives', dok: 1, domain: 'Language/Grammar' },
+  { qNum: 23, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'The ___ belt is expensive', correct: 'b', standard: 'L.4.1', standardDesc: 'Superlative adjectives', dok: 1, domain: 'Language/Grammar' },
   { qNum: 24, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'I like to ___ books', correct: 'a', standard: 'L.4.1', standardDesc: 'Infinitive verb forms', dok: 1, domain: 'Language/Grammar' },
   { qNum: 25, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'I am ___ watch the magic show', correct: 'd', standard: 'L.4.1', standardDesc: 'Future tense (going to)', dok: 1, domain: 'Language/Grammar' },
   { qNum: 26, section: 'language2', sectionLabel: 'Language: Grammar 2', text: 'Mike ___ when he won the award', correct: 'b', standard: 'L.4.1', standardDesc: 'Irregular past tense/linking verbs', dok: 1, domain: 'Language/Grammar' },
@@ -209,6 +209,12 @@ const GRADE_5_QUESTIONS: QuestionDef[] = [
   { qNum: 18, section: 'reading1', sectionLabel: 'Reading: Mount Everest', text: 'How many people reached the summit?', correct: 'c', standard: 'RI.5.1', standardDesc: 'Quote accurately from text', dok: 1, domain: 'Reading Comprehension' },
   { qNum: 19, section: 'reading1', sectionLabel: 'Reading: Mount Everest', text: 'People\'s attitude toward climbing?', correct: 'c', standard: 'RI.5.3', standardDesc: 'Relationships between concepts', dok: 2, domain: 'Reading Comprehension' },
   { qNum: 20, section: 'reading1', sectionLabel: 'Reading: Mount Everest', text: 'How does author support main idea?', correct: 'c', standard: 'RI.5.5', standardDesc: 'Text structure analysis', dok: 3, domain: 'Reading Comprehension' },
+  // Reading: "The Great Migration of Monarch Butterflies" (Q21-25)
+  { qNum: 21, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'Main purpose of this passage?', correct: 'b', standard: 'RI.5.2', standardDesc: 'Determine main idea', dok: 2, domain: 'Reading Comprehension' },
+  { qNum: 22, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'Why do migrating monarchs live longer?', correct: 'c', standard: 'RI.5.3', standardDesc: 'Relationships between concepts', dok: 2, domain: 'Reading Comprehension' },
+  { qNum: 23, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'Which is a threat to the migration?', correct: 'c', standard: 'RI.5.1', standardDesc: 'Quote accurately from text', dok: 1, domain: 'Reading Comprehension' },
+  { qNum: 24, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'How does author show monarchs are remarkable?', correct: 'b', standard: 'RI.5.5', standardDesc: 'Text structure analysis', dok: 2, domain: 'Reading Comprehension' },
+  { qNum: 25, section: 'reading2', sectionLabel: 'Reading: Monarch Butterflies', text: 'What can be inferred about monarchs?', correct: 'b', standard: 'RI.5.6', standardDesc: 'Analyze author perspective', dok: 3, domain: 'Reading Comprehension' },
 ]
 
 const GRADE_5_WRITING: WritingCategory[] = [
@@ -228,7 +234,7 @@ function getGradeConfig(grade: number): GradeConfig | null {
     case 2: return { grade: 2, totalMC: 32, questionCount: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20 }
     case 3: return { grade: 3, totalMC: 26, questionCount: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20 }
     case 4: return { grade: 4, totalMC: 40, questionCount: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20 }
-    case 5: return { grade: 5, totalMC: 28, questionCount: 20, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20 }
+    case 5: return { grade: 5, totalMC: 37, questionCount: 25, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20 }
     default: return null
   }
 }
@@ -238,7 +244,7 @@ function getGradeConfig(grade: number): GradeConfig | null {
 // ═══════════════════════════════════════════════════════════════════════
 
 function classToColor(cls: string) {
-  const m: Record<string, string> = { Lily: '#C084FC', Daisy: '#FACC15', Rose: '#FB7185', Tulip: '#F97316', Iris: '#60A5FA', Snapdragon: '#34D399' }
+  const m: Record<string, string> = { Lily: '#C084FC', Camellia: '#F5D0A9', Daisy: '#FACC15', Sunflower: '#ABEBC6', Marigold: '#AED6F1', Snapdragon: '#34D399' }
   return m[cls] || '#94A3B8'
 }
 

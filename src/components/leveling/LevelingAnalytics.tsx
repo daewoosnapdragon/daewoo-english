@@ -12,7 +12,7 @@ import { Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, BarChart3, Arr
 function getWrittenMcTotal(grade: number | string): number {
   // DOK-weighted: DOK1=1pt, DOK2+=2pt
   const g = Number(grade)
-  if (g === 2) return 32; if (g === 3) return 26; if (g === 4) return 40; if (g === 5) return 28
+  if (g === 2) return 32; if (g === 3) return 26; if (g === 4) return 40; if (g === 5) return 37
   return 26
 }
 
@@ -125,7 +125,7 @@ function DotPlot({ title, data, maxVal, outliers, students }: { title: string; d
   return (
     <div>
       <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">{title}</p>
-      <div className="relative h-12 bg-gray-50 rounded-lg border border-border overflow-hidden">
+      <div className="relative h-20 bg-gray-50 rounded-lg border border-border overflow-hidden">
         {/* Axis ticks */}
         {[0, 0.25, 0.5, 0.75, 1].map(pct => (
           <div key={pct} className="absolute top-0 h-full border-l border-gray-200" style={{ left: `${pct * 100}%` }}>
@@ -275,7 +275,26 @@ export default function LevelingAnalytics({ levelTest }: { levelTest: LevelTest 
 
       const hasGrades = gradeScore != null
       const gScore = gradeScore ?? 0.5
-      const composite = hasGrades ? testScore * 0.30 + gScore * 0.40 + anecScore * 0.30 : testScore * 0.80 + anecScore * 0.20
+      // Composite: 40% oral + 40% written + 20% teacher rating
+      const oralRatios2 = [oralRatio, wrAcc].filter(v => v != null) as number[]
+      const oralScoreCalc = oralRatios2.length > 0 ? oralRatios2.reduce((a, b) => a + b, 0) / oralRatios2.length : null
+      const writtenRatios2 = [writingRatio, mcRatio].filter(v => v != null) as number[]
+      const writtenScoreCalc = writtenRatios2.length > 0 ? writtenRatios2.reduce((a, b) => a + b, 0) / writtenRatios2.length : null
+      const hasOral2 = oralScoreCalc != null
+      const hasWritten2 = writtenScoreCalc != null
+      const hasAnec2 = av.length > 0
+      let composite: number
+      if (hasOral2 && hasWritten2 && hasAnec2) {
+        composite = oralScoreCalc * 0.40 + writtenScoreCalc * 0.40 + anecScore * 0.20
+      } else if (hasOral2 && hasWritten2) {
+        composite = oralScoreCalc * 0.50 + writtenScoreCalc * 0.50
+      } else if (hasOral2 && hasAnec2) {
+        composite = oralScoreCalc * 0.80 + anecScore * 0.20
+      } else if (hasWritten2 && hasAnec2) {
+        composite = writtenScoreCalc * 0.80 + anecScore * 0.20
+      } else {
+        composite = testScore
+      }
 
       allRows.push({ student: s, oral, writing, mc: mcRaw, gradeAvg, anecAvg, composite, suggestedClass: s.english_class as EnglishClass })
     })
@@ -512,51 +531,7 @@ export default function LevelingAnalytics({ levelTest }: { levelTest: LevelTest 
         </div>
       </section>
 
-      {/* ── 4. Movement Summary ──────────────────────────────────── */}
-      <section className="bg-surface border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-border">
-          <h4 className="font-display text-[14px] font-semibold text-navy">Movement Summary</h4>
-          <p className="text-[11px] text-text-secondary mt-0.5">
-            Suggested level changes based on composite scores. This is the starting point for discussion at the leveling meeting — the numbers make a suggestion, teachers make the decision.
-          </p>
-        </div>
-        <div className="p-5">
-          <div className="grid grid-cols-6 gap-3 mb-6">
-            {classMetrics.filter(cm => cm.count > 0).map(cm => (
-              <div key={cm.cls} className="bg-surface-alt rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1 mb-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: classToColor(cm.cls) }} />
-                  <span className="text-[12px] font-semibold text-navy">{cm.cls}</span>
-                </div>
-                <p className="text-[10px] text-text-tertiary">{cm.count} students</p>
-                <div className="flex justify-center gap-3 mt-2">
-                  {cm.moveDownCount > 0 && <span className="flex items-center gap-0.5 text-[10px] font-bold text-red-600"><TrendingDown size={10} />{cm.moveDownCount}</span>}
-                  <span className="flex items-center gap-0.5 text-[10px] font-bold text-blue-600"><Minus size={10} />{cm.stayCount}</span>
-                  {cm.moveUpCount > 0 && <span className="flex items-center gap-0.5 text-[10px] font-bold text-green-600"><TrendingUp size={10} />{cm.moveUpCount}</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Movement details */}
-          {classMetrics.some(cm => cm.movements.length > 0) && (
-            <div className="space-y-1">
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Suggested Moves</p>
-              {classMetrics.flatMap(cm => cm.movements).sort((a, b) => b.composite - a.composite).map((m, i) => (
-                <div key={i} className="flex items-center gap-2 py-1.5 px-3 rounded-lg hover:bg-surface-alt text-[11px]">
-                  <span className="font-medium text-navy w-40 truncate">{m.student.english_name}</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(m.from) + '40', color: classToTextColor(m.from) }}>{m.from}</span>
-                  <ArrowRight size={12} className="text-text-tertiary" />
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(m.to) + '40', color: classToTextColor(m.to) }}>{m.to}</span>
-                  <span className="text-text-tertiary ml-auto text-[10px]">Composite: {m.composite.toFixed(0)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── 5. Score Distributions ───────────────────────────────── */}
+      {/* ── 4. Score Distributions ───────────────────────────────── */}
       <section className="bg-surface border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
           <h4 className="font-display text-[14px] font-semibold text-navy">Score Distributions</h4>
@@ -571,7 +546,7 @@ export default function LevelingAnalytics({ levelTest }: { levelTest: LevelTest 
         </div>
       </section>
 
-      {/* ── 6. Outlier Flags ─────────────────────────────────────── */}
+      {/* ── 5. Outlier Flags ─────────────────────────────────────── */}
       {outliers.length > 0 && (
         <section className="bg-red-50 border border-red-200 rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-red-200">
@@ -598,7 +573,7 @@ export default function LevelingAnalytics({ levelTest }: { levelTest: LevelTest 
         </section>
       )}
 
-      {/* ── 7. Test-Over-Test Comparison ─────────────────────────── */}
+      {/* ── 6. Test-Over-Test Comparison ─────────────────────────── */}
       {prevTest && prevClassMetrics && (
         <section className="bg-surface border border-border rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
