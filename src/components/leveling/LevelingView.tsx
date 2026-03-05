@@ -1142,6 +1142,23 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
     }))
   }, [students, scores, anecdotals, enhancedBenchmarks, semGrades])
 
+  // Class averages for hover card comparison bars
+  const hoverClassAverages = useMemo(() => {
+    const result: Record<string, { oral: number | null; writing: number | null; mc: number | null; comp: number | null; composite: number | null; count: number }> = {}
+    ENGLISH_CLASSES.forEach(cls => {
+      const classRows = rows.filter(r => r.student.english_class === cls)
+      if (classRows.length === 0) { result[cls] = { oral: null, writing: null, mc: null, comp: null, composite: null, count: 0 }; return }
+      const orals = classRows.map(r => r.rawCwpm).filter(v => v != null) as number[]
+      const writings = classRows.map(r => r.rawWriting).filter(v => v != null) as number[]
+      const mcs = classRows.map(r => r.rawMc).filter(v => v != null) as number[]
+      const comps = classRows.map(r => r.rawComp).filter(v => v != null) as number[]
+      const composites = classRows.map(r => r.composite)
+      const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+      result[cls] = { oral: avg(orals), writing: avg(writings), mc: avg(mcs), comp: avg(comps), composite: avg(composites), count: classRows.length }
+    })
+    return result
+  }, [rows])
+
   const displayed = useMemo(() => {
     let res = [...rows]
     if (filterClass !== 'all') res = res.filter(r => r.student.english_class === filterClass)
@@ -1391,102 +1408,136 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
             </div>
           </div>
           {compareStudents.length < 2 && <p className="text-[11px] text-blue-600 mb-3">Click student cards below to add them to the comparison (2-4 students).</p>}
-          {compareStudents.length >= 2 && (
-            <div>
-              {/* Radar Chart */}
-              <div className="bg-white rounded-lg border border-blue-200 p-4 mb-3">
-                <p className="text-[10px] uppercase tracking-wider text-blue-700 font-semibold mb-3">Visual Comparison</p>
-                <div className="flex justify-center">
-                  {(() => {
-                    const size = 240, cx = size / 2, cy = size / 2, r = 90
-                    const axes = ['Oral', 'Writing', 'MC', 'Comp', 'Anecdotal']
-                    const n = axes.length
-                    const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b']
-                    // Normalize data to 0-1
-                    const studentData = compareStudents.map(sid => {
-                      const sc = scores[sid]; const cl = sc?.calculated_metrics || {}; const an = anecdotals[sid]; const sg = semGrades[sid] || []
-                      const cwpmVal = cl.weighted_cwpm ?? cl.cwpm ?? sc?.raw_scores?.passage_cwpm ?? 0
-                      const writing = sc?.raw_scores?.writing || 0
-                      const mc = sc?.raw_scores?.written_mc || 0
-                      const comp = cl.comp_total || 0
-                      const anAvg = an ? ([an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / Math.max(1, [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null).length) : 0
-                      return [Math.min(1, cwpmVal / 150), writing / 20, mc / getWrittenMcTotal(levelTest.grade), comp / 15, anAvg / 4]
-                    })
-                    const angleStep = (Math.PI * 2) / n
-                    const getPoint = (angle: number, val: number) => ({
-                      x: cx + r * val * Math.sin(angle), y: cy - r * val * Math.cos(angle)
-                    })
+          {compareStudents.length >= 2 && (() => {
+            const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b']
+            const mcMax = getWrittenMcTotal(levelTest.grade)
+            // Build normalized data per student
+            const compStudents = compareStudents.map((sid, i) => {
+              const s = students.find(st => st.id === sid)
+              const sc = scores[sid]; const cl = sc?.calculated_metrics || {}; const an = anecdotals[sid]; const sg = semGrades[sid] || []
+              const rawCwpm = cl.weighted_cwpm ?? cl.cwpm ?? sc?.raw_scores?.passage_cwpm ?? sc?.raw_scores?.orf_cwpm ?? null
+              const rawWriting = sc?.raw_scores?.writing ?? null
+              const rawMc = sc?.raw_scores?.written_mc ?? null
+              const rawComp = cl.comp_total ?? null
+              const gradeAvg = sg.length > 0 ? sg.reduce((sum: number, g: any) => sum + (g.score || 0), 0) / sg.length : null
+              const anVals = an ? [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[] : []
+              const anAvg = anVals.length > 0 ? anVals.reduce((a: number, b: number) => a + b, 0) / anVals.length : null
+              const row = rows.find(r => r.student.id === sid)
+              return { sid, student: s, color: COLORS[i % COLORS.length], rawCwpm, rawWriting, rawMc, rawComp, gradeAvg, anAvg, an, passageLevel: cl.passage_level, composite: row?.composite, percentile: row?.percentile, suggestedClass: row?.suggestedClass }
+            })
+            // Find max oral value for scaling
+            const maxOral = Math.max(...compStudents.map(s => s.rawCwpm ?? 0), ...(Object.values(hoverClassAverages).map(a => a.oral ?? 0)), 1)
+
+            const metrics = [
+              { key: 'oral', label: 'Oral (CWPM)', max: maxOral * 1.2, getValue: (s: any) => s.rawCwpm, getClassAvg: (a: any) => a.oral },
+              { key: 'writing', label: 'Writing (/20)', max: 20, getValue: (s: any) => s.rawWriting, getClassAvg: (a: any) => a.writing },
+              { key: 'mc', label: `MC (/${mcMax})`, max: mcMax, getValue: (s: any) => s.rawMc, getClassAvg: (a: any) => a.mc },
+              { key: 'comp', label: 'Comp (/15)', max: 15, getValue: (s: any) => s.rawComp, getClassAvg: (a: any) => a.comp },
+              { key: 'anec', label: 'Teacher Rating (/4)', max: 4, getValue: (s: any) => s.anAvg, getClassAvg: () => null },
+            ]
+
+            // Unique classes among selected students for class avg reference
+            const classesInComp = [...new Set(compStudents.map(s => s.student?.english_class).filter(Boolean))] as EnglishClass[]
+
+            return (
+            <div className="space-y-3">
+              {/* ── Grouped Bar Chart ─────────────────────────── */}
+              <div className="bg-white rounded-lg border border-blue-200 p-4">
+                <p className="text-[10px] uppercase tracking-wider text-blue-700 font-semibold mb-4">Score Comparison</p>
+                <div className="space-y-4">
+                  {metrics.map(m => {
+                    const scale = m.max > 0 ? m.max : 1
                     return (
-                      <svg width={size} height={size + 24} viewBox={`0 0 ${size} ${size + 24}`}>
-                        {/* Grid lines */}
-                        {[0.25, 0.5, 0.75, 1].map(level => (
-                          <polygon key={level} points={Array.from({ length: n }, (_, i) => {
-                            const p = getPoint(i * angleStep, level)
-                            return `${p.x},${p.y}`
-                          }).join(' ')} fill="none" stroke="#e2e8f0" strokeWidth="1" />
-                        ))}
-                        {/* Axis lines and labels */}
-                        {axes.map((label, i) => {
-                          const p = getPoint(i * angleStep, 1.15)
-                          const ep = getPoint(i * angleStep, 1)
-                          return <g key={label}>
-                            <line x1={cx} y1={cy} x2={ep.x} y2={ep.y} stroke="#cbd5e1" strokeWidth="1" />
-                            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#64748b" fontWeight="600">{label}</text>
-                          </g>
-                        })}
-                        {/* Data polygons */}
-                        {studentData.map((vals, si) => {
-                          const points = vals.map((v, i) => getPoint(i * angleStep, v))
-                          return <polygon key={si}
-                            points={points.map(p => `${p.x},${p.y}`).join(' ')}
-                            fill={COLORS[si % COLORS.length] + '20'} stroke={COLORS[si % COLORS.length]} strokeWidth="2" />
-                        })}
-                        {/* Legend */}
-                        {compareStudents.map((sid, i) => {
-                          const s = students.find(st => st.id === sid)
-                          return <g key={sid} transform={`translate(${10 + i * 70}, ${size + 8})`}>
-                            <rect width="8" height="8" rx="2" fill={COLORS[i % COLORS.length]} />
-                            <text x="12" y="7" fontSize="9" fill="#475569">{s?.english_name?.split(' ')[0] || '?'}</text>
-                          </g>
-                        })}
-                      </svg>
+                      <div key={m.key}>
+                        <p className="text-[9px] font-semibold text-text-secondary mb-1.5">{m.label}</p>
+                        <div className="space-y-1">
+                          {/* Class average reference lines */}
+                          {classesInComp.map(cls => {
+                            const avg = hoverClassAverages[cls] ? m.getClassAvg(hoverClassAverages[cls]) : null
+                            if (avg == null) return null
+                            return (
+                              <div key={`avg-${cls}`} className="flex items-center gap-2">
+                                <span className="w-28 text-[8px] text-text-tertiary text-right truncate">{cls} avg</span>
+                                <div className="flex-1 h-2 bg-gray-50 rounded-full overflow-hidden relative">
+                                  <div className="h-full rounded-full" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classToColor(cls), opacity: 0.2 }} />
+                                  <div className="absolute top-0 h-full w-0.5" style={{ left: `${(avg / scale) * 100}%`, backgroundColor: classToColor(cls), opacity: 0.5 }} />
+                                </div>
+                                <span className="w-8 text-[8px] text-text-tertiary text-right">{Math.round(avg)}</span>
+                              </div>
+                            )
+                          })}
+                          {/* Student bars */}
+                          {compStudents.map(s => {
+                            const val = m.getValue(s)
+                            if (val == null) return (
+                              <div key={s.sid} className="flex items-center gap-2">
+                                <span className="w-28 text-[9px] font-medium text-right truncate" style={{ color: s.color }}>{s.student?.english_name}</span>
+                                <div className="flex-1 h-4 bg-gray-50 rounded-full"><span className="text-[8px] text-text-tertiary ml-2">--</span></div>
+                                <span className="w-8" />
+                              </div>
+                            )
+                            return (
+                              <div key={s.sid} className="flex items-center gap-2">
+                                <span className="w-28 text-[9px] font-medium text-right truncate" style={{ color: s.color }}>{s.student?.english_name}</span>
+                                <div className="flex-1 h-4 bg-gray-50 rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full transition-all" style={{ width: `${Math.min((val / scale) * 100, 100)}%`, backgroundColor: s.color, opacity: 0.7 }} />
+                                </div>
+                                <span className="w-8 text-[9px] font-bold text-right" style={{ color: s.color }}>{m.key === 'anec' ? val.toFixed(1) : Math.round(val)}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
                     )
-                  })()}
+                  })}
+                </div>
+
+                {/* Composite scores */}
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                  <p className="text-[9px] font-semibold text-text-secondary mb-1.5">Composite Score</p>
+                  <div className="flex gap-2">
+                    {compStudents.map(s => (
+                      <div key={s.sid} className="flex-1 rounded-lg p-2 text-center" style={{ backgroundColor: s.color + '10', borderLeft: `3px solid ${s.color}` }}>
+                        <p className="text-[8px] font-medium truncate" style={{ color: s.color }}>{s.student?.english_name}</p>
+                        <p className="text-[16px] font-bold" style={{ color: s.color }}>{s.composite != null ? (s.composite * 100).toFixed(0) : '--'}%</p>
+                        <p className="text-[8px] text-text-tertiary">{s.percentile != null ? `${Math.round(s.percentile * 100)}%ile` : ''}{s.passageLevel ? ` | ${s.passageLevel}` : ''}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              {/* Cards */}
-            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(compareStudents.length, 4)}, 1fr)` }}>
-              {compareStudents.map(sid => {
-                const s = students.find(st => st.id === sid)
-                if (!s) return null
-                const sc = scores[sid]; const an = anecdotals[sid]; const sg = semGrades[sid] || []
-                const gradeAvg = sg.length > 0 ? sg.reduce((sum: number, g: any) => sum + (g.score || 0), 0) / sg.length : null
-                return (
-                  <div key={sid} className="bg-white rounded-lg border border-blue-200 p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="text-[13px] font-bold text-navy">{s.english_name}</p>
-                        <p className="text-[10px] text-text-tertiary">{s.korean_name}</p>
+
+              {/* ── Detail Cards ──────────────────────────────── */}
+              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(compareStudents.length, 4)}, 1fr)` }}>
+                {compStudents.map(cs => {
+                  const s = cs.student
+                  if (!s) return null
+                  const an = cs.an
+                  return (
+                    <div key={cs.sid} className="bg-white rounded-lg border p-3" style={{ borderColor: cs.color + '60', borderLeftWidth: '3px', borderLeftColor: cs.color }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-[12px] font-bold text-navy">{s.english_name}</p>
+                          <p className="text-[9px] text-text-tertiary">{s.korean_name}</p>
+                        </div>
+                        <button onClick={() => setCompareStudents(prev => prev.filter(id => id !== cs.sid))} className="text-text-tertiary hover:text-red-500"><X size={12} /></button>
                       </div>
-                      <button onClick={() => setCompareStudents(prev => prev.filter(id => id !== sid))} className="text-text-tertiary hover:text-red-500"><X size={12} /></button>
+                      <div className="space-y-1 text-[11px]">
+                        <div className="flex justify-between"><span className="text-text-tertiary">Current</span><span className="font-bold px-1.5 py-0.5 rounded text-[9px]" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) + '40', color: classToTextColor(s.english_class as EnglishClass) }}>{s.english_class}</span></div>
+                        {cs.suggestedClass && cs.suggestedClass !== s.english_class && (
+                          <div className="flex justify-between"><span className="text-text-tertiary">Suggested</span><span className="font-bold px-1.5 py-0.5 rounded text-[9px]" style={{ backgroundColor: classToColor(cs.suggestedClass as EnglishClass) + '40', color: classToTextColor(cs.suggestedClass as EnglishClass) }}>{cs.suggestedClass}</span></div>
+                        )}
+                        <div className="flex justify-between"><span className="text-text-tertiary">Grade Avg</span><span className={`font-bold ${cs.gradeAvg != null ? (cs.gradeAvg >= 80 ? 'text-green-600' : cs.gradeAvg >= 60 ? 'text-amber-600' : 'text-red-600') : ''}`}>{cs.gradeAvg != null ? `${cs.gradeAvg.toFixed(0)}%` : '--'}</span></div>
+                        <div className="flex justify-between"><span className="text-text-tertiary">Teacher Rec</span><span className={`font-bold text-[10px] ${an?.teacher_recommends === 'move_up' ? 'text-green-600' : an?.teacher_recommends === 'move_down' ? 'text-red-600' : 'text-blue-600'}`}>{an?.teacher_recommends === 'keep' ? 'KEEP' : an?.teacher_recommends === 'move_up' ? 'MOVE UP' : an?.teacher_recommends === 'move_down' ? 'MOVE DOWN' : '--'}</span></div>
+                        {an?.notes && <p className="text-[9px] text-text-secondary bg-surface-alt rounded px-2 py-1 mt-1 italic">"{an.notes}"</p>}
+                      </div>
                     </div>
-                    <div className="space-y-1.5 text-[11px]">
-                      <div className="flex justify-between"><span className="text-text-tertiary">Current</span><span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) + '40', color: classToTextColor(s.english_class as EnglishClass) }}>{s.english_class}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Oral</span><span className="font-bold text-navy">{sc?.calculated_metrics?.weighted_cwpm != null ? Math.round(sc.calculated_metrics.weighted_cwpm) : (sc?.raw_scores?.passage_cwpm ?? sc?.raw_scores?.orf_cwpm) != null ? Math.round(sc.raw_scores.passage_cwpm ?? sc.raw_scores.orf_cwpm) : '—'}{sc?.calculated_metrics?.passage_level ? ` (${sc.calculated_metrics.passage_level})` : ''}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Writing</span><span className="font-bold text-navy">{sc?.raw_scores?.writing ?? '—'}/20</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">MC</span><span className="font-bold text-navy">{sc?.raw_scores?.written_mc ?? '—'}/{getWrittenMcTotal(levelTest.grade)}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Comp</span><span className="font-bold text-navy">{sc?.calculated_metrics?.comp_total ?? '—'}/15</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Grade Avg</span><span className={`font-bold ${gradeAvg != null ? (gradeAvg >= 80 ? 'text-green-600' : gradeAvg >= 60 ? 'text-amber-600' : 'text-red-600') : ''}`}>{gradeAvg != null ? `${gradeAvg.toFixed(0)}%` : '—'}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Anecdotal Avg</span><span className="font-bold text-navy">{an ? ((([an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null).length) || 0).toFixed(1) : '—'}/4</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Teacher Rec</span><span className={`font-bold text-[10px] ${an?.teacher_recommends === 'move_up' ? 'text-green-600' : an?.teacher_recommends === 'move_down' ? 'text-red-600' : 'text-blue-600'}`}>{an?.teacher_recommends === 'keep' ? 'KEEP' : an?.teacher_recommends === 'move_up' ? 'MOVE UP' : an?.teacher_recommends === 'move_down' ? 'MOVE DOWN' : '—'}</span></div>
-                      {an?.notes && <p className="text-[10px] text-text-secondary bg-surface-alt rounded px-2 py-1 mt-1 italic">{an.notes}</p>}
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-            </div>
-          )}
+            )
+          })()}
         </div>
       )}
 
@@ -1517,9 +1568,13 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                           className="w-3 h-3 rounded border-blue-300 text-blue-600 flex-shrink-0" />
                       )}
                       <GripVertical size={10} className="text-text-tertiary flex-shrink-0" />
-                      <div className="flex-1 min-w-0"><LevelingHoverCard studentId={student.id} studentName={student.english_name} koreanName={student.korean_name} className={student.english_class} grade={student.grade}
-                        trigger={<p className="text-[10px] font-semibold text-navy truncate cursor-pointer hover:underline">{student.english_name}</p>}
-                      /><p className="text-[8px] text-text-tertiary truncate">{student.korean_name}</p></div>
+                      <div className="flex-1 min-w-0">{(() => {
+                        const row = rows.find(r => r.student.id === student.id)
+                        return <LevelingHoverCard studentId={student.id} studentName={student.english_name} koreanName={student.korean_name} className={student.english_class} grade={student.grade}
+                          levelTestData={row ? { rawCwpm: row.rawCwpm, rawWriting: row.rawWriting, rawMc: row.rawMc, rawComp: row.rawComp, passageLevel: row.passageLevel, composite: row.composite, percentile: row.percentile ?? null, suggestedClass: row.suggestedClass ?? null, classAverages: hoverClassAverages, mcTotal: GRADE_MC_TOTAL } : undefined}
+                          trigger={<p className="text-[10px] font-semibold text-navy truncate cursor-pointer hover:underline">{student.english_name}</p>}
+                        />
+                      })()}<p className="text-[8px] text-text-tertiary truncate">{student.korean_name}</p></div>
                       <div className="flex items-center gap-0.5">
                         {up && <ArrowUp size={10} className="text-green-500" />}{down && <ArrowDown size={10} className="text-red-500" />}{!up && !down && <Minus size={10} className="text-text-tertiary" />}
                         {bigJump && <span className="text-[7px] font-bold bg-red-500 text-white px-1 rounded">{levelDiff}+</span>}

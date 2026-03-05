@@ -235,69 +235,91 @@ function StandardsMasteryCell({ met, total }: { met: number; total: number }) {
   )
 }
 
-// ── NEW: Composite Histogram ────────────────────────────────────
-function CompositeHistogram({ data, classMetrics }: { data: { value: number; cls: EnglishClass; name: string }[]; classMetrics: ClassMetrics[] }) {
+// ── NEW: Composite Strip Plot (one row per class) ───────────────
+function CompositeStripPlot({ data, classMetrics }: { data: { value: number; cls: EnglishClass; name: string }[]; classMetrics: ClassMetrics[] }) {
   if (data.length === 0) return null
 
-  const bins: { range: string; min: number; max: number; students: typeof data }[] = []
-  for (let i = 0; i < 10; i++) {
-    bins.push({ range: `${i * 10}-${(i + 1) * 10}`, min: i * 10, max: (i + 1) * 10, students: [] })
-  }
-  data.forEach(d => {
-    const binIdx = Math.min(Math.floor(d.value / 10), 9)
-    bins[binIdx].students.push(d)
-  })
-
-  const maxBin = Math.max(...bins.map(b => b.students.length), 1)
-
-  const boundaries: { position: number; label: string }[] = []
   const activeClasses = classMetrics.filter(cm => cm.count > 0 && cm.composite.hasData)
-  for (let i = 0; i < activeClasses.length - 1; i++) {
-    const a = activeClasses[i]
-    const b = activeClasses[i + 1]
-    if (a.composite.hasData && b.composite.hasData) {
-      const midpoint = (a.composite.median + b.composite.median) / 2
-      boundaries.push({ position: midpoint, label: `${a.cls}/${b.cls}` })
-    }
-  }
+  // Find actual data range for tighter scaling
+  const allValues = data.map(d => d.value)
+  const dataMin = Math.max(0, Math.floor(Math.min(...allValues) / 5) * 5 - 5)
+  const dataMax = Math.min(100, Math.ceil(Math.max(...allValues) / 5) * 5 + 5)
+  const range = dataMax - dataMin || 1
+
+  // Generate tick marks
+  const ticks: number[] = []
+  for (let t = Math.ceil(dataMin / 10) * 10; t <= dataMax; t += 10) ticks.push(t)
 
   return (
     <div>
-      <div className="relative h-40 flex items-end gap-1">
-        {bins.map((bin, i) => {
-          const height = maxBin > 0 ? (bin.students.length / maxBin) * 100 : 0
-          const classCounts: Record<string, number> = {}
-          bin.students.forEach(s => { classCounts[s.cls] = (classCounts[s.cls] || 0) + 1 })
-          const dominantCls = Object.entries(classCounts).sort((a, b) => b[1] - a[1])[0]
-          const color = dominantCls ? classToColor(dominantCls[0] as EnglishClass) : '#CBD5E1'
-
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center group relative">
-              <div className="w-full rounded-t relative" style={{ height: `${height}%`, backgroundColor: color, opacity: 0.7, minHeight: bin.students.length > 0 ? '4px' : '0px' }}>
-                {bin.students.length > 0 && (
-                  <div className="hidden group-hover:block absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-navy text-white text-[9px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-50 max-h-32 overflow-y-auto">
-                    <p className="font-bold mb-0.5">{bin.range}% ({bin.students.length})</p>
-                    {bin.students.map((s, j) => (
-                      <p key={j}>{s.name} <span className="opacity-70">{s.cls}</span></p>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <span className="text-[8px] text-text-tertiary mt-1">{bin.min}</span>
-            </div>
-          )
-        })}
-      </div>
-      {boundaries.length > 0 && (
-        <div className="relative h-4 mt-1">
-          {boundaries.map((b, i) => (
-            <div key={i} className="absolute flex flex-col items-center" style={{ left: `${b.position}%`, transform: 'translateX(-50%)' }}>
-              <div className="w-px h-3 bg-navy opacity-30" />
-              <span className="text-[7px] text-text-tertiary whitespace-nowrap">{b.label}</span>
-            </div>
+      {/* Axis header */}
+      <div className="flex items-center mb-1">
+        <div className="w-24 shrink-0" />
+        <div className="flex-1 relative h-4">
+          {ticks.map(t => (
+            <span key={t} className="absolute text-[8px] text-text-tertiary -translate-x-1/2" style={{ left: `${((t - dataMin) / range) * 100}%` }}>{t}</span>
           ))}
         </div>
-      )}
+        <div className="w-16 shrink-0" />
+      </div>
+
+      {/* Class rows */}
+      {activeClasses.map(cm => {
+        const classStudents = data.filter(d => d.cls === cm.cls)
+        const med = cm.composite.median
+        const q1Val = cm.composite.q1
+        const q3Val = cm.composite.q3
+
+        return (
+          <div key={cm.cls} className="flex items-center mb-1">
+            <span className="w-24 text-[10px] font-semibold text-right pr-3 shrink-0" style={{ color: classToTextColor(cm.cls) }}>
+              {cm.cls} <span className="text-text-tertiary font-normal">({cm.count})</span>
+            </span>
+            <div className="flex-1 relative h-10 bg-gray-50 rounded border border-gray-100">
+              {/* Grid lines */}
+              {ticks.map(t => (
+                <div key={t} className="absolute top-0 h-full border-l border-gray-200" style={{ left: `${((t - dataMin) / range) * 100}%` }} />
+              ))}
+              {/* IQR range band */}
+              <div className="absolute top-1 bottom-1 rounded opacity-15" style={{
+                left: `${((q1Val - dataMin) / range) * 100}%`,
+                width: `${((q3Val - q1Val) / range) * 100}%`,
+                backgroundColor: classToColor(cm.cls),
+              }} />
+              {/* Median line */}
+              <div className="absolute top-0 h-full w-0.5 z-10" style={{
+                left: `${((med - dataMin) / range) * 100}%`,
+                backgroundColor: classToColor(cm.cls),
+                opacity: 0.6,
+              }} />
+              {/* Student dots */}
+              {classStudents.map((s, i) => {
+                const leftPct = ((s.value - dataMin) / range) * 100
+                // Jitter vertically to reduce overlap
+                const jitter = classStudents.length > 1 ? ((i % 3) - 1) * 6 : 0
+                return (
+                  <div key={i} className="absolute group z-20" style={{ left: `${leftPct}%`, top: '50%', transform: `translate(-50%, calc(-50% + ${jitter}px))` }}>
+                    <div className="w-2.5 h-2.5 rounded-full border border-white shadow-sm cursor-default" style={{ backgroundColor: classToColor(cm.cls) }} />
+                    <div className="hidden group-hover:block absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-navy text-white text-[9px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-50">
+                      {s.name}: {s.value.toFixed(1)}%
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <span className="w-16 text-[10px] font-bold text-right pl-2 shrink-0" style={{ color: classToTextColor(cm.cls) }}>
+              {med.toFixed(0)}%
+            </span>
+          </div>
+        )
+      })}
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 mt-3 ml-24 text-[9px] text-text-tertiary">
+        <span className="flex items-center gap-1"><span className="w-4 h-2 rounded bg-gray-300 opacity-30" /> Q1-Q3 range</span>
+        <span className="flex items-center gap-1"><span className="w-0.5 h-3 bg-gray-400" /> Median</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-400" /> Student</span>
+      </div>
     </div>
   )
 }
@@ -1060,8 +1082,8 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       {activeSection === 'comprehension' && (
         <div className="space-y-8">
           <SectionCard icon={PieChart} title="Composite Score Distribution"
-            description="Histogram of all students' composite scores (0-100). Each bar is a 10-point range, colored by the dominant class. Look for natural gaps between clusters -- these suggest good class boundary points. A bimodal distribution (two humps) might mean a class has two distinct skill groups.">
-            <CompositeHistogram data={allComposites} classMetrics={classMetrics} />
+            description="Each row is a class. Dots show individual student composite scores on a shared 0-100 scale. The shaded band is the Q1-Q3 range (middle 50%) and the vertical line is the median. Look for overlap between classes -- students in the overlap zone are borderline cases worth discussing. Wide spreads within a class suggest mixed ability levels.">
+            <CompositeStripPlot data={allComposites} classMetrics={classMetrics} />
           </SectionCard>
 
           <SectionCard icon={BarChart3} title="Component Score Distributions"
