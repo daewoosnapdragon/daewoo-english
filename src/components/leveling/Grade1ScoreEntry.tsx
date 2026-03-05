@@ -511,7 +511,7 @@ function suggestG1Class(
 // MAIN COMPONENT: Grade1ScoreEntry
 // ============================================================================
 
-function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
+export default function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   levelTest: LevelTest
   isAdmin: boolean
   teacherClass?: EnglishClass | null
@@ -2151,7 +2151,6 @@ function G1TeacherRatings({ students, levelTestId }: { students: any[]; levelTes
 // EXPORTS for use in LevelingView
 // ============================================================================
 
-export default Grade1ScoreEntry
 export { calculateG1Composite, suggestG1Class, ResultsView as G1ResultsView, WRITTEN_SECTIONS, PASSAGE_CONFIGS, STANDARDS_BASELINE, NAEP_MULTIPLIERS }
 export type { G1Scores, PassageLevel }
 
