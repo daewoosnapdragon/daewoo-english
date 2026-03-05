@@ -86,6 +86,9 @@ const NAEP_LABELS: Record<number, { label: string; desc: string }> = {
 
 const NAEP_MULTIPLIERS: Record<number, number> = { 1: 0.85, 2: 0.95, 3: 1.0, 4: 1.1 }
 
+// Passage difficulty multiplier: C = baseline (1.0), lower = easier, higher = harder
+export const PASSAGE_MULTIPLIERS: Record<string, number> = { A: 0.70, B: 0.85, C: 1.00, D: 1.15, E: 1.30 }
+
 // ============================================================================
 // CCSS STANDARDS BY GRADE — from teacher guides
 // ============================================================================
@@ -236,7 +239,7 @@ const GRADE_CONFIGS: Record<number, GradeTestConfig> = {
   2: {
     hasPhonics: true,
     hasSentences: true,
-    naepLevels: ['C', 'D', 'E'],
+    naepLevels: ['A', 'B', 'C', 'D', 'E'],
     passages: {
       A: {
         title: 'My Pets', lexile: 'BR80L', wordCount: 43, genre: 'Nonfiction',
@@ -301,7 +304,7 @@ const GRADE_CONFIGS: Record<number, GradeTestConfig> = {
   3: {
     hasPhonics: false,
     hasSentences: false,
-    naepLevels: ['C', 'D', 'E'],
+    naepLevels: ['A', 'B', 'C', 'D', 'E'],
     passages: {
       A: {
         title: 'My Pet Cat', lexile: '120L', wordCount: 82, genre: 'Fiction',
@@ -366,7 +369,7 @@ const GRADE_CONFIGS: Record<number, GradeTestConfig> = {
   4: {
     hasPhonics: false,
     hasSentences: false,
-    naepLevels: ['C', 'D', 'E'],
+    naepLevels: ['A', 'B', 'C', 'D', 'E'],
     passages: {
       A: {
         title: 'The School Garden', lexile: '220L', wordCount: 106, genre: 'Nonfiction',
@@ -431,7 +434,7 @@ const GRADE_CONFIGS: Record<number, GradeTestConfig> = {
   5: {
     hasPhonics: false,
     hasSentences: false,
-    naepLevels: ['C', 'D', 'E'],
+    naepLevels: ['A', 'B', 'C', 'D', 'E'],
     passages: {
       A: {
         title: 'The Lunchbox Mix-Up', lexile: '~380L', wordCount: 124, genre: 'Realistic fiction',
@@ -711,10 +714,11 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const [activeClass, setActiveClass] = useState<EnglishClass>(teacherClass || 'Lily')
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [showPassageReader, setShowPassageReader] = useState(false)
-  const [activeSection, setActiveSection] = useState<'phonics' | 'sentences' | 'passage'>('passage')
 
   const grade = typeof levelTest.grade === 'string' ? parseInt(levelTest.grade) : levelTest.grade
   const config = GRADE_CONFIGS[grade]
+
+  const [activeSection, setActiveSection] = useState<'phonics' | 'sentences' | 'passage'>(config?.hasPhonics ? 'phonics' : 'passage')
 
   // Load students and existing scores
   useEffect(() => {
@@ -728,9 +732,24 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       if (existing) existing.forEach((s: any) => { map[s.student_id] = s.raw_scores || {} })
       if (studs) studs.forEach(s => { if (!map[s.id]) map[s.id] = {} })
       setScores(map)
+      setSavedSnapshot(JSON.parse(JSON.stringify(map)))
       setLoading(false)
     })()
   }, [levelTest.id, levelTest.grade])
+
+  // Track saved state for dirty detection
+  const [savedSnapshot, setSavedSnapshot] = useState<Record<string, OralScores>>({})
+  const scoresRef = useRef(scores)
+  const savedSnapshotRef = useRef(savedSnapshot)
+  useEffect(() => { scoresRef.current = scores }, [scores])
+  useEffect(() => { savedSnapshotRef.current = savedSnapshot }, [savedSnapshot])
+
+  const isStudentDirty = useCallback((sid: string) => {
+    return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
+  }, [])
+
+  // Auto-save: saves dirty students via existing handleSave, then updates snapshot
+  const autoSaveRef = useRef<(() => Promise<void>) | null>(null)
 
   // Filter students by class
   const availableClasses = isAdmin ? ENGLISH_CLASSES : (teacherClass ? [teacherClass] : ENGLISH_CLASSES)
@@ -744,11 +763,26 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     return counts
   }, [students, scores])
 
+  // Fields that belong to the current passage and should be cleared on passage switch
+  const PASSAGE_FIELDS = ['orf_words_read', 'orf_errors', 'orf_time_seconds', 'naep', 'comp_1', 'comp_2', 'comp_3', 'comp_4', 'comp_5', 'notes']
+
   const updateScore = useCallback((sid: string, key: string, val: number | string | null) => {
-    setScores(prev => ({
-      ...prev,
-      [sid]: { ...prev[sid], [key]: val }
-    }))
+    setScores(prev => {
+      const current = prev[sid] || {}
+      // If changing passage_level, archive current passage data and clear fields
+      if (key === 'passage_level' && current.passage_level && val !== current.passage_level) {
+        const archive: Record<string, any> = { level: current.passage_level }
+        PASSAGE_FIELDS.forEach(f => { if (current[f] != null) archive[f] = current[f] })
+        // Only archive if there's actual data (not just an empty passage selection)
+        const hasData = PASSAGE_FIELDS.some(f => current[f] != null)
+        const attempts = Array.isArray(current.passages_attempted) ? [...current.passages_attempted] : []
+        if (hasData) attempts.push(archive)
+        const cleared: Record<string, any> = { ...current, passage_level: val, passages_attempted: attempts }
+        PASSAGE_FIELDS.forEach(f => { delete cleared[f] })
+        return { ...prev, [sid]: cleared }
+      }
+      return { ...prev, [sid]: { ...current, [key]: val } }
+    })
   }, [])
 
   const handleSave = async (sids?: string[]) => {
@@ -764,25 +798,39 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       const calcCwpm = time > 0 ? Math.round(((wordsRead - orfErrors) / time) * 60) : null
       const calcAccuracy = wordsRead > 0 ? Math.round(((wordsRead - orfErrors) / wordsRead) * 1000) / 10 : null
       const naepVal = (raw.naep as number) || null
-      const wCwpm = calcCwpm && naepVal ? Math.round(calcCwpm * (NAEP_MULTIPLIERS[naepVal] || 1)) : calcCwpm
+      const passageMult = PASSAGE_MULTIPLIERS[raw.passage_level as string] || 1.0
+      const naepMult = naepVal ? (NAEP_MULTIPLIERS[naepVal] || 1) : 1
+      const wCwpm = calcCwpm ? Math.round(calcCwpm * passageMult * naepMult) : calcCwpm
       const cTotal = [raw.comp_1, raw.comp_2, raw.comp_3, raw.comp_4, raw.comp_5].reduce((a: number, b) => a + ((b as number) || 0), 0)
       const pTotal = [raw.phonics_row1, raw.phonics_row2, raw.phonics_row3, raw.phonics_row4, raw.phonics_row5].reduce((a: number, b) => a + ((b as number) || 0), 0)
       const sTotal = [raw.sent_1, raw.sent_2, raw.sent_3, raw.sent_4, raw.sent_5].reduce((a: number, b) => a + ((b as number) || 0), 0)
+
+      // Merge with existing calculated_metrics (preserve written test data)
+      const existingRes = await supabase.from('level_test_scores')
+        .select('calculated_metrics')
+        .eq('level_test_id', levelTest.id)
+        .eq('student_id', sid)
+        .maybeSingle()
+      const existingCalc = existingRes.data?.calculated_metrics || {}
 
       const { error } = await supabase.from('level_test_scores').upsert({
         level_test_id: levelTest.id,
         student_id: sid,
         raw_scores: raw,
         calculated_metrics: {
+          ...existingCalc,
           passage_level: raw.passage_level || null,
+          passage_multiplier: passageMult,
           cwpm: calcCwpm,
           weighted_cwpm: wCwpm,
           naep: naepVal,
+          naep_multiplier: naepMult,
           accuracy_pct: calcAccuracy,
           comp_total: cTotal,
           comp_max: 15,
           phonics_total: pTotal || null,
           sentence_total: sTotal || null,
+          passages_attempted: raw.passages_attempted || [],
           standards_baseline: standards,
         },
         previous_class: students.find(s => s.id === sid)?.english_class || null,
@@ -792,6 +840,82 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     }
     setSaving(false)
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved (${toSave.length} student${toSave.length === 1 ? '' : 's'})`)
+    if (errors === 0) setSavedSnapshot(JSON.parse(JSON.stringify(scoresRef.current)))
+  }
+
+  // Auto-save function for timer/unmount/visibility (silent, no toast for timer)
+  const autoSave = useCallback(async (silent = true) => {
+    const currentScores = scoresRef.current
+    const snapshot = savedSnapshotRef.current
+    const dirty = students.filter(s => {
+      const cur = currentScores[s.id]
+      if (!cur || Object.keys(cur).length === 0) return false
+      return JSON.stringify(cur) !== JSON.stringify(snapshot[s.id] || {})
+    })
+    if (dirty.length === 0) return
+    await handleSave(dirty.map(s => s.id))
+  }, [students, handleSave])
+
+  useEffect(() => { autoSaveRef.current = autoSave }, [autoSave])
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    const timer = setInterval(() => { autoSaveRef.current?.() }, 30000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Auto-save on tab visibility change
+  useEffect(() => {
+    const handler = () => { if (document.hidden) autoSaveRef.current?.() }
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [])
+
+  // Auto-save on unmount (teacher switches phases)
+  useEffect(() => {
+    return () => { autoSaveRef.current?.() }
+  }, [])
+
+  // Warn before leaving with unsaved data
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      const cur = scoresRef.current; const snap = savedSnapshotRef.current
+      const dirty = students.some(s => JSON.stringify(cur[s.id] || {}) !== JSON.stringify(snap[s.id] || {}))
+      if (dirty) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [students])
+
+  // Clear oral data — clears local state AND removes oral data from DB (preserves written data)
+  const clearStudent = async (sid: string, name: string) => {
+    if (!confirm(`Clear all oral test scores for ${name}? This cannot be undone.`)) return
+    setScores(prev => ({ ...prev, [sid]: {} }))
+    try {
+      const { data: existing } = await supabase.from('level_test_scores')
+        .select('raw_scores, calculated_metrics')
+        .eq('level_test_id', levelTest.id)
+        .eq('student_id', sid)
+        .maybeSingle()
+      if (existing) {
+        const raw = existing.raw_scores || {}
+        const calc = existing.calculated_metrics || {}
+        // Keep only written-specific keys
+        const writtenRaw: Record<string, any> = {}
+        const writtenCalc: Record<string, any> = {}
+        ;['written_answers', 'written_rubric', 'written_mc', 'writing'].forEach(k => { if (raw[k] != null) writtenRaw[k] = raw[k] })
+        ;['written_mc_total', 'written_mc_max', 'written_mc_pct', 'writing_total', 'writing_max', 'written_domain_scores', 'written_standards_mastery'].forEach(k => { if (calc[k] != null) writtenCalc[k] = calc[k] })
+        const hasWrittenData = Object.keys(writtenRaw).length > 0
+        if (hasWrittenData) {
+          await supabase.from('level_test_scores').update({ raw_scores: writtenRaw, calculated_metrics: writtenCalc })
+            .eq('level_test_id', levelTest.id).eq('student_id', sid)
+        } else {
+          await supabase.from('level_test_scores').delete()
+            .eq('level_test_id', levelTest.id).eq('student_id', sid)
+        }
+      }
+    } catch (e) { console.error('Clear DB error:', e) }
+    showToast(`Cleared oral scores for ${name}`)
   }
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
@@ -816,13 +940,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const accuracy = sc.orf_words_read && sc.orf_errors != null
     ? Math.round(((sc.orf_words_read - sc.orf_errors) / sc.orf_words_read) * 1000) / 10
     : null
-  const weightedCwpm = cwpm && sc.naep ? Math.round(cwpm * (NAEP_MULTIPLIERS[sc.naep] || 1)) : cwpm
+  const livePassageMult = passageLevel ? (PASSAGE_MULTIPLIERS[passageLevel] || 1.0) : 1.0
+  const liveNaepMult = sc.naep ? (NAEP_MULTIPLIERS[sc.naep] || 1) : 1
+  const weightedCwpm = cwpm ? Math.round(cwpm * livePassageMult * liveNaepMult) : cwpm
   const compTotal = [sc.comp_1, sc.comp_2, sc.comp_3, sc.comp_4, sc.comp_5].reduce((a: number, b) => a + (b || 0), 0)
   const phonicsTotal = [sc.phonics_row1, sc.phonics_row2, sc.phonics_row3, sc.phonics_row4, sc.phonics_row5].reduce((a: number, b) => a + (b || 0), 0)
   const sentTotal = [sc.sent_1, sc.sent_2, sc.sent_3, sc.sent_4, sc.sent_5].reduce((a: number, b) => a + (b || 0), 0)
 
-  // Set default section
-  const defaultSection = config.hasPhonics ? 'phonics' : 'passage'
 
   return (
     <div className="flex h-[calc(100vh-220px)]">
@@ -896,12 +1020,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
               <div className="flex items-center gap-2">
                 {/* Clear Student */}
                 {studentHasData(student.id) && (
-                  <button onClick={() => {
-                    if (confirm(`Clear all scores for ${student.english_name}? This cannot be undone.`)) {
-                      setScores(prev => ({ ...prev, [student.id]: {} }))
-                      showToast(`Cleared scores for ${student.english_name}`)
-                    }
-                  }}
+                  <button onClick={() => clearStudent(student.id, student.english_name)}
                     className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-medium text-red-500 hover:bg-red-50 border border-red-200">
                     <RotateCcw size={12} /> Clear
                   </button>
@@ -1060,7 +1179,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     {(['A', 'B', 'C', 'D', 'E'] as PassageLevel[]).map(level => {
                       const p = config.passages[level]
                       return (
-                        <button key={level} onClick={() => updateScore(student.id, 'passage_level', level)}
+                        <button key={level} onClick={() => {
+                          if (passageLevel && level !== passageLevel && PASSAGE_FIELDS.some(f => sc[f] != null)) {
+                            if (!confirm(`Switch from passage ${passageLevel} to ${level}? Current scores will be archived and a fresh entry started.`)) return
+                          }
+                          updateScore(student.id, 'passage_level', level)
+                        }}
                           className={`flex-1 px-3 py-3 rounded-xl text-center transition-all ${
                             passageLevel === level
                               ? 'bg-navy text-white shadow-sm ring-2 ring-navy/30'
@@ -1069,10 +1193,35 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                           <div className="text-[14px] font-bold">{level}</div>
                           <div className="text-[10px] mt-0.5 opacity-80">{p.title}</div>
                           <div className="text-[9px] mt-0.5 opacity-60">{p.lexile} | {p.wordCount}w</div>
+                          <div className={`text-[8px] mt-0.5 font-semibold ${PASSAGE_MULTIPLIERS[level] === 1.0 ? 'opacity-80' : 'opacity-60'}`}>×{PASSAGE_MULTIPLIERS[level]?.toFixed(2)}</div>
                         </button>
                       )
                     })}
                   </div>
+
+                  {/* Previous attempts */}
+                  {Array.isArray(sc.passages_attempted) && sc.passages_attempted.length > 0 && (
+                    <div className="mb-4 bg-amber-50/50 border border-amber-100 rounded-lg px-3 py-2">
+                      <p className="text-[9px] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (not scored)</p>
+                      <div className="flex gap-3">
+                        {sc.passages_attempted.map((att: any, i: number) => (
+                          <div key={i} className="text-[10px] text-amber-800">
+                            <span className="font-bold">Lv {att.level}</span>
+                            {att.orf_words_read != null && att.orf_errors != null && att.orf_time_seconds ? (
+                              <span className="text-text-tertiary ml-1">
+                                {Math.round(((att.orf_words_read - att.orf_errors) / (att.orf_time_seconds || 60)) * 60)} CWPM
+                              </span>
+                            ) : null}
+                            {att.comp_1 != null && (
+                              <span className="text-text-tertiary ml-1">
+                                Comp {[att.comp_1, att.comp_2, att.comp_3, att.comp_4, att.comp_5].reduce((a: number, b: any) => a + (b || 0), 0)}/15
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Selected passage info + open button */}
                   {passage && (
@@ -1138,12 +1287,14 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                         <span className="text-text-tertiary">
                           {accuracy >= 95 ? '(Independent)' : accuracy >= 90 ? '(Instructional)' : '(Frustration -- try easier passage)'}
                         </span>
-                        {weightedCwpm && sc.naep && (
+                        {weightedCwpm && weightedCwpm !== cwpm && (
                           <>
                             <span className="text-text-tertiary mx-2">|</span>
-                            <span className="text-text-secondary">Weighted CWPM:</span>
+                            <span className="text-text-secondary">Adjusted:</span>
                             <span className="font-bold text-navy">{weightedCwpm}</span>
-                            <span className="text-text-tertiary">(x{NAEP_MULTIPLIERS[sc.naep]})</span>
+                            <span className="text-text-tertiary text-[9px]">
+                              ({cwpm} × {livePassageMult !== 1 ? `Lv${passageLevel}:${livePassageMult}` : ''}{livePassageMult !== 1 && liveNaepMult !== 1 ? ' × ' : ''}{liveNaepMult !== 1 ? `NAEP:${liveNaepMult}` : ''})
+                            </span>
                           </>
                         )}
                       </div>
@@ -1251,7 +1402,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       <div className="text-center">
                         <div className="text-[10px] text-text-tertiary uppercase">CWPM</div>
                         <div className="text-[16px] font-bold text-green-600">{cwpm}</div>
-                        {weightedCwpm && weightedCwpm !== cwpm && <div className="text-[9px] text-text-tertiary">Weighted: {weightedCwpm}</div>}
+                        {weightedCwpm && weightedCwpm !== cwpm && <div className="text-[9px] text-text-tertiary">Adjusted: {weightedCwpm} ({passageLevel})</div>}
                       </div>
                       <div className="text-center">
                         <div className="text-[10px] text-text-tertiary uppercase">Accuracy</div>
