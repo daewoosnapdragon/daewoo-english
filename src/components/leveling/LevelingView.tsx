@@ -1335,6 +1335,37 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
     setAutoPlacements(auto); showToast('Auto-placements recalculated (drag students to apply)')
   }
 
+  const GRADE_MC_TOTAL = getWrittenMcTotal(levelTest.grade)
+
+  // Compute rows for hover card data (composite, percentile, suggested class)
+  const rows = useMemo(() => {
+    if (students.length === 0) return []
+    const enhBench: Record<string, any> = { ...benchmarks }
+    const r = students.map(s => computeRow(s, scores, anecdotals, enhBench, semGrades, levelTest.grade))
+    const sorted = [...r].sort((a, b) => a.composite - b.composite)
+    return sorted.map((row, idx) => ({
+      ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
+      suggestedClass: suggestClass(row, idx, sorted.length),
+    }))
+  }, [students, scores, anecdotals, benchmarks, semGrades])
+
+  // Class averages for hover card comparison bars
+  const hoverClassAverages = useMemo(() => {
+    const result: Record<string, { oral: number | null; writing: number | null; mc: number | null; comp: number | null; composite: number | null; count: number }> = {}
+    ENGLISH_CLASSES.forEach(cls => {
+      const classRows = rows.filter(r => r.student.english_class === cls)
+      if (classRows.length === 0) { result[cls] = { oral: null, writing: null, mc: null, comp: null, composite: null, count: 0 }; return }
+      const orals = classRows.map(r => r.rawCwpm).filter(v => v != null) as number[]
+      const writings = classRows.map(r => r.rawWriting).filter(v => v != null) as number[]
+      const mcs = classRows.map(r => r.rawMc).filter(v => v != null) as number[]
+      const comps = classRows.map(r => r.rawComp).filter(v => v != null) as number[]
+      const composites = classRows.map(r => r.composite)
+      const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+      result[cls] = { oral: avg(orals), writing: avg(writings), mc: avg(mcs), comp: avg(comps), composite: avg(composites), count: classRows.length }
+    })
+    return result
+  }, [rows])
+
   const resetToCurrentClasses = () => {
     if (!confirm('Reset all students to their current class assignments? Any manual moves will be undone.')) return
     const pm: Record<string, EnglishClass> = {}
