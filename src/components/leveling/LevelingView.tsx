@@ -1016,6 +1016,58 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>('all')
   const [filterPassage, setFilterPassage] = useState<string>('all')
   const [showBorderline, setShowBorderline] = useState(false)
+  // Grade entry modal
+  const [gradeEntryStudent, setGradeEntryStudent] = useState<Student | null>(null)
+  const [gradeEntrySemId, setGradeEntrySemId] = useState<string>('')
+  const [gradeEntryValues, setGradeEntryValues] = useState<Record<string, string>>({})
+  const [gradeEntrySemesters, setGradeEntrySemesters] = useState<any[]>([])
+  const [gradeEntrySaving, setGradeEntrySaving] = useState(false)
+  const GRADE_DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language'] as const
+  const DOMAIN_LABELS: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
+
+  const openGradeEntry = async (student: Student) => {
+    setGradeEntryStudent(student)
+    setGradeEntrySemId('')
+    setGradeEntryValues({})
+    if (gradeEntrySemesters.length === 0) {
+      const { data } = await supabase.from('semesters').select('id, name, type').order('created_at', { ascending: false })
+      if (data) setGradeEntrySemesters(data)
+    }
+  }
+
+  const loadGradeEntryData = async (studentId: string, semesterId: string) => {
+    setGradeEntrySemId(semesterId)
+    const { data } = await supabase.from('semester_grades').select('domain, final_grade, calculated_grade').eq('student_id', studentId).eq('semester_id', semesterId)
+    const vals: Record<string, string> = {}
+    data?.forEach((g: any) => {
+      const score = g.final_grade ?? g.calculated_grade ?? null
+      if (score != null) vals[g.domain] = String(Math.round(score * 10) / 10)
+    })
+    setGradeEntryValues(vals)
+  }
+
+  const saveGradeEntry = async () => {
+    if (!gradeEntryStudent || !gradeEntrySemId) return
+    setGradeEntrySaving(true)
+    let saved = 0
+    for (const dom of GRADE_DOMAINS) {
+      const val = parseFloat(gradeEntryValues[dom] || '')
+      if (!isNaN(val)) {
+        const { error } = await supabase.from('semester_grades').upsert({
+          student_id: gradeEntryStudent.id, semester_id: gradeEntrySemId, domain: dom, final_grade: val,
+          english_class: gradeEntryStudent.english_class, grade: gradeEntryStudent.grade,
+        }, { onConflict: 'student_id,semester_id,domain' })
+        if (!error) saved++
+      }
+    }
+    // Refresh semGrades for this student
+    const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').eq('student_id', gradeEntryStudent.id)
+    if (sg) {
+      setSemGrades(prev => ({ ...prev, [gradeEntryStudent!.id]: sg.map((g: any) => ({ ...g, score: g.final_grade ?? g.calculated_grade ?? null, semester_name: g.semesters?.name })) }))
+    }
+    setGradeEntrySaving(false)
+    setGradeEntryStudent(null)
+  }
 
   const handlePrintSummary = (allRows: any[]) => {
     const pw = window.open('', '_blank'); if (!pw) return
@@ -1221,7 +1273,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                 <td className="px-2 py-2 text-center">{row.rawComp != null ? <span>{row.rawComp}<span className="text-text-tertiary/50">/15</span></span> : '—'}</td>
                 <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.rawWriting != null ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawWriting}<span className="text-text-tertiary/50">/20</span></span> : '—'}</td>
                 <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.rawMc != null ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawMc}<span className="text-text-tertiary/50">/{WRITTEN_MC_TOTAL}</span></span> : '—'}</td>
-                <td className="px-2 py-2 text-center">{row.gradeScore !== 0.5 ? `${(row.gradeScore * 100).toFixed(0)}%` : '—'}</td>
+                <td className="px-2 py-2 text-center cursor-pointer hover:bg-blue-50/50 group" onClick={() => openGradeEntry(row.student)} title="Click to edit grades">{row.gradeScore !== 0.5 ? <span>{(row.gradeScore * 100).toFixed(0)}%</span> : <span className="text-text-tertiary group-hover:text-navy">+ Add</span>}</td>
                 <td className="px-2 py-2 text-center">{row.anecScore !== 0.5 ? (row.anecScore * 4).toFixed(1) : '—'}</td>
                 <td className="px-2 py-2 text-center font-bold text-navy">{(row.composite * 100).toFixed(0)}</td>
                 <td className="px-2 py-2 text-center">{(row.percentile * 100).toFixed(0)}%</td>
@@ -1231,6 +1283,59 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
         </table>
       </div>
       <p className="text-[10px] text-text-tertiary mt-3">Test score = avg of oral (adjusted), writing, MC, comprehension{Number(levelTest.grade) === 2 ? ', phonics, sentences' : ''}. Composite = 30% test + 40% grades + 30% anecdotal. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier.</p>
+
+      {/* Grade Entry Modal */}
+      {gradeEntryStudent && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setGradeEntryStudent(null)}>
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="font-display text-lg font-semibold text-navy">{gradeEntryStudent.english_name} <span className="text-text-tertiary font-normal text-[13px]">{gradeEntryStudent.korean_name}</span></h3>
+              <p className="text-[11px] text-text-tertiary mt-0.5">Grade {gradeEntryStudent.grade} | {gradeEntryStudent.english_class} — Enter semester grades</p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5 block">Semester</label>
+                <select value={gradeEntrySemId} onChange={e => loadGradeEntryData(gradeEntryStudent.id, e.target.value)}
+                  className="w-full text-[13px] px-3 py-2 rounded-lg border border-border bg-surface focus:border-navy focus:ring-1 focus:ring-navy/20 outline-none">
+                  <option value="">Select semester…</option>
+                  {gradeEntrySemesters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              {gradeEntrySemId && (
+                <div className="space-y-2.5">
+                  {GRADE_DOMAINS.map(dom => (
+                    <div key={dom} className="flex items-center gap-3">
+                      <label className="text-[12px] text-text-secondary w-44">{DOMAIN_LABELS[dom]}</label>
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <input type="number" min={0} max={100} step={0.1} placeholder="—"
+                          value={gradeEntryValues[dom] || ''}
+                          onChange={e => setGradeEntryValues(prev => ({ ...prev, [dom]: e.target.value }))}
+                          className="w-full text-[13px] px-3 py-2 rounded-lg border border-border bg-surface text-center font-medium focus:border-navy focus:ring-1 focus:ring-navy/20 outline-none" />
+                        <span className="text-[11px] text-text-tertiary">%</span>
+                      </div>
+                    </div>
+                  ))}
+                  {Object.values(gradeEntryValues).some(v => v !== '') && (
+                    <div className="pt-2 border-t border-border flex items-center justify-between">
+                      <span className="text-[11px] text-text-tertiary">Average</span>
+                      <span className="text-[13px] font-bold text-navy">
+                        {(() => { const vals = Object.values(gradeEntryValues).map(v => parseFloat(v)).filter(v => !isNaN(v)); return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) + '%' : '—' })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+              <button onClick={() => setGradeEntryStudent(null)} className="px-4 py-2 rounded-lg text-[12px] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
+              <button onClick={saveGradeEntry} disabled={!gradeEntrySemId || gradeEntrySaving}
+                className="px-5 py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                {gradeEntrySaving ? 'Saving…' : 'Save Grades'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
