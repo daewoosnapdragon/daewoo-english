@@ -236,6 +236,7 @@ export interface LevelTestConfig {
   weights: Record<string, number>;
   adaptive_passage: boolean;
   adaptive_min_n: number;
+  excluded_questions?: number[];
 }
 
 export interface LevelTestSection {

@@ -300,7 +300,70 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
     })
   })
 
-  return { itemDifficulty, domains, studentStandards, studentCount: studentIds.length }
+  // ── Point-biserial correlation per question ──
+  // For each MC question, correlate binary correct/incorrect against total DOK-weighted MC score
+  // Computed across the full grade (all classes combined)
+  const totalScores: Record<string, number> = {}
+  studentIds.forEach(sid => {
+    const ans = allScores[sid].answers
+    totalScores[sid] = config.questions.reduce((sum, q) => sum + (ans[q.qNum] === q.correct ? dokWeight(q.dok) : 0), 0)
+  })
+  const allTotals = studentIds.map(sid => totalScores[sid])
+  const meanTotal = allTotals.length > 0 ? allTotals.reduce((a, b) => a + b, 0) / allTotals.length : 0
+  const stdTotal = allTotals.length > 1 ? Math.sqrt(allTotals.reduce((s, v) => s + (v - meanTotal) ** 2, 0) / (allTotals.length - 1)) : 0
+
+  const discrimination: Record<number, { rpb: number; flag: string; flagColor: string }> = {}
+  config.questions.forEach(q => {
+    const item = itemDifficulty[q.qNum]
+    const n = item.total
+    if (n < 3 || stdTotal === 0) {
+      discrimination[q.qNum] = { rpb: 0, flag: 'LOW N', flagColor: 'gray' }
+      return
+    }
+    const accuracy = item.correct / n
+    // Compute point-biserial: r_pb = (M1 - M0) / S * sqrt(p * q)
+    // M1 = mean total score of students who got this right
+    // M0 = mean total score of students who got this wrong
+    const correctTotals: number[] = []
+    const wrongTotals: number[] = []
+    studentIds.forEach(sid => {
+      const ans = allScores[sid].answers
+      if (!ans[q.qNum]) return
+      if (ans[q.qNum] === q.correct) correctTotals.push(totalScores[sid])
+      else wrongTotals.push(totalScores[sid])
+    })
+    const m1 = correctTotals.length > 0 ? correctTotals.reduce((a, b) => a + b, 0) / correctTotals.length : 0
+    const m0 = wrongTotals.length > 0 ? wrongTotals.reduce((a, b) => a + b, 0) / wrongTotals.length : 0
+    const p = correctTotals.length / n
+    const qProp = 1 - p
+    const rpb = stdTotal > 0 && p > 0 && qProp > 0 ? ((m1 - m0) / stdTotal) * Math.sqrt(p * qProp) : 0
+
+    // Determine flag
+    let flag: string
+    let flagColor: string
+    if (rpb < 0) {
+      flag = 'CHECK KEY'
+      flagColor = 'red'
+    } else if (accuracy > 0.9) {
+      flag = 'TOO EASY'
+      flagColor = 'blue'
+    } else if (accuracy < 0.2) {
+      flag = 'TOO HARD'
+      flagColor = 'amber'
+    } else if (rpb <= 0.1 && accuracy >= 0.2 && accuracy <= 0.9) {
+      flag = 'BAD DISCRIMINATOR'
+      flagColor = 'red'
+    } else if (rpb > 0.2 && accuracy >= 0.3 && accuracy <= 0.9) {
+      flag = 'KEEP'
+      flagColor = 'green'
+    } else {
+      flag = 'OK'
+      flagColor = 'gray'
+    }
+    discrimination[q.qNum] = { rpb, flag, flagColor }
+  })
+
+  return { itemDifficulty, domains, studentStandards, studentCount: studentIds.length, discrimination }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -760,10 +823,12 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
 // ANALYTICS VIEW
 // ═══════════════════════════════════════════════════════════════════════
 
-function AnalyticsView({ config, analytics, scores, students }: {
+function AnalyticsView({ config, analytics, scores, students, excludedQuestions, onToggleExclude, canToggleExclude }: {
   config: GradeConfig; analytics: ReturnType<typeof computeAnalytics>; scores: Record<string, StudentScores>; students: any[]
+  excludedQuestions: number[]; onToggleExclude: (qNum: number) => void; canToggleExclude: boolean
 }) {
   const [expandedQ, setExpandedQ] = useState<number | null>(null)
+  const [showInfoCard, setShowInfoCard] = useState(false)
 
   if (!analytics) return (
     <div className="p-12 text-center text-text-tertiary">
@@ -773,7 +838,11 @@ function AnalyticsView({ config, analytics, scores, students }: {
     </div>
   )
 
-  const { itemDifficulty, domains, studentCount } = analytics
+  const { itemDifficulty, domains, studentCount, discrimination } = analytics
+  const excludedSet = new Set(excludedQuestions)
+  const excludedCount = excludedQuestions.length
+  const flagCounts = { KEEP: 0, 'TOO EASY': 0, 'TOO HARD': 0, 'BAD DISCRIMINATOR': 0, 'CHECK KEY': 0, OK: 0, 'LOW N': 0 }
+  if (discrimination) Object.values(discrimination).forEach(d => { if (flagCounts[d.flag as keyof typeof flagCounts] !== undefined) flagCounts[d.flag as keyof typeof flagCounts]++ })
 
   return (
     <div className="p-6 max-w-5xl">
@@ -799,24 +868,69 @@ function AnalyticsView({ config, analytics, scores, students }: {
         })}
       </div>
 
-      {/* Item Difficulty Table */}
+      {/* Test Quality Section with Info Card */}
+      <div className="flex items-center gap-2 mb-3">
+        <h4 className="text-[14px] font-semibold text-navy">Test Quality</h4>
+        <div className="relative">
+          <button onClick={() => setShowInfoCard(!showInfoCard)} className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-[11px] font-bold flex items-center justify-center hover:bg-blue-200 transition-colors">?</button>
+          {showInfoCard && (
+            <div className="absolute left-0 top-7 w-96 bg-white border border-border rounded-xl shadow-xl p-4 z-50 text-[11px] text-text-secondary leading-relaxed">
+              <p className="font-semibold text-navy mb-2">How Question Discrimination Works</p>
+              <p>Some questions don't help us make good placement decisions. A well-written question is one where students who scored well overall also got this question right. When that pattern breaks down -- when strong students miss it and weak students get it right -- the question adds noise instead of signal to our data.</p>
+              <p className="mt-2">Excluding these questions doesn't change anyone's answers. It recalculates the MC component of the composite score using only the questions that reliably measure student ability. This gives us more accurate placements, especially for borderline students.</p>
+              <button onClick={() => setShowInfoCard(false)} className="mt-2 text-[10px] text-navy font-semibold hover:underline">Got it</button>
+            </div>
+          )}
+        </div>
+        {excludedCount > 0 && (
+          <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{excludedCount} question{excludedCount !== 1 ? 's' : ''} excluded</span>
+        )}
+      </div>
+
+      {/* Discrimination flag legend */}
+      {discrimination && (
+        <div className="flex flex-wrap gap-2 mb-4 text-[10px]">
+          {flagCounts.KEEP > 0 && <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">KEEP ({flagCounts.KEEP})</span>}
+          {flagCounts['TOO EASY'] > 0 && <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">TOO EASY ({flagCounts['TOO EASY']})</span>}
+          {flagCounts['TOO HARD'] > 0 && <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">TOO HARD ({flagCounts['TOO HARD']})</span>}
+          {flagCounts['BAD DISCRIMINATOR'] > 0 && <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">BAD DISCRIMINATOR ({flagCounts['BAD DISCRIMINATOR']})</span>}
+          {flagCounts['CHECK KEY'] > 0 && <span className="px-2 py-0.5 rounded-full bg-red-200 text-red-800 font-bold">CHECK KEY ({flagCounts['CHECK KEY']})</span>}
+        </div>
+      )}
+
+      {/* Item Analysis Table with Discrimination */}
       <h4 className="text-[14px] font-semibold text-navy mb-3">Item Analysis</h4>
       <div className="border border-border rounded-lg mb-6">
-        <div className="grid grid-cols-[40px_1fr_60px_80px_60px_60px_60px_60px_40px] bg-gray-50 px-3 py-1.5 text-[10px] font-semibold text-text-tertiary border-b border-border">
+        <div className="grid grid-cols-[32px_40px_1fr_60px_80px_60px_60px_60px_60px_40px_90px] bg-gray-50 px-3 py-1.5 text-[10px] font-semibold text-text-tertiary border-b border-border">
+          {canToggleExclude && <span className="text-center">Excl</span>}
+          {!canToggleExclude && <span />}
           <span>#</span><span>Question</span><span>Standard</span><span>Domain</span>
           <span className="text-center">A</span><span className="text-center">B</span><span className="text-center">C</span><span className="text-center">D</span>
           <span className="text-center">%</span>
+          <span className="text-center">Quality</span>
         </div>
         {config.questions.map(q => {
           const item = itemDifficulty[q.qNum]
           const pct = item.total > 0 ? Math.round((item.correct / item.total) * 100) : 0
           const bgColor = pct >= 80 ? 'bg-green-50' : pct >= 50 ? 'bg-amber-50' : 'bg-red-50'
+          const isExcluded = excludedSet.has(q.qNum)
+          const disc = discrimination?.[q.qNum]
+          const flagBg: Record<string, string> = { green: 'bg-green-100 text-green-700', blue: 'bg-blue-100 text-blue-700', amber: 'bg-amber-100 text-amber-700', red: 'bg-red-100 text-red-700', gray: 'bg-gray-100 text-gray-500' }
           return (
-            <div key={q.qNum}>
+            <div key={q.qNum} className={isExcluded ? 'opacity-50' : ''}>
               <button onClick={() => setExpandedQ(expandedQ === q.qNum ? null : q.qNum)}
-                className={`w-full grid grid-cols-[40px_1fr_60px_80px_60px_60px_60px_60px_40px] px-3 py-1.5 text-[11px] border-b border-border/50 hover:bg-gray-50 ${bgColor}`}>
-                <span className="font-mono">{q.qNum}</span>
-                <span className="text-left truncate">{q.text}</span>
+                className={`w-full grid grid-cols-[32px_40px_1fr_60px_80px_60px_60px_60px_60px_40px_90px] px-3 py-1.5 text-[11px] border-b border-border/50 hover:bg-gray-50 ${isExcluded ? 'bg-gray-100' : bgColor}`}>
+                {canToggleExclude ? (
+                  <span className="text-center" onClick={e => { e.stopPropagation(); onToggleExclude(q.qNum) }}>
+                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded border-2 cursor-pointer transition-all ${isExcluded ? 'bg-red-500 border-red-500 text-white' : 'border-gray-300 hover:border-navy'}`}>
+                      {isExcluded && <X size={10} />}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-center">{isExcluded && <X size={10} className="inline text-red-400" />}</span>
+                )}
+                <span className={`font-mono ${isExcluded ? 'line-through' : ''}`}>{q.qNum}</span>
+                <span className={`text-left truncate ${isExcluded ? 'line-through' : ''}`}>{q.text}</span>
                 <StandardBadge code={q.standard} description={q.standardDesc} />
                 <span className="text-text-tertiary truncate">{q.domain.replace('Comprehension', 'Comp.').replace('Language/', '')}</span>
                 {['a', 'b', 'c', 'd'].map(letter => {
@@ -832,14 +946,24 @@ function AnalyticsView({ config, analytics, scores, students }: {
                 <span className={`text-center font-bold ${pct >= 80 ? 'text-green-600' : pct >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
                   {pct}%
                 </span>
+                <span className="text-center">
+                  {disc && (
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-bold ${flagBg[disc.flagColor] || 'bg-gray-100 text-gray-500'} ${disc.flag === 'CHECK KEY' ? 'font-extrabold' : ''}`}>
+                      {disc.flag}
+                      {disc.flag !== 'LOW N' && <span className="font-normal ml-0.5">({disc.rpb.toFixed(2)})</span>}
+                    </span>
+                  )}
+                </span>
               </button>
               {expandedQ === q.qNum && (
                 <div className="px-6 py-3 bg-blue-50/50 border-b border-border text-[11px]">
                   <div className="grid grid-cols-2 gap-x-8 gap-y-1">
                     <div><span className="text-text-tertiary">Standard:</span> <span className="font-medium">{q.standard} -- {q.standardDesc}</span></div>
-                    <div><span className="text-text-tertiary">DOK Level:</span> <span className="font-medium">{q.dok}</span></div>
+                    <div><span className="text-text-tertiary">DOK Level:</span> <span className="font-medium">{q.dok} ({dokWeight(q.dok)}pt)</span></div>
                     <div><span className="text-text-tertiary">Correct Answer:</span> <span className="font-bold text-green-700">{q.correct.toUpperCase()}</span></div>
                     <div><span className="text-text-tertiary">Students answered:</span> <span className="font-medium">{item.total}</span></div>
+                    {disc && <div><span className="text-text-tertiary">Discrimination (r_pb):</span> <span className={`font-bold ${disc.rpb < 0 ? 'text-red-600' : disc.rpb > 0.2 ? 'text-green-600' : 'text-amber-600'}`}>{disc.rpb.toFixed(3)}</span></div>}
+                    <div><span className="text-text-tertiary">Status:</span> <span className="font-medium">{isExcluded ? 'EXCLUDED from MC scoring' : 'Included'}</span></div>
                   </div>
                   <div className="mt-2 flex gap-4">
                     {['a', 'b', 'c', 'd'].map(letter => {
@@ -879,15 +1003,16 @@ function AnalyticsView({ config, analytics, scores, students }: {
           .map(q => {
             const item = itemDifficulty[q.qNum]
             const pct = Math.round((item.correct / item.total) * 100)
+            const isExcluded = excludedSet.has(q.qNum)
             // Find the most-chosen wrong answer
             const wrongDistractors = Object.entries(item.distractors)
               .filter(([l]) => l !== q.correct)
               .sort((a, b) => b[1] - a[1])
             const topWrong = wrongDistractors[0]
             return (
-              <div key={q.qNum} className="flex items-center gap-3 px-3 py-2 border-b border-border/50">
+              <div key={q.qNum} className={`flex items-center gap-3 px-3 py-2 border-b border-border/50 ${isExcluded ? 'opacity-50 bg-gray-50' : ''}`}>
                 <span className="text-[11px] font-mono text-text-tertiary w-5">Q{q.qNum}</span>
-                <span className="text-[11px] flex-1">{q.text}</span>
+                <span className={`text-[11px] flex-1 ${isExcluded ? 'line-through' : ''}`}>{q.text}</span>
                 <StandardBadge code={q.standard} description={q.standardDesc} />
                 <span className="text-[11px] font-bold text-red-600 w-10 text-right">{pct}%</span>
                 {topWrong && topWrong[1] > 0 && (
@@ -895,6 +1020,7 @@ function AnalyticsView({ config, analytics, scores, students }: {
                     {Math.round((topWrong[1] / item.total) * 100)}% chose {topWrong[0].toUpperCase()}
                   </span>
                 )}
+                {isExcluded && <span className="text-[8px] text-red-500 font-bold">EXCL</span>}
               </div>
             )
           })}
@@ -952,6 +1078,10 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
   const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>(teacherClass || 'all')
   const [view, setView] = useState<'entry' | 'analytics'>('entry')
   const [toast, setToast] = useState('')
+  const [excludedQuestions, setExcludedQuestions] = useState<number[]>([])
+
+  // Can toggle exclusions: Snapdragon teacher or admin only
+  const canToggleExclude = isAdmin || teacherClass === 'Snapdragon'
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
@@ -984,6 +1114,38 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     }
     load()
   }, [levelTest.id, grade])
+
+  // Load excluded questions from level_tests.config
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('level_tests').select('config').eq('id', levelTest.id).single()
+      if (data?.config?.excluded_questions) {
+        setExcludedQuestions(data.config.excluded_questions)
+      }
+    })()
+  }, [levelTest.id])
+
+  // Toggle question exclusion and save to DB
+  const handleToggleExclude = useCallback(async (qNum: number) => {
+    if (!canToggleExclude) return
+    const newExcluded = excludedQuestions.includes(qNum)
+      ? excludedQuestions.filter(q => q !== qNum)
+      : [...excludedQuestions, qNum]
+    setExcludedQuestions(newExcluded)
+    // Save to level_tests.config.excluded_questions
+    const { data: lt } = await supabase.from('level_tests').select('config').eq('id', levelTest.id).single()
+    const currentConfig = lt?.config || {}
+    const { error } = await supabase.from('level_tests').update({
+      config: { ...currentConfig, excluded_questions: newExcluded }
+    }).eq('id', levelTest.id)
+    if (error) {
+      showToast('Error saving exclusion')
+      // Revert on error
+      setExcludedQuestions(excludedQuestions)
+    } else {
+      showToast(newExcluded.includes(qNum) ? `Q${qNum} excluded from scoring` : `Q${qNum} restored to scoring`)
+    }
+  }, [excludedQuestions, canToggleExclude, levelTest.id])
 
   // Filter students by class
   const classStudents = useMemo(() => {
@@ -1334,7 +1496,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
             totalStudents={classStudents.length}
           />
         ) : (
-          <AnalyticsView config={config} analytics={analytics} scores={scores} students={students} />
+          <AnalyticsView config={config} analytics={analytics} scores={scores} students={students} excludedQuestions={excludedQuestions} onToggleExclude={handleToggleExclude} canToggleExclude={canToggleExclude} />
         )}
       </div>
 
