@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
-import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload } from 'lucide-react'
+import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
@@ -16,16 +16,19 @@ import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
-type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'meeting'
+import LevelingAnalytics from '@/components/leveling/LevelingAnalytics'
+
+type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'analytics' | 'meeting'
 
 // Written MC total — update here when test format changes
 // Written MC total varies by grade: G2=25, G3=21, G4=28, G5=20
 function getWrittenMcTotal(grade: number | string): number {
+  // DOK-weighted: DOK1=1pt, DOK2+=2pt
   const g = Number(grade)
-  if (g === 2) return 25; if (g === 3) return 21; if (g === 4) return 28; if (g === 5) return 20
-  return 21 // fallback
+  if (g === 2) return 32; if (g === 3) return 26; if (g === 4) return 40; if (g === 5) return 28
+  return 26 // fallback
 }
-const WRITTEN_MC_TOTAL = 21 // default for backward compat, use getWrittenMcTotal() where grade is known
+const WRITTEN_MC_TOTAL = 26 // default for backward compat, use getWrittenMcTotal() where grade is known
 
 const DIMS = [
   { key: 'receptive_language', label: 'Receptive Language', desc: 'Listening & reading for their class level',
@@ -40,9 +43,10 @@ const DIMS = [
 
 // ─── Main View ──────────────────────────────────────────────────────
 
-export default function LevelingView() {
+function LevelingView() {
   const { showToast, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
+  const isLeadTeacher = isAdmin || currentTeacher?.is_head_teacher || currentTeacher?.english_class === 'Snapdragon'
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class as EnglishClass : null
   const [levelTests, setLevelTests] = useState<LevelTest[]>([])
   const [selectedTest, setSelectedTest] = useState<LevelTest | null>(null)
@@ -77,7 +81,7 @@ export default function LevelingView() {
       <div className="px-10 py-8 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-display text-lg font-semibold text-navy">Level Tests</h3>
-          {isAdmin && <CreateTestBtn onCreate={handleCreateTest} />}
+          {isLeadTeacher && <CreateTestBtn onCreate={handleCreateTest} />}
         </div>
         {levelTests.length === 0 ? <p className="text-text-tertiary text-sm py-8 text-center">No level tests created yet.</p> :
           <div className="space-y-2">{levelTests.map(t => (
@@ -88,7 +92,7 @@ export default function LevelingView() {
             </button>))}</div>}
 
         {/* Emergency Leveling - Grade 1 Only */}
-        {isAdmin && <EmergencyLeveling />}
+        {isLeadTeacher && <EmergencyLeveling />}
       </div>
     </div>
   )
@@ -103,19 +107,20 @@ export default function LevelingView() {
         <span className="text-[14px] font-semibold text-navy mr-4">{selectedTest.name}</span>
         {/* Grade 1 Wave 1 (oral only): skip Teacher Ratings. Wave 2 (has written): show all phases. */}
         {(String(selectedTest.grade) === '1'
-          ? (['scores', 'results', 'meeting'] as Phase[])
-          : (['scores', 'written_test', 'anecdotal', 'results', 'meeting'] as Phase[])
+          ? (['scores', 'results', 'analytics', 'meeting'] as Phase[])
+          : (['scores', 'written_test', 'anecdotal', 'results', 'analytics', 'meeting'] as Phase[])
         ).map(p => (
           <button key={p} onClick={() => setPhase(p)} className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${phase === p ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface'}`}>
-            {p === 'scores' ? 'Oral Test' : p === 'written_test' ? 'Written Test' : p === 'anecdotal' ? 'Teacher Ratings' : p === 'results' ? 'Results' : 'Leveling Meeting'}
+            {p === 'scores' ? 'Oral Test' : p === 'written_test' ? 'Written Test' : p === 'anecdotal' ? 'Teacher Ratings' : p === 'results' ? 'Results' : p === 'analytics' ? 'Analytics' : 'Leveling Meeting'}
           </button>
         ))}
         <span className={`ml-auto text-[10px] font-bold px-2 py-1 rounded-full ${selectedTest.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{selectedTest.status.toUpperCase()}</span>
       </div>
-      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} onContinue={() => setPhase('written_test')} />}
-      {phase === 'written_test' && <WrittenTestPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />}
-      {phase === 'anecdotal' && <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isAdmin} />}
+      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isLeadTeacher} onContinue={() => setPhase('written_test')} />}
+      {phase === 'written_test' && <WrittenTestPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isLeadTeacher} />}
+      {phase === 'anecdotal' && <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isLeadTeacher} />}
       {phase === 'results' && <ResultsPhase levelTest={selectedTest} />}
+      {phase === 'analytics' && <LevelingAnalytics levelTest={selectedTest} />}
       {phase === 'meeting' && <MeetingPhase levelTest={selectedTest} onFinalize={() => {
         setSelectedTest({ ...selectedTest, status: 'finalized' }); setLevelTests(prev => prev.map(t => t.id === selectedTest.id ? { ...t, status: 'finalized' } : t))
       }} />}
@@ -580,11 +585,19 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
   const { showToast, currentTeacher } = useApp()
   const [students, setStudents] = useState<Student[]>([])
   const [ratings, setRatings] = useState<Record<string, Partial<TeacherAnecdotalRating>>>({})
-  const [studentData, setStudentData] = useState<Record<string, { grades: any[]; reading: any[]; scores: any }>>({})
+  const [studentData, setStudentData] = useState<Record<string, { grades: any[]; reading: any[]; scores: any; calc: any }>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<EnglishClass>(teacherClass || 'Lily')
   const [modalIdx, setModalIdx] = useState<number | null>(null)
+  const [editingManualGrades, setEditingManualGrades] = useState(false)
+  const [allSemesters, setAllSemesters] = useState<any[]>([])
+  const [manualGradeSemId, setManualGradeSemId] = useState<string>('')
+  const [manualGradeValues, setManualGradeValues] = useState<Record<string, string>>({})
+  const GRADE_DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language'] as const
+  const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set())
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     (async () => {
@@ -600,11 +613,11 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
           supabase.from('semester_grades').select('*, semesters(name, type)').in('student_id', ids),
           supabase.from('reading_assessments').select('*').in('student_id', ids).order('date', { ascending: false }),
         ])
-        const dm: Record<string, { grades: any[]; reading: any[]; scores: any }> = {}
-        studs.forEach((s: Student) => { dm[s.id] = { grades: [], reading: [], scores: null } })
+        const dm: Record<string, { grades: any[]; reading: any[]; scores: any; calc: any }> = {}
+        studs.forEach((s: Student) => { dm[s.id] = { grades: [], reading: [], scores: null, calc: null } })
         sg?.forEach((g: any) => { if (dm[g.student_id]) dm[g.student_id].grades.push({ ...g, score: g.final_grade ?? g.calculated_grade ?? null }) })
         rd?.forEach((r: any) => { if (dm[r.student_id]) dm[r.student_id].reading.push(r) })
-        testScores?.forEach((ts: any) => { if (dm[ts.student_id]) dm[ts.student_id].scores = ts.raw_scores })
+        testScores?.forEach((ts: any) => { if (dm[ts.student_id]) { dm[ts.student_id].scores = ts.raw_scores; dm[ts.student_id].calc = ts.calculated_metrics } })
         setStudentData(dm)
       }
       const map: Record<string, Partial<TeacherAnecdotalRating>> = {}
@@ -615,22 +628,113 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
     })()
   }, [levelTest.id, levelTest.grade])
 
+  // Track dirty state when ratings change
+  const updateRating = useCallback((sid: string, updates: Partial<TeacherAnecdotalRating>) => {
+    setRatings(prev => ({ ...prev, [sid]: { ...prev[sid], ...updates } }))
+    setDirtyIds(prev => { const next = new Set(prev); next.add(sid); return next })
+  }, [])
+
+  // Auto-save: debounce 3 seconds after last change
+  useEffect(() => {
+    if (dirtyIds.size === 0) return
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(async () => {
+      const idsToSave = Array.from(dirtyIds)
+      let errors = 0
+      for (const sid of idsToSave) {
+        const r = ratings[sid] || {}
+        const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({
+          level_test_id: levelTest.id, student_id: sid, teacher_id: currentTeacher?.id || null,
+          receptive_language: r.receptive_language ?? null, productive_language: r.productive_language ?? null,
+          engagement_pace: r.engagement_pace ?? null, placement_recommendation: r.placement_recommendation ?? null,
+          notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null,
+        }, { onConflict: 'level_test_id,student_id' })
+        if (error) errors++
+      }
+      setDirtyIds(new Set())
+      setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+      if (errors > 0) showToast(`Auto-save: ${errors} error(s)`)
+    }, 3000)
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
+  }, [dirtyIds, ratings, levelTest.id, currentTeacher?.id])
+
+  // Warn before leaving with unsaved data
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (dirtyIds.size > 0) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [dirtyIds])
+
   const saveOne = async (sid: string) => {
     const r = ratings[sid] || {}
     const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({
       level_test_id: levelTest.id, student_id: sid, teacher_id: currentTeacher?.id || null,
-      receptive_language: r.receptive_language || null, productive_language: r.productive_language || null,
-      engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null,
+      receptive_language: r.receptive_language ?? null, productive_language: r.productive_language ?? null,
+      engagement_pace: r.engagement_pace ?? null, placement_recommendation: r.placement_recommendation ?? null,
       notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null,
     }, { onConflict: 'level_test_id,student_id' })
-    if (error) showToast(`Error: ${error.message}`); else showToast('Saved')
+    if (error) { showToast(`Error: ${error.message}`); return false }
+    setDirtyIds(prev => { const next = new Set(prev); next.delete(sid); return next })
+    setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+    showToast('Saved')
+    return true
   }
 
   const saveAll = async () => {
     setSaving(true)
     const cs = students.filter(s => s.english_class === activeTab); let errors = 0
-    for (const s of cs) { const r = ratings[s.id] || {}; const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({ level_test_id: levelTest.id, student_id: s.id, teacher_id: currentTeacher?.id || null, receptive_language: r.receptive_language || null, productive_language: r.productive_language || null, engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null, notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null }, { onConflict: 'level_test_id,student_id' }); if (error) errors++ }
+    for (const s of cs) { const r = ratings[s.id] || {}; const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({ level_test_id: levelTest.id, student_id: s.id, teacher_id: currentTeacher?.id || null, receptive_language: r.receptive_language ?? null, productive_language: r.productive_language ?? null, engagement_pace: r.engagement_pace ?? null, placement_recommendation: r.placement_recommendation ?? null, notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null }, { onConflict: 'level_test_id,student_id' }); if (error) errors++ }
+    setDirtyIds(prev => { const next = new Set(prev); cs.forEach(s => next.delete(s.id)); return next })
+    setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
     setSaving(false); showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved all ${activeTab} ratings`)
+  }
+
+  // ── Manual Grade Entry ────────────────────────────────────────────
+  const openGradeEditor = async (studentId: string) => {
+    setEditingManualGrades(true)
+    if (allSemesters.length === 0) {
+      const { data } = await supabase.from('semesters').select('id, name, type').order('created_at', { ascending: false })
+      if (data) setAllSemesters(data)
+    }
+    // Pre-load existing grades for this student to populate values
+    setManualGradeSemId('')
+    setManualGradeValues({})
+  }
+
+  const loadExistingGrades = async (studentId: string, semesterId: string) => {
+    setManualGradeSemId(semesterId)
+    const { data } = await supabase.from('semester_grades').select('domain, final_grade, calculated_grade').eq('student_id', studentId).eq('semester_id', semesterId)
+    const vals: Record<string, string> = {}
+    data?.forEach((g: any) => {
+      const score = g.final_grade ?? g.calculated_grade ?? null
+      if (score != null) vals[g.domain] = String(Math.round(score * 10) / 10)
+    })
+    setManualGradeValues(vals)
+  }
+
+  const saveManualGrades = async (studentId: string) => {
+    const student = students.find(s => s.id === studentId)
+    if (!manualGradeSemId) { showToast('Select a semester first'); return }
+    let saved = 0
+    for (const dom of GRADE_DOMAINS) {
+      const val = parseFloat(manualGradeValues[dom] || '')
+      if (!isNaN(val)) {
+        const { error } = await supabase.from('semester_grades').upsert({
+          student_id: studentId, semester_id: manualGradeSemId, domain: dom, final_grade: val,
+          english_class: student?.english_class || activeTab, grade: student?.grade,
+        }, { onConflict: 'student_id,semester_id,domain' })
+        if (!error) saved++
+      }
+    }
+    showToast(`Saved ${saved} grade(s)`)
+    setEditingManualGrades(false)
+    // Refresh student data
+    const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').eq('student_id', studentId)
+    if (sg && studentData[studentId]) {
+      studentData[studentId].grades = sg.map((g: any) => ({ ...g, score: g.final_grade ?? g.calculated_grade ?? null }))
+    }
   }
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
@@ -647,10 +751,31 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
   return (
     <div className="px-10 py-6">
       <div className="flex items-center justify-between">
-        <ClassTabs active={activeTab} onSelect={c => { setActiveTab(c); setModalIdx(null) }} counts={classCounts} available={available} />
-        <button onClick={saveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 mb-4">
-          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save All {activeTab}
-        </button>
+        <ClassTabs active={activeTab} onSelect={c => {
+          if (dirtyIds.size > 0) {
+            // Auto-save before switching tabs
+            saveAll().then(() => setActiveTab(c))
+          } else {
+            setActiveTab(c); setModalIdx(null); setEditingManualGrades(false)
+          }
+        }} counts={classCounts} available={available} />
+        <div className="flex items-center gap-3 mb-4">
+          {/* Auto-save indicator */}
+          {dirtyIds.size > 0 && (
+            <span className="text-[10px] text-amber-600 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              {dirtyIds.size} unsaved
+            </span>
+          )}
+          {dirtyIds.size === 0 && lastSavedAt && (
+            <span className="text-[10px] text-green-600 flex items-center gap-1">
+              <Check size={10} /> Saved {lastSavedAt}
+            </span>
+          )}
+          <button onClick={saveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save All {activeTab}
+          </button>
+        </div>
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
@@ -728,7 +853,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                   <span className="ml-2">{modalIdx + 1} of {classStudents.length}</span>
                 </p>
               </div>
-              <button onClick={() => setModalIdx(null)} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+              <button onClick={() => { setModalIdx(null); setEditingManualGrades(false) }} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
             </div>
 
             {/* Student data */}
@@ -739,15 +864,49 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                     <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Level Test Scores</p>
                     {studentData[modalStudent.id]?.scores ? (
                       <div className="space-y-0.5">
-                        {studentData[modalStudent.id].scores.passage_cwpm != null && <p>CWPM: <span className="font-bold text-navy">{Math.round(studentData[modalStudent.id].scores.passage_cwpm)}</span></p>}
+                        {(studentData[modalStudent.id].calc?.weighted_cwpm ?? studentData[modalStudent.id].scores.passage_cwpm ?? studentData[modalStudent.id].scores.orf_cwpm) != null && <p>Oral: <span className="font-bold text-navy">{Math.round(studentData[modalStudent.id].calc?.weighted_cwpm ?? studentData[modalStudent.id].scores.passage_cwpm ?? studentData[modalStudent.id].scores.orf_cwpm)}</span>{studentData[modalStudent.id].calc?.passage_level && <span className="text-text-tertiary text-[10px] ml-1">(Lv {studentData[modalStudent.id].calc.passage_level})</span>}</p>}
                         {studentData[modalStudent.id].scores.writing != null && <p>Writing: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.writing}/20</span></p>}
                         {studentData[modalStudent.id].scores.written_mc != null && <p>MC: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.written_mc}/{WRITTEN_MC_TOTAL}</span></p>}
+                        {studentData[modalStudent.id].calc?.comp_total != null && <p>Comp: <span className="font-bold text-navy">{studentData[modalStudent.id].calc.comp_total}/15</span></p>}
                         {studentData[modalStudent.id].scores.word_reading_correct != null && <p>WR: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.word_reading_correct}{studentData[modalStudent.id].scores.word_reading_attempted ? `/${studentData[modalStudent.id].scores.word_reading_attempted}` : ''}</span></p>}
                       </div>) : <p className="text-text-tertiary italic">No scores yet</p>}
                   </div>
                   <div>
-                    <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Semester Grades</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold">Semester Grades</p>
+                      <button onClick={() => editingManualGrades ? setEditingManualGrades(false) : openGradeEditor(modalStudent.id)}
+                        className="text-[10px] text-navy hover:text-navy-dark font-medium flex items-center gap-0.5">
+                        {editingManualGrades ? '✕ Close' : '✏️ Add/Edit'}
+                      </button>
+                    </div>
                     {studentData[modalStudent.id]?.grades.length > 0 ? <div className="space-y-0.5">{studentData[modalStudent.id].grades.slice(0, 5).map((g: any, i: number) => <p key={i}>{domainLabel(g.domain)}: <span className="font-bold text-navy">{g.score?.toFixed(0)}%</span> <span className="text-text-tertiary">({g.semesters?.name})</span></p>)}</div> : <p className="text-text-tertiary italic">No grades</p>}
+                    {editingManualGrades && (
+                      <div className="mt-2 p-2 bg-blue-50/50 rounded-lg border border-blue-200/50 space-y-2">
+                        <select value={manualGradeSemId} onChange={e => loadExistingGrades(modalStudent.id, e.target.value)}
+                          className="w-full text-[11px] px-2 py-1.5 rounded-md border border-border bg-white">
+                          <option value="">Select semester…</option>
+                          {allSemesters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                        {manualGradeSemId && (
+                          <>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {GRADE_DOMAINS.map(dom => (
+                                <div key={dom} className="flex items-center gap-1">
+                                  <label className="text-[10px] text-text-secondary w-16 capitalize">{dom}</label>
+                                  <input type="number" min="0" max="100" step="0.1" placeholder="—"
+                                    value={manualGradeValues[dom] || ''} onChange={e => setManualGradeValues(prev => ({ ...prev, [dom]: e.target.value }))}
+                                    className="flex-1 text-[11px] px-1.5 py-1 rounded border border-border w-full" />
+                                </div>
+                              ))}
+                            </div>
+                            <button onClick={() => saveManualGrades(modalStudent.id)}
+                              className="w-full py-1.5 rounded-md text-[11px] font-semibold bg-navy text-white hover:bg-navy-dark">
+                              Save Grades
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Recent Reading</p>
@@ -772,7 +931,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                     <p className="text-[11px] text-text-tertiary mb-2">{dim.desc}</p>
                     <div className="grid grid-cols-4 gap-2">
                       {[1,2,3,4].map(val => (
-                        <button key={val} onClick={() => setRatings(prev => ({ ...prev, [modalStudent.id]: { ...prev[modalStudent.id], [dim.key]: cur === val ? null : val } }))}
+                        <button key={val} onClick={() => updateRating(modalStudent.id, { [dim.key]: cur === val ? null : val })}
                           className={`p-2.5 rounded-lg text-left transition-all border-2 ${cur === val ? (val <= 1 ? 'border-red-400 bg-red-50' : val === 2 ? 'border-amber-400 bg-amber-50' : val === 3 ? 'border-blue-400 bg-blue-50' : 'border-green-400 bg-green-50') : 'border-transparent bg-surface-alt hover:bg-surface-alt/80'}`}>
                           <span className={`text-[12px] font-bold ${cur === val ? (val <= 1 ? 'text-red-700' : val === 2 ? 'text-amber-700' : val === 3 ? 'text-blue-700' : 'text-green-700') : 'text-text-secondary'}`}>{val}</span>
                           <p className="text-[9px] text-text-tertiary mt-0.5 leading-tight">{dim.levels[val - 1]}</p>
@@ -786,20 +945,20 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
               {/* Watchlist + Rec */}
               <div className="flex items-center gap-4 pt-2 border-t border-border">
                 <label className="flex items-center gap-2 text-[12px] cursor-pointer">
-                  <input type="checkbox" checked={ratings[modalStudent.id]?.is_watchlist || false} onChange={e => setRatings(prev => ({ ...prev, [modalStudent.id]: { ...prev[modalStudent.id], is_watchlist: e.target.checked } }))} className="w-4 h-4 rounded" />
+                  <input type="checkbox" checked={ratings[modalStudent.id]?.is_watchlist || false} onChange={e => updateRating(modalStudent.id, { is_watchlist: e.target.checked })} className="w-4 h-4 rounded" />
                   <Star size={14} className="text-amber-500" /> Watchlist
                 </label>
                 <div className="flex items-center gap-2 text-[12px]">
                   <span className="text-text-secondary">Recommends:</span>
                   {(['keep', 'move_up', 'move_down'] as const).map(opt => (
-                    <button key={opt} onClick={() => setRatings(prev => ({ ...prev, [modalStudent.id]: { ...prev[modalStudent.id], teacher_recommends: prev[modalStudent.id]?.teacher_recommends === opt ? null : opt } }))}
+                    <button key={opt} onClick={() => updateRating(modalStudent.id, { teacher_recommends: ratings[modalStudent.id]?.teacher_recommends === opt ? null : opt })}
                       className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${ratings[modalStudent.id]?.teacher_recommends === opt ? (opt === 'keep' ? 'bg-blue-500 text-white' : opt === 'move_up' ? 'bg-green-500 text-white' : 'bg-red-500 text-white') : 'bg-surface-alt text-text-secondary'}`}>
                       {opt === 'keep' ? 'Keep' : opt === 'move_up' ? 'Move Up' : 'Move Down'}
                     </button>
                   ))}
                 </div>
               </div>
-              <textarea value={ratings[modalStudent.id]?.notes || ''} onChange={e => setRatings(prev => ({ ...prev, [modalStudent.id]: { ...prev[modalStudent.id], notes: e.target.value } }))}
+              <textarea value={ratings[modalStudent.id]?.notes || ''} onChange={e => updateRating(modalStudent.id, { notes: e.target.value })}
                 placeholder="Optional notes for the leveling meeting..." className="w-full px-3 py-2.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface resize-none h-20" />
             </div>
 
@@ -855,7 +1014,60 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<string>('composite')
   const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>('all')
+  const [filterPassage, setFilterPassage] = useState<string>('all')
   const [showBorderline, setShowBorderline] = useState(false)
+  // Grade entry modal
+  const [gradeEntryStudent, setGradeEntryStudent] = useState<Student | null>(null)
+  const [gradeEntrySemId, setGradeEntrySemId] = useState<string>('')
+  const [gradeEntryValues, setGradeEntryValues] = useState<Record<string, string>>({})
+  const [gradeEntrySemesters, setGradeEntrySemesters] = useState<any[]>([])
+  const [gradeEntrySaving, setGradeEntrySaving] = useState(false)
+  const GRADE_DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language'] as const
+  const DOMAIN_LABELS: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
+
+  const openGradeEntry = async (student: Student) => {
+    setGradeEntryStudent(student)
+    setGradeEntrySemId('')
+    setGradeEntryValues({})
+    if (gradeEntrySemesters.length === 0) {
+      const { data } = await supabase.from('semesters').select('id, name, type').order('created_at', { ascending: false })
+      if (data) setGradeEntrySemesters(data)
+    }
+  }
+
+  const loadGradeEntryData = async (studentId: string, semesterId: string) => {
+    setGradeEntrySemId(semesterId)
+    const { data } = await supabase.from('semester_grades').select('domain, final_grade, calculated_grade').eq('student_id', studentId).eq('semester_id', semesterId)
+    const vals: Record<string, string> = {}
+    data?.forEach((g: any) => {
+      const score = g.final_grade ?? g.calculated_grade ?? null
+      if (score != null) vals[g.domain] = String(Math.round(score * 10) / 10)
+    })
+    setGradeEntryValues(vals)
+  }
+
+  const saveGradeEntry = async () => {
+    if (!gradeEntryStudent || !gradeEntrySemId) return
+    setGradeEntrySaving(true)
+    let saved = 0
+    for (const dom of GRADE_DOMAINS) {
+      const val = parseFloat(gradeEntryValues[dom] || '')
+      if (!isNaN(val)) {
+        const { error } = await supabase.from('semester_grades').upsert({
+          student_id: gradeEntryStudent.id, semester_id: gradeEntrySemId, domain: dom, final_grade: val,
+          english_class: gradeEntryStudent.english_class, grade: gradeEntryStudent.grade,
+        }, { onConflict: 'student_id,semester_id,domain' })
+        if (!error) saved++
+      }
+    }
+    // Refresh semGrades for this student
+    const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').eq('student_id', gradeEntryStudent.id)
+    if (sg) {
+      setSemGrades(prev => ({ ...prev, [gradeEntryStudent!.id]: sg.map((g: any) => ({ ...g, score: g.final_grade ?? g.calculated_grade ?? null, semester_name: g.semesters?.name })) }))
+    }
+    setGradeEntrySaving(false)
+    setGradeEntryStudent(null)
+  }
 
   const handlePrintSummary = (allRows: any[]) => {
     const pw = window.open('', '_blank'); if (!pw) return
@@ -875,9 +1087,10 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
         return `<tr style="${move ? 'background:#fef3c7;' : ''}">
           <td style="padding:6px 10px;font-weight:600;color:#1e3a5f">${i + 1}</td>
           <td style="padding:6px 10px;font-weight:600">${r.student.english_name}<br><span style="color:#94a3b8;font-size:10px">${r.student.korean_name}</span></td>
-          <td style="padding:6px 10px;text-align:center">${r.rawCwpm != null ? Math.round(r.rawCwpm) : '—'}</td>
+          <td style="padding:6px 10px;text-align:center">${r.rawCwpm != null ? Math.round(r.rawCwpm) : '—'}${r.passageLevel ? ' (' + r.passageLevel + ')' : ''}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawWriting ?? '—'}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawMc != null ? r.rawMc + '/' + WRITTEN_MC_TOTAL : '—'}</td>
+          <td style="padding:6px 10px;text-align:center">${r.rawComp != null ? r.rawComp + '/15' : '—'}</td>
           <td style="padding:6px 10px;text-align:center">${(r.gradeScore * 100).toFixed(0)}%</td>
           <td style="padding:6px 10px;text-align:center;font-weight:700;color:#1e3a5f">${(r.composite * 100).toFixed(0)}</td>
           <td style="padding:6px 10px;text-align:center">${Math.round(r.percentile * 100)}%</td>
@@ -895,9 +1108,10 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           <thead><tr style="background:#f1f5f9">
             <th style="padding:6px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">#</th>
             <th style="padding:6px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Student</th>
-            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">CWPM</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Oral</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Writing</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">MC</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Comp</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Grades</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:800">Composite</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">%ile</th>
@@ -938,28 +1152,64 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
     })()
   }, [levelTest.id, levelTest.grade])
 
+  // ── Auto-calculate benchmarks (class medians) for missing benchmarks ──
+  const enhancedBenchmarks = useMemo(() => {
+    const eb: Record<string, any> = {}
+    ENGLISH_CLASSES.forEach(cls => {
+      const manual = benchmarks[cls] || {}
+      const classStudents = students.filter(s => s.english_class === cls)
+      const writings: number[] = []; const mcs: number[] = []; const orals: number[] = []
+      classStudents.forEach(s => {
+        const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}
+        if (sc.writing != null) writings.push(sc.writing)
+        if (sc.written_mc != null) mcs.push(sc.written_mc)
+        const oral = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+        if (oral != null) orals.push(oral)
+      })
+      const med = (arr: number[]) => { if (arr.length === 0) return 0; const s = [...arr].sort((a, b) => a - b); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2 }
+      eb[cls] = {
+        ...manual,
+        // Use manual benchmark if set, otherwise auto-calculate from class median
+        writing_end: manual.writing_end > 0 ? manual.writing_end : (writings.length > 0 ? med(writings) : 0),
+        mc_end: manual.mc_end > 0 ? manual.mc_end : (mcs.length > 0 ? med(mcs) : 0),
+        cwpm_end: manual.cwpm_end > 0 ? manual.cwpm_end : (orals.length > 0 ? med(orals) : 0),
+        // Store medians and counts for outlier detection
+        _auto_writing_median: writings.length > 0 ? med(writings) : 0,
+        _auto_mc_median: mcs.length > 0 ? med(mcs) : 0,
+        _auto_oral_median: orals.length > 0 ? med(orals) : 0,
+        _auto_writing_count: writings.length,
+        _auto_mc_count: mcs.length,
+        _auto_oral_count: orals.length,
+        _class_size: classStudents.length,
+      }
+    })
+    return eb
+  }, [students, scores, benchmarks])
+
   const rows = useMemo(() => {
-    const r = students.map(s => computeRow(s, scores, anecdotals, benchmarks, semGrades))
+    const r = students.map(s => computeRow(s, scores, anecdotals, enhancedBenchmarks, semGrades))
     const sorted = [...r].sort((a, b) => a.composite - b.composite)
     return sorted.map((row, idx) => ({
       ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
       suggestedClass: suggestClass(row, idx, sorted.length),
     }))
-  }, [students, scores, anecdotals, benchmarks, semGrades])
+  }, [students, scores, anecdotals, enhancedBenchmarks, semGrades])
 
   const displayed = useMemo(() => {
     let res = [...rows]
     if (filterClass !== 'all') res = res.filter(r => r.student.english_class === filterClass)
+    if (filterPassage !== 'all') res = res.filter(r => r.passageLevel === filterPassage)
     if (showBorderline) res = res.filter(r => r.suggestedClass !== r.student.english_class)
     switch (sortBy) {
       case 'composite': res.sort((a, b) => b.composite - a.composite); break
       case 'percentile': res.sort((a, b) => b.percentile - a.percentile); break
       case 'cwpm': res.sort((a, b) => (b.rawCwpm ?? -1) - (a.rawCwpm ?? -1)); break
+      case 'comp': res.sort((a, b) => (b.rawComp ?? -1) - (a.rawComp ?? -1)); break
       case 'writing': res.sort((a, b) => (b.rawWriting ?? -1) - (a.rawWriting ?? -1)); break
       case 'name': res.sort((a, b) => a.student.english_name.localeCompare(b.student.english_name)); break
     }
     return res
-  }, [rows, filterClass, sortBy, showBorderline])
+  }, [rows, filterClass, filterPassage, sortBy, showBorderline])
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
@@ -970,8 +1220,13 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           <button onClick={() => setFilterClass('all')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
           {ENGLISH_CLASSES.map(cls => <button key={cls} onClick={() => setFilterClass(cls)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === cls ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`} style={filterClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>{cls}</button>)}
         </div>
+        <div className="flex gap-1 border-l border-border pl-3">
+          <span className="text-[9px] uppercase tracking-wider text-text-tertiary self-center mr-1">Passage:</span>
+          <button onClick={() => setFilterPassage('all')} className={`px-2 py-1 rounded text-[10px] font-medium ${filterPassage === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
+          {['A', 'B', 'C', 'D', 'E'].map(lv => <button key={lv} onClick={() => setFilterPassage(lv)} className={`px-2 py-1 rounded text-[10px] font-medium ${filterPassage === lv ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface'}`}>{lv}</button>)}
+        </div>
         <select value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[11px] bg-surface">
-          <option value="composite">Sort: Composite</option><option value="percentile">Sort: %ILE</option><option value="cwpm">Sort: CWPM</option><option value="writing">Sort: Writing</option><option value="name">Sort: Name</option>
+          <option value="composite">Sort: Composite</option><option value="percentile">Sort: %ILE</option><option value="cwpm">Sort: Oral</option><option value="comp">Sort: Comp</option><option value="writing">Sort: Writing</option><option value="name">Sort: Name</option>
         </select>
         <button onClick={() => setShowBorderline(!showBorderline)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showBorderline ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}>
           <AlertTriangle size={12} /> Borderline
@@ -981,9 +1236,9 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
         </button>
         <button onClick={() => {
           exportToCSV(`leveling-G${levelTest.grade}`,
-            ['Student', 'Korean Name', 'Current Class', 'CWPM', 'Writing', 'MC', 'Grade Avg%', 'Anecdotal', 'Composite', 'Percentile', 'Suggested'],
+            ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Writing', 'MC', 'Comp', 'Grade Avg%', 'Anecdotal', 'Composite', 'Percentile', 'Suggested'],
             displayed.map(r => [r.student.english_name, r.student.korean_name, r.student.english_class,
-              r.rawCwpm != null ? Math.round(r.rawCwpm) : '', r.rawWriting ?? '', r.rawMc ?? '',
+              r.passageLevel ?? '', r.rawCwpm != null ? Math.round(r.rawCwpm) : '', r.rawWriting ?? '', r.rawMc ?? '', r.rawComp ?? '',
               (r.gradeScore * 100).toFixed(0), (r.anecScore * 100).toFixed(0), (r.composite * 100).toFixed(0),
               Math.round(r.percentile * 100), r.suggestedClass]))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
@@ -996,7 +1251,8 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           <thead><tr className="bg-surface-alt">
             <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px]">Student</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Current</th>
-            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Oral</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Grade Avg</th>
@@ -1008,14 +1264,16 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           </tr></thead>
           <tbody>{displayed.map(row => {
             const move = row.suggestedClass !== row.student.english_class
+            const flags = row.outlierFlags || []
             return (
-              <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${move ? 'bg-amber-50/30' : ''}`}>
-                <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span></td>
+              <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${move ? 'bg-amber-50/30' : ''} ${flags.length > 0 ? 'bg-red-50/20' : ''}`}>
+                <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" title={`Outlier: ${flags.join(', ')}`} />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span></td>
                 <td className="px-2 py-2 text-center"><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass) + '40', color: classToTextColor(row.student.english_class as EnglishClass) }}>{row.student.english_class}</span></td>
-                <td className="px-2 py-2 text-center">{row.rawCwpm != null ? <span>{Math.round(row.rawCwpm)} <span className="text-text-tertiary text-[9px]">({row.cwpmRatio != null ? (row.cwpmRatio * 100).toFixed(0) + '%' : '—'})</span></span> : '—'}</td>
-                <td className="px-2 py-2 text-center">{row.rawWriting != null ? <span>{row.rawWriting} <span className="text-text-tertiary text-[9px]">({row.writingRatio != null ? (row.writingRatio * 100).toFixed(0) + '%' : '—'})</span></span> : '—'}</td>
-                <td className="px-2 py-2 text-center">{row.rawMc != null ? `${row.rawMc}/${WRITTEN_MC_TOTAL}` : '—'}</td>
-                <td className="px-2 py-2 text-center">{row.gradeScore !== 0.5 ? `${(row.gradeScore * 100).toFixed(0)}%` : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}>{row.rawCwpm != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(row.rawCwpm)}{row.passageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.passageLevel})</span>}</span> : '—'}</td>
+                <td className="px-2 py-2 text-center">{row.rawComp != null ? <span>{row.rawComp}<span className="text-text-tertiary/50">/15</span></span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.rawWriting != null ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawWriting}<span className="text-text-tertiary/50">/20</span></span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.rawMc != null ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawMc}<span className="text-text-tertiary/50">/{WRITTEN_MC_TOTAL}</span></span> : '—'}</td>
+                <td className="px-2 py-2 text-center cursor-pointer hover:bg-blue-50/50 group" onClick={() => openGradeEntry(row.student)} title="Click to edit grades">{row.gradeScore !== 0.5 ? <span>{(row.gradeScore * 100).toFixed(0)}%</span> : <span className="text-text-tertiary group-hover:text-navy">+ Add</span>}</td>
                 <td className="px-2 py-2 text-center">{row.anecScore !== 0.5 ? (row.anecScore * 4).toFixed(1) : '—'}</td>
                 <td className="px-2 py-2 text-center font-bold text-navy">{(row.composite * 100).toFixed(0)}</td>
                 <td className="px-2 py-2 text-center">{(row.percentile * 100).toFixed(0)}%</td>
@@ -1024,7 +1282,60 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Benchmark-relative % shown in parentheses (100% = at class target). Composite = 30% test + 40% grades + 30% anecdotal.</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Test score = avg of oral (adjusted), writing, MC, comprehension{Number(levelTest.grade) === 2 ? ', phonics, sentences' : ''}. Composite = 30% test + 40% grades + 30% anecdotal. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier.</p>
+
+      {/* Grade Entry Modal */}
+      {gradeEntryStudent && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setGradeEntryStudent(null)}>
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="font-display text-lg font-semibold text-navy">{gradeEntryStudent.english_name} <span className="text-text-tertiary font-normal text-[13px]">{gradeEntryStudent.korean_name}</span></h3>
+              <p className="text-[11px] text-text-tertiary mt-0.5">Grade {gradeEntryStudent.grade} | {gradeEntryStudent.english_class} — Enter semester grades</p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5 block">Semester</label>
+                <select value={gradeEntrySemId} onChange={e => loadGradeEntryData(gradeEntryStudent.id, e.target.value)}
+                  className="w-full text-[13px] px-3 py-2 rounded-lg border border-border bg-surface focus:border-navy focus:ring-1 focus:ring-navy/20 outline-none">
+                  <option value="">Select semester…</option>
+                  {gradeEntrySemesters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              {gradeEntrySemId && (
+                <div className="space-y-2.5">
+                  {GRADE_DOMAINS.map(dom => (
+                    <div key={dom} className="flex items-center gap-3">
+                      <label className="text-[12px] text-text-secondary w-44">{DOMAIN_LABELS[dom]}</label>
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <input type="number" min={0} max={100} step={0.1} placeholder="—"
+                          value={gradeEntryValues[dom] || ''}
+                          onChange={e => setGradeEntryValues(prev => ({ ...prev, [dom]: e.target.value }))}
+                          className="w-full text-[13px] px-3 py-2 rounded-lg border border-border bg-surface text-center font-medium focus:border-navy focus:ring-1 focus:ring-navy/20 outline-none" />
+                        <span className="text-[11px] text-text-tertiary">%</span>
+                      </div>
+                    </div>
+                  ))}
+                  {Object.values(gradeEntryValues).some(v => v !== '') && (
+                    <div className="pt-2 border-t border-border flex items-center justify-between">
+                      <span className="text-[11px] text-text-tertiary">Average</span>
+                      <span className="text-[13px] font-bold text-navy">
+                        {(() => { const vals = Object.values(gradeEntryValues).map(v => parseFloat(v)).filter(v => !isNaN(v)); return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) + '%' : '—' })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+              <button onClick={() => setGradeEntryStudent(null)} className="px-4 py-2 rounded-lg text-[12px] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
+              <button onClick={saveGradeEntry} disabled={!gradeEntrySemId || gradeEntrySaving}
+                className="px-5 py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                {gradeEntrySaving ? 'Saving…' : 'Save Grades'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1034,6 +1345,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
 function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinalize: () => void }) {
   const { showToast, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
+  const isLeadTeacher = isAdmin || currentTeacher?.is_head_teacher || currentTeacher?.english_class === 'Snapdragon'
   const [students, setStudents] = useState<Student[]>([])
   const [scores, setScores] = useState<Record<string, any>>({})
   const [anecdotals, setAnecdotals] = useState<Record<string, any>>({})
@@ -1065,9 +1377,21 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
       const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }
       const sortedStuds = (studs || []).sort((a: any, b: any) => (classOrder[a.english_class] || 99) - (classOrder[b.english_class] || 99) || a.english_name.localeCompare(b.english_name))
       if (sortedStuds.length) setStudents(sortedStuds)
-      const bm: Record<string, any> = {}; bd?.forEach((b: any) => { bm[b.english_class] = b }); setBenchmarks(bm)
+      const bm: Record<string, any> = {}; bd?.forEach((b: any) => { bm[b.english_class] = b })
       const sm: Record<string, any> = {}; sd?.forEach((s: any) => { sm[s.student_id] = s }); setScores(sm)
       const am: Record<string, any> = {}; ad?.forEach((a: any) => { am[a.student_id] = a }); setAnecdotals(am)
+      // Enhance benchmarks with auto-calculated medians
+      if (studs) {
+        const med = (arr: number[]) => { if (arr.length === 0) return 0; const sorted = [...arr].sort((a, b) => a - b); const m = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[m] : (sorted[m - 1] + sorted[m]) / 2 }
+        ENGLISH_CLASSES.forEach(cls => {
+          const cs = studs.filter((s: any) => s.english_class === cls)
+          const writings: number[] = []; const mcs: number[] = []; const orals: number[] = []
+          cs.forEach((s: any) => { const sc = sm[s.id]?.raw_scores || {}; const calc = sm[s.id]?.calculated_metrics || {}; if (sc.writing != null) writings.push(sc.writing); if (sc.written_mc != null) mcs.push(sc.written_mc); const oral = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null; if (oral != null) orals.push(oral) })
+          const manual = bm[cls] || {}
+          bm[cls] = { ...manual, writing_end: manual.writing_end > 0 ? manual.writing_end : (writings.length > 0 ? med(writings) : 0), mc_end: manual.mc_end > 0 ? manual.mc_end : (mcs.length > 0 ? med(mcs) : 0), cwpm_end: manual.cwpm_end > 0 ? manual.cwpm_end : (orals.length > 0 ? med(orals) : 0) }
+        })
+      }
+      setBenchmarks(bm)
       if (studs) {
         const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').in('student_id', studs.map((s: any) => s.id))
         const sgm: Record<string, any[]> = {}; sg?.forEach((g: any) => { const gWithName = { ...g, semester_name: g.semesters?.name || '', score: g.final_grade ?? g.calculated_grade ?? null }; if (!sgm[g.student_id]) sgm[g.student_id] = []; sgm[g.student_id].push(gWithName) }); setSemGrades(sgm)
@@ -1129,9 +1453,9 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
         <div className="flex gap-2">
           <button onClick={() => setShowWeights(!showWeights)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showWeights ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}><SlidersHorizontal size={13} /> Weights</button>
           <button onClick={() => setShowCompare(!showCompare)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showCompare ? 'bg-blue-100 text-blue-700' : 'bg-surface-alt text-text-secondary'}`}><Users size={13} /> Compare{compareStudents.length > 0 ? ` (${compareStudents.length})` : ''}</button>
-          {(isAdmin || currentTeacher?.english_class === 'Snapdragon') && <button onClick={resetToCurrentClasses} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-amber-50 hover:text-amber-700">Reset to Current Classes</button>}
+          {isLeadTeacher && <button onClick={resetToCurrentClasses} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-amber-50 hover:text-amber-700">Reset to Current Classes</button>}
           <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save</button>
-          {(isAdmin || currentTeacher?.english_class === 'Snapdragon') && levelTest.status !== 'finalized' && <button onClick={handleFinalize} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-green-600 text-white hover:bg-green-700"><Lock size={14} /> Finalize</button>}
+          {isLeadTeacher && levelTest.status !== 'finalized' && <button onClick={handleFinalize} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-green-600 text-white hover:bg-green-700"><Lock size={14} /> Finalize</button>}
         </div>
       </div>
 
@@ -1168,18 +1492,19 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                 <div className="flex justify-center">
                   {(() => {
                     const size = 240, cx = size / 2, cy = size / 2, r = 90
-                    const axes = ['CWPM', 'Writing', 'MC', 'Grades', 'Anecdotal']
+                    const axes = ['Oral', 'Writing', 'MC', 'Comp', 'Grades', 'Anecdotal']
                     const n = axes.length
                     const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b']
                     // Normalize data to 0-1
                     const studentData = compareStudents.map(sid => {
-                      const sc = scores[sid]; const an = anecdotals[sid]; const sg = semGrades[sid] || []
-                      const cwpmRaw = sc?.raw_scores?.passage_cwpm || 0
+                      const sc = scores[sid]; const cl = sc?.calculated_metrics || {}; const an = anecdotals[sid]; const sg = semGrades[sid] || []
+                      const cwpmVal = cl.weighted_cwpm ?? cl.cwpm ?? sc?.raw_scores?.passage_cwpm ?? 0
                       const writing = sc?.raw_scores?.writing || 0
                       const mc = sc?.raw_scores?.written_mc || 0
+                      const comp = cl.comp_total || 0
                       const gradeAvg = sg.length > 0 ? sg.reduce((sum: number, g: any) => sum + (g.score || 0), 0) / sg.length : 0
                       const anAvg = an ? ([an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / Math.max(1, [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null).length) : 0
-                      return [Math.min(1, cwpmRaw / 150), writing / 20, mc / WRITTEN_MC_TOTAL, gradeAvg / 100, anAvg / 4]
+                      return [Math.min(1, cwpmVal / 150), writing / 20, mc / WRITTEN_MC_TOTAL, comp / 15, gradeAvg / 100, anAvg / 4]
                     })
                     const angleStep = (Math.PI * 2) / n
                     const getPoint = (angle: number, val: number) => ({
@@ -1241,9 +1566,10 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                     </div>
                     <div className="space-y-1.5 text-[11px]">
                       <div className="flex justify-between"><span className="text-text-tertiary">Current</span><span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) + '40', color: classToTextColor(s.english_class as EnglishClass) }}>{s.english_class}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">CWPM</span><span className="font-bold text-navy">{sc?.raw_scores?.passage_cwpm != null ? Math.round(sc.raw_scores.passage_cwpm) : '—'}</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">Oral</span><span className="font-bold text-navy">{sc?.calculated_metrics?.weighted_cwpm != null ? Math.round(sc.calculated_metrics.weighted_cwpm) : (sc?.raw_scores?.passage_cwpm ?? sc?.raw_scores?.orf_cwpm) != null ? Math.round(sc.raw_scores.passage_cwpm ?? sc.raw_scores.orf_cwpm) : '—'}{sc?.calculated_metrics?.passage_level ? ` (${sc.calculated_metrics.passage_level})` : ''}</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">Writing</span><span className="font-bold text-navy">{sc?.raw_scores?.writing ?? '—'}/20</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">MC</span><span className="font-bold text-navy">{sc?.raw_scores?.written_mc ?? '—'}/{WRITTEN_MC_TOTAL}</span></div>
+                      <div className="flex justify-between"><span className="text-text-tertiary">Comp</span><span className="font-bold text-navy">{sc?.calculated_metrics?.comp_total ?? '—'}/15</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">Grade Avg</span><span className={`font-bold ${gradeAvg != null ? (gradeAvg >= 80 ? 'text-green-600' : gradeAvg >= 60 ? 'text-amber-600' : 'text-red-600') : ''}`}>{gradeAvg != null ? `${gradeAvg.toFixed(0)}%` : '—'}</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">Anecdotal Avg</span><span className="font-bold text-navy">{an ? ((([an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null).length) || 0).toFixed(1) : '—'}/4</span></div>
                       <div className="flex justify-between"><span className="text-text-tertiary">Teacher Rec</span><span className={`font-bold text-[10px] ${an?.teacher_recommends === 'move_up' ? 'text-green-600' : an?.teacher_recommends === 'move_down' ? 'text-red-600' : 'text-blue-600'}`}>{an?.teacher_recommends === 'keep' ? 'KEEP' : an?.teacher_recommends === 'move_up' ? 'MOVE UP' : an?.teacher_recommends === 'move_down' ? 'MOVE DOWN' : '—'}</span></div>
@@ -1294,7 +1620,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                         {anec?.is_watchlist && <Star size={9} className="text-amber-500 fill-amber-500" />}{isOvr && <AlertTriangle size={9} className="text-amber-500" />}
                       </div>
                     </div>
-                    {score?.raw_scores && <div className="flex gap-1 mt-1 text-[8px] text-text-tertiary">{score.raw_scores.passage_cwpm != null && <span>C:{Math.round(score.raw_scores.passage_cwpm)}</span>}{score.raw_scores.writing != null && <span>W:{score.raw_scores.writing}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
+                    {score?.raw_scores && <div className="flex gap-1 mt-1 text-[8px] text-text-tertiary">{(score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm) != null && <span>O:{Math.round(score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm)}{score.calculated_metrics?.passage_level ? `(${score.calculated_metrics.passage_level})` : ''}</span>}{score.calculated_metrics?.comp_total != null && <span>C:{score.calculated_metrics.comp_total}</span>}{score.raw_scores.writing != null && <span>W:{score.raw_scores.writing}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
                     {anec && <div className="flex gap-0.5 mt-1">{DIMS.map(d => { const v = anec[d.key]; const c = !v ? '#e5e7eb' : v <= 1 ? '#ef4444' : v === 2 ? '#f59e0b' : v === 3 ? '#3b82f6' : '#22c55e'; return <div key={d.key} className="w-3 h-3 rounded-sm flex items-center justify-center" style={{ backgroundColor: c, color: v ? '#fff' : '#d1d5db', fontSize: '7px', fontWeight: 700 }}>{v || '—'}</div> })}</div>}
                     {anec?.teacher_recommends && <p className={`text-[7px] font-bold mt-0.5 ${anec.teacher_recommends === 'keep' ? 'text-blue-600' : anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{anec.teacher_recommends === 'keep' ? 'KEEP' : anec.teacher_recommends === 'move_up' ? 'UP' : 'DOWN'}</p>}
                     {expandedCard === student.id && (
@@ -1396,24 +1722,42 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
 }
 
 function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>) {
-  const sc = scores[s.id]?.raw_scores || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
-  const cwpmRatio = sc.passage_cwpm != null && bench.cwpm_end > 0 ? sc.passage_cwpm / bench.cwpm_end : null
+  const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
+  // CWPM: prefer weighted_cwpm (includes passage + NAEP adjustment), fallback to raw
+  const rawCwpmValue = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+  const cwpmRatio = rawCwpmValue != null && bench.cwpm_end > 0 ? rawCwpmValue / bench.cwpm_end : null
   const writingRatio = sc.writing != null && bench.writing_end > 0 ? sc.writing / bench.writing_end : null
-  const mcPct = sc.written_mc != null ? sc.written_mc / WRITTEN_MC_TOTAL : null
+  const mcBench = bench.mc_end > 0 ? bench.mc_end : WRITTEN_MC_TOTAL
+  const mcPct = sc.written_mc != null ? sc.written_mc / mcBench : null
   const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
-  const testRatios = [cwpmRatio, writingRatio, mcPct, wrAcc].filter(v => v != null) as number[]
+  // Comprehension: comp_total / 15 (5 questions × 0-3 scale)
+  const compRatio = calc.comp_total != null && calc.comp_total > 0 ? calc.comp_total / (calc.comp_max || 15) : null
+  // Grade 2 only: phonics / 25 and sentences / 35
+  const studentGrade = Number(s.grade)
+  const phonicsRatio = studentGrade === 2 && calc.phonics_total != null && calc.phonics_total > 0 ? calc.phonics_total / 25 : null
+  const sentRatio = studentGrade === 2 && calc.sentence_total != null && calc.sentence_total > 0 ? calc.sentence_total / 35 : null
+  const testRatios = [cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, phonicsRatio, sentRatio].filter(v => v != null) as number[]
   const testScore = testRatios.length > 0 ? testRatios.reduce((a, b) => a + b, 0) / testRatios.length : 0.5
   const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall'))); const gradeScore = gv.length > 0 ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length / 100 : null
   const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
   const anecScore = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
   // Composite: if student has grades, use test 30% + grades 40% + anecdotal 30%
-  // If no grades (transfer, etc.): test 40% + anecdotal 20% (heavier on test)
+  // If no grades (transfer, etc.): test 80% + anecdotal 20% (heavier on test)
   const hasGrades = gradeScore != null
   const gScore = gradeScore ?? 0.5
   const composite = hasGrades
     ? testScore * 0.30 + gScore * 0.40 + anecScore * 0.30
     : testScore * 0.80 + anecScore * 0.20
-  return { student: s, score: sc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, testScore, gradeScore: gScore, anecScore, composite, rawCwpm: sc.passage_cwpm ?? null, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, hasGrades }
+  // Outlier flags: score is 0 or below 10% of class auto-median
+  // Only flag when enough classmates have data for that component (>=3 or >=50% of class) to make the median meaningful
+  const outlierFlags: string[] = []
+  const oralReliable = bench._auto_oral_count >= 3 && bench._auto_oral_count >= (bench._class_size || 1) * 0.5
+  const writingReliable = bench._auto_writing_count >= 3 && bench._auto_writing_count >= (bench._class_size || 1) * 0.5
+  const mcReliable = bench._auto_mc_count >= 3 && bench._auto_mc_count >= (bench._class_size || 1) * 0.5
+  if (oralReliable && rawCwpmValue != null && (rawCwpmValue === 0 || (bench._auto_oral_median > 0 && rawCwpmValue < bench._auto_oral_median * 0.1))) outlierFlags.push('oral')
+  if (writingReliable && sc.writing != null && (sc.writing === 0 || (bench._auto_writing_median > 0 && sc.writing < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
+  if (mcReliable && sc.written_mc != null && (sc.written_mc === 0 || (bench._auto_mc_median > 0 && sc.written_mc < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
+  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, rawComp: calc.comp_total ?? null, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags }
 }
 
 function suggestClass(row: any, idx: number, total: number): EnglishClass {
@@ -1429,8 +1773,11 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
   const result: Record<string, EnglishClass> = {}
   const metrics: Record<string, number> = {}
   students.forEach(s => {
-    const sc = scores[s.id]?.raw_scores || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
-    const tr: number[] = []; if (sc.passage_cwpm != null && bench.cwpm_end > 0) tr.push(sc.passage_cwpm / bench.cwpm_end); if (sc.writing != null && bench.writing_end > 0) tr.push(sc.writing / bench.writing_end); if (sc.written_mc != null) tr.push(sc.written_mc / WRITTEN_MC_TOTAL); if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) tr.push(sc.word_reading_correct / sc.word_reading_attempted)
+    const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
+    const rawCwpmValue = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+    const tr: number[] = []; if (rawCwpmValue != null && bench.cwpm_end > 0) tr.push(rawCwpmValue / bench.cwpm_end); if (sc.writing != null && bench.writing_end > 0) tr.push(sc.writing / bench.writing_end); const mcBench = bench.mc_end > 0 ? bench.mc_end : WRITTEN_MC_TOTAL; if (sc.written_mc != null) tr.push(sc.written_mc / mcBench); if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) tr.push(sc.word_reading_correct / sc.word_reading_attempted)
+    if (calc.comp_total != null && calc.comp_total > 0) tr.push(calc.comp_total / (calc.comp_max || 15))
+    const sg = Number(s.grade); if (sg === 2 && calc.phonics_total != null && calc.phonics_total > 0) tr.push(calc.phonics_total / 25); if (sg === 2 && calc.sentence_total != null && calc.sentence_total > 0) tr.push(calc.sentence_total / 35)
     const ts = tr.length > 0 ? tr.reduce((a, b) => a + b, 0) / tr.length : 0.5
     // Filter to fall semester grades only (matches computeRow behavior)
     const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall')))
@@ -1499,3 +1846,5 @@ function WIDADetail({ studentId }: { studentId: string }) {
     </div>
   )
 }
+
+export default LevelingView
