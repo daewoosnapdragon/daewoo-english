@@ -1067,7 +1067,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           </tr></thead>
           <tbody>${rowsHTML}</tbody>
         </table>
-        <p style="font-size:9px;color:#94a3b8;margin-top:8px">* = suggested class differs from current. Composite = 40% oral test + 40% written test + 20% teacher rating. Printed ${new Date().toLocaleDateString()}</p>
+        <p style="font-size:9px;color:#94a3b8;margin-top:8px">* = suggested class differs from current. Composite = 40% oral + 15% MC + 35% writing + 10% teacher rating. Printed ${new Date().toLocaleDateString()}</p>
       </div>`
     })
 
@@ -1168,10 +1168,12 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5">
         <p className="text-[12px] font-semibold text-blue-800 mb-1">How Composite Scores Work</p>
         <p className="text-[11px] text-blue-700">
-          The composite score combines three data points to create a single number for ranking students across the grade:
+          The composite score combines four data points to create a single number for ranking students across the grade:
           <span className="font-semibold"> 40% Oral Test</span> (CWPM, word reading, comprehension),
-          <span className="font-semibold"> 40% Written Test</span> (MC, writing rubric{Number(levelTest.grade) === 2 ? ', phonics, sentences' : ''}), and
-          <span className="font-semibold"> 20% Teacher Ratings</span> (anecdotal observations).
+          <span className="font-semibold"> 15% Written MC</span> (multiple choice{Number(levelTest.grade) === 2 ? ', phonics, sentences' : ''}),
+          <span className="font-semibold"> 35% Writing Rubric</span>, and
+          <span className="font-semibold"> 10% Teacher Ratings</span> (anecdotal observations).
+          When a component is missing, its weight is redistributed proportionally among the available components.
           Higher scores indicate stronger overall English proficiency. Use the sort and filter options to explore the data before the leveling meeting.
         </p>
       </div>
@@ -1240,7 +1242,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = 40% oral test + 40% written test + 20% teacher rating. Rank = position within the grade (higher = stronger). <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 40% oral test + 15% MC + 35% writing rubric + 10% teacher rating. Rank = position within the grade (higher = stronger). <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
     </div>
   )
 }
@@ -1264,7 +1266,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   const [profileStudent, setProfileStudent] = useState<Student | null>(null)
   const [profileData, setProfileData] = useState<any>(null)
-  const [weights, setWeights] = useState({ test: 40, grades: 40, anecdotal: 20 })
+  const [weights, setWeights] = useState({ test: 40, mc: 15, grades: 35, anecdotal: 10 })
   const [showWeights, setShowWeights] = useState(false)
   const [compareStudents, setCompareStudents] = useState<string[]>([])
   const [showCompare, setShowCompare] = useState(false)
@@ -1300,7 +1302,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
       if (studs) {
         const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').in('student_id', studs.map((s: any) => s.id))
         const sgm: Record<string, any[]> = {}; sg?.forEach((g: any) => { const gWithName = { ...g, semester_name: g.semesters?.name || '', score: g.final_grade ?? g.calculated_grade ?? null }; if (!sgm[g.student_id]) sgm[g.student_id] = []; sgm[g.student_id].push(gWithName) }); setSemGrades(sgm)
-        const auto = calcAuto(studs, sm, am, bm, sgm, { oral: 0.4, written: 0.4, anecdotal: 0.2 }, levelTest.grade)
+        const auto = calcAuto(studs, sm, am, bm, sgm, { oral: 0.40, mc: 0.15, writing: 0.35, anecdotal: 0.10 }, levelTest.grade)
         setAutoPlacements(auto)
         const pm: Record<string, EnglishClass> = {}
         if (pd?.length) pd.forEach((p: any) => { pm[p.student_id] = p.final_placement })
@@ -1312,7 +1314,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   }, [levelTest.id, levelTest.grade])
 
   const recompute = () => {
-    const auto = calcAuto(students, scores, anecdotals, benchmarks, semGrades, { oral: weights.test / 100, written: weights.grades / 100, anecdotal: weights.anecdotal / 100 }, levelTest.grade)
+    const auto = calcAuto(students, scores, anecdotals, benchmarks, semGrades, { oral: weights.test / 100, mc: weights.mc / 100, writing: weights.grades / 100, anecdotal: weights.anecdotal / 100 }, levelTest.grade)
     setAutoPlacements(auto); showToast('Auto-placements recalculated (drag students to apply)')
   }
 
@@ -1366,14 +1368,14 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
 
       {showWeights && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-center gap-6">
-          {([['test', 'Oral Test'], ['grades', 'Written Test'], ['anecdotal', 'Teacher Rating']] as const).map(([k, label]) => (
+          {([['test', 'Oral Test'], ['mc', 'MC'], ['grades', 'Writing'], ['anecdotal', 'Teacher Rating']] as const).map(([k, label]) => (
             <div key={k} className="flex items-center gap-2">
               <label className="text-[11px] font-medium text-amber-800">{label}:</label>
               <input type="number" min={0} max={100} step={5} value={weights[k]} onChange={e => setWeights(w => ({ ...w, [k]: Number(e.target.value) }))} className="w-14 px-2 py-1 border border-amber-300 rounded text-[12px] text-center bg-white" />
               <span className="text-[11px] text-amber-600">%</span>
             </div>
           ))}
-          <span className={`text-[11px] font-bold ${weights.test + weights.grades + weights.anecdotal === 100 ? 'text-green-700' : 'text-red-600'}`}>= {weights.test + weights.grades + weights.anecdotal}%</span>
+          <span className={`text-[11px] font-bold ${weights.test + weights.mc + weights.grades + weights.anecdotal === 100 ? 'text-green-700' : 'text-red-600'}`}>= {weights.test + weights.mc + weights.grades + weights.anecdotal}%</span>
           <button onClick={recompute} className="ml-auto px-4 py-1.5 rounded-lg text-[11px] font-medium bg-amber-600 text-white hover:bg-amber-700">Recalculate</button>
         </div>
       )}
@@ -1648,34 +1650,33 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   // Separate oral and written test scores for composite weighting
   const oralRatios = [cwpmRatio, wrAcc, compRatio].filter(v => v != null) as number[]
   const oralScore = oralRatios.length > 0 ? oralRatios.reduce((a, b) => a + b, 0) / oralRatios.length : null
-  const writtenRatios = [writingRatio, mcPct, phonicsRatio, sentRatio].filter(v => v != null) as number[]
-  const writtenScore = writtenRatios.length > 0 ? writtenRatios.reduce((a, b) => a + b, 0) / writtenRatios.length : null
+  // Written test split into MC and writing rubric for independent weighting
+  const mcRatios = [mcPct, phonicsRatio, sentRatio].filter(v => v != null) as number[]
+  const mcScore = mcRatios.length > 0 ? mcRatios.reduce((a, b) => a + b, 0) / mcRatios.length : null
+  const writingRubricScore = writingRatio // already null if no data (raw / 20)
   // Grade average: still computed for display in hover card, but NOT included in composite
   const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall'))); const gradeScore = gv.length > 0 ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length / 100 : null
   const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
   const anecScore = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
-  // Composite: 40% oral test + 40% written test + 20% teacher rating
-  // Fallbacks: if only one test type available, it gets 80%. If no anecdotal, tests split evenly.
+  // Composite: 40% oral + 15% MC + 35% writing rubric + 10% teacher rating = 100%
+  // When components are missing, redistribute proportionally among available components
   const hasOral = oralScore != null
-  const hasWritten = writtenScore != null
+  const hasMc = mcScore != null
+  const hasWritingRubric = writingRubricScore != null
   const hasAnec = av.length > 0
   const hasGrades = gradeScore != null
   const gScore = gradeScore ?? 0.5
   let composite: number
-  if (hasOral && hasWritten && hasAnec) {
-    composite = oralScore * 0.40 + writtenScore * 0.40 + anecScore * 0.20
-  } else if (hasOral && hasWritten) {
-    composite = oralScore * 0.50 + writtenScore * 0.50
-  } else if (hasOral && hasAnec) {
-    composite = oralScore * 0.80 + anecScore * 0.20
-  } else if (hasWritten && hasAnec) {
-    composite = writtenScore * 0.80 + anecScore * 0.20
-  } else if (hasOral) {
-    composite = oralScore
-  } else if (hasWritten) {
-    composite = writtenScore
+  const parts: { score: number; weight: number }[] = []
+  if (hasOral) parts.push({ score: oralScore, weight: 0.40 })
+  if (hasMc) parts.push({ score: mcScore, weight: 0.15 })
+  if (hasWritingRubric) parts.push({ score: writingRubricScore, weight: 0.35 })
+  if (hasAnec) parts.push({ score: anecScore, weight: 0.10 })
+  if (parts.length > 0) {
+    const totalWeight = parts.reduce((s, p) => s + p.weight, 0)
+    composite = parts.reduce((s, p) => s + p.score * (p.weight / totalWeight), 0)
   } else {
-    composite = anecScore
+    composite = 0.5
   }
   // Outlier flags: score is 0 or below 10% of class auto-median
   // Only flag when enough classmates have data for that component (>=3 or >=50% of class) to make the median meaningful
@@ -1686,7 +1687,7 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   if (oralReliable && rawCwpmValue != null && (rawCwpmValue === 0 || (bench._auto_oral_median > 0 && rawCwpmValue < bench._auto_oral_median * 0.1))) outlierFlags.push('oral')
   if (writingReliable && sc.writing != null && (sc.writing === 0 || (bench._auto_writing_median > 0 && sc.writing < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
   if (mcReliable && sc.written_mc != null && (sc.written_mc === 0 || (bench._auto_mc_median > 0 && sc.written_mc < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
-  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, writtenScore: writtenScore ?? 0.5, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, rawComp: calc.comp_total ?? null, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags }
+  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, rawComp: calc.comp_total ?? null, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags }
 }
 
 function suggestClass(row: any, idx: number, total: number): EnglishClass {
@@ -1698,7 +1699,7 @@ function suggestClass(row: any, idx: number, total: number): EnglishClass {
   return PLACEMENT_CLASSES[bi]
 }
 
-function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, w: { oral: number; written: number; anecdotal: number }, grade: number | string): Record<string, EnglishClass> {
+function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, w: { oral: number; mc: number; writing: number; anecdotal: number }, grade: number | string): Record<string, EnglishClass> {
   const result: Record<string, EnglishClass> = {}
   const metrics: Record<string, number> = {}
   const gradeMcTotal = getWrittenMcTotal(grade)
@@ -1711,31 +1712,28 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
     if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) oralRatios.push(sc.word_reading_correct / sc.word_reading_attempted)
     if (calc.comp_total != null && calc.comp_total > 0) oralRatios.push(calc.comp_total / (calc.comp_max || 15))
     const oralScore = oralRatios.length > 0 ? oralRatios.reduce((a, b) => a + b, 0) / oralRatios.length : null
-    // Written components - use raw % of max (same test for all students in grade)
-    const writtenRatios: number[] = []
-    if (sc.writing != null) writtenRatios.push(sc.writing / 20)
-    if (sc.written_mc != null) writtenRatios.push(sc.written_mc / gradeMcTotal)
-    const sg = Number(s.grade); if (sg === 2 && calc.phonics_total != null && calc.phonics_total > 0) writtenRatios.push(calc.phonics_total / 25); if (sg === 2 && calc.sentence_total != null && calc.sentence_total > 0) writtenRatios.push(calc.sentence_total / 35)
-    const writtenScore = writtenRatios.length > 0 ? writtenRatios.reduce((a, b) => a + b, 0) / writtenRatios.length : null
+    // Written test split: MC and writing rubric scored separately
+    const mcRatios: number[] = []
+    if (sc.written_mc != null) mcRatios.push(sc.written_mc / gradeMcTotal)
+    const sg = Number(s.grade); if (sg === 2 && calc.phonics_total != null && calc.phonics_total > 0) mcRatios.push(calc.phonics_total / 25); if (sg === 2 && calc.sentence_total != null && calc.sentence_total > 0) mcRatios.push(calc.sentence_total / 35)
+    const mcScoreVal = mcRatios.length > 0 ? mcRatios.reduce((a, b) => a + b, 0) / mcRatios.length : null
+    const writingRubricVal = sc.writing != null ? sc.writing / 20 : null
     // Teacher rating
     const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
     const as2 = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
     const hasAnec = av.length > 0
-    // Composite: 40% oral + 40% written + 20% teacher rating (with fallbacks)
-    if (oralScore != null && writtenScore != null && hasAnec) {
-      metrics[s.id] = oralScore * w.oral + writtenScore * w.written + as2 * w.anecdotal
-    } else if (oralScore != null && writtenScore != null) {
-      metrics[s.id] = oralScore * 0.50 + writtenScore * 0.50
-    } else if (oralScore != null && hasAnec) {
-      metrics[s.id] = oralScore * 0.80 + as2 * 0.20
-    } else if (writtenScore != null && hasAnec) {
-      metrics[s.id] = writtenScore * 0.80 + as2 * 0.20
-    } else if (oralScore != null) {
-      metrics[s.id] = oralScore
-    } else if (writtenScore != null) {
-      metrics[s.id] = writtenScore
+    // Composite: 40% oral + 15% MC + 35% writing rubric + 10% teacher rating
+    // Redistribute proportionally when components are missing
+    const parts: { score: number; weight: number }[] = []
+    if (oralScore != null) parts.push({ score: oralScore, weight: w.oral })
+    if (mcScoreVal != null) parts.push({ score: mcScoreVal, weight: w.mc })
+    if (writingRubricVal != null) parts.push({ score: writingRubricVal, weight: w.writing })
+    if (hasAnec) parts.push({ score: as2, weight: w.anecdotal })
+    if (parts.length > 0) {
+      const totalWeight = parts.reduce((s, p) => s + p.weight, 0)
+      metrics[s.id] = parts.reduce((s, p) => s + p.score * (p.weight / totalWeight), 0)
     } else {
-      metrics[s.id] = as2
+      metrics[s.id] = 0.5
     }
   })
   const sorted = students.map(s => ({ id: s.id, m: metrics[s.id] || 0 })).sort((a, b) => a.m - b.m)

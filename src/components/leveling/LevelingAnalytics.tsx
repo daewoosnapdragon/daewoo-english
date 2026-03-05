@@ -274,23 +274,20 @@ export default function LevelingAnalytics({ levelTest }: { levelTest: LevelTest 
 
       const hasGrades = gradeScore != null
       const gScore = gradeScore ?? 0.5
-      // Composite: 40% oral + 40% written + 20% teacher rating
+      // Composite: 40% oral + 15% MC + 25% writing rubric + 20% teacher rating
       const oralRatios2 = [oralRatio, wrAcc].filter(v => v != null) as number[]
       const oralScoreCalc = oralRatios2.length > 0 ? oralRatios2.reduce((a, b) => a + b, 0) / oralRatios2.length : null
-      const writtenRatios2 = [writingRatio, mcRatio].filter(v => v != null) as number[]
-      const writtenScoreCalc = writtenRatios2.length > 0 ? writtenRatios2.reduce((a, b) => a + b, 0) / writtenRatios2.length : null
-      const hasOral2 = oralScoreCalc != null
-      const hasWritten2 = writtenScoreCalc != null
       const hasAnec2 = av.length > 0
+      // Proportional redistribution when components are missing
+      const parts: { score: number; weight: number }[] = []
+      if (oralScoreCalc != null) parts.push({ score: oralScoreCalc, weight: 0.40 })
+      if (mcRatio != null) parts.push({ score: mcRatio, weight: 0.15 })
+      if (writingRatio != null) parts.push({ score: writingRatio, weight: 0.35 })
+      if (hasAnec2) parts.push({ score: anecScore, weight: 0.10 })
       let composite: number
-      if (hasOral2 && hasWritten2 && hasAnec2) {
-        composite = oralScoreCalc * 0.40 + writtenScoreCalc * 0.40 + anecScore * 0.20
-      } else if (hasOral2 && hasWritten2) {
-        composite = oralScoreCalc * 0.50 + writtenScoreCalc * 0.50
-      } else if (hasOral2 && hasAnec2) {
-        composite = oralScoreCalc * 0.80 + anecScore * 0.20
-      } else if (hasWritten2 && hasAnec2) {
-        composite = writtenScoreCalc * 0.80 + anecScore * 0.20
+      if (parts.length > 0) {
+        const totalWeight = parts.reduce((s, p) => s + p.weight, 0)
+        composite = parts.reduce((s, p) => s + p.score * (p.weight / totalWeight), 0)
       } else {
         composite = testScore
       }
