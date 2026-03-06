@@ -584,12 +584,12 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         const raw = scoresRef.current[sid] || {}
         const metrics = calculateG1Composite(raw)
 
-        // Atomic merge via RPC — all keys merged, no read-before-write needed
-        const { error } = await supabase.rpc('upsert_g1_scores', {
-          p_level_test_id: levelTest.id,
-          p_student_id: sid,
-          p_raw: raw,
-          p_metrics: {
+        // Upsert — DB trigger merges raw_scores/calculated_metrics with existing
+        const { error } = await supabase.from('level_test_scores').upsert({
+          level_test_id: levelTest.id,
+          student_id: sid,
+          raw_scores: raw,
+          calculated_metrics: {
             written_pct: metrics.writtenPct,
             oral_score: metrics.oralScore,
             teacher_pct: metrics.teacherPct,
@@ -600,11 +600,11 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
             comp_max: metrics.compMax,
             standards_baseline: metrics.standardsBaseline,
           },
-          p_composite_index: metrics.composite,
-          p_composite_band: metrics.suggestedClass,
-          p_previous_class: students.find(s => s.id === sid)?.english_class || null,
-          p_entered_by: currentTeacher?.id || null,
-        })
+          composite_index: metrics.composite,
+          composite_band: metrics.suggestedClass,
+          previous_class: students.find(s => s.id === sid)?.english_class || null,
+          entered_by: currentTeacher?.id || null,
+        }, { onConflict: 'level_test_id,student_id' })
         if (error) errors++
       }
       if (errors === 0) {

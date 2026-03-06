@@ -1189,17 +1189,32 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     }))
   }, [student])
 
-  // Clear student — atomic RPC removes only written keys, oral keys untouched
+  // Clear student — removes written keys from DB, preserves oral keys
   const clearStudent = useCallback(async () => {
     if (!student) return
     if (!confirm(`Clear all written test scores for ${student.english_name || student.korean_name}? This cannot be undone.`)) return
     setScores(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
     setSavedSnapshot(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
     try {
-      await supabase.rpc('clear_written_scores', {
-        p_level_test_id: levelTest.id,
-        p_student_id: student.id,
-      })
+      const { data: existing } = await supabase.from('level_test_scores')
+        .select('raw_scores, calculated_metrics')
+        .eq('level_test_id', levelTest.id)
+        .eq('student_id', student.id)
+        .maybeSingle()
+      if (existing) {
+        const raw = { ...(existing.raw_scores || {}) }
+        const calc = { ...(existing.calculated_metrics || {}) }
+        delete raw.written_answers; delete raw.written_rubric; delete raw.written_mc; delete raw.writing
+        delete calc.written_mc_total; delete calc.written_mc_max; delete calc.written_mc_pct
+        delete calc.writing_total; delete calc.writing_max; delete calc.written_domain_scores; delete calc.written_standards_mastery
+        if (Object.keys(raw).length > 0) {
+          await supabase.from('level_test_scores').update({ raw_scores: raw, calculated_metrics: calc })
+            .eq('level_test_id', levelTest.id).eq('student_id', student.id)
+        } else {
+          await supabase.from('level_test_scores').delete()
+            .eq('level_test_id', levelTest.id).eq('student_id', student.id)
+        }
+      }
     } catch (e) { console.error('Clear DB error:', e) }
     showToast('Cleared written test scores')
   }, [student, levelTest.id])
@@ -1273,15 +1288,13 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       config.questions.forEach(q => { if (sc.answers[q.qNum]) { const w = dokWeight(q.dok); if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }; domainScores[q.domain].total += w; if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct += w } })
       const standardsMastery: Record<string, { met: number; total: number }> = {}
       config.questions.forEach(q => { if (sc.answers[q.qNum]) { const w = dokWeight(q.dok); if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }; standardsMastery[q.standard].total += w; if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met += w } })
-      // Atomic merge via RPC — only written keys are sent, oral keys in DB untouched
-      const { error } = await supabase.rpc('upsert_written_scores', {
-        p_level_test_id: levelTest.id,
-        p_student_id: stu.id,
-        p_written_raw: { written_answers: sc.answers, written_rubric: sc.writing, written_mc: mcTotal, writing: wTotal },
-        p_written_metrics: { written_mc_total: mcTotal, written_mc_max: config.totalMC, written_mc_pct: Math.round((mcTotal / config.totalMC) * 100), writing_total: wTotal, writing_max: config.writingMax, written_domain_scores: domainScores, written_standards_mastery: standardsMastery },
-        p_previous_class: students.find(s => s.id === stu.id)?.english_class || null,
-        p_entered_by: currentTeacher?.id || null,
-      })
+      // Upsert with only written keys — DB trigger merges with existing oral keys
+      const { error } = await supabase.from('level_test_scores').upsert({
+        level_test_id: levelTest.id, student_id: stu.id,
+        raw_scores: { written_answers: sc.answers, written_rubric: sc.writing, written_mc: mcTotal, writing: wTotal },
+        calculated_metrics: { written_mc_total: mcTotal, written_mc_max: config.totalMC, written_mc_pct: Math.round((mcTotal / config.totalMC) * 100), writing_total: wTotal, writing_max: config.writingMax, written_domain_scores: domainScores, written_standards_mastery: standardsMastery },
+        previous_class: students.find(s => s.id === stu.id)?.english_class || null, entered_by: currentTeacher?.id || null,
+      }, { onConflict: 'level_test_id,student_id' })
       if (error) errors++
     }
     savingRef.current = false
@@ -1353,17 +1366,17 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         }
       })
 
-      // Atomic merge via RPC — only written keys are sent, oral keys in DB untouched
-      const { error } = await supabase.rpc('upsert_written_scores', {
-        p_level_test_id: levelTest.id,
-        p_student_id: stu.id,
-        p_written_raw: {
+      // Upsert with only written keys — DB trigger merges with existing oral keys
+      const { error } = await supabase.from('level_test_scores').upsert({
+        level_test_id: levelTest.id,
+        student_id: stu.id,
+        raw_scores: {
           written_answers: sc.answers,
           written_rubric: sc.writing,
           written_mc: mcTotal,
           writing: wTotal,
         },
-        p_written_metrics: {
+        calculated_metrics: {
           written_mc_total: mcTotal,
           written_mc_max: config.totalMC,
           written_mc_pct: Math.round((mcTotal / config.totalMC) * 100),
@@ -1372,9 +1385,9 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           written_domain_scores: domainScores,
           written_standards_mastery: standardsMastery,
         },
-        p_previous_class: stu.english_class || null,
-        p_entered_by: currentTeacher?.id || null,
-      })
+        previous_class: stu.english_class || null,
+        entered_by: currentTeacher?.id || null,
+      }, { onConflict: 'level_test_id,student_id' })
       if (error) errors++
     }
 
