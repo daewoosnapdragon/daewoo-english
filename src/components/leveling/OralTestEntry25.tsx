@@ -829,12 +829,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       const pTotal = [raw.phonics_row1, raw.phonics_row2, raw.phonics_row3, raw.phonics_row4, raw.phonics_row5].reduce((a: number, b) => a + ((b as number) || 0), 0)
       const sTotal = [raw.sent_1, raw.sent_2, raw.sent_3, raw.sent_4, raw.sent_5].reduce((a: number, b) => a + ((b as number) || 0), 0)
 
-      // Atomic merge via RPC — only oral keys are sent, written keys in DB are never touched
-      const { error } = await supabase.rpc('upsert_oral_scores', {
-        p_level_test_id: levelTest.id,
-        p_student_id: sid,
-        p_oral_raw: raw,
-        p_oral_metrics: {
+      // Upsert with only oral keys — DB trigger merges with existing written keys
+      const { error } = await supabase.from('level_test_scores').upsert({
+        level_test_id: levelTest.id,
+        student_id: sid,
+        raw_scores: raw,
+        calculated_metrics: {
           passage_level: raw.passage_level || null,
           passage_multiplier: passageMult,
           cwpm: calcCwpm,
@@ -849,9 +849,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           passages_attempted: raw.passages_attempted || [],
           standards_baseline: standards,
         },
-        p_previous_class: students.find(s => s.id === sid)?.english_class || null,
-        p_entered_by: currentTeacher?.id || null,
-      })
+        previous_class: students.find(s => s.id === sid)?.english_class || null,
+        entered_by: currentTeacher?.id || null,
+      }, { onConflict: 'level_test_id,student_id' })
       if (error) errors++
     }
     setSaving(false)
@@ -905,16 +905,33 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     return () => window.removeEventListener('beforeunload', handler)
   }, [students])
 
-  // Clear oral data — atomic RPC removes only oral keys, written keys untouched
+  // Clear oral data — removes oral keys from DB, preserves written keys
   const clearStudent = async (sid: string, name: string) => {
     if (!confirm(`Clear all oral test scores for ${name}? This cannot be undone.`)) return
     setScores(prev => ({ ...prev, [sid]: {} }))
     setSavedSnapshot(prev => ({ ...prev, [sid]: {} }))
     try {
-      await supabase.rpc('clear_oral_scores', {
-        p_level_test_id: levelTest.id,
-        p_student_id: sid,
-      })
+      const { data: existing } = await supabase.from('level_test_scores')
+        .select('raw_scores, calculated_metrics')
+        .eq('level_test_id', levelTest.id)
+        .eq('student_id', sid)
+        .maybeSingle()
+      if (existing) {
+        const raw = existing.raw_scores || {}
+        const calc = existing.calculated_metrics || {}
+        // Keep only written keys
+        const writtenRaw: Record<string, any> = {}
+        const writtenCalc: Record<string, any> = {}
+        ;['written_answers', 'written_rubric', 'written_mc', 'writing'].forEach(k => { if (raw[k] != null) writtenRaw[k] = raw[k] })
+        ;['written_mc_total', 'written_mc_max', 'written_mc_pct', 'writing_total', 'writing_max', 'written_domain_scores', 'written_standards_mastery'].forEach(k => { if (calc[k] != null) writtenCalc[k] = calc[k] })
+        if (Object.keys(writtenRaw).length > 0) {
+          await supabase.from('level_test_scores').update({ raw_scores: writtenRaw, calculated_metrics: writtenCalc })
+            .eq('level_test_id', levelTest.id).eq('student_id', sid)
+        } else {
+          await supabase.from('level_test_scores').delete()
+            .eq('level_test_id', levelTest.id).eq('student_id', sid)
+        }
+      }
     } catch (e) { console.error('Clear DB error:', e) }
     showToast(`Cleared oral scores for ${name}`)
   }
