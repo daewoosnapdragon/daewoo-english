@@ -720,7 +720,19 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
 
   const [activeSection, setActiveSection] = useState<'phonics' | 'sentences' | 'passage'>(config?.hasPhonics ? 'phonics' : 'passage')
 
-  // Load students and existing scores
+  // Keys that belong to oral scoring — used to strip written keys on load
+  const ORAL_RAW_KEYS = new Set([
+    'phonics_row1','phonics_row2','phonics_row3','phonics_row4','phonics_row5',
+    'sent_1','sent_2','sent_3','sent_4','sent_5',
+    'passage_level','orf_words_read','orf_errors','orf_time_seconds','orf_cwpm','orf_accuracy',
+    'naep','comp_1','comp_2','comp_3','comp_4','comp_5',
+    'passages_attempted','notes',
+  ])
+
+  // Lock to prevent overlapping async saves
+  const savingRef = useRef(false)
+
+  // Load students and existing scores (strip written keys from local state)
   useEffect(() => {
     (async () => {
       const [{ data: studs }, { data: existing }] = await Promise.all([
@@ -729,7 +741,15 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       ])
       if (studs) setStudents(studs)
       const map: Record<string, OralScores> = {}
-      if (existing) existing.forEach((s: any) => { map[s.student_id] = s.raw_scores || {} })
+      if (existing) existing.forEach((s: any) => {
+        const full = s.raw_scores || {}
+        // Only keep oral keys in local state — never hold written keys
+        const oral: OralScores = {}
+        for (const k of Object.keys(full)) {
+          if (ORAL_RAW_KEYS.has(k)) (oral as any)[k] = full[k]
+        }
+        map[s.student_id] = oral
+      })
       if (studs) studs.forEach(s => { if (!map[s.id]) map[s.id] = {} })
       setScores(map)
       setSavedSnapshot(JSON.parse(JSON.stringify(map)))
@@ -786,8 +806,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   }, [])
 
   const handleSave = async (sids?: string[]) => {
+    if (savingRef.current) return
+    savingRef.current = true
     setSaving(true)
-    const toSave = sids || classStudents.map(s => s.id)
+    // Only save dirty students (not all class students) unless specific sids given
+    const toSave = sids || classStudents.filter(s => isStudentDirty(s.id)).map(s => s.id)
+    if (toSave.length === 0) { setSaving(false); savingRef.current = false; return }
     let errors = 0
     for (const sid of toSave) {
       const raw = scores[sid] || {}
@@ -805,24 +829,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       const pTotal = [raw.phonics_row1, raw.phonics_row2, raw.phonics_row3, raw.phonics_row4, raw.phonics_row5].reduce((a: number, b) => a + ((b as number) || 0), 0)
       const sTotal = [raw.sent_1, raw.sent_2, raw.sent_3, raw.sent_4, raw.sent_5].reduce((a: number, b) => a + ((b as number) || 0), 0)
 
-      // Merge with existing data (preserve written test data in both raw_scores and calculated_metrics)
-      const existingRes = await supabase.from('level_test_scores')
-        .select('raw_scores, calculated_metrics')
-        .eq('level_test_id', levelTest.id)
-        .eq('student_id', sid)
-        .maybeSingle()
-      const existingRaw = existingRes.data?.raw_scores || {}
-      const existingCalc = existingRes.data?.calculated_metrics || {}
-
-      // Preserve any written test keys that exist in raw_scores
-      const mergedRaw = { ...existingRaw, ...raw }
-
-      const { error } = await supabase.from('level_test_scores').upsert({
-        level_test_id: levelTest.id,
-        student_id: sid,
-        raw_scores: mergedRaw,
-        calculated_metrics: {
-          ...existingCalc,
+      // Atomic merge via RPC — only oral keys are sent, written keys in DB are never touched
+      const { error } = await supabase.rpc('upsert_oral_scores', {
+        p_level_test_id: levelTest.id,
+        p_student_id: sid,
+        p_oral_raw: raw,
+        p_oral_metrics: {
           passage_level: raw.passage_level || null,
           passage_multiplier: passageMult,
           cwpm: calcCwpm,
@@ -837,18 +849,20 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           passages_attempted: raw.passages_attempted || [],
           standards_baseline: standards,
         },
-        previous_class: students.find(s => s.id === sid)?.english_class || null,
-        entered_by: currentTeacher?.id || null,
-      }, { onConflict: 'level_test_id,student_id' })
+        p_previous_class: students.find(s => s.id === sid)?.english_class || null,
+        p_entered_by: currentTeacher?.id || null,
+      })
       if (error) errors++
     }
     setSaving(false)
+    savingRef.current = false
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved (${toSave.length} student${toSave.length === 1 ? '' : 's'})`)
     if (errors === 0) setSavedSnapshot(JSON.parse(JSON.stringify(scoresRef.current)))
   }
 
   // Auto-save function for timer/unmount/visibility (silent, no toast for timer)
   const autoSave = useCallback(async (silent = true) => {
+    if (savingRef.current) return // prevent overlapping saves
     const currentScores = scoresRef.current
     const snapshot = savedSnapshotRef.current
     const dirty = students.filter(s => {
@@ -891,33 +905,16 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     return () => window.removeEventListener('beforeunload', handler)
   }, [students])
 
-  // Clear oral data — clears local state AND removes oral data from DB (preserves written data)
+  // Clear oral data — atomic RPC removes only oral keys, written keys untouched
   const clearStudent = async (sid: string, name: string) => {
     if (!confirm(`Clear all oral test scores for ${name}? This cannot be undone.`)) return
     setScores(prev => ({ ...prev, [sid]: {} }))
+    setSavedSnapshot(prev => ({ ...prev, [sid]: {} }))
     try {
-      const { data: existing } = await supabase.from('level_test_scores')
-        .select('raw_scores, calculated_metrics')
-        .eq('level_test_id', levelTest.id)
-        .eq('student_id', sid)
-        .maybeSingle()
-      if (existing) {
-        const raw = existing.raw_scores || {}
-        const calc = existing.calculated_metrics || {}
-        // Keep only written-specific keys
-        const writtenRaw: Record<string, any> = {}
-        const writtenCalc: Record<string, any> = {}
-        ;['written_answers', 'written_rubric', 'written_mc', 'writing'].forEach(k => { if (raw[k] != null) writtenRaw[k] = raw[k] })
-        ;['written_mc_total', 'written_mc_max', 'written_mc_pct', 'writing_total', 'writing_max', 'written_domain_scores', 'written_standards_mastery'].forEach(k => { if (calc[k] != null) writtenCalc[k] = calc[k] })
-        const hasWrittenData = Object.keys(writtenRaw).length > 0
-        if (hasWrittenData) {
-          await supabase.from('level_test_scores').update({ raw_scores: writtenRaw, calculated_metrics: writtenCalc })
-            .eq('level_test_id', levelTest.id).eq('student_id', sid)
-        } else {
-          await supabase.from('level_test_scores').delete()
-            .eq('level_test_id', levelTest.id).eq('student_id', sid)
-        }
-      }
+      await supabase.rpc('clear_oral_scores', {
+        p_level_test_id: levelTest.id,
+        p_student_id: sid,
+      })
     } catch (e) { console.error('Clear DB error:', e) }
     showToast(`Cleared oral scores for ${name}`)
   }

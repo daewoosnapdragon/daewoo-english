@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
-import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check } from 'lucide-react'
+import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
@@ -1055,6 +1055,28 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   const [filterPassage, setFilterPassage] = useState<string>('all')
   const [showBorderline, setShowBorderline] = useState(false)
   const [excludedQuestions, setExcludedQuestions] = useState<number[]>([])
+  const [savingCheckpoint, setSavingCheckpoint] = useState(false)
+  const { currentTeacher, showToast } = useApp()
+
+  // Save a named checkpoint of all current scores
+  const saveCheckpoint = async () => {
+    setSavingCheckpoint(true)
+    try {
+      const { data: allScores } = await supabase.from('level_test_scores')
+        .select('*').eq('level_test_id', levelTest.id)
+      const label = `Pre-meeting ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
+      await supabase.from('leveling_snapshots').insert({
+        level_test_id: levelTest.id,
+        snapshot_data: allScores || [],
+        created_by: currentTeacher?.id || null,
+        label,
+      })
+      showToast(`Checkpoint saved: ${label}`)
+    } catch (e: any) {
+      showToast(`Error saving checkpoint: ${e.message}`)
+    }
+    setSavingCheckpoint(false)
+  }
 
   const handlePrintSummary = (allRows: any[]) => {
     const pw = window.open('', '_blank'); if (!pw) return
@@ -1263,6 +1285,28 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               Math.round(r.percentile * 100), r.suggestedClass]))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
           <Download size={12} /> CSV
+        </button>
+        <button onClick={saveCheckpoint} disabled={savingCheckpoint}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 disabled:opacity-50">
+          {savingCheckpoint ? <Loader2 size={12} className="animate-spin" /> : <Shield size={12} />} Save Checkpoint
+        </button>
+        <button onClick={() => {
+          exportToCSV(`leveling-backup-G${levelTest.grade}-${new Date().toISOString().slice(0, 10)}`,
+            ['Student ID', 'English Name', 'Korean Name', 'Class', 'Passage', 'CWPM', 'Accuracy', 'NAEP', 'Comp', 'Phonics', 'Sentences', 'WrittenMC', 'Writing', 'Composite', 'Band'],
+            Object.values(scores).length > 0
+              ? Object.entries(scores).map(([sid, sc]) => {
+                  const stu = students.find(s => s.id === sid)
+                  const raw = sc?.raw_scores || {}
+                  const calc = sc?.calculated_metrics || {}
+                  return [sid, stu?.english_name || '', stu?.korean_name || '', stu?.english_class || '',
+                    raw.passage_level ?? '', calc.cwpm ?? '', calc.accuracy_pct ?? '', raw.naep ?? '',
+                    calc.comp_total ?? '', calc.phonics_total ?? '', calc.sentence_total ?? '',
+                    calc.written_mc_total ?? '', calc.writing_total ?? '',
+                    sc?.composite_index ?? '', sc?.composite_band ?? '']
+                })
+              : [])
+        }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
+          <Download size={12} /> Full Backup
         </button>
         <span className="text-[11px] text-text-tertiary ml-auto">{displayed.length} students</span>
       </div>

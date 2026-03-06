@@ -548,9 +548,22 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         })
       }
       setScores(scoreMap)
+      setSavedSnapshot(JSON.parse(JSON.stringify(scoreMap)))
       setLoading(false)
     })()
   }, [levelTest.id, levelTest.grade])
+
+  // Auto-save infrastructure
+  const [savedSnapshot, setSavedSnapshot] = useState<Record<string, G1Scores>>({})
+  const savingRef = useRef(false)
+  const scoresRef = useRef(scores)
+  const savedSnapshotRef = useRef(savedSnapshot)
+  useEffect(() => { scoresRef.current = scores }, [scores])
+  useEffect(() => { savedSnapshotRef.current = savedSnapshot }, [savedSnapshot])
+
+  const isStudentDirty = useCallback((sid: string) => {
+    return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
+  }, [])
 
   // Update a score field for a student
   const updateScore = useCallback((studentId: string, key: string, value: number | string | null) => {
@@ -560,19 +573,23 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     }))
   }, [])
 
-  // Save scores for given student IDs
-  const saveScores = useCallback(async (studentIds: string[]) => {
+  // Save scores for given student IDs via atomic RPC
+  const saveScores = useCallback(async (studentIds: string[], silent = false) => {
+    if (savingRef.current) return
+    savingRef.current = true
     setSaving(true)
+    let errors = 0
     try {
       for (const sid of studentIds) {
-        const raw = scores[sid] || {}
+        const raw = scoresRef.current[sid] || {}
         const metrics = calculateG1Composite(raw)
 
-        const payload = {
-          level_test_id: levelTest.id,
-          student_id: sid,
-          raw_scores: raw,
-          calculated_metrics: {
+        // Atomic merge via RPC — all keys merged, no read-before-write needed
+        const { error } = await supabase.rpc('upsert_g1_scores', {
+          p_level_test_id: levelTest.id,
+          p_student_id: sid,
+          p_raw: raw,
+          p_metrics: {
             written_pct: metrics.writtenPct,
             oral_score: metrics.oralScore,
             teacher_pct: metrics.teacherPct,
@@ -583,21 +600,72 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
             comp_max: metrics.compMax,
             standards_baseline: metrics.standardsBaseline,
           },
-          composite_index: metrics.composite,
-          composite_band: metrics.suggestedClass,
-          entered_by: currentTeacher?.id || null,
-        }
-
-        await supabase.from('level_test_scores').upsert(payload, {
-          onConflict: 'level_test_id,student_id',
+          p_composite_index: metrics.composite,
+          p_composite_band: metrics.suggestedClass,
+          p_previous_class: students.find(s => s.id === sid)?.english_class || null,
+          p_entered_by: currentTeacher?.id || null,
         })
+        if (error) errors++
       }
-      showToast(`Saved ${studentIds.length} student${studentIds.length > 1 ? 's' : ''}`)
+      if (errors === 0) {
+        setSavedSnapshot(JSON.parse(JSON.stringify(scoresRef.current)))
+        if (!silent) showToast(`Saved ${studentIds.length} student${studentIds.length > 1 ? 's' : ''}`)
+      } else {
+        showToast(`Saved with ${errors} error(s)`)
+      }
     } catch (err: any) {
       showToast(`Error saving: ${err.message}`)
     }
     setSaving(false)
-  }, [scores, levelTest.id, currentTeacher?.id, showToast])
+    savingRef.current = false
+  }, [levelTest.id, currentTeacher?.id, students, showToast])
+
+  // Auto-save: saves dirty students every 30s, on visibility change, and on unmount
+  const autoSave = useCallback(async () => {
+    if (savingRef.current) return
+    const current = scoresRef.current
+    const snapshot = savedSnapshotRef.current
+    const dirty = students.filter(s => {
+      const cur = current[s.id]
+      if (!cur || Object.keys(cur).length === 0) return false
+      return JSON.stringify(cur) !== JSON.stringify(snapshot[s.id] || {})
+    })
+    if (dirty.length === 0) return
+    await saveScores(dirty.map(s => s.id), true)
+    showToast(`Auto-saved ${dirty.length} student${dirty.length === 1 ? '' : 's'}`)
+  }, [students, saveScores, showToast])
+
+  const autoSaveRef = useRef<(() => Promise<void>) | null>(null)
+  useEffect(() => { autoSaveRef.current = autoSave }, [autoSave])
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    const timer = setInterval(() => { autoSaveRef.current?.() }, 30000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Auto-save on tab visibility change
+  useEffect(() => {
+    const handler = () => { if (document.hidden) autoSaveRef.current?.() }
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [])
+
+  // Auto-save on unmount
+  useEffect(() => {
+    return () => { autoSaveRef.current?.() }
+  }, [])
+
+  // Warn before leaving with unsaved data
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      const cur = scoresRef.current; const snap = savedSnapshotRef.current
+      const dirty = students.some(s => JSON.stringify(cur[s.id] || {}) !== JSON.stringify(snap[s.id] || {}))
+      if (dirty) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [students])
 
   // Class filtering
   const availableClasses = isAdmin ? ENGLISH_CLASSES : (teacherClass ? [teacherClass] : ENGLISH_CLASSES)
