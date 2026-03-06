@@ -1327,12 +1327,21 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     return () => { autoSave() }
   }, [autoSave])
 
-  // Save — saves ALL students with data across ALL classes (not just current filter)
+  // Save — saves only students with UNSAVED changes (prevents overwriting other teachers' work)
   const handleSave = async () => {
     if (!config) return
     setSaving(true)
     let errors = 0
-    const toSave = students.filter(s => studentHasData(s.id))
+    // Only save students whose scores differ from the last-saved snapshot
+    // This prevents overwriting another teacher's concurrent edits with stale local data
+    const toSave = students.filter(s => {
+      const current = scores[s.id]
+      const saved = savedSnapshot[s.id]
+      if (!current) return false
+      const hasData = Object.keys(current.answers).length > 0 || Object.values(current.writing).some((v: any) => v > 0)
+      if (!hasData) return false
+      return JSON.stringify(current) !== JSON.stringify(saved)
+    })
 
     for (const stu of toSave) {
       const sc = scores[stu.id]
@@ -1397,8 +1406,15 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     }
 
     setSaving(false)
-    if (errors === 0) setSavedSnapshot(JSON.parse(JSON.stringify(scores))) // Update clean snapshot
-    showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved ${toSave.length} student${toSave.length === 1 ? '' : 's'}`)
+    if (errors === 0) {
+      // Only update snapshot for students we actually saved (not the whole scores object)
+      setSavedSnapshot(prev => {
+        const updated = { ...prev }
+        toSave.forEach(stu => { updated[stu.id] = JSON.parse(JSON.stringify(scores[stu.id])) })
+        return updated
+      })
+    }
+    showToast(errors > 0 ? `Saved with ${errors} error(s)` : toSave.length === 0 ? 'No unsaved changes' : `Saved ${toSave.length} student${toSave.length === 1 ? '' : 's'}`)
   }
 
   // Analytics
