@@ -924,12 +924,15 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         const writtenCalc: Record<string, any> = {}
         ;['written_answers', 'written_rubric', 'written_mc', 'writing'].forEach(k => { if (raw[k] != null) writtenRaw[k] = raw[k] })
         ;['written_mc_total', 'written_mc_max', 'written_mc_pct', 'writing_total', 'writing_max', 'written_domain_scores', 'written_standards_mastery'].forEach(k => { if (calc[k] != null) writtenCalc[k] = calc[k] })
+        // DELETE first to bypass merge trigger, then re-insert written-only data if any
+        await supabase.from('level_test_scores').delete()
+          .eq('level_test_id', levelTest.id).eq('student_id', sid)
         if (Object.keys(writtenRaw).length > 0) {
-          await supabase.from('level_test_scores').update({ raw_scores: writtenRaw, calculated_metrics: writtenCalc })
-            .eq('level_test_id', levelTest.id).eq('student_id', sid)
-        } else {
-          await supabase.from('level_test_scores').delete()
-            .eq('level_test_id', levelTest.id).eq('student_id', sid)
+          await supabase.from('level_test_scores').insert({
+            level_test_id: levelTest.id, student_id: sid,
+            raw_scores: writtenRaw, calculated_metrics: writtenCalc,
+            previous_class: existing.previous_class || null,
+          })
         }
       }
     } catch (e) { console.error('Clear DB error:', e) }

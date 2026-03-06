@@ -256,7 +256,7 @@ CREATE TABLE IF NOT EXISTS level_test_scores_history (
   previous_class TEXT,
   entered_by UUID,
   changed_at TIMESTAMPTZ DEFAULT now(),
-  change_type TEXT NOT NULL CHECK (change_type IN ('update', 'delete'))
+  change_type TEXT NOT NULL CHECK (change_type IN ('UPDATE', 'DELETE'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_lts_history_lookup

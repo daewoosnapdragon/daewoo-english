@@ -1207,12 +1207,15 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         delete raw.written_answers; delete raw.written_rubric; delete raw.written_mc; delete raw.writing
         delete calc.written_mc_total; delete calc.written_mc_max; delete calc.written_mc_pct
         delete calc.writing_total; delete calc.writing_max; delete calc.written_domain_scores; delete calc.written_standards_mastery
+        // DELETE first to bypass merge trigger, then re-insert oral-only data if any
+        await supabase.from('level_test_scores').delete()
+          .eq('level_test_id', levelTest.id).eq('student_id', student.id)
         if (Object.keys(raw).length > 0) {
-          await supabase.from('level_test_scores').update({ raw_scores: raw, calculated_metrics: calc })
-            .eq('level_test_id', levelTest.id).eq('student_id', student.id)
-        } else {
-          await supabase.from('level_test_scores').delete()
-            .eq('level_test_id', levelTest.id).eq('student_id', student.id)
+          await supabase.from('level_test_scores').insert({
+            level_test_id: levelTest.id, student_id: student.id,
+            raw_scores: raw, calculated_metrics: calc,
+            previous_class: existing.previous_class || null,
+          })
         }
       }
     } catch (e) { console.error('Clear DB error:', e) }
