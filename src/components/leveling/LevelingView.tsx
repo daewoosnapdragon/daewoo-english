@@ -25,10 +25,47 @@ type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'an
 function getWrittenMcTotal(grade: number | string): number {
   // DOK-weighted: DOK1=1pt, DOK2+=2pt
   const g = Number(grade)
-  if (g === 2) return 32; if (g === 3) return 26; if (g === 4) return 40; if (g === 5) return 28
+  if (g === 2) return 32; if (g === 3) return 26; if (g === 4) return 40; if (g === 5) return 37
   return 26 // fallback
 }
-const WRITTEN_MC_TOTAL = 26 // default for backward compat, use getWrittenMcTotal() where grade is known
+
+// Minimal grade config for recalculating adjusted MC from per-question answers
+// This mirrors WrittenTestEntry's question data but only needs qNum, correct, dok
+function getGradeConfigForComposite(grade: number): { questions: { qNum: number; correct: string; dok: number }[] } | null {
+  // Grade 2: 25 questions
+  if (grade === 2) return { questions: [
+    {qNum:1,correct:'b',dok:2},{qNum:2,correct:'b',dok:1},{qNum:3,correct:'d',dok:2},{qNum:4,correct:'a',dok:1},{qNum:5,correct:'a',dok:2},
+    {qNum:6,correct:'a',dok:2},{qNum:7,correct:'d',dok:2},{qNum:8,correct:'c',dok:1},{qNum:9,correct:'b',dok:1},
+    {qNum:10,correct:'b',dok:2},{qNum:11,correct:'c',dok:1},{qNum:12,correct:'d',dok:1},{qNum:13,correct:'b',dok:2},{qNum:14,correct:'c',dok:1},{qNum:15,correct:'c',dok:1},
+    {qNum:16,correct:'a',dok:1},{qNum:17,correct:'b',dok:1},{qNum:18,correct:'a',dok:1},{qNum:19,correct:'b',dok:1},{qNum:20,correct:'c',dok:1},
+    {qNum:21,correct:'a',dok:1},{qNum:22,correct:'d',dok:1},{qNum:23,correct:'b',dok:1},{qNum:24,correct:'c',dok:1},{qNum:25,correct:'a',dok:1},
+  ]}
+  // Grade 3: 21 questions
+  if (grade === 3) return { questions: [
+    {qNum:1,correct:'d',dok:1},{qNum:2,correct:'a',dok:1},{qNum:3,correct:'d',dok:1},{qNum:4,correct:'b',dok:2},{qNum:5,correct:'b',dok:2},
+    {qNum:6,correct:'b',dok:1},{qNum:7,correct:'d',dok:1},{qNum:8,correct:'b',dok:1},{qNum:9,correct:'a',dok:1},{qNum:10,correct:'d',dok:1},{qNum:11,correct:'b',dok:1},{qNum:12,correct:'d',dok:1},{qNum:13,correct:'c',dok:1},
+    {qNum:14,correct:'d',dok:1},{qNum:15,correct:'b',dok:1},{qNum:16,correct:'c',dok:2},
+    {qNum:17,correct:'b',dok:1},{qNum:18,correct:'c',dok:1},{qNum:19,correct:'d',dok:1},{qNum:20,correct:'c',dok:2},{qNum:21,correct:'b',dok:3},
+  ]}
+  // Grade 4: 28 questions
+  if (grade === 4) return { questions: [
+    {qNum:1,correct:'b',dok:2},{qNum:2,correct:'c',dok:1},{qNum:3,correct:'a',dok:1},{qNum:4,correct:'c',dok:2},{qNum:5,correct:'d',dok:2},
+    {qNum:6,correct:'b',dok:1},{qNum:7,correct:'c',dok:2},{qNum:8,correct:'b',dok:3},{qNum:9,correct:'c',dok:2},{qNum:10,correct:'b',dok:2},{qNum:11,correct:'a',dok:2},
+    {qNum:12,correct:'c',dok:1},{qNum:13,correct:'a',dok:1},{qNum:14,correct:'c',dok:1},{qNum:15,correct:'a',dok:1},{qNum:16,correct:'b',dok:1},{qNum:17,correct:'a',dok:1},
+    {qNum:18,correct:'c',dok:1},{qNum:19,correct:'c',dok:2},{qNum:20,correct:'b',dok:2},{qNum:21,correct:'b',dok:2},{qNum:22,correct:'a',dok:2},
+    {qNum:23,correct:'b',dok:1},{qNum:24,correct:'a',dok:1},{qNum:25,correct:'d',dok:1},{qNum:26,correct:'b',dok:1},{qNum:27,correct:'a',dok:1},{qNum:28,correct:'d',dok:1},
+  ]}
+  // Grade 5: 25 questions
+  if (grade === 5) return { questions: [
+    {qNum:1,correct:'c',dok:1},{qNum:2,correct:'d',dok:2},{qNum:3,correct:'b',dok:2},{qNum:4,correct:'b',dok:2},{qNum:5,correct:'d',dok:2},
+    {qNum:6,correct:'d',dok:1},{qNum:7,correct:'a',dok:1},{qNum:8,correct:'b',dok:1},{qNum:9,correct:'c',dok:1},
+    {qNum:10,correct:'a',dok:1},{qNum:11,correct:'b',dok:1},{qNum:12,correct:'b',dok:1},{qNum:13,correct:'d',dok:1},{qNum:14,correct:'d',dok:1},{qNum:15,correct:'b',dok:1},
+    {qNum:16,correct:'a',dok:2},{qNum:17,correct:'d',dok:2},{qNum:18,correct:'c',dok:1},{qNum:19,correct:'c',dok:2},{qNum:20,correct:'c',dok:3},
+    {qNum:21,correct:'b',dok:2},{qNum:22,correct:'c',dok:2},{qNum:23,correct:'c',dok:1},{qNum:24,correct:'b',dok:2},{qNum:25,correct:'b',dok:3},
+  ]}
+  return null
+}
+// Written MC total is now always grade-specific via getWrittenMcTotal()
 
 const DIMS = [
   { key: 'receptive_language', label: 'Receptive Language', desc: 'Listening & reading for their class level',
@@ -326,7 +363,7 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
     { key: 'word_reading_attempted', label: 'WR Attempted', max: null },
     { key: 'passage_cwpm', label: 'CWPM', max: null },
     { key: 'comprehension', label: 'Comprehension', max: 5 },
-    { key: 'written_mc', label: 'MC', max: WRITTEN_MC_TOTAL },
+    { key: 'written_mc', label: 'MC', max: getWrittenMcTotal(levelTest.grade) },
     { key: 'writing', label: 'Writing', max: 20 },
   ]
 
@@ -866,7 +903,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                       <div className="space-y-0.5">
                         {(studentData[modalStudent.id].calc?.weighted_cwpm ?? studentData[modalStudent.id].scores.passage_cwpm ?? studentData[modalStudent.id].scores.orf_cwpm) != null && <p>Oral: <span className="font-bold text-navy">{Math.round(studentData[modalStudent.id].calc?.weighted_cwpm ?? studentData[modalStudent.id].scores.passage_cwpm ?? studentData[modalStudent.id].scores.orf_cwpm)}</span>{studentData[modalStudent.id].calc?.passage_level && <span className="text-text-tertiary text-[10px] ml-1">(Lv {studentData[modalStudent.id].calc.passage_level})</span>}</p>}
                         {studentData[modalStudent.id].scores.writing != null && <p>Writing: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.writing}/20</span></p>}
-                        {studentData[modalStudent.id].scores.written_mc != null && <p>MC: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.written_mc}/{WRITTEN_MC_TOTAL}</span></p>}
+                        {studentData[modalStudent.id].scores.written_mc != null && <p>MC: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.written_mc}/{getWrittenMcTotal(levelTest.grade)}</span></p>}
                         {studentData[modalStudent.id].calc?.comp_total != null && <p>Comp: <span className="font-bold text-navy">{studentData[modalStudent.id].calc.comp_total}/15</span></p>}
                         {studentData[modalStudent.id].scores.word_reading_correct != null && <p>WR: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.word_reading_correct}{studentData[modalStudent.id].scores.word_reading_attempted ? `/${studentData[modalStudent.id].scores.word_reading_attempted}` : ''}</span></p>}
                       </div>) : <p className="text-text-tertiary italic">No scores yet</p>}
@@ -1006,6 +1043,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   // Grade 1 uses its own ResultsView
   if (String(levelTest.grade) === '1') return <G1ResultsWrapper levelTest={levelTest} />
 
+  const GRADE_MC_TOTAL = getWrittenMcTotal(levelTest.grade)
   const [students, setStudents] = useState<Student[]>([])
   const [scores, setScores] = useState<Record<string, any>>({})
   const [anecdotals, setAnecdotals] = useState<Record<string, any>>({})
@@ -1016,6 +1054,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>('all')
   const [filterPassage, setFilterPassage] = useState<string>('all')
   const [showBorderline, setShowBorderline] = useState(false)
+  const [excludedQuestions, setExcludedQuestions] = useState<number[]>([])
 
   const handlePrintSummary = (allRows: any[]) => {
     const pw = window.open('', '_blank'); if (!pw) return
@@ -1037,9 +1076,8 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           <td style="padding:6px 10px;font-weight:600">${r.student.english_name}<br><span style="color:#94a3b8;font-size:10px">${r.student.korean_name}</span></td>
           <td style="padding:6px 10px;text-align:center">${r.rawCwpm != null ? Math.round(r.rawCwpm) : '—'}${r.passageLevel ? ' (' + r.passageLevel + ')' : ''}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawWriting ?? '—'}</td>
-          <td style="padding:6px 10px;text-align:center">${r.rawMc != null ? r.rawMc + '/' + WRITTEN_MC_TOTAL : '—'}</td>
+          <td style="padding:6px 10px;text-align:center">${r.rawMc != null ? r.rawMc + '/' + GRADE_MC_TOTAL : '—'}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawComp != null ? r.rawComp + '/15' : '—'}</td>
-          <td style="padding:6px 10px;text-align:center">${(r.gradeScore * 100).toFixed(0)}%</td>
           <td style="padding:6px 10px;text-align:center;font-weight:700;color:#1e3a5f">${(r.composite * 100).toFixed(0)}</td>
           <td style="padding:6px 10px;text-align:center">${Math.round(r.percentile * 100)}%</td>
           <td style="padding:6px 10px;text-align:center;font-weight:600;${move ? 'color:#d97706' : ''}">${r.suggestedClass}${move ? ' *' : ''}</td>
@@ -1060,15 +1098,14 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Writing</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">MC</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Comp</th>
-            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Grades</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:800">Composite</th>
-            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">%ile</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Rank</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Suggested</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Teacher</th>
           </tr></thead>
           <tbody>${rowsHTML}</tbody>
         </table>
-        <p style="font-size:9px;color:#94a3b8;margin-top:8px">* = suggested class differs from current. Composite = 30% test + 40% grades + 30% anecdotal. Printed ${new Date().toLocaleDateString()}</p>
+        <p style="font-size:9px;color:#94a3b8;margin-top:8px">* = suggested class differs from current. Composite = 40% oral + 15% MC + 35% writing + 10% teacher rating. Printed ${new Date().toLocaleDateString()}</p>
       </div>`
     })
 
@@ -1096,6 +1133,9 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
       const sm: Record<string, any> = {}; sd?.forEach((s: any) => { sm[s.student_id] = s }); setScores(sm)
       const am: Record<string, any> = {}; ad?.forEach((a: any) => { am[a.student_id] = a }); setAnecdotals(am)
       const bm: Record<string, any> = {}; bd?.forEach((b: any) => { bm[b.english_class] = b }); setBenchmarks(bm)
+      // Load excluded questions from level test config
+      const { data: ltData } = await supabase.from('level_tests').select('config').eq('id', levelTest.id).single()
+      if (ltData?.config?.excluded_questions) setExcludedQuestions(ltData.config.excluded_questions)
       setLoading(false)
     })()
   }, [levelTest.id, levelTest.grade])
@@ -1135,13 +1175,30 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   }, [students, scores, benchmarks])
 
   const rows = useMemo(() => {
-    const r = students.map(s => computeRow(s, scores, anecdotals, enhancedBenchmarks, semGrades))
+    const r = students.map(s => computeRow(s, scores, anecdotals, enhancedBenchmarks, semGrades, levelTest.grade, excludedQuestions))
     const sorted = [...r].sort((a, b) => a.composite - b.composite)
     return sorted.map((row, idx) => ({
       ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
       suggestedClass: suggestClass(row, idx, sorted.length),
     }))
-  }, [students, scores, anecdotals, enhancedBenchmarks, semGrades])
+  }, [students, scores, anecdotals, enhancedBenchmarks, semGrades, excludedQuestions])
+
+  // Class averages for hover card comparison bars
+  const hoverClassAverages = useMemo(() => {
+    const result: Record<string, { oral: number | null; writing: number | null; mc: number | null; comp: number | null; composite: number | null; count: number }> = {}
+    ENGLISH_CLASSES.forEach(cls => {
+      const classRows = rows.filter(r => r.student.english_class === cls)
+      if (classRows.length === 0) { result[cls] = { oral: null, writing: null, mc: null, comp: null, composite: null, count: 0 }; return }
+      const orals = classRows.map(r => r.rawCwpm).filter(v => v != null) as number[]
+      const writings = classRows.map(r => r.rawWriting).filter(v => v != null) as number[]
+      const mcs = classRows.map(r => r.rawMc).filter(v => v != null) as number[]
+      const comps = classRows.map(r => r.rawComp).filter(v => v != null) as number[]
+      const composites = classRows.map(r => r.composite)
+      const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+      result[cls] = { oral: avg(orals), writing: avg(writings), mc: avg(mcs), comp: avg(comps), composite: avg(composites), count: classRows.length }
+    })
+    return result
+  }, [rows])
 
   const displayed = useMemo(() => {
     let res = [...rows]
@@ -1154,6 +1211,8 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
       case 'cwpm': res.sort((a, b) => (b.rawCwpm ?? -1) - (a.rawCwpm ?? -1)); break
       case 'comp': res.sort((a, b) => (b.rawComp ?? -1) - (a.rawComp ?? -1)); break
       case 'writing': res.sort((a, b) => (b.rawWriting ?? -1) - (a.rawWriting ?? -1)); break
+      case 'mc': res.sort((a, b) => (b.rawMc ?? -1) - (a.rawMc ?? -1)); break
+      case 'suggested': { const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }; res.sort((a, b) => (classOrder[a.suggestedClass] || 99) - (classOrder[b.suggestedClass] || 99)); break }
       case 'name': res.sort((a, b) => a.student.english_name.localeCompare(b.student.english_name)); break
     }
     return res
@@ -1163,6 +1222,19 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
 
   return (
     <div className="px-10 py-6">
+      {/* Composite explanation blurb */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5">
+        <p className="text-[12px] font-semibold text-blue-800 mb-1">How Composite Scores Work</p>
+        <p className="text-[11px] text-blue-700">
+          The composite score combines four data points to create a single number for ranking students across the grade:
+          <span className="font-semibold"> 40% Oral Test</span> (CWPM, word reading, comprehension),
+          <span className="font-semibold"> 15% Written MC</span> (multiple choice{Number(levelTest.grade) === 2 ? ', phonics, sentences' : ''}),
+          <span className="font-semibold"> 35% Writing Rubric</span>, and
+          <span className="font-semibold"> 10% Teacher Ratings</span> (anecdotal observations).
+          When a component is missing, its weight is redistributed proportionally among the available components.
+          Higher scores indicate stronger overall English proficiency. Use the sort and filter options to explore the data before the leveling meeting.
+        </p>
+      </div>
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="flex gap-1">
           <button onClick={() => setFilterClass('all')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
@@ -1174,7 +1246,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           {['A', 'B', 'C', 'D', 'E'].map(lv => <button key={lv} onClick={() => setFilterPassage(lv)} className={`px-2 py-1 rounded text-[10px] font-medium ${filterPassage === lv ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface'}`}>{lv}</button>)}
         </div>
         <select value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[11px] bg-surface">
-          <option value="composite">Sort: Composite</option><option value="percentile">Sort: %ILE</option><option value="cwpm">Sort: Oral</option><option value="comp">Sort: Comp</option><option value="writing">Sort: Writing</option><option value="name">Sort: Name</option>
+          <option value="composite">Sort: Composite</option><option value="percentile">Sort: Rank</option><option value="cwpm">Sort: Oral (CWPM)</option><option value="comp">Sort: Comprehension</option><option value="writing">Sort: Writing</option><option value="mc">Sort: MC</option><option value="suggested">Sort: Suggested Class</option><option value="name">Sort: Name</option>
         </select>
         <button onClick={() => setShowBorderline(!showBorderline)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showBorderline ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}>
           <AlertTriangle size={12} /> Borderline
@@ -1184,10 +1256,10 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
         </button>
         <button onClick={() => {
           exportToCSV(`leveling-G${levelTest.grade}`,
-            ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Writing', 'MC', 'Comp', 'Grade Avg%', 'Anecdotal', 'Composite', 'Percentile', 'Suggested'],
+            ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Writing', 'MC', 'Comp', 'Anecdotal', 'Composite', 'Rank', 'Suggested'],
             displayed.map(r => [r.student.english_name, r.student.korean_name, r.student.english_class,
               r.passageLevel ?? '', r.rawCwpm != null ? Math.round(r.rawCwpm) : '', r.rawWriting ?? '', r.rawMc ?? '', r.rawComp ?? '',
-              (r.gradeScore * 100).toFixed(0), (r.anecScore * 100).toFixed(0), (r.composite * 100).toFixed(0),
+              (r.anecScore * 100).toFixed(0), (r.composite * 100).toFixed(0),
               Math.round(r.percentile * 100), r.suggestedClass]))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
           <Download size={12} /> CSV
@@ -1203,12 +1275,12 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
-            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Grade Avg</th>
-            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Anecdotal</th>
-            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Composite</th>
-            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">%ile</th>
-            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Suggested</th>
+            {excludedQuestions.length > 0 && <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#2563eb', backgroundColor: '#eff6ff' }}>Adj MC</th>}
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Teacher</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Composite</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Rank</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Suggested</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Rec.</th>
           </tr></thead>
           <tbody>{displayed.map(row => {
             const move = row.suggestedClass !== row.student.english_class
@@ -1220,17 +1292,21 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                 <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}>{row.rawCwpm != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(row.rawCwpm)}{row.passageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.passageLevel})</span>}</span> : '—'}</td>
                 <td className="px-2 py-2 text-center">{row.rawComp != null ? <span>{row.rawComp}<span className="text-text-tertiary/50">/15</span></span> : '—'}</td>
                 <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.rawWriting != null ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawWriting}<span className="text-text-tertiary/50">/20</span></span> : '—'}</td>
-                <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.rawMc != null ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawMc}<span className="text-text-tertiary/50">/{WRITTEN_MC_TOTAL}</span></span> : '—'}</td>
-                <td className="px-2 py-2 text-center">{row.gradeScore !== 0.5 ? `${(row.gradeScore * 100).toFixed(0)}%` : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.rawMc != null ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawMc}<span className="text-text-tertiary/50">/{GRADE_MC_TOTAL}</span></span> : '—'}</td>
+                {excludedQuestions.length > 0 && (
+                  <td className="px-2 py-2 text-center" style={{ backgroundColor: '#eff6ff' }} title={`Composite adjusted: ${excludedQuestions.length} question${excludedQuestions.length !== 1 ? 's' : ''} excluded from MC scoring`}>
+                    {row.adjMcScore != null && row.adjMcMax != null ? <span className="font-medium text-blue-700">{row.adjMcScore}<span className="text-blue-400">/{row.adjMcMax}</span></span> : '—'}
+                  </td>
+                )}
                 <td className="px-2 py-2 text-center">{row.anecScore !== 0.5 ? (row.anecScore * 4).toFixed(1) : '—'}</td>
-                <td className="px-2 py-2 text-center font-bold text-navy">{(row.composite * 100).toFixed(0)}</td>
+                <td className="px-2 py-2 text-center font-bold text-navy" title={excludedQuestions.length > 0 ? `Composite adjusted: ${excludedQuestions.length} question${excludedQuestions.length !== 1 ? 's' : ''} excluded from MC scoring` : undefined}>{excludedQuestions.length > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-0.5 align-super" />}{(row.composite * 100).toFixed(0)}</td>
                 <td className="px-2 py-2 text-center">{(row.percentile * 100).toFixed(0)}%</td>
                 <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${move ? 'ring-2 ring-amber-400' : ''}`} style={{ backgroundColor: classToColor(row.suggestedClass) + '40', color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span></td>
                 <td className="px-2 py-2 text-center">{row.anec?.teacher_recommends ? <span className={`text-[9px] font-bold ${row.anec.teacher_recommends === 'keep' ? 'text-blue-600' : row.anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{row.anec.teacher_recommends === 'keep' ? 'Keep' : row.anec.teacher_recommends === 'move_up' ? 'Up' : 'Down'}</span> : '—'}</td>
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Test score = avg of oral (adjusted), writing, MC, comprehension{Number(levelTest.grade) === 2 ? ', phonics, sentences' : ''}. Composite = 30% test + 40% grades + 30% anecdotal. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier.</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 40% oral test + 15% MC + 35% writing rubric + 10% teacher rating. Rank = position within the grade (higher = stronger). <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
     </div>
   )
 }
@@ -1254,10 +1330,11 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   const [profileStudent, setProfileStudent] = useState<Student | null>(null)
   const [profileData, setProfileData] = useState<any>(null)
-  const [weights, setWeights] = useState({ test: 30, grades: 40, anecdotal: 30 })
+  const [weights, setWeights] = useState({ test: 40, mc: 15, grades: 35, anecdotal: 10 })
   const [showWeights, setShowWeights] = useState(false)
   const [compareStudents, setCompareStudents] = useState<string[]>([])
   const [showCompare, setShowCompare] = useState(false)
+  const [meetingExcludedQ, setMeetingExcludedQ] = useState<number[]>([])
 
   useEffect(() => {
     (async () => {
@@ -1287,10 +1364,14 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
         })
       }
       setBenchmarks(bm)
+      // Load excluded questions
+      const { data: ltConfig } = await supabase.from('level_tests').select('config').eq('id', levelTest.id).single()
+      const meetingExcluded = ltConfig?.config?.excluded_questions || []
+      setMeetingExcludedQ(meetingExcluded)
       if (studs) {
         const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').in('student_id', studs.map((s: any) => s.id))
         const sgm: Record<string, any[]> = {}; sg?.forEach((g: any) => { const gWithName = { ...g, semester_name: g.semesters?.name || '', score: g.final_grade ?? g.calculated_grade ?? null }; if (!sgm[g.student_id]) sgm[g.student_id] = []; sgm[g.student_id].push(gWithName) }); setSemGrades(sgm)
-        const auto = calcAuto(studs, sm, am, bm, sgm, { test: 0.3, grades: 0.4, anecdotal: 0.3 })
+        const auto = calcAuto(studs, sm, am, bm, sgm, { oral: 0.40, mc: 0.15, writing: 0.35, anecdotal: 0.10 }, levelTest.grade)
         setAutoPlacements(auto)
         const pm: Record<string, EnglishClass> = {}
         if (pd?.length) pd.forEach((p: any) => { pm[p.student_id] = p.final_placement })
@@ -1302,9 +1383,40 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   }, [levelTest.id, levelTest.grade])
 
   const recompute = () => {
-    const auto = calcAuto(students, scores, anecdotals, benchmarks, semGrades, { test: weights.test / 100, grades: weights.grades / 100, anecdotal: weights.anecdotal / 100 })
+    const auto = calcAuto(students, scores, anecdotals, benchmarks, semGrades, { oral: weights.test / 100, mc: weights.mc / 100, writing: weights.grades / 100, anecdotal: weights.anecdotal / 100 }, levelTest.grade)
     setAutoPlacements(auto); showToast('Auto-placements recalculated (drag students to apply)')
   }
+
+  const GRADE_MC_TOTAL = getWrittenMcTotal(levelTest.grade)
+
+  // Compute rows for hover card data (composite, percentile, suggested class)
+  const rows = useMemo(() => {
+    if (students.length === 0) return []
+    const enhBench: Record<string, any> = { ...benchmarks }
+    const r = students.map(s => computeRow(s, scores, anecdotals, enhBench, semGrades, levelTest.grade, meetingExcludedQ))
+    const sorted = [...r].sort((a, b) => a.composite - b.composite)
+    return sorted.map((row, idx) => ({
+      ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
+      suggestedClass: suggestClass(row, idx, sorted.length),
+    }))
+  }, [students, scores, anecdotals, benchmarks, semGrades, meetingExcludedQ])
+
+  // Class averages for hover card comparison bars
+  const hoverClassAverages = useMemo(() => {
+    const result: Record<string, { oral: number | null; writing: number | null; mc: number | null; comp: number | null; composite: number | null; count: number }> = {}
+    ENGLISH_CLASSES.forEach(cls => {
+      const classRows = rows.filter(r => r.student.english_class === cls)
+      if (classRows.length === 0) { result[cls] = { oral: null, writing: null, mc: null, comp: null, composite: null, count: 0 }; return }
+      const orals = classRows.map(r => r.rawCwpm).filter(v => v != null) as number[]
+      const writings = classRows.map(r => r.rawWriting).filter(v => v != null) as number[]
+      const mcs = classRows.map(r => r.rawMc).filter(v => v != null) as number[]
+      const comps = classRows.map(r => r.rawComp).filter(v => v != null) as number[]
+      const composites = classRows.map(r => r.composite)
+      const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+      result[cls] = { oral: avg(orals), writing: avg(writings), mc: avg(mcs), comp: avg(comps), composite: avg(composites), count: classRows.length }
+    })
+    return result
+  }, [rows])
 
   const resetToCurrentClasses = () => {
     if (!confirm('Reset all students to their current class assignments? Any manual moves will be undone.')) return
@@ -1356,14 +1468,14 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
 
       {showWeights && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-center gap-6">
-          {(['test', 'grades', 'anecdotal'] as const).map(k => (
+          {([['test', 'Oral Test'], ['mc', 'MC'], ['grades', 'Writing'], ['anecdotal', 'Teacher Rating']] as const).map(([k, label]) => (
             <div key={k} className="flex items-center gap-2">
-              <label className="text-[11px] font-medium text-amber-800 capitalize">{k}:</label>
+              <label className="text-[11px] font-medium text-amber-800">{label}:</label>
               <input type="number" min={0} max={100} step={5} value={weights[k]} onChange={e => setWeights(w => ({ ...w, [k]: Number(e.target.value) }))} className="w-14 px-2 py-1 border border-amber-300 rounded text-[12px] text-center bg-white" />
               <span className="text-[11px] text-amber-600">%</span>
             </div>
           ))}
-          <span className={`text-[11px] font-bold ${weights.test + weights.grades + weights.anecdotal === 100 ? 'text-green-700' : 'text-red-600'}`}>= {weights.test + weights.grades + weights.anecdotal}%</span>
+          <span className={`text-[11px] font-bold ${weights.test + weights.mc + weights.grades + weights.anecdotal === 100 ? 'text-green-700' : 'text-red-600'}`}>= {weights.test + weights.mc + weights.grades + weights.anecdotal}%</span>
           <button onClick={recompute} className="ml-auto px-4 py-1.5 rounded-lg text-[11px] font-medium bg-amber-600 text-white hover:bg-amber-700">Recalculate</button>
         </div>
       )}
@@ -1379,103 +1491,136 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
             </div>
           </div>
           {compareStudents.length < 2 && <p className="text-[11px] text-blue-600 mb-3">Click student cards below to add them to the comparison (2-4 students).</p>}
-          {compareStudents.length >= 2 && (
-            <div>
-              {/* Radar Chart */}
-              <div className="bg-white rounded-lg border border-blue-200 p-4 mb-3">
-                <p className="text-[10px] uppercase tracking-wider text-blue-700 font-semibold mb-3">Visual Comparison</p>
-                <div className="flex justify-center">
-                  {(() => {
-                    const size = 240, cx = size / 2, cy = size / 2, r = 90
-                    const axes = ['Oral', 'Writing', 'MC', 'Comp', 'Grades', 'Anecdotal']
-                    const n = axes.length
-                    const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b']
-                    // Normalize data to 0-1
-                    const studentData = compareStudents.map(sid => {
-                      const sc = scores[sid]; const cl = sc?.calculated_metrics || {}; const an = anecdotals[sid]; const sg = semGrades[sid] || []
-                      const cwpmVal = cl.weighted_cwpm ?? cl.cwpm ?? sc?.raw_scores?.passage_cwpm ?? 0
-                      const writing = sc?.raw_scores?.writing || 0
-                      const mc = sc?.raw_scores?.written_mc || 0
-                      const comp = cl.comp_total || 0
-                      const gradeAvg = sg.length > 0 ? sg.reduce((sum: number, g: any) => sum + (g.score || 0), 0) / sg.length : 0
-                      const anAvg = an ? ([an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / Math.max(1, [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null).length) : 0
-                      return [Math.min(1, cwpmVal / 150), writing / 20, mc / WRITTEN_MC_TOTAL, comp / 15, gradeAvg / 100, anAvg / 4]
-                    })
-                    const angleStep = (Math.PI * 2) / n
-                    const getPoint = (angle: number, val: number) => ({
-                      x: cx + r * val * Math.sin(angle), y: cy - r * val * Math.cos(angle)
-                    })
+          {compareStudents.length >= 2 && (() => {
+            const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b']
+            const mcMax = getWrittenMcTotal(levelTest.grade)
+            // Build normalized data per student
+            const compStudents = compareStudents.map((sid, i) => {
+              const s = students.find(st => st.id === sid)
+              const sc = scores[sid]; const cl = sc?.calculated_metrics || {}; const an = anecdotals[sid]; const sg = semGrades[sid] || []
+              const rawCwpm = cl.weighted_cwpm ?? cl.cwpm ?? sc?.raw_scores?.passage_cwpm ?? sc?.raw_scores?.orf_cwpm ?? null
+              const rawWriting = sc?.raw_scores?.writing ?? null
+              const rawMc = sc?.raw_scores?.written_mc ?? null
+              const rawComp = cl.comp_total ?? null
+              const gradeAvg = sg.length > 0 ? sg.reduce((sum: number, g: any) => sum + (g.score || 0), 0) / sg.length : null
+              const anVals = an ? [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[] : []
+              const anAvg = anVals.length > 0 ? anVals.reduce((a: number, b: number) => a + b, 0) / anVals.length : null
+              const row = rows.find(r => r.student.id === sid)
+              return { sid, student: s, color: COLORS[i % COLORS.length], rawCwpm, rawWriting, rawMc, rawComp, gradeAvg, anAvg, an, passageLevel: cl.passage_level, composite: row?.composite, percentile: row?.percentile, suggestedClass: row?.suggestedClass }
+            })
+            // Find max oral value for scaling
+            const maxOral = Math.max(...compStudents.map(s => s.rawCwpm ?? 0), ...(Object.values(hoverClassAverages).map(a => a.oral ?? 0)), 1)
+
+            const metrics = [
+              { key: 'oral', label: 'Oral (CWPM)', max: maxOral * 1.2, getValue: (s: any) => s.rawCwpm, getClassAvg: (a: any) => a.oral },
+              { key: 'writing', label: 'Writing (/20)', max: 20, getValue: (s: any) => s.rawWriting, getClassAvg: (a: any) => a.writing },
+              { key: 'mc', label: `MC (/${mcMax})`, max: mcMax, getValue: (s: any) => s.rawMc, getClassAvg: (a: any) => a.mc },
+              { key: 'comp', label: 'Comp (/15)', max: 15, getValue: (s: any) => s.rawComp, getClassAvg: (a: any) => a.comp },
+              { key: 'anec', label: 'Teacher Rating (/4)', max: 4, getValue: (s: any) => s.anAvg, getClassAvg: () => null },
+            ]
+
+            // Unique classes among selected students for class avg reference
+            const classesInComp = [...new Set(compStudents.map(s => s.student?.english_class).filter(Boolean))] as EnglishClass[]
+
+            return (
+            <div className="space-y-3">
+              {/* ── Grouped Bar Chart ─────────────────────────── */}
+              <div className="bg-white rounded-lg border border-blue-200 p-4">
+                <p className="text-[10px] uppercase tracking-wider text-blue-700 font-semibold mb-4">Score Comparison</p>
+                <div className="space-y-4">
+                  {metrics.map(m => {
+                    const scale = m.max > 0 ? m.max : 1
                     return (
-                      <svg width={size} height={size + 24} viewBox={`0 0 ${size} ${size + 24}`}>
-                        {/* Grid lines */}
-                        {[0.25, 0.5, 0.75, 1].map(level => (
-                          <polygon key={level} points={Array.from({ length: n }, (_, i) => {
-                            const p = getPoint(i * angleStep, level)
-                            return `${p.x},${p.y}`
-                          }).join(' ')} fill="none" stroke="#e2e8f0" strokeWidth="1" />
-                        ))}
-                        {/* Axis lines and labels */}
-                        {axes.map((label, i) => {
-                          const p = getPoint(i * angleStep, 1.15)
-                          const ep = getPoint(i * angleStep, 1)
-                          return <g key={label}>
-                            <line x1={cx} y1={cy} x2={ep.x} y2={ep.y} stroke="#cbd5e1" strokeWidth="1" />
-                            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#64748b" fontWeight="600">{label}</text>
-                          </g>
-                        })}
-                        {/* Data polygons */}
-                        {studentData.map((vals, si) => {
-                          const points = vals.map((v, i) => getPoint(i * angleStep, v))
-                          return <polygon key={si}
-                            points={points.map(p => `${p.x},${p.y}`).join(' ')}
-                            fill={COLORS[si % COLORS.length] + '20'} stroke={COLORS[si % COLORS.length]} strokeWidth="2" />
-                        })}
-                        {/* Legend */}
-                        {compareStudents.map((sid, i) => {
-                          const s = students.find(st => st.id === sid)
-                          return <g key={sid} transform={`translate(${10 + i * 70}, ${size + 8})`}>
-                            <rect width="8" height="8" rx="2" fill={COLORS[i % COLORS.length]} />
-                            <text x="12" y="7" fontSize="9" fill="#475569">{s?.english_name?.split(' ')[0] || '?'}</text>
-                          </g>
-                        })}
-                      </svg>
+                      <div key={m.key}>
+                        <p className="text-[9px] font-semibold text-text-secondary mb-1.5">{m.label}</p>
+                        <div className="space-y-1">
+                          {/* Class average reference lines */}
+                          {classesInComp.map(cls => {
+                            const avg = hoverClassAverages[cls] ? m.getClassAvg(hoverClassAverages[cls]) : null
+                            if (avg == null) return null
+                            return (
+                              <div key={`avg-${cls}`} className="flex items-center gap-2">
+                                <span className="w-28 text-[8px] text-text-tertiary text-right truncate">{cls} avg</span>
+                                <div className="flex-1 h-2 bg-gray-50 rounded-full overflow-hidden relative">
+                                  <div className="h-full rounded-full" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classToColor(cls), opacity: 0.2 }} />
+                                  <div className="absolute top-0 h-full w-0.5" style={{ left: `${(avg / scale) * 100}%`, backgroundColor: classToColor(cls), opacity: 0.5 }} />
+                                </div>
+                                <span className="w-8 text-[8px] text-text-tertiary text-right">{Math.round(avg)}</span>
+                              </div>
+                            )
+                          })}
+                          {/* Student bars */}
+                          {compStudents.map(s => {
+                            const val = m.getValue(s)
+                            if (val == null) return (
+                              <div key={s.sid} className="flex items-center gap-2">
+                                <span className="w-28 text-[9px] font-medium text-right truncate" style={{ color: s.color }}>{s.student?.english_name}</span>
+                                <div className="flex-1 h-4 bg-gray-50 rounded-full"><span className="text-[8px] text-text-tertiary ml-2">--</span></div>
+                                <span className="w-8" />
+                              </div>
+                            )
+                            return (
+                              <div key={s.sid} className="flex items-center gap-2">
+                                <span className="w-28 text-[9px] font-medium text-right truncate" style={{ color: s.color }}>{s.student?.english_name}</span>
+                                <div className="flex-1 h-4 bg-gray-50 rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full transition-all" style={{ width: `${Math.min((val / scale) * 100, 100)}%`, backgroundColor: s.color, opacity: 0.7 }} />
+                                </div>
+                                <span className="w-8 text-[9px] font-bold text-right" style={{ color: s.color }}>{m.key === 'anec' ? val.toFixed(1) : Math.round(val)}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
                     )
-                  })()}
+                  })}
+                </div>
+
+                {/* Composite scores */}
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                  <p className="text-[9px] font-semibold text-text-secondary mb-1.5">Composite Score</p>
+                  <div className="flex gap-2">
+                    {compStudents.map(s => (
+                      <div key={s.sid} className="flex-1 rounded-lg p-2 text-center" style={{ backgroundColor: s.color + '10', borderLeft: `3px solid ${s.color}` }}>
+                        <p className="text-[8px] font-medium truncate" style={{ color: s.color }}>{s.student?.english_name}</p>
+                        <p className="text-[16px] font-bold" style={{ color: s.color }}>{s.composite != null ? (s.composite * 100).toFixed(0) : '--'}%</p>
+                        <p className="text-[8px] text-text-tertiary">{s.percentile != null ? `${Math.round(s.percentile * 100)}%ile` : ''}{s.passageLevel ? ` | ${s.passageLevel}` : ''}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              {/* Cards */}
-            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(compareStudents.length, 4)}, 1fr)` }}>
-              {compareStudents.map(sid => {
-                const s = students.find(st => st.id === sid)
-                if (!s) return null
-                const sc = scores[sid]; const an = anecdotals[sid]; const sg = semGrades[sid] || []
-                const gradeAvg = sg.length > 0 ? sg.reduce((sum: number, g: any) => sum + (g.score || 0), 0) / sg.length : null
-                return (
-                  <div key={sid} className="bg-white rounded-lg border border-blue-200 p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="text-[13px] font-bold text-navy">{s.english_name}</p>
-                        <p className="text-[10px] text-text-tertiary">{s.korean_name}</p>
+
+              {/* ── Detail Cards ──────────────────────────────── */}
+              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(compareStudents.length, 4)}, 1fr)` }}>
+                {compStudents.map(cs => {
+                  const s = cs.student
+                  if (!s) return null
+                  const an = cs.an
+                  return (
+                    <div key={cs.sid} className="bg-white rounded-lg border p-3" style={{ borderColor: cs.color + '60', borderLeftWidth: '3px', borderLeftColor: cs.color }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-[12px] font-bold text-navy">{s.english_name}</p>
+                          <p className="text-[9px] text-text-tertiary">{s.korean_name}</p>
+                        </div>
+                        <button onClick={() => setCompareStudents(prev => prev.filter(id => id !== cs.sid))} className="text-text-tertiary hover:text-red-500"><X size={12} /></button>
                       </div>
-                      <button onClick={() => setCompareStudents(prev => prev.filter(id => id !== sid))} className="text-text-tertiary hover:text-red-500"><X size={12} /></button>
+                      <div className="space-y-1 text-[11px]">
+                        <div className="flex justify-between"><span className="text-text-tertiary">Current</span><span className="font-bold px-1.5 py-0.5 rounded text-[9px]" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) + '40', color: classToTextColor(s.english_class as EnglishClass) }}>{s.english_class}</span></div>
+                        {cs.suggestedClass && cs.suggestedClass !== s.english_class && (
+                          <div className="flex justify-between"><span className="text-text-tertiary">Suggested</span><span className="font-bold px-1.5 py-0.5 rounded text-[9px]" style={{ backgroundColor: classToColor(cs.suggestedClass as EnglishClass) + '40', color: classToTextColor(cs.suggestedClass as EnglishClass) }}>{cs.suggestedClass}</span></div>
+                        )}
+                        <div className="flex justify-between"><span className="text-text-tertiary">Grade Avg</span><span className={`font-bold ${cs.gradeAvg != null ? (cs.gradeAvg >= 80 ? 'text-green-600' : cs.gradeAvg >= 60 ? 'text-amber-600' : 'text-red-600') : ''}`}>{cs.gradeAvg != null ? `${cs.gradeAvg.toFixed(0)}%` : '--'}</span></div>
+                        <div className="flex justify-between"><span className="text-text-tertiary">Teacher Rec</span><span className={`font-bold text-[10px] ${an?.teacher_recommends === 'move_up' ? 'text-green-600' : an?.teacher_recommends === 'move_down' ? 'text-red-600' : 'text-blue-600'}`}>{an?.teacher_recommends === 'keep' ? 'KEEP' : an?.teacher_recommends === 'move_up' ? 'MOVE UP' : an?.teacher_recommends === 'move_down' ? 'MOVE DOWN' : '--'}</span></div>
+                        {an?.notes && <p className="text-[9px] text-text-secondary bg-surface-alt rounded px-2 py-1 mt-1 italic">"{an.notes}"</p>}
+                      </div>
                     </div>
-                    <div className="space-y-1.5 text-[11px]">
-                      <div className="flex justify-between"><span className="text-text-tertiary">Current</span><span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) + '40', color: classToTextColor(s.english_class as EnglishClass) }}>{s.english_class}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Oral</span><span className="font-bold text-navy">{sc?.calculated_metrics?.weighted_cwpm != null ? Math.round(sc.calculated_metrics.weighted_cwpm) : (sc?.raw_scores?.passage_cwpm ?? sc?.raw_scores?.orf_cwpm) != null ? Math.round(sc.raw_scores.passage_cwpm ?? sc.raw_scores.orf_cwpm) : '—'}{sc?.calculated_metrics?.passage_level ? ` (${sc.calculated_metrics.passage_level})` : ''}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Writing</span><span className="font-bold text-navy">{sc?.raw_scores?.writing ?? '—'}/20</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">MC</span><span className="font-bold text-navy">{sc?.raw_scores?.written_mc ?? '—'}/{WRITTEN_MC_TOTAL}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Comp</span><span className="font-bold text-navy">{sc?.calculated_metrics?.comp_total ?? '—'}/15</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Grade Avg</span><span className={`font-bold ${gradeAvg != null ? (gradeAvg >= 80 ? 'text-green-600' : gradeAvg >= 60 ? 'text-amber-600' : 'text-red-600') : ''}`}>{gradeAvg != null ? `${gradeAvg.toFixed(0)}%` : '—'}</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Anecdotal Avg</span><span className="font-bold text-navy">{an ? ((([an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[]).reduce((a: number, b: number) => a + b, 0) / [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null).length) || 0).toFixed(1) : '—'}/4</span></div>
-                      <div className="flex justify-between"><span className="text-text-tertiary">Teacher Rec</span><span className={`font-bold text-[10px] ${an?.teacher_recommends === 'move_up' ? 'text-green-600' : an?.teacher_recommends === 'move_down' ? 'text-red-600' : 'text-blue-600'}`}>{an?.teacher_recommends === 'keep' ? 'KEEP' : an?.teacher_recommends === 'move_up' ? 'MOVE UP' : an?.teacher_recommends === 'move_down' ? 'MOVE DOWN' : '—'}</span></div>
-                      {an?.notes && <p className="text-[10px] text-text-secondary bg-surface-alt rounded px-2 py-1 mt-1 italic">{an.notes}</p>}
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-            </div>
-          )}
+            )
+          })()}
         </div>
       )}
 
@@ -1506,9 +1651,13 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                           className="w-3 h-3 rounded border-blue-300 text-blue-600 flex-shrink-0" />
                       )}
                       <GripVertical size={10} className="text-text-tertiary flex-shrink-0" />
-                      <div className="flex-1 min-w-0"><LevelingHoverCard studentId={student.id} studentName={student.english_name} koreanName={student.korean_name} className={student.english_class} grade={student.grade}
-                        trigger={<p className="text-[10px] font-semibold text-navy truncate cursor-pointer hover:underline">{student.english_name}</p>}
-                      /><p className="text-[8px] text-text-tertiary truncate">{student.korean_name}</p></div>
+                      <div className="flex-1 min-w-0">{(() => {
+                        const row = rows.find(r => r.student.id === student.id)
+                        return <LevelingHoverCard studentId={student.id} studentName={student.english_name} koreanName={student.korean_name} className={student.english_class} grade={student.grade}
+                          levelTestData={row ? { rawCwpm: row.rawCwpm, rawWriting: row.rawWriting, rawMc: row.rawMc, rawComp: row.rawComp, passageLevel: row.passageLevel, composite: row.composite, percentile: row.percentile ?? null, suggestedClass: row.suggestedClass ?? null, classAverages: hoverClassAverages, mcTotal: GRADE_MC_TOTAL } : undefined}
+                          trigger={<p className="text-[10px] font-semibold text-navy truncate cursor-pointer hover:underline">{student.english_name}</p>}
+                        />
+                      })()}<p className="text-[8px] text-text-tertiary truncate">{student.korean_name}</p></div>
                       <div className="flex items-center gap-0.5">
                         {up && <ArrowUp size={10} className="text-green-500" />}{down && <ArrowDown size={10} className="text-red-500" />}{!up && !down && <Minus size={10} className="text-text-tertiary" />}
                         {bigJump && <span className="text-[7px] font-bold bg-red-500 text-white px-1 rounded">{levelDiff}+</span>}
@@ -1616,14 +1765,44 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   )
 }
 
-function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>) {
+function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, grade: number | string, excludedQuestions?: number[]) {
   const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
+  const gradeMcTotal = getWrittenMcTotal(grade)
   // CWPM: prefer weighted_cwpm (includes passage + NAEP adjustment), fallback to raw
+  // Oral uses benchmark-relative scoring because different classes read different-difficulty passages
   const rawCwpmValue = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
   const cwpmRatio = rawCwpmValue != null && bench.cwpm_end > 0 ? rawCwpmValue / bench.cwpm_end : null
-  const writingRatio = sc.writing != null && bench.writing_end > 0 ? sc.writing / bench.writing_end : null
-  const mcBench = bench.mc_end > 0 ? bench.mc_end : WRITTEN_MC_TOTAL
-  const mcPct = sc.written_mc != null ? sc.written_mc / mcBench : null
+  // Written test: ALL students take the SAME test, so use raw % of max possible (not class benchmarks)
+  // This ensures cross-class comparability — a 20/40 MC is 50% regardless of which class the student is in
+  const writingRatio = sc.writing != null ? sc.writing / 20 : null
+
+  // ── Adjusted MC: recalculate excluding bad questions ──
+  const excluded = excludedQuestions && excludedQuestions.length > 0 ? new Set(excludedQuestions) : null
+  let mcPct: number | null = null
+  let adjMcScore: number | null = null
+  let adjMcMax: number | null = null
+  if (excluded && sc.written_answers && typeof sc.written_answers === 'object') {
+    // Recalculate from per-question answers
+    const gradeConfig = getGradeConfigForComposite(Number(grade))
+    if (gradeConfig) {
+      let adjCorrect = 0
+      let adjMax = 0
+      gradeConfig.questions.forEach((q: any) => {
+        if (excluded.has(q.qNum)) return
+        const w = q.dok >= 2 ? 2 : 1
+        adjMax += w
+        if (sc.written_answers[q.qNum] === q.correct) adjCorrect += w
+      })
+      adjMcScore = adjCorrect
+      adjMcMax = adjMax
+      mcPct = adjMax > 0 ? adjCorrect / adjMax : null
+    } else {
+      mcPct = sc.written_mc != null ? sc.written_mc / gradeMcTotal : null
+    }
+  } else {
+    mcPct = sc.written_mc != null ? sc.written_mc / gradeMcTotal : null
+  }
+
   const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
   // Comprehension: comp_total / 15 (5 questions × 0-3 scale)
   const compRatio = calc.comp_total != null && calc.comp_total > 0 ? calc.comp_total / (calc.comp_max || 15) : null
@@ -1633,16 +1812,37 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   const sentRatio = studentGrade === 2 && calc.sentence_total != null && calc.sentence_total > 0 ? calc.sentence_total / 35 : null
   const testRatios = [cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, phonicsRatio, sentRatio].filter(v => v != null) as number[]
   const testScore = testRatios.length > 0 ? testRatios.reduce((a, b) => a + b, 0) / testRatios.length : 0.5
+  // Separate oral and written test scores for composite weighting
+  const oralRatios = [cwpmRatio, wrAcc, compRatio].filter(v => v != null) as number[]
+  const oralScore = oralRatios.length > 0 ? oralRatios.reduce((a, b) => a + b, 0) / oralRatios.length : null
+  // Written test split into MC and writing rubric for independent weighting
+  const mcRatios = [mcPct, phonicsRatio, sentRatio].filter(v => v != null) as number[]
+  const mcScore = mcRatios.length > 0 ? mcRatios.reduce((a, b) => a + b, 0) / mcRatios.length : null
+  const writingRubricScore = writingRatio // already null if no data (raw / 20)
+  // Grade average: still computed for display in hover card, but NOT included in composite
   const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall'))); const gradeScore = gv.length > 0 ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length / 100 : null
   const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
   const anecScore = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
-  // Composite: if student has grades, use test 30% + grades 40% + anecdotal 30%
-  // If no grades (transfer, etc.): test 80% + anecdotal 20% (heavier on test)
+  // Composite: 40% oral + 15% MC + 35% writing rubric + 10% teacher rating = 100%
+  // When components are missing, redistribute proportionally among available components
+  const hasOral = oralScore != null
+  const hasMc = mcScore != null
+  const hasWritingRubric = writingRubricScore != null
+  const hasAnec = av.length > 0
   const hasGrades = gradeScore != null
   const gScore = gradeScore ?? 0.5
-  const composite = hasGrades
-    ? testScore * 0.30 + gScore * 0.40 + anecScore * 0.30
-    : testScore * 0.80 + anecScore * 0.20
+  let composite: number
+  const parts: { score: number; weight: number }[] = []
+  if (hasOral) parts.push({ score: oralScore, weight: 0.40 })
+  if (hasMc) parts.push({ score: mcScore, weight: 0.15 })
+  if (hasWritingRubric) parts.push({ score: writingRubricScore, weight: 0.35 })
+  if (hasAnec) parts.push({ score: anecScore, weight: 0.10 })
+  if (parts.length > 0) {
+    const totalWeight = parts.reduce((s, p) => s + p.weight, 0)
+    composite = parts.reduce((s, p) => s + p.score * (p.weight / totalWeight), 0)
+  } else {
+    composite = 0.5
+  }
   // Outlier flags: score is 0 or below 10% of class auto-median
   // Only flag when enough classmates have data for that component (>=3 or >=50% of class) to make the median meaningful
   const outlierFlags: string[] = []
@@ -1652,7 +1852,7 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   if (oralReliable && rawCwpmValue != null && (rawCwpmValue === 0 || (bench._auto_oral_median > 0 && rawCwpmValue < bench._auto_oral_median * 0.1))) outlierFlags.push('oral')
   if (writingReliable && sc.writing != null && (sc.writing === 0 || (bench._auto_writing_median > 0 && sc.writing < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
   if (mcReliable && sc.written_mc != null && (sc.written_mc === 0 || (bench._auto_mc_median > 0 && sc.written_mc < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
-  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, rawComp: calc.comp_total ?? null, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags }
+  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags }
 }
 
 function suggestClass(row: any, idx: number, total: number): EnglishClass {
@@ -1664,26 +1864,42 @@ function suggestClass(row: any, idx: number, total: number): EnglishClass {
   return PLACEMENT_CLASSES[bi]
 }
 
-function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, w: { test: number; grades: number; anecdotal: number }): Record<string, EnglishClass> {
+function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, w: { oral: number; mc: number; writing: number; anecdotal: number }, grade: number | string): Record<string, EnglishClass> {
   const result: Record<string, EnglishClass> = {}
   const metrics: Record<string, number> = {}
+  const gradeMcTotal = getWrittenMcTotal(grade)
   students.forEach(s => {
     const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
     const rawCwpmValue = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
-    const tr: number[] = []; if (rawCwpmValue != null && bench.cwpm_end > 0) tr.push(rawCwpmValue / bench.cwpm_end); if (sc.writing != null && bench.writing_end > 0) tr.push(sc.writing / bench.writing_end); const mcBench = bench.mc_end > 0 ? bench.mc_end : WRITTEN_MC_TOTAL; if (sc.written_mc != null) tr.push(sc.written_mc / mcBench); if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) tr.push(sc.word_reading_correct / sc.word_reading_attempted)
-    if (calc.comp_total != null && calc.comp_total > 0) tr.push(calc.comp_total / (calc.comp_max || 15))
-    const sg = Number(s.grade); if (sg === 2 && calc.phonics_total != null && calc.phonics_total > 0) tr.push(calc.phonics_total / 25); if (sg === 2 && calc.sentence_total != null && calc.sentence_total > 0) tr.push(calc.sentence_total / 35)
-    const ts = tr.length > 0 ? tr.reduce((a, b) => a + b, 0) / tr.length : 0.5
-    // Filter to fall semester grades only (matches computeRow behavior)
-    const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall')))
-    const hasGrades = gv.length > 0
-    const gs = hasGrades ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length / 100 : 0.5
+    // Oral components
+    const oralRatios: number[] = []
+    if (rawCwpmValue != null && bench.cwpm_end > 0) oralRatios.push(rawCwpmValue / bench.cwpm_end)
+    if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) oralRatios.push(sc.word_reading_correct / sc.word_reading_attempted)
+    if (calc.comp_total != null && calc.comp_total > 0) oralRatios.push(calc.comp_total / (calc.comp_max || 15))
+    const oralScore = oralRatios.length > 0 ? oralRatios.reduce((a, b) => a + b, 0) / oralRatios.length : null
+    // Written test split: MC and writing rubric scored separately
+    const mcRatios: number[] = []
+    if (sc.written_mc != null) mcRatios.push(sc.written_mc / gradeMcTotal)
+    const sg = Number(s.grade); if (sg === 2 && calc.phonics_total != null && calc.phonics_total > 0) mcRatios.push(calc.phonics_total / 25); if (sg === 2 && calc.sentence_total != null && calc.sentence_total > 0) mcRatios.push(calc.sentence_total / 35)
+    const mcScoreVal = mcRatios.length > 0 ? mcRatios.reduce((a, b) => a + b, 0) / mcRatios.length : null
+    const writingRubricVal = sc.writing != null ? sc.writing / 20 : null
+    // Teacher rating
     const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
     const as2 = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
-    // When student has no grades, weight heavier on test (matches computeRow fallback)
-    metrics[s.id] = hasGrades
-      ? ts * w.test + gs * w.grades + as2 * w.anecdotal
-      : ts * 0.80 + as2 * 0.20
+    const hasAnec = av.length > 0
+    // Composite: 40% oral + 15% MC + 35% writing rubric + 10% teacher rating
+    // Redistribute proportionally when components are missing
+    const parts: { score: number; weight: number }[] = []
+    if (oralScore != null) parts.push({ score: oralScore, weight: w.oral })
+    if (mcScoreVal != null) parts.push({ score: mcScoreVal, weight: w.mc })
+    if (writingRubricVal != null) parts.push({ score: writingRubricVal, weight: w.writing })
+    if (hasAnec) parts.push({ score: as2, weight: w.anecdotal })
+    if (parts.length > 0) {
+      const totalWeight = parts.reduce((s, p) => s + p.weight, 0)
+      metrics[s.id] = parts.reduce((s, p) => s + p.score * (p.weight / totalWeight), 0)
+    } else {
+      metrics[s.id] = 0.5
+    }
   })
   const sorted = students.map(s => ({ id: s.id, m: metrics[s.id] || 0 })).sort((a, b) => a.m - b.m)
   const PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
