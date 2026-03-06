@@ -310,3 +310,28 @@ CREATE POLICY "Allow all reads on score history"
 ALTER TABLE leveling_snapshots ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all on snapshots"
   ON leveling_snapshots FOR ALL USING (true) WITH CHECK (true);
+
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- MERGE TRIGGER: atomic JSONB merge on upsert
+-- ════════════════════════════════════════════════════════════════════════════
+-- When an upsert hits the ON CONFLICT → UPDATE path, this trigger merges
+-- NEW keys into OLD rather than replacing the whole column.
+-- This is what prevents oral saves from clobbering written keys and vice versa.
+
+CREATE OR REPLACE FUNCTION merge_level_test_scores()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    NEW.raw_scores = OLD.raw_scores || NEW.raw_scores;
+    NEW.calculated_metrics = OLD.calculated_metrics || NEW.calculated_metrics;
+    NEW.previous_class = COALESCE(NEW.previous_class, OLD.previous_class);
+    NEW.entered_by = COALESCE(NEW.entered_by, OLD.entered_by);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_merge_level_test_scores
+  BEFORE UPDATE ON level_test_scores
+  FOR EACH ROW EXECUTE FUNCTION merge_level_test_scores();
