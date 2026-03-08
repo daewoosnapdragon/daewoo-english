@@ -17,6 +17,7 @@ import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecor
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
 import LevelingAnalytics from '@/components/leveling/LevelingAnalytics'
+import StudentLevelingCard, { PrintDossier } from '@/components/leveling/StudentLevelingCard'
 
 type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'analytics' | 'meeting'
 
@@ -1373,7 +1374,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   const [dragStudent, setDragStudent] = useState<string | null>(null)
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   const [profileStudent, setProfileStudent] = useState<Student | null>(null)
-  const [profileData, setProfileData] = useState<any>(null)
+  const [showPrintDossier, setShowPrintDossier] = useState(false)
   const [weights, setWeights] = useState({ test: 40, mc: 15, grades: 35, anecdotal: 10 })
   const [showWeights, setShowWeights] = useState(false)
   const [compareStudents, setCompareStudents] = useState<string[]>([])
@@ -1504,6 +1505,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
         <div className="flex gap-2">
           <button onClick={() => setShowWeights(!showWeights)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showWeights ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}><SlidersHorizontal size={13} /> Weights</button>
           <button onClick={() => setShowCompare(!showCompare)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showCompare ? 'bg-blue-100 text-blue-700' : 'bg-surface-alt text-text-secondary'}`}><Users size={13} /> Compare{compareStudents.length > 0 ? ` (${compareStudents.length})` : ''}</button>
+          <button onClick={() => setShowPrintDossier(true)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-blue-50 hover:text-blue-700"><Printer size={13} /> Print Dossier</button>
           {isLeadTeacher && <button onClick={resetToCurrentClasses} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-amber-50 hover:text-amber-700">Reset to Current Classes</button>}
           <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save</button>
           {isLeadTeacher && levelTest.status !== 'finalized' && <button onClick={handleFinalize} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-green-600 text-white hover:bg-green-700"><Lock size={14} /> Finalize</button>}
@@ -1716,7 +1718,10 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                         <p className="text-text-secondary">Was: <b>{student.english_class}</b> | Auto: <b>{auto || '—'}</b></p>
                         {anec?.notes && <p className="text-text-tertiary italic">"{anec.notes}"</p>}
                         {semGrades[student.id]?.length > 0 && <div><p className="font-semibold text-text-secondary">Grades:</p>{semGrades[student.id].slice(0, 4).map((g: any, i: number) => <span key={i} className="inline-block mr-2">{g.domain}: {g.score?.toFixed(0)}%</span>)}</div>}
-                        <select value={cls} onChange={e => { setPlacements(prev => ({ ...prev, [student.id]: e.target.value as EnglishClass })); setDragStudent(null) }} className="w-full px-2 py-1 border border-border rounded text-[10px] bg-surface mt-1">{ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
+                        <div className="flex gap-1.5 mt-1">
+                          <select value={cls} onChange={e => { setPlacements(prev => ({ ...prev, [student.id]: e.target.value as EnglishClass })); setDragStudent(null) }} className="flex-1 px-2 py-1 border border-border rounded text-[10px] bg-surface">{ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
+                          <button onClick={() => setProfileStudent(student)} className="px-2 py-1 rounded text-[9px] font-medium bg-navy text-white hover:bg-navy-dark">Full Profile</button>
+                        </div>
                       </div>
                     )}
                   </div>)})}</div>
@@ -1724,85 +1729,49 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
         })}
       </div>
 
-      {/* Student Profile Modal */}
+      {/* Student Profile Modal -- full leveling dossier card */}
       {profileStudent && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => { setProfileStudent(null); setProfileData(null) }}>
-          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <div>
-                <h3 className="font-display text-lg font-semibold text-navy">{profileStudent.english_name}</h3>
-                <p className="text-text-secondary text-[13px]">{profileStudent.korean_name} -- {profileStudent.english_class} -- Grade {profileStudent.grade}</p>
-              </div>
-              <button onClick={() => { setProfileStudent(null); setProfileData(null) }} className="p-2 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setProfileStudent(null)}>
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e: any) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <div />
+              <button onClick={() => setProfileStudent(null)} className="p-2 rounded-lg bg-white/80 hover:bg-white shadow-sm"><X size={16} /></button>
             </div>
-            {!profileData ? (
-              <div className="p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
-            ) : (
-              <div className="px-6 py-4 space-y-4 text-[12px]">
-                {/* Notes */}
-                {profileData.notes && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                    <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-1">Teacher Notes</p>
-                    <p className="text-text-secondary">{profileData.notes}</p>
-                  </div>
-                )}
-                {/* Grades */}
-                {profileData.grades.length > 0 && (
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Semester Grades</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {profileData.grades.slice(0, 6).map((g: any, i: number) => (
-                        <div key={i} className="bg-surface-alt rounded-lg p-2 text-center">
-                          <p className="text-[10px] text-text-tertiary capitalize">{g.domain}</p>
-                          <p className={`text-[14px] font-bold ${g.score >= 80 ? 'text-green-600' : g.score >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{g.score?.toFixed(0)}%</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {/* Reading */}
-                {profileData.reading.length > 0 && (
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Recent Reading</p>
-                    <div className="flex gap-3">
-                      {profileData.reading.slice(0, 3).map((r: any, i: number) => (
-                        <div key={i} className="bg-surface-alt rounded-lg p-2 text-center flex-1">
-                          <p className="text-[10px] text-text-tertiary">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                          <p className="text-[16px] font-bold text-navy">{r.cwpm ? Math.round(r.cwpm) : '—'}</p>
-                          <p className="text-[9px] text-text-tertiary">CWPM</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {/* Attendance */}
-                <div className="flex gap-3">
-                  <div className="bg-green-50 rounded-lg p-2 text-center flex-1">
-                    <p className="text-[14px] font-bold text-green-600">{profileData.attCounts.present}</p><p className="text-[9px] text-green-700">Present</p>
-                  </div>
-                  <div className="bg-red-50 rounded-lg p-2 text-center flex-1">
-                    <p className="text-[14px] font-bold text-red-600">{profileData.attCounts.absent}</p><p className="text-[9px] text-red-700">Absent</p>
-                  </div>
-                  <div className="bg-amber-50 rounded-lg p-2 text-center flex-1">
-                    <p className="text-[14px] font-bold text-amber-600">{profileData.attCounts.tardy}</p><p className="text-[9px] text-amber-700">Tardy</p>
-                  </div>
-                </div>
-                {/* Behavior */}
-                {profileData.behavior.length > 0 && (
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Recent Behavior ({profileData.behavior.length})</p>
-                    <div className="space-y-1 max-h-[120px] overflow-y-auto">
-                      {profileData.behavior.slice(0, 5).map((b: any) => (
-                        <div key={b.id} className={`text-[11px] px-2 py-1 rounded ${b.type === 'positive' ? 'bg-green-50 text-green-700' : b.type === 'negative' || b.type === 'abc' ? 'bg-red-50 text-red-700' : 'bg-surface-alt text-text-secondary'}`}>
-                          <span className="font-medium capitalize">{b.type}</span> -- {b.note || (b.behaviors || []).join(', ') || '—'} <span className="text-text-tertiary ml-1">({new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            <StudentLevelingCard
+              student={profileStudent}
+              scoreRow={scores[profileStudent.id]}
+              anecdotal={anecdotals[profileStudent.id]}
+              semGrades={semGrades[profileStudent.id]}
+              autoPlacement={autoPlacements[profileStudent.id]}
+              currentPlacement={placements[profileStudent.id]}
+              grade={levelTest.grade}
+            />
           </div>
+        </div>
+      )}
+
+      {/* Print Dossier Modal */}
+      {showPrintDossier && (
+        <div className="fixed inset-0 bg-white z-[200] overflow-y-auto print:static">
+          <div className="print:hidden sticky top-0 bg-white border-b border-border px-6 py-3 flex items-center justify-between z-10">
+            <span className="text-[13px] font-semibold text-navy">Print Preview -- {students.length} student cards</span>
+            <div className="flex gap-2">
+              <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
+                <Printer size={14} /> Print / Save PDF
+              </button>
+              <button onClick={() => setShowPrintDossier(false)} className="px-3 py-2 rounded-lg text-[12px] font-medium text-text-secondary hover:bg-surface-alt">Close</button>
+            </div>
+          </div>
+          <PrintDossier
+            students={students}
+            scores={scores}
+            anecdotals={anecdotals}
+            semGrades={semGrades}
+            autoPlacements={autoPlacements}
+            placements={placements}
+            grade={levelTest.grade}
+            levelTestName={levelTest.name}
+          />
         </div>
       )}
     </div>
