@@ -1027,15 +1027,15 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
   useEffect(() => {
     if (!initialized) {
       // Initialize name status from saved score
-      if (sc.o_alpha_names != null) {
+      if (sc.o_alpha_names != null && sc.o_alpha_names > 0) {
         const ns: Record<number, boolean> = {}
-        for (let i = 0; i < ALPHABET_LETTERS.length; i++) ns[i] = i < (sc.o_alpha_names ?? 0)
+        for (let i = 0; i < sc.o_alpha_names; i++) ns[i] = true
         setNameStatus(ns)
       }
       // Initialize sound status from saved score
-      if (sc.o_alpha_sounds != null) {
+      if (sc.o_alpha_sounds != null && sc.o_alpha_sounds > 0) {
         const ss: Record<number, boolean> = {}
-        for (let i = 0; i < ALPHABET_LETTERS.length; i++) ss[i] = i < (sc.o_alpha_sounds ?? 0)
+        for (let i = 0; i < sc.o_alpha_sounds; i++) ss[i] = true
         setSoundStatus(ss)
       }
       if (sc.o_alpha_words != null) setWordsCount(sc.o_alpha_words)
@@ -1045,7 +1045,8 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
 
   const toggleName = (idx: number) => {
     setNameStatus(prev => {
-      const next = { ...prev, [idx]: !prev[idx] }
+      const next = { ...prev }
+      if (next[idx]) { delete next[idx] } else { next[idx] = true }
       const count = Object.values(next).filter(Boolean).length
       updateScore(studentId, 'o_alpha_names', count)
       return next
@@ -1055,7 +1056,8 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
 
   const toggleSound = (idx: number) => {
     setSoundStatus(prev => {
-      const next = { ...prev, [idx]: !prev[idx] }
+      const next = { ...prev }
+      if (next[idx]) { delete next[idx] } else { next[idx] = true }
       const count = Object.values(next).filter(Boolean).length
       updateScore(studentId, 'o_alpha_sounds', count)
       return next
@@ -1084,7 +1086,6 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
             <button key={`name-${i}`} onClick={() => toggleName(i)}
               className={`px-2 py-3 rounded-xl text-[18px] font-bold font-serif transition-all ${
                 nameStatus[i] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
-                nameStatus[i] === false ? 'bg-red-50 text-red-400 border-2 border-red-200' :
                 'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
               }`} style={{ touchAction: 'manipulation' }}>
               {letter}
@@ -1116,7 +1117,6 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
             <button key={`sound-${i}`} onClick={() => toggleSound(i)}
               className={`px-2 py-3 rounded-xl text-[18px] font-bold font-serif transition-all ${
                 soundStatus[i] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
-                soundStatus[i] === false ? 'bg-red-50 text-red-400 border-2 border-red-200' :
                 'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
               }`} style={{ touchAction: 'manipulation' }}>
               /{letter}/
@@ -1313,9 +1313,9 @@ function LevelBWordGrid({ score, onScore }: { score: number | null | undefined; 
   const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
-    if (score != null && !initialized) {
+    if (score != null && score > 0 && !initialized) {
       const ws: Record<number, boolean> = {}
-      for (let i = 0; i < LEVEL_B_WORDS.length; i++) ws[i] = i < score
+      for (let i = 0; i < score; i++) ws[i] = true
       setWordStatus(ws)
       setInitialized(true)
     }
@@ -1323,7 +1323,8 @@ function LevelBWordGrid({ score, onScore }: { score: number | null | undefined; 
 
   const toggle = (idx: number) => {
     setWordStatus(prev => {
-      const next = { ...prev, [idx]: !prev[idx] }
+      const next = { ...prev }
+      if (next[idx]) { delete next[idx] } else { next[idx] = true }
       const count = Object.values(next).filter(Boolean).length
       onScore(count)
       return next
@@ -1337,14 +1338,13 @@ function LevelBWordGrid({ score, onScore }: { score: number | null | undefined; 
     <div className="space-y-3">
       <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
         <p className="text-[11px] font-semibold text-blue-800">Say: "Read each word. Try your best."</p>
-        <p className="text-[10px] text-blue-600 mt-0.5">Point to each word. Give 3-5 seconds per word. Tap green for correct, tap again to mark incorrect.</p>
+        <p className="text-[10px] text-blue-600 mt-0.5">Point to each word. Give 3-5 seconds per word. Tap to mark correct (green), tap again to undo.</p>
       </div>
       <div className="grid grid-cols-5 gap-2">
         {LEVEL_B_WORDS.map((word, i) => (
           <button key={i} onClick={() => toggle(i)}
             className={`px-3 py-3 rounded-xl text-[16px] font-serif font-bold transition-all ${
               wordStatus[i] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
-              wordStatus[i] === false ? 'bg-red-50 text-red-400 border-2 border-red-200 line-through' :
               'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
             }`}>
             {word}
@@ -1376,7 +1376,7 @@ function LevelCSentences({ score, onScore }: { score: number | null | undefined;
   const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
-    if (score != null && !initialized) {
+    if (score != null && score > 0 && !initialized) {
       const ws: Record<string, boolean> = {}
       let count = 0
       allWords.forEach(w => { if (count < score) { ws[w.key] = true; count++ } })
@@ -1387,7 +1387,8 @@ function LevelCSentences({ score, onScore }: { score: number | null | undefined;
 
   const toggle = (key: string) => {
     setWordStatus(prev => {
-      const next = { ...prev, [key]: !prev[key] }
+      const next = { ...prev }
+      if (next[key]) { delete next[key] } else { next[key] = true }
       const count = Object.values(next).filter(Boolean).length
       onScore(count)
       return next
@@ -1401,7 +1402,7 @@ function LevelCSentences({ score, onScore }: { score: number | null | undefined;
     <div className="space-y-3">
       <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
         <p className="text-[11px] font-semibold text-blue-800">Say: "Read these sentences out loud. Try your best."</p>
-        <p className="text-[10px] text-blue-600 mt-0.5">1 pt per word read correctly. Self-corrections count as correct. Tap each word.</p>
+        <p className="text-[10px] text-blue-600 mt-0.5">1 pt per word read correctly. Self-corrections count as correct. Tap to mark correct, tap again to undo.</p>
       </div>
       <div className="space-y-3">
         {LEVEL_C_SENTENCES.map((sent, si) => (
@@ -1414,7 +1415,6 @@ function LevelCSentences({ score, onScore }: { score: number | null | undefined;
                   <button key={key} onClick={() => toggle(key)}
                     className={`px-3 py-2 rounded-lg text-[16px] font-serif transition-all ${
                       wordStatus[key] === true ? 'bg-green-100 text-green-800 border-2 border-green-400' :
-                      wordStatus[key] === false ? 'bg-red-50 text-red-400 border-2 border-red-200 line-through' :
                       'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
                     }`}>
                     {word}
@@ -1886,6 +1886,7 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
           {passageLevel && config?.hasCwpm && (
             <div className="space-y-4">
               <LevelDEFPassage
+                key={student.id + '-' + passageLevel}
                 level={passageLevel}
                 wordsRead={sc.o_orf_words_read}
                 errors={sc.o_orf_errors}

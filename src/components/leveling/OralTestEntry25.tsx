@@ -718,9 +718,9 @@ function PhonicsClickableGrid({ sc, studentId, updateScore }: {
       const ws: Record<string, boolean> = {}
       PHONICS_ROWS.forEach((row, ri) => {
         const saved = sc[`phonics_row${ri + 1}` as keyof OralScores] as number | null | undefined
-        if (saved != null) {
+        if (saved != null && saved > 0) {
           row.words.forEach((_, wi) => {
-            ws[`${ri}-${wi}`] = wi < saved
+            if (wi < saved) ws[`${ri}-${wi}`] = true
           })
         }
       })
@@ -732,7 +732,8 @@ function PhonicsClickableGrid({ sc, studentId, updateScore }: {
   const toggle = (rowIdx: number, wordIdx: number) => {
     const key = `${rowIdx}-${wordIdx}`
     setWordStatus(prev => {
-      const next = { ...prev, [key]: !prev[key] }
+      const next = { ...prev }
+      if (next[key]) { delete next[key] } else { next[key] = true }
       const rowCount = PHONICS_ROWS[rowIdx].words.reduce((acc, _, wi) => {
         return acc + (next[`${rowIdx}-${wi}`] ? 1 : 0)
       }, 0)
@@ -767,7 +768,6 @@ function PhonicsClickableGrid({ sc, studentId, updateScore }: {
                   <button key={wi} onClick={() => toggle(ri, wi)}
                     className={`flex-1 px-3 py-3 rounded-xl text-[16px] font-serif font-bold transition-all ${
                       wordStatus[key] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
-                      wordStatus[key] === false ? 'bg-red-50 text-red-400 border-2 border-red-200 line-through' :
                       'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
                     }`} style={{ touchAction: 'manipulation' }}>
                     {word}
@@ -820,10 +820,10 @@ function SentenceClickableGrid({ sc, studentId, updateScore }: {
       const ws: Record<string, boolean> = {}
       SENTENCES.forEach((sent, si) => {
         const saved = sc[`sent_${si + 1}` as keyof OralScores] as number | null | undefined
-        if (saved != null) {
+        if (saved != null && saved > 0) {
           const words = sent.text.split(/\s+/)
           words.forEach((_, wi) => {
-            ws[`${si}-${wi}`] = wi < saved
+            if (wi < saved) ws[`${si}-${wi}`] = true
           })
         }
       })
@@ -835,7 +835,8 @@ function SentenceClickableGrid({ sc, studentId, updateScore }: {
   const toggle = (sentIdx: number, wordIdx: number) => {
     const key = `${sentIdx}-${wordIdx}`
     setWordStatus(prev => {
-      const next = { ...prev, [key]: !prev[key] }
+      const next = { ...prev }
+      if (next[key]) { delete next[key] } else { next[key] = true }
       const words = SENTENCES[sentIdx].text.split(/\s+/)
       const sentCount = words.reduce((acc, _, wi) => acc + (next[`${sentIdx}-${wi}`] ? 1 : 0), 0)
       updateScore(studentId, `sent_${sentIdx + 1}`, sentCount)
@@ -875,7 +876,6 @@ function SentenceClickableGrid({ sc, studentId, updateScore }: {
                   <button key={key} onClick={() => toggle(si, wi)}
                     className={`px-2.5 py-2 rounded-lg text-[15px] font-serif transition-all ${
                       wordStatus[key] === true ? 'bg-green-100 text-green-800 border-2 border-green-400' :
-                      wordStatus[key] === false ? 'bg-red-50 text-red-400 border-2 border-red-200 line-through' :
                       'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
                     }`} style={{ touchAction: 'manipulation' }}>
                     {word}
