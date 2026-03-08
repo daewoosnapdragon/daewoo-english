@@ -381,8 +381,8 @@ function calculateG1Composite(scores: G1Scores): {
   const alphaRaw = ((scores.o_alpha_names ?? 0) + (scores.o_alpha_sounds ?? 0) + (scores.o_alpha_words ?? 0))
   const alphaPct = (alphaRaw / 37) * 100
 
-  // Phoneme subscore
-  const phonemePct = ((scores.o_phoneme ?? 0) / 12) * 100
+  // Phoneme subscore (new UI has 20 checkboxes: 4 words x 5 checks)
+  const phonemePct = ((scores.o_phoneme ?? 0) / 20) * 100
 
   // ORF subscore - this varies dramatically by level
   let orfPct = 0
@@ -1730,14 +1730,14 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[13px] font-semibold text-navy mb-1">Component 1: Alphabet Recognition</h4>
           <p className="text-[11px] text-text-secondary mb-4">Letters: s, a, t, m, p, i, n, d, o, g, c, e, k, j, x, y (16 letters)</p>
-          <AlphabetGrids sc={sc} studentId={student.id} updateScore={updateScore} />
+          <AlphabetGrids key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} />
         </div>
 
         {/* Section 2: Phoneme Manipulation -- redesigned */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[13px] font-semibold text-navy mb-1">Component 2: Phoneme Manipulation</h4>
           <p className="text-[11px] text-text-secondary mb-4">Words: sun, map, leg, fish -- segmenting, counting, isolating sounds</p>
-          <PhonemeManipulation sc={sc} studentId={student.id} updateScore={updateScore} />
+          <PhonemeManipulation key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} />
         </div>
 
         {/* Section 3: Oral Reading Fluency -- Passage Level Selection */}
@@ -1836,11 +1836,11 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
           )}
 
           {passageLevel === 'B' && (
-            <LevelBWordGrid score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} />
+            <LevelBWordGrid key={student.id} score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} />
           )}
 
           {passageLevel === 'C' && (
-            <LevelCSentences score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} />
+            <LevelCSentences key={student.id} score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} />
           )}
 
           {passageLevel && config?.hasCwpm && (

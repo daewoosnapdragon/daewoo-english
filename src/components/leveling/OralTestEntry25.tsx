@@ -246,7 +246,7 @@ const GRADE_CONFIGS: Record<number, GradeTestConfig> = {
         text: 'I have a cat. My cat is big and black. She can run fast. She likes to nap on my bed. I have a dog, too. My dog is small and white. He likes to dig in the mud. I love my pets!',
       },
       B: {
-        title: 'My Room', lexile: '~50L', wordCount: 57, genre: 'Fiction',
+        title: 'My Room', lexile: '~50L', wordCount: 61, genre: 'Fiction',
         text: 'I have a big room. My bed is next to the wall. I have a red rug on the floor. My toys are in a box. I like to play in my room. Sometimes I read a book on my bed. My mom says, "Clean up!" I put my toys back in the box. Now my room is nice and clean.',
       },
       C: {
@@ -1307,7 +1307,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                   Show the word card. Say: "Read each word out loud. Do your best."
                   Tap each word: green = correct, tap again = incorrect. If student gets 0-1 on a row, stop.
                 </p>
-                <PhonicsClickableGrid sc={sc} studentId={student.id} updateScore={updateScore} />
+                <PhonicsClickableGrid key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} />
               </div>
             )}
 
@@ -1320,7 +1320,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 <p className="text-[11px] text-text-secondary mb-4">
                   Say: "Now read these sentences out loud. Do your best." Tap each word: green = correct, tap again = incorrect.
                 </p>
-                <SentenceClickableGrid sc={sc} studentId={student.id} updateScore={updateScore} />
+                <SentenceClickableGrid key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} />
               </div>
             )}
 
