@@ -48,9 +48,9 @@ const PASSAGE_CONFIGS: Record<PassageLevel, {
 }> = {
   A: {
     label: 'Level A: Oral Interview',
-    description: 'For students with little or no English. Teacher asks 4 basic questions.',
-    orfMax: 4, hasCwpm: false, hasNaep: false, compQuestions: 0, compMax: 0,
-    wordCount: null, passageWeight: 0, bumpUpThreshold: 4,
+    description: 'For students with little or no English. Teacher asks 5 basic questions, scoring each 0-4.',
+    orfMax: 20, hasCwpm: false, hasNaep: false, compQuestions: 0, compMax: 0,
+    wordCount: null, passageWeight: 0, bumpUpThreshold: 10,
   },
   B: {
     label: 'Level B: HF Word List',
@@ -60,9 +60,9 @@ const PASSAGE_CONFIGS: Record<PassageLevel, {
   },
   C: {
     label: 'Level C: Simple Sentences',
-    description: '3 simple sentences (15 words total). Score per word correct.',
-    orfMax: 15, hasCwpm: false, hasNaep: false, compQuestions: 0, compMax: 0,
-    wordCount: 15, passageWeight: 0, bumpDownThreshold: 0,
+    description: '3 simple sentences (11 words total). Score per word correct. If they can produce a full sentence, try Level D.',
+    orfMax: 11, hasCwpm: false, hasNaep: false, compQuestions: 0, compMax: 0,
+    wordCount: 11, passageWeight: 0, bumpDownThreshold: 0,
   },
   D: {
     label: 'Level D: "My Cat" (25 words)',
@@ -124,23 +124,23 @@ const COMP_SCORING_EXAMPLES: Record<string, string[][]> = {
     ['No answer or repeats question', 'Names an animal only', 'Names animal and gives a reason why'],
   ],
   E: [
-    ['No answer or in Korean', '"Food" or one vague item', 'Names 2+ specific items from passage'],
-    ['No answer or wrong item', 'Gets the item but vague', 'Correctly identifies what they eat first'],
-    ['No answer', 'Says "happy" or one emotion only', 'Describes change: "hungry then happy" or similar'],
-    ['No answer', '"Because lunch" or circular', 'Gives specific reason from passage or personal connection'],
+    ['No answer or in Korean', '"Food" or one vague item', '"Rice and soup" -- names both items from the passage'],
+    ['No answer or wrong item', 'Gets the item but vague', '"The rice" or "They eat the rice first"'],
+    ['No answer', 'Says "happy" or one emotion only', '"First hungry, then not hungry" or "hungry then happy"'],
+    ['No answer', '"Because lunch" or circular', '"Because they get to eat" or "rice and soup taste good"'],
     ['No answer or Korean only', 'One word: "recess" or "lunch"', 'Names a time and explains why with 2+ words'],
   ],
   F: [
     ['No answer or Korean', '"Bad" or "rain"', '"It was rainy" or "raining outside"'],
-    ['No answer', 'One item only: "cookies"', '"Mina and her mom made cookies" or names activity'],
+    ['No answer', 'One item only: "cookies"', '"Mina and her mom made paper animals" or "paper animals"'],
     ['No answer or "happy"', 'One feeling only: "sad"', '"First sad then happy" -- shows change over time'],
-    ['No answer', '"Because rain" or circular', 'Connects reason: "because she had fun inside" or similar'],
+    ['No answer', '"Because rain" or circular', '"Because she had fun making paper animals inside"'],
     ['No answer or Korean', 'One word answer', 'Names activity and gives reason in English'],
   ],
 }
 
 // ============================================================================
-// LEVEL TEST PASSAGE CONTENT (A-F) — NOT in passage library, test-only
+// LEVEL TEST PASSAGE CONTENT (A-F) -- NOT in passage library, test-only
 // ============================================================================
 
 const LEVEL_A_QUESTIONS = [
@@ -192,6 +192,51 @@ const WRITING_RUBRIC = [
   { score: 3, level: 'Phrase level', desc: 'Writes a phrase or simple sentence with some errors' },
   { score: 4, level: 'Sentence level', desc: 'Writes 1-2 complete sentences, mostly correct spelling' },
   { score: 5, level: 'Strong writer', desc: 'Writes 3+ sentences with details (numbers, colors, adjectives)' },
+]
+
+// ============================================================================
+// COMPONENT 1: ALPHABET LETTERS
+// ============================================================================
+
+const ALPHABET_LETTERS = ['s', 'a', 't', 'm', 'p', 'i', 'n', 'd', 'o', 'g', 'c', 'e', 'k', 'j', 'x', 'y']
+
+// ============================================================================
+// COMPONENT 2: PHONEME MANIPULATION WORDS
+// ============================================================================
+
+const PHONEME_WORDS = [
+  {
+    word: 'sun',
+    sounds: ['/s/', '/u/', '/n/'],
+    soundCount: 3,
+    beginning: '/s/',
+    middle: '/u/',
+    end: '/n/',
+  },
+  {
+    word: 'map',
+    sounds: ['/m/', '/a/', '/p/'],
+    soundCount: 3,
+    beginning: '/m/',
+    middle: '/a/',
+    end: '/p/',
+  },
+  {
+    word: 'leg',
+    sounds: ['/l/', '/e/', '/g/'],
+    soundCount: 3,
+    beginning: '/l/',
+    middle: '/e/',
+    end: '/g/',
+  },
+  {
+    word: 'fish',
+    sounds: ['/f/', '/i/', '/sh/'],
+    soundCount: 3,
+    beginning: '/f/',
+    middle: '/i/',
+    end: '/sh/',
+  },
 ]
 
 // ============================================================================
@@ -272,6 +317,33 @@ interface G1Scores {
   o_comp_q4?: number | null
   o_comp_q5?: number | null
   o_open_response?: number | null
+  // Level A per-question scores
+  o_a_q1?: number | null
+  o_a_q2?: number | null
+  o_a_q3?: number | null
+  o_a_q4?: number | null
+  o_a_q5?: number | null
+  // Phoneme per-word scores
+  o_ph_seg_sun?: boolean | null
+  o_ph_seg_map?: boolean | null
+  o_ph_seg_leg?: boolean | null
+  o_ph_seg_fish?: boolean | null
+  o_ph_count_sun?: boolean | null
+  o_ph_count_map?: boolean | null
+  o_ph_count_leg?: boolean | null
+  o_ph_count_fish?: boolean | null
+  o_ph_bme_sun_b?: boolean | null
+  o_ph_bme_sun_m?: boolean | null
+  o_ph_bme_sun_e?: boolean | null
+  o_ph_bme_map_b?: boolean | null
+  o_ph_bme_map_m?: boolean | null
+  o_ph_bme_map_e?: boolean | null
+  o_ph_bme_leg_b?: boolean | null
+  o_ph_bme_leg_m?: boolean | null
+  o_ph_bme_leg_e?: boolean | null
+  o_ph_bme_fish_b?: boolean | null
+  o_ph_bme_fish_m?: boolean | null
+  o_ph_bme_fish_e?: boolean | null
   // Teacher
   teacher_impression?: number | null
   teacher_notes?: string
@@ -293,7 +365,7 @@ function calculateG1Composite(scores: G1Scores): {
   standardsBaseline: { code: string; met: boolean; score: number; threshold: number }[]
   suggestedClass: EnglishClass
 } {
-  // ── Written score (simple percentage) ──
+  // -- Written score (simple percentage) --
   const wScores = [
     scores.w_letter_names, scores.w_letter_sounds,
     scores.w_word_picture, scores.w_passage_comp, scores.w_writing
@@ -301,8 +373,7 @@ function calculateG1Composite(scores: G1Scores): {
   const writtenRaw = wScores.reduce((a, b) => a + b, 0)
   const writtenPct = WRITTEN_TOTAL > 0 ? (writtenRaw / WRITTEN_TOTAL) * 100 : 0
 
-  // ── Oral score (normalized 0-100) ──
-  // This is the complex part because passage level determines the scoring range
+  // -- Oral score (normalized 0-100) --
   const passageLevel = (scores.o_passage_level || 'A') as PassageLevel
   const config = PASSAGE_CONFIGS[passageLevel]
 
@@ -319,11 +390,15 @@ function calculateG1Composite(scores: G1Scores): {
   let weightedCwpm: number | null = null
 
   if (passageLevel === 'A') {
-    orfPct = ((scores.o_orf_raw ?? 0) / 4) * 100
+    // Level A: sum of per-question scores /20
+    const aTotal = (scores.o_a_q1 ?? 0) + (scores.o_a_q2 ?? 0) + (scores.o_a_q3 ?? 0) + (scores.o_a_q4 ?? 0) + (scores.o_a_q5 ?? 0)
+    // Also check legacy o_orf_raw for backward compat
+    const rawScore = aTotal > 0 ? aTotal : (scores.o_orf_raw ?? 0)
+    orfPct = (rawScore / 20) * 100
   } else if (passageLevel === 'B') {
     orfPct = ((scores.o_orf_raw ?? 0) / 20) * 100
   } else if (passageLevel === 'C') {
-    orfPct = ((scores.o_orf_raw ?? 0) / 15) * 100
+    orfPct = ((scores.o_orf_raw ?? 0) / 11) * 100
   } else {
     // Levels D-F: Calculate CWPM
     const wordsRead = scores.o_orf_words_read ?? 0
@@ -335,17 +410,14 @@ function calculateG1Composite(scores: G1Scores): {
       cwpm = Math.round((wordsCorrect / timeSeconds) * 60)
     }
 
-    // Use raw CWPM directly — passage difficulty is tracked as metadata only
     weightedCwpm = cwpm
 
-    // Normalize CWPM to 0-100 scale using grade 1 benchmarks
-    // Lily end target: 15 CWPM, Snapdragon end target: 90 CWPM
     if (cwpm != null) {
       orfPct = Math.min(100, (cwpm / 90) * 100)
     }
   }
 
-  // Passage level itself is a strong signal - add a level bonus
+  // Passage level itself is a strong signal
   const levelBonus: Record<string, number> = { A: 0, B: 15, C: 30, D: 50, E: 70, F: 85 }
   const levelScore = levelBonus[passageLevel] ?? 0
 
@@ -364,9 +436,7 @@ function calculateG1Composite(scores: G1Scores): {
   // Open response
   const openPct = ((scores.o_open_response ?? 0) / 5) * 100
 
-  // Weighted oral composite:
-  // For non-readers (A/B): alphabet + phoneme matter more
-  // For readers (D-F): ORF + comprehension matter more
+  // Weighted oral composite
   let oralScore: number
   if (['A', 'B'].includes(passageLevel)) {
     oralScore = alphaPct * 0.30 + phonemePct * 0.25 + orfPct * 0.20 + levelScore * 0.15 + openPct * 0.10
@@ -377,8 +447,6 @@ function calculateG1Composite(scores: G1Scores): {
   }
 
   // Teacher impression -- wave-aware
-  // Wave 1: use wave1_class_impression (class name -> 0-100 scale)
-  // Wave 2: use numeric teacher_impression (1-5 -> 0-100)
   const CLASS_IMPRESSION_MAP: Record<string, number> = {
     Lily: 8, Camellia: 25, Daisy: 42, Sunflower: 58, Marigold: 75, Snapdragon: 92
   }
@@ -390,8 +458,6 @@ function calculateG1Composite(scores: G1Scores): {
       ? ((scores.teacher_impression! - 1) / 4) * 100
       : 50
 
-  // Wave-aware composite weighting:
-  // Detect which wave we're in based on available data
   const hasWrittenData = wScores.length > 0 && writtenRaw > 0
   const hasOralData = scores.o_passage_level != null
 
@@ -399,9 +465,6 @@ function calculateG1Composite(scores: G1Scores): {
   let wave: 1 | 2
 
   if (!hasWrittenData) {
-    // Wave 1: Oral only + teacher impression
-    // oral 30%, teacher impression 30% (of eventual full composite)
-    // But since we only have 2 of 3 components, normalize to available
     if (hasClassImpression) {
       composite = oralScore * 0.50 + teacherPct * 0.50
     } else {
@@ -409,8 +472,6 @@ function calculateG1Composite(scores: G1Scores): {
     }
     wave = 1
   } else {
-    // Wave 2: All three components available
-    // Grade 1 weights: oral 30% + written 30% + teacher rating 40%
     if (hasOralData && hasClassImpression) {
       composite = oralScore * 0.30 + writtenPct * 0.30 + teacherPct * 0.40
     } else if (hasOralData) {
@@ -421,13 +482,11 @@ function calculateG1Composite(scores: G1Scores): {
     wave = 2
   }
 
-  // ── Standards baseline ──
+  // -- Standards baseline --
   const standardsBaseline = STANDARDS_BASELINE.map(std => {
     let score = (scores as any)[std.testSection] ?? 0
-    // For standards that also check oral scores, use the higher of the two
     if (std.alsoChecks) {
       const altScore = (scores as any)[std.alsoChecks] ?? 0
-      // Normalize: oral alphabet is /16, written is /5 -- compare percentages
       const primaryMax = WRITTEN_SECTIONS.find(s => s.key === std.testSection)?.max ?? 1
       const altMax = std.alsoChecks === 'o_alpha_names' ? 16 : std.alsoChecks === 'o_alpha_sounds' ? 16 : 1
       const primaryPct = score / primaryMax
@@ -444,7 +503,6 @@ function calculateG1Composite(scores: G1Scores): {
     }
   })
 
-  // ── Suggested class placement ──
   const suggestedClass = suggestG1Class(passageLevel, composite, writtenRaw, scores, cwpm)
 
   return {
@@ -461,13 +519,12 @@ function suggestG1Class(
   scores: G1Scores,
   cwpm: number | null,
 ): EnglishClass {
-  // Primary signal: passage level achieved
-  // Secondary: composite score within that band
-  // This uses the placement bands from the migration
-
-  // Hard rules first
-  if (passageLevel === 'A' && (scores.o_orf_raw ?? 0) <= 2) return 'Lily'
-  if (passageLevel === 'A') return composite > 35 ? 'Camellia' : 'Lily'
+  if (passageLevel === 'A') {
+    const aTotal = (scores.o_a_q1 ?? 0) + (scores.o_a_q2 ?? 0) + (scores.o_a_q3 ?? 0) + (scores.o_a_q4 ?? 0) + (scores.o_a_q5 ?? 0)
+    const rawScore = aTotal > 0 ? aTotal : (scores.o_orf_raw ?? 0)
+    if (rawScore <= 5) return 'Lily'
+    return composite > 35 ? 'Camellia' : 'Lily'
+  }
 
   if (passageLevel === 'B') {
     if ((scores.o_orf_raw ?? 0) < 8) return 'Lily'
@@ -476,7 +533,7 @@ function suggestG1Class(
   }
 
   if (passageLevel === 'C') {
-    if ((scores.o_orf_raw ?? 0) < 8) return 'Camellia'
+    if ((scores.o_orf_raw ?? 0) < 5) return 'Camellia'
     return composite > 55 ? 'Sunflower' : 'Daisy'
   }
 
@@ -498,7 +555,6 @@ function suggestG1Class(
     return composite > 70 ? 'Snapdragon' : 'Marigold'
   }
 
-  // Fallback: use composite ranges
   if (composite < 20) return 'Lily'
   if (composite < 35) return 'Camellia'
   if (composite < 50) return 'Daisy'
@@ -521,7 +577,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   const [scores, setScores] = useState<Record<string, G1Scores>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<'written' | 'oral' | 'ratings' | 'results'>('oral')
+  const [activeTab, setActiveTab] = useState<'written' | 'oral' | 'results'>('oral')
   const [selectedStudentIdx, setSelectedStudentIdx] = useState(0)
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'complete'>('all')
   const [activeClass, setActiveClass] = useState<EnglishClass>(teacherClass || 'Lily')
@@ -540,7 +596,6 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
 
       if (studs) setStudents(studs)
 
-      // Load existing scores
       const scoreMap: Record<string, G1Scores> = {}
       if (existing) {
         existing.forEach((row: any) => {
@@ -565,15 +620,13 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
   }, [])
 
-  // Update a score field for a student
-  const updateScore = useCallback((studentId: string, key: string, value: number | string | null) => {
+  const updateScore = useCallback((studentId: string, key: string, value: number | string | boolean | null) => {
     setScores(prev => ({
       ...prev,
       [studentId]: { ...prev[studentId], [key]: value },
     }))
   }, [])
 
-  // Save scores for given student IDs via atomic RPC
   const saveScores = useCallback(async (studentIds: string[], silent = false) => {
     if (savingRef.current) return
     savingRef.current = true
@@ -582,13 +635,33 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     try {
       for (const sid of studentIds) {
         const raw = scoresRef.current[sid] || {}
-        const metrics = calculateG1Composite(raw)
 
-        // Upsert — DB trigger merges raw_scores/calculated_metrics with existing
+        // Compute o_phoneme from individual checkboxes
+        let phonemeTotal = 0
+        for (const pw of PHONEME_WORDS) {
+          const w = pw.word
+          if ((raw as any)[`o_ph_seg_${w}`]) phonemeTotal++
+          if ((raw as any)[`o_ph_count_${w}`]) phonemeTotal++
+          if ((raw as any)[`o_ph_bme_${w}_b`]) phonemeTotal++
+          if ((raw as any)[`o_ph_bme_${w}_m`]) phonemeTotal++
+          if ((raw as any)[`o_ph_bme_${w}_e`]) phonemeTotal++
+        }
+        // But also keep manually set o_phoneme if it's higher (backward compat)
+        const existingPhoneme = raw.o_phoneme ?? 0
+        const finalRaw = { ...raw, o_phoneme: Math.max(phonemeTotal, existingPhoneme) }
+
+        // For Level A, compute o_orf_raw from per-question scores
+        if (finalRaw.o_passage_level === 'A') {
+          const aTotal = (finalRaw.o_a_q1 ?? 0) + (finalRaw.o_a_q2 ?? 0) + (finalRaw.o_a_q3 ?? 0) + (finalRaw.o_a_q4 ?? 0) + (finalRaw.o_a_q5 ?? 0)
+          if (aTotal > 0) finalRaw.o_orf_raw = aTotal
+        }
+
+        const metrics = calculateG1Composite(finalRaw)
+
         const { error } = await supabase.from('level_test_scores').upsert({
           level_test_id: levelTest.id,
           student_id: sid,
-          raw_scores: raw,
+          raw_scores: finalRaw,
           calculated_metrics: {
             written_pct: metrics.writtenPct,
             oral_score: metrics.oralScore,
@@ -620,7 +693,6 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     savingRef.current = false
   }, [levelTest.id, currentTeacher?.id, students, showToast])
 
-  // Auto-save: saves dirty students every 30s, on visibility change, and on unmount
   const autoSave = useCallback(async () => {
     if (savingRef.current) return
     const current = scoresRef.current
@@ -638,25 +710,21 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   const autoSaveRef = useRef<(() => Promise<void>) | null>(null)
   useEffect(() => { autoSaveRef.current = autoSave }, [autoSave])
 
-  // Auto-save every 30 seconds
   useEffect(() => {
     const timer = setInterval(() => { autoSaveRef.current?.() }, 30000)
     return () => clearInterval(timer)
   }, [])
 
-  // Auto-save on tab visibility change
   useEffect(() => {
     const handler = () => { if (document.hidden) autoSaveRef.current?.() }
     document.addEventListener('visibilitychange', handler)
     return () => document.removeEventListener('visibilitychange', handler)
   }, [])
 
-  // Auto-save on unmount
   useEffect(() => {
     return () => { autoSaveRef.current?.() }
   }, [])
 
-  // Warn before leaving with unsaved data
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       const cur = scoresRef.current; const snap = savedSnapshotRef.current
@@ -667,11 +735,9 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     return () => window.removeEventListener('beforeunload', handler)
   }, [students])
 
-  // Class filtering
   const availableClasses = isAdmin ? ENGLISH_CLASSES : (teacherClass ? [teacherClass] : ENGLISH_CLASSES)
   const classStudents = useMemo(() => students.filter(s => s.english_class === activeClass), [students, activeClass])
 
-  // Completion stats - based on filtered students
   const completionStats = useMemo(() => {
     let writtenDone = 0, oralDone = 0
     classStudents.forEach(s => {
@@ -682,7 +748,6 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     return { writtenDone, oralDone, total: classStudents.length }
   }, [classStudents, scores])
 
-  // Class counts for tab badges
   const classCounts = useMemo(() => {
     const counts: Record<string, { total: number; done: number }> = {}
     ENGLISH_CLASSES.forEach(cls => {
@@ -728,13 +793,12 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         </div>
       </div>
 
-      {/* Flat Tab Bar */}
+      {/* Flat Tab Bar -- Teacher Ratings REMOVED for Grade 1 */}
       <div className="px-10 bg-surface border-b border-border">
         <div className="flex items-center gap-2 pb-3">
           {[
             { key: 'oral' as const, icon: Mic, label: 'Oral Test', sub: `${completionStats.oralDone}/${completionStats.total}` },
             { key: 'written' as const, icon: PenTool, label: 'Written Test', sub: `${completionStats.writtenDone}/${completionStats.total}` },
-            { key: 'ratings' as const, icon: Users, label: 'Teacher Ratings', sub: '' },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
@@ -772,12 +836,6 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
               updateScore={updateScore}
               onSave={saveScores}
               saving={saving}
-            />
-          )}
-          {activeTab === 'ratings' && (
-            <G1TeacherRatings
-              students={classStudents}
-              levelTestId={levelTest.id}
             />
           )}
         </>
@@ -818,7 +876,6 @@ function WrittenTestEntry({ students, scores, updateScore, onSave, saving }: {
 
   return (
     <div className="px-10 py-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-display text-lg font-semibold text-navy flex items-center gap-2">
@@ -842,7 +899,6 @@ function WrittenTestEntry({ students, scores, updateScore, onSave, saving }: {
         </div>
       </div>
 
-      {/* Spreadsheet Table */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-[12px]">
@@ -908,7 +964,6 @@ function WrittenTestEntry({ students, scores, updateScore, onSave, saving }: {
         </div>
       </div>
 
-      {/* Writing Rubric Reference */}
       <div className="mt-6 bg-surface border border-border rounded-xl p-5">
         <h4 className="text-[12px] font-semibold text-navy mb-3 flex items-center gap-2">
           <Info size={14} /> Writing Rubric Reference (Page 7)
@@ -937,14 +992,310 @@ function WrittenTestEntry({ students, scores, updateScore, onSave, saving }: {
 // INTERACTIVE ORF SUB-COMPONENTS FOR LEVEL TEST
 // ============================================================================
 
+// ─── COMPONENT 1: Clickable Letter Grids ────────────────────────────────────
+
+function AlphabetGrids({ sc, studentId, updateScore }: {
+  sc: G1Scores
+  studentId: string
+  updateScore: (sid: string, key: string, val: number | boolean | null) => void
+}) {
+  // Letter names grid
+  const [nameStatus, setNameStatus] = useState<Record<number, boolean>>({})
+  const [soundStatus, setSoundStatus] = useState<Record<number, boolean>>({})
+  const [wordsCount, setWordsCount] = useState<number>(sc.o_alpha_words ?? 0)
+  const [wordsNote, setWordsNote] = useState<string>('')
+  const [initialized, setInitialized] = useState(false)
+
+  useEffect(() => {
+    if (!initialized) {
+      // Initialize name status from saved score
+      if (sc.o_alpha_names != null) {
+        const ns: Record<number, boolean> = {}
+        for (let i = 0; i < ALPHABET_LETTERS.length; i++) ns[i] = i < (sc.o_alpha_names ?? 0)
+        setNameStatus(ns)
+      }
+      // Initialize sound status from saved score
+      if (sc.o_alpha_sounds != null) {
+        const ss: Record<number, boolean> = {}
+        for (let i = 0; i < ALPHABET_LETTERS.length; i++) ss[i] = i < (sc.o_alpha_sounds ?? 0)
+        setSoundStatus(ss)
+      }
+      if (sc.o_alpha_words != null) setWordsCount(sc.o_alpha_words)
+      setInitialized(true)
+    }
+  }, [sc.o_alpha_names, sc.o_alpha_sounds, sc.o_alpha_words, initialized])
+
+  const toggleName = (idx: number) => {
+    setNameStatus(prev => {
+      const next = { ...prev, [idx]: !prev[idx] }
+      const count = Object.values(next).filter(Boolean).length
+      updateScore(studentId, 'o_alpha_names', count)
+      return next
+    })
+    setInitialized(true)
+  }
+
+  const toggleSound = (idx: number) => {
+    setSoundStatus(prev => {
+      const next = { ...prev, [idx]: !prev[idx] }
+      const count = Object.values(next).filter(Boolean).length
+      updateScore(studentId, 'o_alpha_sounds', count)
+      return next
+    })
+    setInitialized(true)
+  }
+
+  const nameCount = Object.values(nameStatus).filter(Boolean).length
+  const soundCount = Object.values(soundStatus).filter(Boolean).length
+
+  return (
+    <div className="space-y-5">
+      {/* Letter Names Grid */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-semibold text-navy">Letter Names</p>
+          <span className={`text-[12px] font-bold ${nameCount >= 12 ? 'text-green-600' : nameCount >= 8 ? 'text-amber-600' : 'text-text-secondary'}`}>
+            {nameCount}/16
+          </span>
+        </div>
+        <div className="bg-blue-50 rounded-lg px-4 py-2 border border-blue-100 mb-2">
+          <p className="text-[10px] text-blue-700">Say: "Tell me the name of each letter." Point to each letter. Tap green = correct.</p>
+        </div>
+        <div className="grid grid-cols-8 gap-1.5">
+          {ALPHABET_LETTERS.map((letter, i) => (
+            <button key={`name-${i}`} onClick={() => toggleName(i)}
+              className={`px-2 py-3 rounded-xl text-[18px] font-bold font-serif transition-all ${
+                nameStatus[i] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
+                nameStatus[i] === false ? 'bg-red-50 text-red-400 border-2 border-red-200' :
+                'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
+              }`} style={{ touchAction: 'manipulation' }}>
+              {letter}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 mt-2">
+          <button onClick={() => {
+            const ns: Record<number, boolean> = {}; ALPHABET_LETTERS.forEach((_, i) => { ns[i] = true }); setNameStatus(ns); updateScore(studentId, 'o_alpha_names', 16); setInitialized(true)
+          }} className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          <button onClick={() => { setNameStatus({}); updateScore(studentId, 'o_alpha_names', 0); setInitialized(true) }}
+            className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
+        </div>
+      </div>
+
+      {/* Letter Sounds Grid */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-semibold text-navy">Letter Sounds</p>
+          <span className={`text-[12px] font-bold ${soundCount >= 12 ? 'text-green-600' : soundCount >= 8 ? 'text-amber-600' : 'text-text-secondary'}`}>
+            {soundCount}/16
+          </span>
+        </div>
+        <div className="bg-blue-50 rounded-lg px-4 py-2 border border-blue-100 mb-2">
+          <p className="text-[10px] text-blue-700">Say: "Now tell me the sound each letter makes." Point to each letter. Tap green = correct sound.</p>
+        </div>
+        <div className="grid grid-cols-8 gap-1.5">
+          {ALPHABET_LETTERS.map((letter, i) => (
+            <button key={`sound-${i}`} onClick={() => toggleSound(i)}
+              className={`px-2 py-3 rounded-xl text-[18px] font-bold font-serif transition-all ${
+                soundStatus[i] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
+                soundStatus[i] === false ? 'bg-red-50 text-red-400 border-2 border-red-200' :
+                'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
+              }`} style={{ touchAction: 'manipulation' }}>
+              /{letter}/
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 mt-2">
+          <button onClick={() => {
+            const ss: Record<number, boolean> = {}; ALPHABET_LETTERS.forEach((_, i) => { ss[i] = true }); setSoundStatus(ss); updateScore(studentId, 'o_alpha_sounds', 16); setInitialized(true)
+          }} className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          <button onClick={() => { setSoundStatus({}); updateScore(studentId, 'o_alpha_sounds', 0); setInitialized(true) }}
+            className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
+        </div>
+      </div>
+
+      {/* Words Given */}
+      <div className="bg-surface-alt/50 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-semibold text-navy">Words Given /5</p>
+          <span className={`text-[12px] font-bold ${wordsCount >= 4 ? 'text-green-600' : wordsCount >= 2 ? 'text-amber-600' : 'text-text-secondary'}`}>
+            {wordsCount}/5
+          </span>
+        </div>
+        <div className="bg-blue-50 rounded-lg px-4 py-2 border border-blue-100 mb-3">
+          <p className="text-[10px] text-blue-700">Say: "Can you tell me a word that starts with [letter]?" Pick 5 letters from above. Check how many words they can produce.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            {[0, 1, 2, 3, 4, 5].map(v => (
+              <button key={v} onClick={() => {
+                setWordsCount(v)
+                updateScore(studentId, 'o_alpha_words', v)
+              }}
+                className={`w-10 h-10 rounded-xl text-[13px] font-bold transition-all ${
+                  wordsCount === v
+                    ? 'bg-navy text-white ring-2 ring-navy/30'
+                    : 'bg-surface text-text-secondary hover:bg-surface-alt border border-border'
+                }`}>
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+        <input
+          value={wordsNote}
+          onChange={(e: any) => setWordsNote(e.target.value)}
+          placeholder="Optional: note which words they said..."
+          className="w-full mt-3 px-3 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-surface"
+        />
+      </div>
+
+      <p className="text-[10px] text-text-tertiary italic">Stopping rule: If student misses 5 consecutive letter names, stop and move on.</p>
+    </div>
+  )
+}
+
+// ─── COMPONENT 2: Phoneme Manipulation (redesigned) ─────────────────────────
+
+function PhonemeManipulation({ sc, studentId, updateScore }: {
+  sc: G1Scores
+  studentId: string
+  updateScore: (sid: string, key: string, val: number | boolean | null) => void
+}) {
+  // Compute phoneme total from checkboxes
+  const getPhonemeTotal = () => {
+    let total = 0
+    for (const pw of PHONEME_WORDS) {
+      const w = pw.word
+      if ((sc as any)[`o_ph_seg_${w}`]) total++
+      if ((sc as any)[`o_ph_count_${w}`]) total++
+      if ((sc as any)[`o_ph_bme_${w}_b`]) total++
+      if ((sc as any)[`o_ph_bme_${w}_m`]) total++
+      if ((sc as any)[`o_ph_bme_${w}_e`]) total++
+    }
+    return total
+  }
+
+  const phonemeTotal = getPhonemeTotal()
+
+  return (
+    <div className="space-y-4">
+      {/* Teacher Model Reminder */}
+      <div className="bg-amber-50 rounded-xl px-5 py-4 border border-amber-200">
+        <p className="text-[12px] font-bold text-amber-900 mb-2">Teacher Model First!</p>
+        <p className="text-[11px] text-amber-800 leading-relaxed">
+          Model with the first word before the student tries. Example with "big":
+        </p>
+        <div className="mt-2 bg-white/60 rounded-lg px-4 py-3 text-[11px] text-amber-900 space-y-1.5">
+          <p><span className="font-bold">1.</span> Say the word: <span className="font-semibold">"big"</span></p>
+          <p><span className="font-bold">2.</span> Segment it: <span className="font-semibold">"b - i - g"</span> (stretch each sound)</p>
+          <p><span className="font-bold">3.</span> Blend with sweeping motion: <span className="font-semibold">"biiig"</span></p>
+          <p><span className="font-bold">4.</span> Count: <span className="font-semibold">"One, two, three -- three sounds"</span></p>
+          <p><span className="font-bold">5.</span> Ask: <span className="font-semibold">"What sound is in the beginning? /b/. The middle? /i/. The end? /g/."</span></p>
+        </div>
+        <p className="text-[10px] text-amber-700 mt-2 italic">Model ALL steps with "big", then have the student try each word below.</p>
+      </div>
+
+      {/* Per-word assessment */}
+      <div className="space-y-4">
+        {PHONEME_WORDS.map((pw) => {
+          const w = pw.word
+          const segKey = `o_ph_seg_${w}`
+          const countKey = `o_ph_count_${w}`
+          const bKey = `o_ph_bme_${w}_b`
+          const mKey = `o_ph_bme_${w}_m`
+          const eKey = `o_ph_bme_${w}_e`
+
+          const segChecked = !!(sc as any)[segKey]
+          const countChecked = !!(sc as any)[countKey]
+          const bChecked = !!(sc as any)[bKey]
+          const mChecked = !!(sc as any)[mKey]
+          const eChecked = !!(sc as any)[eKey]
+          const wordTotal = (segChecked ? 1 : 0) + (countChecked ? 1 : 0) + (bChecked ? 1 : 0) + (mChecked ? 1 : 0) + (eChecked ? 1 : 0)
+
+          return (
+            <div key={w} className="bg-surface border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-[20px] font-bold font-serif text-navy">{pw.word}</span>
+                  <div className="flex gap-1">
+                    {pw.sounds.map((s, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-navy/5 rounded text-[11px] font-mono text-navy">{s}</span>
+                    ))}
+                  </div>
+                </div>
+                <span className={`text-[12px] font-bold ${wordTotal >= 4 ? 'text-green-600' : wordTotal >= 2 ? 'text-amber-600' : 'text-text-tertiary'}`}>
+                  {wordTotal}/5
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                {/* Segmenting */}
+                <label className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-alt cursor-pointer transition-all">
+                  <input type="checkbox" checked={segChecked}
+                    onChange={() => updateScore(studentId, segKey, !segChecked)}
+                    className="w-5 h-5 rounded border-2 border-navy/30 text-green-600 focus:ring-green-500" />
+                  <div>
+                    <span className="text-[12px] font-medium text-text-primary">Can segment</span>
+                    <span className="text-[10px] text-text-tertiary ml-2">("{pw.word}" -> {pw.sounds.join(' - ')})</span>
+                  </div>
+                </label>
+
+                {/* Sound count */}
+                <label className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-alt cursor-pointer transition-all">
+                  <input type="checkbox" checked={countChecked}
+                    onChange={() => updateScore(studentId, countKey, !countChecked)}
+                    className="w-5 h-5 rounded border-2 border-navy/30 text-green-600 focus:ring-green-500" />
+                  <div>
+                    <span className="text-[12px] font-medium text-text-primary">Correct # of sounds</span>
+                    <span className="text-[10px] text-text-tertiary ml-2">({pw.soundCount} sounds)</span>
+                  </div>
+                </label>
+
+                {/* B/M/E sounds */}
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <span className="text-[11px] font-medium text-text-secondary w-28">Correct sound:</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" checked={bChecked}
+                      onChange={() => updateScore(studentId, bKey, !bChecked)}
+                      className="w-4 h-4 rounded border-2 border-navy/30 text-green-600" />
+                    <span className="text-[11px]">B <span className="text-text-tertiary">{pw.beginning}</span></span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer ml-3">
+                    <input type="checkbox" checked={mChecked}
+                      onChange={() => updateScore(studentId, mKey, !mChecked)}
+                      className="w-4 h-4 rounded border-2 border-navy/30 text-green-600" />
+                    <span className="text-[11px]">M <span className="text-text-tertiary">{pw.middle}</span></span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer ml-3">
+                    <input type="checkbox" checked={eChecked}
+                      onChange={() => updateScore(studentId, eKey, !eChecked)}
+                      className="w-4 h-4 rounded border-2 border-navy/30 text-green-600" />
+                    <span className="text-[11px]">E <span className="text-text-tertiary">{pw.end}</span></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="flex items-center justify-between bg-navy/5 rounded-xl px-4 py-3 border border-navy/10">
+        <span className="text-[13px] font-bold text-navy">Phoneme Total: {phonemeTotal} / 20</span>
+        <span className="text-[10px] text-text-tertiary italic">Stopping rule: If student cannot segment "sun" after one model, record 0.</span>
+      </div>
+    </div>
+  )
+}
+
+// ─── Level B: HFW clickable word grid (unchanged) ───────────────────────────
+
 function LevelBWordGrid({ score, onScore }: { score: number | null | undefined; onScore: (n: number | null) => void }) {
   const [wordStatus, setWordStatus] = useState<Record<number, boolean>>({})
   const [initialized, setInitialized] = useState(false)
 
-  // Initialize from saved score if exists
   useEffect(() => {
     if (score != null && !initialized) {
-      // Pre-fill: mark first N words as correct
       const ws: Record<number, boolean> = {}
       for (let i = 0; i < LEVEL_B_WORDS.length; i++) ws[i] = i < score
       setWordStatus(ws)
@@ -998,6 +1349,8 @@ function LevelBWordGrid({ score, onScore }: { score: number | null | undefined; 
     </div>
   )
 }
+
+// ─── Level C: Clickable sentence words ──────────────────────────────────────
 
 function LevelCSentences({ score, onScore }: { score: number | null | undefined; onScore: (n: number | null) => void }) {
   const allWords = LEVEL_C_SENTENCES.flatMap((s, si) => s.words.map((w, wi) => ({ word: w, sentIdx: si, wordIdx: wi, key: `${si}-${wi}` })))
@@ -1055,21 +1408,23 @@ function LevelCSentences({ score, onScore }: { score: number | null | undefined;
         ))}
       </div>
       <div className="flex items-center justify-between">
-        <span className={`text-[13px] font-bold ${correctCount >= 13 ? 'text-green-600' : correctCount >= 8 ? 'text-amber-600' : 'text-text-secondary'}`}>
-          {correctCount}/15 correct
+        <span className={`text-[13px] font-bold ${correctCount >= 9 ? 'text-green-600' : correctCount >= 5 ? 'text-amber-600' : 'text-text-secondary'}`}>
+          {correctCount}/11 correct
         </span>
         <div className="flex gap-2">
-          <button onClick={() => { const ws: Record<string, boolean> = {}; allWords.forEach(w => { ws[w.key] = true }); setWordStatus(ws); onScore(15); setInitialized(true) }}
+          <button onClick={() => { const ws: Record<string, boolean> = {}; allWords.forEach(w => { ws[w.key] = true }); setWordStatus(ws); onScore(11); setInitialized(true) }}
             className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
           <button onClick={() => { setWordStatus({}); onScore(0); setInitialized(true) }}
             className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
       </div>
-      {correctCount >= 13 && <p className="text-[10px] text-blue-600 font-medium">Bump-up: Reading fluently. Consider moving to Level D.</p>}
+      {correctCount >= 9 && <p className="text-[10px] text-blue-600 font-medium">If they can give you a full sentence, try them with Level D.</p>}
       {initialized && correctCount === 0 && <p className="text-[10px] text-amber-600 font-medium">Bump-down: Cannot read any words. Consider moving to Level B.</p>}
     </div>
   )
 }
+
+// ─── Level D/E/F: Passage reader (unchanged from original) ─────────────────
 
 function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
   level: string; wordsRead: number | null | undefined; errors: number | null | undefined; timeSeconds: number | null | undefined;
@@ -1089,7 +1444,6 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
   if (!passage) return null
   const words = passage.text.split(/\s+/)
 
-  // Timer
   useEffect(() => {
     if (timing) {
       startRef.current = Date.now() - (elapsed * 1000)
@@ -1112,7 +1466,6 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
 
   const handleWordClick = (idx: number) => {
     if (lastWordIdx !== null && idx > lastWordIdx) return
-    // If this word is the lastWord marker: 4th click = clear marker
     if (lastWordIdx === idx) { setLastWordIdx(null); return }
 
     const current = wordMarks[idx] || null
@@ -1144,14 +1497,12 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
     setNotes('')
   }
 
-  // Sync lastWordIdx from external
   useEffect(() => {
     if (wordsRead != null && wordsRead > 0 && wordsRead < words.length && lastWordIdx === null && !showPassage) {
       setLastWordIdx(wordsRead - 1)
     }
   }, [wordsRead])
 
-  // Split words into lines of 10
   const lines: { word: string; idx: number }[][] = []
   for (let i = 0; i < words.length; i += 10) {
     lines.push(words.slice(i, i + 10).map((w, j) => ({ word: w, idx: i + j })))
@@ -1161,13 +1512,12 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
     <>
       <button onClick={() => setShowPassage(true)}
         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-green-600 text-white hover:bg-green-700 transition-all">
-        <BookOpen size={14} /> {finished ? '✓ ' : ''}Open Passage: "{passage.title}" ({passage.wordCount} words)
+        <BookOpen size={14} /> {finished ? 'Done -- ' : ''}Open Passage: "{passage.title}" ({passage.wordCount} words)
       </button>
 
       {showPassage && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowPassage(false)}>
           <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-[850px] max-h-[90vh] flex flex-col overflow-hidden" onClick={(e: any) => e.stopPropagation()}>
-            {/* Header */}
             <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-green-50 shrink-0">
               <div>
                 <h3 className="font-display text-lg font-semibold text-navy">Passage {level}: {passage.title}</h3>
@@ -1176,25 +1526,24 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
               <button onClick={() => setShowPassage(false)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
             </div>
 
-            {/* Timer bar */}
             <div className="flex items-center justify-between px-6 py-2.5 bg-navy-dark text-white shrink-0">
               <div className="flex items-center gap-3">
                 {!timing && !finished && (
                   <button onClick={() => { setTiming(true); setFinished(false) }}
                     className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-[12px] font-semibold">
-                    ▶ Start
+                    Start
                   </button>
                 )}
                 {timing && (
                   <button onClick={() => { setTiming(false); setFinished(true) }}
                     className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold animate-pulse">
-                    ■ Stop
+                    Stop
                   </button>
                 )}
                 {finished && (
                   <button onClick={handleReset}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium">
-                    ↺ Reset
+                    Reset
                   </button>
                 )}
                 <span className="text-[24px] font-mono font-bold tabular-nums">{formatTime(elapsed)}</span>
@@ -1202,23 +1551,21 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
               <div className="flex items-center gap-5 text-[11px]">
                 <div className="text-center"><div className="text-[18px] font-bold">{errCount}</div><div className="text-white/60 text-[8px] uppercase">Errors</div></div>
                 <div className="text-center"><div className="text-[18px] font-bold">{scCount}</div><div className="text-white/60 text-[8px] uppercase">SC</div></div>
-                <div className="text-center"><div className="text-[18px] font-bold text-gold">{elapsed > 0 ? cwpm : '—'}</div><div className="text-white/60 text-[8px] uppercase">CWPM</div></div>
-                <div className="text-center"><div className={`text-[18px] font-bold ${accuracy >= 95 ? 'text-green-400' : accuracy >= 90 ? 'text-amber-400' : elapsed > 0 ? 'text-red-400' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '—'}</div><div className="text-white/60 text-[8px] uppercase">Acc</div></div>
+                <div className="text-center"><div className="text-[18px] font-bold text-gold">{elapsed > 0 ? cwpm : '--'}</div><div className="text-white/60 text-[8px] uppercase">CWPM</div></div>
+                <div className="text-center"><div className={`text-[18px] font-bold ${accuracy >= 95 ? 'text-green-400' : accuracy >= 90 ? 'text-amber-400' : elapsed > 0 ? 'text-red-400' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '--'}</div><div className="text-white/60 text-[8px] uppercase">Acc</div></div>
                 <div className="text-center"><div className="text-[18px] font-bold">{wRead}/{words.length}</div><div className="text-white/60 text-[8px] uppercase">Words</div></div>
               </div>
             </div>
 
-            {/* Instructions */}
             <div className="px-6 py-1.5 bg-accent-light border-b border-border text-[10px] text-navy shrink-0">
-              <strong>Click:</strong> 1× = <span className="text-red-600 font-bold">error</span> · 2× = <span className="text-amber-600 font-bold">self-correct</span> · 3× = <span className="text-red-600 font-bold">last word read</span> · 4× = reset
+              <strong>Click:</strong> 1x = <span className="text-red-600 font-bold">error</span> | 2x = <span className="text-amber-600 font-bold">self-correct</span> | 3x = <span className="text-red-600 font-bold">last word read</span> | 4x = reset
             </div>
 
-            {/* Passage words */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
               {lastWordIdx !== null && (
                 <div className="mb-3 flex items-center justify-between bg-blue-50 rounded-lg px-4 py-2 border border-blue-200">
                   <span className="text-[11px] text-blue-800 font-medium">
-                    Last word: "{words[lastWordIdx]}" — <span className="font-bold">{lastWordIdx + 1}/{words.length}</span>
+                    Last word: "{words[lastWordIdx]}" -- <span className="font-bold">{lastWordIdx + 1}/{words.length}</span>
                     {lastWordIdx + 1 < words.length && <span className="text-blue-600 ml-1">(didn't finish)</span>}
                   </span>
                   <button onClick={() => setLastWordIdx(null)} className="text-[10px] text-red-500 hover:text-red-700">Clear</button>
@@ -1251,15 +1598,14 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
               </div>
             </div>
 
-            {/* Footer: notes + save */}
             <div className="px-6 py-3 border-t border-border bg-surface-alt/30 shrink-0 space-y-2">
               <input value={notes} onChange={(e: any) => setNotes(e.target.value)}
                 placeholder="Quick notes (e.g. struggled with blends, good expression)..."
                 className="w-full px-3 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white" />
               <div className="flex items-center justify-between">
                 <div className="text-[10px] text-text-tertiary">
-                  {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> · Accuracy: <strong className={accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}>{accuracy}%</strong> · </>}
-                  Errors: <strong className="text-red-600">{errCount}</strong> · SC: <strong className="text-amber-600">{scCount}</strong>
+                  {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> | Accuracy: <strong className={accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}>{accuracy}%</strong> | </>}
+                  Errors: <strong className="text-red-600">{errCount}</strong> | SC: <strong className="text-amber-600">{scCount}</strong>
                 </div>
                 <button onClick={handleSave}
                   className="px-5 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy/90 transition-all">
@@ -1274,10 +1620,14 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
   )
 }
 
+// ============================================================================
+// ORAL TEST ENTRY MAIN
+// ============================================================================
+
 function OralTestEntry({ students, scores, updateScore, onSave, saving, selectedIdx, onSelectIdx, activeWave }: {
   students: Student[]
   scores: Record<string, G1Scores>
-  updateScore: (sid: string, key: string, val: number | string | null) => void
+  updateScore: (sid: string, key: string, val: number | string | boolean | null) => void
   onSave: (sids: string[]) => Promise<void>
   saving: boolean
   selectedIdx: number
@@ -1300,6 +1650,9 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
     const s = scores[sid] || {}
     return s.wave1_class_impression || null
   }
+
+  // For Level A: compute per-question total
+  const aTotal = (sc.o_a_q1 ?? 0) + (sc.o_a_q2 ?? 0) + (sc.o_a_q3 ?? 0) + (sc.o_a_q4 ?? 0) + (sc.o_a_q5 ?? 0)
 
   return (
     <div className="flex h-[calc(100vh-220px)]">
@@ -1373,47 +1726,24 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
           </div>
         </div>
 
-        {/* Section 1: Alphabet Recognition */}
+        {/* Section 1: Alphabet Recognition -- clickable grids */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[13px] font-semibold text-navy mb-1">Component 1: Alphabet Recognition</h4>
           <p className="text-[11px] text-text-secondary mb-4">Letters: s, a, t, m, p, i, n, d, o, g, c, e, k, j, x, y (16 letters)</p>
-          <div className="grid grid-cols-3 gap-4">
-            {ORAL_SECTIONS.alphabet.map(sec => (
-              <div key={sec.key}>
-                <label className="text-[11px] font-medium text-text-secondary block mb-1">{sec.label} <span className="text-text-tertiary">/{sec.max}</span></label>
-                <input type="number" min={0} max={sec.max}
-                  value={(sc as any)[sec.key] ?? ''}
-                  onChange={e => updateScore(student.id, sec.key, e.target.value === '' ? null : Math.min(sec.max, Math.max(0, Number(e.target.value))))}
-                  className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-surface"
-                  placeholder="--"
-                />
-              </div>
-            ))}
-          </div>
-          <p className="text-[10px] text-text-tertiary mt-2 italic">Stopping rule: If student misses 5 consecutive letter names, stop and move on.</p>
+          <AlphabetGrids sc={sc} studentId={student.id} updateScore={updateScore} />
         </div>
 
-        {/* Section 2: Phoneme Manipulation */}
+        {/* Section 2: Phoneme Manipulation -- redesigned */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[13px] font-semibold text-navy mb-1">Component 2: Phoneme Manipulation</h4>
           <p className="text-[11px] text-text-secondary mb-4">Words: sun, map, leg, fish -- segmenting, counting, isolating sounds</p>
-          <div className="w-48">
-            <label className="text-[11px] font-medium text-text-secondary block mb-1">Total Correct <span className="text-text-tertiary">/12</span></label>
-            <input type="number" min={0} max={12}
-              value={sc.o_phoneme ?? ''}
-              onChange={e => updateScore(student.id, 'o_phoneme', e.target.value === '' ? null : Math.min(12, Math.max(0, Number(e.target.value))))}
-              className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-surface"
-              placeholder="--"
-            />
-          </div>
-          <p className="text-[10px] text-text-tertiary mt-2 italic">Stopping rule: If student cannot segment "sun" after one model, record 0.</p>
+          <PhonemeManipulation sc={sc} studentId={student.id} updateScore={updateScore} />
         </div>
 
         {/* Section 3: Oral Reading Fluency -- Passage Level Selection */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[13px] font-semibold text-navy mb-3">Component 3: Oral Reading Fluency</h4>
 
-          {/* Passage Level Selector */}
           <div className="mb-4">
             <label className="text-[11px] font-medium text-text-secondary block mb-2">Passage Level</label>
             <div className="flex gap-2">
@@ -1430,7 +1760,6 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
             </div>
           </div>
 
-          {/* Passage description */}
           {config && (
             <div className="bg-blue-50/50 rounded-lg px-4 py-3 mb-4 border border-blue-100">
               <p className="text-[12px] font-semibold text-navy">{config.label}</p>
@@ -1444,63 +1773,78 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
             </div>
           )}
 
-          {/* Adaptive ORF fields based on passage level */}
+          {/* Level A: Per-question rubric scoring */}
           {passageLevel === 'A' && (
-            // Level A: Oral Interview — all questions visible, rubric selection
             <div className="space-y-3">
               <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
                 <p className="text-[11px] font-semibold text-blue-800">Say: "I'm going to ask you some questions. Just try your best."</p>
               </div>
-              <div className="bg-surface-alt rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Interview Questions</p>
-                <div className="space-y-1.5">
-                  {LEVEL_A_QUESTIONS.map((q, i) => (
-                    <div key={i} className="flex items-center gap-2 text-[12px]">
-                      <span className="w-5 h-5 rounded-full bg-navy/10 text-navy text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                      <span className="text-text-primary">{q.q}</span>
+
+              <div className="space-y-3">
+                {LEVEL_A_QUESTIONS.map((q, qi) => {
+                  const qKey = `o_a_q${qi + 1}` as keyof G1Scores
+                  const qVal = (sc as any)[qKey] as number | null | undefined
+
+                  return (
+                    <div key={qi} className="bg-surface-alt/50 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-6 h-6 rounded-full bg-navy/10 text-navy text-[11px] font-bold flex items-center justify-center shrink-0">{qi + 1}</span>
+                        <span className="text-[12px] font-medium text-text-primary">{q.q}</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        {LEVEL_A_RUBRIC.map(r => (
+                          <button key={r.score} onClick={() => updateScore(student.id, qKey, qVal === r.score ? null : r.score)}
+                            title={`${r.label}: ${r.desc}`}
+                            className={`flex-1 px-2 py-2.5 rounded-xl text-center transition-all ${
+                              qVal === r.score
+                                ? r.score === 0 ? 'bg-red-500 text-white' :
+                                  r.score === 1 ? 'bg-orange-500 text-white' :
+                                  r.score === 2 ? 'bg-amber-500 text-white' :
+                                  r.score === 3 ? 'bg-blue-500 text-white' :
+                                  'bg-green-500 text-white'
+                                : 'bg-surface text-text-secondary hover:bg-surface-alt border border-border'
+                            }`}>
+                            <div className="text-[14px] font-bold">{r.score}</div>
+                            <div className={`text-[8px] mt-0.5 leading-tight ${qVal === r.score ? 'opacity-90' : 'text-text-tertiary'}`}>{r.label}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="flex items-center justify-between bg-navy/5 rounded-xl px-4 py-3 border border-navy/10 mt-3">
+                <span className="text-[13px] font-bold text-navy">Total: {aTotal} / 20</span>
+                {aTotal >= 10 && <span className="text-[10px] text-blue-600 font-medium">Bump-up: Score is 10+. Try Level B.</span>}
+                {aTotal > 0 && aTotal < 5 && <span className="text-[10px] text-red-600 font-medium">Very limited English production.</span>}
+              </div>
+
+              {/* Rubric reference */}
+              <details className="mt-2">
+                <summary className="text-[10px] text-purple-600 cursor-pointer hover:underline font-medium">View full rubric descriptions</summary>
+                <div className="mt-2 space-y-1">
+                  {LEVEL_A_RUBRIC.map(r => (
+                    <div key={r.score} className="flex items-start gap-2 text-[10px] px-2 py-1">
+                      <span className="w-5 h-5 rounded-lg bg-navy/10 text-navy font-bold flex items-center justify-center shrink-0">{r.score}</span>
+                      <div><span className="font-semibold text-navy">{r.label}:</span> <span className="text-text-secondary">{r.desc}</span></div>
                     </div>
                   ))}
                 </div>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Overall Rubric Score</p>
-                <div className="space-y-1.5">
-                  {LEVEL_A_RUBRIC.map(r => (
-                    <button key={r.score} onClick={() => updateScore(student.id, 'o_orf_raw', sc.o_orf_raw === r.score ? null : r.score)}
-                      className={`w-full flex items-start gap-3 px-4 py-2.5 rounded-xl text-left transition-all ${
-                        sc.o_orf_raw === r.score
-                          ? 'bg-navy text-white ring-2 ring-navy/30'
-                          : 'bg-surface border border-border hover:bg-surface-alt'
-                      }`}>
-                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-[13px] font-bold shrink-0 ${
-                        sc.o_orf_raw === r.score ? 'bg-white/20 text-white' : 'bg-surface-alt text-navy'
-                      }`}>{r.score}</span>
-                      <div>
-                        <span className={`text-[12px] font-semibold ${sc.o_orf_raw === r.score ? 'text-white' : 'text-navy'}`}>{r.label}</span>
-                        <p className={`text-[10px] mt-0.5 ${sc.o_orf_raw === r.score ? 'text-white/80' : 'text-text-tertiary'}`}>{r.desc}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <p className="text-[10px] text-blue-600 font-medium">Bump-up: If score is 4, move to Level B.</p>
+              </details>
             </div>
           )}
 
           {passageLevel === 'B' && (
-            // Level B: HFW clickable word grid
             <LevelBWordGrid score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} />
           )}
 
           {passageLevel === 'C' && (
-            // Level C: Clickable sentence words
             <LevelCSentences score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} />
           )}
 
           {passageLevel && config?.hasCwpm && (
-            // Levels D, E, F: CWPM with passage modal option
             <div className="space-y-4">
-              {/* Passage display button */}
               <LevelDEFPassage
                 level={passageLevel}
                 wordsRead={sc.o_orf_words_read}
@@ -1509,7 +1853,6 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
                 onUpdate={(field: string, val: number | null) => updateScore(student.id, field, val)}
               />
 
-              {/* Manual entry fallback */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="text-[11px] font-medium text-text-secondary block mb-1">
@@ -1544,7 +1887,6 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
                 </div>
               </div>
 
-              {/* Live CWPM calculation */}
               {sc.o_orf_words_read != null && (
                 <div className="bg-green-50 rounded-lg px-4 py-2.5 border border-green-100">
                   <span className="text-[11px] text-green-700 font-medium">
@@ -1554,7 +1896,6 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
                 </div>
               )}
 
-              {/* NAEP Rating */}
               <div>
                 <label className="text-[11px] font-medium text-text-secondary block mb-2">NAEP Fluency Rating</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -1667,46 +2008,14 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
           </div>
         </div>
 
-        {/* Section 6: Teacher Impression -- wave-aware */}
+        {/* Section 6: Class Impression (no Teacher Rating for G1) */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-          <h4 className="text-[13px] font-semibold text-navy mb-1">
-            {activeWave === 1 ? 'Class Impression' : 'Teacher Impression'}
-          </h4>
+          <h4 className="text-[13px] font-semibold text-navy mb-1">Class Impression</h4>
           <p className="text-[11px] text-text-secondary mb-3">
-            {activeWave === 1
-              ? 'Which class do you think this student belongs in based on this oral test? Pick "Unsure" if you need the algorithm to decide.'
-              : 'Quick holistic rating from this testing session. Factors into placement (15% weight).'}
+            Which class do you think this student belongs in based on this oral test? Pick "Unsure" if you need the algorithm to decide.
           </p>
 
-          {/* Wave 2 only: numeric 1-5 impression */}
-          {activeWave === 2 && (
-            <div className="flex gap-2 mb-3">
-              {[1, 2, 3, 4, 5].map(v => {
-                const labels: Record<number, string> = {
-                  1: 'Very low -- needs significant support',
-                  2: 'Below expected -- building foundations',
-                  3: 'On track for grade level',
-                  4: 'Above expected -- strong skills',
-                  5: 'Exceptional -- well above expectations',
-                }
-                return (
-                  <button key={v} onClick={() => updateScore(student.id, 'teacher_impression', sc.teacher_impression === v ? null : v)}
-                    className={`flex-1 px-2 py-3 rounded-xl text-center transition-all ${
-                      sc.teacher_impression === v
-                        ? 'bg-navy text-white ring-2 ring-navy/30'
-                        : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80 border border-border'
-                    }`}>
-                    <div className="text-[14px] font-bold">{v}</div>
-                    <div className={`text-[9px] mt-0.5 ${sc.teacher_impression === v ? 'opacity-80' : 'text-text-tertiary'}`}>{labels[v]}</div>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Class Impression -- always shown but emphasized in Wave 1 */}
-          <div className={`rounded-lg p-3 mb-3 ${activeWave === 1 ? 'bg-blue-50/60 border border-blue-200/60' : 'bg-amber-50/50 border border-amber-200/60'}`}>
-            {activeWave !== 1 && <label className="text-[10px] font-semibold text-amber-800 uppercase tracking-wider block mb-1.5">Class Impression (Wave 1)</label>}
+          <div className="rounded-lg p-3 mb-3 bg-blue-50/60 border border-blue-200/60">
             <div className="flex gap-1.5 flex-wrap">
               {ENGLISH_CLASSES.map(cls => (
                 <button key={cls} onClick={() => updateScore(student.id, 'wave1_class_impression', sc.wave1_class_impression === cls ? null : cls)}
@@ -1787,7 +2096,6 @@ function StudentScorePreview({ scores, student }: { scores: G1Scores; student: S
         </div>
       </div>
 
-      {/* CWPM detail */}
       {metrics.cwpm != null && (
         <div className="flex items-center gap-4 mb-3 text-[11px]">
           <span className="text-text-secondary">Passage {metrics.passageLevel}</span>
@@ -1797,7 +2105,6 @@ function StudentScorePreview({ scores, student }: { scores: G1Scores; student: S
         </div>
       )}
 
-      {/* Standards Baseline */}
       <div className="mt-3 pt-3 border-t border-navy/10">
         <p className="text-[10px] font-semibold text-navy mb-2 uppercase tracking-wider">Standards Baseline</p>
         <div className="flex flex-wrap gap-1.5">
@@ -1848,7 +2155,6 @@ function ResultsView({ students, scores, levelTest }: {
       })
   }, [students, scores, sortBy])
 
-  // Class distribution
   const classCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     ENGLISH_CLASSES.forEach(c => counts[c] = 0)
@@ -1866,7 +2172,6 @@ function ResultsView({ students, scores, levelTest }: {
 
   return (
     <div className="px-10 py-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-display text-lg font-semibold text-navy">Results & Suggested Placement</h3>
@@ -1880,7 +2185,6 @@ function ResultsView({ students, scores, levelTest }: {
         </select>
       </div>
 
-      {/* Class Distribution Bar */}
       <div className="bg-surface border border-border rounded-xl p-4 mb-4">
         <p className="text-[11px] font-semibold text-text-secondary mb-2 uppercase tracking-wider">Suggested Class Distribution</p>
         <div className="flex gap-2">
@@ -1896,7 +2200,6 @@ function ResultsView({ students, scores, levelTest }: {
         </div>
       </div>
 
-      {/* Results Table */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
         <table className="w-full text-[12px]">
           <thead>
@@ -1996,7 +2299,6 @@ function ResultsView({ students, scores, levelTest }: {
                           </span>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
-                          {/* Written Test Breakdown */}
                           <div className="bg-white rounded-lg border border-border p-3">
                             <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Written Test</p>
                             {WRITTEN_SECTIONS.map(sec => {
@@ -2010,7 +2312,6 @@ function ResultsView({ students, scores, levelTest }: {
                               )
                             })}
                           </div>
-                          {/* Oral / Reading */}
                           <div className="bg-white rounded-lg border border-border p-3">
                             <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Oral / Reading</p>
                             <div className="space-y-1 text-[10px]">
@@ -2021,7 +2322,6 @@ function ResultsView({ students, scores, levelTest }: {
                               <div className="flex justify-between border-t border-border pt-1 mt-1"><span className="text-text-secondary font-semibold">Composite</span><span className={`font-extrabold text-[12px] ${row.composite >= 70 ? 'text-green-600' : row.composite >= 40 ? 'text-amber-600' : 'text-red-600'}`}>{Math.round(row.composite)}</span></div>
                             </div>
                           </div>
-                          {/* Standards Met/Missing */}
                           <div className="bg-white rounded-lg border border-border p-3">
                             <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Standards ({metCount}/{row.standardsBaseline.length} met)</p>
                             <div className="space-y-0.5 max-h-32 overflow-y-auto">
@@ -2045,7 +2345,6 @@ function ResultsView({ students, scores, levelTest }: {
         </table>
       </div>
 
-      {/* Placement Bands Legend */}
       <div className="mt-6 bg-surface border border-border rounded-xl p-5">
         <h4 className="text-[12px] font-semibold text-navy mb-3">Placement Band Descriptions</h4>
         <div className="grid grid-cols-3 gap-3">
@@ -2071,155 +2370,9 @@ function ResultsView({ students, scores, levelTest }: {
   )
 }
 
-// ============================================================================
-// ─── G1 Wave 2 Teacher Ratings (same as G2-5 anecdotal) ───────────────────
-
-const RATING_DIMENSIONS = [
-  { key: 'receptive_language', label: 'Receptive Language', description: 'Listening comprehension, following directions, understanding stories' },
-  { key: 'productive_language', label: 'Productive Language', description: 'Speaking in sentences, vocabulary use, oral expression' },
-  { key: 'engagement_pace', label: 'Engagement & Learning Pace', description: 'Participation, task completion, ability to keep up with instruction' },
-  { key: 'placement_recommendation', label: 'Overall Placement', description: 'Where would this student best fit based on your observations?' },
-]
-const RATING_LEVELS = [
-  { value: 1, label: 'Well Below', color: 'bg-red-100 text-red-700 border-red-300' },
-  { value: 2, label: 'Approaching', color: 'bg-amber-100 text-amber-700 border-amber-300' },
-  { value: 3, label: 'On Level', color: 'bg-green-100 text-green-700 border-green-300' },
-  { value: 4, label: 'Above', color: 'bg-blue-100 text-blue-700 border-blue-300' },
-]
-
-function G1TeacherRatings({ students, levelTestId }: { students: any[]; levelTestId: string }) {
-  const { currentTeacher, showToast } = useApp()
-  const [ratings, setRatings] = useState<Record<string, any>>({})
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState<string | null>(null)
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTestId)
-      const map: Record<string, any> = {}
-      data?.forEach((r: any) => { map[r.student_id] = r })
-      students.forEach(s => { if (!map[s.id]) map[s.id] = {} })
-      setRatings(map)
-      setLoading(false)
-    })()
-  }, [levelTestId, students])
-
-  const updateRating = (studentId: string, key: string, value: any) => {
-    setRatings(prev => ({ ...prev, [studentId]: { ...prev[studentId], [key]: value } }))
-  }
-
-  const saveOne = async (studentId: string) => {
-    setSaving(studentId)
-    const r = ratings[studentId] || {}
-    const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({
-      level_test_id: levelTestId, student_id: studentId, teacher_id: currentTeacher?.id || null,
-      receptive_language: r.receptive_language || null, productive_language: r.productive_language || null,
-      engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null,
-      notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null,
-    }, { onConflict: 'level_test_id,student_id' })
-    setSaving(null)
-    if (error) showToast(`Error: ${error.message}`); else showToast('Saved')
-  }
-
-  const saveAll = async () => {
-    setSaving('all'); let errors = 0
-    for (const s of students) {
-      const r = ratings[s.id] || {}
-      const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({
-        level_test_id: levelTestId, student_id: s.id, teacher_id: currentTeacher?.id || null,
-        receptive_language: r.receptive_language || null, productive_language: r.productive_language || null,
-        engagement_pace: r.engagement_pace || null, placement_recommendation: r.placement_recommendation || null,
-        notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null,
-      }, { onConflict: 'level_test_id,student_id' })
-      if (error) errors++
-    }
-    setSaving(null); showToast(errors > 0 ? `Saved with ${errors} error(s)` : `All ratings saved`)
-  }
-
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
-
-  return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h3 className="text-[16px] font-bold text-navy">Teacher Ratings (Wave 2)</h3>
-          <p className="text-[11px] text-text-secondary">Rate each student on 4 dimensions based on your classroom observations. These count toward 40% of the placement composite.</p>
-        </div>
-        <button onClick={saveAll} disabled={saving === 'all'}
-          className="px-5 py-2.5 rounded-xl text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-          {saving === 'all' ? 'Saving...' : 'Save All Ratings'}
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        {students.map(student => {
-          const r = ratings[student.id] || {}
-          const filled = RATING_DIMENSIONS.filter(d => r[d.key] != null).length
-          return (
-            <div key={student.id} className="bg-surface border border-border rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-[14px] font-semibold text-navy">{student.english_name}</span>
-                  <span className="text-[11px] text-text-tertiary">{student.korean_name}</span>
-                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-surface-alt text-text-secondary">{student.english_class}</span>
-                  <span className="text-[9px] text-text-tertiary">{filled}/4 rated</span>
-                </div>
-                <button onClick={() => saveOne(student.id)} disabled={saving === student.id}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
-                  {saving === student.id ? '...' : 'Save'}
-                </button>
-              </div>
-              <div className="grid grid-cols-4 gap-2 mb-2">
-                {RATING_DIMENSIONS.map(dim => (
-                  <div key={dim.key}>
-                    <p className="text-[9px] font-semibold text-text-secondary uppercase mb-1">{dim.label}</p>
-                    <div className="flex gap-1">
-                      {RATING_LEVELS.map(level => (
-                        <button key={level.value} onClick={() => updateRating(student.id, dim.key, level.value)}
-                          className={`flex-1 py-1.5 rounded text-[10px] font-bold border transition-all ${r[dim.key] === level.value ? level.color + ' border-2' : 'bg-surface-alt text-text-tertiary border-border hover:bg-surface'}`}>
-                          {level.value}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[7px] text-text-tertiary mt-0.5 text-center">
-                      {RATING_LEVELS.map(l => l.label).join(' / ')}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-3">
-                <input value={r.notes || ''} onChange={e => updateRating(student.id, 'notes', e.target.value)}
-                  placeholder="Notes (optional)" className="flex-1 px-3 py-1.5 text-[11px] border border-border rounded-lg bg-surface outline-none" />
-                <label className="flex items-center gap-1 text-[10px] text-text-secondary cursor-pointer">
-                  <input type="checkbox" checked={r.is_watchlist || false} onChange={e => updateRating(student.id, 'is_watchlist', e.target.checked)} className="rounded" />
-                  Watchlist
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] font-semibold text-text-secondary uppercase">Place in:</span>
-                  <select value={r.teacher_recommends || ''} onChange={e => updateRating(student.id, 'teacher_recommends', e.target.value || null)}
-                    className="px-2 py-1.5 border border-border rounded-lg text-[11px] bg-surface outline-none focus:border-navy min-w-[100px]">
-                    <option value="">-- Select --</option>
-                    <option value="Lily">Lily</option>
-                    <option value="Camellia">Camellia</option>
-                    <option value="Daisy">Daisy</option>
-                    <option value="Sunflower">Sunflower</option>
-                    <option value="Marigold">Marigold</option>
-                    <option value="Snapdragon">Snapdragon</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 // EXPORTS for use in LevelingView
 // ============================================================================
 
 export default Grade1ScoreEntry
 export { calculateG1Composite, suggestG1Class, ResultsView as G1ResultsView, WRITTEN_SECTIONS, PASSAGE_CONFIGS, STANDARDS_BASELINE, NAEP_MULTIPLIERS }
 export type { G1Scores, PassageLevel }
-
