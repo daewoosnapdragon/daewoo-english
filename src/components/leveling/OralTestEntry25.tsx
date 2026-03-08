@@ -246,8 +246,8 @@ const GRADE_CONFIGS: Record<number, GradeTestConfig> = {
         text: 'I have a cat. My cat is big and black. She can run fast. She likes to nap on my bed. I have a dog, too. My dog is small and white. He likes to dig in the mud. I love my pets!',
       },
       B: {
-        title: 'Squares', lexile: '160L', wordCount: 79, genre: 'Nonfiction',
-        text: 'You can see squares in many places. Some squares are red, green, or yellow. Some squares are small, and some squares are big. Some books are square, and many windows are square. Look at the side of a truck. It may be a square. Bread can be square, and your house can be a square. You can make squares with blocks. You can draw squares. Many rooms are squares. I have had square candy. What squares do you see?',
+        title: 'My Room', lexile: '~50L', wordCount: 57, genre: 'Fiction',
+        text: 'I have a big room. My bed is next to the wall. I have a red rug on the floor. My toys are in a box. I like to play in my room. Sometimes I read a book on my bed. My mom says, "Clean up!" I put my toys back in the box. Now my room is nice and clean.',
       },
       C: {
         title: 'What Day Is It?', lexile: '230L', wordCount: 67, genre: 'Fiction',
@@ -271,11 +271,11 @@ const GRADE_CONFIGS: Record<number, GradeTestConfig> = {
         { q: 'Which pet would you want? Why?', expected: '(Open - any reasonable response with reason)', dok: 'Open' },
       ],
       B: [
-        { q: 'What shape is this story about?', expected: 'Squares', dok: 'DOK 1' },
-        { q: 'Name two things that can be square.', expected: 'Books, windows, truck, bread, house, blocks, rooms, candy (any 2)', dok: 'DOK 1' },
-        { q: 'What colors can squares be?', expected: 'Red, green, or yellow', dok: 'DOK 1' },
-        { q: 'Can you make a square? How?', expected: 'With blocks / draw them (from text)', dok: 'DOK 2' },
-        { q: 'Look around. What squares can you find?', expected: '(Open - any real-world connection)', dok: 'Open' },
+        { q: 'Where is the bed?', expected: 'Next to the wall', dok: 'DOK 1' },
+        { q: 'What color is the rug?', expected: 'Red', dok: 'DOK 1' },
+        { q: 'Where does the child put the toys?', expected: 'In the/a box', dok: 'DOK 1' },
+        { q: 'Why does the child clean up the room?', expected: '(Inference: mom says to / mom tells them to)', dok: 'DOK 2' },
+        { q: 'What is your favorite thing in your room? Why?', expected: '(Open -- any reasonable response with reason)', dok: 'Open' },
       ],
       C: [
         { q: 'What are the kids playing?', expected: 'Games / hide-and-seek', dok: 'DOK 1' },
@@ -701,6 +701,218 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
 // MAIN COMPONENT
 // ============================================================================
 
+// ============================================================================
+// CLICKABLE PHONICS GRID (Grade 2 - like Grade 1 Level B)
+// ============================================================================
+
+function PhonicsClickableGrid({ sc, studentId, updateScore }: {
+  sc: OralScores
+  studentId: string
+  updateScore: (sid: string, key: string, val: number | string | null) => void
+}) {
+  const [wordStatus, setWordStatus] = useState<Record<string, boolean>>({})
+  const [initialized, setInitialized] = useState(false)
+
+  useEffect(() => {
+    if (!initialized) {
+      const ws: Record<string, boolean> = {}
+      PHONICS_ROWS.forEach((row, ri) => {
+        const saved = sc[`phonics_row${ri + 1}` as keyof OralScores] as number | null | undefined
+        if (saved != null) {
+          row.words.forEach((_, wi) => {
+            ws[`${ri}-${wi}`] = wi < saved
+          })
+        }
+      })
+      setWordStatus(ws)
+      setInitialized(true)
+    }
+  }, [sc, initialized])
+
+  const toggle = (rowIdx: number, wordIdx: number) => {
+    const key = `${rowIdx}-${wordIdx}`
+    setWordStatus(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      const rowCount = PHONICS_ROWS[rowIdx].words.reduce((acc, _, wi) => {
+        return acc + (next[`${rowIdx}-${wi}`] ? 1 : 0)
+      }, 0)
+      updateScore(studentId, `phonics_row${rowIdx + 1}`, rowCount)
+      return next
+    })
+    setInitialized(true)
+  }
+
+  const getRowCount = (ri: number) => {
+    return PHONICS_ROWS[ri].words.reduce((acc, _, wi) => acc + (wordStatus[`${ri}-${wi}`] ? 1 : 0), 0)
+  }
+
+  const totalCorrect = PHONICS_ROWS.reduce((acc, _, ri) => acc + getRowCount(ri), 0)
+
+  return (
+    <div className="space-y-4">
+      {PHONICS_ROWS.map((row, ri) => {
+        const rowCount = getRowCount(ri)
+        return (
+          <div key={ri}>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-semibold text-text-secondary">{row.label}</span>
+              <span className={`text-[11px] font-bold ${rowCount >= 4 ? 'text-green-600' : rowCount >= 2 ? 'text-amber-600' : 'text-text-tertiary'}`}>
+                {rowCount}/5
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {row.words.map((word, wi) => {
+                const key = `${ri}-${wi}`
+                return (
+                  <button key={wi} onClick={() => toggle(ri, wi)}
+                    className={`flex-1 px-3 py-3 rounded-xl text-[16px] font-serif font-bold transition-all ${
+                      wordStatus[key] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
+                      wordStatus[key] === false ? 'bg-red-50 text-red-400 border-2 border-red-200 line-through' :
+                      'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
+                    }`} style={{ touchAction: 'manipulation' }}>
+                    {word}
+                  </button>
+                )
+              })}
+            </div>
+            {rowCount <= 1 && initialized && PHONICS_ROWS[ri].words.some((_, wi) => wordStatus[`${ri}-${wi}`] !== undefined) && (
+              <p className="text-[9px] text-amber-600 mt-1 italic">Stopping rule: 0-1 correct -- this is the ceiling. Stop here.</p>
+            )}
+          </div>
+        )
+      })}
+      <div className="flex items-center justify-between pt-3 border-t border-border">
+        <span className="text-[12px] font-semibold text-navy">Total: {totalCorrect} / 25</span>
+        <div className="flex gap-2">
+          <button onClick={() => {
+            const ws: Record<string, boolean> = {}
+            PHONICS_ROWS.forEach((row, ri) => {
+              row.words.forEach((_, wi) => { ws[`${ri}-${wi}`] = true })
+              updateScore(studentId, `phonics_row${ri + 1}`, 5)
+            })
+            setWordStatus(ws); setInitialized(true)
+          }} className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          <button onClick={() => {
+            setWordStatus({})
+            PHONICS_ROWS.forEach((_, ri) => { updateScore(studentId, `phonics_row${ri + 1}`, 0) })
+            setInitialized(true)
+          }} className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// CLICKABLE SENTENCE GRID (Grade 2 - like Grade 1 Level C)
+// ============================================================================
+
+function SentenceClickableGrid({ sc, studentId, updateScore }: {
+  sc: OralScores
+  studentId: string
+  updateScore: (sid: string, key: string, val: number | string | null) => void
+}) {
+  const [wordStatus, setWordStatus] = useState<Record<string, boolean>>({})
+  const [initialized, setInitialized] = useState(false)
+
+  useEffect(() => {
+    if (!initialized) {
+      const ws: Record<string, boolean> = {}
+      SENTENCES.forEach((sent, si) => {
+        const saved = sc[`sent_${si + 1}` as keyof OralScores] as number | null | undefined
+        if (saved != null) {
+          const words = sent.text.split(/\s+/)
+          words.forEach((_, wi) => {
+            ws[`${si}-${wi}`] = wi < saved
+          })
+        }
+      })
+      setWordStatus(ws)
+      setInitialized(true)
+    }
+  }, [sc, initialized])
+
+  const toggle = (sentIdx: number, wordIdx: number) => {
+    const key = `${sentIdx}-${wordIdx}`
+    setWordStatus(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      const words = SENTENCES[sentIdx].text.split(/\s+/)
+      const sentCount = words.reduce((acc, _, wi) => acc + (next[`${sentIdx}-${wi}`] ? 1 : 0), 0)
+      updateScore(studentId, `sent_${sentIdx + 1}`, sentCount)
+      return next
+    })
+    setInitialized(true)
+  }
+
+  const getSentCount = (si: number) => {
+    const words = SENTENCES[si].text.split(/\s+/)
+    return words.reduce((acc, _, wi) => acc + (wordStatus[`${si}-${wi}`] ? 1 : 0), 0)
+  }
+
+  const totalCorrect = SENTENCES.reduce((acc, _, si) => acc + getSentCount(si), 0)
+  const totalMax = SENTENCES.reduce((acc, s) => acc + s.max, 0)
+
+  return (
+    <div className="space-y-4">
+      {SENTENCES.map((sent, si) => {
+        const words = sent.text.split(/\s+/)
+        const sentCount = getSentCount(si)
+        return (
+          <div key={si} className="bg-surface-alt/50 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-navy/10 text-navy text-[10px] font-bold flex items-center justify-center shrink-0">{si + 1}</span>
+                <span className="text-[9px] text-text-tertiary">{sent.level}</span>
+              </div>
+              <span className={`text-[11px] font-bold ${sentCount >= sent.max - 1 ? 'text-green-600' : sentCount >= Math.floor(sent.max / 2) ? 'text-amber-600' : 'text-text-tertiary'}`}>
+                {sentCount}/{sent.max}
+              </span>
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {words.map((word, wi) => {
+                const key = `${si}-${wi}`
+                return (
+                  <button key={key} onClick={() => toggle(si, wi)}
+                    className={`px-2.5 py-2 rounded-lg text-[15px] font-serif transition-all ${
+                      wordStatus[key] === true ? 'bg-green-100 text-green-800 border-2 border-green-400' :
+                      wordStatus[key] === false ? 'bg-red-50 text-red-400 border-2 border-red-200 line-through' :
+                      'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
+                    }`} style={{ touchAction: 'manipulation' }}>
+                    {word}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+      <div className="flex items-center justify-between pt-3 border-t border-border">
+        <span className="text-[12px] font-semibold text-navy">Total: {totalCorrect} / {totalMax}</span>
+        <div className="flex gap-2">
+          <button onClick={() => {
+            const ws: Record<string, boolean> = {}
+            SENTENCES.forEach((sent, si) => {
+              const words = sent.text.split(/\s+/)
+              words.forEach((_, wi) => { ws[`${si}-${wi}`] = true })
+              updateScore(studentId, `sent_${si + 1}`, sent.max)
+            })
+            setWordStatus(ws); setInitialized(true)
+          }} className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          <button onClick={() => {
+            setWordStatus({})
+            SENTENCES.forEach((_, si) => { updateScore(studentId, `sent_${si + 1}`, 0) })
+            setInitialized(true)
+          }} className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }: {
   levelTest: LevelTest
   teacherClass: EnglishClass | null
@@ -1093,55 +1305,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 </h4>
                 <p className="text-[11px] text-text-secondary mb-4">
                   Show the word card. Say: "Read each word out loud. Do your best."
-                  Mark + (correct) or - (incorrect). If student gets 0-1 on a row, stop.
+                  Tap each word: green = correct, tap again = incorrect. If student gets 0-1 on a row, stop.
                 </p>
-                <div className="space-y-3">
-                  {PHONICS_ROWS.map((row, ri) => {
-                    const key = `phonics_row${ri + 1}` as keyof OralScores
-                    const val = sc[key] as number | null | undefined
-                    return (
-                      <div key={ri} className="flex items-center gap-3">
-                        <span className="w-32 text-[11px] font-medium text-text-secondary">{row.label}</span>
-                        <div className="flex gap-2">
-                          {row.words.map((word, wi) => (
-                            <span key={wi} className="px-3 py-1.5 bg-surface-alt rounded-lg text-[13px] font-mono min-w-[60px] text-center">
-                              {word}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-1.5 ml-auto">
-                          <input type="number" min={0} max={5}
-                            value={val ?? ''}
-                            onChange={e => updateScore(student.id, key as string, e.target.value === '' ? null : Math.min(5, Math.max(0, Number(e.target.value))))}
-                            className="w-14 px-2 py-1.5 border border-border rounded-lg text-center text-[13px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-surface"
-                            placeholder="--"
-                          />
-                          <span className="text-[10px] text-text-tertiary">/ 5</span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
-                  <span className="text-[12px] font-semibold text-navy">Total: {phonicsTotal} / 25</span>
-                  <span className="text-[10px] text-text-tertiary italic">Stopping rule: If student gets 0-1 on a row, stop -- you have found their ceiling.</span>
-                </div>
-                {/* Ceiling detection */}
-                {PHONICS_ROWS.some((_, ri) => {
-                  const val = sc[`phonics_row${ri + 1}` as keyof OralScores] as number | null | undefined
-                  return val != null && val <= 1
-                }) && (
-                  <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2">
-                    <span className="text-[16px]">&#9888;</span>
-                    <span className="text-[11px] text-amber-800 font-medium">
-                      Ceiling reached at {PHONICS_ROWS.map((row, ri) => {
-                        const val = sc[`phonics_row${ri + 1}` as keyof OralScores] as number | null | undefined
-                        return val != null && val <= 1 ? row.label : null
-                      }).filter(Boolean)[0]}
-                      {' -- '}remaining rows may be skipped.
-                    </span>
-                  </div>
-                )}
+                <PhonicsClickableGrid sc={sc} studentId={student.id} updateScore={updateScore} />
               </div>
             )}
 
@@ -1152,35 +1318,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                   <BookOpen size={15} /> Component 2: Sentence Reading
                 </h4>
                 <p className="text-[11px] text-text-secondary mb-4">
-                  Say: "Now read these sentences out loud. Do your best." Mark errors. Count correct words per sentence.
+                  Say: "Now read these sentences out loud. Do your best." Tap each word: green = correct, tap again = incorrect.
                 </p>
-                <div className="space-y-3">
-                  {SENTENCES.map((sent, si) => {
-                    const key = `sent_${si + 1}` as keyof OralScores
-                    const val = sc[key] as number | null | undefined
-                    return (
-                      <div key={si} className="flex items-start gap-3 bg-surface-alt/50 rounded-lg p-3">
-                        <span className="w-5 h-5 rounded-full bg-navy/10 text-navy text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{si + 1}</span>
-                        <div className="flex-1">
-                          <p className="text-[13px] text-text-primary font-medium">{sent.text}</p>
-                          <p className="text-[9px] text-text-tertiary mt-0.5">{sent.level}</p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <input type="number" min={0} max={sent.max}
-                            value={val ?? ''}
-                            onChange={e => updateScore(student.id, key as string, e.target.value === '' ? null : Math.min(sent.max, Math.max(0, Number(e.target.value))))}
-                            className="w-14 px-2 py-1.5 border border-border rounded-lg text-center text-[13px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-surface"
-                            placeholder="--"
-                          />
-                          <span className="text-[10px] text-text-tertiary">/ {sent.max}</span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-                <div className="mt-4 pt-3 border-t border-border">
-                  <span className="text-[12px] font-semibold text-navy">Total: {sentTotal} / 35</span>
-                </div>
+                <SentenceClickableGrid sc={sc} studentId={student.id} updateScore={updateScore} />
               </div>
             )}
 
