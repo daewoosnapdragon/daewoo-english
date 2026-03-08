@@ -579,6 +579,14 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
     setFinished(false)
   }
 
+  // Detect whether the teacher has done anything worth keeping
+  const hasUnsavedData = timing || elapsed > 0 || Object.keys(wordMarks).length > 0 || lastWordIdx !== null || notes.length > 0
+
+  const handleClose = () => {
+    if (!hasUnsavedData) { onClose(); return }
+    if (confirm('You have unsaved reading data. Close without saving?')) onClose()
+  }
+
   // Split words into lines of 10
   const lines: { word: string; idx: number }[][] = []
   for (let i = 0; i < words.length; i += 10) {
@@ -586,7 +594,7 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={handleClose}>
       <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-[850px] max-h-[90vh] flex flex-col overflow-hidden" onClick={(e: any) => e.stopPropagation()}>
         {/* Header */}
         <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-green-50 shrink-0">
@@ -594,7 +602,7 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
             <h3 className="font-display text-lg font-semibold text-navy">Passage {level}: {passage.title}</h3>
             <p className="text-[10px] text-text-secondary">{passage.wordCount} words | {passage.lexile}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
+          <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
         </div>
 
         {/* Timer bar — 3 states: idle, timing, finished */}
