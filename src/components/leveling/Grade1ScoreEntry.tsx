@@ -620,11 +620,29 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
   }, [])
 
+  // Fields that belong to the current passage level and must be cleared on switch
+  const G1_PASSAGE_FIELDS = [
+    'o_orf_raw', 'o_orf_words_read', 'o_orf_errors', 'o_orf_time_seconds',
+    'o_naep', 'o_comp_q1', 'o_comp_q2', 'o_comp_q3', 'o_comp_q4', 'o_comp_q5',
+    'o_a_q1', 'o_a_q2', 'o_a_q3', 'o_a_q4', 'o_a_q5',
+  ]
+
   const updateScore = useCallback((studentId: string, key: string, value: number | string | boolean | null) => {
-    setScores(prev => ({
-      ...prev,
-      [studentId]: { ...prev[studentId], [key]: value },
-    }))
+    setScores(prev => {
+      const current = prev[studentId] || {}
+      // If changing passage level, archive current passage data and clear fields
+      if (key === 'o_passage_level' && current.o_passage_level && value !== current.o_passage_level) {
+        const archive: Record<string, any> = { level: current.o_passage_level }
+        G1_PASSAGE_FIELDS.forEach(f => { if ((current as any)[f] != null) archive[f] = (current as any)[f] })
+        const hasData = G1_PASSAGE_FIELDS.some(f => (current as any)[f] != null)
+        const attempts = Array.isArray((current as any).passages_attempted) ? [...(current as any).passages_attempted] : []
+        if (hasData) attempts.push(archive)
+        const cleared: Record<string, any> = { ...current, o_passage_level: value, passages_attempted: attempts }
+        G1_PASSAGE_FIELDS.forEach(f => { delete cleared[f] })
+        return { ...prev, [studentId]: cleared }
+      }
+      return { ...prev, [studentId]: { ...current, [key]: value } }
+    })
   }, [])
 
   const saveScores = useCallback(async (studentIds: string[], silent = false) => {
@@ -1748,7 +1766,13 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
             <label className="text-[11px] font-medium text-text-secondary block mb-2">Passage Level</label>
             <div className="flex gap-2">
               {(['A', 'B', 'C', 'D', 'E', 'F'] as PassageLevel[]).map(level => (
-                <button key={level} onClick={() => updateScore(student.id, 'o_passage_level', level)}
+                <button key={level} onClick={() => {
+                  if (passageLevel && level !== passageLevel) {
+                    const hasData = ['o_orf_raw', 'o_orf_words_read', 'o_comp_q1', 'o_a_q1', 'o_a_q2', 'o_a_q3'].some(f => (sc as any)[f] != null)
+                    if (hasData && !confirm(`Switch from Level ${passageLevel} to Level ${level}? Current scores will be archived. Only the last level attempted is used for scoring.`)) return
+                  }
+                  updateScore(student.id, 'o_passage_level', level)
+                }}
                   className={`px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all ${
                     passageLevel === level
                       ? 'bg-navy text-white shadow-sm ring-2 ring-navy/30'
@@ -1760,15 +1784,31 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
             </div>
           </div>
 
+          {/* Previous attempts warning */}
+          {Array.isArray((sc as any).passages_attempted) && (sc as any).passages_attempted.length > 0 && (
+            <div className="mb-4 bg-amber-50/50 border border-amber-100 rounded-lg px-4 py-2.5">
+              <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (not scored -- only current level counts)</p>
+              <div className="flex gap-3">
+                {(sc as any).passages_attempted.map((att: any, i: number) => (
+                  <div key={i} className="text-[10px] text-amber-800">
+                    <span className="font-bold">Lv {att.level}</span>
+                    {att.o_orf_raw != null && <span className="text-text-tertiary ml-1">Score: {att.o_orf_raw}</span>}
+                    {att.o_a_q1 != null && <span className="text-text-tertiary ml-1">Interview: {(att.o_a_q1 || 0) + (att.o_a_q2 || 0) + (att.o_a_q3 || 0) + (att.o_a_q4 || 0) + (att.o_a_q5 || 0)}/20</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {config && (
             <div className="bg-blue-50/50 rounded-lg px-4 py-3 mb-4 border border-blue-100">
               <p className="text-[12px] font-semibold text-navy">{config.label}</p>
               <p className="text-[11px] text-text-secondary mt-0.5">{config.description}</p>
               {config.bumpUpThreshold != null && (
-                <p className="text-[10px] text-blue-600 mt-1">Bump up if score reaches {config.bumpUpThreshold}+</p>
+                <p className="text-[10px] text-blue-600 mt-1">Bump up if score reaches {config.bumpUpThreshold}+. Click the next level above -- previous scores are archived automatically.</p>
               )}
               {config.bumpDownThreshold != null && (
-                <p className="text-[10px] text-amber-600">Bump down if student cannot read any words</p>
+                <p className="text-[10px] text-amber-600">Bump down if student cannot read any words. Click the level below -- previous scores are archived automatically.</p>
               )}
             </div>
           )}
