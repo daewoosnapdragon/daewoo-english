@@ -417,11 +417,7 @@ function calculateG1Composite(scores: G1Scores): {
     }
   }
 
-  // Passage level itself is a strong signal
-  const levelBonus: Record<string, number> = { A: 0, B: 15, C: 30, D: 50, E: 70, F: 85 }
-  const levelScore = levelBonus[passageLevel] ?? 0
-
-  // Comprehension subscore
+  // ── Comprehension subscore ──
   let compTotal: number | null = null
   let compMax: number | null = null
   if (config.compQuestions > 0) {
@@ -436,15 +432,49 @@ function calculateG1Composite(scores: G1Scores): {
   // Open response
   const openPct = ((scores.o_open_response ?? 0) / 5) * 100
 
-  // Weighted oral composite
-  let oralScore: number
-  if (['A', 'B'].includes(passageLevel)) {
-    oralScore = alphaPct * 0.30 + phonemePct * 0.25 + orfPct * 0.20 + levelScore * 0.15 + openPct * 0.10
-  } else if (passageLevel === 'C') {
-    oralScore = alphaPct * 0.15 + phonemePct * 0.15 + orfPct * 0.30 + levelScore * 0.25 + openPct * 0.15
-  } else {
-    oralScore = alphaPct * 0.05 + phonemePct * 0.10 + orfPct * 0.20 + levelScore * 0.25 + compPct * 0.25 + openPct * 0.15
+  // ── Oral score: passage-level-gated scoring ──
+  // The passage level is the strongest signal of where a Grade 1 student belongs.
+  // A student reading passage E should ALWAYS outscore a student on passage A.
+  // We use the passage level to set a floor, then subtests determine position within the band.
+  //
+  // Passage floors (aligned to 6 classes across 0-100):
+  //   A = 0-16  (pre-readers, Lily territory)
+  //   B = 17-32 (early decoding, Lily-Camellia)
+  //   C = 33-49 (beginning fluency, Camellia-Daisy)
+  //   D = 50-66 (developing fluency, Daisy-Sunflower)
+  //   E = 67-83 (fluent readers, Marigold territory)
+  //   F = 84-100 (advanced, Snapdragon territory)
+
+  const LEVEL_BANDS: Record<string, { floor: number; ceiling: number }> = {
+    A: { floor: 0, ceiling: 16 },
+    B: { floor: 17, ceiling: 32 },
+    C: { floor: 33, ceiling: 49 },
+    D: { floor: 50, ceiling: 66 },
+    E: { floor: 67, ceiling: 83 },
+    F: { floor: 84, ceiling: 100 },
   }
+  const band = LEVEL_BANDS[passageLevel] || LEVEL_BANDS['A']
+  const bandWidth = band.ceiling - band.floor
+
+  // Within-band performance: average of available subtests (all normalized 0-1)
+  const withinBandParts: number[] = []
+
+  // Alphabet (all levels)
+  if (alphaRaw > 0) withinBandParts.push(alphaPct / 100)
+  // Phoneme (all levels)
+  if ((scores.o_phoneme ?? 0) > 0) withinBandParts.push(phonemePct / 100)
+  // ORF (passage-level-specific performance)
+  if (orfPct > 0) withinBandParts.push(Math.min(orfPct / 100, 1))
+  // Comprehension (levels with comp questions)
+  if (compPct > 0) withinBandParts.push(Math.min(compPct / 100, 1))
+  // Open response
+  if ((scores.o_open_response ?? 0) > 0) withinBandParts.push(openPct / 100)
+
+  const withinBandAvg = withinBandParts.length > 0
+    ? withinBandParts.reduce((a, b) => a + b, 0) / withinBandParts.length
+    : 0.5 // default to mid-band if no subtest data
+
+  let oralScore = band.floor + (withinBandAvg * bandWidth)
 
   // Teacher impression -- wave-aware
   const CLASS_IMPRESSION_MAP: Record<string, number> = {
