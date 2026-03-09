@@ -1125,6 +1125,37 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     return () => window.removeEventListener('beforeunload', handler)
   }, [students])
 
+  // Restore a previous passage attempt (swap it with current)
+  const restoreAttempt = useCallback((sid: string, attemptIdx: number) => {
+    setScores(prev => {
+      const current = { ...(prev[sid] || {}) }
+      const attempts = Array.isArray(current.passages_attempted) ? [...current.passages_attempted] : []
+      if (attemptIdx < 0 || attemptIdx >= attempts.length) return prev
+      const toRestore = { ...attempts[attemptIdx] }
+      const restoredLevel = toRestore.level
+      delete toRestore.level
+
+      // Archive current passage data if it has any
+      const hasCurrentData = PASSAGE_FIELDS.some(f => current[f] != null)
+      if (hasCurrentData && current.passage_level) {
+        const archive: Record<string, any> = { level: current.passage_level }
+        PASSAGE_FIELDS.forEach(f => { if (current[f] != null) archive[f] = current[f] })
+        attempts[attemptIdx] = archive
+      } else {
+        attempts.splice(attemptIdx, 1)
+      }
+
+      // Clear current passage fields, then apply restored data
+      const updated: Record<string, any> = { ...current }
+      PASSAGE_FIELDS.forEach(f => { delete updated[f] })
+      updated.passage_level = restoredLevel
+      updated.passages_attempted = attempts
+      Object.entries(toRestore).forEach(([k, v]) => { updated[k] = v })
+
+      return { ...prev, [sid]: updated }
+    })
+  }, [])
+
   // Clear oral data — removes oral keys from DB, preserves written keys
   const clearStudent = async (sid: string, name: string) => {
     if (!confirm(`Clear all oral test scores for ${name}? This cannot be undone.`)) return
@@ -1368,25 +1399,30 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     })}
                   </div>
 
-                  {/* Previous attempts */}
+                  {/* Previous attempts -- click to restore */}
                   {Array.isArray(sc.passages_attempted) && sc.passages_attempted.length > 0 && (
                     <div className="mb-4 bg-amber-50/50 border border-amber-100 rounded-lg px-3 py-2">
-                      <p className="text-[9px] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (not scored)</p>
-                      <div className="flex gap-3">
+                      <p className="text-[9px] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (click to restore)</p>
+                      <div className="flex gap-2 flex-wrap">
                         {sc.passages_attempted.map((att: any, i: number) => (
-                          <div key={i} className="text-[10px] text-amber-800">
+                          <button key={i} onClick={() => {
+                            if (!confirm(`Restore Level ${att.level} attempt? Current passage data will be swapped into the archive.`)) return
+                            restoreAttempt(student.id, i)
+                          }}
+                            className="inline-flex items-center gap-1.5 text-[10px] text-amber-800 bg-amber-100/60 hover:bg-amber-200/80 border border-amber-200 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer">
+                            <RotateCcw size={10} />
                             <span className="font-bold">Lv {att.level}</span>
                             {att.orf_words_read != null && att.orf_errors != null && att.orf_time_seconds ? (
-                              <span className="text-text-tertiary ml-1">
+                              <span className="text-text-tertiary">
                                 {Math.round(((att.orf_words_read - att.orf_errors) / (att.orf_time_seconds || 60)) * 60)} CWPM
                               </span>
                             ) : null}
                             {att.comp_1 != null && (
-                              <span className="text-text-tertiary ml-1">
+                              <span className="text-text-tertiary">
                                 Comp {[att.comp_1, att.comp_2, att.comp_3, att.comp_4, att.comp_5].reduce((a: number, b: any) => a + (b || 0), 0)}/15
                               </span>
                             )}
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>

@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X } from 'lucide-react'
+import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X, RotateCcw } from 'lucide-react'
 
 // ============================================================================
 // GRADE 1 TEST CONFIGURATION
@@ -756,6 +756,101 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   const availableClasses = isAdmin ? ENGLISH_CLASSES : (teacherClass ? [teacherClass] : ENGLISH_CLASSES)
   const classStudents = useMemo(() => students.filter(s => s.english_class === activeClass), [students, activeClass])
 
+  // Clear all oral data for a student (keep written + teacher fields)
+  const clearOralData = useCallback(async (sid: string, name: string) => {
+    if (!confirm(`Clear ALL oral test scores for ${name}? This includes passage data and all previous attempts. This cannot be undone.`)) return
+    // Clear local state: keep only non-oral keys
+    setScores(prev => {
+      const current = prev[sid] || {}
+      const kept: Record<string, any> = {}
+      Object.entries(current).forEach(([k, v]) => {
+        if (!k.startsWith('o_') && !k.startsWith('o_ph_') && !k.startsWith('o_a_') && k !== 'passages_attempted') {
+          kept[k] = v
+        }
+      })
+      return { ...prev, [sid]: kept as G1Scores }
+    })
+    setSavedSnapshot(prev => {
+      const current = prev[sid] || {}
+      const kept: Record<string, any> = {}
+      Object.entries(current).forEach(([k, v]) => {
+        if (!k.startsWith('o_') && !k.startsWith('o_ph_') && !k.startsWith('o_a_') && k !== 'passages_attempted') {
+          kept[k] = v
+        }
+      })
+      return { ...prev, [sid]: kept as G1Scores }
+    })
+    // Update DB: delete row and re-insert with only written/teacher data
+    try {
+      const { data: existing } = await supabase.from('level_test_scores')
+        .select('*')
+        .eq('level_test_id', levelTest.id)
+        .eq('student_id', sid)
+        .maybeSingle()
+      if (existing) {
+        const raw = existing.raw_scores || {}
+        const calc = existing.calculated_metrics || {}
+        const writtenRaw: Record<string, any> = {}
+        const writtenCalc: Record<string, any> = {}
+        // Keep written keys (w_ prefix) + teacher fields
+        Object.entries(raw).forEach(([k, v]) => {
+          if (k.startsWith('w_') || k === 'teacher_impression' || k === 'teacher_notes' || k === 'wave1_class_impression') {
+            writtenRaw[k] = v
+          }
+        })
+        Object.entries(calc).forEach(([k, v]) => {
+          if (k.startsWith('written_') || k === 'teacher_pct') {
+            writtenCalc[k] = v
+          }
+        })
+        await supabase.from('level_test_scores').delete()
+          .eq('level_test_id', levelTest.id).eq('student_id', sid)
+        if (Object.keys(writtenRaw).length > 0) {
+          await supabase.from('level_test_scores').insert({
+            level_test_id: levelTest.id, student_id: sid,
+            raw_scores: writtenRaw, calculated_metrics: writtenCalc,
+            previous_class: existing.previous_class || null,
+            entered_by: currentTeacher?.id || null,
+          })
+        }
+      }
+    } catch (e) { console.error('Clear oral DB error:', e) }
+    showToast(`Cleared all oral scores for ${name}`)
+  }, [levelTest.id, currentTeacher?.id, showToast])
+
+  // Restore a previous passage attempt (swap it with current)
+  const restoreAttempt = useCallback((sid: string, attemptIdx: number) => {
+    setScores(prev => {
+      const current = { ...(prev[sid] || {}) }
+      const attempts = Array.isArray((current as any).passages_attempted) ? [...(current as any).passages_attempted] : []
+      if (attemptIdx < 0 || attemptIdx >= attempts.length) return prev
+      const toRestore = { ...attempts[attemptIdx] }
+      const restoredLevel = toRestore.level
+      delete toRestore.level
+
+      // Archive current passage data if it has any
+      const hasCurrentData = G1_PASSAGE_FIELDS.some(f => (current as any)[f] != null)
+      if (hasCurrentData && current.o_passage_level) {
+        const archive: Record<string, any> = { level: current.o_passage_level }
+        G1_PASSAGE_FIELDS.forEach(f => { if ((current as any)[f] != null) archive[f] = (current as any)[f] })
+        attempts[attemptIdx] = archive
+      } else {
+        // No current data to archive, just remove the restored attempt
+        attempts.splice(attemptIdx, 1)
+      }
+
+      // Clear current passage fields, then apply restored data
+      const updated: Record<string, any> = { ...current }
+      G1_PASSAGE_FIELDS.forEach(f => { delete updated[f] })
+      updated.o_passage_level = restoredLevel
+      updated.passages_attempted = attempts
+      // Restore the passage fields from the attempt
+      Object.entries(toRestore).forEach(([k, v]) => { updated[k] = v })
+
+      return { ...prev, [sid]: updated as G1Scores }
+    })
+  }, [])
+
   const completionStats = useMemo(() => {
     let writtenDone = 0, oralDone = 0
     classStudents.forEach(s => {
@@ -845,6 +940,8 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
               selectedIdx={selectedStudentIdx}
               onSelectIdx={setSelectedStudentIdx}
               activeWave={1}
+              onClearOral={clearOralData}
+              onRestoreAttempt={restoreAttempt}
             />
           )}
           {activeTab === 'written' && (
@@ -1642,7 +1739,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
 // ORAL TEST ENTRY MAIN
 // ============================================================================
 
-function OralTestEntry({ students, scores, updateScore, onSave, saving, selectedIdx, onSelectIdx, activeWave }: {
+function OralTestEntry({ students, scores, updateScore, onSave, saving, selectedIdx, onSelectIdx, activeWave, onClearOral, onRestoreAttempt }: {
   students: Student[]
   scores: Record<string, G1Scores>
   updateScore: (sid: string, key: string, val: number | string | boolean | null) => void
@@ -1651,6 +1748,8 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
   selectedIdx: number
   onSelectIdx: (idx: number) => void
   activeWave: 1 | 2
+  onClearOral: (sid: string, name: string) => Promise<void>
+  onRestoreAttempt: (sid: string, attemptIdx: number) => void
 }) {
   const student = students[selectedIdx]
   if (!student) return <div className="p-8 text-center text-text-tertiary">No students found.</div>
@@ -1726,6 +1825,12 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
             <p className="text-[12px] text-text-secondary">{student.korean_name} -- {student.english_class}</p>
           </div>
           <div className="flex items-center gap-2">
+            {studentHasOralData(student.id) && (
+              <button onClick={() => onClearOral(student.id, student.english_name)}
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-medium text-red-500 hover:bg-red-50 border border-red-200 transition-all">
+                <RotateCcw size={12} /> Clear
+              </button>
+            )}
             <button onClick={() => { onSave([student.id]); if (selectedIdx > 0) onSelectIdx(selectedIdx - 1) }}
               disabled={selectedIdx === 0 || saving}
               className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-surface-alt disabled:opacity-30 transition-all">
@@ -1784,17 +1889,22 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
             </div>
           </div>
 
-          {/* Previous attempts warning */}
+          {/* Previous attempts -- click to restore */}
           {Array.isArray((sc as any).passages_attempted) && (sc as any).passages_attempted.length > 0 && (
             <div className="mb-4 bg-amber-50/50 border border-amber-100 rounded-lg px-4 py-2.5">
-              <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (not scored -- only current level counts)</p>
-              <div className="flex gap-3">
+              <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (click to restore)</p>
+              <div className="flex gap-2 flex-wrap">
                 {(sc as any).passages_attempted.map((att: any, i: number) => (
-                  <div key={i} className="text-[10px] text-amber-800">
+                  <button key={i} onClick={() => {
+                    if (!confirm(`Restore Level ${att.level} attempt? Current passage data will be swapped into the archive.`)) return
+                    onRestoreAttempt(student.id, i)
+                  }}
+                    className="inline-flex items-center gap-1.5 text-[10px] text-amber-800 bg-amber-100/60 hover:bg-amber-200/80 border border-amber-200 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer">
+                    <RotateCcw size={10} />
                     <span className="font-bold">Lv {att.level}</span>
-                    {att.o_orf_raw != null && <span className="text-text-tertiary ml-1">Score: {att.o_orf_raw}</span>}
-                    {att.o_a_q1 != null && <span className="text-text-tertiary ml-1">Interview: {(att.o_a_q1 || 0) + (att.o_a_q2 || 0) + (att.o_a_q3 || 0) + (att.o_a_q4 || 0) + (att.o_a_q5 || 0)}/20</span>}
-                  </div>
+                    {att.o_orf_raw != null && <span className="text-text-tertiary">Score: {att.o_orf_raw}</span>}
+                    {att.o_a_q1 != null && <span className="text-text-tertiary">Interview: {(att.o_a_q1 || 0) + (att.o_a_q2 || 0) + (att.o_a_q3 || 0) + (att.o_a_q4 || 0) + (att.o_a_q5 || 0)}/20</span>}
+                  </button>
                 ))}
               </div>
             </div>
