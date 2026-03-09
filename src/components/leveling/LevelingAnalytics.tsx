@@ -37,6 +37,18 @@ function q3(arr: number[]): number {
 const PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
 const PASSAGE_LEVELS = ['A', 'B', 'C', 'D', 'E'] as const
 
+// Grade 1 uses a different oral assessment (alphabet, phoneme, ORF raw) that produces
+// an oral_score (0-100) instead of CWPM. This helper resolves the best oral value
+// for any grade, using weighted CWPM for grades 2-5 and oral_score for grade 1.
+function getOralValue(calc: any, sc: any): number | null {
+  // Prefer best_weighted_cwpm chain (grades 2-5 passage reading)
+  const cwpmVal = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+  if (cwpmVal != null && cwpmVal > 0) return cwpmVal
+  // Grade 1 fallback: oral_score is a 0-100 normalized composite
+  if (calc.oral_score != null && calc.oral_score > 0) return calc.oral_score
+  return cwpmVal // could be 0 or null
+}
+
 // ── Types ──────────────────────────────────────────────────────────
 
 interface ClassMetrics {
@@ -419,7 +431,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
         const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}
         if (sc.writing != null) writings.push(sc.writing)
         if (sc.written_mc != null) mcs.push(sc.written_mc)
-        const oral = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+        const oral = getOralValue(calc, sc)
         if (oral != null) orals.push(oral)
       })
       ab[cls] = { writing_median: median(writings), mc_median: median(mcs), oral_median: median(orals) }
@@ -444,7 +456,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const bench = benchmarks[s.english_class] || {}; const ab = autoBenchmarks[s.english_class] || {}
       const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
 
-      const oral = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+      const oral = getOralValue(calc, sc)
       const writing = sc.writing ?? null
       const mcRaw = sc.written_mc ?? null
 
@@ -541,7 +553,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}
       return {
         student: s,
-        oral: calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null,
+        oral: getOralValue(calc, sc),
         writing: sc.writing ?? null,
         mc: sc.written_mc ?? null,
       }
@@ -557,7 +569,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const orals: number[] = []; const writings: number[] = []; const mcs: number[] = []
       classStudents.forEach(s => {
         const sc = prevScores[s.id]?.raw_scores || {}; const calc = prevScores[s.id]?.calculated_metrics || {}
-        const oral = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+        const oral = getOralValue(calc, sc)
         if (oral != null) orals.push(oral)
         if (sc.writing != null) writings.push(sc.writing)
         if (sc.written_mc != null) mcs.push(sc.written_mc)
@@ -582,7 +594,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const mcReliable = cm.mc.values.length >= 3 && cm.mc.values.length >= cm.count * 0.5
       students.filter(s => s.english_class === cls).forEach(s => {
         const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}
-        const oral = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+        const oral = getOralValue(calc, sc)
         if (oralReliable && oral != null && cm.oral.hasData && (oral === 0 || (cm.oral.median > 0 && oral < cm.oral.median * 0.1)))
           flagged.push({ studentId: s.id, metric: 'oral', value: oral, classMedian: cm.oral.median })
         if (writingReliable && sc.writing != null && cm.writing.hasData && (sc.writing === 0 || (cm.writing.median > 0 && sc.writing < cm.writing.median * 0.1)))
@@ -773,7 +785,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
             description="Median scores per class. Bars show the middle 50% range (Q1-Q3). Higher is better. Dashed markers show previous test medians when available.">
             <div className="grid grid-cols-3 gap-6">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Oral (CWPM)</p>
+                <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Oral {Number(levelTest.grade) === 1 ? '(Score)' : '(CWPM)'}</p>
                 {classMetrics.filter(cm => cm.count > 0).map(cm => (
                   <ClassBar key={cm.cls + '-oral'} cls={cm.cls} stats={cm.oral} maxVal={Math.max(...classMetrics.map(m => m.oral.max || 0), 1)} unit="" prevMedian={prevClassMetrics?.[cm.cls]?.oral ?? null} />
                 ))}
@@ -864,7 +876,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
                 <table className="w-full text-[11px]">
                   <thead><tr>
                     <th className="text-left px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-                    <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Oral (CWPM)</th>
+                    <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Oral</th>
                     <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
                     <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
                   </tr></thead>
@@ -1099,7 +1111,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
           <SectionCard icon={BarChart3} title="Component Score Distributions"
             description="Each dot is one student, color-coded by current class. Clusters and gaps reveal where students naturally group -- useful for identifying borderline cases and class boundaries.">
             <div className="space-y-6">
-              <DotPlot title="Oral (CWPM)" data={allDots.map(d => ({ value: d.oral, cls: d.student.english_class as EnglishClass, name: d.student.english_name }))} maxVal={null} outliers={outliers.filter(o => o.metric === 'oral')} students={students} />
+              <DotPlot title={`Oral ${Number(levelTest.grade) === 1 ? '(Score)' : '(CWPM)'}`} data={allDots.map(d => ({ value: d.oral, cls: d.student.english_class as EnglishClass, name: d.student.english_name }))} maxVal={Number(levelTest.grade) === 1 ? 100 : null} outliers={outliers.filter(o => o.metric === 'oral')} students={students} />
               <DotPlot title="Writing (/20)" data={allDots.map(d => ({ value: d.writing, cls: d.student.english_class as EnglishClass, name: d.student.english_name }))} maxVal={20} outliers={outliers.filter(o => o.metric === 'writing')} students={students} />
               <DotPlot title={`MC (/${WRITTEN_MC_TOTAL})`} data={allDots.map(d => ({ value: d.mc, cls: d.student.english_class as EnglishClass, name: d.student.english_name }))} maxVal={WRITTEN_MC_TOTAL} outliers={outliers.filter(o => o.metric === 'mc')} students={students} />
             </div>
