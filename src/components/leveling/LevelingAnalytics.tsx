@@ -240,10 +240,10 @@ function CompositeStripPlot({ data, classMetrics }: { data: { value: number; cls
   if (data.length === 0) return null
 
   const activeClasses = classMetrics.filter(cm => cm.count > 0 && cm.composite.hasData)
-  // Find actual data range for tighter scaling
+  // Find actual data range — allow values > 100 if composites exceed benchmarks
   const allValues = data.map(d => d.value)
   const dataMin = Math.max(0, Math.floor(Math.min(...allValues) / 5) * 5 - 5)
-  const dataMax = Math.min(100, Math.ceil(Math.max(...allValues) / 5) * 5 + 5)
+  const dataMax = Math.ceil(Math.max(...allValues, 100) / 5) * 5 + 5
   const range = dataMax - dataMin || 1
 
   // Generate tick marks
@@ -419,7 +419,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
         const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}
         if (sc.writing != null) writings.push(sc.writing)
         if (sc.written_mc != null) mcs.push(sc.written_mc)
-        const oral = sc.passage_cwpm ?? sc.orf_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? null
+        const oral = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
         if (oral != null) orals.push(oral)
       })
       ab[cls] = { writing_median: median(writings), mc_median: median(mcs), oral_median: median(orals) }
@@ -439,12 +439,12 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const bench = benchmarks[s.english_class] || {}; const ab = autoBenchmarks[s.english_class] || {}
       const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
 
-      const oral = sc.passage_cwpm ?? sc.orf_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? null
+      const oral = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
       const writing = sc.writing ?? null
       const mcRaw = sc.written_mc ?? null
 
       const oralBench = bench.cwpm_end > 0 ? bench.cwpm_end : (ab.oral_median > 0 ? ab.oral_median : null)
-      const oralRatio = oral != null && oralBench ? oral / oralBench : null
+      const oralRatio = oral != null && oralBench ? Math.min(oral / oralBench, 1.2) : null
       const writingRatio = writing != null ? writing / 20 : null
       const mcRatio = mcRaw != null ? mcRaw / WRITTEN_MC_TOTAL : null
       const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
@@ -457,6 +457,10 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const anecAvg = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / av.length : null
 
       const oralRatios2 = [oralRatio, wrAcc].filter(v => v != null) as number[]
+      // Include comprehension in oral score (matching LevelingView composite)
+      const compTotal = calc.comp_total != null && calc.comp_total > 0 ? calc.comp_total : null
+      const compRatio = compTotal != null ? compTotal / (calc.comp_max || 15) : null
+      if (compRatio != null) oralRatios2.push(compRatio)
       const oralScoreCalc = oralRatios2.length > 0 ? oralRatios2.reduce((a, b) => a + b, 0) / oralRatios2.length : null
       const hasAnec2 = av.length > 0
       const parts: { score: number; weight: number }[] = []
@@ -531,7 +535,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}
       return {
         student: s,
-        oral: sc.passage_cwpm ?? sc.orf_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? null,
+        oral: calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null,
         writing: sc.writing ?? null,
         mc: sc.written_mc ?? null,
       }
@@ -547,7 +551,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const orals: number[] = []; const writings: number[] = []; const mcs: number[] = []
       classStudents.forEach(s => {
         const sc = prevScores[s.id]?.raw_scores || {}; const calc = prevScores[s.id]?.calculated_metrics || {}
-        const oral = sc.passage_cwpm ?? sc.orf_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? null
+        const oral = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
         if (oral != null) orals.push(oral)
         if (sc.writing != null) writings.push(sc.writing)
         if (sc.written_mc != null) mcs.push(sc.written_mc)
@@ -572,7 +576,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const mcReliable = cm.mc.values.length >= 3 && cm.mc.values.length >= cm.count * 0.5
       students.filter(s => s.english_class === cls).forEach(s => {
         const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}
-        const oral = sc.passage_cwpm ?? sc.orf_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? null
+        const oral = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
         if (oralReliable && oral != null && cm.oral.hasData && (oral === 0 || (cm.oral.median > 0 && oral < cm.oral.median * 0.1)))
           flagged.push({ studentId: s.id, metric: 'oral', value: oral, classMedian: cm.oral.median })
         if (writingReliable && sc.writing != null && cm.writing.hasData && (sc.writing === 0 || (cm.writing.median > 0 && sc.writing < cm.writing.median * 0.1)))

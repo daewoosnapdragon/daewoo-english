@@ -1784,7 +1784,9 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   // CWPM: prefer weighted_cwpm (includes passage + NAEP adjustment), fallback to raw
   // Oral uses benchmark-relative scoring because different classes read different-difficulty passages
   const rawCwpmValue = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
-  const cwpmRatio = rawCwpmValue != null && bench.cwpm_end > 0 ? rawCwpmValue / bench.cwpm_end : null
+  // Cap cwpmRatio at 1.2 — exceeding the benchmark is great, but uncapped ratios
+  // distort composite into >100% territory. 1.2 still rewards above-benchmark performance.
+  const cwpmRatio = rawCwpmValue != null && bench.cwpm_end > 0 ? Math.min(rawCwpmValue / bench.cwpm_end, 1.2) : null
   // Written test: ALL students take the SAME test, so use raw % of max possible (not class benchmarks)
   // This ensures cross-class comparability — a 20/40 MC is 50% regardless of which class the student is in
   const writingRatio = sc.writing != null ? sc.writing / 20 : null
@@ -1886,7 +1888,7 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
     const rawCwpmValue = calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
     // Oral components
     const oralRatios: number[] = []
-    if (rawCwpmValue != null && bench.cwpm_end > 0) oralRatios.push(rawCwpmValue / bench.cwpm_end)
+    if (rawCwpmValue != null && bench.cwpm_end > 0) oralRatios.push(Math.min(rawCwpmValue / bench.cwpm_end, 1.2))
     if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) oralRatios.push(sc.word_reading_correct / sc.word_reading_attempted)
     if (calc.comp_total != null && calc.comp_total > 0) oralRatios.push(calc.comp_total / (calc.comp_max || 15))
     const oralScore = oralRatios.length > 0 ? oralRatios.reduce((a, b) => a + b, 0) / oralRatios.length : null
