@@ -1039,12 +1039,34 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       const wordsRead = (raw.orf_words_read as number) || 0
       const orfErrors = (raw.orf_errors as number) || 0
       const time = (raw.orf_time_seconds as number) || 60
-      const calcCwpm = time > 0 ? Math.round(((wordsRead - orfErrors) / time) * 60) : null
+      // Only compute CWPM if student actually has reading data entered
+      const calcCwpm = wordsRead > 0 && time > 0 ? Math.round(((wordsRead - orfErrors) / time) * 60) : null
       const calcAccuracy = wordsRead > 0 ? Math.round(((wordsRead - orfErrors) / wordsRead) * 1000) / 10 : null
       const naepVal = (raw.naep as number) || null
       const passageMult = PASSAGE_MULTIPLIERS[raw.passage_level as string] || 1.0
       const naepMult = naepVal ? (NAEP_MULTIPLIERS[naepVal] || 1) : 1
-      const wCwpm = calcCwpm ? Math.round(calcCwpm * passageMult * naepMult) : calcCwpm
+      const wCwpm = calcCwpm != null && calcCwpm > 0 ? Math.round(calcCwpm * passageMult * naepMult) : null
+
+      // Best weighted CWPM across ALL attempts (current + archived)
+      // If a student tries a harder passage and does better, that score should count
+      let bestWeightedCwpm = wCwpm
+      let bestPassageLevel = raw.passage_level || null
+      const attempts = Array.isArray(raw.passages_attempted) ? raw.passages_attempted : []
+      for (const att of attempts) {
+        const attWords = (att.orf_words_read as number) || 0
+        const attErrors = (att.orf_errors as number) || 0
+        const attTime = (att.orf_time_seconds as number) || 60
+        const attCwpm = attTime > 0 ? Math.round(((attWords - attErrors) / attTime) * 60) : null
+        if (attCwpm != null && attCwpm > 0) {
+          const attPassageMult = PASSAGE_MULTIPLIERS[att.level as string] || 1.0
+          const attNaepMult = att.naep ? (NAEP_MULTIPLIERS[att.naep] || 1) : 1
+          const attWeighted = Math.round(attCwpm * attPassageMult * attNaepMult)
+          if (bestWeightedCwpm == null || attWeighted > bestWeightedCwpm) {
+            bestWeightedCwpm = attWeighted
+            bestPassageLevel = att.level || null
+          }
+        }
+      }
       const cTotal = [raw.comp_1, raw.comp_2, raw.comp_3, raw.comp_4, raw.comp_5].reduce((a: number, b) => a + ((b as number) || 0), 0)
       const pTotal = [raw.phonics_row1, raw.phonics_row2, raw.phonics_row3, raw.phonics_row4, raw.phonics_row5].reduce((a: number, b) => a + ((b as number) || 0), 0)
       const sTotal = [raw.sent_1, raw.sent_2, raw.sent_3, raw.sent_4, raw.sent_5].reduce((a: number, b) => a + ((b as number) || 0), 0)
@@ -1059,6 +1081,8 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           passage_multiplier: passageMult,
           cwpm: calcCwpm,
           weighted_cwpm: wCwpm,
+          best_weighted_cwpm: bestWeightedCwpm,
+          best_passage_level: bestPassageLevel,
           naep: naepVal,
           naep_multiplier: naepMult,
           accuracy_pct: calcAccuracy,
