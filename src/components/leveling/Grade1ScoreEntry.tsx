@@ -304,6 +304,7 @@ interface G1Scores {
   o_alpha_names?: number | null
   o_alpha_sounds?: number | null
   o_alpha_words?: number | null
+  o_alpha_words_note?: string | null
   o_phoneme?: number | null
   o_passage_level?: string | null
   o_orf_raw?: number | null
@@ -1142,13 +1143,13 @@ function WrittenTestEntry({ students, scores, updateScore, onSave, saving }: {
 function AlphabetGrids({ sc, studentId, updateScore }: {
   sc: G1Scores
   studentId: string
-  updateScore: (sid: string, key: string, val: number | boolean | null) => void
+  updateScore: (sid: string, key: string, val: number | string | boolean | null) => void
 }) {
   // Letter names grid
   const [nameStatus, setNameStatus] = useState<Record<number, boolean>>({})
   const [soundStatus, setSoundStatus] = useState<Record<number, boolean>>({})
   const [wordsCount, setWordsCount] = useState<number>(sc.o_alpha_words ?? 0)
-  const [wordsNote, setWordsNote] = useState<string>('')
+  const [wordsNote, setWordsNote] = useState<string>(sc.o_alpha_words_note ?? '')
   const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
@@ -1166,9 +1167,10 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
         setSoundStatus(ss)
       }
       if (sc.o_alpha_words != null) setWordsCount(sc.o_alpha_words)
+      if (sc.o_alpha_words_note != null) setWordsNote(sc.o_alpha_words_note)
       setInitialized(true)
     }
-  }, [sc.o_alpha_names, sc.o_alpha_sounds, sc.o_alpha_words, initialized])
+  }, [sc.o_alpha_names, sc.o_alpha_sounds, sc.o_alpha_words, sc.o_alpha_words_note, initialized])
 
   const toggleName = (idx: number) => {
     setNameStatus(prev => {
@@ -1289,7 +1291,10 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
         </div>
         <input
           value={wordsNote}
-          onChange={(e: any) => setWordsNote(e.target.value)}
+          onChange={(e: any) => {
+            setWordsNote(e.target.value)
+            updateScore(studentId, 'o_alpha_words_note', e.target.value || null)
+          }}
           placeholder="Optional: note which words they said..."
           className="w-full mt-3 px-3 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-surface"
         />
