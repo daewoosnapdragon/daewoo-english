@@ -159,9 +159,11 @@ function LevelingView() {
       {phase === 'anecdotal' && <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isLeadTeacher} />}
       {phase === 'results' && <ResultsPhase levelTest={selectedTest} />}
       {phase === 'analytics' && <LevelingAnalytics levelTest={selectedTest} />}
-      {phase === 'meeting' && <MeetingPhase levelTest={selectedTest} onFinalize={() => {
-        setSelectedTest({ ...selectedTest, status: 'finalized' }); setLevelTests(prev => prev.map(t => t.id === selectedTest.id ? { ...t, status: 'finalized' } : t))
-      }} />}
+      <div style={{ display: phase === 'meeting' ? 'block' : 'none' }}>
+        <MeetingPhase levelTest={selectedTest} onFinalize={() => {
+          setSelectedTest({ ...selectedTest, status: 'finalized' }); setLevelTests(prev => prev.map(t => t.id === selectedTest.id ? { ...t, status: 'finalized' } : t))
+        }} />
+      </div>
     </div>
   )
 }
