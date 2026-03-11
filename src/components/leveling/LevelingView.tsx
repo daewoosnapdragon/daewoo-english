@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
-import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield } from 'lucide-react'
+import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
@@ -1382,6 +1382,40 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   const [compareStudents, setCompareStudents] = useState<string[]>([])
   const [showCompare, setShowCompare] = useState(false)
   const [meetingExcludedQ, setMeetingExcludedQ] = useState<number[]>([])
+  const dirtyStudents = useRef<Set<string>>(new Set())
+  const [dirtyCount, setDirtyCount] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+
+  // Helper to mark a student dirty and update count
+  const markDirty = useCallback((studentId: string) => {
+    dirtyStudents.current.add(studentId)
+    setDirtyCount(dirtyStudents.current.size)
+  }, [])
+
+  // Pull latest saved placements from DB, merging with local dirty moves
+  const refreshFromDB = useCallback(async () => {
+    setRefreshing(true)
+    const { data: pd } = await supabase.from('level_test_placements').select('*').eq('level_test_id', levelTest.id)
+    const { data: sd } = await supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id)
+    const { data: ad } = await supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id)
+    // Update scores and anecdotals
+    if (sd) { const sm: Record<string, any> = {}; sd.forEach((s: any) => { sm[s.student_id] = s }); setScores(sm) }
+    if (ad) { const am: Record<string, any> = {}; ad.forEach((a: any) => { am[a.student_id] = a }); setAnecdotals(am) }
+    // Merge placements: DB values for non-dirty students, keep local for dirty
+    if (pd) {
+      setPlacements(prev => {
+        const merged: Record<string, EnglishClass> = { ...prev }
+        pd.forEach((p: any) => {
+          if (!dirtyStudents.current.has(p.student_id)) {
+            merged[p.student_id] = p.final_placement
+          }
+        })
+        return merged
+      })
+    }
+    setRefreshing(false)
+    showToast('Refreshed from database')
+  }, [levelTest.id, showToast])
 
   useEffect(() => {
     (async () => {
@@ -1470,24 +1504,44 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
     const pm: Record<string, EnglishClass> = {}
     students.forEach((s: any) => { pm[s.id] = s.english_class })
     setPlacements(pm)
+    dirtyStudents.current.clear()
+    setDirtyCount(0)
     showToast('Reset to current classes')
   }
 
   const handleSave = async () => {
+    const dirty = dirtyStudents.current
+    if (dirty.size === 0) { showToast('No changes to save'); return }
     setSaving(true); let errors = 0
-    for (const [sid, fc] of Object.entries(placements)) {
+    for (const sid of dirty) {
+      const fc = placements[sid]
+      if (!fc) continue
       const { error } = await supabase.from('level_test_placements').upsert({
         level_test_id: levelTest.id, student_id: sid, auto_placement: autoPlacements[sid] || 'Lily', final_placement: fc, is_overridden: fc !== autoPlacements[sid], override_by: fc !== autoPlacements[sid] ? currentTeacher?.id : null,
       }, { onConflict: 'level_test_id,student_id' }); if (error) errors++
     }
-    setSaving(false); showToast(errors ? `Saved with ${errors} error(s)` : 'Placements saved')
+    const savedCount = dirty.size
+    dirty.clear()
+    setDirtyCount(0)
+    setSaving(false); showToast(errors ? `Saved with ${errors} error(s)` : `Saved ${savedCount} placement${savedCount === 1 ? '' : 's'}`)
   }
 
   const handleFinalize = async () => {
-    if (!confirm('Finalize placements? This will update all student class assignments.')) return
+    if (!confirm('Finalize placements? This will update all student class assignments. This will merge your moves with other teachers\' saved moves.')) return
+    // 1. Save our dirty moves first
     await handleSave()
-    for (const [sid, fc] of Object.entries(placements)) await supabase.from('students').update({ english_class: fc }).eq('id', sid)
+    // 2. Re-fetch ALL placements from DB (includes everyone's saved moves)
+    const { data: allPd } = await supabase.from('level_test_placements').select('*').eq('level_test_id', levelTest.id)
+    const finalMap: Record<string, EnglishClass> = {}
+    // Start with current class as fallback for students with no placement record
+    students.forEach(s => { finalMap[s.id] = s.english_class as EnglishClass })
+    // Overlay all saved placements from DB
+    if (allPd?.length) allPd.forEach((p: any) => { finalMap[p.student_id] = p.final_placement })
+    // 3. Write final class assignments
+    for (const [sid, fc] of Object.entries(finalMap)) await supabase.from('students').update({ english_class: fc }).eq('id', sid)
     await supabase.from('level_tests').update({ status: 'finalized', finalized_at: new Date().toISOString() }).eq('id', levelTest.id)
+    // Update local state to match what we just finalized
+    setPlacements(finalMap)
     showToast('Placements finalized'); onFinalize()
   }
 
@@ -1509,7 +1563,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
           <button onClick={() => setShowCompare(!showCompare)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showCompare ? 'bg-blue-100 text-blue-700' : 'bg-surface-alt text-text-secondary'}`}><Users size={13} /> Compare{compareStudents.length > 0 ? ` (${compareStudents.length})` : ''}</button>
           <button onClick={() => setShowPrintDossier(true)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-blue-50 hover:text-blue-700"><Printer size={13} /> Print Dossier</button>
           {isLeadTeacher && <button onClick={resetToCurrentClasses} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-amber-50 hover:text-amber-700">Reset to Current Classes</button>}
-          <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save</button>
+          <button onClick={refreshFromDB} disabled={refreshing} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-green-50 hover:text-green-700 disabled:opacity-40" title="Pull latest placements from other teachers">{refreshing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Refresh</button>
+          <button onClick={handleSave} disabled={saving || dirtyCount === 0} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save{dirtyCount > 0 ? ` (${dirtyCount})` : ''}</button>
           {isLeadTeacher && levelTest.status !== 'finalized' && <button onClick={handleFinalize} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-green-600 text-white hover:bg-green-700"><Lock size={14} /> Finalize</button>}
         </div>
       </div>
@@ -1677,7 +1732,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
           const cs = students.filter(s => placements[s.id] === cls)
           return (
             <div key={cls} className="rounded-xl border-2 min-h-[400px] transition-all" style={{ borderColor: dragStudent ? classToColor(cls) : '#e2e8f0', backgroundColor: dragStudent ? classToColor(cls) + '08' : '#fafafa' }}
-              onDragOver={e => e.preventDefault()} onDrop={() => { if (dragStudent) { setPlacements(prev => ({ ...prev, [dragStudent]: cls })); setDragStudent(null) } }}>
+              onDragOver={e => e.preventDefault()} onDrop={() => { if (dragStudent) { markDirty(dragStudent); setPlacements(prev => ({ ...prev, [dragStudent]: cls })); setDragStudent(null) } }}>
               <div className="px-3 py-2 rounded-t-xl" style={{ backgroundColor: classToColor(cls) }}>
                 <p className="text-[12px] font-bold text-center" style={{ color: classToTextColor(cls) }}>{cls} ({cs.length})</p>
               </div>
@@ -1721,7 +1776,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                         {anec?.notes && <p className="text-text-tertiary italic">"{anec.notes}"</p>}
                         {semGrades[student.id]?.length > 0 && <div><p className="font-semibold text-text-secondary">Grades:</p>{semGrades[student.id].slice(0, 4).map((g: any, i: number) => <span key={i} className="inline-block mr-2">{g.domain}: {g.score?.toFixed(0)}%</span>)}</div>}
                         <div className="flex gap-1.5 mt-1">
-                          <select value={cls} onChange={e => { setPlacements(prev => ({ ...prev, [student.id]: e.target.value as EnglishClass })); setDragStudent(null) }} className="flex-1 px-2 py-1 border border-border rounded text-[10px] bg-surface">{ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
+                          <select value={cls} onChange={e => { markDirty(student.id); setPlacements(prev => ({ ...prev, [student.id]: e.target.value as EnglishClass })); setDragStudent(null) }} className="flex-1 px-2 py-1 border border-border rounded text-[10px] bg-surface">{ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
                           <button onClick={() => setProfileStudent(student)} className="px-2 py-1 rounded text-[9px] font-medium bg-navy text-white hover:bg-navy-dark">Full Profile</button>
                         </div>
                       </div>
