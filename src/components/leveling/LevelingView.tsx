@@ -1528,21 +1528,38 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
 
   const handleFinalize = async () => {
     if (!confirm('Finalize placements? This will update all student class assignments. This will merge your moves with other teachers\' saved moves.')) return
+    setSaving(true)
     // 1. Save our dirty moves first
     await handleSave()
     // 2. Re-fetch ALL placements from DB (includes everyone's saved moves)
-    const { data: allPd } = await supabase.from('level_test_placements').select('*').eq('level_test_id', levelTest.id)
+    const { data: allPd, error: fetchErr } = await supabase.from('level_test_placements').select('*').eq('level_test_id', levelTest.id)
+    if (fetchErr) { showToast(`Error fetching placements: ${fetchErr.message}`); setSaving(false); return }
     const finalMap: Record<string, EnglishClass> = {}
     // Start with current class as fallback for students with no placement record
     students.forEach(s => { finalMap[s.id] = s.english_class as EnglishClass })
     // Overlay all saved placements from DB
     if (allPd?.length) allPd.forEach((p: any) => { finalMap[p.student_id] = p.final_placement })
-    // 3. Write final class assignments
-    for (const [sid, fc] of Object.entries(finalMap)) await supabase.from('students').update({ english_class: fc }).eq('id', sid)
-    await supabase.from('level_tests').update({ status: 'finalized', finalized_at: new Date().toISOString() }).eq('id', levelTest.id)
-    // Update local state to match what we just finalized
+    // 3. Only update students whose class actually changed
+    // Also fetch teacher map so we can update teacher_id
+    const { data: teachers } = await supabase.from('teachers').select('id, english_class').eq('role', 'teacher')
+    const teacherMap: Record<string, string> = {}
+    teachers?.forEach((t: any) => { if (t.english_class) teacherMap[t.english_class] = t.id })
+    let errors = 0; let updated = 0
+    for (const [sid, fc] of Object.entries(finalMap)) {
+      const student = students.find(s => s.id === sid)
+      if (student && student.english_class !== fc) {
+        const { error } = await supabase.from('students').update({ english_class: fc, teacher_id: teacherMap[fc] || null }).eq('id', sid)
+        if (error) { console.error(`Failed to update ${student.english_name}:`, error); errors++ }
+        else updated++
+      }
+    }
+    const { error: ltErr } = await supabase.from('level_tests').update({ status: 'finalized', finalized_at: new Date().toISOString() }).eq('id', levelTest.id)
+    if (ltErr) console.error('Failed to mark test finalized:', ltErr)
+    // Update local student objects to reflect new classes
+    setStudents(prev => prev.map(s => finalMap[s.id] ? { ...s, english_class: finalMap[s.id] } : s))
     setPlacements(finalMap)
-    showToast('Placements finalized'); onFinalize()
+    setSaving(false)
+    showToast(errors ? `Finalized with ${errors} error(s). ${updated} student(s) moved.` : `Placements finalized! ${updated} student(s) moved.`); onFinalize()
   }
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
