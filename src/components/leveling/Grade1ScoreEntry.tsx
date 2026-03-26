@@ -40,9 +40,9 @@ const GRADE_1_QUESTIONS: G1QuestionDef[] = [
   // Letter Names (Q1-5)
   { qNum: 1, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['A', 'E', 'I', 'U'], correct: 'c', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
   { qNum: 2, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['B', 'd', 'b', 'P'], correct: 'b', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
-  { qNum: 3, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['I', 'e', 'O', 'a'], correct: 'b', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
-  { qNum: 4, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['W', 's', 'X', 'V'], correct: 'b', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
-  { qNum: 5, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['t', 'A', 'O', 'E'], correct: 'b', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
+  { qNum: 3, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['I', 'e', 'O', 'a'], correct: 'c', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
+  { qNum: 4, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['W', 's', 'X', 'V'], correct: 'a', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
+  { qNum: 5, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['t', 'A', 'O', 'E'], correct: 'd', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
   // Letter Sounds (Q6-10)
   { qNum: 6, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['s', 'T', 'd', 'z'], correct: 'b', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
   { qNum: 7, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['f', 'p', 'n', 'R'], correct: 'a', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
