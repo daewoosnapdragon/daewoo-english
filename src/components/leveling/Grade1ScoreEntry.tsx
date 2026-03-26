@@ -1495,8 +1495,19 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
 
   const clearStudent = () => {
     if (!student) return
-    Object.keys(answers).forEach(qNum => updateWrittenAnswer(student.id, Number(qNum), answers[Number(qNum)]))
-    G1_WRITING_CATEGORIES.forEach(cat => { if (rubric[cat.key] != null) updateWrittenRubric(student.id, cat.key, 0) })
+    // Fully clear written_answers, written_rubric, and wave2 fields
+    updateScore(student.id, 'written_answers', null as any)
+    updateScore(student.id, 'written_rubric', null as any)
+    updateScore(student.id, 'written_mc', null as any)
+    updateScore(student.id, 'writing_bonus', null as any)
+    updateScore(student.id, 'writing', null as any)
+    updateScore(student.id, 'w_letter_names', null as any)
+    updateScore(student.id, 'w_letter_sounds', null as any)
+    updateScore(student.id, 'w_word_picture', null as any)
+    updateScore(student.id, 'w_passage_comp', null as any)
+    updateScore(student.id, 'w_writing', null as any)
+    updateScore(student.id, 'wave2_class_impression', null)
+    updateScore(student.id, 'wave2_retention_rating', null)
   }
 
   return (
