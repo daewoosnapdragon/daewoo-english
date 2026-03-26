@@ -627,26 +627,33 @@ function calculateG1Composite(scores: G1Scores): {
   let wave: 1 | 2
 
   if (!hasWrittenData) {
+    // Wave 1: oral only
     if (hasClassImpression) {
-      composite = oralScore * 0.50 + teacherPct * 0.50
+      composite = oralScore * 0.65 + teacherPct * 0.35
     } else {
       composite = oralScore
     }
     wave = 1
   } else {
+    // Wave 2: oral + written MC + teacher
     if (hasOralData && hasClassImpression) {
-      composite = oralScore * 0.30 + writtenPct * 0.30 + teacherPct * 0.40
+      composite = oralScore * 0.40 + writtenPct * 0.35 + teacherPct * 0.25
     } else if (hasOralData) {
-      composite = oralScore * 0.50 + writtenPct * 0.50
+      composite = oralScore * 0.55 + writtenPct * 0.45
     } else {
       composite = writtenPct
     }
     wave = 2
   }
 
-  // Writing bonus: additive boost for upper-band discrimination
-  if (writingBonus > 0 && composite >= 60) {
-    composite += writingBonus * 0.25 // max +5 points from 20 bonus
+  // Writing bonus: sliding scale based on bonus score itself
+  // 0-4 = no effect, 5-9 = small nudge, 10-14 = meaningful, 15-20 = major
+  if (writingBonus >= 15) {
+    composite += writingBonus * 0.50  // max +10
+  } else if (writingBonus >= 10) {
+    composite += writingBonus * 0.35  // max +4.9
+  } else if (writingBonus >= 5) {
+    composite += writingBonus * 0.20  // max +1.8
   }
 
   // -- Standards baseline --
@@ -1488,8 +1495,19 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
 
   const clearStudent = () => {
     if (!student) return
-    Object.keys(answers).forEach(qNum => updateWrittenAnswer(student.id, Number(qNum), answers[Number(qNum)]))
-    G1_WRITING_CATEGORIES.forEach(cat => { if (rubric[cat.key] != null) updateWrittenRubric(student.id, cat.key, 0) })
+    // Fully clear written_answers, written_rubric, and wave2 fields
+    updateScore(student.id, 'written_answers', null as any)
+    updateScore(student.id, 'written_rubric', null as any)
+    updateScore(student.id, 'written_mc', null as any)
+    updateScore(student.id, 'writing_bonus', null as any)
+    updateScore(student.id, 'writing', null as any)
+    updateScore(student.id, 'w_letter_names', null as any)
+    updateScore(student.id, 'w_letter_sounds', null as any)
+    updateScore(student.id, 'w_word_picture', null as any)
+    updateScore(student.id, 'w_passage_comp', null as any)
+    updateScore(student.id, 'w_writing', null as any)
+    updateScore(student.id, 'wave2_class_impression', null)
+    updateScore(student.id, 'wave2_retention_rating', null)
   }
 
   return (
