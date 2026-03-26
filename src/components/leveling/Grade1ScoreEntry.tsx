@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X, RotateCcw } from 'lucide-react'
+import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X, RotateCcw, Check, Star } from 'lucide-react'
 
 // ============================================================================
 // GRADE 1 TEST CONFIGURATION
@@ -19,6 +19,108 @@ const WRITTEN_SECTIONS = [
   { key: 'w_writing', label: 'Writing', shortLabel: 'Wr', max: 5, standards: ['W.K.2', 'W.1.2'] },
 ]
 const WRITTEN_TOTAL = 30
+
+// ============================================================================
+// GRADE 1 PER-QUESTION WRITTEN TEST DATA (Bubble-Sheet Format)
+// ============================================================================
+
+interface G1QuestionDef {
+  qNum: number
+  section: string
+  sectionLabel: string
+  text: string
+  choices: string[]
+  correct: string // positional: 'a'=0, 'b'=1, 'c'=2, 'd'=3
+  standard: string
+  standardDesc: string
+  domain: string
+}
+
+const GRADE_1_QUESTIONS: G1QuestionDef[] = [
+  // Letter Names (Q1-5)
+  { qNum: 1, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['A', 'E', 'I', 'U'], correct: 'c', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
+  { qNum: 2, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['B', 'd', 'b', 'P'], correct: 'b', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
+  { qNum: 3, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['I', 'e', 'O', 'a'], correct: 'b', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
+  { qNum: 4, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['W', 's', 'X', 'V'], correct: 'b', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
+  { qNum: 5, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['t', 'A', 'O', 'E'], correct: 'b', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
+  // Letter Sounds (Q6-10)
+  { qNum: 6, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['s', 'T', 'd', 'z'], correct: 'b', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
+  { qNum: 7, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['f', 'p', 'n', 'R'], correct: 'a', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
+  { qNum: 8, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['D', 'B', 'c', 'S'], correct: 'b', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
+  { qNum: 9, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['F', 'P', 'd', 'q'], correct: 'd', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
+  { qNum: 10, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['m', 'N', 'L', 'r'], correct: 'c', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
+  // Word-Picture Match (Q11-20) — 3 choices each
+  { qNum: 11, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['red', 'had', 'led'], correct: 'a', standard: 'RF.K.3c', standardDesc: 'Read common high-frequency words', domain: 'Word-Picture' },
+  { qNum: 12, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['ran', 'did', 'man'], correct: 'c', standard: 'RF.K.3c', standardDesc: 'Read common high-frequency words', domain: 'Word-Picture' },
+  { qNum: 13, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['see', 'tree', 'three'], correct: 'b', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
+  { qNum: 14, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['eat', 'lite', 'light'], correct: 'c', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
+  { qNum: 15, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['play', 'pay', 'day'], correct: 'a', standard: 'RF.K.3c', standardDesc: 'Read common high-frequency words', domain: 'Word-Picture' },
+  { qNum: 16, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['hold', 'call', 'old'], correct: 'c', standard: 'RF.K.3c', standardDesc: 'Read common high-frequency words', domain: 'Word-Picture' },
+  { qNum: 17, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['draw', 'ring', 'drink'], correct: 'b', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
+  { qNum: 18, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['first', 'grow', 'girl'], correct: 'c', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
+  { qNum: 19, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['walk', 'work', 'warm'], correct: 'a', standard: 'RF.K.3c', standardDesc: 'Read common high-frequency words', domain: 'Word-Picture' },
+  { qNum: 20, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['sleep', 'feet', 'five'], correct: 'b', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
+  // Passage Comprehension "My Bag" (Q21-25)
+  { qNum: 21, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'How many books are in the bag?', choices: ['1', '2', '3', '4'], correct: 'c', standard: 'RL.K.1', standardDesc: 'Key details in text', domain: 'Passage Comp' },
+  { qNum: 22, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'What color is the pencil case?', choices: ['red', 'blue', 'yellow', 'pink'], correct: 'c', standard: 'RL.K.1', standardDesc: 'Key details in text', domain: 'Passage Comp' },
+  { qNum: 23, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'What shape is on the bag?', choices: ['star', 'circle', 'heart', 'square'], correct: 'b', standard: 'SL.K.2', standardDesc: 'Key ideas from text read aloud', domain: 'Passage Comp' },
+  { qNum: 24, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'Is there a red book?', choices: ['Yes, there is.', 'No, there isn\'t.'], correct: 'a', standard: 'RL.K.1', standardDesc: 'Key details in text', domain: 'Passage Comp' },
+  { qNum: 25, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'Is the circle pink?', choices: ['Yes, it is.', 'No, it isn\'t.'], correct: 'a', standard: 'SL.K.2', standardDesc: 'Key ideas from text read aloud', domain: 'Passage Comp' },
+]
+
+const G1_MC_MAX = 25
+const G1_QUESTION_SECTIONS = ['letter_names', 'letter_sounds', 'word_picture', 'passage_comp'] as const
+
+interface G1WritingCategory {
+  key: string
+  label: string
+  max: number
+  standard: string
+  standardDesc: string
+}
+
+const G1_WRITING_CATEGORIES: G1WritingCategory[] = [
+  { key: 'completeness', label: 'Completeness', max: 5, standard: 'W.K.2', standardDesc: 'Informative writing: name topic, supply detail' },
+  { key: 'content', label: 'Content & Vocabulary', max: 5, standard: 'W.K.2', standardDesc: 'Use words to supply information about topic' },
+  { key: 'sentence_structure', label: 'Sentence Structure', max: 5, standard: 'L.K.1f', standardDesc: 'Produce complete sentences' },
+  { key: 'mechanics', label: 'Mechanics', max: 5, standard: 'L.K.2', standardDesc: 'Capitalization, punctuation, spelling' },
+]
+const G1_WRITING_MAX = 20
+
+const G1_WRITING_RUBRIC: Record<string, Record<number, string>> = {
+  completeness: {
+    0: 'Blank, draws pictures, or writes in Korean only',
+    1: 'Draws pictures or writes 1-2 English letters',
+    2: 'Writes 1-3 English words (any spelling)',
+    3: 'Writes a phrase or short sentence',
+    4: '2-3 sentences about bag contents',
+    5: '4+ sentences with detail about the bag',
+  },
+  content: {
+    0: 'No English content about the bag',
+    1: 'Copies words from the passage only',
+    2: '1-2 own words related to bag items',
+    3: 'Uses colors, numbers, or items from bag',
+    4: 'Describes multiple items with detail',
+    5: 'Rich description with adjectives, numbers, colors combined',
+  },
+  sentence_structure: {
+    0: 'No attempt at English writing',
+    1: 'Letter strings or single isolated words',
+    2: '2+ words together but no verb',
+    3: 'Simple "I see ___" pattern',
+    4: 'Varied sentence starts or compound ideas',
+    5: 'Multiple sentence types with connecting words',
+  },
+  mechanics: {
+    0: 'No recognizable English letters',
+    1: 'Letter-like forms or random letters',
+    2: 'Some correctly formed letters, L-R directionality',
+    3: 'Spaces between words visible',
+    4: 'Capitals and periods attempted',
+    5: 'Consistent caps, periods, mostly correct spelling',
+  },
+}
 
 const ORAL_SECTIONS = {
   alphabet: [
@@ -345,6 +447,11 @@ interface G1Scores {
   o_ph_bme_fish_b?: boolean | null
   o_ph_bme_fish_m?: boolean | null
   o_ph_bme_fish_e?: boolean | null
+  // Per-question written test data (new bubble-sheet format)
+  written_answers?: Record<number, string>   // qNum -> 'a'|'b'|'c'|'d'
+  written_rubric?: Record<string, number>    // category key -> 0-5
+  written_mc?: number                        // total MC correct (0-25)
+  writing_bonus?: number                     // total rubric score (0-20)
   // Teacher
   teacher_impression?: number | null
   teacher_notes?: string
@@ -354,6 +461,8 @@ interface G1Scores {
 
 function calculateG1Composite(scores: G1Scores): {
   writtenPct: number
+  writtenMC: number
+  writingBonus: number
   oralScore: number  // 0-100 normalized
   teacherPct: number
   composite: number
@@ -367,12 +476,26 @@ function calculateG1Composite(scores: G1Scores): {
   suggestedClass: EnglishClass
 } {
   // -- Written score (simple percentage) --
-  const wScores = [
-    scores.w_letter_names, scores.w_letter_sounds,
-    scores.w_word_picture, scores.w_passage_comp, scores.w_writing
-  ].filter(v => v != null) as number[]
-  const writtenRaw = wScores.reduce((a, b) => a + b, 0)
-  const writtenPct = WRITTEN_TOTAL > 0 ? (writtenRaw / WRITTEN_TOTAL) * 100 : 0
+  let writtenPct = 0
+  let writtenMC = 0
+  let writingBonus = 0
+
+  if (scores.written_answers && Object.keys(scores.written_answers).length > 0) {
+    // New per-question format
+    writtenMC = GRADE_1_QUESTIONS.reduce((sum, q) =>
+      sum + (scores.written_answers![q.qNum] === q.correct ? 1 : 0), 0)
+    writtenPct = (writtenMC / G1_MC_MAX) * 100
+    writingBonus = scores.writing_bonus ?? 0
+  } else {
+    // Old section-subtotal format (backward compat)
+    const wScores = [
+      scores.w_letter_names, scores.w_letter_sounds,
+      scores.w_word_picture, scores.w_passage_comp, scores.w_writing
+    ].filter(v => v != null) as number[]
+    const writtenRaw = wScores.reduce((a, b) => a + b, 0)
+    writtenMC = writtenRaw
+    writtenPct = WRITTEN_TOTAL > 0 ? (writtenRaw / WRITTEN_TOTAL) * 100 : 0
+  }
 
   // -- Oral score (normalized 0-100) --
   const passageLevel = (scores.o_passage_level || 'A') as PassageLevel
@@ -489,7 +612,7 @@ function calculateG1Composite(scores: G1Scores): {
       ? ((scores.teacher_impression! - 1) / 4) * 100
       : 50
 
-  const hasWrittenData = wScores.length > 0 && writtenRaw > 0
+  const hasWrittenData = writtenMC > 0 || writtenPct > 0
   const hasOralData = scores.o_passage_level != null
 
   let composite: number
@@ -513,6 +636,11 @@ function calculateG1Composite(scores: G1Scores): {
     wave = 2
   }
 
+  // Writing bonus: additive boost for upper-band discrimination
+  if (writingBonus > 0 && composite >= 60) {
+    composite += writingBonus * 0.25 // max +5 points from 20 bonus
+  }
+
   // -- Standards baseline --
   const standardsBaseline = STANDARDS_BASELINE.map(std => {
     let score = (scores as any)[std.testSection] ?? 0
@@ -534,10 +662,10 @@ function calculateG1Composite(scores: G1Scores): {
     }
   })
 
-  const suggestedClass = suggestG1Class(passageLevel, composite, writtenRaw, scores, cwpm)
+  const suggestedClass = suggestG1Class(passageLevel, composite, writtenMC, scores, cwpm, writingBonus)
 
   return {
-    writtenPct, oralScore, teacherPct, composite, wave,
+    writtenPct, writtenMC, writingBonus, oralScore, teacherPct, composite, wave,
     passageLevel, cwpm, weightedCwpm,
     compTotal, compMax, standardsBaseline, suggestedClass,
   }
@@ -546,10 +674,13 @@ function calculateG1Composite(scores: G1Scores): {
 function suggestG1Class(
   passageLevel: string,
   composite: number,
-  writtenRaw: number,
+  writtenMC: number,
   scores: G1Scores,
   cwpm: number | null,
+  writingBonus: number = 0,
 ): EnglishClass {
+  // Writing bonus lowers Snapdragon threshold for upper-band discrimination
+  const snapBoost = writingBonus >= 12 ? 5 : 0
   if (passageLevel === 'A') {
     const aTotal = (scores.o_a_q1 ?? 0) + (scores.o_a_q2 ?? 0) + (scores.o_a_q3 ?? 0) + (scores.o_a_q4 ?? 0) + (scores.o_a_q5 ?? 0)
     const rawScore = aTotal > 0 ? aTotal : (scores.o_orf_raw ?? 0)
@@ -576,14 +707,14 @@ function suggestG1Class(
 
   if (passageLevel === 'E') {
     if (cwpm != null && cwpm < 20) return 'Sunflower'
-    if (cwpm != null && cwpm >= 35) return composite > 75 ? 'Snapdragon' : 'Marigold'
+    if (cwpm != null && cwpm >= 35) return composite > (75 - snapBoost) ? 'Snapdragon' : 'Marigold'
     return 'Marigold'
   }
 
   if (passageLevel === 'F') {
     if (cwpm != null && cwpm < 25) return 'Marigold'
-    if (cwpm != null && cwpm >= 40 && composite > 80) return 'Snapdragon'
-    return composite > 70 ? 'Snapdragon' : 'Marigold'
+    if (cwpm != null && cwpm >= 40 && composite > (80 - snapBoost)) return 'Snapdragon'
+    return composite > (70 - snapBoost) ? 'Snapdragon' : 'Marigold'
   }
 
   if (composite < 20) return 'Lily'
@@ -676,6 +807,26 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     })
   }, [])
 
+  const updateWrittenAnswer = useCallback((studentId: string, qNum: number, choice: string) => {
+    setScores(prev => {
+      const current = prev[studentId] || {}
+      const answers = { ...(current.written_answers || {}), [qNum]: choice }
+      // If toggling same answer off, delete it
+      if (current.written_answers?.[qNum] === choice) {
+        delete answers[qNum]
+      }
+      return { ...prev, [studentId]: { ...current, written_answers: answers } }
+    })
+  }, [])
+
+  const updateWrittenRubric = useCallback((studentId: string, category: string, score: number) => {
+    setScores(prev => {
+      const current = prev[studentId] || {}
+      const rubric = { ...(current.written_rubric || {}), [category]: score }
+      return { ...prev, [studentId]: { ...current, written_rubric: rubric } }
+    })
+  }, [])
+
   const saveScores = useCallback(async (studentIds: string[], silent = false) => {
     if (savingRef.current) return
     savingRef.current = true
@@ -697,7 +848,34 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         }
         // But also keep manually set o_phoneme if it's higher (backward compat)
         const existingPhoneme = raw.o_phoneme ?? 0
-        const finalRaw = { ...raw, o_phoneme: Math.max(phonemeTotal, existingPhoneme) }
+        const finalRaw: any = { ...raw, o_phoneme: Math.max(phonemeTotal, existingPhoneme) }
+
+        // Compute backward-compat section subtotals from per-question answers
+        if (finalRaw.written_answers && Object.keys(finalRaw.written_answers).length > 0) {
+          const answers = finalRaw.written_answers as Record<number, string>
+          let letterNames = 0, letterSounds = 0, wordPicture = 0, passageComp = 0
+          GRADE_1_QUESTIONS.forEach(q => {
+            if (answers[q.qNum] === q.correct) {
+              if (q.section === 'letter_names') letterNames++
+              else if (q.section === 'letter_sounds') letterSounds++
+              else if (q.section === 'word_picture') wordPicture++
+              else if (q.section === 'passage_comp') passageComp++
+            }
+          })
+          finalRaw.w_letter_names = letterNames
+          finalRaw.w_letter_sounds = letterSounds
+          finalRaw.w_word_picture = wordPicture
+          finalRaw.w_passage_comp = passageComp
+          finalRaw.written_mc = letterNames + letterSounds + wordPicture + passageComp
+        }
+        // Compute writing bonus from rubric categories
+        if (finalRaw.written_rubric && Object.keys(finalRaw.written_rubric).length > 0) {
+          const rubric = finalRaw.written_rubric as Record<string, number>
+          const rubricTotal = Object.values(rubric).reduce((a, b) => a + b, 0)
+          finalRaw.writing_bonus = rubricTotal
+          // Backward compat: map 0-20 bonus to old 0-5 w_writing scale
+          finalRaw.w_writing = Math.round(rubricTotal / 4)
+        }
 
         // For Level A, compute o_orf_raw from per-question scores
         if (finalRaw.o_passage_level === 'A') {
@@ -713,6 +891,8 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
           raw_scores: finalRaw,
           calculated_metrics: {
             written_pct: metrics.writtenPct,
+            written_mc: metrics.writtenMC,
+            writing_bonus: metrics.writingBonus,
             oral_score: metrics.oralScore,
             teacher_pct: metrics.teacherPct,
             passage_level: metrics.passageLevel,
@@ -886,7 +1066,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     let writtenDone = 0, oralDone = 0
     classStudents.forEach(s => {
       const sc = scores[s.id] || {}
-      if (sc.w_letter_names != null || sc.w_letter_sounds != null || sc.w_word_picture != null) writtenDone++
+      if (sc.w_letter_names != null || sc.w_letter_sounds != null || sc.w_word_picture != null || (sc.written_answers && Object.keys(sc.written_answers).length > 0)) writtenDone++
       if (sc.o_passage_level) oralDone++
     })
     return { writtenDone, oralDone, total: classStudents.length }
@@ -977,11 +1157,13 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
           )}
           {activeTab === 'written' && (
             <WrittenTestEntry
-              students={classStudents}
+              students={students}
               scores={scores}
-              updateScore={updateScore}
+              updateWrittenAnswer={updateWrittenAnswer}
+              updateWrittenRubric={updateWrittenRubric}
               onSave={saveScores}
               saving={saving}
+              teacherClass={activeClass}
             />
           )}
         </>
@@ -991,140 +1173,506 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
 }
 
 // ============================================================================
-// WRITTEN TEST ENTRY - Spreadsheet Mode
+// GRADE 1 WRITTEN TEST ANALYTICS
 // ============================================================================
 
-function WrittenTestEntry({ students, scores, updateScore, onSave, saving }: {
-  students: Student[]
-  scores: Record<string, G1Scores>
-  updateScore: (sid: string, key: string, val: number | null) => void
-  onSave: (sids: string[]) => Promise<void>
-  saving: boolean
-}) {
-  const [sortBy, setSortBy] = useState<'name' | 'class'>('name')
+function computeG1Analytics(scores: Record<string, G1Scores>, students: Student[]) {
+  const studentIds = students.map(s => s.id).filter(sid => {
+    const sc = scores[sid]
+    return sc?.written_answers && Object.keys(sc.written_answers).length > 0
+  })
+  const n = studentIds.length
+  if (n === 0) return null
 
-  const sorted = useMemo(() => {
-    return [...students].sort((a, b) => {
-      if (sortBy === 'class') {
-        const ca = ENGLISH_CLASSES.indexOf(a.english_class as EnglishClass)
-        const cb = ENGLISH_CLASSES.indexOf(b.english_class as EnglishClass)
-        if (ca !== cb) return ca - cb
+  const itemDifficulty: Record<number, { correct: number; total: number; distractors: Record<string, number> }> = {}
+  GRADE_1_QUESTIONS.forEach(q => {
+    const distrs: Record<string, number> = {}
+    q.choices.forEach((_, i) => { distrs[String.fromCharCode(97 + i)] = 0 })
+    itemDifficulty[q.qNum] = { correct: 0, total: n, distractors: distrs }
+  })
+
+  const studentTotals: Record<string, number> = {}
+  studentIds.forEach(sid => {
+    const answers = scores[sid]?.written_answers || {}
+    let total = 0
+    GRADE_1_QUESTIONS.forEach(q => {
+      const chosen = answers[q.qNum]
+      if (chosen) {
+        if (itemDifficulty[q.qNum].distractors[chosen] !== undefined) {
+          itemDifficulty[q.qNum].distractors[chosen]++
+        }
+        if (chosen === q.correct) { itemDifficulty[q.qNum].correct++; total++ }
       }
-      return a.english_name.localeCompare(b.english_name)
     })
-  }, [students, sortBy])
+    studentTotals[sid] = total
+  })
 
-  const getWrittenTotal = (sid: string) => {
-    const sc = scores[sid] || {}
-    const vals = WRITTEN_SECTIONS.map(s => (sc as any)[s.key] ?? 0)
-    return vals.reduce((a: number, b: number) => a + b, 0)
-  }
+  const domains: Record<string, { correct: number; total: number }> = {}
+  G1_QUESTION_SECTIONS.forEach(sec => { domains[sec] = { correct: 0, total: 0 } })
+  GRADE_1_QUESTIONS.forEach(q => {
+    domains[q.section].total += n
+    domains[q.section].correct += itemDifficulty[q.qNum].correct
+  })
+
+  const allTotals = studentIds.map(sid => studentTotals[sid])
+  const meanTotal = allTotals.reduce((a, b) => a + b, 0) / n
+  const sdTotal = Math.sqrt(allTotals.reduce((s, t) => s + (t - meanTotal) ** 2, 0) / n)
+
+  const discrimination: Record<number, { rpb: number; flag: string; flagColor: string }> = {}
+  GRADE_1_QUESTIONS.forEach(q => {
+    const diff = itemDifficulty[q.qNum]
+    const p = diff.correct / n
+    if (sdTotal === 0 || p === 0 || p === 1) {
+      discrimination[q.qNum] = { rpb: 0, flag: p === 1 ? 'TOO EASY' : p === 0 ? 'TOO HARD' : 'OK', flagColor: p === 1 ? 'text-blue-600' : p === 0 ? 'text-amber-600' : 'text-gray-500' }
+      return
+    }
+    const gotRight = studentIds.filter(sid => (scores[sid]?.written_answers || {})[q.qNum] === q.correct)
+    const gotWrong = studentIds.filter(sid => !gotRight.includes(sid))
+    const m1 = gotRight.length > 0 ? gotRight.reduce((s, sid) => s + studentTotals[sid], 0) / gotRight.length : 0
+    const m0 = gotWrong.length > 0 ? gotWrong.reduce((s, sid) => s + studentTotals[sid], 0) / gotWrong.length : 0
+    const rpb = ((m1 - m0) / sdTotal) * Math.sqrt(p * (1 - p))
+
+    let flag = 'OK', flagColor = 'text-gray-500'
+    if (rpb < 0) { flag = 'CHECK KEY'; flagColor = 'text-red-600' }
+    else if (p > 0.9) { flag = 'TOO EASY'; flagColor = 'text-blue-600' }
+    else if (p < 0.2) { flag = 'TOO HARD'; flagColor = 'text-amber-600' }
+    else if (rpb <= 0.1) { flag = 'WEAK'; flagColor = 'text-red-500' }
+    else if (rpb > 0.2 && p >= 0.3 && p <= 0.9) { flag = 'KEEP'; flagColor = 'text-green-600' }
+    discrimination[q.qNum] = { rpb, flag, flagColor }
+  })
+
+  return { itemDifficulty, domains, discrimination, studentCount: n, studentTotals }
+}
+
+const G1_SECTION_LABELS: Record<string, string> = {
+  letter_names: 'Letter Names', letter_sounds: 'Letter Sounds',
+  word_picture: 'Word-Picture', passage_comp: 'Passage Comp',
+}
+
+function G1AnalyticsView({ scores, students }: { scores: Record<string, G1Scores>; students: Student[] }) {
+  const analytics = useMemo(() => computeG1Analytics(scores, students), [scores, students])
+  if (!analytics) return <div className="p-12 text-center text-text-tertiary">No written test data entered yet.</div>
+
+  const missed = GRADE_1_QUESTIONS
+    .map(q => ({ ...q, pct: (analytics.itemDifficulty[q.qNum].correct / analytics.studentCount) * 100 }))
+    .filter(q => q.pct < 60).sort((a, b) => a.pct - b.pct).slice(0, 8)
+
+  const writingStudents = students.filter(s => scores[s.id]?.written_rubric && Object.keys(scores[s.id].written_rubric!).length > 0)
 
   return (
-    <div className="px-10 py-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-display text-lg font-semibold text-navy flex items-center gap-2">
-            <PenTool size={18} /> Written Test Entry
-          </h3>
-          <p className="text-[12px] text-text-secondary mt-1">
-            Whole-class test. Enter section scores for each student. Total: /30
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
-            className="px-3 py-2 border border-border rounded-lg text-[12px] bg-surface">
-            <option value="name">Sort by Name</option>
-            <option value="class">Sort by Class</option>
-          </select>
-          <button onClick={() => onSave(students.map(s => s.id))} disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 transition-all">
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            Save All
-          </button>
-        </div>
+    <div className="p-6 max-w-4xl overflow-y-auto">
+      <h3 className="text-[16px] font-display font-semibold text-navy mb-4">Written Test Analytics</h3>
+      <p className="text-[11px] text-text-tertiary mb-4">{analytics.studentCount} students scored</p>
+
+      <div className="grid grid-cols-4 gap-3 mb-6">
+        {G1_QUESTION_SECTIONS.map(sec => {
+          const d = analytics.domains[sec]
+          const pct = d.total > 0 ? Math.round((d.correct / d.total) * 100) : 0
+          return (
+            <div key={sec} className="bg-surface border border-border rounded-lg p-3 text-center">
+              <div className={`text-[20px] font-bold ${pct >= 70 ? 'text-green-600' : pct >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{pct}%</div>
+              <div className="text-[10px] text-text-tertiary font-medium">{G1_SECTION_LABELS[sec]}</div>
+            </div>
+          )
+        })}
       </div>
 
-      <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
+      <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm mb-6">
+        <div className="px-4 py-3 bg-surface-alt border-b border-border">
+          <h4 className="text-[12px] font-semibold text-navy">Item Analysis</h4>
+        </div>
+        <table className="w-full text-[11px]">
+          <thead>
+            <tr className="bg-surface-alt/50">
+              <th className="text-left px-3 py-2 text-[9px] uppercase text-text-tertiary">#</th>
+              <th className="text-left px-3 py-2 text-[9px] uppercase text-text-tertiary">Section</th>
+              <th className="text-center px-3 py-2 text-[9px] uppercase text-text-tertiary">Answer</th>
+              <th className="text-center px-3 py-2 text-[9px] uppercase text-text-tertiary">Difficulty</th>
+              <th className="text-center px-3 py-2 text-[9px] uppercase text-text-tertiary">rpb</th>
+              <th className="text-center px-3 py-2 text-[9px] uppercase text-text-tertiary">Flag</th>
+            </tr>
+          </thead>
+          <tbody>
+            {GRADE_1_QUESTIONS.map((q, qi) => {
+              const diff = analytics.itemDifficulty[q.qNum]
+              const disc = analytics.discrimination[q.qNum]
+              const pct = Math.round((diff.correct / diff.total) * 100)
+              return (
+                <tr key={q.qNum} className={qi % 2 === 0 ? '' : 'bg-surface-alt/30'}>
+                  <td className="px-3 py-1.5 font-mono">{q.qNum}</td>
+                  <td className="px-3 py-1.5 text-text-secondary">{G1_SECTION_LABELS[q.section]}</td>
+                  <td className="px-3 py-1.5 text-center font-bold text-navy">{q.choices[q.correct.charCodeAt(0) - 97]}</td>
+                  <td className="px-3 py-1.5 text-center">
+                    <div className="flex items-center gap-1 justify-center">
+                      <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${pct >= 70 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[10px] w-8 text-right">{pct}%</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-1.5 text-center font-mono text-[10px]">{disc.rpb.toFixed(2)}</td>
+                  <td className={`px-3 py-1.5 text-center text-[9px] font-bold ${disc.flagColor}`}>{disc.flag}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {missed.length > 0 && (
+        <div className="bg-surface border border-border rounded-xl p-4 mb-6">
+          <h4 className="text-[12px] font-semibold text-navy mb-2">Instructional Priorities (below 60%)</h4>
+          <div className="grid grid-cols-2 gap-2">
+            {missed.map(q => (
+              <div key={q.qNum} className="flex items-center gap-2 text-[11px]">
+                <span className="font-mono text-text-tertiary w-5">Q{q.qNum}</span>
+                <span className="text-text-secondary flex-1">{G1_SECTION_LABELS[q.section]}: {q.choices[q.correct.charCodeAt(0) - 97]}</span>
+                <span className="font-bold text-red-600">{Math.round(q.pct)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {writingStudents.length > 0 && (
+        <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
+          <div className="px-4 py-3 bg-surface-alt border-b border-border">
+            <h4 className="text-[12px] font-semibold text-navy flex items-center gap-2">
+              <Star size={12} /> Writing Bonus Scores ({writingStudents.length} students)
+            </h4>
+          </div>
+          <table className="w-full text-[11px]">
             <thead>
-              <tr className="bg-surface-alt">
-                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold sticky left-0 bg-surface-alt z-10 min-w-[200px]">
-                  Student
-                </th>
-                {WRITTEN_SECTIONS.map(sec => (
-                  <th key={sec.key} className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold min-w-[80px]">
-                    <div>{sec.shortLabel}</div>
-                    <div className="text-[9px] font-normal text-text-tertiary">/{sec.max}</div>
-                  </th>
+              <tr className="bg-surface-alt/50">
+                <th className="text-left px-3 py-2 text-[9px] uppercase text-text-tertiary">Student</th>
+                {G1_WRITING_CATEGORIES.map(cat => (
+                  <th key={cat.key} className="text-center px-2 py-2 text-[9px] uppercase text-text-tertiary">{cat.label.split(' ')[0]}</th>
                 ))}
-                <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-bold min-w-[70px]">
-                  Total<br/><span className="text-[9px] font-normal">/{WRITTEN_TOTAL}</span>
-                </th>
+                <th className="text-center px-3 py-2 text-[9px] uppercase text-navy font-bold">Total</th>
               </tr>
             </thead>
             <tbody>
-              {sorted.map((student, idx) => {
-                const total = getWrittenTotal(student.id)
-                const sc = scores[student.id] || {}
-                const hasData = WRITTEN_SECTIONS.some(s => (sc as any)[s.key] != null)
+              {writingStudents.map((s, i) => {
+                const rub = scores[s.id]?.written_rubric || {}
+                const total = G1_WRITING_CATEGORIES.reduce((sum, cat) => sum + (rub[cat.key] || 0), 0)
                 return (
-                  <tr key={student.id} className={`border-t border-border ${idx % 2 === 0 ? '' : 'bg-surface-alt/30'} hover:bg-blue-50/50 transition-colors`}>
-                    <td className="px-4 py-2.5 sticky left-0 bg-inherit z-10">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold"
-                          style={{ backgroundColor: classToColor(student.english_class as EnglishClass), color: classToTextColor(student.english_class as EnglishClass) }}>
-                          {student.english_class.slice(0, 3)}
-                        </span>
-                        <div>
-                          <span className="font-medium text-navy">{student.english_name}</span>
-                          <span className="text-text-tertiary ml-1.5">{student.korean_name}</span>
-                        </div>
-                        {hasData && <CheckCircle2 size={12} className="text-green-500 ml-auto flex-shrink-0" />}
-                      </div>
-                    </td>
-                    {WRITTEN_SECTIONS.map(sec => (
-                      <td key={sec.key} className="text-center px-1 py-1.5">
-                        <input
-                          type="number"
-                          min={0}
-                          max={sec.max}
-                          value={(sc as any)[sec.key] ?? ''}
-                          onChange={e => updateScore(student.id, sec.key, e.target.value === '' ? null : Math.min(sec.max, Math.max(0, Number(e.target.value))))}
-                          className="w-14 px-2 py-1.5 border border-border rounded-lg text-center text-[12px] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-surface transition-all"
-                          placeholder="--"
-                        />
-                      </td>
+                  <tr key={s.id} className={i % 2 === 0 ? '' : 'bg-surface-alt/30'}>
+                    <td className="px-3 py-1.5"><span className="font-medium text-navy">{s.english_name}</span></td>
+                    {G1_WRITING_CATEGORIES.map(cat => (
+                      <td key={cat.key} className="text-center px-2 py-1.5 font-mono">{rub[cat.key] ?? '--'}</td>
                     ))}
-                    <td className="text-center px-3 py-2.5">
-                      <span className={`text-[13px] font-bold ${total >= 25 ? 'text-green-600' : total >= 15 ? 'text-amber-600' : total > 0 ? 'text-red-600' : 'text-text-tertiary'}`}>
-                        {hasData ? total : '--'}
-                      </span>
-                    </td>
+                    <td className="text-center px-3 py-1.5 font-bold text-navy">{total}/{G1_WRITING_MAX}</td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
         </div>
-      </div>
+      )}
+    </div>
+  )
+}
 
-      <div className="mt-6 bg-surface border border-border rounded-xl p-5">
-        <h4 className="text-[12px] font-semibold text-navy mb-3 flex items-center gap-2">
-          <Info size={14} /> Writing Rubric Reference (Page 7)
-        </h4>
-        <div className="grid grid-cols-3 gap-2">
-          {WRITING_RUBRIC.map(r => (
-            <div key={r.score} className="flex items-start gap-2 text-[11px]">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-navy text-white text-[10px] font-bold flex-shrink-0 mt-0.5">{r.score}</span>
-              <div>
-                <span className="font-semibold text-navy">{r.level}</span>
-                <span className="text-text-secondary ml-1">-- {r.desc}</span>
-              </div>
-            </div>
+// ============================================================================
+// G1 STANDARD BADGE
+// ============================================================================
+
+function G1StandardBadge({ code, description }: { code: string; description: string }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <span className="relative" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+      <span className="text-[9px] text-text-tertiary/60 font-mono cursor-help underline decoration-dotted decoration-text-tertiary/30">{code}</span>
+      {hover && (
+        <div className="absolute right-0 bottom-full mb-1 w-48 bg-white border border-border rounded-lg shadow-lg p-2 z-50 text-left text-[10px] text-text-secondary">
+          <span className="font-bold text-navy">{code}:</span> {description}
+        </div>
+      )}
+    </span>
+  )
+}
+
+// ============================================================================
+// WRITTEN TEST ENTRY - Bubble-Sheet UI (matching Grade 2-5)
+// ============================================================================
+
+function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWrittenRubric, onSave, saving, teacherClass }: {
+  students: Student[]
+  scores: Record<string, G1Scores>
+  updateWrittenAnswer: (sid: string, qNum: number, choice: string) => void
+  updateWrittenRubric: (sid: string, category: string, score: number) => void
+  onSave: (sids: string[]) => Promise<void>
+  saving: boolean
+  teacherClass: EnglishClass
+}) {
+  const [view, setView] = useState<'entry' | 'analytics'>('entry')
+  const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>(teacherClass || 'all')
+  const [selectedIdx, setSelectedIdx] = useState(0)
+  const [focusedQ, setFocusedQ] = useState<number | null>(null)
+  const [showRubricGuide, setShowRubricGuide] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const classStudents = useMemo(() => {
+    return students
+      .filter(s => filterClass === 'all' || s.english_class === filterClass)
+      .sort((a, b) => a.english_name.localeCompare(b.english_name))
+  }, [students, filterClass])
+
+  const student = classStudents[selectedIdx] || null
+  const sc = student ? (scores[student.id] || {}) : ({} as G1Scores)
+  const answers = sc.written_answers || {}
+  const rubric = sc.written_rubric || {}
+
+  const mcCorrect = useMemo(() => GRADE_1_QUESTIONS.reduce((sum, q) => sum + (answers[q.qNum] === q.correct ? 1 : 0), 0), [answers])
+  const writingTotal = useMemo(() => G1_WRITING_CATEGORIES.reduce((sum, cat) => sum + (rubric[cat.key] || 0), 0), [rubric])
+  const studentHasData = Object.keys(answers).length > 0 || Object.keys(rubric).length > 0
+
+  const sections = useMemo(() => {
+    const groups: Record<string, G1QuestionDef[]> = {}
+    GRADE_1_QUESTIONS.forEach(q => { if (!groups[q.section]) groups[q.section] = []; groups[q.section].push(q) })
+    return groups
+  }, [])
+  const allQNums = GRADE_1_QUESTIONS.map(q => q.qNum)
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!student || view !== 'entry') return
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      const key = e.key.toLowerCase()
+      if (focusedQ != null && ['a', 'b', 'c', 'd'].includes(key)) {
+        const q = GRADE_1_QUESTIONS.find(q => q.qNum === focusedQ)
+        if (!q) return
+        const choiceIdx = key.charCodeAt(0) - 97
+        if (choiceIdx >= q.choices.length) return
+        e.preventDefault()
+        updateWrittenAnswer(student.id, focusedQ, key)
+        const idx = allQNums.indexOf(focusedQ)
+        if (idx < allQNums.length - 1) setTimeout(() => setFocusedQ(allQNums[idx + 1]), 100)
+        return
+      }
+      if ((key === 'arrowdown' || key === 'arrowup') && focusedQ != null) {
+        e.preventDefault()
+        const idx = allQNums.indexOf(focusedQ)
+        if (key === 'arrowdown' && idx < allQNums.length - 1) setFocusedQ(allQNums[idx + 1])
+        else if (key === 'arrowup' && idx > 0) setFocusedQ(allQNums[idx - 1])
+        return
+      }
+      if (key === 'escape') { setFocusedQ(null) }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [student, focusedQ, answers, allQNums, updateWrittenAnswer, view])
+
+  useEffect(() => {
+    if (focusedQ == null) return
+    document.getElementById(`g1-q-row-${focusedQ}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [focusedQ])
+
+  const availableClasses = useMemo(() => {
+    const cs = new Set(students.map(s => s.english_class as EnglishClass))
+    return ENGLISH_CLASSES.filter(c => cs.has(c))
+  }, [students])
+
+  const clearStudent = () => {
+    if (!student) return
+    Object.keys(answers).forEach(qNum => updateWrittenAnswer(student.id, Number(qNum), answers[Number(qNum)]))
+    G1_WRITING_CATEGORIES.forEach(cat => { if (rubric[cat.key] != null) updateWrittenRubric(student.id, cat.key, 0) })
+  }
+
+  return (
+    <div className="flex h-[calc(100vh-280px)]">
+      {/* Sidebar */}
+      <div className="w-[220px] border-r border-border bg-surface flex flex-col">
+        <div className="flex border-b border-border">
+          <button onClick={() => setView('entry')} className={`flex-1 py-2 text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors ${view === 'entry' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt'}`}>
+            <BookOpen size={12} /> Entry
+          </button>
+          <button onClick={() => setView('analytics')} className={`flex-1 py-2 text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors ${view === 'analytics' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt'}`}>
+            <BarChart3 size={12} /> Analytics
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1 px-2 py-2 border-b border-border">
+          <button onClick={() => { setFilterClass('all'); setSelectedIdx(0) }}
+            className={`px-2 py-0.5 rounded-full text-[9px] font-bold transition-colors ${filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-tertiary hover:bg-border'}`}>All</button>
+          {availableClasses.map(cls => (
+            <button key={cls} onClick={() => { setFilterClass(cls); setSelectedIdx(0) }}
+              className={`px-2 py-0.5 rounded-full text-[9px] font-bold transition-colors ${filterClass === cls ? 'ring-2 ring-navy ring-offset-1' : ''}`}
+              style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>{cls.slice(0, 3)}</button>
           ))}
         </div>
+        <div className="flex-1 overflow-y-auto">
+          {classStudents.map((s, idx) => {
+            const sAnswers = scores[s.id]?.written_answers || {}
+            const answered = Object.keys(sAnswers).length
+            const hasData = answered > 0
+            return (
+              <div key={s.id} onClick={() => setSelectedIdx(idx)}
+                className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-[11px] transition-colors ${idx === selectedIdx ? 'bg-blue-50' : 'hover:bg-surface-alt'}`}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) }} />
+                <span className="flex-1 truncate">{s.english_name || s.korean_name}</span>
+                {hasData && <span className="text-[9px] text-text-tertiary">{answered}/{G1_MC_MAX}</span>}
+                {hasData && <CheckCircle2 size={10} className="text-green-500 flex-shrink-0" />}
+              </div>
+            )
+          })}
+        </div>
+        <div className="p-2 border-t border-border">
+          <button onClick={() => onSave(students.map(s => s.id))} disabled={saving}
+            className="w-full py-2 rounded-lg text-[11px] font-semibold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 transition-all flex items-center justify-center gap-1.5">
+            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save All
+          </button>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 overflow-y-auto">
+        {view === 'analytics' ? (
+          <G1AnalyticsView scores={scores} students={classStudents} />
+        ) : !student ? (
+          <div className="p-12 text-center text-text-tertiary">Select a student from the sidebar</div>
+        ) : (
+          <div className="p-6 max-w-4xl" ref={containerRef}>
+            {/* Student header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-[18px] font-display font-semibold text-navy">{student.english_name || student.korean_name}</h3>
+                <div className="text-[12px] text-text-tertiary mt-0.5">{student.english_class} -- Grade 1 Written Test</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-right mr-3">
+                  <div className="text-[20px] font-bold text-navy">{mcCorrect}<span className="text-[14px] text-text-tertiary">/{G1_MC_MAX}</span></div>
+                  <div className="text-[10px] text-text-tertiary">MC ({Math.round(mcCorrect / G1_MC_MAX * 100)}%)</div>
+                </div>
+                <div className="text-right mr-3">
+                  <div className="text-[20px] font-bold text-amber-600">{writingTotal}<span className="text-[14px] text-text-tertiary">/{G1_WRITING_MAX}</span></div>
+                  <div className="text-[10px] text-amber-600 flex items-center gap-0.5 justify-end"><Star size={9} /> Bonus</div>
+                </div>
+                {studentHasData && (
+                  <button onClick={clearStudent} className="text-[11px] text-red-500 hover:text-red-700 border border-red-200 px-2 py-1 rounded flex items-center gap-1">
+                    <RotateCcw size={12} /> Clear
+                  </button>
+                )}
+                <button onClick={() => setSelectedIdx(Math.max(0, selectedIdx - 1))} disabled={selectedIdx === 0}
+                  className="p-1.5 rounded hover:bg-surface-alt disabled:opacity-30"><ChevronLeft size={16} /></button>
+                <span className="text-[11px] text-text-tertiary">{selectedIdx + 1}/{classStudents.length}</span>
+                <button onClick={() => setSelectedIdx(Math.min(classStudents.length - 1, selectedIdx + 1))} disabled={selectedIdx >= classStudents.length - 1}
+                  className="p-1.5 rounded hover:bg-surface-alt disabled:opacity-30"><ChevronRight size={16} /></button>
+              </div>
+            </div>
+
+            {/* Keyboard hint */}
+            <div className="mb-3 flex items-center gap-3 text-[10px] text-text-tertiary bg-surface-alt/60 rounded-lg px-3 py-1.5">
+              <span className="font-semibold">Keyboard:</span>
+              <span>Click row, then <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">A</kbd> <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">B</kbd> <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">C</kbd> to answer</span>
+              <span><kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">↑↓</kbd> nav</span>
+            </div>
+
+            {/* MC Bubble Sheet */}
+            {G1_QUESTION_SECTIONS.map(sKey => {
+              const qs = sections[sKey]
+              if (!qs) return null
+              const sCorrect = qs.reduce((sum, q) => sum + (answers[q.qNum] === q.correct ? 1 : 0), 0)
+              return (
+                <div key={sKey} className="mb-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-[13px] font-semibold text-navy">{qs[0].sectionLabel}</h4>
+                    <span className="text-[11px] text-text-tertiary">{sCorrect}/{qs.length}</span>
+                  </div>
+                  <div className="border border-border rounded-lg">
+                    {qs.map((q, qi) => {
+                      const chosen = answers[q.qNum]
+                      const isCorrect = chosen === q.correct
+                      const isFocused = focusedQ === q.qNum
+                      const isWordQ = q.section === 'word_picture' || q.section === 'passage_comp'
+                      return (
+                        <div key={q.qNum} id={`g1-q-row-${q.qNum}`} onClick={() => setFocusedQ(q.qNum)}
+                          className={`flex items-center gap-3 px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-blue-50/30' : ''}`}>
+                          <span className={`w-5 text-[11px] text-right font-mono ${isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
+                          <div className="flex gap-1">
+                            {q.choices.map((choice, ci) => {
+                              const letter = String.fromCharCode(97 + ci)
+                              const isChosen = chosen === letter
+                              const isCorrectAnswer = q.correct === letter
+                              let bg = 'bg-white border-gray-200 hover:border-navy/40'
+                              if (isChosen && isCorrect) bg = 'bg-green-500 border-green-500 text-white'
+                              else if (isChosen && !isCorrect) bg = 'bg-red-400 border-red-400 text-white'
+                              else if (chosen && isCorrectAnswer) bg = 'bg-green-100 border-green-300 text-green-700'
+                              return (
+                                <button key={letter} onClick={(e) => { e.stopPropagation(); updateWrittenAnswer(student.id, q.qNum, letter); setFocusedQ(q.qNum) }}
+                                  className={`${isWordQ ? 'min-w-[60px] px-2' : 'w-9'} h-8 rounded text-[11px] font-bold border-2 transition-all ${bg}`}>
+                                  {choice}
+                                </button>
+                              )
+                            })}
+                          </div>
+                          <span className="flex-1 text-[10px] text-text-tertiary truncate">{q.text}</span>
+                          <G1StandardBadge code={q.standard} description={q.standardDesc} />
+                          {chosen && (isCorrect ? <Check size={12} className="text-green-500" /> : <X size={12} className="text-red-400" />)}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Writing Bonus Rubric */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-[13px] font-semibold text-navy flex items-center gap-1.5">
+                    <Star size={13} className="text-amber-500" /> Writing Bonus
+                  </h4>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">
+                    Does not penalize -- discriminates advanced students
+                  </span>
+                  <button onClick={() => setShowRubricGuide(!showRubricGuide)}
+                    className={`text-[10px] px-2 py-0.5 rounded-full transition-all flex items-center gap-1 ${showRubricGuide ? 'bg-navy text-white' : 'bg-surface-alt text-text-tertiary hover:bg-border'}`}>
+                    <Eye size={10} /> {showRubricGuide ? 'Hide Guide' : 'Show Guide'}
+                  </button>
+                </div>
+                <span className="text-[11px] text-text-tertiary">{writingTotal}/{G1_WRITING_MAX}</span>
+              </div>
+              <div className="border border-border rounded-lg overflow-hidden">
+                {G1_WRITING_CATEGORIES.map((cat, ci) => {
+                  const val = rubric[cat.key] || 0
+                  const descriptors = G1_WRITING_RUBRIC[cat.key]
+                  return (
+                    <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                      <div className="flex items-center gap-3 px-3 py-2">
+                        <div className="w-44">
+                          <div className="text-[12px] font-medium">{cat.label}</div>
+                          <div className="text-[9px] text-text-tertiary">{cat.standard} -- {cat.standardDesc}</div>
+                        </div>
+                        <div className="flex gap-1">
+                          {Array.from({ length: cat.max + 1 }, (_, i) => (
+                            <button key={i} onClick={() => updateWrittenRubric(student.id, cat.key, i)}
+                              title={descriptors?.[i] || ''}
+                              className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'}`}>
+                              {i}
+                            </button>
+                          ))}
+                        </div>
+                        <span className="text-[12px] font-bold text-navy ml-2">{val}/{cat.max}</span>
+                      </div>
+                      {showRubricGuide && descriptors && (
+                        <div className="px-3 pb-2">
+                          <div className="bg-surface-alt/60 rounded-lg px-3 py-2 grid gap-1" style={{ gridTemplateColumns: `repeat(${cat.max + 1}, 1fr)` }}>
+                            {Array.from({ length: cat.max + 1 }, (_, i) => (
+                              <div key={i} className={`text-[8px] leading-tight px-1 py-1 rounded ${val === i ? 'bg-navy/10 font-semibold text-navy' : 'text-text-tertiary'}`}>
+                                <span className="font-bold text-[9px]">{i}:</span> {descriptors[i] || '—'}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -2328,7 +2876,7 @@ function ResultsView({ students, scores, levelTest }: {
       const sc = scores[s.id] || {}
       const metrics = calculateG1Composite(sc)
       return { student: s, scores: sc, ...metrics }
-    }).filter(r => r.scores.o_passage_level || r.scores.w_letter_names != null)
+    }).filter(r => r.scores.o_passage_level || r.scores.w_letter_names != null || (r.scores.written_answers && Object.keys(r.scores.written_answers).length > 0))
       .sort((a, b) => {
         if (sortBy === 'composite') return b.composite - a.composite
         if (sortBy === 'name') return a.student.english_name.localeCompare(b.student.english_name)
@@ -2393,7 +2941,8 @@ function ResultsView({ students, scores, levelTest }: {
               <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">#</th>
               <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Student</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Passage</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Written<br/>/30</th>
+              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">MC<br/>/25</th>
+              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-600 font-semibold">Wr Bonus<br/>/20</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">CWPM</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Comp</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Oral</th>
@@ -2405,7 +2954,8 @@ function ResultsView({ students, scores, levelTest }: {
           </thead>
           <tbody>
             {rows.map((row, idx) => {
-              const writtenRaw = WRITTEN_SECTIONS.map(s => (row.scores as any)[s.key] ?? 0).reduce((a: number, b: number) => a + b, 0)
+              const mcScore = row.writtenMC
+              const wrBonus = row.writingBonus
               const metCount = row.standardsBaseline.filter(s => s.met).length
               const expanded = expandedStudent === row.student.id
 
@@ -2427,7 +2977,8 @@ function ResultsView({ students, scores, levelTest }: {
                   <td className="text-center px-3 py-2.5">
                     <span className="font-bold text-navy">{row.passageLevel}</span>
                   </td>
-                  <td className="text-center px-3 py-2.5">{writtenRaw}</td>
+                  <td className="text-center px-3 py-2.5">{mcScore}</td>
+                  <td className="text-center px-3 py-2.5">{wrBonus > 0 ? wrBonus : '--'}</td>
                   <td className="text-center px-3 py-2.5">{row.cwpm ?? '--'}</td>
                   <td className="text-center px-3 py-2.5">{row.compTotal != null ? `${row.compTotal}/${row.compMax}` : '--'}</td>
                   <td className="text-center px-3 py-2.5">{Math.round(row.oralScore)}</td>
@@ -2470,8 +3021,8 @@ function ResultsView({ students, scores, levelTest }: {
                 </tr>
                 {expanded && (
                   <tr>
-                    <td colSpan={11} className="px-4 py-4 bg-blue-50/50 border-t border-blue-200">
-                      <div className="max-w-4xl">
+                    <td colSpan={12} className="px-4 py-4 bg-blue-50/50 border-t border-blue-200">
+                      <div className="max-w-5xl">
                         <div className="flex items-center gap-2 mb-3">
                           <h4 className="text-[13px] font-bold text-navy">Leveling Dossier: {row.student.english_name}</h4>
                           <span className="text-[10px] text-text-tertiary">{row.student.korean_name}</span>
@@ -2484,19 +3035,53 @@ function ResultsView({ students, scores, levelTest }: {
                             Suggested: {row.suggestedClass}
                           </span>
                         </div>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-4 gap-4">
                           <div className="bg-white rounded-lg border border-border p-3">
-                            <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Written Test</p>
-                            {WRITTEN_SECTIONS.map(sec => {
-                              const val = (row.scores as any)[sec.key] ?? 0
-                              const pct = sec.max > 0 ? (val / sec.max) * 100 : 0
-                              return (
-                                <div key={sec.key} className="flex items-center justify-between text-[10px] py-0.5">
-                                  <span className="text-text-secondary">{sec.label}</span>
-                                  <span className={`font-bold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-500'}`}>{val}/{sec.max}</span>
-                                </div>
-                              )
-                            })}
+                            <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Written MC ({mcScore}/{G1_MC_MAX})</p>
+                            {row.scores.written_answers && Object.keys(row.scores.written_answers).length > 0 ? (
+                              <>
+                                {G1_QUESTION_SECTIONS.map(sec => {
+                                  const qs = GRADE_1_QUESTIONS.filter(q => q.section === sec)
+                                  const correct = qs.reduce((sum, q) => sum + (row.scores.written_answers![q.qNum] === q.correct ? 1 : 0), 0)
+                                  const pct = qs.length > 0 ? (correct / qs.length) * 100 : 0
+                                  return (
+                                    <div key={sec} className="flex items-center justify-between text-[10px] py-0.5">
+                                      <span className="text-text-secondary">{G1_SECTION_LABELS[sec]}</span>
+                                      <span className={`font-bold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-500'}`}>{correct}/{qs.length}</span>
+                                    </div>
+                                  )
+                                })}
+                              </>
+                            ) : (
+                              <>
+                                {WRITTEN_SECTIONS.filter(s => s.key !== 'w_writing').map(sec => {
+                                  const val = (row.scores as any)[sec.key] ?? 0
+                                  const pct = sec.max > 0 ? (val / sec.max) * 100 : 0
+                                  return (
+                                    <div key={sec.key} className="flex items-center justify-between text-[10px] py-0.5">
+                                      <span className="text-text-secondary">{sec.label}</span>
+                                      <span className={`font-bold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-500'}`}>{val}/{sec.max}</span>
+                                    </div>
+                                  )
+                                })}
+                              </>
+                            )}
+                          </div>
+                          <div className="bg-white rounded-lg border border-border p-3">
+                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1"><Star size={10} /> Writing Bonus ({wrBonus}/{G1_WRITING_MAX})</p>
+                            {row.scores.written_rubric && Object.keys(row.scores.written_rubric).length > 0 ? (
+                              G1_WRITING_CATEGORIES.map(cat => {
+                                const val = row.scores.written_rubric![cat.key] ?? 0
+                                return (
+                                  <div key={cat.key} className="flex items-center justify-between text-[10px] py-0.5">
+                                    <span className="text-text-secondary">{cat.label}</span>
+                                    <span className={`font-bold ${val >= 4 ? 'text-green-600' : val >= 2 ? 'text-amber-600' : val > 0 ? 'text-red-500' : 'text-text-tertiary'}`}>{val}/{cat.max}</span>
+                                  </div>
+                                )
+                              })
+                            ) : (
+                              <div className="text-[10px] text-text-tertiary">No writing rubric data</div>
+                            )}
                           </div>
                           <div className="bg-white rounded-lg border border-border p-3">
                             <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Oral / Reading</p>
@@ -2560,5 +3145,5 @@ function ResultsView({ students, scores, levelTest }: {
 // ============================================================================
 
 export default Grade1ScoreEntry
-export { calculateG1Composite, suggestG1Class, ResultsView as G1ResultsView, WRITTEN_SECTIONS, PASSAGE_CONFIGS, STANDARDS_BASELINE, NAEP_MULTIPLIERS }
+export { calculateG1Composite, suggestG1Class, ResultsView as G1ResultsView, WRITTEN_SECTIONS, PASSAGE_CONFIGS, STANDARDS_BASELINE, NAEP_MULTIPLIERS, GRADE_1_QUESTIONS, G1_WRITING_CATEGORIES, G1_MC_MAX, G1_WRITING_MAX }
 export type { G1Scores, PassageLevel }
