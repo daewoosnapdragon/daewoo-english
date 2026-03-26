@@ -873,6 +873,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
           const rubric = finalRaw.written_rubric as Record<string, number>
           const rubricTotal = Object.values(rubric).reduce((a, b) => a + b, 0)
           finalRaw.writing_bonus = rubricTotal
+          finalRaw.writing = rubricTotal  // Dashboard reads raw_scores.writing
           // Backward compat: map 0-20 bonus to old 0-5 w_writing scale
           finalRaw.w_writing = Math.round(rubricTotal / 4)
         }
