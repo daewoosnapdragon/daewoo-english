@@ -1164,6 +1164,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
               onSave={saveScores}
               saving={saving}
               teacherClass={activeClass}
+              isStudentDirty={isStudentDirty}
             />
           )}
         </>
@@ -1395,7 +1396,7 @@ function G1StandardBadge({ code, description }: { code: string; description: str
 // WRITTEN TEST ENTRY - Bubble-Sheet UI (matching Grade 2-5)
 // ============================================================================
 
-function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWrittenRubric, onSave, saving, teacherClass }: {
+function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWrittenRubric, onSave, saving, teacherClass, isStudentDirty }: {
   students: Student[]
   scores: Record<string, G1Scores>
   updateWrittenAnswer: (sid: string, qNum: number, choice: string) => void
@@ -1403,6 +1404,7 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
   onSave: (sids: string[]) => Promise<void>
   saving: boolean
   teacherClass: EnglishClass
+  isStudentDirty: (sid: string) => boolean
 }) {
   const [view, setView] = useState<'entry' | 'analytics'>('entry')
   const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>(teacherClass || 'all')
@@ -1505,22 +1507,35 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
             const sAnswers = scores[s.id]?.written_answers || {}
             const answered = Object.keys(sAnswers).length
             const hasData = answered > 0
+            const dirty = isStudentDirty(s.id)
             return (
               <div key={s.id} onClick={() => setSelectedIdx(idx)}
                 className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-[11px] transition-colors ${idx === selectedIdx ? 'bg-blue-50' : 'hover:bg-surface-alt'}`}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) }} />
                 <span className="flex-1 truncate">{s.english_name || s.korean_name}</span>
                 {hasData && <span className="text-[9px] text-text-tertiary">{answered}/{G1_MC_MAX}</span>}
-                {hasData && <CheckCircle2 size={10} className="text-green-500 flex-shrink-0" />}
+                {dirty ? <span className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" title="Unsaved changes" /> : hasData && <CheckCircle2 size={10} className="text-green-500 flex-shrink-0" />}
               </div>
             )
           })}
         </div>
         <div className="p-2 border-t border-border">
-          <button onClick={() => onSave(students.map(s => s.id))} disabled={saving}
-            className="w-full py-2 rounded-lg text-[11px] font-semibold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 transition-all flex items-center justify-center gap-1.5">
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save All
-          </button>
+          {(() => {
+            const dirtyIds = students.filter(s => isStudentDirty(s.id)).map(s => s.id)
+            const dirtyCount = dirtyIds.length
+            return (
+              <>
+                {dirtyCount > 0 && (
+                  <div className="text-[10px] text-amber-600 font-medium mb-1 text-center">{dirtyCount} unsaved</div>
+                )}
+                <button onClick={() => onSave(dirtyIds)} disabled={saving || dirtyCount === 0}
+                  className={`w-full py-2 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5 ${dirtyCount > 0 ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse' : 'bg-navy text-white hover:bg-navy/90'} disabled:opacity-50 disabled:animate-none`}>
+                  {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                  {dirtyCount > 0 ? `Save ${dirtyCount} Changed` : 'All Saved'}
+                </button>
+              </>
+            )
+          })()}
         </div>
       </div>
 
