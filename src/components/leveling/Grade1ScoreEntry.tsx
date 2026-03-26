@@ -457,6 +457,10 @@ interface G1Scores {
   teacher_notes?: string
   // Wave 1 class impression (teacher's gut feeling after oral test)
   wave1_class_impression?: string | null
+  // Wave 2 class impression (after written + oral data)
+  wave2_class_impression?: string | null
+  // Retention rating: how student performs within their current class
+  wave2_retention_rating?: 'weak' | 'core' | 'strong' | null
 }
 
 function calculateG1Composite(scores: G1Scores): {
@@ -600,14 +604,18 @@ function calculateG1Composite(scores: G1Scores): {
 
   let oralScore = band.floor + (withinBandAvg * bandWidth)
 
-  // Teacher impression -- wave-aware
+  // Teacher impression -- wave-aware (Wave 2 preferred over Wave 1)
   const CLASS_IMPRESSION_MAP: Record<string, number> = {
     Lily: 8, Camellia: 25, Daisy: 42, Sunflower: 58, Marigold: 75, Snapdragon: 92
   }
-  const hasClassImpression = scores.wave1_class_impression && scores.wave1_class_impression !== 'Unsure'
+  const hasW2Impression = scores.wave2_class_impression && scores.wave2_class_impression !== 'Unsure'
+  const hasW1Impression = scores.wave1_class_impression && scores.wave1_class_impression !== 'Unsure'
+  const hasClassImpression = hasW2Impression || hasW1Impression
   const hasNumericImpression = scores.teacher_impression != null
+  // Prefer Wave 2 impression when available
+  const activeImpression = hasW2Impression ? scores.wave2_class_impression : scores.wave1_class_impression
   const teacherPct = hasClassImpression
-    ? (CLASS_IMPRESSION_MAP[scores.wave1_class_impression as string] ?? 50)
+    ? (CLASS_IMPRESSION_MAP[activeImpression as string] ?? 50)
     : hasNumericImpression
       ? ((scores.teacher_impression! - 1) / 4) * 100
       : 50
@@ -873,6 +881,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
           const rubric = finalRaw.written_rubric as Record<string, number>
           const rubricTotal = Object.values(rubric).reduce((a, b) => a + b, 0)
           finalRaw.writing_bonus = rubricTotal
+          finalRaw.writing = rubricTotal  // Dashboard reads raw_scores.writing
           // Backward compat: map 0-20 bonus to old 0-5 w_writing scale
           finalRaw.w_writing = Math.round(rubricTotal / 4)
         }
@@ -1161,9 +1170,11 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
               scores={scores}
               updateWrittenAnswer={updateWrittenAnswer}
               updateWrittenRubric={updateWrittenRubric}
+              updateScore={updateScore}
               onSave={saveScores}
               saving={saving}
               teacherClass={activeClass}
+              isStudentDirty={isStudentDirty}
             />
           )}
         </>
@@ -1395,14 +1406,16 @@ function G1StandardBadge({ code, description }: { code: string; description: str
 // WRITTEN TEST ENTRY - Bubble-Sheet UI (matching Grade 2-5)
 // ============================================================================
 
-function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWrittenRubric, onSave, saving, teacherClass }: {
+function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWrittenRubric, updateScore, onSave, saving, teacherClass, isStudentDirty }: {
   students: Student[]
   scores: Record<string, G1Scores>
   updateWrittenAnswer: (sid: string, qNum: number, choice: string) => void
   updateWrittenRubric: (sid: string, category: string, score: number) => void
+  updateScore: (sid: string, key: string, val: string | number | boolean | null) => void
   onSave: (sids: string[]) => Promise<void>
   saving: boolean
   teacherClass: EnglishClass
+  isStudentDirty: (sid: string) => boolean
 }) {
   const [view, setView] = useState<'entry' | 'analytics'>('entry')
   const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>(teacherClass || 'all')
@@ -1505,22 +1518,35 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
             const sAnswers = scores[s.id]?.written_answers || {}
             const answered = Object.keys(sAnswers).length
             const hasData = answered > 0
+            const dirty = isStudentDirty(s.id)
             return (
               <div key={s.id} onClick={() => setSelectedIdx(idx)}
                 className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-[11px] transition-colors ${idx === selectedIdx ? 'bg-blue-50' : 'hover:bg-surface-alt'}`}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) }} />
                 <span className="flex-1 truncate">{s.english_name || s.korean_name}</span>
                 {hasData && <span className="text-[9px] text-text-tertiary">{answered}/{G1_MC_MAX}</span>}
-                {hasData && <CheckCircle2 size={10} className="text-green-500 flex-shrink-0" />}
+                {dirty ? <span className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" title="Unsaved changes" /> : hasData && <CheckCircle2 size={10} className="text-green-500 flex-shrink-0" />}
               </div>
             )
           })}
         </div>
         <div className="p-2 border-t border-border">
-          <button onClick={() => onSave(students.map(s => s.id))} disabled={saving}
-            className="w-full py-2 rounded-lg text-[11px] font-semibold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 transition-all flex items-center justify-center gap-1.5">
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save All
-          </button>
+          {(() => {
+            const dirtyIds = students.filter(s => isStudentDirty(s.id)).map(s => s.id)
+            const dirtyCount = dirtyIds.length
+            return (
+              <>
+                {dirtyCount > 0 && (
+                  <div className="text-[10px] text-amber-600 font-medium mb-1 text-center">{dirtyCount} unsaved</div>
+                )}
+                <button onClick={() => onSave(dirtyIds)} disabled={saving || dirtyCount === 0}
+                  className={`w-full py-2 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5 ${dirtyCount > 0 ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse' : 'bg-navy text-white hover:bg-navy/90'} disabled:opacity-50 disabled:animate-none`}>
+                  {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                  {dirtyCount > 0 ? `Save ${dirtyCount} Changed` : 'All Saved'}
+                </button>
+              </>
+            )
+          })()}
         </div>
       </div>
 
@@ -1669,6 +1695,67 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
                     </div>
                   )
                 })}
+              </div>
+            </div>
+
+            {/* Wave 2 Teacher Impression */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-[13px] font-semibold text-navy">Wave 2 Teacher Impression</h4>
+              </div>
+              <div className="border border-border rounded-lg overflow-hidden">
+                {/* Class impression */}
+                <div className="px-4 py-3 bg-white">
+                  <p className="text-[11px] text-text-secondary mb-2">
+                    After seeing oral + written data, which class do you think this student belongs in?
+                  </p>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {ENGLISH_CLASSES.map(cls => (
+                      <button key={cls} onClick={() => updateScore(student.id, 'wave2_class_impression', sc.wave2_class_impression === cls ? null : cls)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                          sc.wave2_class_impression === cls
+                            ? 'text-white ring-2 ring-offset-1'
+                            : 'border border-border hover:opacity-80'
+                        }`}
+                        style={sc.wave2_class_impression === cls
+                          ? { backgroundColor: classToTextColor(cls), ringColor: classToTextColor(cls) }
+                          : { backgroundColor: classToColor(cls), color: classToTextColor(cls) }
+                        }>
+                        {cls}
+                      </button>
+                    ))}
+                    <button onClick={() => updateScore(student.id, 'wave2_class_impression', sc.wave2_class_impression === 'Unsure' ? null : 'Unsure')}
+                      className={`px-4 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                        sc.wave2_class_impression === 'Unsure'
+                          ? 'bg-gray-600 text-white ring-2 ring-gray-400 ring-offset-1'
+                          : 'bg-gray-100 text-text-secondary border border-border hover:bg-gray-200'
+                      }`}>
+                      Unsure
+                    </button>
+                  </div>
+                </div>
+                {/* Retention rating */}
+                <div className="px-4 py-3 bg-gray-50/50 border-t border-border">
+                  <p className="text-[11px] text-text-secondary mb-2">
+                    Within their current class ({student.english_class}), how is this student performing?
+                  </p>
+                  <div className="flex gap-2">
+                    {([
+                      { value: 'weak', label: 'Weak', desc: 'Struggling, may need extra support', color: 'bg-red-100 text-red-700 border-red-300', active: 'bg-red-500 text-white ring-2 ring-red-400' },
+                      { value: 'core', label: 'Core', desc: 'Right where they should be', color: 'bg-gray-100 text-gray-700 border-gray-300', active: 'bg-gray-600 text-white ring-2 ring-gray-400' },
+                      { value: 'strong', label: 'Strong', desc: 'Excelling, could move up', color: 'bg-green-100 text-green-700 border-green-300', active: 'bg-green-500 text-white ring-2 ring-green-400' },
+                    ] as const).map(opt => (
+                      <button key={opt.value}
+                        onClick={() => updateScore(student.id, 'wave2_retention_rating', sc.wave2_retention_rating === opt.value ? null : opt.value)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-[11px] font-medium transition-all border ${
+                          sc.wave2_retention_rating === opt.value ? opt.active + ' ring-offset-1' : opt.color
+                        }`}>
+                        <div className="font-bold">{opt.label}</div>
+                        <div className="text-[9px] opacity-80 mt-0.5">{opt.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2948,7 +3035,8 @@ function ResultsView({ students, scores, levelTest }: {
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Oral</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-bold">Composite</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Suggested</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-700 font-semibold">W1 Impression</th>
+              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-700 font-semibold">W2 Impression</th>
+              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Retention</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Standards</th>
             </tr>
           </thead>
@@ -2994,10 +3082,22 @@ function ResultsView({ students, scores, levelTest }: {
                     </span>
                   </td>
                   <td className="text-center px-3 py-2.5">
-                    {row.scores.wave1_class_impression ? (
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border-2 border-amber-300"
-                        style={{ backgroundColor: classToColor(row.scores.wave1_class_impression as EnglishClass), color: classToTextColor(row.scores.wave1_class_impression as EnglishClass) }}>
-                        {row.scores.wave1_class_impression}
+                    {(row.scores.wave2_class_impression || row.scores.wave1_class_impression) ? (
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${row.scores.wave2_class_impression ? 'border-2 border-navy' : 'border-2 border-amber-300 opacity-60'}`}
+                        style={{ backgroundColor: classToColor((row.scores.wave2_class_impression || row.scores.wave1_class_impression) as EnglishClass), color: classToTextColor((row.scores.wave2_class_impression || row.scores.wave1_class_impression) as EnglishClass) }}>
+                        {row.scores.wave2_class_impression || row.scores.wave1_class_impression}
+                        {!row.scores.wave2_class_impression && <span className="text-[8px] ml-0.5">(W1)</span>}
+                      </span>
+                    ) : <span className="text-text-tertiary text-[10px]">--</span>}
+                  </td>
+                  <td className="text-center px-3 py-2.5">
+                    {row.scores.wave2_retention_rating ? (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        row.scores.wave2_retention_rating === 'strong' ? 'bg-green-100 text-green-700' :
+                        row.scores.wave2_retention_rating === 'weak' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {row.scores.wave2_retention_rating}
                       </span>
                     ) : <span className="text-text-tertiary text-[10px]">--</span>}
                   </td>
@@ -3021,7 +3121,7 @@ function ResultsView({ students, scores, levelTest }: {
                 </tr>
                 {expanded && (
                   <tr>
-                    <td colSpan={12} className="px-4 py-4 bg-blue-50/50 border-t border-blue-200">
+                    <td colSpan={13} className="px-4 py-4 bg-blue-50/50 border-t border-blue-200">
                       <div className="max-w-5xl">
                         <div className="flex items-center gap-2 mb-3">
                           <h4 className="text-[13px] font-bold text-navy">Leveling Dossier: {row.student.english_name}</h4>
