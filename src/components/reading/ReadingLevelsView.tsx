@@ -300,16 +300,22 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
       const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', selectedStudentId).order('date', { ascending: true })
       const orfRecords: ReadingRecord[] = data || []
 
-      // Also fetch level test oral reading scores
-      const { data: ltData } = await supabase.from('level_test_scores').select('raw_scores, level_tests(created_at)').eq('student_id', selectedStudentId)
+      // Also fetch level test oral reading scores (two-step: scores then test dates)
+      const { data: ltScoreData } = await supabase.from('level_test_scores').select('level_test_id, raw_scores').eq('student_id', selectedStudentId)
       const ltRecords: ReadingRecord[] = []
-      if (ltData) {
-        ltData.forEach((lt: any) => {
+      if (ltScoreData && ltScoreData.length > 0) {
+        const testIds = [...new Set(ltScoreData.map((s: any) => s.level_test_id))]
+        const { data: ltTests } = await supabase.from('level_tests').select('id, created_at').in('id', testIds)
+        const testDateMap: Record<string, string> = {}
+        ltTests?.forEach((t: any) => { testDateMap[t.id] = t.created_at?.split('T')[0] || '' })
+
+        ltScoreData.forEach((lt: any) => {
           const cwpm = lt.raw_scores?.passage_cwpm
           if (cwpm != null && cwpm > 0) {
-            const ltDate = lt.level_tests?.created_at ? lt.level_tests.created_at.split('T')[0] : ''
+            const ltDate = testDateMap[lt.level_test_id] || ''
+            if (!ltDate) return
             ltRecords.push({
-              id: `lt-${ltDate}`, student_id: selectedStudentId, date: ltDate,
+              id: `lt-${lt.level_test_id}`, student_id: selectedStudentId, date: ltDate,
               passage_title: '📋 Level Test', passage_level: null,
               word_count: lt.raw_scores?.word_count || 0, time_seconds: 60,
               errors: 0, self_corrections: 0, cwpm, accuracy_rate: 100,

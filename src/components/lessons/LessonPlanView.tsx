@@ -580,33 +580,34 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
                   return (
                     <div key={di}
                       onClick={() => openDay(day.date)}
-                      className={`border-r border-border last:border-r-0 min-h-[110px] p-2.5 transition-all ${
+                      className={`border-r border-border last:border-r-0 min-h-[140px] p-3 transition-all ${
                         canEdit ? 'cursor-pointer hover:bg-blue-50/30' : ''
                       } ${isToday ? 'bg-amber-50/30 ring-2 ring-inset ring-gold/40' : 'bg-white'}`}>
                       {/* Day header */}
-                      <div className={`text-[9px] font-bold uppercase tracking-wider mb-1.5 pb-1 border-b ${isToday ? 'text-amber-700 border-gold/30' : 'text-slate-500 border-border/40'}`}>
-                        {DAY_SHORT[di]} <span className="text-text-primary font-extrabold">{month + 1}/{day.dayNum}</span>
-                        {isToday && <span className="text-gold ml-1">TODAY</span>}
+                      <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 pb-1.5 border-b flex items-center justify-between ${isToday ? 'text-amber-700 border-gold/30' : 'text-slate-500 border-border/40'}`}>
+                        <span>{DAY_SHORT[di]} <span className="text-text-primary font-extrabold">{month + 1}/{day.dayNum}</span></span>
+                        {isToday && <span className="text-[8px] bg-gold/20 text-gold-dark px-1.5 py-0.5 rounded-full font-bold">TODAY</span>}
+                        {canEdit && hasFill && <span className="text-[8px] text-blue-400">✎</span>}
                       </div>
 
                       {noG5 ? (
-                        <div className="text-[10px] text-text-secondary italic text-center mt-4">No G5 Mondays</div>
+                        <div className="text-[11px] text-text-secondary italic text-center mt-6">No G5 Mondays</div>
                       ) : (
                         <>
-                          {evts.map((ev, ei) => <div key={ei} className="text-[9px] font-bold text-slate-600 bg-slate-100 rounded px-1.5 py-1 mb-1">{ev.title}</div>)}
+                          {evts.map((ev, ei) => <div key={ei} className="text-[10px] font-bold text-slate-600 bg-slate-100 rounded px-2 py-1 mb-1.5">{ev.title}</div>)}
                           {data.subjects.filter(s => s.content.trim() || (hasFill && s.label.trim())).map(s => (
-                            <div key={s.label} className="text-[10px] leading-snug mb-0.5">
+                            <div key={s.label} className="text-[11px] leading-snug mb-1">
                               <span className="font-bold text-navy">{s.label}{s.content ? ':' : ''}</span>{s.content ? ' ' : ''}
                               <span className="text-text-primary">{s.content}</span>
                             </div>
                           ))}
                           {data.objective && (
-                            <div className="text-[9px] text-text-primary italic mt-1 pt-1 border-t border-border/20">
+                            <div className="text-[10px] text-text-primary italic mt-1.5 pt-1.5 border-t border-border/20">
                               <span className="text-navy font-semibold">Students will</span> {data.objective}
                             </div>
                           )}
                           {!hasFill && !data.objective && evts.length === 0 && canEdit && (
-                            <div className="text-[10px] text-text-tertiary/25 italic text-center mt-5">Click to edit</div>
+                            <div className="text-[11px] text-text-tertiary/30 italic text-center mt-8">Click to add</div>
                           )}
                         </>
                       )}
@@ -1343,20 +1344,26 @@ function TeacherWeeklyPlans() {
                         <span className="text-[10px] font-normal ml-1.5">{formatShort(date)}</span>
                         {isToday && <span className="text-[9px] font-semibold text-gold ml-1.5">TODAY</span>}
                       </span>
-                      {canEdit && plans[date]?.trim() && (
+                      {canEdit && (
                         <div className="relative">
                           <button onClick={() => setPushFromIdx(pushFromIdx === i ? null : i)}
-                            className="text-[9px] px-1.5 py-0.5 rounded text-text-tertiary hover:text-navy hover:bg-white/50 transition-all" title="Push plans to another day">
-                            Push →
+                            className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all ${
+                              pushFromIdx === i ? 'bg-navy text-white' : plans[date]?.trim() ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200' : 'text-text-tertiary/30 cursor-default'
+                            }`}
+                            disabled={!plans[date]?.trim()}
+                            title="Push this day's plans to another day (shifts plans forward)">
+                            <ChevronRight size={10} /> Push
                           </button>
                           {pushFromIdx === i && (
-                            <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-lg shadow-lg z-20 py-1 min-w-[100px]">
+                            <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-xl z-20 py-1.5 min-w-[140px]">
+                              <p className="px-3 py-1 text-[9px] text-text-tertiary font-semibold uppercase">Move {DAY_LABELS[i]} plans to:</p>
                               {DAY_LABELS.map((dayLabel, di) => di !== i && (
                                 <button key={di} onClick={() => handlePushDay(i, di)}
-                                  className="w-full text-left px-3 py-1.5 text-[11px] hover:bg-surface-alt text-text-secondary hover:text-navy">
-                                  → {dayLabel} {formatShort(weekDates[di])}
+                                  className="w-full text-left px-3 py-2 text-[12px] hover:bg-surface-alt text-text-secondary hover:text-navy font-medium">
+                                  → {dayLabel} <span className="text-[10px] text-text-tertiary">{formatShort(weekDates[di])}</span>
                                 </button>
                               ))}
+                              <p className="px-3 py-1 text-[8px] text-text-tertiary border-t border-border mt-1 pt-1.5">All plans between shift forward</p>
                             </div>
                           )}
                         </div>

@@ -148,8 +148,8 @@ export default function AttendanceView() {
     showToast(lang === 'ko' ? '출석이 저장되었습니다' : entries.length > 0 ? `Saved attendance for ${entries.length} students` : 'Attendance cleared')
   }
 
-  const prevDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d.toISOString().split('T')[0]) }
-  const nextDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d.toISOString().split('T')[0]) }
+  const prevDay = () => guardUnsaved(() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d.toISOString().split('T')[0]) })
+  const nextDay = () => guardUnsaved(() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d.toISOString().split('T')[0]) })
   const isToday = selectedDate === getKSTDateString()
   const isWeekend = [0, 6].includes(new Date(selectedDate + 'T00:00').getDay())
 
@@ -187,11 +187,11 @@ export default function AttendanceView() {
         const bg = st === 'present' ? '#dcfce7' : st === 'absent' ? '#fee2e2' : st === 'tardy' ? '#fef3c7' : d.isWknd ? '#f0f0f0' : ''
         return `<td style="padding:2px 4px;border:1px solid #ccc;text-align:center;font-size:10px;font-weight:600;background:${bg}">${sym}</td>`
       }).join('')
-      return `<tr><td style="padding:4px 8px;border:1px solid #ccc;font-size:11px;white-space:nowrap">${s.english_name} (${s.korean_name})</td>${cells}</tr>`
+      return `<tr><td style="padding:4px 8px;border:1px solid #ccc;font-size:11px;white-space:nowrap">${s.english_name} (${s.korean_name})</td><td style="padding:4px 6px;border:1px solid #ccc;font-size:10px;text-align:center">${s.korean_class || ''}</td><td style="padding:4px 6px;border:1px solid #ccc;font-size:10px;text-align:center">${s.class_number || ''}</td>${cells}</tr>`
     }).join('')
     printWin.document.write(`<html><head><title>Attendance — ${selectedClass} ${monthName}</title><style>body{font-family:sans-serif;padding:15px}table{border-collapse:collapse}@media print{body{padding:0}}</style></head><body>
       <h3 style="margin-bottom:4px">${selectedClass} — Grade ${selectedGrade} Attendance</h3><p style="color:#666;margin-top:0;font-size:12px">${monthName} · ${students.length} students</p>
-      <table><thead><tr><th style="padding:4px 8px;border:1px solid #ccc;text-align:left;font-size:10px">Student</th>${headerRow}</tr></thead><tbody>${rows}</tbody></table>
+      <table><thead><tr><th style="padding:4px 8px;border:1px solid #ccc;text-align:left;font-size:10px">Student</th><th style="padding:4px 6px;border:1px solid #ccc;font-size:9px">Korean Class</th><th style="padding:4px 6px;border:1px solid #ccc;font-size:9px">No.</th>${headerRow}</tr></thead><tbody>${rows}</tbody></table>
       <p style="font-size:9px;color:#999;margin-top:8px">✓ Present · ✗ Absent · T Tardy</p></body></html>`)
     printWin.document.close()
     printWin.print()
@@ -229,7 +229,7 @@ export default function AttendanceView() {
           {availableClasses.length > 1 ? (
             <div className="flex gap-1">
               {availableClasses.map(cls => (
-                <button key={cls} onClick={() => setSelectedClass(cls)}
+                <button key={cls} onClick={() => guardUnsaved(() => setSelectedClass(cls))}
                   className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
                   style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>
                   {cls}
@@ -243,10 +243,10 @@ export default function AttendanceView() {
           {/* Date nav */}
           <div className="flex items-center gap-1">
             <button onClick={prevDay} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronLeft size={16} /></button>
-            <input type="date" value={selectedDate} onChange={(e: any) => setSelectedDate(e.target.value)}
+            <input type="date" value={selectedDate} onChange={(e: any) => guardUnsaved(() => setSelectedDate(e.target.value))}
               className="px-3 py-1.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
             <button onClick={nextDay} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronRight size={16} /></button>
-            {!isToday && <button onClick={() => setSelectedDate(getKSTDateString())} className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light ml-1">Today</button>}
+            {!isToday && <button onClick={() => guardUnsaved(() => setSelectedDate(getKSTDateString()))} className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light ml-1">Today</button>}
           </div>
           <div className="w-px h-6 bg-border" />
           <button onClick={markAllPresent} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-green-100 text-green-700 hover:bg-green-200">
@@ -305,7 +305,7 @@ export default function AttendanceView() {
               <thead><tr className="bg-surface-alt">
                 <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
                 <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-                <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-14">{lang === 'ko' ? '반' : 'K-Class'}</th>
+                <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-14">{lang === 'ko' ? '반' : 'Korean Class'}</th>
                 <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-10">{lang === 'ko' ? '번호' : 'No.'}</th>
                 <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Status</th>
                 <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-green-600 font-bold w-12">P</th>

@@ -62,8 +62,8 @@ const GRADE_1_QUESTIONS: G1QuestionDef[] = [
   { qNum: 20, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['sleep', 'feet', 'five'], correct: 'b', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
   // Passage Comprehension "My Bag" (Q21-25)
   { qNum: 21, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'How many books are in the bag?', choices: ['1', '2', '3', '4'], correct: 'c', standard: 'RL.K.1', standardDesc: 'Key details in text', domain: 'Passage Comp' },
-  { qNum: 22, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'What color is the pencil case?', choices: ['red', 'blue', 'yellow', 'pink'], correct: 'c', standard: 'RL.K.1', standardDesc: 'Key details in text', domain: 'Passage Comp' },
-  { qNum: 23, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'What shape is on the bag?', choices: ['star', 'circle', 'heart', 'square'], correct: 'b', standard: 'SL.K.2', standardDesc: 'Key ideas from text read aloud', domain: 'Passage Comp' },
+  { qNum: 22, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'What color is the pencil case?', choices: ['blue', 'red', 'yellow'], correct: 'c', standard: 'RL.K.1', standardDesc: 'Key details in text', domain: 'Passage Comp' },
+  { qNum: 23, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'What shape is on the bag?', choices: ['square', 'circle', 'triangle'], correct: 'b', standard: 'SL.K.2', standardDesc: 'Key ideas from text read aloud', domain: 'Passage Comp' },
   { qNum: 24, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'Is there a red book?', choices: ['Yes, there is.', 'No, there isn\'t.'], correct: 'a', standard: 'RL.K.1', standardDesc: 'Key details in text', domain: 'Passage Comp' },
   { qNum: 25, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'Is the circle pink?', choices: ['Yes, it is.', 'No, it isn\'t.'], correct: 'a', standard: 'SL.K.2', standardDesc: 'Key ideas from text read aloud', domain: 'Passage Comp' },
 ]
