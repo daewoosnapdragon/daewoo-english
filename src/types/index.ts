@@ -13,6 +13,7 @@ export type Language = 'en' | 'ko';
 
 export const ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon', 'Unplaced'];
 export const ALL_ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon', 'Unplaced'];
+export const PLACED_ENGLISH_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon'];
 export const KOREAN_CLASSES: KoreanClass[] = ['대', '솔', '매'];
 export const GRADES: Grade[] = [1, 2, 3, 4, 5];
 export const DOMAINS: Domain[] = ['reading', 'phonics', 'writing', 'speaking', 'language'];
@@ -130,6 +131,7 @@ export interface AssessmentSection {
   label: string;
   standard: string;
   max_points: number;
+  domain?: Domain; // Optional: allows sections to map to different domains for multi-domain assessments
 }
 
 export interface QuestionMapItem {

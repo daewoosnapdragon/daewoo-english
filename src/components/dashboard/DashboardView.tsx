@@ -186,12 +186,17 @@ export default function DashboardView() {
       </div>
       <div className="px-10 py-6 space-y-5">
         {/* ─── Top Row: Status + Calendar ─── */}
-        <div className="grid grid-cols-[280px_1fr] gap-5">
+        <div className="grid grid-cols-[280px_1fr_220px] gap-5">
           <div className="space-y-4">
             <ActionableSummary shared={shared} />
             {isAdmin && <ClassOverviewTable />}
           </div>
           <SharedCalendar />
+          <div className="bg-surface border border-border rounded-xl shadow-sm p-5 flex flex-col items-center justify-center text-center min-h-[320px]">
+            <CalendarDays className="w-10 h-10 text-text-tertiary mb-3" />
+            <h3 className="font-display text-sm font-semibold text-navy mb-1">Weekly Schedule</h3>
+            <p className="text-[11px] text-text-tertiary">Coming Soon</p>
+          </div>
         </div>
         {/* ─── Below: Insights + Content ─── */}
         <InsightsBanner shared={shared} />
@@ -272,15 +277,17 @@ function InsightsBanner({ shared }: { shared: SharedDashboardData }) {
     return new Set()
   })
 
-  // Compute insights from shared data (no independent fetching)
+  // Compute insights from shared data — only past 7 days
   const insights = useMemo(() => {
     if (shared.loading || shared.students.length === 0) return []
     const allInsights: { key: string; text: string; detail: string; type: string; navView?: string; navStudent?: string; navDomain?: string }[] = []
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
 
-    // Reading growth & decline
-    if (shared.readingAssessments.length > 0) {
+    // Reading growth & decline (only assessments from past 7 days)
+    const recentReadings = shared.readingAssessments.filter(r => r.date >= sevenDaysAgo)
+    if (recentReadings.length > 0) {
       const byStudent: Record<string, { name: string; id: string; first: number; last: number }> = {}
-      shared.readingAssessments.forEach(r => {
+      recentReadings.forEach(r => {
         const s = shared.students.find(st => st.id === r.student_id)
         if (!s || r.cwpm == null) return
         if (!byStudent[r.student_id]) byStudent[r.student_id] = { name: s.english_name, id: s.id, first: r.cwpm, last: r.cwpm }
@@ -296,10 +303,11 @@ function InsightsBanner({ shared }: { shared: SharedDashboardData }) {
       })
     }
 
-    // Attendance pattern (from shared 30-day absences)
+    // Attendance pattern (only past 7 days)
+    const recentAbsences = shared.absences30d.filter(a => a.date >= sevenDaysAgo)
     const counts: Record<string, number> = {}
-    shared.absences30d.forEach(a => { counts[a.student_id] = (counts[a.student_id] || 0) + 1 })
-    Object.entries(counts).filter(([, c]) => c >= 4).sort((a, b) => b[1] - a[1]).slice(0, 2).forEach(([sid, count]) => {
+    recentAbsences.forEach(a => { counts[a.student_id] = (counts[a.student_id] || 0) + 1 })
+    Object.entries(counts).filter(([, c]) => c >= 2).sort((a, b) => b[1] - a[1]).slice(0, 2).forEach(([sid, count]) => {
       const s = shared.students.find(st => st.id === sid)
       if (s) allInsights.push({ key: `attendance_${sid}`, text: `${s.english_name} has been absent ${count} times in the last month`, detail: 'Consider reaching out to parents or checking in with the homeroom teacher.', type: 'concern', navView: 'attendance', navStudent: sid })
     })
@@ -384,18 +392,18 @@ function InsightsBanner({ shared }: { shared: SharedDashboardData }) {
 
 // ─── Actionable Summary (sidebar) ────────────────────────────────
 function ActionableSummary({ shared }: { shared: SharedDashboardData }) {
-  const { currentTeacher, language } = useApp()
+  const { currentTeacher, language, navigateTo } = useApp()
   const today = getKSTDateString()
 
   // Compute items from shared data (no independent fetching)
   const items = useMemo(() => {
     if (shared.loading) return []
-    const newItems: { icon: any; text: string; urgent: boolean }[] = []
+    const newItems: { icon: any; text: string; urgent: boolean; nav?: string }[] = []
 
     // Unmarked attendance
     const unmarked = shared.students.length - shared.todayAttendanceIds.size
     if (unmarked > 0) {
-      newItems.push({ icon: UserCheck, text: `${unmarked} students need attendance marked`, urgent: true })
+      newItems.push({ icon: UserCheck, text: `${unmarked} students need attendance marked`, urgent: true, nav: 'attendance' })
     } else {
       newItems.push({ icon: UserCheck, text: 'All attendance recorded today', urgent: false })
     }
@@ -437,10 +445,21 @@ function ActionableSummary({ shared }: { shared: SharedDashboardData }) {
       <div className="divide-y divide-border">
         {items.map((item, i) => {
           const Icon = item.icon
-          return (
-            <div key={i} className={`px-4 py-2.5 flex items-center gap-2.5 ${item.urgent ? 'bg-amber-50/50' : ''}`}>
+          const content = (
+            <>
               <Icon size={14} className={item.urgent ? 'text-amber-500' : 'text-text-tertiary'} />
-              <p className={`text-[12px] ${item.urgent ? 'text-amber-800 font-medium' : 'text-text-secondary'}`}>{item.text}</p>
+              <p className={`text-[12px] flex-1 ${item.urgent ? 'text-amber-800 font-medium' : 'text-text-secondary'}`}>{item.text}</p>
+              {item.nav && <ArrowRight size={12} className="text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />}
+            </>
+          )
+          return item.nav ? (
+            <button key={i} onClick={() => navigateTo({ view: item.nav! })}
+              className={`w-full px-4 py-2.5 flex items-center gap-2.5 group hover:bg-navy/5 transition-colors text-left ${item.urgent ? 'bg-amber-50/50' : ''}`}>
+              {content}
+            </button>
+          ) : (
+            <div key={i} className={`px-4 py-2.5 flex items-center gap-2.5 ${item.urgent ? 'bg-amber-50/50' : ''}`}>
+              {content}
             </div>
           )
         })}
@@ -573,43 +592,35 @@ function NeedsAttentionWatchlist({ shared }: { shared: SharedDashboardData }) {
       }
     }
 
-    // Behavior spike (from shared 28-day behavior logs)
+    // Behavior spike (past 7 days only)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
     const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0]
-    const recent: Record<string, number> = {}
-    const prior: Record<string, number> = {}
+    const recentBeh: Record<string, number> = {}
+    const priorBeh: Record<string, number> = {}
     shared.behaviorLogs28d.forEach(b => {
-      if (b.date >= twoWeeksAgo) recent[b.student_id] = (recent[b.student_id] || 0) + 1
-      else prior[b.student_id] = (prior[b.student_id] || 0) + 1
+      if (b.date >= sevenDaysAgo) recentBeh[b.student_id] = (recentBeh[b.student_id] || 0) + 1
+      else if (b.date >= twoWeeksAgo) priorBeh[b.student_id] = (priorBeh[b.student_id] || 0) + 1
     })
-    for (const [sid, count] of Object.entries(recent)) {
-      if (count >= 3 && count >= (prior[sid] || 0) * 2) {
+    for (const [sid, count] of Object.entries(recentBeh)) {
+      if (count >= 3 && count >= (priorBeh[sid] || 0) * 2) {
         const s = students.find(st => st.id === sid)
-        if (s) addConcern(s, 'behavior_spike', `${count} behavior logs in 2 weeks (was ${prior[sid] || 0})`)
+        if (s) addConcern(s, 'behavior_spike', `${count} behavior logs in 7 days (was ${priorBeh[sid] || 0})`)
       }
     }
 
-    // No ORF in 60 days (from shared reading assessments)
-    const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0]
-    const withReading = new Set(
-      shared.readingAssessments.filter(r => r.date >= sixtyDaysAgo).map(r => r.student_id)
-    )
-    students.forEach(s => {
-      if (!withReading.has(s.id)) addConcern(s, 'missing_orf', 'No reading assessment in 60+ days')
-    })
-
-    // Attendance pattern (from shared 30-day absences)
+    // Attendance pattern (past 3 days only)
+    const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0]
     const absCounts: Record<string, number> = {}
-    shared.absences30d.forEach(a => { absCounts[a.student_id] = (absCounts[a.student_id] || 0) + 1 })
+    shared.absences30d.filter(a => a.date >= threeDaysAgo).forEach(a => { absCounts[a.student_id] = (absCounts[a.student_id] || 0) + 1 })
     Object.entries(absCounts).forEach(([sid, c]) => {
-      if (c >= 3) {
+      if (c >= 2) {
         const s = students.find(st => st.id === sid)
-        if (s) addConcern(s, 'attendance', `Absent ${c} times in 30 days`)
+        if (s) addConcern(s, 'attendance', `Absent ${c} times in 3 days`)
       }
     })
 
-    // Sort by concern count, exclude "missing_orf only"
+    // Sort by concern count
     const list = Object.values(studentConcerns)
-      .filter(s => s.concerns.some(c => c.type !== 'missing_orf') || s.concerns.length > 1)
       .sort((a, b) => b.concerns.length - a.concerns.length)
 
     return { watchlist: list, classAlerts: cAlerts }

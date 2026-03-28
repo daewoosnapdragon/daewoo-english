@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useApp } from '@/lib/context'
-import { useStudents } from '@/hooks/useData'
+import { useStudents, useAvailableClasses } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
-import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
+import { GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import WIDABadge from '@/components/shared/WIDABadge'
 import { ChevronLeft, ChevronRight, Loader2, Check, UserCheck, UserX, Clock, Download, AlertTriangle } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 
@@ -32,6 +31,13 @@ export default function AttendanceView() {
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [focusedRow, setFocusedRow] = useState<number>(-1)
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false)
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
+
+  const guardUnsaved = (action: () => void) => {
+    if (hasChanges) { setPendingAction(() => action); setShowUnsavedModal(true) }
+    else action()
+  }
 
   // Warn on page leave with unsaved changes
   useEffect(() => {
@@ -41,8 +47,9 @@ export default function AttendanceView() {
   }, [hasChanges])
 
   const isTeacher = currentTeacher?.role === 'teacher'
+  const { classes: allClasses } = useAvailableClasses()
   const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
-    ? [currentTeacher.english_class as EnglishClass] : ALL_ENGLISH_CLASSES
+    ? [currentTeacher.english_class as EnglishClass] : allClasses
   const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
 
   const [clearedOnce, setClearedOnce] = useState(false)
@@ -198,13 +205,13 @@ export default function AttendanceView() {
             <h2 className="font-display text-[26px] font-semibold tracking-tight text-navy">{t.nav.attendance}</h2>
             <p className="text-text-secondary text-sm mt-1">{selectedClass} · Grade {selectedGrade} · {students.length} students</p>
           </div>
-          {hasChanges && (
-            <button onClick={handleSave} disabled={saving}
-              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[13px] font-medium bg-gold text-navy-dark hover:bg-gold-light transition-all shadow-sm">
-              {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
-              {lang === 'ko' ? '저장' : 'Save Attendance'}
-            </button>
-          )}
+          <button onClick={handleSave} disabled={saving || !hasChanges}
+            className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl text-[16px] font-bold transition-all shadow-md ${
+              hasChanges ? 'bg-gold text-navy-dark hover:bg-gold-light animate-pulse' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}>
+            {saving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+            {lang === 'ko' ? '출석 저장' : 'Save Attendance'}
+          </button>
           <button onClick={handlePrintAttendance}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt">
             🖨️ {lang === 'ko' ? '월별 출력' : 'Print Monthly'}
@@ -215,7 +222,7 @@ export default function AttendanceView() {
       <div className="px-10 py-6">
         {/* Controls */}
         <div className="flex items-center gap-3 mb-5 flex-wrap">
-          <select value={selectedGrade} onChange={(e: any) => setSelectedGrade(Number(e.target.value) as Grade)}
+          <select value={selectedGrade} onChange={(e: any) => { const v = Number(e.target.value) as Grade; guardUnsaved(() => setSelectedGrade(v)) }}
             className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
             {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
           </select>
@@ -298,6 +305,8 @@ export default function AttendanceView() {
               <thead><tr className="bg-surface-alt">
                 <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
                 <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
+                <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-14">{lang === 'ko' ? '반' : 'K-Class'}</th>
+                <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-10">{lang === 'ko' ? '번호' : 'No.'}</th>
                 <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Status</th>
                 <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-green-600 font-bold w-12">P</th>
                 <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-red-600 font-bold w-12">A</th>
@@ -315,8 +324,9 @@ export default function AttendanceView() {
                       <td className="px-4 py-2">
                         <span className="font-medium">{s.english_name}</span>
                         <span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span>
-                        <WIDABadge studentId={s.id} compact />
                       </td>
+                      <td className="px-2 py-2 text-center text-[12px] text-text-secondary">{s.korean_class}</td>
+                      <td className="px-2 py-2 text-center text-[12px] text-text-secondary">{s.class_number}</td>
                       <td className="px-2 py-2 text-center">
                         {status ? (
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${STATUS_CONFIG[status as Status].bg}`}>
@@ -373,6 +383,29 @@ export default function AttendanceView() {
           )}
         </div>
       </div>
+
+      {/* Unsaved changes confirmation modal */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setShowUnsavedModal(false)}>
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle size={24} className="text-amber-500" />
+              <h3 className="text-[16px] font-bold text-navy">{lang === 'ko' ? '저장되지 않은 변경사항' : 'Unsaved Changes'}</h3>
+            </div>
+            <p className="text-[13px] text-text-secondary mb-5">{lang === 'ko' ? '저장하지 않으면 변경사항이 사라집니다.' : 'You have unsaved attendance changes. Save before leaving?'}</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => { setShowUnsavedModal(false); setHasChanges(false); if (pendingAction) pendingAction(); setPendingAction(null) }}
+                className="px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt">
+                {lang === 'ko' ? '저장 안 함' : 'Discard'}
+              </button>
+              <button onClick={async () => { await handleSave(); setShowUnsavedModal(false); if (pendingAction) pendingAction(); setPendingAction(null) }}
+                className="px-4 py-2 rounded-lg text-[13px] font-bold bg-gold text-navy-dark hover:bg-gold-light">
+                {lang === 'ko' ? '저장' : 'Save First'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

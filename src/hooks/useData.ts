@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Student, Teacher, SchoolSettings, Semester, EnglishClass, Grade } from '@/types'
+import { Student, Teacher, SchoolSettings, Semester, EnglishClass, Grade, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES } from '@/types'
 
 // ─── Teachers ────────────────────────────────────────────────────────
 
@@ -128,6 +128,28 @@ export function useClassCounts() {
   }, [])
 
   return { counts, loading }
+}
+
+// ─── Available Classes (filters out Unplaced when no unplaced students) ──
+
+export function useAvailableClasses() {
+  const [hasUnplaced, setHasUnplaced] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function check() {
+      const { count, error } = await supabase
+        .from('students')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_active', true)
+        .eq('english_class', 'Unplaced')
+      if (!error) setHasUnplaced((count || 0) > 0)
+      setLoading(false)
+    }
+    check()
+  }, [])
+
+  return { classes: hasUnplaced ? ENGLISH_CLASSES : PLACED_ENGLISH_CLASSES, hasUnplaced, loading }
 }
 
 // ─── School Settings ─────────────────────────────────────────────────

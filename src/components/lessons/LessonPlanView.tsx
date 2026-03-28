@@ -59,7 +59,14 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   const teacherClass = currentTeacher?.english_class as EnglishClass
 
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(teacherClass || 'Snapdragon')
-  const [selectedGrade, setSelectedGrade] = useState<Grade>(3)
+  const [selectedGrade, setSelectedGrade] = useState<Grade>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('daewoo_lesson_grade')
+      if (saved) { const n = Number(saved); if ([1,2,3,4,5].includes(n)) return n as Grade }
+    }
+    return 3
+  })
+  useEffect(() => { localStorage.setItem('daewoo_lesson_grade', String(selectedGrade)) }, [selectedGrade])
   const [year, setYear] = useState(new Date().getFullYear())
   const [month, setMonth] = useState(new Date().getMonth())
   const [editDate, setEditDate] = useState<string | null>(null)
@@ -861,7 +868,14 @@ function TeacherWeeklyPlans() {
   }
 
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(teacherClass || 'Snapdragon')
-  const [selectedGrade, setSelectedGrade] = useState<Grade>(3)
+  const [selectedGrade, setSelectedGrade] = useState<Grade>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('daewoo_lesson_grade')
+      if (saved) { const n = Number(saved); if ([1,2,3,4,5].includes(n)) return n as Grade }
+    }
+    return 3
+  })
+  useEffect(() => { localStorage.setItem('daewoo_lesson_grade', String(selectedGrade)) }, [selectedGrade])
   const todayStr = getKSTDateString()
   const [weekDates, setWeekDates] = useState<string[]>(getWeekDatesForPlans(todayStr))
   const [plans, setPlans] = useState<Record<string, string>>({})
@@ -1009,11 +1023,44 @@ function TeacherWeeklyPlans() {
     setWeekDates(getWeekDatesForPlans(ds))
   }
 
+  const [pushFromIdx, setPushFromIdx] = useState<number | null>(null)
+
   const updateDay = (date: string, text: string) => {
     setPlans(prev => ({ ...prev, [date]: text }))
     changedDays.current.add(date)
     setHasChanges(true)
   }
+
+  // Push a day's plans forward: move source to dest, shift everything between forward
+  const handlePushDay = (fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0 || fromIdx > 4 || toIdx > 4) return
+    const newPlans = { ...plans }
+    if (toIdx > fromIdx) {
+      // Push forward: shift days between fromIdx+1..toIdx forward by 1, put source at toIdx
+      const sourcePlan = newPlans[weekDates[fromIdx]] || ''
+      for (let i = toIdx; i > fromIdx; i--) {
+        newPlans[weekDates[i]] = newPlans[weekDates[i - 1]] || ''
+        changedDays.current.add(weekDates[i])
+      }
+      newPlans[weekDates[fromIdx]] = '' // Clear original
+      changedDays.current.add(weekDates[fromIdx])
+    } else {
+      // Push backward: shift days between toIdx..fromIdx-1 backward by 1
+      const sourcePlan = newPlans[weekDates[fromIdx]] || ''
+      for (let i = toIdx; i < fromIdx; i++) {
+        newPlans[weekDates[i]] = newPlans[weekDates[i + 1]] || ''
+        changedDays.current.add(weekDates[i])
+      }
+      newPlans[weekDates[fromIdx]] = '' // Clear original
+      changedDays.current.add(weekDates[fromIdx])
+    }
+    setPlans(newPlans)
+    setHasChanges(true)
+    setPushFromIdx(null)
+    showToast(`Plans shifted from ${DAY_LABELS[fromIdx]} to ${DAY_LABELS[toIdx]}`)
+  }
+
+  const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 
   const handleSave = async () => {
     setSaving(true)
@@ -1296,6 +1343,24 @@ function TeacherWeeklyPlans() {
                         <span className="text-[10px] font-normal ml-1.5">{formatShort(date)}</span>
                         {isToday && <span className="text-[9px] font-semibold text-gold ml-1.5">TODAY</span>}
                       </span>
+                      {canEdit && plans[date]?.trim() && (
+                        <div className="relative">
+                          <button onClick={() => setPushFromIdx(pushFromIdx === i ? null : i)}
+                            className="text-[9px] px-1.5 py-0.5 rounded text-text-tertiary hover:text-navy hover:bg-white/50 transition-all" title="Push plans to another day">
+                            Push →
+                          </button>
+                          {pushFromIdx === i && (
+                            <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-lg shadow-lg z-20 py-1 min-w-[100px]">
+                              {DAY_LABELS.map((dayLabel, di) => di !== i && (
+                                <button key={di} onClick={() => handlePushDay(i, di)}
+                                  className="w-full text-left px-3 py-1.5 text-[11px] hover:bg-surface-alt text-text-secondary hover:text-navy">
+                                  → {dayLabel} {formatShort(weekDates[di])}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {calEvents[date] && (
                       <div className="px-2 py-1.5 bg-slate-100 border-b border-slate-200 flex items-center gap-1.5">

@@ -121,16 +121,34 @@ export default function GradesView() {
 
   const loadAssessments = useCallback(async () => {
     setLoadingAssessments(true)
+    // Load assessments for the selected domain
     let query = supabase.from('assessments').select('*')
       .eq('grade', selectedGrade).eq('english_class', selectedClass).eq('domain', selectedDomain)
     if (selectedSemester) query = query.eq('semester_id', selectedSemester)
     const { data, error } = await query
       .order('date', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true })
-    if (!error && data) {
-      setAssessments(data)
-      if (data.length > 0 && !selectedAssessment) { setSelectedAssessment(data[data.length - 1]) }
-      else if (data.length > 0 && selectedAssessment) {
-        if (!data.find(a => a.id === selectedAssessment.id)) setSelectedAssessment(data[data.length - 1])
+
+    // Also load multi-domain assessments that have sections targeting this domain
+    let crossQuery = supabase.from('assessments').select('*')
+      .eq('grade', selectedGrade).eq('english_class', selectedClass).neq('domain', selectedDomain)
+      .not('sections', 'is', null)
+    if (selectedSemester) crossQuery = crossQuery.eq('semester_id', selectedSemester)
+    const { data: crossData } = await crossQuery
+
+    // Filter cross-domain assessments to only those with sections matching selectedDomain
+    const crossDomainAssessments = (crossData || []).filter((a: any) => {
+      const secs = Array.isArray(a.sections) ? a.sections : []
+      return secs.some((s: any) => s.domain === selectedDomain)
+    }).map((a: any) => ({ ...a, _isMultiDomain: true }))
+
+    const allAssessments = [...(data || []), ...crossDomainAssessments]
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
+
+    if (!error) {
+      setAssessments(allAssessments)
+      if (allAssessments.length > 0 && !selectedAssessment) { setSelectedAssessment(allAssessments[allAssessments.length - 1]) }
+      else if (allAssessments.length > 0 && selectedAssessment) {
+        if (!allAssessments.find(a => a.id === selectedAssessment.id)) setSelectedAssessment(allAssessments[allAssessments.length - 1])
       } else { setSelectedAssessment(null) }
     }
     setLoadingAssessments(false)
@@ -390,6 +408,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
             <div key={a.id} className="relative">
               <button onClick={() => setSelectedAssessment(a)} className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all border ${selectedAssessment?.id === a.id ? 'border-navy bg-navy text-white' : 'border-border bg-surface text-text-secondary hover:border-navy/30'}`}>
                 <span>{a.name}</span><span className="opacity-60 ml-1">/{a.max_score}</span>
+                {(a as any)._isMultiDomain && <span className={`ml-1.5 text-[8px] px-1 py-0.5 rounded font-bold ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-purple-100 text-purple-700'}`}>Multi</span>}
                 {a.type !== 'formative' && <span className={`ml-1.5 text-[9px] px-1 py-0.5 rounded ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-surface-alt'}`}>{catLabel(a.type)}</span>}
                 {a.date && <span className={`ml-1 text-[10px] ${selectedAssessment?.id === a.id ? 'opacity-60' : 'text-text-tertiary'}`}>{new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
               </button>
@@ -1796,6 +1815,11 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                   <div key={si} className="flex items-center gap-2">
                     <input value={sec.label} onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], label: e.target.value }; setSections(ns) }}
                       placeholder="e.g. Q1-3" className="w-24 px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy" />
+                    <select value={sec.domain || ''} onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], domain: e.target.value || undefined }; setSections(ns) }}
+                      className="w-28 px-1.5 py-1.5 border border-border rounded-lg text-[10px] outline-none focus:border-navy" title="Section domain (for multi-domain assessments)">
+                      <option value="">Same domain</option>
+                      {DOMAINS.map(d => <option key={d} value={d}>{DOMAIN_LABELS[d].en}</option>)}
+                    </select>
                     <div className="relative flex-1">
                       <input value={sec.standard}
                         onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], standard: e.target.value }; setSections(ns); setFocusedSection(si) }}
@@ -1837,13 +1861,13 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                   </div>
                 ))}
                 <div className="flex items-center justify-between pt-1">
-                  <button onClick={() => setSections([...sections, { label: `Section ${sections.length + 1}`, standard: '', max_points: 5 }])}
+                  <button onClick={() => setSections([...sections, { label: `Section ${sections.length + 1}`, standard: '', max_points: 5, domain: undefined }])}
                     className="inline-flex items-center gap-1 text-[10px] text-navy font-medium hover:text-navy-dark"><Plus size={11} /> Add Section</button>
                   <span className="text-[10px] text-text-tertiary font-semibold">
                     Total: {sections.reduce((s, sec) => s + sec.max_points, 0)} pts
                   </span>
                 </div>
-                <p className="text-[9px] text-text-tertiary">Each section's score is tracked separately. Total points auto-calculated from sections. Standards mastery is tracked per-section.</p>
+                <p className="text-[9px] text-text-tertiary">Each section's score is tracked separately. Total points auto-calculated from sections. Set a section's domain to create multi-domain assessments — section scores automatically roll into each domain's gradebook.</p>
               </div>
             )}
           </div>

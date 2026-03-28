@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
@@ -296,8 +296,33 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
     if (!selectedStudentId) return
     ;(async () => {
       setLoading(true)
+      // Fetch ORF records
       const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', selectedStudentId).order('date', { ascending: true })
-      if (data) setRecords(data)
+      const orfRecords: ReadingRecord[] = data || []
+
+      // Also fetch level test oral reading scores
+      const { data: ltData } = await supabase.from('level_test_scores').select('raw_scores, level_tests(created_at)').eq('student_id', selectedStudentId)
+      const ltRecords: ReadingRecord[] = []
+      if (ltData) {
+        ltData.forEach((lt: any) => {
+          const cwpm = lt.raw_scores?.passage_cwpm
+          if (cwpm != null && cwpm > 0) {
+            const ltDate = lt.level_tests?.created_at ? lt.level_tests.created_at.split('T')[0] : ''
+            ltRecords.push({
+              id: `lt-${ltDate}`, student_id: selectedStudentId, date: ltDate,
+              passage_title: '📋 Level Test', passage_level: null,
+              word_count: lt.raw_scores?.word_count || 0, time_seconds: 60,
+              errors: 0, self_corrections: 0, cwpm, accuracy_rate: 100,
+              reading_level: null, notes: 'From level placement test', naep_fluency: null,
+              assessed_by: null, is_level_test: true,
+            } as any)
+          }
+        })
+      }
+
+      // Merge and sort by date
+      const all = [...orfRecords, ...ltRecords].sort((a, b) => a.date.localeCompare(b.date))
+      setRecords(all)
       setLoading(false)
     })()
   }, [selectedStudentId])
@@ -337,6 +362,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
   })()
 
   const [editRecord, setEditRecord] = useState<any>(null)
+  const [detailRecord, setDetailRecord] = useState<any>(null)
 
   const handleDeleteRecord = async (id: string) => {
     if (!confirm('Delete this reading record?')) return
@@ -441,9 +467,12 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                 </tr></thead>
                 <tbody>
                   {[...records].reverse().map((r: any) => (
-                    <tr key={r.id} className="border-t border-border/50 table-row-hover group">
+                    <tr key={r.id} className="border-t border-border/50 table-row-hover group cursor-pointer" onClick={() => setDetailRecord(r)}>
                       <td className="px-5 py-2 text-text-secondary">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                      <td className="px-3 py-2 font-medium">{r.passage_title || '—'}</td>
+                      <td className="px-3 py-2 font-medium">
+                        {r.is_level_test && <span className="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-100 text-purple-700 mr-1">LT</span>}
+                        {r.passage_title || '—'}
+                      </td>
                       <td className="px-2 py-2 text-center font-medium text-purple-600">{r.reading_level || '—'}</td>
                       <td className="px-3 py-2 text-center">{r.word_count || '—'}</td>
                       <td className="px-3 py-2 text-center">{r.time_seconds ? `${Math.floor(r.time_seconds / 60)}:${String(r.time_seconds % 60).padStart(2, '0')}` : '—'}</td>
@@ -461,8 +490,10 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                       <td className="px-3 py-2 text-text-tertiary truncate max-w-[120px]">{r.notes || ''}</td>
                       <td className="px-2 py-2 text-center">
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => setEditRecord(r)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Edit"><Pencil size={12} /></button>
-                          <button onClick={() => handleDeleteRecord(r.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500" title="Delete"><Trash2 size={12} /></button>
+                          {!r.is_level_test && <>
+                          <button onClick={(e) => { e.stopPropagation(); setEditRecord(r) }} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Edit"><Pencil size={12} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(r.id) }} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500" title="Delete"><Trash2 size={12} /></button>
+                          </>}
                         </div>
                       </td>
                     </tr>
@@ -479,6 +510,67 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 
       {/* Edit Reading Record Modal */}
       {editRecord && <EditReadingModal record={editRecord} onClose={() => setEditRecord(null)} onSave={handleUpdateRecord} />}
+
+      {/* ORF Detail Modal */}
+      {detailRecord && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setDetailRecord(null)}>
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="font-display text-lg font-semibold text-navy">
+                {detailRecord.is_level_test ? '📋 Level Test ORF' : 'ORF Assessment Detail'}
+              </h3>
+              <button onClick={() => setDetailRecord(null)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-[13px]">
+                <div><span className="text-text-tertiary block text-[11px] mb-0.5">Date</span><span className="font-medium">{new Date(detailRecord.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span></div>
+                <div><span className="text-text-tertiary block text-[11px] mb-0.5">Passage</span><span className="font-medium">{detailRecord.passage_title || '—'}</span></div>
+                <div><span className="text-text-tertiary block text-[11px] mb-0.5">Lexile</span><span className="font-medium text-purple-600">{detailRecord.reading_level || '—'}</span></div>
+                <div><span className="text-text-tertiary block text-[11px] mb-0.5">Word Count</span><span className="font-medium">{detailRecord.word_count || '—'}</span></div>
+              </div>
+              <div className="bg-surface-alt rounded-xl p-4">
+                <div className="grid grid-cols-4 gap-4 text-center">
+                  <div>
+                    <p className="text-[10px] text-text-tertiary uppercase">Time</p>
+                    <p className="text-[18px] font-bold text-navy">{detailRecord.time_seconds ? `${Math.floor(detailRecord.time_seconds / 60)}:${String(detailRecord.time_seconds % 60).padStart(2, '0')}` : '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-text-tertiary uppercase">Errors</p>
+                    <p className="text-[18px] font-bold text-red-600">{detailRecord.errors ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-text-tertiary uppercase">CWPM</p>
+                    <p className="text-[18px] font-bold text-navy">{detailRecord.cwpm != null ? Math.round(detailRecord.cwpm) : '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-text-tertiary uppercase">Accuracy</p>
+                    <p className={`text-[18px] font-bold ${detailRecord.accuracy_rate >= 96 ? 'text-green-600' : detailRecord.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-600'}`}>
+                      {detailRecord.accuracy_rate != null ? `${detailRecord.accuracy_rate.toFixed(1)}%` : '—'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {detailRecord.self_corrections > 0 && (
+                <div className="text-[13px]"><span className="text-text-tertiary">Self-corrections:</span> <span className="font-medium">{detailRecord.self_corrections}</span></div>
+              )}
+              {detailRecord.naep_fluency && (
+                <div className="text-[13px]"><span className="text-text-tertiary">NAEP Fluency:</span> <span className="font-medium">Level {detailRecord.naep_fluency}</span></div>
+              )}
+              {detailRecord.notes && (
+                <div><span className="text-text-tertiary block text-[11px] mb-1">Notes</span><p className="text-[13px] bg-amber-50 rounded-lg p-3 border border-amber-100">{detailRecord.notes}</p></div>
+              )}
+              {!detailRecord.is_level_test && (
+                <div className="flex gap-2 pt-2">
+                  <button onClick={() => { setDetailRecord(null); setEditRecord(detailRecord) }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium border border-border hover:bg-surface-alt">
+                    <Pencil size={13} /> Edit Record
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -881,6 +973,46 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const [directCwpm, setDirectCwpm] = useState<number | ''>('')
   const [directAccuracy, setDirectAccuracy] = useState<number | ''>('')
 
+  // ── Autosave draft to localStorage (3s debounce) ──
+  const draftKey = `daewoo_orf_draft_${selStudent || 'new'}_${date}`
+  const autosaveRef = useRef<NodeJS.Timeout | null>(null)
+  const [draftRestored, setDraftRestored] = useState(false)
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (draftRestored) return
+    try {
+      const saved = localStorage.getItem(draftKey)
+      if (saved) {
+        const d = JSON.parse(saved)
+        if (d.passageTitle) setPassageTitle(d.passageTitle)
+        if (d.wordCount) setWordCount(d.wordCount)
+        if (d.timeSeconds) setTimeSeconds(d.timeSeconds)
+        if (d.errors !== undefined) setErrors(d.errors)
+        if (d.selfCorrections !== undefined) setSelfCorrections(d.selfCorrections)
+        if (d.notes) setNotes(d.notes)
+        if (d.lexile) setLexile(d.lexile)
+        if (d.naepScore) setNaepScore(d.naepScore)
+        showToast('Draft restored from autosave')
+      }
+    } catch {}
+    setDraftRestored(true)
+  }, [draftKey, draftRestored])
+
+  // Autosave on field changes
+  useEffect(() => {
+    if (!draftRestored) return
+    if (autosaveRef.current) clearTimeout(autosaveRef.current)
+    autosaveRef.current = setTimeout(() => {
+      if (mode === 'single' && (wordCount || notes || passageTitle)) {
+        try {
+          localStorage.setItem(draftKey, JSON.stringify({ passageTitle, wordCount, timeSeconds, errors, selfCorrections, notes, lexile, naepScore }))
+        } catch {}
+      }
+    }, 3000)
+    return () => { if (autosaveRef.current) clearTimeout(autosaveRef.current) }
+  }, [passageTitle, wordCount, timeSeconds, errors, selfCorrections, notes, lexile, naepScore, draftKey, mode, draftRestored])
+
   // Load saved passages
   useEffect(() => {
     supabase.from('reading_passages').select('*').order('created_at', { ascending: false }).then(({ data }) => {
@@ -1011,7 +1143,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
       })
       setSaving(false)
       if (error) showToast(`Error: ${error.message}`)
-      else { showToast('Reading record saved'); onSaved() }
+      else { try { localStorage.removeItem(draftKey) } catch {}; showToast('Reading record saved'); onSaved() }
     } else {
       // Batch save — skip already-saved students
       const rows = Object.entries(batchScores)
@@ -1423,6 +1555,7 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
 function PassageLibrary({ lang }: { lang: LangKey }) {
   const { currentTeacher, showToast } = useApp()
   const [passages, setPassages] = useState<any[]>([])
+  const [passageUsage, setPassageUsage] = useState<Record<string, any[]>>({})
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<any>({})
@@ -1434,8 +1567,19 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await supabase.from('reading_passages').select('*').order('created_at', { ascending: false })
-        if (data) setPassages(data)
+        const [passageRes, usageRes] = await Promise.all([
+          supabase.from('reading_passages').select('*').order('created_at', { ascending: false }),
+          supabase.from('passage_usage').select('*').order('last_used_date', { ascending: false }),
+        ])
+        if (passageRes.data) setPassages(passageRes.data)
+        if (usageRes.data) {
+          const grouped: Record<string, any[]> = {}
+          usageRes.data.forEach((u: any) => {
+            if (!grouped[u.passage_id]) grouped[u.passage_id] = []
+            grouped[u.passage_id].push(u)
+          })
+          setPassageUsage(grouped)
+        }
       } catch {}
       setLoading(false)
     })()
@@ -1667,6 +1811,18 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
                       {p.source && <span className="text-[10px] text-text-tertiary">{p.source}</span>}
                       <span className="text-[10px] text-text-tertiary">{new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
+                    {/* Usage tags */}
+                    {passageUsage[p.id]?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {passageUsage[p.id].map((u: any, ui: number) => (
+                          <span key={ui} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-medium bg-green-50 text-green-700 border border-green-200">
+                            {u.english_class} G{u.grade} {u.academic_year}
+                            {u.median_cwpm != null && <span className="font-bold">· {Math.round(u.median_cwpm)} CWPM</span>}
+                            <span className="opacity-60">({u.assessment_count}×)</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                     <button onClick={() => startEdit(p)} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Edit"><Pencil size={13} /></button>

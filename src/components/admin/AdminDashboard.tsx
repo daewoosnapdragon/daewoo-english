@@ -17,7 +17,11 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>(isHeadOrAdmin ? 'overview' : 'reading')
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<any>(null)
-  const [academicYear, setAcademicYear] = useState('2025-2026')
+  const [academicYear, setAcademicYear] = useState(() => {
+    const now = new Date()
+    const startYear = now.getMonth() >= 2 ? now.getFullYear() : now.getFullYear() - 1
+    return `${startYear}-${startYear + 1}`
+  })
 
   // Compute date range for academic year (March 1 to Feb 28)
   const yearStart = useMemo(() => {
@@ -41,8 +45,8 @@ export default function AdminDashboard() {
         supabase.from('attendance').select('student_id, status, date').eq('date', today),
         supabase.from('attendance').select('student_id, status, date').gte('date', thirtyDaysAgo),
         supabase.from('attendance').select('student_id, status, date').gte('date', yearStart).lte('date', yearEnd),
-        supabase.from('behavior_logs').select('student_id, date, flagged').gte('date', thirtyDaysAgo),
-        supabase.from('behavior_logs').select('student_id, date, flagged, antecedent, behavior, consequence').gte('date', yearStart).lte('date', yearEnd),
+        supabase.from('behavior_logs').select('student_id, date, is_flagged').gte('date', thirtyDaysAgo),
+        supabase.from('behavior_logs').select('student_id, date, is_flagged, antecedents, behaviors, consequences').gte('date', yearStart).lte('date', yearEnd),
         supabase.from('reading_assessments').select('student_id, cwpm, date, accuracy_rate').gte('date', yearStart).lte('date', yearEnd).order('date', { ascending: true }),
         supabase.from('semesters').select('id').eq('is_active', true).limit(1),
         supabase.from('student_wida_levels').select('student_id, domain, wida_level'),
@@ -90,7 +94,7 @@ export default function AdminDashboard() {
         const s = students.find(st => st.id === b.student_id)
         if (s && behByClass[s.english_class] != null) behByClass[s.english_class]++
       })
-      const flaggedCount = behavior.filter(b => b.flagged).length
+      const flaggedCount = behavior.filter(b => b.is_flagged).length
 
       // --- Reading: latest CWPM by class ---
       const latestReading: Record<string, number> = {}
@@ -163,8 +167,10 @@ export default function AdminDashboard() {
         const weekStart = new Date(d); weekStart.setDate(d.getDate() - d.getDay() + 1)
         const wk = weekStart.toISOString().split('T')[0]
         behByWeek[wk] = (behByWeek[wk] || 0) + 1
-        if (b.behavior) topBehaviors[b.behavior] = (topBehaviors[b.behavior] || 0) + 1
-        if (b.antecedent) topAntecedents[b.antecedent] = (topAntecedents[b.antecedent] || 0) + 1
+        const behs = Array.isArray(b.behaviors) ? b.behaviors : b.behaviors ? [b.behaviors] : []
+        const ants = Array.isArray(b.antecedents) ? b.antecedents : b.antecedents ? [b.antecedents] : []
+        behs.forEach((beh: string) => { if (beh) topBehaviors[beh] = (topBehaviors[beh] || 0) + 1 })
+        ants.forEach((ant: string) => { if (ant) topAntecedents[ant] = (topAntecedents[ant] || 0) + 1 })
       })
       const behaviorWeekly = Object.entries(behByWeek).sort(([a], [b]) => a.localeCompare(b)).map(([week, count]) => ({ week, count }))
       const topBeh = Object.entries(topBehaviors).sort(([, a], [, b]) => b - a).slice(0, 8)
@@ -221,8 +227,7 @@ export default function AdminDashboard() {
           <p className="text-text-secondary text-sm">{data.totalStudents} {ko ? '명 학생' : 'students'} · {ENGLISH_CLASSES.length} {ko ? '개 반' : 'classes'}</p>
           <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
             className="px-3 py-1 border border-border rounded-lg text-[12px] font-medium text-navy bg-surface outline-none focus:border-navy">
-            <option value="2025-2026">2025-2026</option>
-            <option value="2026-2027">2026-2027</option>
+            {(() => { const cy = new Date().getMonth() >= 2 ? new Date().getFullYear() : new Date().getFullYear() - 1; return [cy - 1, cy, cy + 1].map(y => <option key={y} value={`${y}-${y+1}`}>{y}-{y+1}</option>) })()}
           </select>
         </div>
         <div className="flex gap-1 mt-4 flex-wrap">
