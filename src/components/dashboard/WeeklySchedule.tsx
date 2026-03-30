@@ -206,7 +206,7 @@ export default function WeeklySchedule() {
                   {slot.label}
                 </span>
                 {slot.note && (
-                  <span className="text-[8px] text-text-tertiary ml-auto flex-shrink-0">{slot.note}</span>
+                  <span className="text-[9px] font-medium text-red-400 ml-auto flex-shrink-0">{slot.note}</span>
                 )}
               </div>
             </div>
