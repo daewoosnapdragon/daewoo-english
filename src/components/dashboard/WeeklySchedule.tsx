@@ -205,6 +205,9 @@ export default function WeeklySchedule() {
                 <span className={`text-[11px] font-semibold ${isActive ? 'text-navy' : colors.text}`}>
                   {slot.label}
                 </span>
+                {slot.note && (
+                  <span className="text-[8px] text-text-tertiary ml-auto flex-shrink-0">{slot.note}</span>
+                )}
               </div>
             </div>
           )
