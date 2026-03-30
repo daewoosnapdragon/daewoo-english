@@ -584,23 +584,38 @@ function calculateG1Composite(scores: G1Scores): {
   const band = LEVEL_BANDS[passageLevel] || LEVEL_BANDS['A']
   const bandWidth = band.ceiling - band.floor
 
-  // Within-band performance: average of available subtests (all normalized 0-1)
-  const withinBandParts: number[] = []
+  // Within-band performance: weighted subtests (all normalized 0-1)
+  // At low levels, alphabet is the strongest discriminator between Lily/Camellia.
+  // At higher levels, ORF and comprehension matter more.
+  type SubtestEntry = { value: number; weight: number }
+  const withinBandParts: SubtestEntry[] = []
+
+  // Level-dependent weights: alphabet is weighted more at A/B where it's the key differentiator
+  const isLowLevel = passageLevel === 'A' || passageLevel === 'B'
+  const alphaWeight   = isLowLevel ? 0.35 : 0.20
+  const phonemeWeight = isLowLevel ? 0.25 : 0.20
+  const orfWeight     = isLowLevel ? 0.20 : 0.30
+  const compWeight    = isLowLevel ? 0.10 : 0.20
+  const openWeight    = isLowLevel ? 0.10 : 0.10
 
   // Alphabet (all levels)
-  if (alphaRaw > 0) withinBandParts.push(alphaPct / 100)
+  if (alphaRaw > 0) withinBandParts.push({ value: alphaPct / 100, weight: alphaWeight })
   // Phoneme (all levels)
-  if ((scores.o_phoneme ?? 0) > 0) withinBandParts.push(phonemePct / 100)
+  if ((scores.o_phoneme ?? 0) > 0) withinBandParts.push({ value: phonemePct / 100, weight: phonemeWeight })
   // ORF (passage-level-specific performance)
-  if (orfPct > 0) withinBandParts.push(Math.min(orfPct / 100, 1))
+  if (orfPct > 0) withinBandParts.push({ value: Math.min(orfPct / 100, 1), weight: orfWeight })
   // Comprehension (levels with comp questions)
-  if (compPct > 0) withinBandParts.push(Math.min(compPct / 100, 1))
+  if (compPct > 0) withinBandParts.push({ value: Math.min(compPct / 100, 1), weight: compWeight })
   // Open response
-  if ((scores.o_open_response ?? 0) > 0) withinBandParts.push(openPct / 100)
+  if ((scores.o_open_response ?? 0) > 0) withinBandParts.push({ value: openPct / 100, weight: openWeight })
 
-  const withinBandAvg = withinBandParts.length > 0
-    ? withinBandParts.reduce((a, b) => a + b, 0) / withinBandParts.length
-    : 0.5 // default to mid-band if no subtest data
+  let withinBandAvg: number
+  if (withinBandParts.length > 0) {
+    const totalWeight = withinBandParts.reduce((sum, p) => sum + p.weight, 0)
+    withinBandAvg = withinBandParts.reduce((sum, p) => sum + p.value * p.weight, 0) / totalWeight
+  } else {
+    withinBandAvg = 0.5 // default to mid-band if no subtest data
+  }
 
   let oralScore = band.floor + (withinBandAvg * bandWidth)
 
@@ -696,22 +711,33 @@ function suggestG1Class(
 ): EnglishClass {
   // Writing bonus lowers Snapdragon threshold for upper-band discrimination
   const snapBoost = writingBonus >= 12 ? 5 : 0
+
+  // ── Low-end placement: composite-driven ──
+  // At Levels A-C, the composite (which includes alphabet, phoneme, teacher
+  // impression, and written scores) is more informative than a single ORF
+  // cutoff. ORF still influences via the within-band average, but we let the
+  // full composite decide placement so strong alphabet/phoneme students aren't
+  // locked into Lily by one weak subtest.
+
   if (passageLevel === 'A') {
-    const aTotal = (scores.o_a_q1 ?? 0) + (scores.o_a_q2 ?? 0) + (scores.o_a_q3 ?? 0) + (scores.o_a_q4 ?? 0) + (scores.o_a_q5 ?? 0)
-    const rawScore = aTotal > 0 ? aTotal : (scores.o_orf_raw ?? 0)
-    if (rawScore <= 5) return 'Lily'
+    // Level A students: pre-readers. Composite range is ~0-16 oral + written/teacher blend.
+    if (composite < 15) return 'Lily'
     return composite > 35 ? 'Camellia' : 'Lily'
   }
 
   if (passageLevel === 'B') {
-    if ((scores.o_orf_raw ?? 0) < 8) return 'Lily'
-    if ((scores.o_orf_raw ?? 0) < 15) return 'Camellia'
-    return composite > 50 ? 'Daisy' : 'Camellia'
+    // Level B: early decoders. Composite range ~17-32 oral + written/teacher blend.
+    if (composite < 22) return 'Lily'
+    if (composite < 40) return 'Camellia'
+    return 'Daisy'
   }
 
   if (passageLevel === 'C') {
-    if ((scores.o_orf_raw ?? 0) < 5) return 'Camellia'
-    return composite > 55 ? 'Sunflower' : 'Daisy'
+    // Level C: beginning fluency. Still use composite, but ORF < 3 is a strong
+    // signal the student isn't reading at sentence level yet.
+    if ((scores.o_orf_raw ?? 0) < 3 && composite < 40) return 'Camellia'
+    if (composite < 45) return 'Daisy'
+    return 'Sunflower'
   }
 
   if (passageLevel === 'D') {
