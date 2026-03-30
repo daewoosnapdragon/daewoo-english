@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
 import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, Pencil, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX, Sparkles, Eye, BookOpen, CalendarDays, UserCheck, CheckCircle, XCircle, ArrowRight } from 'lucide-react'
+import WeeklySchedule from './WeeklySchedule'
 
 const EVENT_TYPES = [
   { value: 'day_off', label: 'Day Off', color: '#22C55E', bg: 'bg-green-100 text-green-800' },
@@ -192,11 +193,7 @@ export default function DashboardView() {
             {isAdmin && <ClassOverviewTable />}
           </div>
           <SharedCalendar />
-          <div className="bg-surface border border-border rounded-xl shadow-sm p-5 flex flex-col items-center justify-center text-center min-h-[320px]">
-            <CalendarDays className="w-10 h-10 text-text-tertiary mb-3" />
-            <h3 className="font-display text-sm font-semibold text-navy mb-1">Weekly Schedule</h3>
-            <p className="text-[11px] text-text-tertiary">Coming Soon</p>
-          </div>
+          <WeeklySchedule />
         </div>
         {/* ─── Below: Insights + Content ─── */}
         <InsightsBanner shared={shared} />
