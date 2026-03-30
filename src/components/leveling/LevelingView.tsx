@@ -1455,8 +1455,10 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
         const auto = calcAuto(studs, sm, am, bm, sgm, { oral: 0.40, mc: 0.15, writing: 0.35, anecdotal: 0.10 }, levelTest.grade)
         setAutoPlacements(auto)
         const pm: Record<string, EnglishClass> = {}
+        // Always start with current class as fallback for ALL students
+        studs.forEach((s: any) => { pm[s.id] = s.english_class })
+        // Then overlay any saved placements from DB
         if (pd?.length) pd.forEach((p: any) => { pm[p.student_id] = p.final_placement })
-        else studs.forEach((s: any) => { pm[s.id] = s.english_class })
         setPlacements(pm)
       }
       setLoading(false)
