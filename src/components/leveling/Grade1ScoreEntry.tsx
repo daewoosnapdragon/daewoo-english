@@ -656,9 +656,29 @@ function calculateG1Composite(scores: G1Scores): {
     } else if (hasOralData) {
       composite = oralScore * 0.55 + writtenPct * 0.45
     } else {
-      composite = writtenPct
+      // Written-only: no oral assessment was done. Cap composite so a strong MC
+      // score alone can't outrank students who demonstrated actual reading ability
+      // on higher passage levels. Max ~35 = top of Camellia range.
+      composite = Math.min(writtenPct * 0.55, 35)
+      if (hasClassImpression) {
+        composite = composite * 0.65 + teacherPct * 0.35
+      }
     }
     wave = 2
+  }
+
+  // ── Passage-level composite cap ──
+  // A strong written MC score shouldn't let a Level A/B student outrank kids who
+  // demonstrated actual reading on higher passages. Cap the composite so the
+  // passage level remains the dominant signal.
+  const LEVEL_COMPOSITE_CAP: Record<string, number> = {
+    A: 38,   // can reach mid-Camellia at most
+    B: 48,   // can reach low-Daisy at most
+    C: 60,   // can reach low-Sunflower at most
+  }
+  const cap = LEVEL_COMPOSITE_CAP[passageLevel]
+  if (cap != null && composite > cap) {
+    composite = cap
   }
 
   // Writing bonus: sliding scale based on bonus score itself
