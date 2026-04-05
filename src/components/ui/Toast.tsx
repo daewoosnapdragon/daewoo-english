@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useApp } from '@/lib/context'
-import { Check, AlertCircle, X } from 'lucide-react'
+import { AlertCircle, X } from 'lucide-react'
 
 const DURATION = 4000
 const ERROR_DURATION = 6000
@@ -11,28 +11,43 @@ export default function Toast() {
   const { toast } = useApp()
   const [visible, setVisible] = useState(false)
   const [leaving, setLeaving] = useState(false)
-  const [currentToast, setCurrentToast] = useState<string | null>(null)
-
-  const dismiss = useCallback(() => {
-    setLeaving(true)
-    setTimeout(() => { setVisible(false); setLeaving(false); setCurrentToast(null) }, 250)
-  }, [])
+  const [displayText, setDisplayText] = useState<string | null>(null)
+  const lastToastRef = useRef<string | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (toast && toast !== currentToast) {
-      setCurrentToast(toast)
-      setLeaving(false)
-      setVisible(true)
-      const isError = toast.toLowerCase().startsWith('error')
-      const duration = isError ? ERROR_DURATION : DURATION
-      const timer = setTimeout(dismiss, duration)
-      return () => clearTimeout(timer)
-    }
-  }, [toast, currentToast, dismiss])
+    if (!toast) return
+    // Only react to genuinely new toast messages
+    if (toast === lastToastRef.current) return
+    lastToastRef.current = toast
 
-  if (!visible || !currentToast) return null
+    // Clear any existing dismiss timer
+    if (timerRef.current) clearTimeout(timerRef.current)
 
-  const isError = currentToast.toLowerCase().startsWith('error')
+    setDisplayText(toast)
+    setLeaving(false)
+    setVisible(true)
+
+    const isError = toast.toLowerCase().startsWith('error')
+    const duration = isError ? ERROR_DURATION : DURATION
+
+    timerRef.current = setTimeout(() => {
+      setLeaving(true)
+      setTimeout(() => { setVisible(false); setLeaving(false) }, 250)
+    }, duration)
+
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [toast])
+
+  const dismiss = () => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setLeaving(true)
+    setTimeout(() => { setVisible(false); setLeaving(false) }, 250)
+  }
+
+  if (!visible || !displayText) return null
+
+  const isError = displayText.toLowerCase().startsWith('error')
   const duration = isError ? ERROR_DURATION : DURATION
 
   return (
@@ -49,7 +64,7 @@ export default function Toast() {
               </svg>
             )}
           </div>
-          <span className="text-[13px] font-medium flex-1 leading-snug">{currentToast}</span>
+          <span className="text-[13px] font-medium flex-1 leading-snug">{displayText}</span>
           <button onClick={(e) => { e.stopPropagation(); dismiss() }} className="flex-shrink-0 opacity-50 hover:opacity-100 transition-opacity p-0.5">
             <X size={14} />
           </button>

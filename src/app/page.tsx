@@ -49,6 +49,19 @@ export default function Home() {
     if (saved === 'true') setSidebarCollapsed(true)
   }, [])
 
+  // Dynamic page title
+  useEffect(() => {
+    if (!currentTeacher) { document.title = 'Daewoo English'; return }
+    const titles: Record<string, string> = {
+      dashboard: 'Dashboard', students: 'Students', grades: 'Grades',
+      reports: 'Reports', leveling: 'Leveling', attendance: 'Attendance',
+      readingLevels: 'Reading Levels', groups: 'Groups', curriculum: 'Curriculum',
+      teacherGuides: 'Teacher Guides', lessonPlans: 'Lesson Plans',
+      adminDashboard: 'Program Overview', settings: 'Settings',
+    }
+    document.title = `${titles[activeView] || 'Dashboard'} | Daewoo English`
+  }, [activeView, currentTeacher])
+
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => {
       sessionStorage.setItem('daewoo_sidebar_collapsed', String(!prev))
@@ -97,18 +110,6 @@ export default function Home() {
   }
 
   const ml = sidebarCollapsed ? 'ml-[60px]' : 'ml-[220px]'
-
-  // Dynamic page title
-  useEffect(() => {
-    const titles: Record<string, string> = {
-      dashboard: 'Dashboard', students: 'Students', grades: 'Grades',
-      reports: 'Reports', leveling: 'Leveling', attendance: 'Attendance',
-      readingLevels: 'Reading Levels', groups: 'Groups', curriculum: 'Curriculum',
-      teacherGuides: 'Teacher Guides', lessonPlans: 'Lesson Plans',
-      adminDashboard: 'Program Overview', settings: 'Settings',
-    }
-    document.title = `${titles[activeView] || 'Dashboard'} | Daewoo English`
-  }, [activeView])
 
   return (
     <div className="flex min-h-screen">
