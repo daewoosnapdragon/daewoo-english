@@ -8,6 +8,8 @@ import { GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
 import { ChevronLeft, ChevronRight, Loader2, Check, UserCheck, UserX, Clock, Download, AlertTriangle, Printer } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
+import EmptyState from '@/components/shared/EmptyState'
+import AnimatedNumber from '@/components/shared/AnimatedNumber'
 
 type Status = 'present' | 'absent' | 'tardy'
 type LangKey = 'en' | 'ko'
@@ -31,6 +33,7 @@ export default function AttendanceView() {
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [focusedRow, setFocusedRow] = useState<number>(-1)
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const [showUnsavedModal, setShowUnsavedModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
 
@@ -135,6 +138,8 @@ export default function AttendanceView() {
 
     setSaving(false)
     setHasChanges(false)
+    setSaveSuccess(true)
+    setTimeout(() => setSaveSuccess(false), 1500)
     showToast(lang === 'ko' ? '출석이 저장되었습니다' : entries.length > 0 ? `Saved attendance for ${entries.length} students` : 'Attendance cleared')
   }
 
@@ -214,10 +219,10 @@ export default function AttendanceView() {
             <p className="text-text-secondary text-sm mt-1">{selectedClass} · Grade {selectedGrade} · {students.length} students</p>
           </div>
           <button onClick={handleSave} disabled={saving || !hasChanges}
-            className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl text-[16px] font-bold transition-all shadow-md ${
-              hasChanges ? 'bg-gold text-navy-dark hover:bg-gold-light animate-pulse' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-[14px] font-bold transition-all ${
+              hasChanges ? 'bg-gold text-navy-dark hover:bg-gold-light shadow-md shadow-gold/20' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}>
-            {saving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
             {lang === 'ko' ? '출석 저장' : 'Save Attendance'}
           </button>
           <button onClick={handlePrintAttendance}
@@ -293,7 +298,7 @@ export default function AttendanceView() {
             </p>
           )}
           {isToday && <p className="text-[12px] text-green-600 font-medium mt-0.5">Today</p>}
-          <p className="text-[10px] text-text-tertiary mt-1">Tip: Click a row, then use <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">P</kbd> <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">A</kbd> <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">T</kbd> keys and <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">↑</kbd><kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">↓</kbd> to navigate</p>
+          <p className="text-[10px] text-text-tertiary mt-1">Click a row, then use <kbd className="px-1.5 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border shadow-sm">P</kbd> <kbd className="px-1.5 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border shadow-sm">A</kbd> <kbd className="px-1.5 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border shadow-sm">T</kbd> and <kbd className="px-1.5 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border shadow-sm">↑</kbd> <kbd className="px-1.5 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border shadow-sm">↓</kbd> to navigate</p>
         </div>
 
         {/* Quick-start prompt when today has no records */}
@@ -314,20 +319,32 @@ export default function AttendanceView() {
         {/* Stats bar */}
         {Object.keys(records).length > 0 && (
           <div className="flex gap-4 mb-5 text-[12px]">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500" /> {presentCount} Present</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500" /> {absentCount} Absent</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500" /> {tardyCount} Tardy</span>
-            {unmarkedCount > 0 && <span className="text-text-tertiary">{unmarkedCount} unmarked</span>}
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500" /> <AnimatedNumber value={presentCount} /> Present</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500" /> <AnimatedNumber value={absentCount} /> Absent</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500" /> <AnimatedNumber value={tardyCount} /> Tardy</span>
+            {unmarkedCount > 0 && <span className="text-text-tertiary"><AnimatedNumber value={unmarkedCount} /> unmarked</span>}
           </div>
         )}
 
         {/* Attendance grid */}
         {loadingStudents || loading ? (
-          <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
-        ) : students.length === 0 ? (
-          <div className="py-12 text-center text-text-tertiary">No students in this class.</div>
-        ) : (
           <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-surface-alt px-4 py-3"><div className="skeleton h-3 w-full" /></div>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="px-4 py-3 border-t border-border flex items-center gap-4">
+                <div className="skeleton h-3 w-6" />
+                <div className="skeleton h-3 w-32" />
+                <div className="skeleton h-3 w-12 ml-auto" />
+                <div className="skeleton h-6 w-6 rounded-full" />
+                <div className="skeleton h-6 w-6 rounded-full" />
+                <div className="skeleton h-6 w-6 rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : students.length === 0 ? (
+          <EmptyState icon={UserCheck} title="No students in this class" description="Select a different grade or class to view students" />
+        ) : (
+          <div className={`bg-surface border border-border rounded-xl shadow-sm overflow-hidden ${saveSuccess ? 'animate-success-flash' : ''}`}>
             <table className="w-full text-[13px]">
               <thead><tr className="bg-surface-alt">
                 <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>

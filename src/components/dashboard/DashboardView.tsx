@@ -163,25 +163,91 @@ export default function DashboardView() {
   const greeting = today.getHours() < 12 ? 'Good morning' : today.getHours() < 17 ? 'Good afternoon' : 'Good evening'
   const dayStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 
+  // Compute quick stats for hero card
+  const totalStudents = shared.students.length
+  const attendanceMarked = shared.todayAttendanceIds.size
+  const attendancePct = totalStudents > 0 ? Math.round((attendanceMarked / totalStudents) * 100) : 0
+  const urgentItems = shared.todayEvents.filter((ev: any) => ev.type === 'deadline' || ev.type === 'testing').length
+
   return (
     <div className="animate-fade-in">
-      <div className="px-10 pt-6 pb-5 bg-surface border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display text-[22px] font-semibold tracking-tight text-navy">
-              {language === 'ko' ? '대시보드' : `${greeting}${currentTeacher?.name ? `, ${currentTeacher.name}` : ''}`}
-            </h2>
-            <p className="text-text-secondary text-[13px] mt-0.5">{dayStr} {activeSem ? `-- ${activeSem}` : ''}</p>
+      {/* Hero briefing card */}
+      <div className="px-10 pt-7 pb-6 bg-gradient-to-br from-navy-dark via-navy to-navy-dark relative overflow-hidden">
+        {/* Subtle grid overlay */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'radial-gradient(circle, #FFB915 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }} />
+        <div className="relative z-10">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="font-display text-[24px] font-semibold tracking-tight text-white">
+                {language === 'ko' ? '대시보드' : `${greeting}${currentTeacher?.name ? `, ${currentTeacher.name}` : ''}`}
+              </h2>
+              <p className="text-blue-200/40 text-[13px] mt-1">{dayStr}</p>
+            </div>
+            {semesters.length > 0 && (
+              <select value={activeSem} onChange={(e: any) => setActiveSem(e.target.value)}
+                className="px-3 py-2 border border-white/10 rounded-lg text-[12px] bg-white/5 text-blue-200/70 outline-none focus:border-gold/40 cursor-pointer">
+                {semesters.map((sem: any) => (
+                  <option key={sem.id} value={language === 'ko' ? sem.name_ko : sem.name} className="bg-navy-dark text-white">
+                    {language === 'ko' ? sem.name_ko : sem.name}{sem.is_active ? ' *' : ''}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
-          {semesters.length > 0 && (
-            <select value={activeSem} onChange={(e: any) => setActiveSem(e.target.value)}
-              className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
-              {semesters.map((sem: any) => (
-                <option key={sem.id} value={language === 'ko' ? sem.name_ko : sem.name}>
-                  {language === 'ko' ? sem.name_ko : sem.name}{sem.is_active ? ' ●' : ''}
-                </option>
-              ))}
-            </select>
+          {/* Quick stats row */}
+          {!shared.loading && totalStudents > 0 && (
+            <div className="flex gap-6 mt-5">
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${attendancePct === 100 ? 'bg-green-500/15' : 'bg-amber-500/15'}`}>
+                  <UserCheck size={16} className={attendancePct === 100 ? 'text-green-400' : 'text-amber-400'} />
+                </div>
+                <div>
+                  <p className="text-white text-[15px] font-bold leading-tight">{attendanceMarked}/{totalStudents}</p>
+                  <p className="text-blue-200/35 text-[10px]">{language === 'ko' ? '출석 확인' : 'Attendance'}</p>
+                </div>
+              </div>
+              <div className="w-px h-10 bg-white/10" />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-navy/40 flex items-center justify-center">
+                  <GraduationCap size={16} className="text-blue-300/60" />
+                </div>
+                <div>
+                  <p className="text-white text-[15px] font-bold leading-tight">{totalStudents}</p>
+                  <p className="text-blue-200/35 text-[10px]">{language === 'ko' ? '학생 수' : 'Students'}</p>
+                </div>
+              </div>
+              {shared.todayBehaviorCount > 0 && (
+                <>
+                  <div className="w-px h-10 bg-white/10" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <ClipboardCheck size={16} className="text-amber-400/70" />
+                    </div>
+                    <div>
+                      <p className="text-white text-[15px] font-bold leading-tight">{shared.todayBehaviorCount}</p>
+                      <p className="text-blue-200/35 text-[10px]">{language === 'ko' ? '행동 기록' : 'Behavior logs'}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+              {shared.todayEvents.length > 0 && (
+                <>
+                  <div className="w-px h-10 bg-white/10" />
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${urgentItems > 0 ? 'bg-red-500/15' : 'bg-blue-500/10'}`}>
+                      <CalendarDays size={16} className={urgentItems > 0 ? 'text-red-400/70' : 'text-blue-300/60'} />
+                    </div>
+                    <div>
+                      <p className="text-white text-[15px] font-bold leading-tight">{shared.todayEvents.length}</p>
+                      <p className="text-blue-200/35 text-[10px]">{language === 'ko' ? '오늘 일정' : 'Events today'}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>
