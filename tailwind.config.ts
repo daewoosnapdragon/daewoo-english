@@ -19,8 +19,8 @@ const config: Config = {
         'text-tertiary': '#8892A2',
         // Brand palette
         navy: '#647FBC',
-        'navy-dark': '#4A6199',
-        'navy-deep': '#354A7C',
+        'navy-dark': '#1E2A3A',
+        'navy-deep': '#151E2B',
         gold: '#E8C547',
         'gold-light': '#F0D76A',
         'gold-pale': '#FAFDD6',

@@ -16,7 +16,7 @@ function renderCellContent(content: string): string {
   if (!content) return ''
   return content
     .replace(/---/g, '<hr style="border:0;border-top:1px solid #e2e8f0;margin:3px 0">')
-    .replace(/^## (.+)$/gm, '<div style="font-size:13px;font-weight:800;color:#4A6199;margin:3px 0 1px">$1</div>')
+    .replace(/^## (.+)$/gm, '<div style="font-size:13px;font-weight:800;color:#647FBC;margin:3px 0 1px">$1</div>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/^- (.+)$/gm, '<div style="padding-left:10px;position:relative;margin:0"><span style="position:absolute;left:1px">&#8226;</span>$1</div>')
@@ -405,12 +405,12 @@ export default function YearlyPlanView() {
         const content = cell?.content ? renderCellContent(cell.content) : '<span style="color:#cbd5e1">--</span>'
         cellsHTML += `<td style="border:1px solid #e2e8f0;padding:8px 10px;vertical-align:top;font-size:10px;line-height:1.5">${content}</td>`
       })
-      rowsHTML += `<tr><td style="border:1px solid #e2e8f0;padding:8px 10px;vertical-align:top;font-size:11px;font-weight:700;color:#4A6199;background:#f8fafc;white-space:nowrap">${track.name}</td>${cellsHTML}</tr>`
+      rowsHTML += `<tr><td style="border:1px solid #e2e8f0;padding:8px 10px;vertical-align:top;font-size:11px;font-weight:700;color:#647FBC;background:#f8fafc;white-space:nowrap">${track.name}</td>${cellsHTML}</tr>`
     })
 
     let periodHeaders = ''
     periods.forEach(p => {
-      periodHeaders += `<th style="text-align:center;padding:8px 6px;font-size:10px;font-weight:700;border:1px solid #e2e8f0;background:${p.color};color:#4A6199">${p.name}</th>`
+      periodHeaders += `<th style="text-align:center;padding:8px 6px;font-size:10px;font-weight:700;border:1px solid #e2e8f0;background:${p.color};color:#647FBC">${p.name}</th>`
     })
 
     pw.document.write(`<!DOCTYPE html><html><head><title>Yearly Plan - ${selectedClass} Grade ${selectedGrade}</title>
@@ -496,7 +496,7 @@ export default function YearlyPlanView() {
             <thead>
               <tr>
                 <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-secondary font-semibold bg-surface-alt border-b border-border">Track</th>
-                {periods.map(p => <th key={p.id} className="text-center px-3 py-3 text-[12px] font-bold border-b border-border" style={{ backgroundColor: p.color, color: '#4A6199' }}>{p.name}</th>)}
+                {periods.map(p => <th key={p.id} className="text-center px-3 py-3 text-[12px] font-bold border-b border-border" style={{ backgroundColor: p.color, color: '#647FBC' }}>{p.name}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -848,7 +848,7 @@ export default function YearlyPlanView() {
             <div className="px-3 py-2 border-b border-border/60 flex items-center gap-2">
               <span className="text-[10px] font-bold text-navy">{track?.name}</span>
               <span className="text-[9px] text-text-tertiary">·</span>
-              <span className="text-[10px] font-semibold" style={{ color: period?.color ? '#4A6199' : undefined }}>{period?.name}</span>
+              <span className="text-[10px] font-semibold" style={{ color: period?.color ? '#647FBC' : undefined }}>{period?.name}</span>
             </div>
             <div className="px-3 py-2.5 text-[11px] leading-relaxed text-text-primary break-words"
               dangerouslySetInnerHTML={{ __html: renderCellContent(cell.content) }} />

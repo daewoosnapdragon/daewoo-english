@@ -1373,10 +1373,10 @@ function AssignScaffolds() {
     }).filter(Boolean).join(' ')
     pw.document.write(`<!DOCTYPE html><html><head><title>Scaffold Card - ${student.english_name}</title>
       <style>body{font-family:Arial,sans-serif;padding:24px;max-width:600px;margin:0 auto}
-      h2{color:#4A6199;margin:0 0 4px}p.sub{color:#666;font-size:12px;margin:0 0 12px}
+      h2{color:#647FBC;margin:0 0 4px}p.sub{color:#666;font-size:12px;margin:0 0 12px}
       .wida-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold;background:#E3F2FD;color:#1565C0;margin-right:4px}
       .scaffold{padding:8px 12px;margin:4px 0;border-radius:8px;font-size:13px;border:1px solid #e2e8f0;background:#f8fafc}
-      .domain{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:bold;background:#EEF2FF;color:#4A6199;text-transform:uppercase;margin-right:6px}
+      .domain{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:bold;background:#EEF2FF;color:#647FBC;text-transform:uppercase;margin-right:6px}
       .eff{font-size:9px;padding:1px 4px;border-radius:3px;margin-left:6px}
       .working{background:#D1FAE5;color:#065F46}.notworking{background:#FEE2E2;color:#991B1B}
       .footer{margin-top:16px;font-size:10px;color:#999;border-top:1px solid #eee;padding-top:8px}
@@ -1384,7 +1384,7 @@ function AssignScaffolds() {
       <h2>${student.english_name} <span style="color:#999;font-weight:normal">${student.korean_name}</span></h2>
       <p class="sub">${cls} -- Grade ${gr}</p>
       <div style="margin-bottom:12px">${widaHTML}</div>
-      <h3 style="font-size:13px;color:#4A6199;margin:12px 0 6px">Active Scaffolds</h3>
+      <h3 style="font-size:13px;color:#647FBC;margin:12px 0 6px">Active Scaffolds</h3>
       ${scaffoldHTML}
       <p class="footer">Printed ${new Date().toLocaleDateString()} -- Daewoo English Program</p>
       </body></html>`)
@@ -1439,19 +1439,19 @@ function AssignScaffolds() {
                   ? scaff.map(sc => `<div style="padding:6px 10px;margin:3px 0;border-radius:6px;font-size:11px;border:1px solid #e2e8f0;background:#f8fafc;page-break-inside:avoid"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:bold;color:white;background:${domainColors[sc.domain] || '#6b7280'};text-transform:uppercase;margin-right:5px">${sc.domain}</span>${sc.scaffold_text}</div>`).join('')
                   : '<p style="color:#999;font-size:11px;font-style:italic">No scaffolds assigned yet</p>'
                 return `<div style="page-break-after:always;padding:16px;border:2px solid #e2e8f0;border-radius:12px;margin-bottom:8px">
-                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid #4A6199">
-                    <div><h3 style="margin:0;color:#4A6199;font-size:16px">${s.english_name} <span style="color:#999;font-weight:normal;font-size:13px">${s.korean_name}</span></h3>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid #647FBC">
+                    <div><h3 style="margin:0;color:#647FBC;font-size:16px">${s.english_name} <span style="color:#999;font-weight:normal;font-size:13px">${s.korean_name}</span></h3>
                     <p style="margin:2px 0 0;font-size:11px;color:#666">${cls} — Grade ${gr}</p></div>
                     <div style="font-size:10px;color:#999">WIDA: ${s.wida_level ? 'L' + s.wida_level : '—'}</div>
                   </div>
-                  <p style="font-size:10px;font-weight:bold;color:#4A6199;text-transform:uppercase;letter-spacing:1px;margin:8px 0 4px">Scaffolds (${scaff.length})</p>
+                  <p style="font-size:10px;font-weight:bold;color:#647FBC;text-transform:uppercase;letter-spacing:1px;margin:8px 0 4px">Scaffolds (${scaff.length})</p>
                   ${scaffHTML}
                 </div>`
               }).join('')
               pw.document.write(`<!DOCTYPE html><html><head><title>Scaffold Cards - ${cls} Gr ${gr}</title>
                 <style>body{font-family:Arial,sans-serif;padding:12px;margin:0}
                 @media print{body{padding:8px}div{page-break-inside:avoid}}</style></head><body>
-                <div style="text-align:center;margin-bottom:12px"><h2 style="margin:0;color:#4A6199;font-size:14px">${cls} Grade ${gr} — Scaffold Cards</h2>
+                <div style="text-align:center;margin-bottom:12px"><h2 style="margin:0;color:#647FBC;font-size:14px">${cls} Grade ${gr} — Scaffold Cards</h2>
                 <p style="margin:2px 0 0;font-size:10px;color:#999">${new Date().toLocaleDateString()} • ${students.length} students</p></div>
                 ${cards}</body></html>`)
               pw.document.close(); pw.print()
