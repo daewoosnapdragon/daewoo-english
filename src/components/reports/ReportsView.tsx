@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useSemesters } from '@/hooks/useData'
-import { useAI } from '@/hooks/useAI'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
@@ -332,8 +331,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [loading, setLoading] = useState(true)
   const [comment, setComment] = useState('')
   const [savingComment, setSavingComment] = useState(false)
-  const [showAiPanel, setShowAiPanel] = useState(false)
-  const [commentTone, setCommentTone] = useState<'Balanced' | 'Highlight growth' | 'Constructive'>('Balanced')
+  const [showRefPanel, setShowRefPanel] = useState(false)
   const [editingGrades, setEditingGrades] = useState(false)
   const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
   const [reviewStatus, setReviewStatus] = useState<{ partner_approved: boolean; admin_approved: boolean } | null>(null)
@@ -347,54 +345,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     })()
   }, [studentId, semesterId])
 
-  const ai = useAI()
-
-  const generateTemplateComment = useCallback(async () => {
-    if (!data || !studentId) return
-    const d = data, s = d.student
-
-    // Fetch extra data for richer AI context
-    const [widaRes, readingRes, goalsRes] = await Promise.all([
-      supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId),
-      supabase.from('reading_assessments').select('cwpm, accuracy_rate, date, passage_level, reading_level').eq('student_id', studentId).order('date', { ascending: false }).limit(3),
-      supabase.from('student_goals').select('goal_text, status, target_metric, target_value, baseline_value, current_value').eq('student_id', studentId).limit(5),
-    ])
-
-    // WIDA levels as map
-    const widaLevels: Record<string, number> = {}
-    ;(widaRes.data || []).forEach((w: any) => { if (w.wida_level > 0) widaLevels[w.domain] = w.wida_level })
-
-    // Reading data
-    const readings = readingRes.data || []
-    const readingData = readings.length > 0 ? {
-      latestCwpm: readings[0]?.cwpm ? Math.round(readings[0].cwpm) : null,
-      trend: readings.length >= 2 ? (readings[0].cwpm > readings[1].cwpm ? 'improving' : readings[0].cwpm < readings[1].cwpm ? 'declining' : 'stable') : null,
-      readingLevel: readings[0]?.passage_level || readings[0]?.reading_level || null,
-    } : null
-
-    const result = await ai.generate('report_comment', {
-      student: { english_name: s.english_name, grade: s.grade, english_class: s.english_class },
-      tone: commentTone,
-      domainGrades: d.domainGrades,
-      overallGrade: d.overallGrade,
-      prevDomainGrades: d.prevDomainGrades,
-      prevOverall: d.prevOverall,
-      widaLevels,
-      readingData,
-      behaviorCount: d.behaviorCount,
-      goals: goalsRes.data || [],
-      semesterName: d.semesterName,
-      attendanceData: d.attCounts,
-    })
-
-    if (result) {
-      setComment(result)
-      setShowAiPanel(false)
-      showToast('AI draft generated -- please review and edit before saving')
-    } else {
-      showToast(ai.error || 'Failed to generate comment')
-    }
-  }, [data, studentId, commentTone, ai])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const loadReport = useCallback(async () => {
@@ -954,15 +904,15 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               </div>
             </div>
             {/* Student Reference — hidden on print */}
-            <button onClick={() => setShowAiPanel(!showAiPanel)}
-              className={`print:hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${showAiPanel ? 'bg-navy text-white border-navy' : 'bg-[#f8f5f1] text-[#475569] border-[#d1d5db] hover:bg-[#f1ede8]'}`}>
+            <button onClick={() => setShowRefPanel(!showRefPanel)}
+              className={`print:hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${showRefPanel ? 'bg-navy text-white border-navy' : 'bg-[#f8f5f1] text-[#475569] border-[#d1d5db] hover:bg-[#f1ede8]'}`}>
               <BarChart3 size={14} />
               Student Reference
             </button>
           </div>
 
           {/* Student Reference Panel */}
-          {showAiPanel && (
+          {showRefPanel && (
             <div className="print:hidden bg-[#f8f9fb] border border-[#d1d5db] rounded-xl p-4 mb-3.5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[11px] font-bold text-[#475569]">Student Reference -- All Data at a Glance</p>
@@ -1063,21 +1013,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 </div>
               )}
 
-              {/* AI Generate Controls */}
-              <div className="border-t border-[#d1d5db] pt-3 mt-1">
-                <p className="text-[10px] font-bold text-[#475569] mb-2">Generate AI Draft</p>
-                <div className="flex gap-1.5 flex-wrap mb-3">
-                  {(['Balanced', 'Highlight growth', 'Constructive'] as const).map((tone) => (
-                    <button key={tone} onClick={() => setCommentTone(tone)}
-                      className={`px-2.5 py-1 rounded-md text-[10px] font-semibold border transition-all ${commentTone === tone ? 'bg-navy text-white border-navy' : 'bg-white border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]'}`}>{tone}</button>
-                  ))}
-                </div>
-                <button onClick={() => generateTemplateComment()} disabled={ai.loading}
-                  className="w-full py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-60 flex items-center justify-center gap-2">
-                  {ai.loading ? <><Loader2 size={13} className="animate-spin" /> Generating...</> : 'Generate Draft Comment'}
-                </button>
-                {ai.error && <p className="text-[10px] text-red-600 mt-1.5">{ai.error}</p>}
-              </div>
             </div>
           )}
 
@@ -1321,75 +1256,6 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
   )
 }
 
-// ─── Progress Report AI Draft Button ─────────────────────────────────
-function ProgressReportAIDraft({ student, data, studentId, onGenerated }: {
-  student: any; data: any; studentId: string; onGenerated: (text: string) => void
-}) {
-  const { showToast } = useApp()
-  const ai = useAI()
-  const [tone, setTone] = useState<'Balanced' | 'Highlight growth' | 'Constructive'>('Balanced')
-  const [open, setOpen] = useState(false)
-
-  const handleGenerate = async () => {
-    // Fetch WIDA and reading data
-    const [widaRes, readingRes] = await Promise.all([
-      supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId),
-      supabase.from('reading_assessments').select('cwpm, date, passage_level, reading_level').eq('student_id', studentId).order('date', { ascending: false }).limit(3),
-    ])
-    const widaLevels: Record<string, number> = {}
-    ;(widaRes.data || []).forEach((w: any) => { if (w.wida_level > 0) widaLevels[w.domain] = w.wida_level })
-    const readings = readingRes.data || []
-    const readingData = readings.length > 0 ? {
-      latestCwpm: readings[0]?.cwpm ? Math.round(readings[0].cwpm) : null,
-      trend: readings.length >= 2 ? (readings[0].cwpm > readings[1].cwpm ? 'improving' : readings[0].cwpm < readings[1].cwpm ? 'declining' : 'stable') : null,
-      readingLevel: readings[0]?.passage_level || readings[0]?.reading_level || null,
-    } : null
-
-    const result = await ai.generate('progress_comment', {
-      student: { english_name: student.english_name, grade: student.grade, english_class: student.english_class },
-      tone,
-      domainGrades: data.domainGrades,
-      overallGrade: data.overallGrade,
-      widaLevels,
-      readingData,
-      semesterName: data.semesterName,
-    })
-    if (result) {
-      onGenerated(result)
-      setOpen(false)
-      showToast('AI draft generated -- please review and edit')
-    } else {
-      showToast(ai.error || 'Failed to generate')
-    }
-  }
-
-  return (
-    <div className="relative">
-      <button onClick={() => setOpen(!open)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-all ${open ? 'bg-navy text-white border-navy' : 'bg-surface-alt text-text-secondary border-border hover:border-navy/30'}`}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        AI Draft
-      </button>
-      {open && (
-        <div className="absolute right-0 top-8 z-20 bg-surface border border-border rounded-xl shadow-lg p-3 w-[260px]">
-          <p className="text-[10px] font-bold text-text-secondary mb-2">Generate progress report comment</p>
-          <div className="flex gap-1 flex-wrap mb-2">
-            {(['Balanced', 'Highlight growth', 'Constructive'] as const).map(t => (
-              <button key={t} onClick={() => setTone(t)}
-                className={`px-2 py-0.5 rounded text-[9px] font-semibold border ${tone === t ? 'bg-navy text-white border-navy' : 'bg-white border-border text-text-secondary'}`}>{t}</button>
-            ))}
-          </div>
-          <button onClick={handleGenerate} disabled={ai.loading}
-            className="w-full py-1.5 rounded-lg text-[11px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-60 flex items-center justify-center gap-1.5">
-            {ai.loading ? <><Loader2 size={11} className="animate-spin" /> Generating...</> : 'Generate'}
-          </button>
-          {ai.error && <p className="text-[9px] text-red-600 mt-1">{ai.error}</p>}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Progress Report (simplified, overall averages only) ────────────
 function ProgressReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass }: {
   studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: EnglishClass
@@ -1538,14 +1404,8 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
           {/* Teacher Comment */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-2">
               <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Teacher Comment</p>
-              <ProgressReportAIDraft
-                student={student}
-                data={data}
-                studentId={studentId}
-                onGenerated={(text) => { setComment(text) }}
-              />
             </div>
             <textarea value={comment} onChange={e => setComment(e.target.value)}
               rows={4} placeholder="Write a comment about this student's progress..."

@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase'
 import { BehaviorLog } from '@/types'
 import { Plus, X, Loader2, ChevronDown, ChevronRight, Bell } from 'lucide-react'
 import { getKSTDateString } from '@/lib/utils'
-import { useAI } from '@/hooks/useAI'
 
 // ─── ABC Options organized by category ──────────────────────────────
 
@@ -120,7 +119,6 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
         </div>
         <div className="flex items-center gap-2">
           <button onClick={handlePrint} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-surface-alt border border-border">Print</button>
-          {logs.length >= 3 && <BehaviorSummaryButton studentId={studentId} studentName={studentName} logs={logs} />}
           <button onClick={() => setShowAddForm(!showAddForm)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${showAddForm ? 'bg-surface-alt text-text-secondary' : 'bg-navy text-white hover:bg-navy-dark'}`}>
             {showAddForm ? <><X size={13} /> Close</> : <><Plus size={13} /> {lang === 'ko' ? '기록 추가' : 'Add Entry'}</>}
@@ -533,90 +531,3 @@ function CategorizedCheckboxGroup({ label, categories, selected, onToggle, color
   )
 }
 
-// ─── AI Behavior Summary ────────────────────────────────────────────
-
-function BehaviorSummaryButton({ studentId, studentName, logs }: { studentId: string; studentName: string; logs: BehaviorLog[] }) {
-  const { showToast } = useApp()
-  const ai = useAI()
-  const [summary, setSummary] = useState<string | null>(null)
-  const [open, setOpen] = useState(false)
-
-  const handleGenerate = async () => {
-    // Fetch student grade/class
-    const { data: student } = await supabase.from('students').select('grade, english_class, english_name').eq('id', studentId).single()
-
-    const result = await ai.generate('behavior_summary', {
-      student: student || { english_name: studentName, grade: '?', english_class: '?' },
-      logs: logs.slice(0, 20).map(l => ({
-        date: l.date,
-        time: l.time || null,
-        type: l.type,
-        activity: l.activity || null,
-        antecedents: l.antecedents || [],
-        behaviors: l.behaviors || [],
-        consequences: l.consequences || [],
-        intensity: l.intensity || null,
-        frequency: l.frequency || null,
-        duration: l.duration || null,
-        note: l.note || null,
-      })),
-    })
-
-    if (result) {
-      setSummary(result)
-    } else {
-      showToast(ai.error || 'Failed to generate summary')
-    }
-  }
-
-  const handleCopy = () => {
-    if (summary) {
-      navigator.clipboard.writeText(summary)
-      showToast('Summary copied to clipboard')
-    }
-  }
-
-  return (
-    <div className="relative">
-      <button onClick={() => { setOpen(!open); if (!open && !summary) handleGenerate() }}
-        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${open ? 'bg-navy text-white border-navy' : 'text-text-secondary hover:bg-surface-alt border-border'}`}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        AI Summary
-      </button>
-      {open && (
-        <div className="absolute right-0 top-10 z-20 bg-surface border border-border rounded-xl shadow-lg p-4 w-[380px]">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[11px] font-bold text-navy">Behavior Pattern Summary</p>
-            <button onClick={() => setOpen(false)} className="text-text-tertiary hover:text-text-secondary"><X size={14} /></button>
-          </div>
-          {ai.loading ? (
-            <div className="flex items-center gap-2 py-4 justify-center text-text-tertiary text-[12px]">
-              <Loader2 size={14} className="animate-spin" /> Analyzing {logs.length} entries...
-            </div>
-          ) : summary ? (
-            <>
-              <div className="bg-[#f8f9fb] border border-[#e2e8f0] rounded-lg p-3 text-[12px] text-text-secondary leading-relaxed mb-3">
-                {summary}
-              </div>
-              <div className="flex gap-2">
-                <button onClick={handleCopy} className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-surface-alt border border-border text-text-secondary hover:bg-[#f1f5f9]">
-                  Copy
-                </button>
-                <button onClick={handleGenerate} disabled={ai.loading}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-surface-alt border border-border text-text-secondary hover:bg-[#f1f5f9]">
-                  Regenerate
-                </button>
-              </div>
-              <p className="text-[9px] text-text-tertiary mt-2">Observational only -- no diagnostic claims. Review before sharing.</p>
-            </>
-          ) : ai.error ? (
-            <div className="py-3">
-              <p className="text-[11px] text-red-600 mb-2">{ai.error}</p>
-              <button onClick={handleGenerate} className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-navy text-white">Retry</button>
-            </div>
-          ) : null}
-        </div>
-      )}
-    </div>
-  )
-}
