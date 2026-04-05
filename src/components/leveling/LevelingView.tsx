@@ -1112,7 +1112,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
 
       pagesHTML += `<div style="page-break-after:always;margin-bottom:20px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 16px;background:#647FBC;border-radius:8px;color:white">
-          <div><span style="font-size:18px;font-weight:700;font-family:Lora,serif">${cls}</span><span style="font-size:12px;margin-left:8px;opacity:0.7">${students.length} students</span></div>
+          <div><span style="font-size:18px;font-weight:700;font-family:Inter,sans-serif;font-weight:700">${cls}</span><span style="font-size:12px;margin-left:8px;opacity:0.7">${students.length} students</span></div>
           <div style="font-size:11px">Grade ${levelTest.grade} Level Test Summary</div>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #e2e8f0">
@@ -1135,8 +1135,8 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
     })
 
     pw.document.write(`<!DOCTYPE html><html><head><title>Leveling Summary - Grade ${levelTest.grade}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-      <style>body{font-family:Roboto,sans-serif;margin:20px;color:#1a1a2e} table{border-collapse:collapse} td,th{border-bottom:1px solid #e2e8f0} @media print{@page{margin:12mm 14mm}}</style>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>body{font-family:Inter,sans-serif;margin:20px;color:#1a1a2e} table{border-collapse:collapse} td,th{border-bottom:1px solid #e2e8f0} @media print{@page{margin:12mm 14mm}}</style>
       </head><body>${pagesHTML}</body></html>`)
     pw.document.close()
     pw.print()

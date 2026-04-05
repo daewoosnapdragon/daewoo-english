@@ -27,13 +27,13 @@ export const DOMAIN_LABELS: Record<Domain, { en: string; ko: string }> = {
 export const BEHAVIOR_GRADES: BehaviorGrade[] = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'E'];
 
 export const CLASS_COLORS: Record<EnglishClass, string> = {
-  Lily: '#E8B4B8',
-  Camellia: '#F5D0A9',
-  Daisy: '#F9E79F',
-  Sunflower: '#ABEBC6',
-  Marigold: '#AED6F1',
-  Snapdragon: '#D2B4DE',
-  Unplaced: '#D5D8DC',
+  Lily: '#D4A5B0',
+  Camellia: '#C8A88E',
+  Daisy: '#E8DFA0',
+  Sunflower: '#AED6CF',
+  Marigold: '#91ADC8',
+  Snapdragon: '#B4A8CC',
+  Unplaced: '#C8CED8',
 };
 
 export const CLASS_ORDER: Record<EnglishClass, number> = {

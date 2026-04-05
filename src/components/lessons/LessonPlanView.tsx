@@ -1102,10 +1102,10 @@ function TeacherWeeklyPlans() {
     if (!printWin) return
     const html = `<!DOCTYPE html><html><head><title>Teacher Plans - ${selectedClass} - ${weekLabel}</title>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Roboto:wght@400;500&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: 'Roboto', sans-serif; font-size: 11px; color: #1a1a1a; padding: 20px; }
-      h1 { font-family: 'Lora', serif; font-size: 18px; color: #1a2744; margin-bottom: 4px; }
+      body { font-family: 'Inter', sans-serif; font-size: 11px; color: #1a1a1a; padding: 20px; }
+      h1 { font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 700; color: #1E2A3A; margin-bottom: 4px; }
       .sub { font-size: 11px; color: #666; margin-bottom: 16px; }
       .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
       .day { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
