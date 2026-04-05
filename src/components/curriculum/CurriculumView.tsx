@@ -185,11 +185,11 @@ export function WIDAProfiles() {
         const bg = wl ? wl.bg : '#f8fafc'
         return `<td style="text-align:center;padding:6px;background:${bg};font-weight:600;font-size:11px">${lvl > 0 ? `L${lvl}` : '--'}</td>`
       }).join('')
-      return `<tr><td style="padding:6px;font-size:11px">${i + 1}</td><td style="padding:6px;font-size:11px;font-weight:500">${s.english_name}</td>${cells}<td style="text-align:center;padding:6px;font-weight:700;font-size:12px;color:#1e3a5f">${overall?.toFixed(1) || '--'}</td></tr>`
+      return `<tr><td style="padding:6px;font-size:11px">${i + 1}</td><td style="padding:6px;font-size:11px;font-weight:500">${s.english_name}</td>${cells}<td style="text-align:center;padding:6px;font-weight:700;font-size:12px;color:#647FBC">${overall?.toFixed(1) || '--'}</td></tr>`
     }).join('')
     win.document.write(`<!DOCTYPE html><html><head><title>WIDA Profiles - ${cls} Grade ${gr}</title><style>
       body { font-family: -apple-system, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
-      h1 { font-size: 18px; color: #1e3a5f; margin-bottom: 4px; } .meta { color: #64748b; font-size: 12px; }
+      h1 { font-size: 18px; color: #647FBC; margin-bottom: 4px; } .meta { color: #64748b; font-size: 12px; }
       table { width: 100%; border-collapse: collapse; margin-top: 12px; } th { background: #f1f5f9; padding: 8px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; border-bottom: 2px solid #e2e8f0; }
       td { border-bottom: 1px solid #f1f5f9; } @media print { body { padding: 10px; } } @page { size: A4 landscape; margin: 15mm; }
     </style></head><body><h1>WIDA Profiles: ${cls} -- Grade ${gr}</h1><p class="meta">Printed ${new Date().toLocaleDateString()} | ${students.length} students</p>

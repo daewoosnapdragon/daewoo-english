@@ -196,7 +196,7 @@ export default function ReportsView() {
 
 function InfoCell({ label, value, bold = false }: { label: string; value: any; bold?: boolean }) {
   return (
-    <div className="py-1.5 border-b border-[#f1ede8]">
+    <div className="py-1.5 border-b border-[#DFE4EB]">
       <div className="text-[9px] text-[#94a3b8] font-semibold tracking-wide">{label}</div>
       <div className={`text-[13px] text-[#1e293b] mt-0.5 ${bold ? 'font-bold' : 'font-semibold'}`}>{value}</div>
     </div>
@@ -242,7 +242,7 @@ function RadarChart({ studentGrades, classAverages }: {
       {levels.map(lvl => (
         <polygon key={lvl}
           points={angles.map(a => { const p = toXY(a, lvl); return `${p.x},${p.y}` }).join(' ')}
-          fill="none" stroke="#e8e0d8" strokeWidth={lvl === 60 ? 0.8 : 0.5}
+          fill="none" stroke="#C8CED8" strokeWidth={lvl === 60 ? 0.8 : 0.5}
           strokeDasharray={lvl === 100 ? undefined : '2,2'}
         />
       ))}
@@ -250,7 +250,7 @@ function RadarChart({ studentGrades, classAverages }: {
       {/* Axis lines */}
       {angles.map((a, i) => {
         const end = toXY(a, 100)
-        return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke="#e8e0d8" strokeWidth={0.5} />
+        return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke="#C8CED8" strokeWidth={0.5} />
       })}
 
       {/* Class average polygon */}
@@ -266,21 +266,21 @@ function RadarChart({ studentGrades, classAverages }: {
       {filledCount >= 3 && (
         <polygon
           points={makePolygon(studentValues)}
-          fill="rgba(30,58,95,0.3)" stroke="#1e3a5f" strokeWidth={2.5}
+          fill="rgba(30,58,95,0.3)" stroke="#647FBC" strokeWidth={2.5}
         />
       )}
 
       {/* For 2 domains, draw a line between them */}
       {filledCount === 2 && (() => {
         const pts = studentValues.map((v, i) => v != null ? toXY(angles[i], v) : null).filter(Boolean) as { x: number; y: number }[]
-        return pts.length === 2 ? <line x1={pts[0].x} y1={pts[0].y} x2={pts[1].x} y2={pts[1].y} stroke="#1e3a5f" strokeWidth={2} /> : null
+        return pts.length === 2 ? <line x1={pts[0].x} y1={pts[0].y} x2={pts[1].x} y2={pts[1].y} stroke="#647FBC" strokeWidth={2} /> : null
       })()}
 
       {/* Student dots — always show */}
       {studentValues.map((v, i) => {
         if (v == null) return null
         const pt = toXY(angles[i], v)
-        return <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r={4} fill="#1e3a5f" stroke="white" strokeWidth={1.5} />
+        return <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r={4} fill="#647FBC" stroke="white" strokeWidth={1.5} />
       })}
 
       {/* Domain labels -- positioned further out with smart anchoring */}
@@ -301,7 +301,7 @@ function RadarChart({ studentGrades, classAverages }: {
             ))}
             {sv != null && (
               <text x={pt.x} y={pt.y + 7 + ((labelLines.length - 1) * 6)} textAnchor={anchor} dominantBaseline="middle"
-                style={{ fontSize: '9px', fontWeight: 700, fill: '#1e3a5f' }}>
+                style={{ fontSize: '9px', fontWeight: 700, fill: '#647FBC' }}>
                 {sv.toFixed(0)}%
               </text>
             )}
@@ -539,18 +539,18 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const sFilledCount = sVals.filter(v => v != null).length
 
     const gridLines = [20, 40, 60, 80, 100].map(lvl =>
-      `<polygon points="${rAngles.map(a => { const p = toXY(a, lvl); return `${p.x},${p.y}` }).join(' ')}" fill="none" stroke="#e8e0d8" stroke-width="0.5" ${lvl < 100 ? 'stroke-dasharray="2,2"' : ''}/>`
+      `<polygon points="${rAngles.map(a => { const p = toXY(a, lvl); return `${p.x},${p.y}` }).join(' ')}" fill="none" stroke="#C8CED8" stroke-width="0.5" ${lvl < 100 ? 'stroke-dasharray="2,2"' : ''}/>`
     ).join('')
-    const axisLines = rAngles.map(a => { const e = toXY(a, 100); return `<line x1="${rcx}" y1="${rcy}" x2="${e.x}" y2="${e.y}" stroke="#e8e0d8" stroke-width="0.5"/>` }).join('')
+    const axisLines = rAngles.map(a => { const e = toXY(a, 100); return `<line x1="${rcx}" y1="${rcy}" x2="${e.x}" y2="${e.y}" stroke="#C8CED8" stroke-width="0.5"/>` }).join('')
     const classPoly = cVals.some(v => v != null) ? `<polygon points="${makePoly(cVals)}" fill="rgba(148,163,184,0.08)" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,3"/>` : ''
-    const studentPoly = sFilledCount >= 3 ? `<polygon points="${makePoly(sVals)}" fill="rgba(30,58,95,0.15)" stroke="#1e3a5f" stroke-width="2"/>` : ''
-    const dots = sVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="#1e3a5f" stroke="white" stroke-width="1.5"/>` }).join('')
+    const studentPoly = sFilledCount >= 3 ? `<polygon points="${makePoly(sVals)}" fill="rgba(30,58,95,0.15)" stroke="#647FBC" stroke-width="2"/>` : ''
+    const dots = sVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="#647FBC" stroke="white" stroke-width="1.5"/>` }).join('')
     const radarLabels = rAngles.map((a, i) => {
       const pt = toXY(a, ((maxR + 26) / maxR) * 100)
       const sv = sVals[i]
       const anchor = pt.x < rcx - 10 ? 'end' : pt.x > rcx + 10 ? 'start' : 'middle'
       return `<text x="${pt.x}" y="${pt.y - 4}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:9px;font-weight:700;fill:#475569">${rLabels[i]}</text>
-        ${sv != null ? `<text x="${pt.x}" y="${pt.y + 7}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:8px;font-weight:700;fill:#1e3a5f">${sv.toFixed(0)}%</text>` : ''}`
+        ${sv != null ? `<text x="${pt.x}" y="${pt.y + 7}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:8px;font-weight:700;fill:#647FBC">${sv.toFixed(0)}%</text>` : ''}`
     }).join('')
 
     const radarSvg = `<svg width="${radarSize}" height="${radarSize}" viewBox="0 0 ${radarSize} ${radarSize}">${gridLines}${axisLines}${classPoly}${studentPoly}${dots}${radarLabels}</svg>`
@@ -559,11 +559,11 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const r = d.latestReading
     const readingHtml = r ? `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Words Per Minute</div><div style="font-size:20px;font-weight:800;color:#1e3a5f">${r.cwpm != null ? Math.round(r.cwpm) : '—'}</div></div>
-        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Reading Accuracy</div><div style="font-size:20px;font-weight:800;color:${r.accuracy_rate != null ? (r.accuracy_rate >= 96 ? '#16a34a' : r.accuracy_rate >= 90 ? '#d97706' : '#dc2626') : '#94a3b8'}">${r.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '—'}</div></div>
-        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Lexile</div><div style="font-size:16px;font-weight:700;color:#475569">${r.reading_level || r.passage_level || '—'}</div></div>
-        <div style="background:#f8f5f1;border-radius:8px;padding:10px;text-align:center;border:1px solid #e8e0d8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Fluency Rating</div><div style="font-size:16px;font-weight:700;color:#475569">${r.naep_fluency ? r.naep_fluency + ' of 4' : '—'}</div></div>
-      </div>` : '<div style="background:#f8f5f1;border:1px solid #e8e0d8;border-radius:8px;padding:14px;text-align:center;font-size:11px;color:#94a3b8">No reading assessments recorded yet.</div>'
+        <div style="background:#EDF1F8;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8CED8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Words Per Minute</div><div style="font-size:20px;font-weight:800;color:#647FBC">${r.cwpm != null ? Math.round(r.cwpm) : '—'}</div></div>
+        <div style="background:#EDF1F8;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8CED8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Reading Accuracy</div><div style="font-size:20px;font-weight:800;color:${r.accuracy_rate != null ? (r.accuracy_rate >= 96 ? '#16a34a' : r.accuracy_rate >= 90 ? '#d97706' : '#dc2626') : '#94a3b8'}">${r.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '—'}</div></div>
+        <div style="background:#EDF1F8;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8CED8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Lexile</div><div style="font-size:16px;font-weight:700;color:#475569">${r.reading_level || r.passage_level || '—'}</div></div>
+        <div style="background:#EDF1F8;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8CED8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Fluency Rating</div><div style="font-size:16px;font-weight:700;color:#475569">${r.naep_fluency ? r.naep_fluency + ' of 4' : '—'}</div></div>
+      </div>` : '<div style="background:#EDF1F8;border:1px solid #C8CED8;border-radius:8px;padding:14px;text-align:center;font-size:11px;color:#94a3b8">No reading assessments recorded yet.</div>'
 
     // Goals HTML
     const goalsHtml = d.goals?.length ? d.goals.slice(0, 5).map((g: any) =>
@@ -571,15 +571,15 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         <span style="flex-shrink:0">${g.completed_at ? '[done]' : g.goal_type === 'stretch' ? '' : g.goal_type === 'behavioral' ? '' : ''}</span>
         <span style="${g.completed_at ? 'text-decoration:line-through;color:#94a3b8' : 'color:#475569;line-height:1.5'}">${g.goal_text}</span>
       </div>`
-    ).join('') : '<div style="background:#f8f5f1;border:1px solid #e8e0d8;border-radius:8px;padding:10px;text-align:center;font-size:11px;color:#94a3b8">No goals set yet.</div>'
+    ).join('') : '<div style="background:#EDF1F8;border:1px solid #C8CED8;border-radius:8px;padding:10px;text-align:center;font-size:11px;color:#94a3b8">No goals set yet.</div>'
 
     // Grading scale
-    const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#f8f5f1;border:1px solid #e8e0d8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
+    const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#EDF1F8;border:1px solid #C8CED8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
 
     // Teacher avatar
     const avatarHtml = d.teacherPhotoUrl
-      ? `<img src="${d.teacherPhotoUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #f1ede8" />`
-      : `<div style="width:32px;height:32px;border-radius:50%;background:#1e3a5f;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${d.teacherName[0] || ''}</div>`
+      ? `<img src="${d.teacherPhotoUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #DFE4EB" />`
+      : `<div style="width:32px;height:32px;border-radius:50%;background:#647FBC;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${d.teacherName[0] || ''}</div>`
 
     const pw = window.open('', '_blank')
     if (!pw) return
@@ -591,48 +591,48 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     </style></head>
     <body><div class="card">
     <!-- Header -->
-    <div style="background:#1e3a5f;padding:18px 28px;color:white;display:flex;justify-content:space-between;align-items:center">
+    <div style="background:#647FBC;padding:18px 28px;color:white;display:flex;justify-content:space-between;align-items:center">
       <div><div style="font-size:10px;opacity:0.5;letter-spacing:2.5px;text-transform:uppercase">Daewoo Elementary School</div>
       <div style="font-size:22px;font-weight:700;margin-top:4px;font-family:Georgia,serif">${d.semesterName} Report Card</div>
       <div style="font-size:11px;opacity:0.6;margin-top:2px;font-style:italic">English Program \u2014 Growing together through English.</div></div>
       <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2)"><img src="/logo.png" style="width:36px;height:36px;object-fit:contain" onerror="this.style.display='none'" /></div>
     </div>
     <!-- Student Info -->
-    <div style="background:#fdfcfa;padding:14px 28px;border-bottom:1px solid #e8e0d8">
+    <div style="background:#fdfcfa;padding:14px 28px;border-bottom:1px solid #C8CED8">
       <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr auto;gap:0 14px">
-        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Name</div><div style="font-size:13px;font-weight:700;margin-top:1px">${s.korean_name}  ${s.english_name}</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Grade</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayGrade}</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Korean Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.korean_class}반</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Class Number</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.class_number}번</div></div>
+        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Name</div><div style="font-size:13px;font-weight:700;margin-top:1px">${s.korean_name}  ${s.english_name}</div></div>
+        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Grade</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayGrade}</div></div>
+        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Korean Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.korean_class}반</div></div>
+        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Class Number</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.class_number}번</div></div>
         <div style="grid-row:1/3;display:flex;align-items:center;justify-content:center;padding-left:8px">
           <div style="position:relative;width:76px;height:76px">
-            <svg width="76" height="76" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${radius}" fill="none" stroke="#e8e0d8" stroke-width="${stroke}"/>
+            <svg width="76" height="76" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${radius}" fill="none" stroke="#C8CED8" stroke-width="${stroke}"/>
             <circle cx="60" cy="60" r="${radius}" fill="none" stroke="${gc}" stroke-width="${stroke}" stroke-dasharray="${pct * circ} ${circ}" stroke-linecap="round" transform="rotate(-90 60 60)"/></svg>
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-              <div style="font-size:20px;font-weight:800;color:#1e3a5f">${d.overallLetter}</div>
+              <div style="font-size:20px;font-weight:800;color:#647FBC">${d.overallLetter}</div>
               <div style="font-size:10px;color:#64748b">${d.overallGrade != null ? d.overallGrade.toFixed(1) + '%' : ''}</div>
             </div>
           </div>
         </div>
-        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">English Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayClass}</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Teacher</div><div style="font-size:13px;font-weight:600;margin-top:1px">${d.teacherName}</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Team Manager</div><div style="font-size:13px;font-weight:600;margin-top:1px">Victoria Park</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #f1ede8"><div style="font-size:9px;color:#94a3b8;font-weight:600">Principal</div><div style="font-size:13px;font-weight:600;margin-top:1px">Kwak Cheol Ok</div></div>
+        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">English Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayClass}</div></div>
+        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Teacher</div><div style="font-size:13px;font-weight:600;margin-top:1px">${d.teacherName}</div></div>
+        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Team Manager</div><div style="font-size:13px;font-weight:600;margin-top:1px">Victoria Park</div></div>
+        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Principal</div><div style="font-size:13px;font-weight:600;margin-top:1px">Kwak Cheol Ok</div></div>
       </div>
     </div>
     <!-- Score Tiles -->
-    <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #e8e0d8">
+    <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #C8CED8">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
     </div>
     <!-- Student Snapshot: Radar + Reading + Goals -->
-    <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #e8e0d8">
+    <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
         <div>
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Class Comparison</div>
           <div style="text-align:center">${radarSvg}</div>
           <div style="text-align:center;margin-top:4px;font-size:8px;color:#94a3b8">
-            <span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(30,58,95,0.25);border:1.5px solid #1e3a5f;display:inline-block"></span> Student</span>
+            <span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(30,58,95,0.25);border:1.5px solid #647FBC;display:inline-block"></span> Student</span>
             <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(148,163,184,0.15);border:1.5px solid #cbd5e1;display:inline-block"></span> Class Avg</span>
           </div>
         </div>
@@ -645,15 +645,15 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       </div>
     </div>
     <!-- Comment -->
-    <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #e8e0d8">
+    <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
-      <div style="font-size:12px;line-height:1.8;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 18px;border:1px solid #e8e0d8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>
+      <div style="font-size:12px;line-height:1.8;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>
     </div>
     <!-- Scale + Footer -->
     <div style="background:#fdfcfa;padding:14px 28px">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Grading Scale</div>
       <div style="display:flex;gap:3px;flex-wrap:wrap">${scaleHtml}</div>
-      <div style="text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid #e8e0d8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School \u00b7 English Program \u00b7 ${d.semesterName}</div>
+      <div style="text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid #C8CED8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School \u00b7 English Program \u00b7 ${d.semesterName}</div>
     </div>
     </div></body></html>`)
     pw.document.close()
@@ -713,7 +713,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         </div>
 
         {/* ─── Student Info — 4 columns + donut ─── */}
-        <div className="bg-white px-7 py-3.5" style={{ borderBottom: '1px solid #e8e0d8' }}>
+        <div className="bg-white px-7 py-3.5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="grid gap-x-4" style={{ gridTemplateColumns: '1.2fr 0.8fr 0.8fr 0.8fr auto' }}>
             {/* Row 1 */}
             <InfoCell label="이름 / Name" value={`${s.korean_name}  ${s.english_name}`} bold />
@@ -724,7 +724,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             <div className="flex items-center justify-center pl-2" style={{ gridRow: '1 / 3' }}>
               <div className="relative" style={{ width: 80, height: 80 }}>
                 <svg width="80" height="80" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r={radius} fill="none" stroke="#e8e0d8" strokeWidth={stroke} />
+                  <circle cx="60" cy="60" r={radius} fill="none" stroke="#C8CED8" strokeWidth={stroke} />
                   <circle cx="60" cy="60" r={radius} fill="none" stroke={gc} strokeWidth={stroke}
                     strokeDasharray={`${pct * circ} ${circ}`} strokeLinecap="round"
                     style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} />
@@ -744,7 +744,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         </div>
 
         {/* ─── Score Tiles ─── */}
-        <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #e8e0d8' }}>
+        <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
             <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Academic Performance</div>
             {!editingGrades ? (
@@ -817,14 +817,14 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           )}
         </div>
         {/* ─── Student Snapshot: Radar + Reading + Goals ─── */}
-        <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #e8e0d8' }}>
+        <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="grid gap-6" style={{ gridTemplateColumns: '1fr 1fr' }}>
             {/* Left: Radar Chart — Student vs Class */}
             <div>
               <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3">Class Comparison</div>
               <RadarChart studentGrades={d.domainGrades} classAverages={d.classAverages} />
               <div className="flex items-center justify-center gap-4 mt-2 text-[9px]">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(30,58,95,0.25)', border: '1.5px solid #1e3a5f' }} /> Student</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(30,58,95,0.25)', border: '1.5px solid #647FBC' }} /> Student</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(148,163,184,0.15)', border: '1.5px solid #cbd5e1' }} /> Class Average</span>
               </div>
             </div>
@@ -881,16 +881,16 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         </div>
 
         {/* ─── Teacher Comment ─── */}
-        <div className="bg-white px-7 py-6" style={{ borderBottom: '1px solid #e8e0d8' }}>
+        <div className="bg-white px-7 py-6" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
             <div className="flex items-center gap-2.5">
               {/* Teacher avatar — clickable to upload */}
               <label className="cursor-pointer relative group">
                 <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleTeacherPhotoUpload} />
                 {d.teacherPhotoUrl ? (
-                  <img src={d.teacherPhotoUrl} className="w-9 h-9 rounded-full object-cover border-2 border-[#f1ede8]" />
+                  <img src={d.teacherPhotoUrl} className="w-9 h-9 rounded-full object-cover border-2 border-[#DFE4EB]" />
                 ) : (
-                  <div className="w-9 h-9 rounded-full bg-[#e8e0d8] text-[#64748b] flex items-center justify-center text-[14px] font-bold border-2 border-[#f1ede8]">
+                  <div className="w-9 h-9 rounded-full bg-[#C8CED8] text-[#64748b] flex items-center justify-center text-[14px] font-bold border-2 border-[#DFE4EB]">
                     {d.teacherName[0] || ''}
                   </div>
                 )}
@@ -905,7 +905,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             </div>
             {/* Student Reference — hidden on print */}
             <button onClick={() => setShowRefPanel(!showRefPanel)}
-              className={`print:hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${showRefPanel ? 'bg-navy text-white border-navy' : 'bg-[#f8f5f1] text-[#475569] border-[#d1d5db] hover:bg-[#f1ede8]'}`}>
+              className={`print:hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${showRefPanel ? 'bg-navy text-white border-navy' : 'bg-[#EDF1F8] text-[#475569] border-[#d1d5db] hover:bg-[#DFE4EB]'}`}>
               <BarChart3 size={14} />
               Student Reference
             </button>
@@ -1018,7 +1018,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
           <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={6}
             placeholder="Write comments about this student's progress..."
-            className="w-full px-4 py-3 border border-[#e8e0d8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed bg-[#fafaf8]" />
+            className="w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed bg-[#fafaf8]" />
           <div className="flex justify-end mt-2">
             <button onClick={saveComment} disabled={savingComment}
               className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
@@ -1032,13 +1032,13 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2.5">Grading Scale</div>
           <div className="flex gap-1 flex-wrap">
             {SCALE_DISPLAY.map((r: any) => (
-              <span key={r.letter + r.range} className="px-2 py-0.5 rounded bg-[#f8f5f1] border border-[#e8e0d8] text-[10px] inline-flex gap-1">
+              <span key={r.letter + r.range} className="px-2 py-0.5 rounded bg-[#EDF1F8] border border-[#C8CED8] text-[10px] inline-flex gap-1">
                 <strong style={{ color: letterColor(r.letter) }}>{r.letter}</strong>
                 <span className="text-[#94a3b8]">{r.range}</span>
               </span>
             ))}
           </div>
-          <div className="text-center mt-4 pt-3 text-[10px] text-[#b8b0a6] tracking-wider" style={{ borderTop: '1px solid #e8e0d8' }}>
+          <div className="text-center mt-4 pt-3 text-[10px] text-[#b8b0a6] tracking-wider" style={{ borderTop: '1px solid #C8CED8' }}>
             Daewoo Elementary School &middot; English Program &middot; {d.semesterName}
           </div>
         </div>
@@ -1073,7 +1073,7 @@ function printProgressReport(student: any, data: any) {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f0eb; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     .card { max-width: 720px; margin: 20px auto; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.08); background: white; }
-    .header { background: #1e3a5f; padding: 20px 28px; color: white; display: flex; justify-content: space-between; align-items: center; }
+    .header { background: #647FBC; padding: 20px 28px; color: white; display: flex; justify-content: space-between; align-items: center; }
     .header .label { font-size: 10px; text-transform: uppercase; letter-spacing: 3px; opacity: 0.5; font-weight: 600; }
     .header .name { font-size: 24px; font-weight: 700; font-family: Georgia, serif; margin-top: 4px; }
     .header .sub { font-size: 13px; opacity: 0.65; margin-top: 3px; }
@@ -1085,12 +1085,12 @@ function printProgressReport(student: any, data: any) {
     .overall-pct { font-size: 10px; color: #64748b; }
     .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #94a3b8; font-weight: 700; margin-bottom: 10px; }
     .domain-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 28px; }
-    .fluency-box { background: #f5f0eb; border: 1px solid #e8e0d8; border-radius: 10px; padding: 18px 20px; margin-bottom: 24px; }
+    .fluency-box { background: #f5f0eb; border: 1px solid #C8CED8; border-radius: 10px; padding: 18px 20px; margin-bottom: 24px; }
     .fluency-grid { display: flex; gap: 36px; margin-top: 8px; }
     .fluency-item p:first-child { font-size: 10px; color: #94a3b8; font-weight: 600; }
-    .fluency-item p:last-child { font-size: 22px; font-weight: 700; color: #1e3a5f; margin-top: 2px; }
+    .fluency-item p:last-child { font-size: 22px; font-weight: 700; color: #647FBC; margin-top: 2px; }
     .comment-box { background: #f8f9fb; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; font-size: 13px; line-height: 1.8; color: #374151; margin-bottom: 20px; }
-    .footer { text-align: center; padding-top: 14px; border-top: 1px solid #e8e0d8; font-size: 10px; color: #b8b0a6; letter-spacing: 1px; }
+    .footer { text-align: center; padding-top: 14px; border-top: 1px solid #C8CED8; font-size: 10px; color: #b8b0a6; letter-spacing: 1px; }
     @media print {
       @page { size: A4; margin: 10mm; }
       body { background: white; }
@@ -1116,7 +1116,7 @@ function printProgressReport(student: any, data: any) {
         </div>
         <div>
           <p class="section-label" style="margin-bottom:4px">Overall Grade</p>
-          <p style="font-size:16px;font-weight:700;color:#1e3a5f">
+          <p style="font-size:16px;font-weight:700;color:#647FBC">
             ${data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}
           </p>
         </div>
@@ -1213,7 +1213,7 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
       const accuracy = data.latestReading?.accuracy_rate != null ? `${data.latestReading.accuracy_rate.toFixed(1)}%` : '--'
 
       pw.document.write(`<div class="card">
-      <div style="background:#1e3a5f;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
+      <div style="background:#647FBC;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
         <div><p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;opacity:0.6">Progress Report</p>
         <p style="font-size:20px;font-weight:700;font-family:Georgia,serif;margin-top:4px">${student.english_name}</p>
         <p style="font-size:12px;opacity:0.7">${student.korean_name} -- ${student.english_class} -- Grade ${student.grade}</p></div>
@@ -1225,20 +1225,20 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
             <div style="text-align:center"><p style="font-size:22px;font-weight:800;color:${data.overallGrade != null ? letterColor(data.overallLetter) : '#94a3b8'}">${data.overallLetter}</p></div>
           </div>
           <div><p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600">Overall Grade</p>
-          <p style="font-size:14px;font-weight:700;color:#1e3a5f">${data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}</p></div>
+          <p style="font-size:14px;font-weight:700;color:#647FBC">${data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}</p></div>
         </div>
         <p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Domain Scores</p>
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px">${ds}</div>
         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin-bottom:16px">
           <p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Reading Fluency</p>
           <div style="display:flex;gap:24px">
-            <div><p style="font-size:9px;color:#94a3b8">CWPM</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${cwpm}</p></div>
-            <div><p style="font-size:9px;color:#94a3b8">Lexile</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${lexile}</p></div>
-            <div><p style="font-size:9px;color:#94a3b8">Accuracy</p><p style="font-size:18px;font-weight:700;color:#1e3a5f">${accuracy}</p></div>
+            <div><p style="font-size:9px;color:#94a3b8">CWPM</p><p style="font-size:18px;font-weight:700;color:#647FBC">${cwpm}</p></div>
+            <div><p style="font-size:9px;color:#94a3b8">Lexile</p><p style="font-size:18px;font-weight:700;color:#647FBC">${lexile}</p></div>
+            <div><p style="font-size:9px;color:#94a3b8">Accuracy</p><p style="font-size:18px;font-weight:700;color:#647FBC">${accuracy}</p></div>
           </div>
         </div>
         ${data.comment ? `<p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:6px">Teacher Comment</p><div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.7;color:#374151;margin-bottom:12px">${data.comment}</div>` : ''}
-        <div style="text-align:center;padding-top:10px;border-top:1px solid #e8e0d8;font-size:9px;color:#b8b0a6">Daewoo Elementary School \u00b7 English Program \u00b7 ${data.semesterName}</div>
+        <div style="text-align:center;padding-top:10px;border-top:1px solid #C8CED8;font-size:9px;color:#b8b0a6">Daewoo Elementary School \u00b7 English Program \u00b7 ${data.semesterName}</div>
       </div></div>`)
     }
 
@@ -1703,9 +1703,9 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
   const handlePrint = () => {
     const rows = summaries.map((s: any, i: number) =>
       `<tr><td style="padding:6px 10px;color:#94a3b8">${i + 1}</td>
-       <td style="padding:6px 10px;font-weight:500;color:#1e3a5f">${s.student.english_name} <span style="color:#94a3b8;font-size:10px">${s.student.korean_name}</span></td>
-       ${DOMAINS.map((d) => `<td style="padding:6px 10px;text-align:center;font-weight:600;color:${s.domainAvgs[d] != null ? (s.domainAvgs[d] >= 80 ? '#16a34a' : s.domainAvgs[d] >= 60 ? '#1e3a5f' : '#dc2626') : '#94a3b8'}">${s.domainAvgs[d] != null ? s.domainAvgs[d].toFixed(1) : '\u2014'}</td>`).join('')}
-       <td style="padding:6px 10px;text-align:center;font-weight:700;color:#1e3a5f">${s.overall != null ? s.overall.toFixed(1) : '\u2014'}</td>
+       <td style="padding:6px 10px;font-weight:500;color:#647FBC">${s.student.english_name} <span style="color:#94a3b8;font-size:10px">${s.student.korean_name}</span></td>
+       ${DOMAINS.map((d) => `<td style="padding:6px 10px;text-align:center;font-weight:600;color:${s.domainAvgs[d] != null ? (s.domainAvgs[d] >= 80 ? '#16a34a' : s.domainAvgs[d] >= 60 ? '#647FBC' : '#dc2626') : '#94a3b8'}">${s.domainAvgs[d] != null ? s.domainAvgs[d].toFixed(1) : '\u2014'}</td>`).join('')}
+       <td style="padding:6px 10px;text-align:center;font-weight:700;color:#647FBC">${s.overall != null ? s.overall.toFixed(1) : '\u2014'}</td>
        <td style="padding:6px 10px;text-align:center;font-weight:700;color:${s.letter !== '\u2014' ? letterColor(s.letter) : '#999'}">${s.letter}</td></tr>`
     ).join('')
     const pw = window.open('', '_blank'); if (!pw) return
@@ -1713,12 +1713,12 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
     body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f5f0eb}
     .page{max-width:900px;margin:20px auto;overflow:hidden;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
     table{border-collapse:collapse;width:100%;font-size:11px}
-    th{background:#f0eae3;padding:8px 10px;border-bottom:2px solid #d4c8b8;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#1e3a5f}
-    td{padding:6px 10px;border-bottom:1px solid #e8e0d8}
+    th{background:#f0eae3;padding:8px 10px;border-bottom:2px solid #d4c8b8;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#647FBC}
+    td{padding:6px 10px;border-bottom:1px solid #C8CED8}
     tr:nth-child(even) td{background:#faf8f5}
     @media print{@page{size:A4 landscape;margin:8mm}body{background:white}.page{margin:0;box-shadow:none;border-radius:0}}
     </style></head><body><div class="page">
-    <div style="background:#1e3a5f;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
+    <div style="background:#647FBC;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
       <div>
         <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;opacity:0.6">Class Summary</p>
         <p style="font-size:20px;font-weight:700;font-family:Georgia,serif;margin-top:4px">${selectedClass} -- Grade ${selectedGrade}</p>
@@ -1731,7 +1731,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
     <div style="background:white;padding:16px">
     <table><thead><tr><th style="text-align:left">#</th><th style="text-align:left">Student</th>${DOMAINS.map((d) => `<th style="text-align:center">${DOMAIN_PRINT[d]}</th>`).join('')}<th style="text-align:center">Overall</th><th style="text-align:center">Grade</th></tr></thead><tbody>${rows}</tbody></table>
     </div>
-    <div style="background:#f8f5f1;padding:10px 24px;text-align:center;border-top:1px solid #e8e0d8;font-size:9px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School \u00b7 English Program</div>
+    <div style="background:#EDF1F8;padding:10px 24px;text-align:center;border-top:1px solid #C8CED8;font-size:9px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School \u00b7 English Program</div>
     </div></body></html>`)
     pw.document.close(); pw.print()
   }

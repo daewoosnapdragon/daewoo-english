@@ -68,26 +68,26 @@ export function letterToColor(letter: string): string {
 
 export function classToColor(cls: EnglishClass): string {
   const colors: Record<string, string> = {
-    Lily: '#E8B4B8',
-    Camellia: '#F5D0A9',
-    Daisy: '#F9E79F',
-    Sunflower: '#ABEBC6',
-    Marigold: '#AED6F1',
-    Snapdragon: '#D2B4DE',
+    Lily: '#D4A5B0',
+    Camellia: '#C8A88E',
+    Daisy: '#E8DFA0',
+    Sunflower: '#AED6CF',
+    Marigold: '#91ADC8',
+    Snapdragon: '#B4A8CC',
   }
-  return colors[cls] || '#E5E7EB'
+  return colors[cls] || '#C8CED8'
 }
 
 export function classToTextColor(cls: EnglishClass): string {
   const colors: Record<string, string> = {
-    Lily: '#9B2C3A',
-    Camellia: '#92400E',
-    Daisy: '#78350F',
-    Sunflower: '#065F46',
-    Marigold: '#1E40AF',
-    Snapdragon: '#5B21B6',
+    Lily: '#8B3A4A',
+    Camellia: '#7A5A30',
+    Daisy: '#6B5E1A',
+    Sunflower: '#2A6B5E',
+    Marigold: '#3A5A8A',
+    Snapdragon: '#5A3D8A',
   }
-  return colors[cls] || '#374151'
+  return colors[cls] || '#5A6275'
 }
 
 // ─── Formatting ──────────────────────────────────────────────────────

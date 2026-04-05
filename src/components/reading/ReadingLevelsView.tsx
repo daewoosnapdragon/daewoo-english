@@ -198,9 +198,9 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
             const rows = students.map((s: any) => {
               const r = latestRecords[s.id]; const b = r?.cwpm != null ? getBand(r.cwpm) : null
               const bColor = b ? (b.label === 'Advanced' ? '#dbeafe' : b.label === 'Proficient' ? '#dcfce7' : b.label === 'Approaching' ? '#fef3c7' : '#fee2e2') : '#f8fafc'
-              return `<tr><td style="padding:6px 12px;border-bottom:1px solid #e2e8f0">${s.english_name}</td><td style="padding:6px;text-align:center;font-weight:700;color:#1e3a5f;border-bottom:1px solid #e2e8f0">${r?.cwpm != null ? Math.round(r.cwpm) : '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0;background:${bColor}">${b?.label || '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0">${r?.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0">${r?.reading_level || '--'}</td></tr>`
+              return `<tr><td style="padding:6px 12px;border-bottom:1px solid #e2e8f0">${s.english_name}</td><td style="padding:6px;text-align:center;font-weight:700;color:#647FBC;border-bottom:1px solid #e2e8f0">${r?.cwpm != null ? Math.round(r.cwpm) : '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0;background:${bColor}">${b?.label || '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0">${r?.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '--'}</td><td style="padding:6px;text-align:center;border-bottom:1px solid #e2e8f0">${r?.reading_level || '--'}</td></tr>`
             }).join('')
-            pw.document.write(`<html><head><title>Reading Report - ${englishClass} Gr ${grade}</title><style>body{font-family:'Segoe UI',sans-serif;padding:24px}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#f1f5f9;padding:8px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #cbd5e1}@media print{body{padding:12px}}</style></head><body><h2 style="color:#1e3a5f;font-size:18px;margin:0">${englishClass} Grade ${grade} -- Reading Fluency Report</h2><p style="color:#94a3b8;font-size:11px;margin-top:4px">Benchmarks: Below &lt;${bench.approaching} | Approaching ${bench.approaching}-${bench.proficient - 1} | Proficient ${bench.proficient}-${bench.advanced - 1} | Advanced ${bench.advanced}+</p><table><thead><tr><th style="text-align:left">Student</th><th>CWPM</th><th>Band</th><th>Accuracy</th><th>Lexile</th></tr></thead><tbody>${rows}</tbody></table><p style="color:#94a3b8;font-size:10px;margin-top:16px;text-align:center">Printed ${new Date().toLocaleDateString()}</p></body></html>`)
+            pw.document.write(`<html><head><title>Reading Report - ${englishClass} Gr ${grade}</title><style>body{font-family:'Segoe UI',sans-serif;padding:24px}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#f1f5f9;padding:8px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #cbd5e1}@media print{body{padding:12px}}</style></head><body><h2 style="color:#647FBC;font-size:18px;margin:0">${englishClass} Grade ${grade} -- Reading Fluency Report</h2><p style="color:#94a3b8;font-size:11px;margin-top:4px">Benchmarks: Below &lt;${bench.approaching} | Approaching ${bench.approaching}-${bench.proficient - 1} | Proficient ${bench.proficient}-${bench.advanced - 1} | Advanced ${bench.advanced}+</p><table><thead><tr><th style="text-align:left">Student</th><th>CWPM</th><th>Band</th><th>Accuracy</th><th>Lexile</th></tr></thead><tbody>${rows}</tbody></table><p style="color:#94a3b8;font-size:10px;margin-top:16px;text-align:center">Printed ${new Date().toLocaleDateString()}</p></body></html>`)
             pw.document.close(); pw.print()
           }} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
             <Printer size={11} /> Print
@@ -723,7 +723,7 @@ function CwpmLineChart({ records, classBench }: { records: any[]; classBench: an
       )}
 
       {/* Data line */}
-      <path d={linePath} fill="none" stroke="#1e3a5f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={linePath} fill="none" stroke="#647FBC" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
       {/* Data points with accuracy color */}
       {records.map((r: any, i: number) => {
@@ -735,7 +735,7 @@ function CwpmLineChart({ records, classBench }: { records: any[]; classBench: an
             {/* Colored dot */}
             <circle cx={x} cy={y} r="5" fill={dotColor(r.accuracy_rate || 0)} stroke="white" strokeWidth="1.5" />
             {/* CWPM label */}
-            <text x={x} y={y - 10} textAnchor="middle" fontSize="9" fontWeight="700" fill="#1e3a5f">{Math.round(r.cwpm || 0)}</text>
+            <text x={x} y={y - 10} textAnchor="middle" fontSize="9" fontWeight="700" fill="#647FBC">{Math.round(r.cwpm || 0)}</text>
             {/* Passage level + Lexile above dot */}
             {r.reading_level && (
               <text x={x} y={y - 20} textAnchor="middle" fontSize="7" fill="#94a3b8">
@@ -1951,7 +1951,7 @@ function CorrelationView({ students, loading, lang, grade, englishClass }: {
           <text x={W / 2} y={H - 5} textAnchor="middle" fontSize={10} fill="#64748b" fontWeight={600}>CWPM</text>
           <text x={12} y={H / 2} textAnchor="middle" fontSize={10} fill="#64748b" fontWeight={600} transform={`rotate(-90, 12, ${H / 2})`}>Grade Avg %</text>
           {/* Trend line */}
-          <line x1={scaleX(lineX1)} y1={scaleY(lineY1)} x2={scaleX(lineX2)} y2={scaleY(lineY2)} stroke="#1e3a5f" strokeWidth={1.5} strokeDasharray="6,4" opacity={0.5} />
+          <line x1={scaleX(lineX1)} y1={scaleY(lineY1)} x2={scaleX(lineX2)} y2={scaleY(lineY2)} stroke="#647FBC" strokeWidth={1.5} strokeDasharray="6,4" opacity={0.5} />
           {/* Points */}
           {points.map((p, i) => (
             <g key={i}>

@@ -175,7 +175,7 @@ export default function DashboardView() {
       <div className="px-10 pt-7 pb-6 bg-gradient-to-br from-navy-dark via-navy to-navy-dark relative overflow-hidden">
         {/* Subtle grid overlay */}
         <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: 'radial-gradient(circle, #FFB915 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(circle, #E8C547 1px, transparent 1px)',
           backgroundSize: '24px 24px',
         }} />
         <div className="relative z-10">

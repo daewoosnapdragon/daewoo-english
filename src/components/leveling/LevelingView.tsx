@@ -1097,13 +1097,13 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
       let rowsHTML = students.map((r: any, i: number) => {
         const move = r.suggestedClass !== r.student.english_class
         return `<tr style="${move ? 'background:#fef3c7;' : ''}">
-          <td style="padding:6px 10px;font-weight:600;color:#1e3a5f">${i + 1}</td>
+          <td style="padding:6px 10px;font-weight:600;color:#647FBC">${i + 1}</td>
           <td style="padding:6px 10px;font-weight:600">${r.student.english_name}<br><span style="color:#94a3b8;font-size:10px">${r.student.korean_name}</span></td>
           <td style="padding:6px 10px;text-align:center">${r.rawCwpm != null ? Math.round(r.rawCwpm) : '—'}${r.passageLevel ? ' (' + r.passageLevel + ')' : ''}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawWriting ?? '—'}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawMc != null ? r.rawMc + '/' + GRADE_MC_TOTAL : '—'}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawComp != null ? r.rawComp + '/15' : '—'}</td>
-          <td style="padding:6px 10px;text-align:center;font-weight:700;color:#1e3a5f">${(r.composite * 100).toFixed(0)}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:700;color:#647FBC">${(r.composite * 100).toFixed(0)}</td>
           <td style="padding:6px 10px;text-align:center">${Math.round(r.percentile * 100)}%</td>
           <td style="padding:6px 10px;text-align:center;font-weight:600;${move ? 'color:#d97706' : ''}">${r.suggestedClass}${move ? ' *' : ''}</td>
           <td style="padding:6px 10px;text-align:center;font-size:10px;color:${r.anec?.teacher_recommends === 'move_up' ? '#16a34a' : r.anec?.teacher_recommends === 'move_down' ? '#dc2626' : '#6b7280'}">${r.anec?.teacher_recommends === 'keep' ? 'KEEP' : r.anec?.teacher_recommends === 'move_up' ? 'UP' : r.anec?.teacher_recommends === 'move_down' ? 'DOWN' : '—'}</td>
@@ -1111,7 +1111,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
       }).join('')
 
       pagesHTML += `<div style="page-break-after:always;margin-bottom:20px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 16px;background:#1e3a5f;border-radius:8px;color:white">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 16px;background:#647FBC;border-radius:8px;color:white">
           <div><span style="font-size:18px;font-weight:700;font-family:Lora,serif">${cls}</span><span style="font-size:12px;margin-left:8px;opacity:0.7">${students.length} students</span></div>
           <div style="font-size:11px">Grade ${levelTest.grade} Level Test Summary</div>
         </div>

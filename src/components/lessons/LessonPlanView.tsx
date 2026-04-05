@@ -418,7 +418,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   @page { size: landscape; margin: 8mm 10mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .header { background: #1e3a5f; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+  .header { background: #647FBC; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: relative; }
   .header::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #C9A84C, #e8d48b, #C9A84C); }
   .header h1 { font-size: 20px; font-weight: 700; font-family: Georgia, serif; }
   .header .sub { font-size: 11px; opacity: 0.6; margin-top: 2px; }
@@ -430,7 +430,7 @@ function ParentCalendarView({ tabBar }: { tabBar: React.ReactNode }) {
   .day-hdr { font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; padding-bottom: 3px; border-bottom: 1px solid #f1f5f9; }
   .day-num { color: #475569; font-weight: 800; }
   .subj { font-size: 9.5px; line-height: 1.4; margin: 2px 0; }
-  .subj-label { font-weight: 700; color: #1e3a5f; }
+  .subj-label { font-weight: 700; color: #647FBC; }
   .obj { font-size: 9px; color: #1e293b; font-style: italic; margin-top: 3px; padding-top: 3px; border-top: 1px solid #f1f5f9; }
   .obj-pre { color: #475569; font-weight: 600; }
   .hw { font-size: 9px; font-weight: 600; color: #b8860b; margin-top: 3px; padding: 2px 5px; background: #fff8e1; border-radius: 3px; }

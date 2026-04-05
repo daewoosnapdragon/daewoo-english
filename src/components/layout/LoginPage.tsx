@@ -35,71 +35,62 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
   }
 
   return (
-    <div className="min-h-screen bg-navy-deep flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Subtle gradient background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-navy-deep via-navy-dark to-navy-deep" />
-        {/* Dot grid pattern */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: 'radial-gradient(circle, #FFB915 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-        }} />
-        {/* Subtle top glow */}
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-gold/[0.04] blur-[100px]" />
-      </div>
-
+    <div className="min-h-screen flex flex-col items-center justify-center relative" style={{ background: '#E8ECF1' }}>
       <div className="relative z-10 w-full max-w-[380px] mx-auto px-6">
-        {/* Logo and branding */}
+        {/* Logo — neumorphic raised circle */}
         <div className="text-center mb-10">
-          <div className="w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center mx-auto mb-5 border border-gold/15">
-            <GraduationCap size={28} className="text-gold" />
+          <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center shadow-neu-raised" style={{ background: '#E8ECF1' }}>
+            <GraduationCap size={28} className="text-navy" />
           </div>
-          <h1 className="text-white font-display text-[28px] font-bold tracking-tight">Daewoo English</h1>
-          <p className="text-blue-300/30 text-[12px] mt-1.5 tracking-wide">School Management System</p>
+          <h1 className="text-navy-deep text-[28px] font-bold tracking-tight">Daewoo English</h1>
+          <p className="text-text-tertiary text-[12px] mt-1.5 tracking-wide">School Management System</p>
         </div>
 
-        {/* Login card */}
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-7 shadow-2xl">
-          <p className="text-blue-200/40 text-[11px] font-medium mb-5 tracking-wide uppercase text-center">Sign in to continue</p>
-          <div className="space-y-4">
+        {/* Login card — neumorphic raised panel */}
+        <div className="neu-card p-8">
+          <p className="text-text-tertiary text-[10px] font-semibold mb-6 tracking-[0.15em] uppercase text-center">Sign in to continue</p>
+          <div className="space-y-5">
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-blue-300/30 font-semibold block mb-2 px-0.5">Teacher</label>
+              <label className="text-[10px] uppercase tracking-[0.12em] text-text-tertiary font-semibold block mb-2.5 pl-1">Teacher</label>
               <select
                 value={selectedTeacherId}
                 onChange={e => { setSelectedTeacherId(e.target.value); setLoginError('') }}
-                className="w-full px-4 py-3 bg-white/[0.04] rounded-xl text-[13px] text-white border border-white/[0.08] outline-none focus:border-gold/40 focus:bg-white/[0.06] transition-all appearance-none cursor-pointer"
+                className="neu-input w-full cursor-pointer appearance-none"
               >
-                <option value="" className="bg-navy-dark">Select your name...</option>
+                <option value="">Select your name...</option>
                 {loginTeachers.map(t => (
-                  <option key={t.id} value={t.id} className="bg-navy-dark">
+                  <option key={t.id} value={t.id}>
                     {t.name} {t.role === 'admin' ? '(Admin)' : `-- ${t.english_class}`}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-blue-300/30 font-semibold block mb-2 px-0.5">Password</label>
+              <label className="text-[10px] uppercase tracking-[0.12em] text-text-tertiary font-semibold block mb-2.5 pl-1">Password</label>
               <div className="relative">
-                <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300/20" />
+                <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary/50" />
                 <input
                   type="password"
                   value={password}
                   onChange={e => { setPassword(e.target.value); setLoginError('') }}
                   onKeyDown={e => { if (e.key === 'Enter') handleLogin() }}
                   placeholder="Enter password"
-                  className="w-full pl-11 pr-4 py-3 bg-white/[0.04] rounded-xl text-[13px] text-white border border-white/[0.08] outline-none focus:border-gold/40 focus:bg-white/[0.06] transition-all placeholder-blue-300/15"
+                  className="neu-input w-full pl-11"
                 />
               </div>
             </div>
             {loginError && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
-                <p className="text-red-400 text-[11px] font-medium">{loginError}</p>
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg" style={{
+                boxShadow: 'inset 2px 2px 4px rgba(220,38,38,0.1), inset -2px -2px 4px rgba(255,255,255,0.5)',
+                background: '#E8ECF1',
+              }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                <p className="text-red-600 text-[11px] font-medium">{loginError}</p>
               </div>
             )}
             <button
               onClick={handleLogin}
-              className="w-full py-3 rounded-xl text-[13px] font-semibold bg-gold text-navy-dark hover:bg-gold-light transition-all mt-2 shadow-lg shadow-gold/15 flex items-center justify-center gap-2 group"
+              className="neu-btn-primary w-full py-3.5 text-[14px] flex items-center justify-center gap-2 group mt-2"
             >
               Sign In
               <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
@@ -111,7 +102,7 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
         <div className="mt-8 text-center">
           <button
             onClick={() => setLanguage(language === 'en' ? 'ko' : 'en')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] text-blue-300/30 hover:text-blue-200/60 transition-all"
+            className="neu-btn inline-flex items-center gap-2 px-4 py-2 text-[11px] text-text-secondary"
           >
             <Globe size={13} />
             {language === 'en' ? '한국어로 전환' : 'Switch to English'}
@@ -119,7 +110,7 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-blue-300/15 text-[10px] mt-10 tracking-wide">
+        <p className="text-center text-text-tertiary/50 text-[10px] mt-10 tracking-wide">
           Daewoo Elementary School English Program
         </p>
       </div>
