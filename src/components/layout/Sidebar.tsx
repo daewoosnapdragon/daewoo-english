@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, ClipboardEdit, FileText, Layers,
   CalendarCheck, BookOpen, Settings, Globe, LogOut, GraduationCap,
   ChevronsLeft, ChevronsRight, Map, AlertTriangle, CalendarDays, Moon, Sun, BarChart3,
-  BookMarked, MessageSquare, CheckSquare
+  BookMarked, MessageSquare, CheckSquare, Bell
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -45,6 +45,7 @@ export default function Sidebar({
   const { t, language, setLanguage, currentTeacher, setCurrentTeacher, theme, setTheme } = useApp()
   const [flaggedCount, setFlaggedCount] = useState(0)
   const [dots, setDots] = useState<NavDots>({})
+  const [showAttendanceReminder, setShowAttendanceReminder] = useState(false)
 
   // Load notification dots
   useEffect(() => {
@@ -79,6 +80,36 @@ export default function Sidebar({
       setFlaggedCount(newDots.dashboard?.count || 0)
     })()
   }, [currentTeacher, activeView])
+
+  // Attendance reminder: check every minute if it's >= 3:30 PM KST on a weekday and attendance is unmarked
+  useEffect(() => {
+    if (!currentTeacher) return
+    const checkReminder = async () => {
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
+      const day = now.getDay()
+      const minutes = now.getHours() * 60 + now.getMinutes()
+      // Only show on weekdays, from 3:30 PM (210 min after noon = 930 min) to end of day
+      if (day < 1 || day > 5 || minutes < 930) { setShowAttendanceReminder(false); return }
+
+      const isAdmin = currentTeacher.role === 'admin'
+      const cls = currentTeacher.english_class
+      const today = now.toISOString().split('T')[0]
+
+      const studentQuery = isAdmin
+        ? supabase.from('students').select('id', { count: 'exact', head: true }).eq('is_active', true)
+        : supabase.from('students').select('id', { count: 'exact', head: true }).eq('english_class', cls).eq('is_active', true)
+      const { count: studentCount } = await studentQuery
+      const attQuery = isAdmin
+        ? supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today)
+        : supabase.from('attendance').select('id, students!inner(english_class)', { count: 'exact', head: true }).eq('date', today).eq('students.english_class', cls)
+      const { count: attCount } = await attQuery
+
+      setShowAttendanceReminder(!!(studentCount && (!attCount || attCount < studentCount)))
+    }
+    checkReminder()
+    const interval = setInterval(checkReminder, 60_000)
+    return () => clearInterval(interval)
+  }, [currentTeacher])
 
   const handleLogout = () => {
     setCurrentTeacher(null)
@@ -126,6 +157,21 @@ export default function Sidebar({
           </div>
         )}
       </div>
+      {/* Attendance Reminder Banner */}
+      {showAttendanceReminder && (
+        <div className={`${collapsed ? 'px-1.5' : 'px-2'} py-1.5`}>
+          <button onClick={() => onNavigate('attendance')}
+            className={`w-full rounded-lg bg-amber-500/20 border border-amber-400/30 transition-all hover:bg-amber-500/30 ${collapsed ? 'p-1.5 flex items-center justify-center' : 'px-2.5 py-2 flex items-center gap-2'}`}
+            title={language === 'ko' ? '출석을 확인하셨나요?' : 'Did you mark attendance today?'}>
+            <Bell size={collapsed ? 16 : 14} className="text-amber-400 animate-bounce flex-shrink-0" />
+            {!collapsed && (
+              <span className="text-[10px] font-semibold text-amber-300 leading-tight">
+                {language === 'ko' ? '출석을 확인하셨나요?' : 'Did you mark attendance today?'}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
       <nav className={`flex-1 overflow-y-auto ${collapsed ? 'px-1.5' : 'px-2'}`}>
         {NAV_ITEMS.map((item, i) => {
           if ('section' in item && item.section) {

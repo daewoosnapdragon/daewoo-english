@@ -52,8 +52,6 @@ export default function AttendanceView() {
     ? [currentTeacher.english_class as EnglishClass] : allClasses
   const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
 
-  const [clearedOnce, setClearedOnce] = useState(false)
-
   const loadRecords = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('attendance').select('*')
@@ -61,18 +59,10 @@ export default function AttendanceView() {
       .in('student_id', students.map((s: any) => s.id))
     const map: Record<string, { status: Status; note: string; id?: string }> = {}
     if (data) data.forEach((r: any) => { map[r.student_id] = { status: r.status, note: r.note || '', id: r.id } })
-    const isToday = selectedDate === getKSTDateString()
-    if (isToday && (!data || data.length === 0) && students.length > 0 && !clearedOnce) {
-      students.forEach((s: any) => { map[s.id] = { status: 'present', note: '' } })
-      setRecords(map)
-      setLoading(false)
-      setHasChanges(true)
-    } else {
-      setRecords(map)
-      setLoading(false)
-      setHasChanges(false)
-    }
-  }, [selectedDate, students, clearedOnce])
+    setRecords(map)
+    setLoading(false)
+    setHasChanges(false)
+  }, [selectedDate, students])
 
   useEffect(() => { if (students.length > 0) loadRecords() }, [loadRecords, students])
 
@@ -107,8 +97,8 @@ export default function AttendanceView() {
   }
 
   const markAllPresent = () => {
-    const updated: typeof records = { ...records }
-    students.forEach((s: any) => { if (!updated[s.id]) updated[s.id] = { status: 'present', note: '' } })
+    const updated: typeof records = {}
+    students.forEach((s: any) => { updated[s.id] = { status: 'present', note: records[s.id]?.note || '' } })
     setRecords(updated)
     setHasChanges(true)
   }
@@ -126,13 +116,13 @@ export default function AttendanceView() {
     const { data: existing } = await supabase.from('attendance').select('id, student_id')
       .eq('date', selectedDate).in('student_id', students.map((s: any) => s.id))
 
-    // Upsert current records
+    // Upsert current records in batch
     const entries = Object.entries(records).map(([studentId, r]: [string, any]) => ({
       student_id: studentId, date: selectedDate, status: r.status, note: r.note,
       recorded_by: currentTeacher?.id || null,
     }))
-    for (const entry of entries) {
-      const { error } = await supabase.from('attendance').upsert(entry, { onConflict: 'student_id,date' })
+    if (entries.length > 0) {
+      const { error } = await supabase.from('attendance').upsert(entries, { onConflict: 'student_id,date' })
       if (error) { showToast(`Error: ${error.message}`); setSaving(false); return }
     }
 
@@ -148,10 +138,26 @@ export default function AttendanceView() {
     showToast(lang === 'ko' ? '출석이 저장되었습니다' : entries.length > 0 ? `Saved attendance for ${entries.length} students` : 'Attendance cleared')
   }
 
-  const prevDay = () => guardUnsaved(() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d.toISOString().split('T')[0]) })
-  const nextDay = () => guardUnsaved(() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d.toISOString().split('T')[0]) })
+  // Skip weekends (and Monday for Grade 5) in date navigation
+  const isNonClassDay = (dateStr: string, grade: Grade) => {
+    const dow = new Date(dateStr + 'T12:00:00').getDay()
+    if (dow === 0 || dow === 6) return true // weekend
+    if (dow === 1 && grade === 5) return true // Grade 5 no Monday
+    return false
+  }
+  const prevDay = () => guardUnsaved(() => {
+    const d = new Date(selectedDate)
+    do { d.setDate(d.getDate() - 1) } while (isNonClassDay(d.toISOString().split('T')[0], selectedGrade))
+    setSelectedDate(d.toISOString().split('T')[0])
+  })
+  const nextDay = () => guardUnsaved(() => {
+    const d = new Date(selectedDate)
+    do { d.setDate(d.getDate() + 1) } while (isNonClassDay(d.toISOString().split('T')[0], selectedGrade))
+    setSelectedDate(d.toISOString().split('T')[0])
+  })
   const isToday = selectedDate === getKSTDateString()
   const isWeekend = [0, 6].includes(new Date(selectedDate + 'T00:00').getDay())
+  const isNoClassDay = isNonClassDay(selectedDate, selectedGrade)
 
   // Stats
   const presentCount = Object.values(records).filter((r: any) => r.status === 'present').length
@@ -174,17 +180,19 @@ export default function AttendanceView() {
     if (monthData) monthData.forEach((r: any) => { if (!lookup[r.student_id]) lookup[r.student_id] = {}; lookup[r.student_id][r.date] = r.status })
     const dates = Array.from({ length: daysInMonth }, (_, i) => {
       const d = new Date(year, month, i + 1)
-      const isWknd = [0, 6].includes(d.getDay())
-      return { date: `${year}-${String(month + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`, day: i + 1, isWknd, dayName: d.toLocaleDateString('en-US', { weekday: 'short' }) }
-    })
+      const dow = d.getDay()
+      const isWknd = dow === 0 || dow === 6
+      const isG5Monday = dow === 1 && selectedGrade === 5
+      return { date: `${year}-${String(month + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`, day: i + 1, isWknd, isG5Monday, isNoClass: isWknd || isG5Monday, dayName: d.toLocaleDateString('en-US', { weekday: 'short' }) }
+    }).filter(d => !d.isNoClass) // Exclude weekends and Grade 5 Mondays from printout
     const printWin = window.open('', '_blank')
     if (!printWin) return
-    const headerRow = dates.map(d => `<th style="padding:2px 4px;border:1px solid #ccc;font-size:9px;${d.isWknd ? 'background:#f0f0f0;color:#999' : ''}" title="${d.dayName}">${d.day}</th>`).join('')
+    const headerRow = dates.map(d => `<th style="padding:2px 4px;border:1px solid #ccc;font-size:9px;" title="${d.dayName}">${d.day}<br/><span style="font-size:7px;color:#999">${d.dayName}</span></th>`).join('')
     const rows = students.map((s: any) => {
       const cells = dates.map(d => {
         const st = lookup[s.id]?.[d.date]
         const sym = st === 'present' ? '✓' : st === 'absent' ? '✗' : st === 'tardy' ? 'T' : ''
-        const bg = st === 'present' ? '#dcfce7' : st === 'absent' ? '#fee2e2' : st === 'tardy' ? '#fef3c7' : d.isWknd ? '#f0f0f0' : ''
+        const bg = st === 'present' ? '#dcfce7' : st === 'absent' ? '#fee2e2' : st === 'tardy' ? '#fef3c7' : ''
         return `<td style="padding:2px 4px;border:1px solid #ccc;text-align:center;font-size:10px;font-weight:600;background:${bg}">${sym}</td>`
       }).join('')
       return `<tr><td style="padding:4px 8px;border:1px solid #ccc;font-size:11px;white-space:nowrap">${s.english_name} (${s.korean_name})</td><td style="padding:4px 6px;border:1px solid #ccc;font-size:10px;text-align:center">${s.korean_class || ''}</td><td style="padding:4px 6px;border:1px solid #ccc;font-size:10px;text-align:center">${s.class_number || ''}</td>${cells}</tr>`
@@ -266,7 +274,7 @@ export default function AttendanceView() {
             {lang === 'ko' ? '현장학습 (전원 결석)' : 'Field Trip (all absent)'}
           </label>
           {Object.keys(records).length > 0 && (
-            <button onClick={() => { setRecords({}); setHasChanges(true); setClearedOnce(true) }}
+            <button onClick={() => { setRecords({}); setHasChanges(true) }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
               Clear All
             </button>
@@ -278,11 +286,30 @@ export default function AttendanceView() {
           <h3 className="font-display text-lg font-semibold text-navy">
             {new Date(selectedDate + 'T00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           </h3>
-          {isWeekend && <p className="text-[12px] text-amber-600 font-medium mt-0.5"> This is a weekend</p>}
-          {(() => { const dow = new Date(selectedDate + 'T12:00:00').getDay(); return dow === 1 && selectedGrade === 5 ? <p className="text-[12px] text-amber-600 font-medium mt-0.5"> Grade 5 does not attend English on Mondays</p> : null })()}
+          {isNoClassDay && (
+            <p className="text-[12px] text-amber-600 font-medium mt-0.5">
+              {isWeekend ? 'No classes on weekends' : `Grade 5 does not attend English on Mondays`}
+              {' — '}use arrows to skip to the next class day
+            </p>
+          )}
           {isToday && <p className="text-[12px] text-green-600 font-medium mt-0.5">Today</p>}
           <p className="text-[10px] text-text-tertiary mt-1">Tip: Click a row, then use <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">P</kbd> <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">A</kbd> <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">T</kbd> keys and <kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">↑</kbd><kbd className="px-1 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border">↓</kbd> to navigate</p>
         </div>
+
+        {/* Quick-start prompt when today has no records */}
+        {isToday && !isNoClassDay && !loading && !loadingStudents && students.length > 0 && Object.keys(records).length === 0 && (
+          <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-4">
+            <AlertTriangle size={20} className="text-amber-500 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-[13px] font-semibold text-amber-800">{lang === 'ko' ? '오늘 출석이 아직 기록되지 않았습니다' : 'Attendance not yet recorded for today'}</p>
+              <p className="text-[11px] text-amber-600 mt-0.5">{lang === 'ko' ? '출석을 표시한 후 반드시 저장 버튼을 눌러주세요' : 'Mark attendance and press Save to record it'}</p>
+            </div>
+            <button onClick={() => { markAllPresent(); }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-bold bg-green-500 text-white hover:bg-green-600 shadow-sm transition-all">
+              <UserCheck size={14} /> {lang === 'ko' ? '전원 출석 표시' : 'Mark All Present'}
+            </button>
+          </div>
+        )}
 
         {/* Stats bar */}
         {Object.keys(records).length > 0 && (
