@@ -6,7 +6,7 @@ import { useStudents, useAvailableClasses } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Loader2, Check, UserCheck, UserX, Clock, Download, AlertTriangle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Check, UserCheck, UserX, Clock, Download, AlertTriangle, Printer } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 
 type Status = 'present' | 'absent' | 'tardy'
@@ -222,7 +222,7 @@ export default function AttendanceView() {
           </button>
           <button onClick={handlePrintAttendance}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt">
-            🖨️ {lang === 'ko' ? '월별 출력' : 'Print Monthly'}
+            <Printer size={14} /> {lang === 'ko' ? '월별 출력' : 'Print Monthly'}
           </button>
         </div>
       </div>
@@ -390,8 +390,8 @@ export default function AttendanceView() {
           </div>
         )}
 
-        {/* Export & Save bar */}
-        <div className="mt-4 flex items-center justify-between">
+        {/* Export bar */}
+        <div className="mt-4">
           <button onClick={() => {
             exportToCSV(`attendance-${selectedClass}-${selectedDate}`,
               ['Student', 'Korean Name', 'Status', 'Note'],
@@ -399,16 +399,19 @@ export default function AttendanceView() {
           }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
             <Download size={12} /> Export CSV
           </button>
-          {hasChanges && (
-            <div className="px-5 py-3 bg-warm-light border border-gold/20 rounded-lg flex items-center gap-4">
-              <p className="text-[12px] text-amber-700">{lang === 'ko' ? '저장되지 않은 변경사항이 있습니다' : 'Unsaved changes'}</p>
-              <button onClick={handleSave} disabled={saving}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light transition-all">
-                {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Save
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Sticky save bar */}
+        {hasChanges && (
+          <div className="sticky-save-bar -mx-10 mt-4 flex items-center justify-between">
+            <p className="text-[12px] text-amber-700 font-medium">{lang === 'ko' ? '저장되지 않은 변경사항이 있습니다' : 'You have unsaved changes'}</p>
+            <button onClick={handleSave} disabled={saving}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-[13px] font-bold bg-gold text-navy-dark hover:bg-gold-light transition-all shadow-md">
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              {lang === 'ko' ? '출석 저장' : 'Save Attendance'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Unsaved changes confirmation modal */}

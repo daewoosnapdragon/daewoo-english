@@ -122,7 +122,7 @@ export default function WeeklySchedule() {
     : -1
 
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden flex flex-col" style={{ minHeight: 320 }}>
+    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden flex flex-col card-hover" style={{ minHeight: 320 }}>
       {/* Header */}
       <div className="px-3 py-2.5 border-b border-border bg-gradient-to-r from-navy/5 to-transparent">
         <div className="flex items-center gap-2">

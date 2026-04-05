@@ -1011,7 +1011,7 @@ function ClusterTracker() {
                               )}
                               {tip && (
                                 <button onClick={() => setExpandedTip(expandedTip === std.code ? null : std.code)}
-                                  className="text-[9px] text-indigo-600 hover:underline">💡 tip</button>
+                                  className="text-[9px] text-indigo-600 hover:underline">tip</button>
                               )}
                             </div>
                             <p className="text-[11px] text-text-primary leading-snug mt-0.5">{std.text}</p>

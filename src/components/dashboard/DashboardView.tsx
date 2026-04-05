@@ -884,7 +884,7 @@ function SharedCalendar() {
   const dayN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden card-hover">
       <div className="px-5 py-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h3 className="font-display text-[16px] font-semibold text-navy">{months[m]} {y}</h3>
@@ -1127,7 +1127,7 @@ function ClassOverviewTable() {
   const totalStudents = counts.reduce((a: any, c: any) => a + c.count, 0)
 
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden card-hover">
       <div className="px-4 py-3 border-b border-border">
         <h3 className="font-display text-[13px] font-semibold text-navy">{language === 'ko' ? '반별 학생 수' : 'Students by Class'}</h3>
       </div>

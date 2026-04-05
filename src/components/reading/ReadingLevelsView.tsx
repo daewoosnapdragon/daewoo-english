@@ -316,7 +316,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
             if (!ltDate) return
             ltRecords.push({
               id: `lt-${lt.level_test_id}`, student_id: selectedStudentId, date: ltDate,
-              passage_title: '📋 Level Test', passage_level: null,
+              passage_title: 'Level Test', passage_level: null,
               word_count: lt.raw_scores?.word_count || 0, time_seconds: 60,
               errors: 0, self_corrections: 0, cwpm, accuracy_rate: 100,
               reading_level: null, notes: 'From level placement test', naep_fluency: null,
@@ -523,7 +523,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
           <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">
               <h3 className="font-display text-lg font-semibold text-navy">
-                {detailRecord.is_level_test ? '📋 Level Test ORF' : 'ORF Assessment Detail'}
+                {detailRecord.is_level_test ? 'Level Test ORF' : 'ORF Assessment Detail'}
               </h3>
               <button onClick={() => setDetailRecord(null)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
             </div>

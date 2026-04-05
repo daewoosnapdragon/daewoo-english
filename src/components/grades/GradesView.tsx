@@ -1220,7 +1220,7 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
               pw.document.write(`<!DOCTYPE html><html><head><title>Grade Report - ${selected.english_name}</title><link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet"><style>body{font-family:Roboto,sans-serif;margin:24px;color:#1a1a2e}@media print{@page{margin:15mm}}</style></head><body><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#1e3a5f;border-radius:8px;color:white;margin-bottom:16px"><div><span style="font-size:20px;font-weight:700;font-family:Lora,serif">${selected.english_name}</span><span style="font-size:14px;margin-left:8px;opacity:0.7">${selected.korean_name}</span></div><div style="font-size:11px;text-align:right">Grade Report<br>${new Date().toLocaleDateString()}</div></div>${domainsHTML}<p style="font-size:9px;color:#94a3b8;margin-top:16px">Daewoo Elementary English Program</p></body></html>`)
               pw.document.close(); pw.print()
             }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border border border-border">
-              🖨️ Print Report
+              Print Report
             </button>
           </div>
           {/* Overall score summary */}

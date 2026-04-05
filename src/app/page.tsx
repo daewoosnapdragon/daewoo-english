@@ -98,11 +98,25 @@ export default function Home() {
 
   const ml = sidebarCollapsed ? 'ml-[60px]' : 'ml-[220px]'
 
+  // Dynamic page title
+  useEffect(() => {
+    const titles: Record<string, string> = {
+      dashboard: 'Dashboard', students: 'Students', grades: 'Grades',
+      reports: 'Reports', leveling: 'Leveling', attendance: 'Attendance',
+      readingLevels: 'Reading Levels', groups: 'Groups', curriculum: 'Curriculum',
+      teacherGuides: 'Teacher Guides', lessonPlans: 'Lesson Plans',
+      adminDashboard: 'Program Overview', settings: 'Settings',
+    }
+    document.title = `${titles[activeView] || 'Dashboard'} | Daewoo English`
+  }, [activeView])
+
   return (
     <div className="flex min-h-screen">
       <Sidebar activeView={activeView} onNavigate={setActiveView} teachers={teachers} collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
       <main className={`${ml} flex-1 min-h-screen transition-all duration-200`}>
-        {renderView()}
+        <div key={activeView} className="animate-page-enter">
+          {renderView()}
+        </div>
       </main>
       <Toast />
     </div>

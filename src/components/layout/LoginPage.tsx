@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { Teacher } from '@/types'
-import { Lock, GraduationCap, Globe } from 'lucide-react'
+import { Lock, GraduationCap, Globe, ArrowRight } from 'lucide-react'
 
 export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
   const { setCurrentTeacher, language, setLanguage } = useApp()
@@ -35,34 +35,39 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
   }
 
   return (
-    <div className="min-h-screen bg-navy-dark flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Decorative background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-navy opacity-50 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-gold/5 blur-3xl" />
-        <div className="absolute top-1/4 right-0 w-[300px] h-[300px] rounded-full bg-blue-500/5 blur-3xl" />
+    <div className="min-h-screen bg-navy-deep flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-navy-deep via-navy-dark to-navy-deep" />
+        {/* Dot grid pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'radial-gradient(circle, #FFB915 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+        }} />
+        {/* Subtle top glow */}
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-gold/[0.04] blur-[100px]" />
       </div>
 
-      <div className="relative z-10 w-full max-w-sm mx-auto px-6">
+      <div className="relative z-10 w-full max-w-[380px] mx-auto px-6">
         {/* Logo and branding */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gold/15 flex items-center justify-center mx-auto mb-4 backdrop-blur-sm border border-gold/20">
-            <GraduationCap size={32} className="text-gold" />
+        <div className="text-center mb-10">
+          <div className="w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center mx-auto mb-5 border border-gold/15">
+            <GraduationCap size={28} className="text-gold" />
           </div>
-          <h1 className="text-white font-display text-2xl font-bold tracking-tight">Daewoo English</h1>
-          <p className="text-blue-300/40 text-[13px] mt-1">School Management System</p>
+          <h1 className="text-white font-display text-[28px] font-bold tracking-tight">Daewoo English</h1>
+          <p className="text-blue-300/30 text-[12px] mt-1.5 tracking-wide">School Management System</p>
         </div>
 
         {/* Login card */}
-        <div className="bg-white/[0.04] backdrop-blur-lg border border-white/10 rounded-2xl p-6 shadow-2xl">
-          <p className="text-blue-200/60 text-[12px] font-medium mb-4 text-center">Sign in to continue</p>
-          <div className="space-y-3">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-7 shadow-2xl">
+          <p className="text-blue-200/40 text-[11px] font-medium mb-5 tracking-wide uppercase text-center">Sign in to continue</p>
+          <div className="space-y-4">
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-blue-300/40 font-semibold block mb-1.5 px-1">Teacher</label>
+              <label className="text-[10px] uppercase tracking-widest text-blue-300/30 font-semibold block mb-2 px-0.5">Teacher</label>
               <select
                 value={selectedTeacherId}
                 onChange={e => { setSelectedTeacherId(e.target.value); setLoginError('') }}
-                className="w-full px-3.5 py-3 bg-white/[0.06] rounded-xl text-[13px] text-white border border-white/10 outline-none focus:border-gold/50 transition-colors appearance-none cursor-pointer"
+                className="w-full px-4 py-3 bg-white/[0.04] rounded-xl text-[13px] text-white border border-white/[0.08] outline-none focus:border-gold/40 focus:bg-white/[0.06] transition-all appearance-none cursor-pointer"
               >
                 <option value="" className="bg-navy-dark">Select your name...</option>
                 {loginTeachers.map(t => (
@@ -73,47 +78,48 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-blue-300/40 font-semibold block mb-1.5 px-1">Password</label>
+              <label className="text-[10px] uppercase tracking-widest text-blue-300/30 font-semibold block mb-2 px-0.5">Password</label>
               <div className="relative">
-                <Lock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-300/30" />
+                <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300/20" />
                 <input
                   type="password"
                   value={password}
                   onChange={e => { setPassword(e.target.value); setLoginError('') }}
                   onKeyDown={e => { if (e.key === 'Enter') handleLogin() }}
                   placeholder="Enter password"
-                  className="w-full pl-10 pr-3.5 py-3 bg-white/[0.06] rounded-xl text-[13px] text-white border border-white/10 outline-none focus:border-gold/50 transition-colors placeholder-blue-300/20"
+                  className="w-full pl-11 pr-4 py-3 bg-white/[0.04] rounded-xl text-[13px] text-white border border-white/[0.08] outline-none focus:border-gold/40 focus:bg-white/[0.06] transition-all placeholder-blue-300/15"
                 />
               </div>
             </div>
             {loginError && (
-              <p className="text-red-400 text-[11px] font-medium px-1 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
-                {loginError}
-              </p>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                <p className="text-red-400 text-[11px] font-medium">{loginError}</p>
+              </div>
             )}
             <button
               onClick={handleLogin}
-              className="w-full py-3 rounded-xl text-[13px] font-semibold bg-gold text-navy-dark hover:bg-gold-light transition-all mt-1 shadow-lg shadow-gold/20"
+              className="w-full py-3 rounded-xl text-[13px] font-semibold bg-gold text-navy-dark hover:bg-gold-light transition-all mt-2 shadow-lg shadow-gold/15 flex items-center justify-center gap-2 group"
             >
               Sign In
+              <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
         </div>
 
         {/* Language toggle */}
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center">
           <button
             onClick={() => setLanguage(language === 'en' ? 'ko' : 'en')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] text-blue-200/50 hover:text-white hover:bg-white/5 transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] text-blue-300/30 hover:text-blue-200/60 transition-all"
           >
-            <Globe size={14} />
+            <Globe size={13} />
             {language === 'en' ? '한국어로 전환' : 'Switch to English'}
           </button>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-blue-300/20 text-[10px] mt-8">
+        <p className="text-center text-blue-300/15 text-[10px] mt-10 tracking-wide">
           Daewoo Elementary School English Program
         </p>
       </div>
