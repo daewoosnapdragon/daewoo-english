@@ -334,6 +334,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [comment, setComment] = useState('')
+  const [commentSkipped, setCommentSkipped] = useState(false)
   const [savingComment, setSavingComment] = useState(false)
   const [showRefPanel, setShowRefPanel] = useState(false)
   const [editingGrades, setEditingGrades] = useState(false)
@@ -464,7 +465,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     }
 
     // ─── STEP 5: Comment, teacher, reading, attendance, behavior, scaffolds, goals ───
-    const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
+    const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
     const [readingRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
@@ -483,6 +484,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       classOverall: null,
       prevDomainGrades, prevOverall, prevSemesterName,
       comment: commentData?.text || '',
+      commentSkipped: !!commentData?.is_skipped,
       teacherName: teacher?.name || currentTeacher?.name || '',
       teacherPhotoUrl: teacher?.photo_url || null,
       semesterName: semester.name,
@@ -498,6 +500,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       goals: goalsRes.data || [],
     })
     setComment(commentData?.text || '')
+    setCommentSkipped(!!commentData?.is_skipped)
     setLoading(false)
   }, [studentId, semesterId, students, allSemesters, selectedClass, currentTeacher])
 
@@ -505,9 +508,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
   const saveComment = async () => {
     setSavingComment(true)
-    await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, text: comment.trim(), created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id' })
+    await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, text: comment.trim(), is_skipped: commentSkipped, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id' })
     setSavingComment(false)
-    showToast('Comment saved')
+    showToast(commentSkipped ? 'Comment skipped' : 'Comment saved')
   }
 
   const handleTeacherPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -668,11 +671,11 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         </div>
       </div>
     </div>
-    <!-- Comment -->
+    ${commentSkipped ? '' : `<!-- Comment -->
     <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
       <div style="font-size:12px;line-height:1.8;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>
-    </div>
+    </div>`}
     <!-- Scale + Footer -->
     <div style="background:#fdfcfa;padding:14px 28px">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Grading Scale</div>
@@ -1079,9 +1082,18 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             </div>
           )}
 
+          <div className="flex items-center justify-between mb-2">
+            <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
+              <input type="checkbox" checked={commentSkipped}
+                onChange={(e: any) => setCommentSkipped(e.target.checked)} />
+              Skip comment for this student
+            </label>
+            {commentSkipped && <span className="text-[10px] text-[#94a3b8] italic">Comment section will be hidden on the printed report.</span>}
+          </div>
           <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={6}
-            placeholder="Write comments about this student's progress..."
-            className="w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed bg-[#fafaf8]" />
+            disabled={commentSkipped}
+            placeholder={commentSkipped ? 'Skipped — uncheck above to write a comment.' : "Write comments about this student's progress..."}
+            className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${commentSkipped ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
           <div className="flex justify-end mt-2">
             <button onClick={saveComment} disabled={savingComment}
               className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
@@ -1181,11 +1193,11 @@ function progressCardHtml(s: any, d: any, comment: string): string {
     <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Domain Performance</div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
   </div>
-  <!-- Comment -->
+  ${d.commentSkipped ? '' : `<!-- Comment -->
   <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
     <div style="font-size:12px;line-height:1.8;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>
-  </div>
+  </div>`}
   <!-- Scale + Footer -->
   <div style="background:#fdfcfa;padding:14px 28px">
     <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Grading Scale</div>
@@ -1261,11 +1273,12 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
         const overallGrade = scored.length > 0 ? Math.round(scored.reduce((acc: number, dd) => acc + (domainGrades[dd] as number), 0) / scored.length * 10) / 10 : null
         const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
 
-        const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', student.id).eq('semester_id', semesterId).limit(1).single()
+        const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', student.id).eq('semester_id', semesterId).limit(1).single()
         const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
         const data = {
           domainGrades, domainNa, overallGrade, overallLetter, semesterName,
+          commentSkipped: !!commentData?.is_skipped,
           teacherName: teacher?.name || currentTeacher?.name || '',
           teacherPhotoUrl: teacher?.photo_url || null,
           semesterGrade: (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade,
@@ -1355,6 +1368,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [comment, setComment] = useState('')
+  const [commentSkipped, setCommentSkipped] = useState(false)
   const [savingComment, setSavingComment] = useState(false)
   const [showRefPanel, setShowRefPanel] = useState(false)
   const [editingGrades, setEditingGrades] = useState(false)
@@ -1426,7 +1440,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
 
     // Comment, teacher, plus extras for Student Reference panel
-    const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
+    const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
     const [readingRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1),
@@ -1442,6 +1456,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     setData({
       student, domainGrades, domainNa, domainStudentNa, domainClassNa, overallGrade, overallLetter,
       comment: commentData?.text || '',
+      commentSkipped: !!commentData?.is_skipped,
       teacherName: teacher?.name || currentTeacher?.name || '',
       teacherPhotoUrl: teacher?.photo_url || null,
       semesterName: sem.name,
@@ -1455,6 +1470,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       goals: goalsRes.data || [],
     })
     setComment(commentData?.text || '')
+    setCommentSkipped(!!commentData?.is_skipped)
     setLoading(false)
   }, [studentId, semesterId, students, allSemesters, selectedClass, currentTeacher])
 
@@ -1464,11 +1480,12 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     setSavingComment(true)
     const { error } = await supabase.from('comments').upsert({
       student_id: studentId, semester_id: semesterId, text: comment.trim(),
+      is_skipped: commentSkipped,
       created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
     }, { onConflict: 'student_id,semester_id' })
     setSavingComment(false)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast('Comment saved'); setData((prev: any) => ({ ...prev, comment: comment.trim() })) }
+    else { showToast(commentSkipped ? 'Comment skipped' : 'Comment saved'); setData((prev: any) => ({ ...prev, comment: comment.trim(), commentSkipped })) }
   }
 
   const handleTeacherPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1785,9 +1802,18 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
             </div>
           )}
 
+          <div className="flex items-center justify-between mb-2">
+            <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
+              <input type="checkbox" checked={commentSkipped}
+                onChange={(e: any) => setCommentSkipped(e.target.checked)} />
+              Skip comment for this student
+            </label>
+            {commentSkipped && <span className="text-[10px] text-[#94a3b8] italic">Comment section will be hidden on the printed report.</span>}
+          </div>
           <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={6}
-            placeholder="Write comments about this student's progress..."
-            className="w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed bg-[#fafaf8]" />
+            disabled={commentSkipped}
+            placeholder={commentSkipped ? 'Skipped — uncheck above to write a comment.' : "Write comments about this student's progress..."}
+            className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${commentSkipped ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
           <div className="flex justify-end mt-2">
             <button onClick={saveComment} disabled={savingComment}
               className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
@@ -2183,7 +2209,7 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
   const { showToast, currentTeacher } = useApp()
   const [loading, setLoading] = useState(true)
   const [classNa, setClassNa] = useState<Record<string, boolean>>({})
-  const [studentRows, setStudentRows] = useState<Array<{ student: any; status: Record<string, 'graded' | 'na' | 'empty'>; isComplete: boolean; hasComment: boolean }>>([])
+  const [studentRows, setStudentRows] = useState<Array<{ student: any; status: Record<string, 'graded' | 'na' | 'empty'>; isComplete: boolean; hasComment: boolean; commentSkipped: boolean }>>([])
   const [domainAvgs, setDomainAvgs] = useState<Record<string, number | null>>({})
   const [savingNa, setSavingNa] = useState<string | null>(null)
 
@@ -2205,12 +2231,12 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
     const [allGradesRes, allCommentsRes] = await Promise.all([
       supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na')
         .eq('semester_id', semesterId).in('student_id', studentIds),
-      supabase.from('comments').select('student_id, text')
+      supabase.from('comments').select('student_id, text, is_skipped')
         .eq('semester_id', semesterId).in('student_id', studentIds),
     ])
     const allGrades = allGradesRes.data || []
-    const commentsByStudent: Record<string, string> = {}
-    ;(allCommentsRes.data || []).forEach((c: any) => { commentsByStudent[c.student_id] = (c.text || '').trim() })
+    const commentsByStudent: Record<string, { text: string; skipped: boolean }> = {}
+    ;(allCommentsRes.data || []).forEach((c: any) => { commentsByStudent[c.student_id] = { text: (c.text || '').trim(), skipped: !!c.is_skipped } })
 
     const rows = students.map(student => {
       const myGrades = allGrades.filter((g: any) => g.student_id === student.id)
@@ -2226,8 +2252,10 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
         else { status[d] = 'empty' }
       })
       const isComplete = (scoredCount + naCount) === DOMAINS.length
-      const hasComment = !!commentsByStudent[student.id]
-      return { student, status, isComplete, hasComment }
+      const c = commentsByStudent[student.id]
+      const hasComment = !!(c && (c.text || c.skipped))
+      const commentSkipped = !!c?.skipped
+      return { student, status, isComplete, hasComment, commentSkipped }
     })
 
     // Class domain averages — exclude student-level is_na; class-N/A → null
@@ -2361,7 +2389,7 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
               </tr>
             </thead>
             <tbody>
-              {studentRows.map(({ student, status, hasComment, isComplete }) => (
+              {studentRows.map(({ student, status, hasComment, commentSkipped }) => (
                 <tr key={student.id} onClick={() => onSelectStudent(student.id)}
                   className="border-b border-border cursor-pointer hover:bg-surface-alt">
                   <td className="py-2 px-2">
@@ -2376,7 +2404,9 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
                     </td>
                   ))}
                   <td className="text-center py-2 px-2">
-                    {hasComment
+                    {commentSkipped
+                      ? <span title="Comment skipped" className="text-[#94a3b8] text-[10px] font-semibold">SKIP</span>
+                      : hasComment
                       ? <span title="Comment written" className="text-green-600 font-bold">&#10003;</span>
                       : <span title="No comment" className="text-text-tertiary">&mdash;</span>}
                   </td>
