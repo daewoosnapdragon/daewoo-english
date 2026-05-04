@@ -13,11 +13,13 @@ type LangKey = 'en' | 'ko'
 const DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language'] as const
 type Domain = typeof DOMAINS[number]
 const DOMAIN_SHORT: Record<string, string> = {
+  reading: 'Reading', phonics: 'Phonics', writing: 'Writing', speaking: 'Speaking', language: 'Language',
+}
+const DOMAIN_LONG: Record<string, string> = {
   reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards',
 }
 const DOMAIN_PRINT: Record<string, string> = {
-  reading: 'Reading', phonics: 'Phonics &<br>Foundational<br>Skills', writing: 'Writing',
-  speaking: 'Speaking &<br>Listening', language: 'Language<br>Standards',
+  reading: 'Reading', phonics: 'Phonics', writing: 'Writing', speaking: 'Speaking', language: 'Language',
 }
 
 const SCALE_DISPLAY = [
@@ -58,6 +60,9 @@ function tileBgPrint(v: number): { bg: string; border: string } {
 interface ReportData {
   student: any
   domainGrades: Record<string, number | null>
+  domainNa: Record<string, boolean>
+  domainStudentNa: Record<string, boolean>
+  domainClassNa: Record<string, boolean>
   overallGrade: number | null
   overallLetter: string
   classAverages: Record<string, number | null>
@@ -172,14 +177,13 @@ export default function ReportsView() {
         {mode === 'progress' && selectedStudentId && selectedSemesterId && selectedSemester && (
           <ProgressReport key={`prog-${selectedStudentId}`} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} />
         )}
-        {mode === 'progress' && !selectedStudentId && selectedSemesterId && (
-          <div className="bg-surface border border-border rounded-xl p-12 text-center">
-            <p className="text-text-tertiary mb-4">Select a student to generate their progress report, or print all at once.</p>
-            <BatchPrintButton students={students} semesterId={selectedSemesterId} className={selectedClass} />
-          </div>
+        {mode === 'progress' && !selectedStudentId && selectedSemesterId && selectedSemester && (
+          <ProgressClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
+            selectedClass={selectedClass} selectedGrade={selectedGrade}
+            onSelectStudent={(id: string) => setSelectedStudentId(id)} />
         )}
         {mode === 'progress' && !selectedStudentId && !selectedSemesterId && (
-          <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a student to generate their progress report.</div>
+          <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a semester to view the class overview.</div>
         )}
         {mode === 'class' && selectedSemesterId && selectedSemester && (
           <ClassSummary students={students} semesterId={selectedSemesterId} semester={selectedSemester} lang={lang} selectedClass={selectedClass} selectedGrade={selectedGrade} />
@@ -334,6 +338,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [showRefPanel, setShowRefPanel] = useState(false)
   const [editingGrades, setEditingGrades] = useState(false)
   const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
+  const [editNaValues, setEditNaValues] = useState<Record<string, boolean>>({})
   const [reviewStatus, setReviewStatus] = useState<{ partner_approved: boolean; admin_approved: boolean } | null>(null)
 
   // Load review status
@@ -388,29 +393,43 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       .eq('student_id', studentId).eq('semester_id', semesterId)
     
     const domainGrades: Record<string, number | null> = {}
+    const domainStudentNa: Record<string, boolean> = {}
     let behaviorGrade: string | null = null
-    DOMAINS.forEach(d => { domainGrades[d] = null })
+    DOMAINS.forEach(d => { domainGrades[d] = null; domainStudentNa[d] = false })
     ;(myGrades || []).forEach((sg: any) => {
       if (sg.domain === 'overall') {
         behaviorGrade = sg.behavior_grade || null
       } else if (DOMAINS.includes(sg.domain)) {
         // final_grade (manual override) takes priority over calculated_grade
         domainGrades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+        domainStudentNa[sg.domain] = !!sg.is_na
       }
     })
 
-    const scoredDomains = DOMAINS.filter(d => domainGrades[d] != null)
+    // Class-level N/A settings — applied OR'd with student-level
+    const sgClass = (myGrades || []).find((sg: any) => sg.english_class)?.english_class || selectedClass
+    const sgGrade = (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade
+    const { data: classSettings } = await supabase.from('class_report_settings').select('domain, is_na')
+      .eq('semester_id', semesterId).eq('english_class', sgClass).eq('grade', sgGrade)
+    const domainClassNa: Record<string, boolean> = {}
+    DOMAINS.forEach(d => { domainClassNa[d] = false })
+    ;(classSettings || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) domainClassNa[r.domain] = !!r.is_na })
+    const domainNa: Record<string, boolean> = {}
+    DOMAINS.forEach(d => { domainNa[d] = domainStudentNa[d] || domainClassNa[d] })
+
+    const scoredDomains = DOMAINS.filter(d => !domainNa[d] && domainGrades[d] != null)
     const overallGrade = scoredDomains.length > 0 ? Math.round(scoredDomains.reduce((a: number, d) => a + (domainGrades[d] as number), 0) / scoredDomains.length * 10) / 10 : null
     const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '\u2014'
 
     // ─── STEP 3: Class averages from semester_grades (same semester + same class + same grade) ───
+    // Excludes students whose domain is marked N/A. Domains marked class-level N/A
+    // return null (every student is N/A — no average to compute).
     const classAverages: Record<string, number | null> = {}
-    const sgClass = (myGrades || []).find((sg: any) => sg.english_class)?.english_class || selectedClass
-    const sgGrade = (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade
-    const { data: classSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade')
+    const { data: classSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na')
       .eq('semester_id', semesterId).eq('english_class', sgClass).eq('grade', sgGrade)
     DOMAINS.forEach(domain => {
-      const vals = (classSemGrades || []).filter((sg: any) => sg.domain === domain)
+      if (domainClassNa[domain]) { classAverages[domain] = null; return }
+      const vals = (classSemGrades || []).filter((sg: any) => sg.domain === domain && !sg.is_na)
         .map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
       classAverages[domain] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : null
     })
@@ -460,7 +479,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     attRecords.forEach((r: any) => { if (r.status === 'present') attCounts.present++; else if (r.status === 'absent') attCounts.absent++; else if (r.status === 'tardy') attCounts.tardy++ })
 
     setData({
-      student, domainGrades, overallGrade, overallLetter, classAverages,
+      student, domainGrades, domainNa, domainStudentNa, domainClassNa, overallGrade, overallLetter, classAverages,
       classOverall: null,
       prevDomainGrades, prevOverall, prevSemesterName,
       comment: commentData?.text || '',
@@ -518,6 +537,11 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
     // Score tiles (clean — no vs class badge)
     const tiles = DOMAINS.map((dom) => {
+      if (d.domainNa[dom]) return `<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f5f5f5">
+        <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
+        <div style="font-size:20px;font-weight:800;color:#94a3b8;margin-top:6px">N/A</div>
+        <div style="font-size:9px;color:#94a3b8;margin-top:3px">Not assessed</div>
+      </div>`
       const v = d.domainGrades[dom]; if (v == null) return '<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px">--</div>'
       const g = getLetterGrade(v); const t = tileBgPrint(v)
       return `<div style="text-align:center;padding:14px 8px;background:${t.bg};border:1.5px solid ${t.border};border-radius:12px">
@@ -534,7 +558,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const rAngles = domains.map((_, i) => (Math.PI * 2 * i) / 5 - Math.PI / 2)
     const toXY = (a: number, p: number) => ({ x: rcx + Math.cos(a) * (p / 100) * maxR, y: rcy + Math.sin(a) * (p / 100) * maxR })
     const makePoly = (vals: (number | null)[]) => vals.map((v, i) => { const pt = toXY(rAngles[i], v ?? 0); return `${pt.x},${pt.y}` }).join(' ')
-    const sVals = domains.map(dm => d.domainGrades[dm])
+    const sVals = domains.map(dm => d.domainNa[dm] ? null : d.domainGrades[dm])
     const cVals = domains.map(dm => d.classAverages[dm])
     const sFilledCount = sVals.filter(v => v != null).length
 
@@ -750,9 +774,14 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             {!editingGrades ? (
               <button onClick={() => {
                 const eg: Record<string, string> = {}
-                DOMAINS.forEach(dom => { eg[dom] = d.domainGrades[dom] != null ? String(d.domainGrades[dom]) : '' })
+                const en: Record<string, boolean> = {}
+                DOMAINS.forEach(dom => {
+                  eg[dom] = d.domainGrades[dom] != null ? String(d.domainGrades[dom]) : ''
+                  en[dom] = !!d.domainStudentNa[dom]
+                })
                 eg.behavior = d.behaviorGrade || ''
                 setEditGradeValues(eg)
+                setEditNaValues(en)
                 setEditingGrades(true)
               }} className="text-[10px] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
             ) : (
@@ -762,10 +791,18 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   const student = students.find((s: any) => s.id === studentId)
                   // Save to semester_grades with class snapshot
                   for (const dom of DOMAINS) {
+                    const isNa = !!editNaValues[dom]
                     const val = parseFloat(editGradeValues[dom])
-                    if (!isNaN(val)) {
+                    if (isNa) {
+                      const row: any = {
+                        student_id: studentId, semester_id: semesterId, domain: dom, is_na: true,
+                        english_class: student?.english_class || selectedClass, grade: student?.grade,
+                      }
+                      if (!isNaN(val)) row.final_grade = val
+                      await supabase.from('semester_grades').upsert(row, { onConflict: 'student_id,semester_id,domain' })
+                    } else if (!isNaN(val)) {
                       await supabase.from('semester_grades').upsert({
-                        student_id: studentId, semester_id: semesterId, domain: dom, final_grade: val,
+                        student_id: studentId, semester_id: semesterId, domain: dom, final_grade: val, is_na: false,
                         english_class: student?.english_class || selectedClass, grade: student?.grade,
                       }, { onConflict: 'student_id,semester_id,domain' })
                     } else {
@@ -788,20 +825,45 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           </div>
           {editingGrades ? (
             <div className="grid grid-cols-5 gap-2.5">
-              {DOMAINS.map((dom) => (
-                <div key={dom} className="rounded-xl border-[1.5px] border-border p-3.5 text-center">
-                  <div className="text-[11px] text-[#64748b] font-semibold mb-2">{DOMAIN_SHORT[dom]}</div>
-                  <input type="number" min={0} max={100} step={0.1} value={editGradeValues[dom] || ''}
-                    onChange={e => setEditGradeValues(prev => ({ ...prev, [dom]: e.target.value }))}
-                    className="w-full text-center text-[18px] font-bold px-2 py-1.5 border border-border rounded-lg outline-none focus:border-navy"
-                    placeholder="--" />
-                  <div className="text-[9px] text-text-tertiary mt-1">%</div>
-                </div>
-              ))}
+              {DOMAINS.map((dom) => {
+                const classNa = !!d.domainClassNa[dom]
+                const isNa = classNa || !!editNaValues[dom]
+                return (
+                  <div key={dom} className={`rounded-xl border-[1.5px] ${isNa ? 'border-[#94a3b8] bg-[#f5f5f5]' : 'border-border bg-white'} p-3.5 text-center`}>
+                    <div className="text-[11px] text-[#64748b] font-semibold mb-2">{DOMAIN_SHORT[dom]}</div>
+                    {isNa ? (
+                      <div className="text-[18px] font-bold text-[#94a3b8] py-2 leading-none">N/A</div>
+                    ) : (
+                      <>
+                        <input type="number" min={0} max={100} step={0.1} value={editGradeValues[dom] || ''}
+                          onChange={e => setEditGradeValues(prev => ({ ...prev, [dom]: e.target.value }))}
+                          className="w-full text-center text-[18px] font-bold px-2 py-1.5 border border-border rounded-lg outline-none focus:border-navy"
+                          placeholder="--" />
+                        <div className="text-[9px] text-text-tertiary mt-1">%</div>
+                      </>
+                    )}
+                    {classNa ? (
+                      <div className="text-[8px] text-[#94a3b8] mt-2 leading-tight">Class N/A · change in Class Overview</div>
+                    ) : (
+                      <button onClick={() => setEditNaValues(prev => ({ ...prev, [dom]: !prev[dom] }))}
+                        className={`text-[9px] mt-2 px-2 py-0.5 rounded font-medium ${isNa ? 'bg-[#94a3b8] text-white hover:bg-[#64748b]' : 'bg-white text-text-secondary border border-border hover:bg-surface-alt'}`}>
+                        {isNa ? 'Remove N/A' : 'Mark N/A'}
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           ) : (
           <div className="grid grid-cols-5 gap-2.5">
             {DOMAINS.map((dom) => {
+              if (d.domainNa[dom]) return (
+                <div key={dom} className="rounded-xl border border-border bg-[#f5f5f5] p-3.5 text-center flex flex-col justify-center" style={{ minHeight: 90 }}>
+                  <div className="text-[11px] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                  <div className="text-[20px] font-bold text-[#94a3b8] mt-2 leading-none">N/A</div>
+                  <div className="text-[9px] text-[#94a3b8] mt-1">Not assessed</div>
+                </div>
+              )
               const v = d.domainGrades[dom]
               if (v == null) return <div key={dom} className="rounded-xl border border-border p-3.5 text-center text-text-tertiary text-[12px]">--</div>
               const g = getLetterGrade(v)
@@ -822,7 +884,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             {/* Left: Radar Chart — Student vs Class */}
             <div>
               <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3">Class Comparison</div>
-              <RadarChart studentGrades={d.domainGrades} classAverages={d.classAverages} />
+              <RadarChart studentGrades={Object.fromEntries(DOMAINS.map(dom => [dom, d.domainNa[dom] ? null : d.domainGrades[dom]]))} classAverages={d.classAverages} />
               <div className="flex items-center justify-center gap-4 mt-2 text-[9px]">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(30,58,95,0.25)', border: '1.5px solid #647FBC' }} /> Student</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(148,163,184,0.15)', border: '1.5px solid #cbd5e1' }} /> Class Average</span>
@@ -922,7 +984,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                     `Semester: ${d.semesterName}`,
                     '',
                     'DOMAIN GRADES:',
-                    ...DOMAINS.map(dom => `  ${DOMAIN_SHORT[dom]}: ${d.domainGrades[dom] != null ? `${d.domainGrades[dom]!.toFixed(1)}% (${getLetterGrade(d.domainGrades[dom]!)})` : 'No grade'}`),
+                    ...DOMAINS.map(dom => `  ${DOMAIN_SHORT[dom]}: ${d.domainNa[dom] ? 'N/A' : (d.domainGrades[dom] != null ? `${d.domainGrades[dom]!.toFixed(1)}% (${getLetterGrade(d.domainGrades[dom]!)})` : 'No grade')}`),
                     `  Overall: ${d.overallGrade != null ? `${d.overallGrade.toFixed(1)}% (${d.overallLetter})` : 'No grade'}`,
                     '',
                     'READING FLUENCY:',
@@ -947,12 +1009,13 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
                   <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-2">Domain Grades</p>
                   {DOMAINS.map(dom => {
+                    const isNa = !!d.domainNa[dom]
                     const v = d.domainGrades[dom]
                     return (
                       <div key={dom} className="flex items-center justify-between py-0.5">
                         <span className="text-[11px] text-[#64748b]">{DOMAIN_SHORT[dom]}</span>
-                        <span className="text-[11px] font-bold" style={{ color: v != null ? letterColor(getLetterGrade(v)) : '#94a3b8' }}>
-                          {v != null ? `${v.toFixed(1)}% (${getLetterGrade(v)})` : '--'}
+                        <span className="text-[11px] font-bold" style={{ color: isNa ? '#94a3b8' : (v != null ? letterColor(getLetterGrade(v)) : '#94a3b8') }}>
+                          {isNa ? 'N/A' : (v != null ? `${v.toFixed(1)}% (${getLetterGrade(v)})` : '--')}
                         </span>
                       </div>
                     )
@@ -1048,384 +1111,707 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   )
 }
 
-// ─── Print Progress Report Helper ────────────────────────────────────
-function printProgressReport(student: any, data: any) {
-  const ds = DOMAINS.map(dom => {
-    const v = data.domainGrades[dom]
-    if (v == null) return `<div style="text-align:center;border:1px solid #d4d4d4;border-radius:10px;padding:14px 8px;background:#f5f0eb">
-      <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px">${DOMAIN_SHORT[dom]}</p>
-      <p style="font-size:22px;font-weight:700;color:#94a3b8;margin:0">--</p></div>`
-    const letter = getLetterGrade(v); const t = tileBgPrint(v)
-    return `<div style="text-align:center;border:1px solid ${t.border};border-radius:10px;padding:14px 8px;background:${t.bg}">
-      <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 4px">${DOMAIN_SHORT[dom]}</p>
-      <p style="font-size:24px;font-weight:800;color:${letterColor(letter)};margin:0">${letter}</p>
-      <p style="font-size:11px;color:#64748b;margin:2px 0 0">${v.toFixed(1)}%</p></div>`
+// ─── Progress Report Card HTML (shared by single + batch print) ──────
+function progressCardHtml(s: any, d: any, comment: string): string {
+  const naMap: Record<string, boolean> = d.domainNa || {}
+  const tiles = DOMAINS.map((dom) => {
+    if (naMap[dom]) return `<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f5f5f5">
+      <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
+      <div style="font-size:20px;font-weight:800;color:#94a3b8;margin-top:6px">N/A</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:3px">Not assessed</div>
+    </div>`
+    const v = d.domainGrades[dom]
+    if (v == null) return `<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px;background:white">
+      <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
+      <div style="font-size:22px;font-weight:800;color:#94a3b8;margin-top:8px">—</div>
+    </div>`
+    const g = getLetterGrade(v); const t = tileBgPrint(v)
+    return `<div style="text-align:center;padding:14px 8px;background:${t.bg};border:1.5px solid ${t.border};border-radius:12px">
+      <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
+      <div style="font-size:26px;font-weight:800;color:#1e293b;margin-top:6px">${v.toFixed(1)}%</div>
+      <div style="font-size:14px;font-weight:700;color:${letterColor(g)};margin-top:3px">${g}</div>
+    </div>`
   }).join('')
 
-  const cwpm = data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'
-  const lexile = data.latestReading ? (data.latestReading.reading_level || data.latestReading.passage_level || '--') : '--'
-  const lastAssessed = data.latestReading?.date ? new Date(data.latestReading.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '--'
+  const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#EDF1F8;border:1px solid #C8CED8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
 
+  const avatarHtml = d.teacherPhotoUrl
+    ? `<img src="${d.teacherPhotoUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #DFE4EB" />`
+    : `<div style="width:32px;height:32px;border-radius:50%;background:#C8CED8;color:#64748b;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${(d.teacherName || '')[0] || ''}</div>`
+
+  const gc = d.overallGrade != null ? letterColor(d.overallLetter) : '#94a3b8'
+  const pct = (d.overallGrade || 0) / 100
+  const radius = 50, stroke = 8, circ = 2 * Math.PI * radius
+  const displayGrade = d.semesterGrade || s.grade
+  const displayClass = d.semesterClass || s.english_class
+
+  return `<div class="card">
+  <!-- Header -->
+  <div style="background:#647FBC;padding:18px 28px;color:white;display:flex;justify-content:space-between;align-items:center">
+    <div><div style="font-size:10px;opacity:0.5;letter-spacing:2.5px;text-transform:uppercase">Daewoo Elementary School</div>
+    <div style="font-size:22px;font-weight:700;margin-top:4px;font-family:Georgia,serif">${d.semesterName} Progress Report</div>
+    <div style="font-size:11px;opacity:0.6;margin-top:2px;font-style:italic">English Program — Mid-semester progress.</div></div>
+    <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2)"><img src="/logo.png" style="width:36px;height:36px;object-fit:contain" onerror="this.style.display=\'none\'" /></div>
+  </div>
+  <!-- Student Info -->
+  <div style="background:#fdfcfa;padding:14px 28px;border-bottom:1px solid #C8CED8">
+    <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr auto;gap:0 14px">
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Name</div><div style="font-size:13px;font-weight:700;margin-top:1px">${s.korean_name}  ${s.english_name}</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Grade</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayGrade}</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Korean Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.korean_class}반</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Class Number</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.class_number}번</div></div>
+      <div style="grid-row:1/3;display:flex;align-items:center;justify-content:center;padding-left:8px">
+        <div style="position:relative;width:76px;height:76px">
+          <svg width="76" height="76" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${radius}" fill="none" stroke="#C8CED8" stroke-width="${stroke}"/>
+          <circle cx="60" cy="60" r="${radius}" fill="none" stroke="${gc}" stroke-width="${stroke}" stroke-dasharray="${pct * circ} ${circ}" stroke-linecap="round" transform="rotate(-90 60 60)"/></svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div style="font-size:20px;font-weight:800;color:#647FBC">${d.overallLetter}</div>
+            <div style="font-size:10px;color:#64748b">${d.overallGrade != null ? d.overallGrade.toFixed(1) + '%' : ''}</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">English Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayClass}</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Teacher</div><div style="font-size:13px;font-weight:600;margin-top:1px">${d.teacherName}</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Team Manager</div><div style="font-size:13px;font-weight:600;margin-top:1px">Victoria Park</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Principal</div><div style="font-size:13px;font-weight:600;margin-top:1px">Kwak Cheol Ok</div></div>
+    </div>
+  </div>
+  <!-- Score Tiles -->
+  <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #C8CED8">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Domain Performance</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
+  </div>
+  <!-- Comment -->
+  <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
+    <div style="font-size:12px;line-height:1.8;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>
+  </div>
+  <!-- Scale + Footer -->
+  <div style="background:#fdfcfa;padding:14px 28px">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Grading Scale</div>
+    <div style="display:flex;gap:3px;flex-wrap:wrap">${scaleHtml}</div>
+    <div style="text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid #C8CED8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School · English Program · ${d.semesterName}</div>
+  </div>
+  </div>`
+}
+
+// ─── Print Single Progress Report ────────────────────
+function printProgressReport(s: any, d: any, comment: string) {
   const pw = window.open('', '_blank')
   if (!pw) return
-  pw.document.write(`<!DOCTYPE html><html><head><title>Progress Report - ${student.english_name}</title>
+  pw.document.write(`<!DOCTYPE html><html><head><title>Progress Report — ${s.english_name}</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f0eb; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-    .card { max-width: 720px; margin: 20px auto; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.08); background: white; }
-    .header { background: #647FBC; padding: 20px 28px; color: white; display: flex; justify-content: space-between; align-items: center; }
-    .header .label { font-size: 10px; text-transform: uppercase; letter-spacing: 3px; opacity: 0.5; font-weight: 600; }
-    .header .name { font-size: 24px; font-weight: 700; font-family: Georgia, serif; margin-top: 4px; }
-    .header .sub { font-size: 13px; opacity: 0.65; margin-top: 3px; }
-    .header .right { text-align: right; font-size: 12px; opacity: 0.6; line-height: 1.7; }
-    .body { padding: 28px 28px 20px; }
-    .overall-row { display: flex; align-items: center; gap: 18px; margin-bottom: 28px; }
-    .overall-box { width: 80px; height: 80px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-direction: column; border: 2px solid #d4d4d4; background: #f8fafc; }
-    .overall-letter { font-size: 28px; font-weight: 800; color: #94a3b8; }
-    .overall-pct { font-size: 10px; color: #64748b; }
-    .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #94a3b8; font-weight: 700; margin-bottom: 10px; }
-    .domain-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 28px; }
-    .fluency-box { background: #f5f0eb; border: 1px solid #C8CED8; border-radius: 10px; padding: 18px 20px; margin-bottom: 24px; }
-    .fluency-grid { display: flex; gap: 36px; margin-top: 8px; }
-    .fluency-item p:first-child { font-size: 10px; color: #94a3b8; font-weight: 600; }
-    .fluency-item p:last-child { font-size: 22px; font-weight: 700; color: #647FBC; margin-top: 2px; }
-    .comment-box { background: #f8f9fb; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; font-size: 13px; line-height: 1.8; color: #374151; margin-bottom: 20px; }
-    .footer { text-align: center; padding-top: 14px; border-top: 1px solid #C8CED8; font-size: 10px; color: #b8b0a6; letter-spacing: 1px; }
-    @media print {
-      @page { size: A4; margin: 10mm; }
-      body { background: white; }
-      .card { margin: 0; box-shadow: none; border-radius: 0; max-width: 100%; }
-    }
+    body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb}
+    @media print{@page{size:A4;margin:8mm}body{padding:0}.card{margin:0;box-shadow:none;border-radius:0;max-height:277mm;overflow:hidden}}
   </style></head>
-  <body><div class="card">
-    <div class="header">
-      <div>
-        <p class="label">Progress Report</p>
-        <p class="name">${student.english_name}</p>
-        <p class="sub">${student.korean_name} -- ${student.english_class} -- Grade ${student.grade}</p>
-      </div>
-      <div class="right">${data.semesterName}<br>Teacher: ${data.teacherName}</div>
-    </div>
-    <div class="body">
-      <div class="overall-row">
-        <div class="overall-box" ${data.overallGrade != null ? `style="background:${tileBgPrint(data.overallGrade).bg};border-color:${tileBgPrint(data.overallGrade).border}"` : ''}>
-          <p class="overall-letter" ${data.overallGrade != null ? `style="color:${letterColor(data.overallLetter)}"` : ''}>
-            ${data.overallLetter}
-          </p>
-          ${data.overallGrade != null ? `<p class="overall-pct">${data.overallGrade.toFixed(1)}%</p>` : ''}
-        </div>
-        <div>
-          <p class="section-label" style="margin-bottom:4px">Overall Grade</p>
-          <p style="font-size:16px;font-weight:700;color:#647FBC">
-            ${data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}
-          </p>
-        </div>
-      </div>
-
-      <p class="section-label">Domain Scores</p>
-      <div class="domain-grid">${ds}</div>
-
-      <div class="fluency-box">
-        <p class="section-label" style="margin-bottom:0">Reading Fluency</p>
-        <div class="fluency-grid">
-          <div class="fluency-item"><p>CWPM</p><p>${cwpm}</p></div>
-          <div class="fluency-item"><p>Lexile</p><p>${lexile}</p></div>
-          <div class="fluency-item"><p>Last Assessed</p><p style="font-size:16px">${lastAssessed}</p></div>
-        </div>
-      </div>
-
-      ${data.comment ? `<p class="section-label">Teacher Comment</p><div class="comment-box">${data.comment}</div>` : ''}
-
-      <div class="footer">Daewoo Elementary School \u00b7 English Program \u00b7 ${data.semesterName}</div>
-    </div>
-  </div></body></html>`)
-  pw.document.close(); setTimeout(() => pw.print(), 300)
+  <body>${progressCardHtml(s, d, comment)}</body></html>`)
+  pw.document.close()
+  setTimeout(() => pw.print(), 300)
 }
 
 // ─── Batch Print All Progress Reports ────────────────────────────────
 function BatchPrintButton({ students, semesterId, className: cls }: { students: any[]; semesterId: string; className: string }) {
-  const [printing, setPrinting] = useState(false)
-  const { currentTeacher } = useApp()
+  const [generating, setGenerating] = useState(false)
+  const [progress, setProgress] = useState({ current: 0, total: 0 })
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const { currentTeacher, showToast } = useApp()
 
-  const handleBatchPrint = async () => {
+  const handleStart = async () => {
     if (students.length === 0) return
-    setPrinting(true)
+    setGenerating(true)
+    setProgress({ current: 0, total: students.length })
 
-    const pw = window.open('', '_blank')
-    if (!pw) { setPrinting(false); return }
-
-    pw.document.write(`<html><head><title>Progress Reports - ${cls} Grade ${students[0]?.grade}</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: white; }
-      .card { max-width: 680px; margin: 0 auto; overflow: visible; page-break-after: always; page-break-inside: avoid; break-after: page; break-inside: avoid; }
-      .card:last-child { page-break-after: auto; break-after: auto; }
-      @media print {
-        @page { size: A4; margin: 12mm 10mm; }
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .card { margin: 0; box-shadow: none; overflow: visible; page-break-after: always; page-break-inside: avoid; break-after: page; break-inside: avoid; }
-        .card:last-child { page-break-after: auto; break-after: auto; }
-      }
-      @media screen { .card { margin: 20px auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; } }
-    </style></head><body>`)
-
-    for (const student of students) {
-      // Load data for each student
-      const { data: assessments } = await supabase.from('assessments').select('*').eq('semester_id', semesterId).or(`english_class.eq.${student.english_class},english_class.is.null`).eq('grade', student.grade)
-      const { data: grades } = await supabase.from('grades').select('*').eq('student_id', student.id).in('assessment_id', (assessments || []).map((a: any) => a.id))
-
-      const domainGrades: Record<string, number | null> = {}
-      for (const dom of DOMAINS) {
-        const da = (assessments || []).filter((a: any) => a.domain === dom)
-        const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
-        da.forEach((a: any) => {
-          const g = (grades || []).find((g: any) => g.assessment_id === a.id)
-          if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
-          items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
-        })
-        domainGrades[dom] = calcWeightedAvg(items, Number(student.grade || 3))
-      }
-      const validDomains = Object.values(domainGrades).filter((v): v is number => v != null)
-      const overallGrade = validDomains.length > 0 ? validDomains.reduce((a, b) => a + b, 0) / validDomains.length : null
-      const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '--'
-
-      const { data: reading } = await supabase.from('reading_assessments').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(1)
-      const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', student.id).eq('semester_id', semesterId).limit(1).single()
-      const { data: teacherData } = await supabase.from('teachers').select('name').eq('english_class', student.english_class).limit(1).single()
+    try {
+      // Load semester name + class N/A settings once for the whole class
       const { data: semData } = await supabase.from('semesters').select('name').eq('id', semesterId).single()
+      const semesterName = semData?.name || ''
+      const grade = students[0]?.grade
+      const { data: classSettings } = await supabase.from('class_report_settings').select('domain, is_na')
+        .eq('semester_id', semesterId).eq('english_class', cls).eq('grade', grade)
+      const domainClassNa: Record<string, boolean> = {}
+      DOMAINS.forEach(dd => { domainClassNa[dd] = false })
+      ;(classSettings || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) domainClassNa[r.domain] = !!r.is_na })
 
-      const data = {
-        domainGrades, overallGrade, overallLetter,
-        latestReading: reading?.[0] || null,
-        comment: commentData?.text || '',
-        teacherName: teacherData?.name || currentTeacher?.name || '',
-        semesterName: semData?.name || '',
+      const head = `<!DOCTYPE html><html><head><title>Progress Reports — ${cls} Grade ${grade}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb;page-break-after:always;page-break-inside:avoid;break-after:page;break-inside:avoid}
+  .card:last-child{page-break-after:auto;break-after:auto}
+  @media print{@page{size:A4;margin:8mm}.card{margin:0;box-shadow:none;border-radius:0}}
+</style></head><body>`
+      let body = ''
+
+      for (let i = 0; i < students.length; i++) {
+        const student = students[i]
+        const { data: myGrades } = await supabase.from('semester_grades').select('*')
+          .eq('student_id', student.id).eq('semester_id', semesterId)
+        const domainGrades: Record<string, number | null> = {}
+        const domainNa: Record<string, boolean> = {}
+        DOMAINS.forEach(dd => { domainGrades[dd] = null; domainNa[dd] = domainClassNa[dd] })
+        ;(myGrades || []).forEach((sg: any) => {
+          if (DOMAINS.includes(sg.domain)) {
+            domainGrades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+            if (sg.is_na) domainNa[sg.domain] = true
+          }
+        })
+        const scored = DOMAINS.filter(dd => !domainNa[dd] && domainGrades[dd] != null)
+        const overallGrade = scored.length > 0 ? Math.round(scored.reduce((acc: number, dd) => acc + (domainGrades[dd] as number), 0) / scored.length * 10) / 10 : null
+        const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
+
+        const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', student.id).eq('semester_id', semesterId).limit(1).single()
+        const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
+
+        const data = {
+          domainGrades, domainNa, overallGrade, overallLetter, semesterName,
+          teacherName: teacher?.name || currentTeacher?.name || '',
+          teacherPhotoUrl: teacher?.photo_url || null,
+          semesterGrade: (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade,
+          semesterClass: (myGrades || []).find((sg: any) => sg.english_class)?.english_class || student.english_class,
+        }
+        body += progressCardHtml(student, data, commentData?.text || '')
+        setProgress({ current: i + 1, total: students.length })
       }
 
-      const ds = DOMAINS.map(dom => {
-        const v = data.domainGrades[dom]; if (v == null) return `<div style="text-align:center;border:1px solid #e2e8f0;border-radius:8px;padding:10px 6px"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">${DOMAIN_SHORT[dom]}</p><p style="font-size:18px;font-weight:700;color:#94a3b8;margin-top:4px">--</p></div>`
-        const letter = getLetterGrade(v); const t = tileBgPrint(v)
-        return `<div style="text-align:center;border:1px solid ${t.border};border-radius:8px;padding:10px 6px;background:${t.bg}"><p style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">${DOMAIN_SHORT[dom]}</p><p style="font-size:18px;font-weight:700;color:${letterColor(letter)};margin-top:4px">${letter}</p><p style="font-size:10px;color:#64748b">${v.toFixed(1)}%</p></div>`
-      }).join('')
-
-      const cwpm = data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'
-      const lexile = data.latestReading ? (data.latestReading.reading_level || data.latestReading.passage_level || '--') : '--'
-      const accuracy = data.latestReading?.accuracy_rate != null ? `${data.latestReading.accuracy_rate.toFixed(1)}%` : '--'
-
-      pw.document.write(`<div class="card">
-      <div style="background:#647FBC;padding:16px 24px;color:white;display:flex;justify-content:space-between;align-items:center">
-        <div><p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;opacity:0.6">Progress Report</p>
-        <p style="font-size:20px;font-weight:700;font-family:Georgia,serif;margin-top:4px">${student.english_name}</p>
-        <p style="font-size:12px;opacity:0.7">${student.korean_name} -- ${student.english_class} -- Grade ${student.grade}</p></div>
-        <div style="text-align:right"><p style="font-size:11px;opacity:0.6">${data.semesterName}</p><p style="font-size:11px;opacity:0.6">Teacher: ${data.teacherName}</p></div>
-      </div>
-      <div style="background:white;padding:20px 24px">
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
-          <div style="width:64px;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:${data.overallGrade != null ? tileBgPrint(data.overallGrade).bg : '#f8fafc'};border:2px solid ${data.overallGrade != null ? tileBgPrint(data.overallGrade).border : '#e2e8f0'}">
-            <div style="text-align:center"><p style="font-size:22px;font-weight:800;color:${data.overallGrade != null ? letterColor(data.overallLetter) : '#94a3b8'}">${data.overallLetter}</p></div>
-          </div>
-          <div><p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600">Overall Grade</p>
-          <p style="font-size:14px;font-weight:700;color:#647FBC">${data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}</p></div>
-        </div>
-        <p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Domain Scores</p>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px">${ds}</div>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin-bottom:16px">
-          <p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Reading Fluency</p>
-          <div style="display:flex;gap:24px">
-            <div><p style="font-size:9px;color:#94a3b8">CWPM</p><p style="font-size:18px;font-weight:700;color:#647FBC">${cwpm}</p></div>
-            <div><p style="font-size:9px;color:#94a3b8">Lexile</p><p style="font-size:18px;font-weight:700;color:#647FBC">${lexile}</p></div>
-            <div><p style="font-size:9px;color:#94a3b8">Accuracy</p><p style="font-size:18px;font-weight:700;color:#647FBC">${accuracy}</p></div>
-          </div>
-        </div>
-        ${data.comment ? `<p style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:6px">Teacher Comment</p><div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.7;color:#374151;margin-bottom:12px">${data.comment}</div>` : ''}
-        <div style="text-align:center;padding-top:10px;border-top:1px solid #C8CED8;font-size:9px;color:#b8b0a6">Daewoo Elementary School \u00b7 English Program \u00b7 ${data.semesterName}</div>
-      </div></div>`)
+      setPreviewHtml(head + body + '</body></html>')
+    } catch (err: any) {
+      showToast(`Failed to generate reports: ${err?.message || 'unknown error'}`)
+    } finally {
+      setGenerating(false)
     }
-
-    pw.document.write('</body></html>')
-    pw.document.close()
-    // Longer delay for batch rendering to ensure all cards are laid out
-    setTimeout(() => { pw.print(); setPrinting(false) }, 800)
   }
 
+  const handlePrint = () => {
+    const iframe = iframeRef.current
+    if (!iframe || !iframe.contentWindow) return
+    iframe.contentWindow.focus()
+    iframe.contentWindow.print()
+  }
+
+  const handleClose = () => {
+    setPreviewHtml(null)
+    setProgress({ current: 0, total: 0 })
+  }
+
+  const buttonLabel = generating
+    ? <><Loader2 size={14} className="animate-spin" /> Generating {progress.current} of {progress.total}…</>
+    : <><Printer size={14} /> Print All {students.length} Students</>
+
   return (
-    <button onClick={handleBatchPrint} disabled={printing || students.length === 0}
-      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-50">
-      {printing ? <><Loader2 size={14} className="animate-spin" /> Generating {students.length} reports...</> : <><Printer size={14} /> Print All {students.length} Students</>}
-    </button>
+    <>
+      <button onClick={handleStart} disabled={generating || students.length === 0}
+        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-50">
+        {buttonLabel}
+      </button>
+
+      {/* Generation progress overlay */}
+      {generating && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-[360px]">
+            <div className="text-[14px] font-semibold text-navy mb-1">Generating progress reports…</div>
+            <div className="text-[12px] text-text-secondary mb-3">Loading student {progress.current} of {progress.total}</div>
+            <div className="w-full h-2 bg-surface-alt rounded-full overflow-hidden">
+              <div className="h-full bg-navy transition-all" style={{ width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%` }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview modal */}
+      {previewHtml != null && !generating && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex flex-col">
+          <div className="bg-white border-b border-border px-6 py-3 flex items-center justify-between flex-shrink-0">
+            <div>
+              <div className="text-[14px] font-semibold text-navy">Preview &middot; {students.length} progress reports</div>
+              <div className="text-[11px] text-text-secondary mt-0.5">Choose <strong>Save as PDF</strong> as the destination in the print dialog to download the whole class as one file.</div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleClose}
+                className="px-4 py-1.5 rounded-lg text-[12px] font-medium border border-border text-text-secondary hover:bg-surface-alt">
+                Cancel
+              </button>
+              <button onClick={handlePrint}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
+                <Printer size={14} /> Print / Save as PDF
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-hidden bg-[#f5f0eb]">
+            <iframe ref={iframeRef} srcDoc={previewHtml} className="w-full h-full border-0" title="Progress reports preview" />
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
-// ─── Progress Report (simplified, overall averages only) ────────────
+// ─── Progress Report ────────────────────────────────────────────────
 function ProgressReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass }: {
   studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: EnglishClass
 }) {
   const { showToast, currentTeacher } = useApp()
-  const student = students.find((s: any) => s.id === studentId)
-  const [loading, setLoading] = useState(true)
   const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [comment, setComment] = useState('')
   const [savingComment, setSavingComment] = useState(false)
+  const [showRefPanel, setShowRefPanel] = useState(false)
+  const [editingGrades, setEditingGrades] = useState(false)
+  const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
+  const [editNaValues, setEditNaValues] = useState<Record<string, boolean>>({})
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
+  const loadReport = useCallback(async () => {
+    setLoading(true)
+    setEditingGrades(false)
+    const student = students.find((s: any) => s.id === studentId)
     if (!student) { setLoading(false); return }
-    ;(async () => {
-      // Get assessments + grades for this semester
-      const { data: assessments } = await supabase.from('assessments').select('*').eq('semester_id', semesterId)
-      const { data: grades } = await supabase.from('grades').select('*').eq('student_id', studentId).in('assessment_id', (assessments || []).map((a: any) => a.id))
+    const sem = allSemesters.find((s: any) => s.id === semesterId)
+    if (!sem) { setLoading(false); return }
 
-      // Calculate domain averages
-      const domainGrades: Record<string, number | null> = {}
-      for (const dom of DOMAINS) {
-        const da = (assessments || []).filter((a: any) => a.domain === dom)
-        const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
-        da.forEach((a: any) => {
-          const g = (grades || []).find((g: any) => g.assessment_id === a.id)
-          if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
-          items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
-        })
-        domainGrades[dom] = calcWeightedAvg(items, Number(student.grade || 3))
+    // Sync calculated grades from assessments → semester_grades for active semesters
+    const isArchive = sem.type === 'archive'
+    if (!isArchive) {
+      const { data: assessments } = await supabase.from('assessments').select('*')
+        .eq('semester_id', semesterId).eq('grade', student.grade).eq('english_class', selectedClass)
+      if (assessments && assessments.length > 0) {
+        const { data: studentGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
+          .in('assessment_id', assessments.map((a: any) => a.id))
+        for (const domain of DOMAINS) {
+          const domAssessments = assessments.filter((a: any) => a.domain === domain)
+          const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
+          domAssessments.forEach((a: any) => {
+            const g = (studentGrades || []).find((gr: any) => gr.assessment_id === a.id)
+            if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
+            items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
+          })
+          const avg = calcWeightedAvg(items, Number(student.grade || 3))
+          if (avg != null) {
+            await supabase.from('semester_grades').upsert({
+              student_id: studentId, semester_id: semesterId, domain,
+              calculated_grade: Math.round(avg * 10) / 10, english_class: student.english_class, grade: student.grade,
+            }, { onConflict: 'student_id,semester_id,domain' })
+          }
+        }
       }
-      const validDomains = Object.values(domainGrades).filter((v): v is number => v != null)
-      const overallGrade = validDomains.length > 0 ? validDomains.reduce((a, b) => a + b, 0) / validDomains.length : null
+    }
 
-      // Get latest reading assessment
-      const { data: reading } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1)
+    // Read final grades from semester_grades
+    const { data: myGrades } = await supabase.from('semester_grades').select('*')
+      .eq('student_id', studentId).eq('semester_id', semesterId)
+    const domainGrades: Record<string, number | null> = {}
+    const domainStudentNa: Record<string, boolean> = {}
+    DOMAINS.forEach(d => { domainGrades[d] = null; domainStudentNa[d] = false })
+    ;(myGrades || []).forEach((sg: any) => {
+      if (DOMAINS.includes(sg.domain)) {
+        domainGrades[sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+        domainStudentNa[sg.domain] = !!sg.is_na
+      }
+    })
 
-      // Get teacher comment
-      const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
+    // Class-level N/A settings — applied OR'd with student-level
+    const { data: classSettings } = await supabase.from('class_report_settings').select('domain, is_na')
+      .eq('semester_id', semesterId).eq('english_class', student.english_class).eq('grade', student.grade)
+    const domainClassNa: Record<string, boolean> = {}
+    DOMAINS.forEach(d => { domainClassNa[d] = false })
+    ;(classSettings || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) domainClassNa[r.domain] = !!r.is_na })
 
-      // Teacher name
-      const { data: teacherData } = await supabase.from('teachers').select('name').eq('english_class', student.english_class).limit(1).single()
+    // Effective N/A (used for display + overall avg) is the OR of both
+    const domainNa: Record<string, boolean> = {}
+    DOMAINS.forEach(d => { domainNa[d] = domainStudentNa[d] || domainClassNa[d] })
 
-      setData({
-        domainGrades, overallGrade,
-        overallLetter: overallGrade != null ? getLetterGrade(overallGrade) : '--',
-        latestReading: reading?.[0] || null,
-        comment: commentData?.text || '',
-        teacherName: teacherData?.name || '',
-        semesterName: semester?.name || '',
-      })
-      setComment(commentData?.text || '')
-      setLoading(false)
-    })()
-  }, [studentId, semesterId])
+    const scoredDomains = DOMAINS.filter(d => !domainNa[d] && domainGrades[d] != null)
+    const overallGrade = scoredDomains.length > 0 ? Math.round(scoredDomains.reduce((a: number, d) => a + (domainGrades[d] as number), 0) / scoredDomains.length * 10) / 10 : null
+    const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
+
+    // Comment, teacher, plus extras for Student Reference panel
+    const { data: commentData } = await supabase.from('comments').select('text').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
+    const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
+    const [readingRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
+      supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1),
+      supabase.from('attendance').select('status').eq('student_id', studentId),
+      supabase.from('behavior_logs').select('id', { count: 'exact' }).eq('student_id', studentId),
+      supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', studentId).eq('is_active', true),
+      supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', studentId).eq('is_active', true),
+    ])
+    const attRecords = attRes.data || []
+    const attCounts = { present: 0, absent: 0, tardy: 0 }
+    attRecords.forEach((r: any) => { if (r.status === 'present') attCounts.present++; else if (r.status === 'absent') attCounts.absent++; else if (r.status === 'tardy') attCounts.tardy++ })
+
+    setData({
+      student, domainGrades, domainNa, domainStudentNa, domainClassNa, overallGrade, overallLetter,
+      comment: commentData?.text || '',
+      teacherName: teacher?.name || currentTeacher?.name || '',
+      teacherPhotoUrl: teacher?.photo_url || null,
+      semesterName: sem.name,
+      semesterGrade: (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade,
+      semesterClass: (myGrades || []).find((sg: any) => sg.english_class)?.english_class || student.english_class,
+      latestReading: readingRes.data?.[0] || null,
+      behaviorCount: behaviorRes.count || 0,
+      totalAtt: attRecords.length,
+      attCounts,
+      scaffolds: scaffoldRes.data || [],
+      goals: goalsRes.data || [],
+    })
+    setComment(commentData?.text || '')
+    setLoading(false)
+  }, [studentId, semesterId, students, allSemesters, selectedClass, currentTeacher])
+
+  useEffect(() => { loadReport() }, [loadReport])
 
   const saveComment = async () => {
     setSavingComment(true)
     const { error } = await supabase.from('comments').upsert({
       student_id: studentId, semester_id: semesterId, text: comment.trim(),
-      teacher_id: currentTeacher?.id, updated_at: new Date().toISOString(),
+      created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
     }, { onConflict: 'student_id,semester_id' })
     setSavingComment(false)
     if (error) showToast(`Error: ${error.message}`)
     else { showToast('Comment saved'); setData((prev: any) => ({ ...prev, comment: comment.trim() })) }
   }
 
+  const handleTeacherPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !currentTeacher) return
+    const ext = file.name.split('.').pop()
+    const path = `teacher-photos/${currentTeacher.id}.${ext}`
+    const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
+    if (error) { showToast('Upload failed'); return }
+    const { data: urlData } = supabase.storage.from('uploads').getPublicUrl(path)
+    await supabase.from('teachers').update({ photo_url: urlData.publicUrl }).eq('id', currentTeacher.id)
+    showToast('Photo updated')
+    loadReport()
+  }
+
   if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
-  if (!student || !data) return <div className="py-12 text-center text-text-tertiary">No data available.</div>
+  if (!data) return <div className="py-12 text-center text-text-tertiary">Could not load report data.</div>
+
+  const d = data, s = d.student
+  const gc = d.overallGrade != null ? letterColor(d.overallLetter) : '#94a3b8'
+  const pct = (d.overallGrade || 0) / 100
+  const radius = 50, stroke = 8, circ = 2 * Math.PI * radius
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
-        <div className="bg-navy px-6 py-4 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-blue-200/60 font-semibold">Progress Report</p>
-              <h3 className="font-display text-xl font-bold mt-1">{student.english_name}</h3>
-              <p className="text-blue-200/70 text-[13px]">{student.korean_name} -- {student.english_class} -- Grade {student.grade}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-blue-200/60 text-[11px]">{data.semesterName}</p>
-              <p className="text-blue-200/60 text-[11px]">Teacher: {data.teacherName}</p>
-            </div>
+    <div className="space-y-5">
+      <div className="flex items-center justify-end">
+        <button onClick={() => printProgressReport(s, d, comment)}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt">
+          <Printer size={15} /> Print Progress Report
+        </button>
+      </div>
+
+      {/* Card container — warm paper bg */}
+      <div className="rounded-xl overflow-hidden shadow-sm" style={{ background: '#f5f0eb' }}>
+
+        {/* ─── Header ─── */}
+        <div className="bg-navy px-7 py-5 text-white flex justify-between items-center">
+          <div>
+            <div className="text-[10px] opacity-50 tracking-[2.5px] uppercase font-medium">Daewoo Elementary School</div>
+            <div className="text-[22px] font-bold mt-1 font-display">{d.semesterName} Progress Report</div>
+            <div className="text-[11px] opacity-60 mt-0.5 italic">English Program &mdash; Mid-semester progress.</div>
+          </div>
+          <div className="w-[52px] h-[52px] rounded-full bg-white/95 flex items-center justify-center shadow-lg flex-shrink-0">
+            <img src="/logo.png" alt="" className="w-9 h-9 object-contain" onError={(e: any) => { (e.target as HTMLImageElement).style.display = 'none' }} />
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Overall Grade */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-xl flex items-center justify-center" style={{ backgroundColor: data.overallGrade != null ? tileBgPrint(data.overallGrade).bg : '#f8fafc', border: `2px solid ${data.overallGrade != null ? tileBgPrint(data.overallGrade).border : '#e2e8f0'}` }}>
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: data.overallGrade != null ? letterColor(data.overallLetter) : '#94a3b8' }}>{data.overallLetter}</p>
-                {data.overallGrade != null && <p className="text-[10px] text-text-tertiary">{data.overallGrade.toFixed(1)}%</p>}
+        {/* ─── Student Info — 4 columns + donut ─── */}
+        <div className="bg-white px-7 py-3.5" style={{ borderBottom: '1px solid #C8CED8' }}>
+          <div className="grid gap-x-4" style={{ gridTemplateColumns: '1.2fr 0.8fr 0.8fr 0.8fr auto' }}>
+            <InfoCell label="이름 / Name" value={`${s.korean_name}  ${s.english_name}`} bold />
+            <InfoCell label="학년 / Grade" value={d.semesterGrade || s.grade} />
+            <InfoCell label="반 / Korean Class" value={`${s.korean_class}반`} />
+            <InfoCell label="번호 / Class Number" value={`${s.class_number}번`} />
+            <div className="flex items-center justify-center pl-2" style={{ gridRow: '1 / 3' }}>
+              <div className="relative" style={{ width: 80, height: 80 }}>
+                <svg width="80" height="80" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r={radius} fill="none" stroke="#C8CED8" strokeWidth={stroke} />
+                  <circle cx="60" cy="60" r={radius} fill="none" stroke={gc} strokeWidth={stroke}
+                    strokeDasharray={`${pct * circ} ${circ}`} strokeLinecap="round"
+                    style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-[20px] font-extrabold text-navy leading-none">{d.overallLetter}</div>
+                  <div className="text-[10px] text-text-tertiary mt-0.5">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}%` : ''}</div>
+                </div>
               </div>
             </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Overall Grade</p>
-              <p className="text-[14px] font-semibold text-navy mt-0.5">{data.overallGrade != null ? `${data.overallGrade.toFixed(1)}% (${data.overallLetter})` : 'No grades entered'}</p>
-            </div>
+            <InfoCell label="영어반 / English Class" value={d.semesterClass || s.english_class} />
+            <InfoCell label="담당 / Teacher" value={d.teacherName} />
+            <InfoCell label="Team Manager" value="Victoria Park" />
+            <InfoCell label="교장 / Principal" value="Kwak Cheol Ok" />
           </div>
+        </div>
 
-          {/* Domain Breakdown */}
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Domain Scores</p>
-            <div className="grid grid-cols-5 gap-2">
-              {DOMAINS.map(dom => {
-                const v = data.domainGrades[dom]
-                const letter = v != null ? getLetterGrade(v) : '--'
+        {/* ─── Score Tiles ─── */}
+        <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Domain Performance</div>
+            {!editingGrades ? (
+              <button onClick={() => {
+                const eg: Record<string, string> = {}
+                const en: Record<string, boolean> = {}
+                DOMAINS.forEach(dom => {
+                  eg[dom] = d.domainGrades[dom] != null ? String(d.domainGrades[dom]) : ''
+                  en[dom] = !!d.domainStudentNa[dom]
+                })
+                setEditGradeValues(eg)
+                setEditNaValues(en)
+                setEditingGrades(true)
+              }} className="text-[10px] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button onClick={() => setEditingGrades(false)} className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
+                <button onClick={async () => {
+                  const student = students.find((st: any) => st.id === studentId)
+                  for (const dom of DOMAINS) {
+                    const isNa = !!editNaValues[dom]
+                    const val = parseFloat(editGradeValues[dom])
+                    if (isNa) {
+                      // Mark N/A — preserve any existing grade in case teacher untoggles later
+                      const row: any = {
+                        student_id: studentId, semester_id: semesterId, domain: dom, is_na: true,
+                        english_class: student?.english_class || selectedClass, grade: student?.grade,
+                      }
+                      if (!isNaN(val)) row.final_grade = val
+                      await supabase.from('semester_grades').upsert(row, { onConflict: 'student_id,semester_id,domain' })
+                    } else if (!isNaN(val)) {
+                      await supabase.from('semester_grades').upsert({
+                        student_id: studentId, semester_id: semesterId, domain: dom, final_grade: val, is_na: false,
+                        english_class: student?.english_class || selectedClass, grade: student?.grade,
+                      }, { onConflict: 'student_id,semester_id,domain' })
+                    } else {
+                      await supabase.from('semester_grades').delete().eq('student_id', studentId).eq('semester_id', semesterId).eq('domain', dom)
+                    }
+                  }
+                  setEditingGrades(false)
+                  showToast('Grades saved')
+                  loadReport()
+                }} className="px-3 py-1 rounded-lg text-[10px] font-semibold bg-navy text-white hover:bg-navy-dark">Save</button>
+              </div>
+            )}
+          </div>
+          {editingGrades ? (
+            <div className="grid grid-cols-5 gap-2.5">
+              {DOMAINS.map((dom) => {
+                const classNa = !!d.domainClassNa[dom]
+                const isNa = classNa || !!editNaValues[dom]
                 return (
-                  <div key={dom} className={`text-center rounded-lg border p-3 ${v != null ? tileBgClass(v) : 'bg-surface-alt border-border'}`}>
-                    <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">{DOMAIN_SHORT[dom]}</p>
-                    <p className="text-lg font-bold" style={{ color: v != null ? letterColor(letter) : '#94a3b8' }}>{letter}</p>
-                    {v != null && <p className="text-[10px] text-text-secondary">{v.toFixed(1)}%</p>}
+                  <div key={dom} className={`rounded-xl border-[1.5px] ${isNa ? 'border-[#94a3b8] bg-[#f5f5f5]' : 'border-border bg-white'} p-3.5 text-center`}>
+                    <div className="text-[11px] text-[#64748b] font-semibold mb-2">{DOMAIN_SHORT[dom]}</div>
+                    {isNa ? (
+                      <div className="text-[18px] font-bold text-[#94a3b8] py-2 leading-none">N/A</div>
+                    ) : (
+                      <>
+                        <input type="number" min={0} max={100} step={0.1} value={editGradeValues[dom] || ''}
+                          onChange={e => setEditGradeValues(prev => ({ ...prev, [dom]: e.target.value }))}
+                          className="w-full text-center text-[18px] font-bold px-2 py-1.5 border border-border rounded-lg outline-none focus:border-navy"
+                          placeholder="--" />
+                        <div className="text-[9px] text-text-tertiary mt-1">%</div>
+                      </>
+                    )}
+                    {classNa ? (
+                      <div className="text-[8px] text-[#94a3b8] mt-2 leading-tight">Class N/A · change in Class Overview</div>
+                    ) : (
+                      <button onClick={() => setEditNaValues(prev => ({ ...prev, [dom]: !prev[dom] }))}
+                        className={`text-[9px] mt-2 px-2 py-0.5 rounded font-medium ${isNa ? 'bg-[#94a3b8] text-white hover:bg-[#64748b]' : 'bg-white text-text-secondary border border-border hover:bg-surface-alt'}`}>
+                        {isNa ? 'Remove N/A' : 'Mark N/A'}
+                      </button>
+                    )}
                   </div>
                 )
               })}
             </div>
+          ) : (
+            <div className="grid grid-cols-5 gap-2.5">
+              {DOMAINS.map((dom) => {
+                if (d.domainNa[dom]) return (
+                  <div key={dom} className="rounded-xl border border-border bg-[#f5f5f5] p-3.5 text-center flex flex-col justify-center" style={{ minHeight: 96 }}>
+                    <div className="text-[11px] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                    <div className="text-[20px] font-bold text-[#94a3b8] mt-2 leading-none">N/A</div>
+                    <div className="text-[9px] text-[#94a3b8] mt-1">Not assessed</div>
+                  </div>
+                )
+                const v = d.domainGrades[dom]
+                if (v == null) return (
+                  <div key={dom} className="rounded-xl border border-border p-3.5 text-center flex flex-col justify-center" style={{ minHeight: 96 }}>
+                    <div className="text-[11px] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                    <div className="text-[22px] font-bold text-[#94a3b8] mt-2 leading-none">—</div>
+                  </div>
+                )
+                const g = getLetterGrade(v)
+                return (
+                  <div key={dom} className={`rounded-xl border-[1.5px] ${tileBgClass(v)} p-3.5 text-center flex flex-col justify-center`} style={{ minHeight: 96 }}>
+                    <div className="text-[11px] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                    <div className="text-[28px] font-extrabold text-[#1e293b] mt-2 leading-none">{v.toFixed(1)}%</div>
+                    <div className="text-[15px] font-bold mt-1" style={{ color: letterColor(g) }}>{g}</div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ─── Teacher Comment ─── */}
+        <div className="bg-white px-7 py-6" style={{ borderBottom: '1px solid #C8CED8' }}>
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="flex items-center gap-2.5">
+              <label className="cursor-pointer relative group">
+                <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleTeacherPhotoUpload} />
+                {d.teacherPhotoUrl ? (
+                  <img src={d.teacherPhotoUrl} className="w-9 h-9 rounded-full object-cover border-2 border-[#DFE4EB]" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-[#C8CED8] text-[#64748b] flex items-center justify-center text-[14px] font-bold border-2 border-[#DFE4EB]">
+                    {d.teacherName[0] || ''}
+                  </div>
+                )}
+                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-navy flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+                  <Camera size={9} className="text-white" />
+                </div>
+              </label>
+              <div>
+                <div className="text-[14px] font-bold text-[#1e293b]">{d.teacherName}</div>
+                <div className="text-[10px] text-[#94a3b8]">{s.english_class} Class</div>
+              </div>
+            </div>
+            <button onClick={() => setShowRefPanel(!showRefPanel)}
+              className={`print:hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${showRefPanel ? 'bg-navy text-white border-navy' : 'bg-[#EDF1F8] text-[#475569] border-[#d1d5db] hover:bg-[#DFE4EB]'}`}>
+              <BarChart3 size={14} />
+              Student Reference
+            </button>
           </div>
 
-          {/* Reading Info */}
-          <div className="bg-surface-alt border border-border rounded-lg p-4">
-            <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Reading Fluency</p>
-            <div className="flex items-center gap-6">
-              <div>
-                <p className="text-[9px] text-text-tertiary">CWPM</p>
-                <p className="text-[20px] font-bold text-navy">{data.latestReading?.cwpm != null ? Math.round(data.latestReading.cwpm) : '--'}</p>
-              </div>
-              <div>
-                <p className="text-[9px] text-text-tertiary">Lexile</p>
-                <p className="text-[20px] font-bold text-navy">{data.latestReading?.passage_level || data.latestReading?.reading_level || '--'}</p>
-              </div>
-              {data.latestReading?.accuracy_rate != null && (
-                <div>
-                  <p className="text-[9px] text-text-tertiary">Accuracy</p>
-                  <p className="text-[20px] font-bold text-navy">{data.latestReading.accuracy_rate.toFixed(1)}%</p>
-                </div>
-              )}
-              {data.latestReading?.date && (
-                <div>
-                  <p className="text-[9px] text-text-tertiary">Last Assessed</p>
-                  <p className="text-[12px] font-medium text-text-secondary">{new Date(data.latestReading.date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Teacher Comment */}
-          <div>
-            <div className="mb-2">
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Teacher Comment</p>
-            </div>
-            <textarea value={comment} onChange={e => setComment(e.target.value)}
-              rows={4} placeholder="Write a comment about this student's progress..."
-              className="w-full px-4 py-3 border border-border rounded-lg text-[13px] text-text-secondary outline-none focus:border-navy resize-none leading-relaxed" />
-            {comment !== (data.comment || '') && (
-              <div className="flex justify-end mt-2">
-                <button onClick={saveComment} disabled={savingComment}
-                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-50">
-                  {savingComment ? <Loader2 size={12} className="animate-spin" /> : null} Save Comment
+          {/* Student Reference Panel */}
+          {showRefPanel && (
+            <div className="print:hidden bg-[#f8f9fb] border border-[#d1d5db] rounded-xl p-4 mb-3.5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[11px] font-bold text-[#475569]">Student Reference -- All Data at a Glance</p>
+                <button onClick={() => {
+                  const lines = [
+                    `${s.english_name} (${s.korean_name}) -- ${s.english_class} -- Grade ${s.grade}`,
+                    `Semester: ${d.semesterName}`,
+                    '',
+                    'DOMAIN GRADES:',
+                    ...DOMAINS.map(dom => `  ${DOMAIN_LONG[dom]}: ${d.domainNa[dom] ? 'N/A' : (d.domainGrades[dom] != null ? `${d.domainGrades[dom]!.toFixed(1)}% (${getLetterGrade(d.domainGrades[dom]!)})` : 'No grade')}`),
+                    `  Overall: ${d.overallGrade != null ? `${d.overallGrade.toFixed(1)}% (${d.overallLetter})` : 'No grade'}`,
+                    '',
+                    'READING FLUENCY:',
+                    `  CWPM: ${d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : 'N/A'}`,
+                    `  Lexile: ${d.latestReading?.reading_level || d.latestReading?.passage_level || 'N/A'}`,
+                    `  Accuracy: ${d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : 'N/A'}`,
+                    `  NAEP Fluency: ${d.latestReading?.naep_fluency ? `Level ${d.latestReading.naep_fluency}` : 'N/A'}`,
+                    '',
+                    `ATTENDANCE: ${d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}% (${d.attCounts.present}P/${d.attCounts.absent}A/${d.attCounts.tardy}T)` : 'N/A'}`,
+                    `BEHAVIOR LOGS: ${d.behaviorCount} entries`,
+                    ...(d.scaffolds?.length ? ['', 'SCAFFOLDS:', ...d.scaffolds.map((sc: any) => `  [${sc.domain}] ${sc.scaffold_text}${sc.effectiveness ? ` (${sc.effectiveness})` : ''}`)] : []),
+                    ...(d.goals?.length ? ['', 'GOALS:', ...d.goals.map((g: any) => `  ${g.completed_at ? '[done]' : '[ ]'} [${g.goal_type}] ${g.goal_text}`)] : []),
+                  ]
+                  navigator.clipboard.writeText(lines.join('\n'))
+                  showToast('Copied to clipboard')
+                }} className="px-2.5 py-1 rounded-lg text-[10px] font-medium bg-white border border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]">
+                  Copy to Clipboard
                 </button>
               </div>
-            )}
+
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-2">Domain Grades</p>
+                  {DOMAINS.map(dom => {
+                    const isNa = !!d.domainNa[dom]
+                    const v = d.domainGrades[dom]
+                    return (
+                      <div key={dom} className="flex items-center justify-between py-0.5">
+                        <span className="text-[11px] text-[#64748b]">{DOMAIN_LONG[dom]}</span>
+                        <span className="text-[11px] font-bold" style={{ color: isNa ? '#94a3b8' : (v != null ? letterColor(getLetterGrade(v)) : '#94a3b8') }}>
+                          {isNa ? 'N/A' : (v != null ? `${v.toFixed(1)}% (${getLetterGrade(v)})` : '--')}
+                        </span>
+                      </div>
+                    )
+                  })}
+                  <div className="border-t border-[#e2e8f0] mt-1 pt-1 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-navy">Overall</span>
+                    <span className="text-[11px] font-bold text-navy">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}% (${d.overallLetter})` : '--'}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+                    <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Reading Fluency</p>
+                    <div className="flex gap-4">
+                      <div><p className="text-[9px] text-[#94a3b8]">CWPM</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : '--'}</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">Lexile</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.reading_level || d.latestReading?.passage_level || '--'}</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">Acc.</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '--'}</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">NAEP</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.naep_fluency ? `L${d.latestReading.naep_fluency}` : '--'}</p></div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+                    <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Attendance / Behavior</p>
+                    <div className="flex gap-4">
+                      <div><p className="text-[9px] text-[#94a3b8]">Attendance</p><p className="text-[12px] font-bold text-navy">{d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}%` : '--'}</p></div>
+                      <div><p className="text-[9px] text-[#94a3b8]">Behavior Logs</p><p className="text-[12px] font-bold text-navy">{d.behaviorCount}</p></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {d.scaffolds && d.scaffolds.length > 0 && (
+                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3 mb-2">
+                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Active Scaffolds ({d.scaffolds.length})</p>
+                  <div className="flex flex-wrap gap-1">
+                    {d.scaffolds.map((sc: any, i: number) => (
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-[10px] text-blue-800">
+                        <span className="font-bold uppercase text-[8px]">{sc.domain}</span> {sc.scaffold_text}
+                        {sc.effectiveness === 'working' && <span className="text-green-600">✓</span>}
+                        {sc.effectiveness === 'not_working' && <span className="text-red-600">✗</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {d.goals && d.goals.length > 0 && (
+                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Student Goals ({d.goals.length})</p>
+                  <div className="space-y-0.5">
+                    {d.goals.map((g: any, i: number) => (
+                      <div key={i} className="flex items-center gap-1.5 text-[10px]">
+                        <span>{g.completed_at ? '[done]' : '[ ]'}</span>
+                        <span className={g.completed_at ? 'line-through text-text-tertiary' : 'text-[#475569]'}>{g.goal_text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={6}
+            placeholder="Write comments about this student's progress..."
+            className="w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed bg-[#fafaf8]" />
+          <div className="flex justify-end mt-2">
+            <button onClick={saveComment} disabled={savingComment}
+              className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+              {savingComment ? 'Saving...' : 'Save Comment'}
+            </button>
           </div>
         </div>
-      </div>
 
-      <div className="mt-4 flex items-center justify-center gap-3">
-        <button onClick={() => printProgressReport(student, data)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
-          <Printer size={14} /> Print Progress Report
-        </button>
+        {/* ─── Grading Scale + Footer ─── */}
+        <div className="bg-white px-7 py-4">
+          <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2.5">Grading Scale</div>
+          <div className="flex gap-1 flex-wrap">
+            {SCALE_DISPLAY.map((r: any) => (
+              <span key={r.letter + r.range} className="px-2 py-0.5 rounded bg-[#EDF1F8] border border-[#C8CED8] text-[10px] inline-flex gap-1">
+                <strong style={{ color: letterColor(r.letter) }}>{r.letter}</strong>
+                <span className="text-[#94a3b8]">{r.range}</span>
+              </span>
+            ))}
+          </div>
+          <div className="text-center mt-4 pt-3 text-[10px] text-[#b8b0a6] tracking-wider" style={{ borderTop: '1px solid #C8CED8' }}>
+            Daewoo Elementary School &middot; English Program &middot; {d.semesterName}
+          </div>
+        </div>
+
       </div>
     </div>
   )
@@ -1783,6 +2169,231 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+// ─── Progress Report Class Overview ─────────────────────────────────
+function ProgressClassOverview({ students, semesterId, semester, selectedClass, selectedGrade, onSelectStudent }: {
+  students: any[]; semesterId: string; semester: any;
+  selectedClass: EnglishClass; selectedGrade: Grade;
+  onSelectStudent: (studentId: string) => void;
+}) {
+  const { showToast, currentTeacher } = useApp()
+  const [loading, setLoading] = useState(true)
+  const [classNa, setClassNa] = useState<Record<string, boolean>>({})
+  const [studentRows, setStudentRows] = useState<Array<{ student: any; status: Record<string, 'graded' | 'na' | 'empty'>; isComplete: boolean; hasComment: boolean }>>([])
+  const [domainAvgs, setDomainAvgs] = useState<Record<string, number | null>>({})
+  const [savingNa, setSavingNa] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    if (students.length === 0) {
+      setClassNa({}); setStudentRows([]); setDomainAvgs({}); setLoading(false); return
+    }
+    const studentIds = students.map(s => s.id)
+
+    // Class N/A settings
+    const { data: cls } = await supabase.from('class_report_settings').select('domain, is_na')
+      .eq('semester_id', semesterId).eq('english_class', selectedClass).eq('grade', selectedGrade)
+    const cna: Record<string, boolean> = {}
+    DOMAINS.forEach(d => { cna[d] = false })
+    ;(cls || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) cna[r.domain] = !!r.is_na })
+
+    // Bulk load all student grades + comments for this class+semester
+    const [allGradesRes, allCommentsRes] = await Promise.all([
+      supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na')
+        .eq('semester_id', semesterId).in('student_id', studentIds),
+      supabase.from('comments').select('student_id, text')
+        .eq('semester_id', semesterId).in('student_id', studentIds),
+    ])
+    const allGrades = allGradesRes.data || []
+    const commentsByStudent: Record<string, string> = {}
+    ;(allCommentsRes.data || []).forEach((c: any) => { commentsByStudent[c.student_id] = (c.text || '').trim() })
+
+    const rows = students.map(student => {
+      const myGrades = allGrades.filter((g: any) => g.student_id === student.id)
+      const status: Record<string, 'graded' | 'na' | 'empty'> = {}
+      let scoredCount = 0
+      let naCount = 0
+      DOMAINS.forEach(d => {
+        const sg = myGrades.find((g: any) => g.domain === d)
+        const studentNa = !!sg?.is_na
+        const grade = sg ? (sg.final_grade ?? sg.calculated_grade ?? null) : null
+        if (studentNa || cna[d]) { status[d] = 'na'; naCount++ }
+        else if (grade != null) { status[d] = 'graded'; scoredCount++ }
+        else { status[d] = 'empty' }
+      })
+      const isComplete = (scoredCount + naCount) === DOMAINS.length
+      const hasComment = !!commentsByStudent[student.id]
+      return { student, status, isComplete, hasComment }
+    })
+
+    // Class domain averages — exclude student-level is_na; class-N/A → null
+    const avgs: Record<string, number | null> = {}
+    DOMAINS.forEach(d => {
+      if (cna[d]) { avgs[d] = null; return }
+      const vals = allGrades.filter((g: any) => g.domain === d && !g.is_na)
+        .map((g: any) => g.final_grade ?? g.calculated_grade)
+        .filter((v: any) => v != null) as number[]
+      avgs[d] = vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length * 10) / 10 : null
+    })
+
+    setClassNa(cna)
+    setStudentRows(rows)
+    setDomainAvgs(avgs)
+    setLoading(false)
+  }, [students, semesterId, selectedClass, selectedGrade])
+
+  useEffect(() => { load() }, [load])
+
+  const toggleClassNa = async (domain: string) => {
+    setSavingNa(domain)
+    const newVal = !classNa[domain]
+    const { error } = await supabase.from('class_report_settings').upsert({
+      semester_id: semesterId, english_class: selectedClass, grade: selectedGrade,
+      domain, is_na: newVal, updated_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
+    }, { onConflict: 'semester_id,english_class,grade,domain' })
+    setSavingNa(null)
+    if (error) {
+      showToast(error.code === '42P01' ? 'class_report_settings table not set up yet. Run the SQL migration.' : `Error: ${error.message}`)
+      return
+    }
+    showToast(newVal ? `${DOMAIN_SHORT[domain]} marked N/A for class` : `${DOMAIN_SHORT[domain]} N/A removed for class`)
+    load()
+  }
+
+  if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
+
+  if (students.length === 0) {
+    return <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">No students in this class.</div>
+  }
+
+  const completeCount = studentRows.filter(r => r.isComplete).length
+  const commentCount = studentRows.filter(r => r.hasComment).length
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-xl overflow-hidden shadow-sm" style={{ background: '#f5f0eb' }}>
+        {/* Header */}
+        <div className="bg-navy px-7 py-5 text-white">
+          <div className="text-[10px] opacity-50 tracking-[2.5px] uppercase font-medium">Progress Report Class Overview</div>
+          <div className="text-[22px] font-bold mt-1 font-display">{semester.name} &middot; Grade {selectedGrade} &middot; {selectedClass}</div>
+          <div className="text-[11px] opacity-60 mt-0.5 italic">{students.length} student{students.length === 1 ? '' : 's'}</div>
+        </div>
+
+        {/* Class averages */}
+        <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
+          <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3">Class Domain Averages</div>
+          <div className="grid grid-cols-5 gap-2.5">
+            {DOMAINS.map(dom => {
+              if (classNa[dom]) return (
+                <div key={dom} className="rounded-xl border border-border bg-[#f5f5f5] p-3 text-center flex flex-col justify-center" style={{ minHeight: 76 }}>
+                  <div className="text-[10px] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                  <div className="text-[16px] font-bold text-[#94a3b8] mt-1">N/A</div>
+                </div>
+              )
+              const v = domainAvgs[dom]
+              if (v == null) return (
+                <div key={dom} className="rounded-xl border border-border p-3 text-center flex flex-col justify-center bg-white" style={{ minHeight: 76 }}>
+                  <div className="text-[10px] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                  <div className="text-[18px] font-bold text-[#94a3b8] mt-1">&mdash;</div>
+                </div>
+              )
+              return (
+                <div key={dom} className={`rounded-xl border-[1.5px] ${tileBgClass(v)} p-3 text-center flex flex-col justify-center`} style={{ minHeight: 76 }}>
+                  <div className="text-[10px] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                  <div className="text-[20px] font-extrabold text-[#1e293b] mt-1 leading-none">{v.toFixed(1)}%</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Completion stats */}
+        <div className="bg-white px-7 py-4" style={{ borderBottom: '1px solid #C8CED8' }}>
+          <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3">Completion</div>
+          <div className="flex gap-8">
+            <div>
+              <div className="text-[10px] text-text-secondary">All 5 domains scored or N/A</div>
+              <div className="text-[18px] font-bold text-navy mt-0.5">{completeCount} <span className="text-text-tertiary text-[12px] font-normal">/ {students.length}</span></div>
+            </div>
+            <div>
+              <div className="text-[10px] text-text-secondary">Comment written</div>
+              <div className="text-[18px] font-bold text-navy mt-0.5">{commentCount} <span className="text-text-tertiary text-[12px] font-normal">/ {students.length}</span></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Class N/A toggles */}
+        <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
+          <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-1">Class N/A Settings</div>
+          <p className="text-[11px] text-text-tertiary mb-3">Mark a domain as <strong>not assessed this term</strong> for the entire class. Every student's report will show N/A for that domain (per-student N/A still applies on top).</p>
+          <div className="grid grid-cols-5 gap-2.5">
+            {DOMAINS.map(dom => {
+              const isOn = !!classNa[dom]
+              const saving = savingNa === dom
+              return (
+                <button key={dom} onClick={() => toggleClassNa(dom)} disabled={saving}
+                  className={`rounded-lg p-3 text-center border transition-all ${isOn ? 'bg-[#94a3b8] text-white border-[#94a3b8]' : 'bg-white text-[#475569] border-border hover:bg-surface-alt'} ${saving ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}>
+                  <div className="text-[11px] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                  <div className="text-[10px] mt-0.5 opacity-80">{isOn ? '✓ N/A' : 'Mark N/A'}</div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Student list */}
+        <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Students</div>
+            <div className="text-[10px] text-text-tertiary">Click a student to open their progress report</div>
+          </div>
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left py-2 px-2 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Student</th>
+                {DOMAINS.map(d => <th key={d} className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">{DOMAIN_SHORT[d]}</th>)}
+                <th className="text-center py-2 px-2 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Comment</th>
+                <th className="py-2 px-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {studentRows.map(({ student, status, hasComment, isComplete }) => (
+                <tr key={student.id} onClick={() => onSelectStudent(student.id)}
+                  className="border-b border-border cursor-pointer hover:bg-surface-alt">
+                  <td className="py-2 px-2">
+                    <div className="font-semibold text-navy text-[12px]">{student.english_name}</div>
+                    <div className="text-[10px] text-text-tertiary">{student.korean_name} &middot; #{student.class_number}</div>
+                  </td>
+                  {DOMAINS.map(d => (
+                    <td key={d} className="text-center py-2 px-1">
+                      {status[d] === 'graded' && <span title="Graded" className="inline-block w-3 h-3 rounded-full bg-green-500" />}
+                      {status[d] === 'na' && <span title="N/A" className="text-[9px] font-bold text-[#94a3b8]">N/A</span>}
+                      {status[d] === 'empty' && <span title="No grade" className="inline-block w-3 h-3 rounded-full border border-border bg-white" />}
+                    </td>
+                  ))}
+                  <td className="text-center py-2 px-2">
+                    {hasComment
+                      ? <span title="Comment written" className="text-green-600 font-bold">&#10003;</span>
+                      : <span title="No comment" className="text-text-tertiary">&mdash;</span>}
+                  </td>
+                  <td className="text-right py-2 px-2 text-text-tertiary">
+                    <ChevronRight size={14} className={isComplete ? '' : 'opacity-50'} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Batch print */}
+        <div className="bg-white px-7 py-4 flex items-center justify-between">
+          <div className="text-[11px] text-text-tertiary">Save as PDF in the print dialog to download the whole class as one file.</div>
+          <BatchPrintButton students={students} semesterId={semesterId} className={selectedClass} />
+        </div>
       </div>
     </div>
   )
