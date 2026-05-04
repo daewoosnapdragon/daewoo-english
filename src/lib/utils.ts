@@ -310,3 +310,65 @@ export function calculateWeightedAverage(
 
   return groupAvgs.reduce((s, g) => s + (g.avg * (g.weight / totalWeight)), 0)
 }
+
+// ─── Level test → reading record adapter ─────────────────────────────
+// Level placement tests (oral section) measure CWPM, accuracy, NAEP, etc.
+// These should surface in the Reading Fluency views alongside ad-hoc reading_assessments.
+// Older tests stored CWPM as raw_scores.passage_cwpm; the rebuilt OralTestEntry25
+// stores it as raw_scores.orf_cwpm and also fills calculated_metrics.cwpm.
+export interface LevelTestReadingRecord {
+  id: string
+  student_id: string
+  date: string
+  passage_title: string
+  passage_level: string | null
+  word_count: number
+  time_seconds: number
+  errors: number
+  self_corrections: number
+  cwpm: number
+  accuracy_rate: number | null
+  reading_level: string | null
+  notes: string
+  naep_fluency: number | null
+  assessed_by: null
+  is_level_test: true
+  level_test_id: string
+}
+
+export function levelTestToReadingRecord(
+  score: { level_test_id: string; raw_scores: any; calculated_metrics?: any },
+  testDate: string,
+  studentId: string
+): LevelTestReadingRecord | null {
+  if (!testDate) return null
+  const raw = score.raw_scores || {}
+  const calc = score.calculated_metrics || {}
+  const cwpm = calc.cwpm ?? raw.passage_cwpm ?? raw.orf_cwpm ?? null
+  if (cwpm == null || cwpm <= 0) return null
+  const accuracy = calc.accuracy_pct ?? raw.orf_accuracy ?? null
+  const naep = calc.naep ?? raw.naep ?? null
+  const passageLevel = calc.best_passage_level ?? calc.passage_level ?? raw.passage_level ?? null
+  const words = raw.orf_words_read ?? raw.word_count ?? 0
+  const errors = raw.orf_errors ?? 0
+  const time = raw.orf_time_seconds ?? 60
+  return {
+    id: `lt-${score.level_test_id}`,
+    student_id: studentId,
+    date: testDate,
+    passage_title: 'Level Test',
+    passage_level: passageLevel,
+    word_count: words,
+    time_seconds: time,
+    errors,
+    self_corrections: 0,
+    cwpm: Math.round(cwpm),
+    accuracy_rate: accuracy != null ? Math.round(accuracy * 10) / 10 : null,
+    reading_level: passageLevel,
+    notes: 'From level placement test',
+    naep_fluency: naep,
+    assessed_by: null,
+    is_level_test: true,
+    level_test_id: score.level_test_id,
+  }
+}

@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { useStudents, useSemesters } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
-import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
+import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord } from '@/lib/utils'
 import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
@@ -78,6 +78,7 @@ interface ReportData {
   semesterGrade: number | null
   semesterClass: string | null
   behaviorCount: number
+  behaviorLogs: any[]
   behaviorGrade: string | null
   totalAtt: number
   attCounts: { present: number; absent: number; tardy: number }
@@ -203,6 +204,49 @@ function InfoCell({ label, value, bold = false }: { label: string; value: any; b
     <div className="py-1.5 border-b border-[#DFE4EB]">
       <div className="text-[9px] text-[#94a3b8] font-semibold tracking-wide">{label}</div>
       <div className={`text-[13px] text-[#1e293b] mt-0.5 ${bold ? 'font-bold' : 'font-semibold'}`}>{value}</div>
+    </div>
+  )
+}
+
+// ─── Behavior Logs Panel (used in Student Reference) ─────────────────
+
+const BEHAVIOR_TYPE_STYLE: Record<string, { label: string; bg: string; text: string }> = {
+  positive: { label: 'POSITIVE', bg: 'bg-green-50 border-green-200', text: 'text-green-700' },
+  negative: { label: 'NEGATIVE', bg: 'bg-red-50 border-red-200', text: 'text-red-700' },
+  abc: { label: 'NEGATIVE', bg: 'bg-red-50 border-red-200', text: 'text-red-700' },
+  concern: { label: 'CONCERN', bg: 'bg-amber-50 border-amber-200', text: 'text-amber-700' },
+  parent_contact: { label: 'PARENT', bg: 'bg-purple-50 border-purple-200', text: 'text-purple-700' },
+  intervention: { label: 'INTERVENTION', bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700' },
+  note: { label: 'NOTE', bg: 'bg-gray-50 border-gray-200', text: 'text-gray-700' },
+}
+
+function BehaviorLogsPanel({ logs }: { logs: any[] }) {
+  if (!logs || logs.length === 0) {
+    return (
+      <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+        <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Recent Behavior Logs</p>
+        <p className="text-[11px] text-text-tertiary italic">No behavior logs yet.</p>
+      </div>
+    )
+  }
+  return (
+    <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
+      <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Recent Behavior Logs ({logs.length})</p>
+      <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
+        {logs.map((log: any) => {
+          const style = BEHAVIOR_TYPE_STYLE[log.type] || BEHAVIOR_TYPE_STYLE.note
+          const dt = log.date ? new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'
+          const summary = (log.note && log.note.trim()) || (log.behaviors && log.behaviors.length ? log.behaviors.join(', ') : '—')
+          return (
+            <div key={log.id} className={`flex items-start gap-2 px-2 py-1 rounded border ${style.bg}`}>
+              <span className="text-[9px] text-text-tertiary font-semibold whitespace-nowrap mt-px w-10 flex-shrink-0">{dt}</span>
+              <span className={`text-[8px] font-bold uppercase ${style.text} whitespace-nowrap mt-px w-16 flex-shrink-0`}>{style.label}</span>
+              <span className="text-[11px] text-[#475569] leading-snug">{summary}</span>
+              {log.is_flagged && <span className="text-amber-600 text-[10px] flex-shrink-0">★</span>}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -468,16 +512,32 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
-    const [readingRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
+    const [readingRes, ltScoreRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(5),
+      supabase.from('level_test_scores').select('level_test_id, raw_scores, calculated_metrics').eq('student_id', studentId),
       supabase.from('attendance').select('status').eq('student_id', studentId),
-      supabase.from('behavior_logs').select('id', { count: 'exact' }).eq('student_id', studentId),
+      supabase.from('behavior_logs').select('id, date, type, note, behaviors, is_flagged').eq('student_id', studentId).order('date', { ascending: false }).limit(20),
       supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', studentId).eq('is_active', true),
       supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', studentId).eq('is_active', true),
     ])
     const attRecords = attRes.data || []
     const attCounts = { present: 0, absent: 0, tardy: 0 }
     attRecords.forEach((r: any) => { if (r.status === 'present') attCounts.present++; else if (r.status === 'absent') attCounts.absent++; else if (r.status === 'tardy') attCounts.tardy++ })
+
+    // Merge level test oral results with reading assessments — pick the most recent
+    const ltScores = ltScoreRes.data || []
+    let latestReading: any = readingRes.data?.[0] || null
+    if (ltScores.length > 0) {
+      const testIds = [...new Set(ltScores.map((s: any) => s.level_test_id))]
+      const { data: ltTests } = await supabase.from('level_tests').select('id, created_at').in('id', testIds)
+      const testDateMap: Record<string, string> = {}
+      ltTests?.forEach((t: any) => { testDateMap[t.id] = t.created_at?.split('T')[0] || '' })
+      ltScores.forEach((lt: any) => {
+        const rec = levelTestToReadingRecord(lt, testDateMap[lt.level_test_id] || '', studentId)
+        if (rec && (!latestReading || (rec.date || '') > (latestReading.date || ''))) latestReading = rec
+      })
+    }
+    const behaviorLogs = behaviorRes.data || []
 
     setData({
       student, domainGrades, domainNa, domainStudentNa, domainClassNa, overallGrade, overallLetter, classAverages,
@@ -491,8 +551,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       // Use grade/class from semester_grades if available (historical accuracy), else current student
       semesterGrade: (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade,
       semesterClass: (myGrades || []).find((sg: any) => sg.english_class)?.english_class || student.english_class,
-      latestReading: readingRes.data?.[0] || null,
-      behaviorCount: behaviorRes.count || 0,
+      latestReading,
+      behaviorCount: behaviorLogs.length,
+      behaviorLogs,
       behaviorGrade,
       totalAtt: attRecords.length,
       attCounts,
@@ -1048,6 +1109,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 </div>
               </div>
 
+              {/* Recent behavior logs — visible while writing comments */}
+              <div className="mb-2"><BehaviorLogsPanel logs={d.behaviorLogs} /></div>
+
               {/* Scaffolds */}
               {d.scaffolds && d.scaffolds.length > 0 && (
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3 mb-2">
@@ -1442,16 +1506,31 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     // Comment, teacher, plus extras for Student Reference panel
     const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
-    const [readingRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
+    const [readingRes, ltScoreRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1),
+      supabase.from('level_test_scores').select('level_test_id, raw_scores, calculated_metrics').eq('student_id', studentId),
       supabase.from('attendance').select('status').eq('student_id', studentId),
-      supabase.from('behavior_logs').select('id', { count: 'exact' }).eq('student_id', studentId),
+      supabase.from('behavior_logs').select('id, date, type, note, behaviors, is_flagged').eq('student_id', studentId).order('date', { ascending: false }).limit(20),
       supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', studentId).eq('is_active', true),
       supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', studentId).eq('is_active', true),
     ])
     const attRecords = attRes.data || []
     const attCounts = { present: 0, absent: 0, tardy: 0 }
     attRecords.forEach((r: any) => { if (r.status === 'present') attCounts.present++; else if (r.status === 'absent') attCounts.absent++; else if (r.status === 'tardy') attCounts.tardy++ })
+
+    const ltScores = ltScoreRes.data || []
+    let latestReading: any = readingRes.data?.[0] || null
+    if (ltScores.length > 0) {
+      const testIds = [...new Set(ltScores.map((s: any) => s.level_test_id))]
+      const { data: ltTests } = await supabase.from('level_tests').select('id, created_at').in('id', testIds)
+      const testDateMap: Record<string, string> = {}
+      ltTests?.forEach((t: any) => { testDateMap[t.id] = t.created_at?.split('T')[0] || '' })
+      ltScores.forEach((lt: any) => {
+        const rec = levelTestToReadingRecord(lt, testDateMap[lt.level_test_id] || '', studentId)
+        if (rec && (!latestReading || (rec.date || '') > (latestReading.date || ''))) latestReading = rec
+      })
+    }
+    const behaviorLogs = behaviorRes.data || []
 
     setData({
       student, domainGrades, domainNa, domainStudentNa, domainClassNa, overallGrade, overallLetter,
@@ -1462,8 +1541,9 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       semesterName: sem.name,
       semesterGrade: (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade,
       semesterClass: (myGrades || []).find((sg: any) => sg.english_class)?.english_class || student.english_class,
-      latestReading: readingRes.data?.[0] || null,
-      behaviorCount: behaviorRes.count || 0,
+      latestReading,
+      behaviorCount: behaviorLogs.length,
+      behaviorLogs,
       totalAtt: attRecords.length,
       attCounts,
       scaffolds: scaffoldRes.data || [],
@@ -1770,6 +1850,8 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                   </div>
                 </div>
               </div>
+
+              <div className="mb-2"><BehaviorLogsPanel logs={d.behaviorLogs} /></div>
 
               {d.scaffolds && d.scaffolds.length > 0 && (
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3 mb-2">
@@ -2389,7 +2471,7 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
               </tr>
             </thead>
             <tbody>
-              {studentRows.map(({ student, status, hasComment, commentSkipped }) => (
+              {studentRows.map(({ student, status, isComplete, hasComment, commentSkipped }) => (
                 <tr key={student.id} onClick={() => onSelectStudent(student.id)}
                   className="border-b border-border cursor-pointer hover:bg-surface-alt">
                   <td className="py-2 px-2">

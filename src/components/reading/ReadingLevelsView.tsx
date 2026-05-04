@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
-import { getKSTDateString, classToColor, classToTextColor } from '@/lib/utils'
+import { getKSTDateString, classToColor, classToTextColor, levelTestToReadingRecord } from '@/lib/utils'
 import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download, Printer, BarChart3, Upload, FileText } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
@@ -149,10 +149,27 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
     if (students.length === 0) { setLoadingRecords(false); return }
     ;(async () => {
       setLoadingRecords(true)
-      const { data } = await supabase.from('reading_assessments').select('*')
-        .in('student_id', students.map((s: any) => s.id)).order('date', { ascending: false })
+      const studentIds = students.map((s: any) => s.id)
+      const [readingRes, ltScoreRes] = await Promise.all([
+        supabase.from('reading_assessments').select('*').in('student_id', studentIds).order('date', { ascending: false }),
+        supabase.from('level_test_scores').select('student_id, level_test_id, raw_scores, calculated_metrics').in('student_id', studentIds),
+      ])
+      const ltScores = ltScoreRes.data || []
+      const testIds = [...new Set(ltScores.map((s: any) => s.level_test_id))]
+      const testDateMap: Record<string, string> = {}
+      if (testIds.length > 0) {
+        const { data: ltTests } = await supabase.from('level_tests').select('id, created_at').in('id', testIds)
+        ltTests?.forEach((t: any) => { testDateMap[t.id] = t.created_at?.split('T')[0] || '' })
+      }
+      const ltRecords: ReadingRecord[] = []
+      ltScores.forEach((lt: any) => {
+        const rec = levelTestToReadingRecord(lt, testDateMap[lt.level_test_id] || '', lt.student_id)
+        if (rec) ltRecords.push(rec as any)
+      })
+      // Combine ad-hoc + level test, take most recent per student
+      const combined = [...(readingRes.data || []), ...ltRecords].sort((a: any, b: any) => (b.date || '').localeCompare(a.date || ''))
       const map: Record<string, ReadingRecord> = {}
-      if (data) data.forEach((r: any) => { if (!map[r.student_id]) map[r.student_id] = r })
+      combined.forEach((r: any) => { if (!map[r.student_id]) map[r.student_id] = r })
       setLatestRecords(map)
       setLoadingRecords(false)
     })()
@@ -301,7 +318,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
       const orfRecords: ReadingRecord[] = data || []
 
       // Also fetch level test oral reading scores (two-step: scores then test dates)
-      const { data: ltScoreData } = await supabase.from('level_test_scores').select('level_test_id, raw_scores').eq('student_id', selectedStudentId)
+      const { data: ltScoreData } = await supabase.from('level_test_scores').select('level_test_id, raw_scores, calculated_metrics').eq('student_id', selectedStudentId)
       const ltRecords: ReadingRecord[] = []
       if (ltScoreData && ltScoreData.length > 0) {
         const testIds = [...new Set(ltScoreData.map((s: any) => s.level_test_id))]
@@ -310,19 +327,8 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
         ltTests?.forEach((t: any) => { testDateMap[t.id] = t.created_at?.split('T')[0] || '' })
 
         ltScoreData.forEach((lt: any) => {
-          const cwpm = lt.raw_scores?.passage_cwpm
-          if (cwpm != null && cwpm > 0) {
-            const ltDate = testDateMap[lt.level_test_id] || ''
-            if (!ltDate) return
-            ltRecords.push({
-              id: `lt-${lt.level_test_id}`, student_id: selectedStudentId, date: ltDate,
-              passage_title: 'Level Test', passage_level: null,
-              word_count: lt.raw_scores?.word_count || 0, time_seconds: 60,
-              errors: 0, self_corrections: 0, cwpm, accuracy_rate: 100,
-              reading_level: null, notes: 'From level placement test', naep_fluency: null,
-              assessed_by: null, is_level_test: true,
-            } as any)
-          }
+          const rec = levelTestToReadingRecord(lt, testDateMap[lt.level_test_id] || '', selectedStudentId)
+          if (rec) ltRecords.push(rec as any)
         })
       }
 
