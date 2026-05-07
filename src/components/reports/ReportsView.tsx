@@ -13,13 +13,13 @@ type LangKey = 'en' | 'ko'
 const DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language'] as const
 type Domain = typeof DOMAINS[number]
 const DOMAIN_SHORT: Record<string, string> = {
-  reading: 'Reading', phonics: 'Phonics', writing: 'Writing', speaking: 'Speaking', language: 'Language',
+  reading: 'Reading', phonics: 'Phonics', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards',
 }
 const DOMAIN_LONG: Record<string, string> = {
   reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards',
 }
 const DOMAIN_PRINT: Record<string, string> = {
-  reading: 'Reading', phonics: 'Phonics', writing: 'Writing', speaking: 'Speaking', language: 'Language',
+  reading: 'Reading', phonics: 'Phonics', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards',
 }
 
 const SCALE_DISPLAY = [
@@ -31,11 +31,10 @@ const SCALE_DISPLAY = [
 ]
 
 function getLetterGrade(score: number): string {
-  const r = Math.round(score)
-  if (r >= 97) return 'A+'; if (r >= 93) return 'A'; if (r >= 90) return 'A-'
-  if (r >= 87) return 'B+'; if (r >= 83) return 'B'; if (r >= 80) return 'B-'
-  if (r >= 77) return 'C+'; if (r >= 73) return 'C'; if (r >= 70) return 'C-'
-  if (r >= 67) return 'D+'; if (r >= 63) return 'D'; if (r >= 60) return 'D-'
+  if (score >= 97) return 'A+'; if (score >= 93) return 'A'; if (score >= 90) return 'A-'
+  if (score >= 87) return 'B+'; if (score >= 83) return 'B'; if (score >= 80) return 'B-'
+  if (score >= 77) return 'C+'; if (score >= 73) return 'C'; if (score >= 70) return 'C-'
+  if (score >= 67) return 'D+'; if (score >= 63) return 'D'; if (score >= 60) return 'D-'
   return 'E'
 }
 
