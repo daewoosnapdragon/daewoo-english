@@ -6,7 +6,7 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["next", "dev"],
       "port": 3000,
-      "cwd": "/Users/kylachampion/Documents/GitHub/daewoo-english"
+      "autoPort": true
     }
   ]
 }

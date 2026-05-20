@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useAvailableClasses } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Loader2, Check, UserCheck, UserX, Clock, Download, AlertTriangle, Printer } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, UserCheck, UserX, Clock, Download, AlertTriangle, Printer } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import EmptyState from '@/components/shared/EmptyState'
 import AnimatedNumber from '@/components/shared/AnimatedNumber'
@@ -36,6 +36,13 @@ export default function AttendanceView() {
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [showUnsavedModal, setShowUnsavedModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
+  const [printWeeks, setPrintWeeks] = useState<Set<string>>(new Set())
+  const [showPrintOptions, setShowPrintOptions] = useState(false)
+  const [printNavMonth, setPrintNavMonth] = useState<{ year: number; month: number }>(() => {
+    const d = new Date(getKSTDateString() + 'T12:00:00')
+    return { year: d.getFullYear(), month: d.getMonth() }
+  })
+  const printDropdownRef = useRef<HTMLDivElement>(null)
 
   const guardUnsaved = (action: () => void) => {
     if (hasChanges) { setPendingAction(() => action); setShowUnsavedModal(true) }
@@ -48,6 +55,27 @@ export default function AttendanceView() {
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasChanges])
+
+  // When the print dropdown opens, reset its month to the currently selected date's month
+  useEffect(() => {
+    if (showPrintOptions) {
+      const d = new Date(selectedDate + 'T12:00:00')
+      setPrintNavMonth({ year: d.getFullYear(), month: d.getMonth() })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPrintOptions])
+
+  // Close print dropdown on outside click
+  useEffect(() => {
+    if (!showPrintOptions) return
+    const handler = (e: MouseEvent) => {
+      if (printDropdownRef.current && !printDropdownRef.current.contains(e.target as Node)) {
+        setShowPrintOptions(false)
+      }
+    }
+    window.addEventListener('mousedown', handler)
+    return () => window.removeEventListener('mousedown', handler)
+  }, [showPrintOptions])
 
   const isTeacher = currentTeacher?.role === 'teacher'
   const { classes: allClasses } = useAvailableClasses()
@@ -170,26 +198,136 @@ export default function AttendanceView() {
   const tardyCount = Object.values(records).filter((r: any) => r.status === 'tardy').length
   const unmarkedCount = students.length - Object.keys(records).length
 
-  // Print monthly attendance
-  const handlePrintAttendance = async () => {
-    const curDate = new Date(selectedDate)
+  // Weeks shown in the print-options dropdown (for printNavMonth)
+  const monthWeeks = useMemo(() => {
+    const { year, month } = printNavMonth
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const seen = new Set<string>()
+    const result: { mondayKey: string; label: string }[] = []
+    for (let i = 1; i <= daysInMonth; i++) {
+      const d = new Date(year, month, i)
+      const dow = d.getDay()
+      if (dow === 0 || dow === 6) continue
+      if (dow === 1 && selectedGrade === 5) continue
+      const diff = dow === 0 ? -6 : 1 - dow
+      const mon = new Date(d); mon.setDate(d.getDate() + diff)
+      const mondayKey = `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, '0')}-${String(mon.getDate()).padStart(2, '0')}`
+      if (seen.has(mondayKey)) continue
+      seen.add(mondayKey)
+      const fri = new Date(mon); fri.setDate(mon.getDate() + 4)
+      result.push({
+        mondayKey,
+        label: `${mon.getMonth() + 1}/${mon.getDate()} – ${fri.getMonth() + 1}/${fri.getDate()}`,
+      })
+    }
+    return result
+  }, [printNavMonth, selectedGrade])
+
+  const navMonthLabel = useMemo(() => {
+    return new Date(printNavMonth.year, printNavMonth.month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  }, [printNavMonth])
+
+  const stepPrintMonth = (delta: number) => {
+    setPrintNavMonth(prev => {
+      const d = new Date(prev.year, prev.month + delta, 1)
+      return { year: d.getFullYear(), month: d.getMonth() }
+    })
+  }
+
+  // Build the list of dates to print: either a specific set of weeks, or the month of selectedDate.
+  type PrintDate = { date: string; day: number; dayName: string; monthShort: string; year: number; month: number }
+  const buildPrintDates = (selectedMondayKeys?: Set<string>): PrintDate[] => {
+    const toEntry = (d: Date): PrintDate => {
+      const y = d.getFullYear(), m = d.getMonth(), dn = d.getDate()
+      return {
+        date: `${y}-${String(m + 1).padStart(2, '0')}-${String(dn).padStart(2, '0')}`,
+        day: dn,
+        dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        monthShort: d.toLocaleDateString('en-US', { month: 'short' }),
+        year: y, month: m,
+      }
+    }
+    const isClassDay = (d: Date) => {
+      const dow = d.getDay()
+      if (dow === 0 || dow === 6) return false
+      if (dow === 1 && selectedGrade === 5) return false
+      return true
+    }
+    if (selectedMondayKeys && selectedMondayKeys.size > 0) {
+      const out: PrintDate[] = []
+      const sortedMondays = Array.from(selectedMondayKeys).sort()
+      for (const mondayKey of sortedMondays) {
+        const [my, mm, md] = mondayKey.split('-').map(Number)
+        const mon = new Date(my, mm - 1, md)
+        for (let i = 0; i < 5; i++) {
+          const d = new Date(mon); d.setDate(mon.getDate() + i)
+          if (isClassDay(d)) out.push(toEntry(d))
+        }
+      }
+      return out
+    }
+    // Default: whole month of selectedDate
+    const curDate = new Date(selectedDate + 'T12:00:00')
     const year = curDate.getFullYear(), month = curDate.getMonth()
     const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const monthName = curDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    // Load all attendance for this month
-    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
-    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${daysInMonth}`
+    const out: PrintDate[] = []
+    for (let i = 1; i <= daysInMonth; i++) {
+      const d = new Date(year, month, i)
+      if (isClassDay(d)) out.push(toEntry(d))
+    }
+    return out
+  }
+
+  const handlePrintAttendance = async (selectedMondayKeys?: Set<string>) => {
+    const dates = buildPrintDates(selectedMondayKeys)
+    if (dates.length === 0) {
+      showToast(lang === 'ko' ? '인쇄할 날짜가 없습니다' : 'No dates to print')
+      return
+    }
+    const startDate = dates[0].date
+    const endDate = dates[dates.length - 1].date
+
+    // Title — either single month, "Selected Weeks", or a date range across months
+    let title: string
+    let subtitle: string
+    if (!selectedMondayKeys || selectedMondayKeys.size === 0) {
+      title = new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      subtitle = `${students.length} students`
+    } else {
+      const startD = new Date(startDate + 'T12:00:00')
+      const endD = new Date(endDate + 'T12:00:00')
+      const sameMonth = startD.getMonth() === endD.getMonth() && startD.getFullYear() === endD.getFullYear()
+      if (sameMonth) {
+        title = startD.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        subtitle = `${selectedMondayKeys.size} week${selectedMondayKeys.size > 1 ? 's' : ''} selected · ${students.length} students`
+      } else {
+        title = `${startD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${endD.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+        subtitle = `${selectedMondayKeys.size} weeks selected · ${students.length} students`
+      }
+    }
+
     const { data: monthData } = await supabase.from('attendance').select('*')
       .in('student_id', students.map((s: any) => s.id)).gte('date', startDate).lte('date', endDate)
     const lookup: Record<string, Record<string, string>> = {}
     if (monthData) monthData.forEach((r: any) => { if (!lookup[r.student_id]) lookup[r.student_id] = {}; lookup[r.student_id][r.date] = r.status })
-    const dates = Array.from({ length: daysInMonth }, (_, i) => {
-      const d = new Date(year, month, i + 1)
-      const dow = d.getDay()
-      const isWknd = dow === 0 || dow === 6
-      const isG5Monday = dow === 1 && selectedGrade === 5
-      return { date: `${year}-${String(month + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`, day: i + 1, isWknd, isG5Monday, isNoClass: isWknd || isG5Monday, dayName: d.toLocaleDateString('en-US', { weekday: 'short' }) }
-    }).filter(d => !d.isNoClass) // Exclude weekends and Grade 5 Mondays from printout
+
+    // Group columns by month so we can render a month-spanning header row when the print covers multiple months
+    const monthGroups: { label: string; span: number }[] = []
+    let lastKey = ''
+    for (const d of dates) {
+      const key = `${d.year}-${d.month}`
+      if (key !== lastKey) {
+        monthGroups.push({ label: new Date(d.year, d.month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), span: 1 })
+        lastKey = key
+      } else {
+        monthGroups[monthGroups.length - 1].span++
+      }
+    }
+    const showMonthRow = monthGroups.length > 1
+    const monthRow = showMonthRow
+      ? `<tr><th colspan="3" style="border:1px solid #ccc;background:#f8fafc"></th>${monthGroups.map(g => `<th colspan="${g.span}" style="padding:3px 4px;border:1px solid #ccc;font-size:10px;background:#f1f5f9;font-weight:700;text-align:center">${g.label}</th>`).join('')}</tr>`
+      : ''
+
     const printWin = window.open('', '_blank')
     if (!printWin) return
     const headerRow = dates.map(d => `<th style="padding:2px 4px;border:1px solid #ccc;font-size:9px;" title="${d.dayName}">${d.day}<br/><span style="font-size:7px;color:#999">${d.dayName}</span></th>`).join('')
@@ -202,9 +340,9 @@ export default function AttendanceView() {
       }).join('')
       return `<tr><td style="padding:4px 8px;border:1px solid #ccc;font-size:11px;white-space:nowrap">${s.english_name} (${s.korean_name})</td><td style="padding:4px 6px;border:1px solid #ccc;font-size:10px;text-align:center">${s.korean_class || ''}</td><td style="padding:4px 6px;border:1px solid #ccc;font-size:10px;text-align:center">${s.class_number || ''}</td>${cells}</tr>`
     }).join('')
-    printWin.document.write(`<html><head><title>Attendance — ${selectedClass} ${monthName}</title><style>body{font-family:sans-serif;padding:15px}table{border-collapse:collapse}@media print{body{padding:0}}</style></head><body>
-      <h3 style="margin-bottom:4px">${selectedClass} — Grade ${selectedGrade} Attendance</h3><p style="color:#666;margin-top:0;font-size:12px">${monthName} · ${students.length} students</p>
-      <table><thead><tr><th style="padding:4px 8px;border:1px solid #ccc;text-align:left;font-size:10px">Student</th><th style="padding:4px 6px;border:1px solid #ccc;font-size:9px">Korean Class</th><th style="padding:4px 6px;border:1px solid #ccc;font-size:9px">No.</th>${headerRow}</tr></thead><tbody>${rows}</tbody></table>
+    printWin.document.write(`<html><head><title>Attendance — ${selectedClass} ${title}</title><style>body{font-family:sans-serif;padding:15px}table{border-collapse:collapse}@media print{body{padding:0}@page{size:landscape;margin:8mm 10mm}}</style></head><body>
+      <h3 style="margin-bottom:4px">${selectedClass} — Grade ${selectedGrade} Attendance</h3><p style="color:#666;margin-top:0;font-size:12px">${title} · ${subtitle}</p>
+      <table><thead>${monthRow}<tr><th style="padding:4px 8px;border:1px solid #ccc;text-align:left;font-size:10px">Student</th><th style="padding:4px 6px;border:1px solid #ccc;font-size:9px">Korean Class</th><th style="padding:4px 6px;border:1px solid #ccc;font-size:9px">No.</th>${headerRow}</tr></thead><tbody>${rows}</tbody></table>
       <p style="font-size:9px;color:#999;margin-top:8px">✓ Present · ✗ Absent · T Tardy</p></body></html>`)
     printWin.document.close()
     printWin.print()
@@ -225,10 +363,66 @@ export default function AttendanceView() {
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
             {lang === 'ko' ? '출석 저장' : 'Save Attendance'}
           </button>
-          <button onClick={handlePrintAttendance}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt">
-            <Printer size={14} /> {lang === 'ko' ? '월별 출력' : 'Print Monthly'}
-          </button>
+          <div className="relative" ref={printDropdownRef}>
+            <div className="flex">
+              <button onClick={() => handlePrintAttendance()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[13px] font-medium border border-border border-r-0 hover:bg-surface-alt">
+                <Printer size={14} /> {lang === 'ko' ? '월별 출력' : 'Print Monthly'}
+              </button>
+              <button onClick={() => setShowPrintOptions(v => !v)} aria-label="Choose weeks to print"
+                className="px-2 py-2 rounded-r-lg border border-border hover:bg-surface-alt">
+                <ChevronDown size={14} />
+              </button>
+            </div>
+            {showPrintOptions && (
+              <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-50 p-3 min-w-[260px]">
+                <p className="text-[11px] font-semibold text-navy mb-2">
+                  {lang === 'ko' ? '주별로 인쇄' : 'Print Selected Weeks'}
+                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <button onClick={() => stepPrintMonth(-1)}
+                    className="p-1 rounded hover:bg-surface-alt" aria-label="Previous month">
+                    <ChevronLeft size={14} />
+                  </button>
+                  <span className="text-[11px] font-medium text-text-primary">{navMonthLabel}</span>
+                  <button onClick={() => stepPrintMonth(1)}
+                    className="p-1 rounded hover:bg-surface-alt" aria-label="Next month">
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+                <div className="space-y-1 mb-3 max-h-56 overflow-y-auto">
+                  {monthWeeks.length === 0 ? (
+                    <p className="text-[11px] text-text-tertiary px-1.5 py-2">{lang === 'ko' ? '이 달에는 수업일이 없습니다' : 'No class days this month'}</p>
+                  ) : (
+                    monthWeeks.map((w, i) => (
+                      <label key={w.mondayKey} className="flex items-center gap-2 text-[11px] text-text-primary cursor-pointer hover:bg-surface-alt rounded px-1.5 py-1">
+                        <input type="checkbox" checked={printWeeks.has(w.mondayKey)}
+                          onChange={() => setPrintWeeks(prev => { const n = new Set(prev); n.has(w.mondayKey) ? n.delete(w.mondayKey) : n.add(w.mondayKey); return n })}
+                          className="rounded border-border text-navy" />
+                        Week {i + 1}: {w.label}
+                      </label>
+                    ))
+                  )}
+                </div>
+                {printWeeks.size > 0 && (
+                  <p className="text-[10px] text-text-tertiary mb-2">
+                    {printWeeks.size} {printWeeks.size === 1 ? 'week' : 'weeks'} selected across all months
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <button onClick={() => { handlePrintAttendance(printWeeks); setShowPrintOptions(false); setPrintWeeks(new Set()) }}
+                    disabled={printWeeks.size === 0}
+                    className="flex-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                    {printWeeks.size > 0 ? `Print ${printWeeks.size} Week${printWeeks.size > 1 ? 's' : ''}` : 'Print (select weeks)'}
+                  </button>
+                  <button onClick={() => { setShowPrintOptions(false); setPrintWeeks(new Set()) }}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
