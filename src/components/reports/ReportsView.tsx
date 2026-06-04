@@ -6,7 +6,7 @@ import { useStudents, useSemesters } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord } from '@/lib/utils'
-import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle } from 'lucide-react'
+import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, ChevronDown, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle, AlertTriangle, FileDown } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
 
@@ -56,6 +56,20 @@ function tileBgPrint(v: number): { bg: string; border: string } {
   return { bg: '#fef2f2', border: '#fecaca' }
 }
 
+// Radar / growth palette — Student vs Class made deliberately high-contrast
+const RADAR_STUDENT = '#1e3a8a'   // bold navy
+const RADAR_CLASS = '#f59e0b'     // amber
+
+// Growth vs previous semester — returns null when no comparison is possible
+function growthDelta(curr: number | null | undefined, prev: number | null | undefined):
+  { arrow: string; val: string; color: string } | null {
+  if (curr == null || prev == null) return null
+  const diff = curr - prev
+  if (Math.abs(diff) < 0.05) return { arrow: '±', val: '0', color: '#94a3b8' }
+  const up = diff > 0
+  return { arrow: up ? '▲' : '▼', val: Math.abs(diff).toFixed(1), color: up ? '#16a34a' : '#dc2626' }
+}
+
 interface ReportData {
   student: any
   domainGrades: Record<string, number | null>
@@ -83,6 +97,9 @@ interface ReportData {
   attCounts: { present: number; absent: number; tardy: number }
   scaffolds: any[]
   goals: any[]
+  reviewerNote: string | null
+  reviewerNoteAck: boolean
+  reviewerNoteByName: string | null
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
@@ -258,11 +275,13 @@ function RadarChart({ studentGrades, classAverages }: {
   studentGrades: Record<string, number | null>
   classAverages: Record<string, number | null>
 }) {
-  const size = 300
-  const cx = size / 2, cy = size / 2 + 4
-  const maxR = 80
+  // Wide viewBox so the side labels ("Language Standards", "Phonics") never clip
+  const VW = 380, VH = 300
+  const cx = VW / 2, cy = 142
+  const maxR = 92
   const levels = [20, 40, 60, 80, 100]
   const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
+  // Labels match the Academic Performance tiles exactly
   const labels = ['Reading', 'Phonics', 'Writing', 'Speaking &\nListening', 'Language\nStandards']
   const angles = domains.map((_, i) => (Math.PI * 2 * i) / domains.length - Math.PI / 2)
 
@@ -284,7 +303,7 @@ function RadarChart({ studentGrades, classAverages }: {
   const hasClass = classValues.some(v => v != null)
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto" style={{ maxWidth: '100%' }}>
+    <svg width="100%" viewBox={`0 0 ${VW} ${VH}`} className="mx-auto block" style={{ maxWidth: 380 }}>
       {/* Background grid rings */}
       {levels.map(lvl => (
         <polygon key={lvl}
@@ -300,39 +319,46 @@ function RadarChart({ studentGrades, classAverages }: {
         return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke="#C8CED8" strokeWidth={0.5} />
       })}
 
-      {/* Class average polygon */}
+      {/* Class average polygon — amber, dashed */}
       {hasClass && (
         <polygon
           points={makePolygon(classValues)}
-          fill="rgba(148,163,184,0.18)" stroke="#94a3b8" strokeWidth={1.5}
-          strokeDasharray="4,3"
+          fill="rgba(245,158,11,0.10)" stroke={RADAR_CLASS} strokeWidth={2}
+          strokeDasharray="5,3"
         />
       )}
 
-      {/* Student polygon — only draw if 3+ domains, otherwise just dots */}
+      {/* Student polygon — bold navy; only draw if 3+ domains, otherwise just dots */}
       {filledCount >= 3 && (
         <polygon
           points={makePolygon(studentValues)}
-          fill="rgba(30,58,95,0.3)" stroke="#647FBC" strokeWidth={2.5}
+          fill="rgba(30,58,138,0.22)" stroke={RADAR_STUDENT} strokeWidth={2.5}
         />
       )}
 
       {/* For 2 domains, draw a line between them */}
       {filledCount === 2 && (() => {
         const pts = studentValues.map((v, i) => v != null ? toXY(angles[i], v) : null).filter(Boolean) as { x: number; y: number }[]
-        return pts.length === 2 ? <line x1={pts[0].x} y1={pts[0].y} x2={pts[1].x} y2={pts[1].y} stroke="#647FBC" strokeWidth={2} /> : null
+        return pts.length === 2 ? <line x1={pts[0].x} y1={pts[0].y} x2={pts[1].x} y2={pts[1].y} stroke={RADAR_STUDENT} strokeWidth={2} /> : null
       })()}
+
+      {/* Class dots */}
+      {hasClass && classValues.map((v, i) => {
+        if (v == null) return null
+        const pt = toXY(angles[i], v)
+        return <circle key={`cdot-${i}`} cx={pt.x} cy={pt.y} r={3} fill={RADAR_CLASS} stroke="white" strokeWidth={1} />
+      })}
 
       {/* Student dots — always show */}
       {studentValues.map((v, i) => {
         if (v == null) return null
         const pt = toXY(angles[i], v)
-        return <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r={4} fill="#647FBC" stroke="white" strokeWidth={1.5} />
+        return <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r={4} fill={RADAR_STUDENT} stroke="white" strokeWidth={1.5} />
       })}
 
       {/* Domain labels -- positioned further out with smart anchoring */}
       {angles.map((a, i) => {
-        const labelR = maxR + 38
+        const labelR = maxR + 30
         const pt = toXY(a, (labelR / maxR) * 100)
         const sv = studentValues[i]
         // Smart text anchor: left side = end, right side = start, top/bottom = middle
@@ -342,13 +368,13 @@ function RadarChart({ studentGrades, classAverages }: {
           <g key={`label-${i}`}>
             {labelLines.map((line, li) => (
               <text key={li} x={pt.x} y={pt.y - 5 + (li * 12) - ((labelLines.length - 1) * 6)} textAnchor={anchor} dominantBaseline="middle"
-                style={{ fontSize: '10px', fontWeight: 700, fill: '#475569' }}>
+                style={{ fontSize: '11px', fontWeight: 700, fill: '#475569' }}>
                 {line}
               </text>
             ))}
             {sv != null && (
               <text x={pt.x} y={pt.y + 7 + ((labelLines.length - 1) * 6)} textAnchor={anchor} dominantBaseline="middle"
-                style={{ fontSize: '9px', fontWeight: 700, fill: '#647FBC' }}>
+                style={{ fontSize: '9px', fontWeight: 700, fill: RADAR_STUDENT }}>
                 {sv.toFixed(0)}%
               </text>
             )}
@@ -379,6 +405,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [comment, setComment] = useState('')
   const [commentSkipped, setCommentSkipped] = useState(false)
   const [savingComment, setSavingComment] = useState(false)
+  const [ackingNote, setAckingNote] = useState(false)
   const [showRefPanel, setShowRefPanel] = useState(false)
   const [editingGrades, setEditingGrades] = useState(false)
   const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
@@ -511,6 +538,25 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
+    // Reviewer feedback flagged by partner/admin (graceful if migration not yet run)
+    let reviewerNote: string | null = null
+    let reviewerNoteAck = false
+    let reviewerNoteByName: string | null = null
+    try {
+      const { data: reviewRows } = await supabase.from('report_card_reviews')
+        .select('reviewer_note, reviewer_note_ack, reviewer_note_by')
+        .eq('student_id', studentId).eq('semester_id', semesterId).limit(1)
+      const reviewRow: any = reviewRows?.[0]
+      if (reviewRow?.reviewer_note) {
+        reviewerNote = reviewRow.reviewer_note
+        reviewerNoteAck = !!reviewRow.reviewer_note_ack
+        if (reviewRow.reviewer_note_by) {
+          const { data: rb } = await supabase.from('teachers').select('name').eq('id', reviewRow.reviewer_note_by).limit(1)
+          reviewerNoteByName = rb?.[0]?.name || null
+        }
+      }
+    } catch { /* reviewer-note columns not migrated yet */ }
+
     const [readingRes, ltScoreRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(5),
       supabase.from('level_test_scores').select('level_test_id, raw_scores, calculated_metrics').eq('student_id', studentId),
@@ -558,6 +604,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       attCounts,
       scaffolds: scaffoldRes.data || [],
       goals: goalsRes.data || [],
+      reviewerNote,
+      reviewerNoteAck,
+      reviewerNoteByName,
     })
     setComment(commentData?.text || '')
     setCommentSkipped(!!commentData?.is_skipped)
@@ -571,6 +620,15 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, text: comment.trim(), is_skipped: commentSkipped, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id' })
     setSavingComment(false)
     showToast(commentSkipped ? 'Comment skipped' : 'Comment saved')
+  }
+
+  const acknowledgeReviewerNote = async () => {
+    setAckingNote(true)
+    const { error } = await supabase.from('report_card_reviews')
+      .update({ reviewer_note_ack: true }).eq('student_id', studentId).eq('semester_id', semesterId)
+    if (error) showToast(`Error: ${error.message}`)
+    else { setData(prev => prev ? { ...prev, reviewerNoteAck: true } : prev); showToast('Marked as reviewed') }
+    setAckingNote(false)
   }
 
   const handleTeacherPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -597,8 +655,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const radius = 50, stroke = 8, circ = 2 * Math.PI * radius
     const displayGrade = d.semesterGrade || s.grade
     const displayClass = d.semesterClass || s.english_class
+    const overallDelta = growthDelta(d.overallGrade, d.prevOverall)
 
-    // Score tiles (clean — no vs class badge)
+    // Score tiles (clean — with growth vs previous semester)
     const tiles = DOMAINS.map((dom) => {
       if (d.domainNa[dom]) return `<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f5f5f5">
         <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
@@ -607,17 +666,19 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       </div>`
       const v = d.domainGrades[dom]; if (v == null) return '<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px">--</div>'
       const g = getLetterGrade(v); const t = tileBgPrint(v)
+      const dlt = growthDelta(v, d.prevDomainGrades?.[dom])
       return `<div style="text-align:center;padding:14px 8px;background:${t.bg};border:1.5px solid ${t.border};border-radius:12px">
         <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
         <div style="font-size:26px;font-weight:800;color:#1e293b;margin-top:6px">${v.toFixed(1)}%</div>
         <div style="font-size:14px;font-weight:700;color:${letterColor(g)};margin-top:3px">${g}</div>
+        ${dlt ? `<div style="font-size:9px;font-weight:700;color:${dlt.color};margin-top:2px">${dlt.arrow} ${dlt.val}</div>` : ''}
       </div>`
     }).join('')
 
-    // Radar chart SVG for print
-    const radarSize = 280, rcx = radarSize / 2, rcy = radarSize / 2 + 6, maxR = 80
+    // Radar chart SVG for print — wide viewBox so labels fit; names match the tiles
+    const RVW = 360, RVH = 300, rcx = RVW / 2, rcy = 140, maxR = 92
     const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
-    const rLabels = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
+    const rLabels = ['Reading', 'Phonics', 'Writing', 'Speaking &|Listening', 'Language|Standards']
     const rAngles = domains.map((_, i) => (Math.PI * 2 * i) / 5 - Math.PI / 2)
     const toXY = (a: number, p: number) => ({ x: rcx + Math.cos(a) * (p / 100) * maxR, y: rcy + Math.sin(a) * (p / 100) * maxR })
     const makePoly = (vals: (number | null)[]) => vals.map((v, i) => { const pt = toXY(rAngles[i], v ?? 0); return `${pt.x},${pt.y}` }).join(' ')
@@ -629,44 +690,39 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       `<polygon points="${rAngles.map(a => { const p = toXY(a, lvl); return `${p.x},${p.y}` }).join(' ')}" fill="none" stroke="#C8CED8" stroke-width="0.5" ${lvl < 100 ? 'stroke-dasharray="2,2"' : ''}/>`
     ).join('')
     const axisLines = rAngles.map(a => { const e = toXY(a, 100); return `<line x1="${rcx}" y1="${rcy}" x2="${e.x}" y2="${e.y}" stroke="#C8CED8" stroke-width="0.5"/>` }).join('')
-    const classPoly = cVals.some(v => v != null) ? `<polygon points="${makePoly(cVals)}" fill="rgba(148,163,184,0.08)" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,3"/>` : ''
-    const studentPoly = sFilledCount >= 3 ? `<polygon points="${makePoly(sVals)}" fill="rgba(30,58,95,0.15)" stroke="#647FBC" stroke-width="2"/>` : ''
-    const dots = sVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="#647FBC" stroke="white" stroke-width="1.5"/>` }).join('')
+    const classPoly = cVals.some(v => v != null) ? `<polygon points="${makePoly(cVals)}" fill="rgba(245,158,11,0.10)" stroke="${RADAR_CLASS}" stroke-width="2" stroke-dasharray="5,3"/>` : ''
+    const studentPoly = sFilledCount >= 3 ? `<polygon points="${makePoly(sVals)}" fill="rgba(30,58,138,0.18)" stroke="${RADAR_STUDENT}" stroke-width="2"/>` : ''
+    const classDots = cVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="2.8" fill="${RADAR_CLASS}" stroke="white" stroke-width="1"/>` }).join('')
+    const dots = sVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="${RADAR_STUDENT}" stroke="white" stroke-width="1.5"/>` }).join('')
     const radarLabels = rAngles.map((a, i) => {
-      const pt = toXY(a, ((maxR + 26) / maxR) * 100)
+      const pt = toXY(a, ((maxR + 28) / maxR) * 100)
       const sv = sVals[i]
       const anchor = pt.x < rcx - 10 ? 'end' : pt.x > rcx + 10 ? 'start' : 'middle'
-      return `<text x="${pt.x}" y="${pt.y - 4}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:9px;font-weight:700;fill:#475569">${rLabels[i]}</text>
-        ${sv != null ? `<text x="${pt.x}" y="${pt.y + 7}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:8px;font-weight:700;fill:#647FBC">${sv.toFixed(0)}%</text>` : ''}`
+      const lines = rLabels[i].split('|')
+      const labelTxt = lines.map((ln, li) => `<text x="${pt.x}" y="${pt.y - 4 + li * 10 - (lines.length - 1) * 5}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:9.5px;font-weight:700;fill:#475569">${ln}</text>`).join('')
+      const valTxt = sv != null ? `<text x="${pt.x}" y="${pt.y + 8 + (lines.length - 1) * 5}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:8px;font-weight:700;fill:${RADAR_STUDENT}">${sv.toFixed(0)}%</text>` : ''
+      return labelTxt + valTxt
     }).join('')
 
-    const radarSvg = `<svg width="${radarSize}" height="${radarSize}" viewBox="0 0 ${radarSize} ${radarSize}">${gridLines}${axisLines}${classPoly}${studentPoly}${dots}${radarLabels}</svg>`
+    const radarSvg = `<svg width="100%" viewBox="0 0 ${RVW} ${RVH}" style="max-width:330px;display:block;margin:0 auto">${gridLines}${axisLines}${classPoly}${studentPoly}${classDots}${dots}${radarLabels}</svg>`
 
-    // Reading fluency HTML — with null safety
-    const r = d.latestReading
-    const readingHtml = r ? `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div style="background:#EDF1F8;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8CED8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Words Per Minute</div><div style="font-size:20px;font-weight:800;color:#647FBC">${r.cwpm != null ? Math.round(r.cwpm) : '—'}</div></div>
-        <div style="background:#EDF1F8;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8CED8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Reading Accuracy</div><div style="font-size:20px;font-weight:800;color:${r.accuracy_rate != null ? (r.accuracy_rate >= 96 ? '#16a34a' : r.accuracy_rate >= 90 ? '#d97706' : '#dc2626') : '#94a3b8'}">${r.accuracy_rate != null ? r.accuracy_rate.toFixed(1) + '%' : '—'}</div></div>
-        <div style="background:#EDF1F8;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8CED8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Lexile</div><div style="font-size:16px;font-weight:700;color:#475569">${r.reading_level || r.passage_level || '—'}</div></div>
-        <div style="background:#EDF1F8;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8CED8"><div style="font-size:8px;color:#94a3b8;font-weight:600;margin-bottom:3px">Fluency Rating</div><div style="font-size:16px;font-weight:700;color:#475569">${r.naep_fluency ? r.naep_fluency + ' of 4' : '—'}</div></div>
-      </div>` : '<div style="background:#EDF1F8;border:1px solid #C8CED8;border-radius:8px;padding:14px;text-align:center;font-size:11px;color:#94a3b8">No reading assessments recorded yet.</div>'
-
-    // Goals HTML
-    const goalsHtml = d.goals?.length ? d.goals.slice(0, 5).map((g: any) =>
-      `<div style="display:flex;align-items:start;gap:6px;font-size:11px;margin-bottom:4px">
-        <span style="flex-shrink:0">${g.completed_at ? '[done]' : g.goal_type === 'stretch' ? '' : g.goal_type === 'behavioral' ? '' : ''}</span>
-        <span style="${g.completed_at ? 'text-decoration:line-through;color:#94a3b8' : 'color:#475569;line-height:1.5'}">${g.goal_text}</span>
-      </div>`
-    ).join('') : '<div style="background:#EDF1F8;border:1px solid #C8CED8;border-radius:8px;padding:10px;text-align:center;font-size:11px;color:#94a3b8">No goals set yet.</div>'
-
-    // Grading scale
-    const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#EDF1F8;border:1px solid #C8CED8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
+    const radarLegend = `<div style="text-align:center;margin-top:6px;font-size:8px;color:#94a3b8">
+      <span style="display:inline-flex;align-items:center;gap:3px;margin-right:12px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(30,58,138,0.22);border:1.5px solid ${RADAR_STUDENT};display:inline-block"></span> Student</span>
+      <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(245,158,11,0.12);border:1.5px solid ${RADAR_CLASS};display:inline-block"></span> Class Avg</span>
+    </div>`
 
     // Teacher avatar
     const avatarHtml = d.teacherPhotoUrl
       ? `<img src="${d.teacherPhotoUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #DFE4EB" />`
       : `<div style="width:32px;height:32px;border-radius:50%;background:#647FBC;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${d.teacherName[0] || ''}</div>`
+
+    // Teacher comment block (sits beside the radar)
+    const commentBlock = commentSkipped ? '' : `<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Teacher's Comment</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
+      <div style="font-size:11.5px;line-height:1.7;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 16px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>`
+
+    // Grading scale
+    const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#EDF1F8;border:1px solid #C8CED8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
 
     const pw = window.open('', '_blank')
     if (!pw) return
@@ -696,8 +752,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             <svg width="76" height="76" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${radius}" fill="none" stroke="#C8CED8" stroke-width="${stroke}"/>
             <circle cx="60" cy="60" r="${radius}" fill="none" stroke="${gc}" stroke-width="${stroke}" stroke-dasharray="${pct * circ} ${circ}" stroke-linecap="round" transform="rotate(-90 60 60)"/></svg>
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-              <div style="font-size:20px;font-weight:800;color:#647FBC">${d.overallLetter}</div>
+              <div style="font-size:19px;font-weight:800;color:#647FBC;line-height:1.1">${d.overallLetter}</div>
               <div style="font-size:10px;color:#64748b">${d.overallGrade != null ? d.overallGrade.toFixed(1) + '%' : ''}</div>
+              ${overallDelta ? `<div style="font-size:8px;font-weight:700;color:${overallDelta.color};line-height:1.2">${overallDelta.arrow} ${overallDelta.val}</div>` : ''}
             </div>
           </div>
         </div>
@@ -709,33 +766,20 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     </div>
     <!-- Score Tiles -->
     <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #C8CED8">
-      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance</div>
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance${d.prevSemesterName ? `<span style="text-transform:none;letter-spacing:0;font-weight:500;color:#b8b0a6"> &nbsp;·&nbsp; ▲▼ change vs ${d.prevSemesterName}</span>` : ''}</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
     </div>
-    <!-- Student Snapshot: Radar + Reading + Goals -->
+    <!-- Student Snapshot: Class Comparison + Teacher Comment -->
     <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div style="display:grid;grid-template-columns:${commentSkipped ? '1fr' : '1.04fr 0.96fr'};gap:26px;align-items:start">
         <div>
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Class Comparison</div>
           <div style="text-align:center">${radarSvg}</div>
-          <div style="text-align:center;margin-top:4px;font-size:8px;color:#94a3b8">
-            <span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(30,58,95,0.25);border:1.5px solid #647FBC;display:inline-block"></span> Student</span>
-            <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(148,163,184,0.15);border:1.5px solid #cbd5e1;display:inline-block"></span> Class Avg</span>
-          </div>
+          ${radarLegend}
         </div>
-        <div>
-          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Reading Fluency</div>
-          ${readingHtml}
-          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin:14px 0 8px">Student Goals</div>
-          ${goalsHtml}
-        </div>
+        ${commentSkipped ? '' : `<div>${commentBlock}</div>`}
       </div>
     </div>
-    ${commentSkipped ? '' : `<!-- Comment -->
-    <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
-      <div style="font-size:12px;line-height:1.8;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>
-    </div>`}
     <!-- Scale + Footer -->
     <div style="background:#fdfcfa;padding:14px 28px">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Grading Scale</div>
@@ -817,8 +861,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                     style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-[20px] font-extrabold text-navy leading-none">{d.overallLetter}</div>
+                  <div className="text-[19px] font-extrabold text-navy leading-none">{d.overallLetter}</div>
                   <div className="text-[10px] text-text-tertiary mt-0.5">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}%` : ''}</div>
+                  {(() => { const dl = growthDelta(d.overallGrade, d.prevOverall); return dl ? <div className="text-[8px] font-bold leading-tight" style={{ color: dl.color }}>{dl.arrow} {dl.val}</div> : null })()}
                 </div>
               </div>
             </div>
@@ -833,7 +878,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Score Tiles ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
-            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Academic Performance</div>
+            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Academic Performance{d.prevSemesterName && <span className="normal-case tracking-normal font-normal text-[#b8b0a6]"> &nbsp;·&nbsp; ▲▼ vs {d.prevSemesterName}</span>}</div>
             {!editingGrades ? (
               <button onClick={() => {
                 const eg: Record<string, string> = {}
@@ -930,115 +975,100 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               const v = d.domainGrades[dom]
               if (v == null) return <div key={dom} className="rounded-xl border border-border p-3.5 text-center text-text-tertiary text-[12px]">--</div>
               const g = getLetterGrade(v)
+              const dl = growthDelta(v, d.prevDomainGrades?.[dom])
               return (
                 <div key={dom} className={`rounded-xl border-[1.5px] ${tileBgClass(v)} p-3.5 text-center`}>
                   <div className="text-[11px] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
                   <div className="text-[28px] font-extrabold text-[#1e293b] mt-2 leading-none">{v.toFixed(1)}%</div>
                   <div className="text-[15px] font-bold mt-1" style={{ color: letterColor(g) }}>{g}</div>
+                  {dl && <div className="text-[10px] font-bold mt-0.5" style={{ color: dl.color }}>{dl.arrow} {dl.val}</div>}
                 </div>
               )
             })}
           </div>
           )}
         </div>
-        {/* ─── Student Snapshot: Radar + Reading + Goals ─── */}
+        {/* ─── Snapshot: Class Comparison + Teacher Comment ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
-          <div className="grid gap-6" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="grid gap-7 items-start" style={{ gridTemplateColumns: '1.04fr 0.96fr' }}>
             {/* Left: Radar Chart — Student vs Class */}
             <div>
               <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3">Class Comparison</div>
               <RadarChart studentGrades={Object.fromEntries(DOMAINS.map(dom => [dom, d.domainNa[dom] ? null : d.domainGrades[dom]]))} classAverages={d.classAverages} />
-              <div className="flex items-center justify-center gap-4 mt-2 text-[9px]">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(30,58,95,0.25)', border: '1.5px solid #647FBC' }} /> Student</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(148,163,184,0.15)', border: '1.5px solid #cbd5e1' }} /> Class Average</span>
+              <div className="flex items-center justify-center gap-4 mt-1 text-[9px]">
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(30,58,138,0.22)', border: `1.5px solid ${RADAR_STUDENT}` }} /> Student</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(245,158,11,0.12)', border: `1.5px solid ${RADAR_CLASS}` }} /> Class Average</span>
               </div>
             </div>
 
-            {/* Right: Reading Fluency + Goals */}
-            <div className="space-y-4">
-              {/* Reading Fluency */}
-              <div>
-                <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2.5">Reading Fluency</div>
-                {d.latestReading ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
-                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Words Per Minute</div>
-                      <div className="text-[22px] font-extrabold text-navy leading-none">{d.latestReading.cwpm != null ? Math.round(d.latestReading.cwpm) : '—'}</div>
-                    </div>
-                    <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
-                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Reading Accuracy</div>
-                      <div className={`text-[22px] font-extrabold leading-none ${d.latestReading.accuracy_rate != null ? (d.latestReading.accuracy_rate >= 96 ? 'text-green-600' : d.latestReading.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-500') : 'text-[#94a3b8]'}`}>
-                        {d.latestReading.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '—'}
+            {/* Right: Teacher comment editor (matches the printed layout) */}
+            <div>
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-2.5">
+                  {/* Teacher avatar — clickable to upload */}
+                  <label className="cursor-pointer relative group">
+                    <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleTeacherPhotoUpload} />
+                    {d.teacherPhotoUrl ? (
+                      <img src={d.teacherPhotoUrl} className="w-9 h-9 rounded-full object-cover border-2 border-[#DFE4EB]" />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-[#C8CED8] text-[#64748b] flex items-center justify-center text-[14px] font-bold border-2 border-[#DFE4EB]">
+                        {d.teacherName[0] || ''}
                       </div>
+                    )}
+                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-navy flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+                      <Camera size={9} className="text-white" />
                     </div>
-                    <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
-                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Lexile</div>
-                      <div className="text-[18px] font-bold text-[#475569]">{d.latestReading.reading_level || d.latestReading.passage_level || '—'}</div>
-                    </div>
-                    <div className="bg-[#f8f9fb] rounded-lg p-3 text-center">
-                      <div className="text-[9px] text-[#94a3b8] font-semibold mb-1">Fluency Rating</div>
-                      <div className="text-[18px] font-bold text-[#475569]">{d.latestReading.naep_fluency ? `${d.latestReading.naep_fluency} of 4` : '—'}</div>
-                    </div>
+                  </label>
+                  <div>
+                    <div className="text-[9px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Teacher's Comment</div>
+                    <div className="text-[13px] font-bold text-[#1e293b] leading-tight">{d.teacherName}</div>
                   </div>
-                ) : (
-                  <div className="bg-[#f8f9fb] rounded-lg p-4 text-center text-[12px] text-[#94a3b8]">No reading assessments recorded yet.</div>
-                )}
+                </div>
+                {/* Student Reference — hidden on print */}
+                <button onClick={() => setShowRefPanel(!showRefPanel)}
+                  className={`print:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${showRefPanel ? 'bg-navy text-white border-navy' : 'bg-[#EDF1F8] text-[#475569] border-[#d1d5db] hover:bg-[#DFE4EB]'}`}>
+                  <BarChart3 size={14} />
+                  Reference
+                </button>
               </div>
-
-              {/* Student Goals */}
-              <div>
-                <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2">Student Goals</div>
-                {d.goals && d.goals.length > 0 ? (
-                  <div className="space-y-1.5">
-                    {d.goals.slice(0, 5).map((g: any, i: number) => (
-                      <div key={i} className="flex items-start gap-2 text-[11px]">
-                        <span className="flex-shrink-0 mt-0.5">{g.completed_at ? '[done]' : g.goal_type === 'stretch' ? '' : g.goal_type === 'behavioral' ? '' : ''}</span>
-                        <span className={g.completed_at ? 'line-through text-[#94a3b8]' : 'text-[#475569] leading-relaxed'}>{g.goal_text}</span>
-                      </div>
-                    ))}
+              {d.reviewerNote && !d.reviewerNoteAck && (
+                <div className="mb-2.5 rounded-lg border border-orange-200 bg-orange-50 p-2.5 print:hidden">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <AlertTriangle size={13} className="text-orange-600" />
+                    <span className="text-[11px] font-semibold text-orange-800">Reviewer feedback{d.reviewerNoteByName ? ` from ${d.reviewerNoteByName}` : ''} — please review</span>
                   </div>
-                ) : (
-                  <div className="bg-[#f8f9fb] rounded-lg p-3 text-center text-[11px] text-[#94a3b8]">No goals set yet.</div>
-                )}
+                  <p className="text-[12px] text-orange-900 whitespace-pre-wrap leading-relaxed">{d.reviewerNote}</p>
+                  <div className="flex justify-end mt-1.5">
+                    <button onClick={acknowledgeReviewerNote} disabled={ackingNote}
+                      className="px-2.5 py-1 rounded-md text-[10px] font-medium bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-40">
+                      {ackingNote ? 'Saving…' : 'Mark as reviewed'}
+                    </button>
+                  </div>
+                </div>
+              )}
+              <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={8}
+                disabled={commentSkipped}
+                placeholder={commentSkipped ? 'Skipped — uncheck below to write a comment.' : "Write comments about this student's progress..."}
+                className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${commentSkipped ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
+              <div className="flex items-center justify-between mt-2">
+                <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
+                  <input type="checkbox" checked={commentSkipped} onChange={(e: any) => setCommentSkipped(e.target.checked)} />
+                  Skip comment
+                </label>
+                <button onClick={saveComment} disabled={savingComment}
+                  className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                  {savingComment ? 'Saving...' : 'Save Comment'}
+                </button>
               </div>
+              {commentSkipped && <div className="text-[10px] text-[#94a3b8] italic mt-1.5">Hidden on the printed report.</div>}
             </div>
           </div>
         </div>
 
-        {/* ─── Teacher Comment ─── */}
-        <div className="bg-white px-7 py-6" style={{ borderBottom: '1px solid #C8CED8' }}>
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="flex items-center gap-2.5">
-              {/* Teacher avatar — clickable to upload */}
-              <label className="cursor-pointer relative group">
-                <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleTeacherPhotoUpload} />
-                {d.teacherPhotoUrl ? (
-                  <img src={d.teacherPhotoUrl} className="w-9 h-9 rounded-full object-cover border-2 border-[#DFE4EB]" />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-[#C8CED8] text-[#64748b] flex items-center justify-center text-[14px] font-bold border-2 border-[#DFE4EB]">
-                    {d.teacherName[0] || ''}
-                  </div>
-                )}
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-navy flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-                  <Camera size={9} className="text-white" />
-                </div>
-              </label>
-              <div>
-                <div className="text-[14px] font-bold text-[#1e293b]">{d.teacherName}</div>
-                <div className="text-[10px] text-[#94a3b8]">{s.english_class} Class</div>
-              </div>
-            </div>
-            {/* Student Reference — hidden on print */}
-            <button onClick={() => setShowRefPanel(!showRefPanel)}
-              className={`print:hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${showRefPanel ? 'bg-navy text-white border-navy' : 'bg-[#EDF1F8] text-[#475569] border-[#d1d5db] hover:bg-[#DFE4EB]'}`}>
-              <BarChart3 size={14} />
-              Student Reference
-            </button>
-          </div>
-
-          {/* Student Reference Panel */}
-          {showRefPanel && (
-            <div className="print:hidden bg-[#f8f9fb] border border-[#d1d5db] rounded-xl p-4 mb-3.5">
+        {/* ─── Student Reference Panel (full width, screen only) ─── */}
+        {showRefPanel && (
+          <div className="print:hidden bg-white px-7 pb-5" style={{ borderBottom: '1px solid #C8CED8' }}>
+            <div className="bg-[#f8f9fb] border border-[#d1d5db] rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[11px] font-bold text-[#475569]">Student Reference -- All Data at a Glance</p>
                 <button onClick={() => {
@@ -1143,27 +1173,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               )}
 
             </div>
-          )}
-
-          <div className="flex items-center justify-between mb-2">
-            <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
-              <input type="checkbox" checked={commentSkipped}
-                onChange={(e: any) => setCommentSkipped(e.target.checked)} />
-              Skip comment for this student
-            </label>
-            {commentSkipped && <span className="text-[10px] text-[#94a3b8] italic">Comment section will be hidden on the printed report.</span>}
           </div>
-          <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={6}
-            disabled={commentSkipped}
-            placeholder={commentSkipped ? 'Skipped — uncheck above to write a comment.' : "Write comments about this student's progress..."}
-            className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${commentSkipped ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
-          <div className="flex justify-end mt-2">
-            <button onClick={saveComment} disabled={savingComment}
-              className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-              {savingComment ? 'Saving...' : 'Save Comment'}
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* ─── Grading Scale + Footer ─── */}
         <div className="bg-white px-7 py-4">
@@ -1935,6 +1946,10 @@ interface ReviewStatus {
   admin_approved: boolean
   admin_approved_at: string | null
   notes: string
+  reviewer_note?: string | null
+  reviewer_note_by?: string | null
+  reviewer_note_at?: string | null
+  reviewer_note_ack?: boolean | null
 }
 
 function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: {
@@ -1943,20 +1958,42 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
   const { showToast, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
   const [reviews, setReviews] = useState<Record<string, ReviewStatus>>({})
+  const [comments, setComments] = useState<Record<string, { text: string; draft_source: string | null; is_skipped: boolean }>>({})
+  const [grades, setGrades] = useState<Record<string, { domains: Record<string, number | null>; overall: number | null; letter: string }>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [noteDraft, setNoteDraft] = useState<Record<string, string>>({})
 
   useEffect(() => {
     ;(async () => {
       setLoading(true)
+      const ids = students.map(s => s.id)
+      const blankGrades = () => ({ domains: Object.fromEntries(DOMAINS.map(dm => [dm, null])) as Record<string, number | null>, overall: null as number | null, letter: '—' })
       try {
-        const { data, error } = await supabase.from('report_card_reviews').select('*')
-          .eq('semester_id', semesterId).in('student_id', students.map(s => s.id))
-        if (!error) {
-          const map: Record<string, ReviewStatus> = {}
-          data?.forEach((r: any) => { map[r.student_id] = r })
-          setReviews(map)
-        }
+        const [revRes, comRes, grRes] = await Promise.all([
+          supabase.from('report_card_reviews').select('*').eq('semester_id', semesterId).in('student_id', ids),
+          supabase.from('comments').select('student_id, text, draft_source, is_skipped').eq('semester_id', semesterId).in('student_id', ids),
+          supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na').eq('semester_id', semesterId).in('student_id', ids),
+        ])
+        const rmap: Record<string, ReviewStatus> = {}
+        revRes.data?.forEach((r: any) => { rmap[r.student_id] = r })
+        setReviews(rmap)
+        const cmap: Record<string, { text: string; draft_source: string | null; is_skipped: boolean }> = {}
+        comRes.data?.forEach((c: any) => { cmap[c.student_id] = { text: c.text || '', draft_source: c.draft_source || null, is_skipped: !!c.is_skipped } })
+        setComments(cmap)
+        const gmap: Record<string, ReturnType<typeof blankGrades>> = {}
+        ids.forEach(id => { gmap[id] = blankGrades() })
+        ;(grRes.data || []).forEach((sg: any) => {
+          if (!DOMAINS.includes(sg.domain) || !gmap[sg.student_id]) return
+          gmap[sg.student_id].domains[sg.domain] = sg.is_na ? null : (sg.final_grade ?? sg.calculated_grade ?? null)
+        })
+        Object.values(gmap).forEach((g) => {
+          const vals = DOMAINS.map(dm => g.domains[dm]).filter((v): v is number => v != null)
+          g.overall = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null
+          g.letter = g.overall != null ? getLetterGrade(g.overall) : '—'
+        })
+        setGrades(gmap)
       } catch { /* table may not exist yet */ }
       setLoading(false)
     })()
@@ -2015,11 +2052,71 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
     showToast(errors > 0 ? `Approved with ${errors} error(s)` : `All ${students.length} students approved`)
   }
 
+  // Save a single reviewer note per student; flags it back to the teacher (ack reset)
+  const saveNote = async (studentId: string) => {
+    setSaving(studentId)
+    const text = (noteDraft[studentId] ?? reviews[studentId]?.reviewer_note ?? '').trim()
+    const row: any = {
+      student_id: studentId, semester_id: semesterId,
+      reviewer_note: text || null,
+      reviewer_note_by: text ? currentTeacher?.id : null,
+      reviewer_note_at: text ? new Date().toISOString() : null,
+      reviewer_note_ack: false,
+    }
+    const { data, error } = await supabase.from('report_card_reviews').upsert(row, { onConflict: 'student_id,semester_id' }).select().single()
+    if (error) {
+      showToast(error.code === '42P01' || error.message?.includes('reviewer_note') ? 'Run the reviewer-note SQL migration first.' : `Error: ${error.message}`)
+    } else {
+      setReviews(prev => ({ ...prev, [studentId]: { ...prev[studentId], ...data } }))
+      showToast(text ? 'Feedback saved & flagged for the teacher' : 'Feedback cleared')
+    }
+    setSaving(null)
+  }
+
+  // Quality flag for a student's comment, or null when it looks complete
+  const commentFlag = (studentId: string): { label: string; cls: string } | null => {
+    const c = comments[studentId]
+    if (c?.is_skipped) return { label: 'Skipped', cls: 'bg-gray-100 text-gray-500 border-gray-200' }
+    const t = (c?.text || '').trim()
+    if (!t) return { label: 'No comment', cls: 'bg-red-50 text-red-600 border-red-200' }
+    if (t.length < 40) return { label: 'Very short', cls: 'bg-amber-50 text-amber-700 border-amber-200' }
+    if (c?.draft_source === 'ai') return { label: 'AI draft', cls: 'bg-amber-50 text-amber-700 border-amber-200' }
+    return null
+  }
+
+  // Print all class comments (with grade summary) to a single PDF sheet
+  const downloadComments = () => {
+    const td = 'border:1px solid #e2e8f0;padding:3px 6px;text-align:center'
+    const rowsHtml = students.map(st => {
+      const c = comments[st.id]; const g = grades[st.id]; const rv = reviews[st.id]
+      const text = c?.is_skipped ? '(Comment skipped for this student)' : (c?.text?.trim() || '(No comment entered)')
+      const head = DOMAINS.map(dm => `<th style="${td};background:#f1f5f9;font-weight:600;color:#475569">${DOMAIN_SHORT[dm]}</th>`).join('')
+      const cells = DOMAINS.map(dm => { const v = g?.domains?.[dm]; return `<td style="${td}">${v != null ? `${v.toFixed(1)}% ${getLetterGrade(v)}` : 'N/A'}</td>` }).join('')
+      return `<div style="page-break-inside:avoid;border:1px solid #d8d8d8;border-radius:8px;padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #eee;padding-bottom:6px;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:700">${st.english_name} <span style="font-weight:400;color:#666">${st.korean_name || ''}</span></div>
+          <div style="font-size:12px;color:#444">Overall: <strong>${g?.overall != null ? `${g.overall.toFixed(1)}% (${g.letter})` : 'N/A'}</strong></div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px"><tr>${head}</tr><tr>${cells}</tr></table>
+        <div style="font-size:12px;line-height:1.6;white-space:pre-wrap;color:#222">${text}</div>
+        ${rv?.reviewer_note ? `<div style="margin-top:8px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:8px 10px;font-size:11px;color:#9a3412"><strong>Reviewer note:</strong> ${rv.reviewer_note}</div>` : ''}
+      </div>`
+    }).join('')
+    const w = window.open('', '_blank'); if (!w) return
+    w.document.write(`<html><head><title>Class Comments — ${selectedClass} Grade ${selectedGrade}</title>
+      <style>body{font-family:'Segoe UI',Arial,sans-serif;padding:24px;color:#222}h1{font-size:18px;margin:0 0 2px}@media print{@page{margin:12mm}}</style></head>
+      <body><h1>Class Comments — ${selectedClass} · Grade ${selectedGrade}</h1>
+      <div style="font-size:12px;color:#666;margin-bottom:16px">${students.length} students</div>
+      ${rowsHtml}</body></html>`)
+    w.document.close(); w.print()
+  }
+
   if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
   const partnerCount = students.filter(s => reviews[s.id]?.partner_approved).length
   const adminCount = students.filter(s => reviews[s.id]?.admin_approved).length
   const fullyApproved = students.filter(s => reviews[s.id]?.partner_approved && reviews[s.id]?.admin_approved).length
+  const flaggedCount = students.filter(s => reviews[s.id]?.reviewer_note && !reviews[s.id]?.reviewer_note_ack).length
 
   return (
     <div className="space-y-4">
@@ -2043,6 +2140,10 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
               <p className="text-[22px] font-bold text-navy">{fullyApproved}/{students.length}</p>
               <p className="text-[9px] uppercase tracking-wider text-text-tertiary">Ready to Print</p>
             </div>
+            <div>
+              <p className={`text-[22px] font-bold ${flaggedCount > 0 ? 'text-orange-500' : 'text-text-tertiary'}`}>{flaggedCount}</p>
+              <p className="text-[9px] uppercase tracking-wider text-text-tertiary">Needs Changes</p>
+            </div>
           </div>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
@@ -2051,7 +2152,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
       </div>
 
       {/* Bulk approve buttons */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button onClick={() => approveAll('partner_approved')} disabled={saving === 'all'}
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40">
           <CheckCircle2 size={14} /> Approve All as Partner
@@ -2062,65 +2163,108 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
             <CheckCircle2 size={14} /> Approve All as Admin
           </button>
         )}
+        <button onClick={downloadComments}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-surface-alt text-navy border border-border hover:bg-surface ml-auto">
+          <FileDown size={14} /> Download All Comments (PDF)
+        </button>
       </div>
 
       {/* Student list */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
-        <div className="px-4 py-2.5 bg-surface-alt border-b border-border grid grid-cols-[1fr,auto,auto,auto] items-center gap-4">
+        <div className="px-4 py-2.5 bg-surface-alt border-b border-border grid grid-cols-[auto,1fr,8rem,8rem,6rem] items-center gap-4">
+          <span className="w-4" />
           <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Student</span>
-          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-32 text-center">Partner Review</span>
-          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-32 text-center">Admin Approval</span>
-          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-24 text-center">Status</span>
+          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold text-center">Partner Review</span>
+          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold text-center">Admin Approval</span>
+          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold text-center">Status</span>
         </div>
         {students.map(student => {
           const r = reviews[student.id]
           const partnerOk = r?.partner_approved
           const adminOk = r?.admin_approved
           const ready = partnerOk && adminOk
+          const isOpen = expanded === student.id
+          const flag = commentFlag(student.id)
+          const c = comments[student.id]
+          const hasNote = !!r?.reviewer_note
+          const noteUnack = hasNote && !r?.reviewer_note_ack
 
           return (
-            <div key={student.id} className={`px-4 py-3 border-b border-border last:border-0 grid grid-cols-[1fr,auto,auto,auto] items-center gap-4 ${ready ? 'bg-green-50/30' : ''}`}>
-              <div>
-                <span className="text-[13px] font-medium text-navy">{student.english_name}</span>
-                <span className="text-[11px] text-text-tertiary ml-2">{student.korean_name}</span>
-              </div>
-              <div className="w-32 flex justify-center">
-                <button onClick={() => toggleApproval(student.id, 'partner_approved')}
-                  disabled={saving === student.id}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                    partnerOk
-                      ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                      : 'bg-surface-alt text-text-tertiary border border-border hover:border-blue-300'
-                  }`}>
-                  {partnerOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-                  {partnerOk ? 'Reviewed' : 'Review'}
-                </button>
-              </div>
-              <div className="w-32 flex justify-center">
-                {isAdmin ? (
-                  <button onClick={() => toggleApproval(student.id, 'admin_approved')}
+            <div key={student.id} className={`border-b border-border last:border-0 ${ready ? 'bg-green-50/30' : ''}`}>
+              <div className="px-4 py-3 grid grid-cols-[auto,1fr,8rem,8rem,6rem] items-center gap-4 cursor-pointer hover:bg-surface-alt/40"
+                onClick={() => setExpanded(isOpen ? null : student.id)}>
+                <span className="text-text-tertiary">{isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  <span className="text-[13px] font-medium text-navy">{student.english_name}</span>
+                  <span className="text-[11px] text-text-tertiary">{student.korean_name}</span>
+                  {flag && <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${flag.cls}`}>{flag.label}</span>}
+                  {noteUnack && <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-orange-50 text-orange-700 border-orange-200 inline-flex items-center gap-1"><AlertTriangle size={9} /> Needs changes</span>}
+                </div>
+                <div className="flex justify-center" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => toggleApproval(student.id, 'partner_approved')}
                     disabled={saving === student.id}
                     className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                      adminOk
-                        ? 'bg-green-100 text-green-700 border border-green-300'
-                        : 'bg-surface-alt text-text-tertiary border border-border hover:border-green-300'
+                      partnerOk ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-surface-alt text-text-tertiary border border-border hover:border-blue-300'
                     }`}>
-                    {adminOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-                    {adminOk ? 'Approved' : 'Approve'}
+                    {partnerOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                    {partnerOk ? 'Reviewed' : 'Review'}
                   </button>
-                ) : (
-                  <span className={`text-[11px] font-medium ${adminOk ? 'text-green-600' : 'text-text-tertiary'}`}>
-                    {adminOk ? 'Approved' : 'Pending'}
-                  </span>
-                )}
+                </div>
+                <div className="flex justify-center" onClick={e => e.stopPropagation()}>
+                  {isAdmin ? (
+                    <button onClick={() => toggleApproval(student.id, 'admin_approved')}
+                      disabled={saving === student.id}
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                        adminOk ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-surface-alt text-text-tertiary border border-border hover:border-green-300'
+                      }`}>
+                      {adminOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                      {adminOk ? 'Approved' : 'Approve'}
+                    </button>
+                  ) : (
+                    <span className={`text-[11px] font-medium ${adminOk ? 'text-green-600' : 'text-text-tertiary'}`}>
+                      {adminOk ? 'Approved' : 'Pending'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-center">
+                  {ready ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-600"><CheckCircle2 size={13} /> Ready</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-amber-600"><Circle size={13} /> Pending</span>
+                  )}
+                </div>
               </div>
-              <div className="w-24 flex justify-center">
-                {ready ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-600"><CheckCircle2 size={13} /> Ready</span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-amber-600"><Circle size={13} /> Pending</span>
-                )}
-              </div>
+
+              {isOpen && (
+                <div className="px-4 pb-4 pl-11 grid gap-3 bg-surface-alt/20">
+                  {/* Teacher comment (read-only) */}
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Teacher's Comment</p>
+                    <div className="bg-white border border-border rounded-lg p-3 text-[12px] leading-relaxed text-text-primary whitespace-pre-wrap">
+                      {c?.is_skipped ? <span className="italic text-text-tertiary">Comment skipped for this student.</span>
+                        : (c?.text?.trim() ? c.text : <span className="italic text-text-tertiary">No comment entered yet.</span>)}
+                    </div>
+                  </div>
+                  {/* Reviewer feedback */}
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Reviewer Feedback — flagged to teacher</p>
+                    <textarea value={noteDraft[student.id] ?? r?.reviewer_note ?? ''}
+                      onChange={e => setNoteDraft(prev => ({ ...prev, [student.id]: e.target.value }))}
+                      rows={3}
+                      placeholder="Leave a note for the teacher (e.g. 'Please expand the Writing comment')…"
+                      className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy resize-none bg-white" />
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="text-[10px] text-text-tertiary">
+                        {hasNote ? (r?.reviewer_note_ack ? '✓ Acknowledged by teacher' : 'Flagged — awaiting teacher') : 'Saving a note flags it for the teacher to review.'}
+                      </span>
+                      <button onClick={() => saveNote(student.id)} disabled={saving === student.id}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                        {saving === student.id ? 'Saving…' : 'Save Feedback'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )
         })}
