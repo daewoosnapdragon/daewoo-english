@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useSemesters } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
-import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
+import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, KOREAN_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord } from '@/lib/utils'
 import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, ChevronDown, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle, AlertTriangle, FileDown, MessageSquare, Save, Lock } from 'lucide-react'
 
@@ -195,7 +195,11 @@ export default function ReportsView() {
         {mode === 'individual' && !selectedStudentId && selectedSemesterId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center">
             <p className="text-text-tertiary mb-4">Select a student to generate their report card, or print all at once.</p>
-            <BatchPrintButton students={students} semesterId={selectedSemesterId} className={selectedClass} kind="report_card" allSemesters={semesters} />
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <BatchPrintButton students={students} semesterId={selectedSemesterId} className={selectedClass} kind="report_card" allSemesters={semesters} />
+              {isAdmin && <BatchPrintButton students={students} semesterId={selectedSemesterId} className={selectedClass} kind="report_card" scope="grade" grade={selectedGrade} allSemesters={semesters} />}
+            </div>
+            {isAdmin && <p className="text-[11px] text-text-tertiary mt-3">Whole-grade printing covers every English class, sorted by Korean homeroom (대 → 솔 → 매) then class number.</p>}
           </div>
         )}
         {mode === 'individual' && !selectedStudentId && !selectedSemesterId && (
@@ -1261,7 +1265,7 @@ function printProgressReport(s: any, d: any, comment: string) {
 }
 
 // ─── Batch Print All Progress Reports ────────────────────────────────
-function BatchPrintButton({ students, semesterId, className: cls, kind = 'progress', allSemesters = [] }: { students: any[]; semesterId: string; className: string; kind?: 'progress' | 'report_card'; allSemesters?: any[] }) {
+function BatchPrintButton({ students, semesterId, className: cls, kind = 'progress', allSemesters = [], scope = 'class', grade }: { students: any[]; semesterId: string; className: string; kind?: 'progress' | 'report_card'; allSemesters?: any[]; scope?: 'class' | 'grade'; grade?: Grade }) {
   const [generating, setGenerating] = useState(false)
   const [progress, setProgress] = useState({ current: 0, total: 0 })
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
@@ -1269,11 +1273,103 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
   const { currentTeacher, showToast } = useApp()
 
   const handleStart = async () => {
-    if (students.length === 0) return
+    if (scope !== 'grade' && students.length === 0) return
     setGenerating(true)
-    setProgress({ current: 0, total: students.length })
+    setProgress({ current: 0, total: scope === 'grade' ? 0 : students.length })
 
     try {
+      if (scope === 'grade') {
+        // ── Whole-grade report cards (admin), sorted by Korean homeroom then number ──
+        const { data: semData } = await supabase.from('semesters').select('name').eq('id', semesterId).single()
+        const semesterName = semData?.name || ''
+        const { data: studentRows } = await supabase.from('students').select('*')
+          .eq('grade', grade).eq('is_active', true).in('english_class', PLACED_ENGLISH_CLASSES as unknown as string[])
+        const kOrder = (kc: string) => { const i = (KOREAN_CLASSES as unknown as string[]).indexOf(kc); return i < 0 ? 99 : i }
+        const gradeStudents = [...(studentRows || [])].sort((a, b) => (kOrder(a.korean_class) - kOrder(b.korean_class)) || ((a.class_number || 0) - (b.class_number || 0)))
+        if (gradeStudents.length === 0) { showToast('No students found for this grade.'); return }
+        const gIds = gradeStudents.map(s => s.id)
+        setProgress({ current: 0, total: gradeStudents.length })
+
+        const [gradesRes, settingsRes, commentsRes, teachersRes] = await Promise.all([
+          supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na').eq('semester_id', semesterId).in('student_id', gIds),
+          supabase.from('class_report_settings').select('english_class, domain, is_na').eq('semester_id', semesterId).eq('grade', grade),
+          supabase.from('comments').select('student_id, text, is_skipped, hide_comparison').eq('semester_id', semesterId).eq('report_type', 'report_card').in('student_id', gIds),
+          supabase.from('teachers').select('id, name, photo_url'),
+        ])
+        const teacherMap: Record<string, any> = {}
+        ;(teachersRes.data || []).forEach((t: any) => { teacherMap[t.id] = t })
+        const commentMap: Record<string, any> = {}
+        ;(commentsRes.data || []).forEach((c: any) => { commentMap[c.student_id] = c })
+        const classNa: Record<string, Record<string, boolean>> = {}
+        ;(settingsRes.data || []).forEach((r: any) => { if (!DOMAINS.includes(r.domain)) return; if (!classNa[r.english_class]) classNa[r.english_class] = {}; classNa[r.english_class][r.domain] = !!r.is_na })
+        const sGrades: Record<string, Record<string, number | null>> = {}
+        const sNa: Record<string, Record<string, boolean>> = {}
+        ;(gradesRes.data || []).forEach((sg: any) => {
+          if (!DOMAINS.includes(sg.domain)) return
+          if (!sGrades[sg.student_id]) sGrades[sg.student_id] = {}
+          if (!sNa[sg.student_id]) sNa[sg.student_id] = {}
+          sGrades[sg.student_id][sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+          sNa[sg.student_id][sg.domain] = !!sg.is_na
+        })
+        // Each student is compared to their own English class average
+        const classAvg: Record<string, Record<string, number | null>> = {}
+        ;(PLACED_ENGLISH_CLASSES as unknown as string[]).forEach(ec => {
+          const inClass = gradeStudents.filter(s => s.english_class === ec)
+          const avg: Record<string, number | null> = {}
+          DOMAINS.forEach(dom => {
+            if (classNa[ec] && classNa[ec][dom]) { avg[dom] = null; return }
+            const vals = inClass.map(s => (sNa[s.id] && sNa[s.id][dom]) ? null : (sGrades[s.id] ? sGrades[s.id][dom] : null)).filter((v): v is number => v != null)
+            avg[dom] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null
+          })
+          classAvg[ec] = avg
+        })
+        // Previous semester for growth deltas
+        const typeOrder: Record<string, number> = { archive: 0, fall_mid: 1, fall_final: 2, fall: 2, spring_mid: 3, spring_final: 4, spring: 4 }
+        const getYear = (s: any) => { const m = s.name?.match(/\d{4}/); return m ? parseInt(m[0]) : 2025 }
+        const sortedSems = [...allSemesters].sort((a: any, b: any) => { const yd = getYear(a) - getYear(b); return yd !== 0 ? yd : (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0) })
+        const idx = sortedSems.findIndex((s: any) => s.id === semesterId)
+        const prevSem = idx > 0 ? sortedSems[idx - 1] : null
+        let prevSemesterName: string | null = null
+        const prevByStudent: Record<string, Record<string, number | null>> = {}
+        if (prevSem) {
+          prevSemesterName = prevSem.name
+          const { data: prevGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade').eq('semester_id', prevSem.id).in('student_id', gIds)
+          ;(prevGrades || []).forEach((sg: any) => { if (!DOMAINS.includes(sg.domain)) return; if (!prevByStudent[sg.student_id]) prevByStudent[sg.student_id] = {}; prevByStudent[sg.student_id][sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null })
+        }
+
+        const head = `<!DOCTYPE html><html><head><title>Report Cards — Grade ${grade}</title><style>${reportCardCss(true)} .sep{max-width:760px;margin:24px auto;height:1100px;display:flex;flex-direction:column;align-items:center;justify-content:center;page-break-after:always;break-after:page;background:#f5f0eb;text-align:center}@media print{.sep{height:281mm;margin:0}}</style></head><body>`
+        let body = ''
+        let lastK: string | null = null
+        for (let i = 0; i < gradeStudents.length; i++) {
+          const student = gradeStudents[i]
+          if (student.korean_class !== lastK) {
+            lastK = student.korean_class
+            const kCount = gradeStudents.filter(s => s.korean_class === lastK).length
+            body += `<div class="sep"><div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#94a3b8">Daewoo Elementary School · Grade ${grade}</div><div style="font-size:52px;font-weight:800;color:#647FBC;font-family:Georgia,serif;margin-top:10px">${student.korean_class}반</div><div style="font-size:13px;color:#64748b;margin-top:8px">${kCount} report card${kCount === 1 ? '' : 's'}</div></div>`
+          }
+          const ec = student.english_class
+          const domainGrades: Record<string, number | null> = {}
+          const domainNa: Record<string, boolean> = {}
+          DOMAINS.forEach(dom => { domainGrades[dom] = sGrades[student.id] ? (sGrades[student.id][dom] ?? null) : null; domainNa[dom] = !!(sNa[student.id] && sNa[student.id][dom]) || !!(classNa[ec] && classNa[ec][dom]) })
+          const scored = DOMAINS.filter(dom => !domainNa[dom] && domainGrades[dom] != null)
+          const overallGrade = scored.length ? Math.round(scored.reduce((a, dom) => a + (domainGrades[dom] as number), 0) / scored.length * 10) / 10 : null
+          const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
+          const prevDomainGrades = prevByStudent[student.id] || null
+          let prevOverall: number | null = null
+          if (prevDomainGrades) { const ps = DOMAINS.filter(dom => prevDomainGrades[dom] != null); prevOverall = ps.length ? Math.round(ps.reduce((a, dom) => a + (prevDomainGrades[dom] as number), 0) / ps.length * 10) / 10 : null }
+          const c = commentMap[student.id]
+          const teacher = teacherMap[student.teacher_id]
+          const data = {
+            domainGrades, domainNa, classAverages: classAvg[ec] || {}, prevDomainGrades, prevOverall, prevSemesterName,
+            overallGrade, overallLetter, semesterName,
+            teacherName: teacher?.name || '', teacherPhotoUrl: teacher?.photo_url || null,
+            semesterGrade: student.grade, semesterClass: student.english_class,
+          }
+          body += reportCardHtml(student, data, c?.text || '', !!c?.is_skipped, !!c?.hide_comparison)
+          setProgress({ current: i + 1, total: gradeStudents.length })
+        }
+        setPreviewHtml(head + body + reportCardShrinkScript(false) + '</body></html>')
+      } else {
       const isCard = kind === 'report_card'
       // Load semester name + class N/A settings once for the whole class
       const { data: semData } = await supabase.from('semesters').select('name').eq('id', semesterId).single()
@@ -1374,6 +1470,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
 
       const tail = isCard ? reportCardShrinkScript(false) + '</body></html>' : '</body></html>'
       setPreviewHtml(head + body + tail)
+      }
     } catch (err: any) {
       showToast(`Failed to generate reports: ${err?.message || 'unknown error'}`)
     } finally {
@@ -1393,14 +1490,17 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
     setProgress({ current: 0, total: 0 })
   }
 
+  const isGrade = scope === 'grade'
   const buttonLabel = generating
-    ? <><Loader2 size={14} className="animate-spin" /> Generating {progress.current} of {progress.total}…</>
-    : <><Printer size={14} /> Print All {students.length} Students</>
+    ? <><Loader2 size={14} className="animate-spin" /> Generating {progress.current}{progress.total ? ` of ${progress.total}` : ''}…</>
+    : (isGrade
+      ? <><Printer size={14} /> Print Whole Grade {grade} (all classes)</>
+      : <><Printer size={14} /> Print All {students.length} Students</>)
 
   return (
     <>
-      <button onClick={handleStart} disabled={generating || students.length === 0}
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-50">
+      <button onClick={handleStart} disabled={generating || (!isGrade && students.length === 0)}
+        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium disabled:opacity-50 ${isGrade ? 'bg-navy text-white hover:bg-navy-dark' : 'bg-gold text-navy-dark hover:bg-gold-light'}`}>
         {buttonLabel}
       </button>
 
@@ -1408,7 +1508,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
       {generating && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-xl p-6 w-[360px]">
-            <div className="text-[14px] font-semibold text-navy mb-1">Generating progress reports…</div>
+            <div className="text-[14px] font-semibold text-navy mb-1">Generating {isGrade || kind === 'report_card' ? 'report cards' : 'progress reports'}…</div>
             <div className="text-[12px] text-text-secondary mb-3">Loading student {progress.current} of {progress.total}</div>
             <div className="w-full h-2 bg-surface-alt rounded-full overflow-hidden">
               <div className="h-full bg-navy transition-all" style={{ width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%` }} />
@@ -1422,7 +1522,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
         <div className="fixed inset-0 bg-black/50 z-50 flex flex-col">
           <div className="bg-white border-b border-border px-6 py-3 flex items-center justify-between flex-shrink-0">
             <div>
-              <div className="text-[14px] font-semibold text-navy">Preview &middot; {students.length} {kind === 'report_card' ? 'report cards' : 'progress reports'}</div>
+              <div className="text-[14px] font-semibold text-navy">Preview &middot; {isGrade ? `${progress.total} report cards · Grade ${grade}` : `${students.length} ${kind === 'report_card' ? 'report cards' : 'progress reports'}`}</div>
               <div className="text-[11px] text-text-secondary mt-0.5">Choose <strong>Save as PDF</strong> as the destination in the print dialog to download the whole class as one file.</div>
             </div>
             <div className="flex gap-2">
