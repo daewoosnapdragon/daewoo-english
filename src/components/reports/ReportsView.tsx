@@ -195,7 +195,7 @@ export default function ReportsView() {
         {mode === 'individual' && !selectedStudentId && selectedSemesterId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center">
             <p className="text-text-tertiary mb-4">Select a student to generate their report card, or print all at once.</p>
-            <BatchPrintButton students={students} semesterId={selectedSemesterId} className={selectedClass} />
+            <BatchPrintButton students={students} semesterId={selectedSemesterId} className={selectedClass} kind="report_card" allSemesters={semesters} />
           </div>
         )}
         {mode === 'individual' && !selectedStudentId && !selectedSemesterId && (
@@ -287,128 +287,42 @@ function BehaviorLogsPanel({ logs }: { logs: any[] }) {
 
 // ─── Radar Chart (Pentagon) ──────────────────────────────────────────
 
-function RadarChart({ studentGrades, classAverages }: {
-  studentGrades: Record<string, number | null>
+// Horizontal student-vs-class bars (screen version of comparisonBarsHtml)
+function ComparisonBars({ domainGrades, domainNa, classAverages }: {
+  domainGrades: Record<string, number | null>
+  domainNa: Record<string, boolean>
   classAverages: Record<string, number | null>
 }) {
-  // Wide viewBox so the side labels ("Language Standards", "Phonics") never clip
-  const VW = 380, VH = 300
-  const cx = VW / 2, cy = 142
-  const maxR = 92
-  const levels = [20, 40, 60, 80, 100]
-  const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
-  // Labels match the Academic Performance tiles exactly
-  const labels = ['Reading', 'Phonics', 'Writing', 'Speaking &\nListening', 'Language\nStandards']
-  const angles = domains.map((_, i) => (Math.PI * 2 * i) / domains.length - Math.PI / 2)
-
-  const toXY = (angle: number, pct: number) => ({
-    x: cx + Math.cos(angle) * (pct / 100) * maxR,
-    y: cy + Math.sin(angle) * (pct / 100) * maxR,
-  })
-
-  const makePolygon = (values: (number | null)[]) => {
-    return values.map((v, i) => {
-      const pt = toXY(angles[i], v ?? 0)
-      return `${pt.x},${pt.y}`
-    }).join(' ')
-  }
-
-  const studentValues = domains.map(d => studentGrades[d])
-  const classValues = domains.map(d => classAverages[d])
-  const filledCount = studentValues.filter(v => v != null).length
-  const hasClass = classValues.some(v => v != null)
-
   return (
-    <svg width="100%" viewBox={`0 0 ${VW} ${VH}`} className="mx-auto block" style={{ maxWidth: 380 }}>
-      {/* Background grid rings */}
-      {levels.map(lvl => (
-        <polygon key={lvl}
-          points={angles.map(a => { const p = toXY(a, lvl); return `${p.x},${p.y}` }).join(' ')}
-          fill="none" stroke="#C8CED8" strokeWidth={lvl === 60 ? 0.8 : 0.5}
-          strokeDasharray={lvl === 100 ? undefined : '2,2'}
-        />
-      ))}
-
-      {/* Axis lines */}
-      {angles.map((a, i) => {
-        const end = toXY(a, 100)
-        return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke="#C8CED8" strokeWidth={0.5} />
-      })}
-
-      {/* Class average polygon — amber, dashed */}
-      {hasClass && (
-        <polygon
-          points={makePolygon(classValues)}
-          fill="rgba(245,158,11,0.10)" stroke={RADAR_CLASS} strokeWidth={2}
-          strokeDasharray="5,3"
-        />
-      )}
-
-      {/* Student polygon — bold navy; only draw if 3+ domains, otherwise just dots */}
-      {filledCount >= 3 && (
-        <polygon
-          points={makePolygon(studentValues)}
-          fill="rgba(30,58,138,0.22)" stroke={RADAR_STUDENT} strokeWidth={2.5}
-        />
-      )}
-
-      {/* For 2 domains, draw a line between them */}
-      {filledCount === 2 && (() => {
-        const pts = studentValues.map((v, i) => v != null ? toXY(angles[i], v) : null).filter(Boolean) as { x: number; y: number }[]
-        return pts.length === 2 ? <line x1={pts[0].x} y1={pts[0].y} x2={pts[1].x} y2={pts[1].y} stroke={RADAR_STUDENT} strokeWidth={2} /> : null
-      })()}
-
-      {/* Class dots */}
-      {hasClass && classValues.map((v, i) => {
-        if (v == null) return null
-        const pt = toXY(angles[i], v)
-        return <circle key={`cdot-${i}`} cx={pt.x} cy={pt.y} r={3} fill={RADAR_CLASS} stroke="white" strokeWidth={1} />
-      })}
-
-      {/* Student dots — always show */}
-      {studentValues.map((v, i) => {
-        if (v == null) return null
-        const pt = toXY(angles[i], v)
-        return <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r={4} fill={RADAR_STUDENT} stroke="white" strokeWidth={1.5} />
-      })}
-
-      {/* Domain labels -- positioned further out with smart anchoring */}
-      {angles.map((a, i) => {
-        const labelR = maxR + 30
-        const pt = toXY(a, (labelR / maxR) * 100)
-        const sv = studentValues[i]
-        // Smart text anchor: left side = end, right side = start, top/bottom = middle
-        const anchor = pt.x < cx - 10 ? 'end' : pt.x > cx + 10 ? 'start' : 'middle'
-        const labelLines = labels[i].split('\n')
+    <div className="space-y-1.5">
+      {DOMAINS.map(dom => {
+        const na = !!domainNa[dom]
+        const v = na ? null : domainGrades[dom]
+        const cv = classAverages?.[dom]
+        if (na || v == null) {
+          return (
+            <div key={dom} className="grid items-center gap-3" style={{ gridTemplateColumns: '120px 1fr' }}>
+              <span className="text-[11px] font-semibold text-[#475569]">{DOMAIN_SHORT[dom]}</span>
+              <span className="text-[10px] text-[#94a3b8] italic">{na ? 'N/A — not assessed' : 'No grade recorded'}</span>
+            </div>
+          )
+        }
+        const w = Math.max(2, Math.min(100, v))
         return (
-          <g key={`label-${i}`}>
-            {labelLines.map((line, li) => (
-              <text key={li} x={pt.x} y={pt.y - 5 + (li * 12) - ((labelLines.length - 1) * 6)} textAnchor={anchor} dominantBaseline="middle"
-                style={{ fontSize: '11px', fontWeight: 700, fill: '#475569' }}>
-                {line}
-              </text>
-            ))}
-            {sv != null && (
-              <text x={pt.x} y={pt.y + 7 + ((labelLines.length - 1) * 6)} textAnchor={anchor} dominantBaseline="middle"
-                style={{ fontSize: '9px', fontWeight: 700, fill: RADAR_STUDENT }}>
-                {sv.toFixed(0)}%
-              </text>
-            )}
-          </g>
+          <div key={dom} className="grid items-center gap-3" style={{ gridTemplateColumns: '120px 1fr 78px' }}>
+            <span className="text-[11px] font-semibold text-[#475569]">{DOMAIN_SHORT[dom]}</span>
+            <div className="relative h-[15px] rounded-lg border border-[#DFE4EB]" style={{ background: '#EDF1F8' }}>
+              <div className="absolute left-0 top-0 bottom-0 rounded-lg" style={{ width: `${w}%`, background: RADAR_STUDENT }} />
+              {cv != null && <div className="absolute" style={{ left: `${Math.min(100, cv)}%`, top: -3, bottom: -3, borderLeft: `2px dashed ${RADAR_CLASS}` }} />}
+            </div>
+            <span className="text-[10px] whitespace-nowrap text-right">
+              <strong className="text-[12px]" style={{ color: RADAR_STUDENT }}>{v.toFixed(0)}</strong>{' '}
+              <span className="text-[#94a3b8]">{cv != null ? `cls ${cv.toFixed(0)}` : 'cls —'}</span>
+            </span>
+          </div>
         )
       })}
-
-      {/* Scale labels along top axis */}
-      {[60, 80, 100].map(lvl => {
-        const pt = toXY(-Math.PI / 2, lvl)
-        return (
-          <text key={`scale-${lvl}`} x={pt.x + 10} y={pt.y + 3}
-            style={{ fontSize: '7px', fill: '#94a3b8' }}>
-            {lvl}
-          </text>
-        )
-      })}
-    </svg>
+    </div>
   )
 }
 
@@ -420,6 +334,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [loading, setLoading] = useState(true)
   const [comment, setComment] = useState('')
   const [commentSkipped, setCommentSkipped] = useState(false)
+  const [hideComparison, setHideComparison] = useState(false)
   const [savingComment, setSavingComment] = useState(false)
   const [ackingNote, setAckingNote] = useState(false)
   const [showRefPanel, setShowRefPanel] = useState(false)
@@ -551,7 +466,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     }
 
     // ─── STEP 5: Comment, teacher, reading, attendance, behavior, scaffolds, goals ───
-    const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', 'report_card').limit(1).single()
+    const { data: commentData } = await supabase.from('comments').select('text, is_skipped, hide_comparison').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', 'report_card').limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
     // Reviewer feedback flagged by partner/admin (graceful if migration not yet run)
@@ -626,6 +541,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     })
     setComment(commentData?.text || '')
     setCommentSkipped(!!commentData?.is_skipped)
+    setHideComparison(!!commentData?.hide_comparison)
     setLoading(false)
   }, [studentId, semesterId, students, allSemesters, selectedClass, currentTeacher])
 
@@ -633,9 +549,18 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
   const saveComment = async () => {
     setSavingComment(true)
-    await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, report_type: 'report_card', text: comment.trim(), is_skipped: commentSkipped, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id,report_type' })
+    await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, report_type: 'report_card', text: comment.trim(), is_skipped: commentSkipped, hide_comparison: hideComparison, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id,report_type' })
     setSavingComment(false)
     showToast(commentSkipped ? 'Comment skipped' : 'Comment saved')
+  }
+
+  // Auto-saves immediately so the chart toggle persists without a comment save
+  const toggleHideComparison = async () => {
+    const next = !hideComparison
+    setHideComparison(next)
+    const { error } = await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, report_type: 'report_card', hide_comparison: next, text: comment.trim(), is_skipped: commentSkipped, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id,report_type' })
+    if (error) { setHideComparison(!next); showToast(error.message?.includes('hide_comparison') ? 'Run the hide_comparison migration first.' : `Error: ${error.message}`) }
+    else showToast(next ? 'Class comparison hidden' : 'Class comparison shown')
   }
 
   const acknowledgeReviewerNote = async () => {
@@ -665,147 +590,10 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const handlePrint = () => {
     if (!data) return
     const d = data, s = d.student
-
-    const gc = d.overallGrade != null ? letterColor(d.overallLetter) : '#94a3b8'
-    const pct = (d.overallGrade || 0) / 100
-    const radius = 50, stroke = 8, circ = 2 * Math.PI * radius
-    const displayGrade = d.semesterGrade || s.grade
-    const displayClass = d.semesterClass || s.english_class
-    const overallDelta = growthDelta(d.overallGrade, d.prevOverall)
-
-    // Score tiles (clean — with growth vs previous semester)
-    const tiles = DOMAINS.map((dom) => {
-      if (d.domainNa[dom]) return `<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f5f5f5">
-        <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
-        <div style="font-size:20px;font-weight:800;color:#94a3b8;margin-top:6px">N/A</div>
-        <div style="font-size:9px;color:#94a3b8;margin-top:3px">Not assessed</div>
-      </div>`
-      const v = d.domainGrades[dom]; if (v == null) return '<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px">--</div>'
-      const g = getLetterGrade(v); const t = tileBgPrint(v)
-      const dlt = growthDelta(v, d.prevDomainGrades?.[dom])
-      return `<div style="text-align:center;padding:14px 8px;background:${t.bg};border:1.5px solid ${t.border};border-radius:12px">
-        <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
-        <div style="font-size:26px;font-weight:800;color:#1e293b;margin-top:6px">${v.toFixed(1)}%</div>
-        <div style="font-size:14px;font-weight:700;color:${letterColor(g)};margin-top:3px">${g}</div>
-        ${dlt ? `<div style="font-size:9px;font-weight:700;color:${dlt.color};margin-top:2px">${dlt.arrow} ${dlt.val}</div>` : ''}
-      </div>`
-    }).join('')
-
-    // Radar chart SVG for print — wide viewBox so labels fit; names match the tiles
-    const RVW = 380, RVH = 320, rcx = RVW / 2, rcy = 150, maxR = 104
-    const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
-    const rLabels = ['Reading', 'Phonics', 'Writing', 'Speaking &|Listening', 'Language|Standards']
-    const rAngles = domains.map((_, i) => (Math.PI * 2 * i) / 5 - Math.PI / 2)
-    const toXY = (a: number, p: number) => ({ x: rcx + Math.cos(a) * (p / 100) * maxR, y: rcy + Math.sin(a) * (p / 100) * maxR })
-    const makePoly = (vals: (number | null)[]) => vals.map((v, i) => { const pt = toXY(rAngles[i], v ?? 0); return `${pt.x},${pt.y}` }).join(' ')
-    const sVals = domains.map(dm => d.domainNa[dm] ? null : d.domainGrades[dm])
-    const cVals = domains.map(dm => d.classAverages[dm])
-    const sFilledCount = sVals.filter(v => v != null).length
-
-    const gridLines = [20, 40, 60, 80, 100].map(lvl =>
-      `<polygon points="${rAngles.map(a => { const p = toXY(a, lvl); return `${p.x},${p.y}` }).join(' ')}" fill="none" stroke="#C8CED8" stroke-width="0.5" ${lvl < 100 ? 'stroke-dasharray="2,2"' : ''}/>`
-    ).join('')
-    const axisLines = rAngles.map(a => { const e = toXY(a, 100); return `<line x1="${rcx}" y1="${rcy}" x2="${e.x}" y2="${e.y}" stroke="#C8CED8" stroke-width="0.5"/>` }).join('')
-    const classPoly = cVals.some(v => v != null) ? `<polygon points="${makePoly(cVals)}" fill="rgba(245,158,11,0.10)" stroke="${RADAR_CLASS}" stroke-width="2" stroke-dasharray="5,3"/>` : ''
-    const studentPoly = sFilledCount >= 3 ? `<polygon points="${makePoly(sVals)}" fill="rgba(30,58,138,0.18)" stroke="${RADAR_STUDENT}" stroke-width="2"/>` : ''
-    const classDots = cVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="2.8" fill="${RADAR_CLASS}" stroke="white" stroke-width="1"/>` }).join('')
-    const dots = sVals.map((v, i) => { if (v == null) return ''; const pt = toXY(rAngles[i], v); return `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="${RADAR_STUDENT}" stroke="white" stroke-width="1.5"/>` }).join('')
-    const radarLabels = rAngles.map((a, i) => {
-      const pt = toXY(a, ((maxR + 28) / maxR) * 100)
-      const sv = sVals[i]
-      const anchor = pt.x < rcx - 10 ? 'end' : pt.x > rcx + 10 ? 'start' : 'middle'
-      const lines = rLabels[i].split('|')
-      const labelTxt = lines.map((ln, li) => `<text x="${pt.x}" y="${pt.y - 4 + li * 10 - (lines.length - 1) * 5}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:9.5px;font-weight:700;fill:#475569">${ln}</text>`).join('')
-      const valTxt = sv != null ? `<text x="${pt.x}" y="${pt.y + 8 + (lines.length - 1) * 5}" text-anchor="${anchor}" dominant-baseline="middle" style="font-size:8px;font-weight:700;fill:${RADAR_STUDENT}">${sv.toFixed(0)}%</text>` : ''
-      return labelTxt + valTxt
-    }).join('')
-
-    const radarSvg = `<svg width="100%" viewBox="0 0 ${RVW} ${RVH}" style="max-width:370px;display:block;margin:0 auto">${gridLines}${axisLines}${classPoly}${studentPoly}${classDots}${dots}${radarLabels}</svg>`
-
-    const radarLegend = `<div style="text-align:center;margin-top:6px;font-size:8px;color:#94a3b8">
-      <span style="display:inline-flex;align-items:center;gap:3px;margin-right:12px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(30,58,138,0.22);border:1.5px solid ${RADAR_STUDENT};display:inline-block"></span> Student</span>
-      <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(245,158,11,0.12);border:1.5px solid ${RADAR_CLASS};display:inline-block"></span> Class Avg</span>
-    </div>`
-
-    // Teacher avatar
-    const avatarHtml = d.teacherPhotoUrl
-      ? `<img src="${d.teacherPhotoUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #DFE4EB" />`
-      : `<div style="width:32px;height:32px;border-radius:50%;background:#647FBC;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${d.teacherName[0] || ''}</div>`
-
-    // Teacher comment block (sits beside the radar; the box flexes to fill the page)
-    const commentBlock = commentSkipped ? '' : `<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Teacher's Comment</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
-      <div style="flex:1 1 auto;min-height:190px;font-size:12px;line-height:1.75;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:16px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>`
-
-    // Grading scale
-    const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#EDF1F8;border:1px solid #C8CED8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
-
     const pw = window.open('', '_blank')
     if (!pw) return
-    pw.document.write(`<html><head><title>Report Card \u2014 ${s.english_name}</title>
-    <style>
-      body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb;display:flex;flex-direction:column;min-height:1040px}
-      .snap{flex:1 1 auto;display:flex;flex-direction:column}
-      @media print{@page{size:A4;margin:8mm}body{padding:0}.card{margin:0;box-shadow:none;border-radius:0;min-height:281mm;max-height:281mm;overflow:hidden}}
-    </style></head>
-    <body><div class="card">
-    <!-- Header -->
-    <div style="background:#647FBC;padding:18px 28px;color:white;display:flex;justify-content:space-between;align-items:center">
-      <div><div style="font-size:10px;opacity:0.5;letter-spacing:2.5px;text-transform:uppercase">Daewoo Elementary School</div>
-      <div style="font-size:22px;font-weight:700;margin-top:4px;font-family:Georgia,serif">${d.semesterName} Report Card</div>
-      <div style="font-size:11px;opacity:0.6;margin-top:2px;font-style:italic">English Program \u2014 Growing together through English.</div></div>
-      <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2)"><img src="/logo.png" style="width:36px;height:36px;object-fit:contain" onerror="this.style.display='none'" /></div>
-    </div>
-    <!-- Student Info -->
-    <div style="background:#fdfcfa;padding:14px 28px;border-bottom:1px solid #C8CED8">
-      <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr auto;gap:0 14px">
-        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Name</div><div style="font-size:13px;font-weight:700;margin-top:1px">${s.korean_name}  ${s.english_name}</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Grade</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayGrade}</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Korean Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.korean_class}반</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Class Number</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.class_number}번</div></div>
-        <div style="grid-row:1/3;display:flex;align-items:center;justify-content:center;padding-left:8px">
-          <div style="position:relative;width:76px;height:76px">
-            <svg width="76" height="76" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${radius}" fill="none" stroke="#C8CED8" stroke-width="${stroke}"/>
-            <circle cx="60" cy="60" r="${radius}" fill="none" stroke="${gc}" stroke-width="${stroke}" stroke-dasharray="${pct * circ} ${circ}" stroke-linecap="round" transform="rotate(-90 60 60)"/></svg>
-            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-              <div style="font-size:19px;font-weight:800;color:#647FBC;line-height:1.1">${d.overallLetter}</div>
-              <div style="font-size:10px;color:#64748b">${d.overallGrade != null ? d.overallGrade.toFixed(1) + '%' : ''}</div>
-              ${overallDelta ? `<div style="font-size:8px;font-weight:700;color:${overallDelta.color};line-height:1.2">${overallDelta.arrow} ${overallDelta.val}</div>` : ''}
-            </div>
-          </div>
-        </div>
-        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">English Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayClass}</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Teacher</div><div style="font-size:13px;font-weight:600;margin-top:1px">${d.teacherName}</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Team Manager</div><div style="font-size:13px;font-weight:600;margin-top:1px">Victoria Park</div></div>
-        <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Principal</div><div style="font-size:13px;font-weight:600;margin-top:1px">Kwak Cheol Ok</div></div>
-      </div>
-    </div>
-    <!-- Score Tiles -->
-    <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #C8CED8">
-      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance${d.prevSemesterName ? `<span style="text-transform:none;letter-spacing:0;font-weight:500;color:#b8b0a6"> &nbsp;·&nbsp; ▲▼ change vs ${d.prevSemesterName}</span>` : ''}</div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
-    </div>
-    <!-- Student Snapshot: Class Comparison + Teacher Comment (stretches to fill the page) -->
-    <div class="snap" style="background:#fdfcfa;padding:22px 28px;border-bottom:1px solid #C8CED8">
-      <div style="flex:1 1 auto;display:grid;grid-template-columns:${commentSkipped ? '1fr' : '1.04fr 0.96fr'};gap:28px;align-items:stretch">
-        <div style="display:flex;flex-direction:column">
-          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Class Comparison</div>
-          <div style="flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;text-align:center">${radarSvg}</div>
-          ${radarLegend}
-        </div>
-        ${commentSkipped ? '' : `<div style="display:flex;flex-direction:column">${commentBlock}</div>`}
-      </div>
-    </div>
-    <!-- Scale + Footer -->
-    <div style="background:#fdfcfa;padding:14px 28px">
-      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Grading Scale</div>
-      <div style="display:flex;gap:3px;flex-wrap:wrap">${scaleHtml}</div>
-      <div style="text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid #C8CED8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School \u00b7 English Program \u00b7 ${d.semesterName}</div>
-    </div>
-    </div></body></html>`)
+    pw.document.write(`<!DOCTYPE html><html><head><title>Report Card — ${s.english_name}</title><style>${reportCardCss(false)}</style></head><body>${reportCardHtml(s, d, comment, commentSkipped, hideComparison)}${reportCardShrinkScript(true)}</body></html>`)
     pw.document.close()
-    pw.print()
   }
 
   // ─── Render ─────────────────────────────────────────────────────────
@@ -1005,21 +793,35 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           </div>
           )}
         </div>
-        {/* ─── Snapshot: Class Comparison + Teacher Comment ─── */}
-        <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
-          <div className="grid gap-7 items-start" style={{ gridTemplateColumns: '1.04fr 0.96fr' }}>
-            {/* Left: Radar Chart — Student vs Class */}
-            <div>
-              <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3">Class Comparison</div>
-              <RadarChart studentGrades={Object.fromEntries(DOMAINS.map(dom => [dom, d.domainNa[dom] ? null : d.domainGrades[dom]]))} classAverages={d.classAverages} />
-              <div className="flex items-center justify-center gap-4 mt-1 text-[9px]">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(30,58,138,0.22)', border: `1.5px solid ${RADAR_STUDENT}` }} /> Student</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(245,158,11,0.12)', border: `1.5px solid ${RADAR_CLASS}` }} /> Class Average</span>
-              </div>
+        {/* ─── Class Comparison (bars: student vs class) ─── */}
+        <div className="bg-white px-7 pt-5 pb-4" style={{ borderBottom: '1px solid #C8CED8' }}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Class Comparison</div>
+            <div className="flex items-center gap-4">
+              {!hideComparison && (
+                <div className="flex items-center gap-3 text-[9px] text-[#94a3b8]">
+                  <span className="flex items-center gap-1"><span className="inline-block w-3.5 h-2 rounded-sm" style={{ background: RADAR_STUDENT }} /> This student</span>
+                  <span className="flex items-center gap-1"><span className="inline-block h-2.5" style={{ borderLeft: `2px dashed ${RADAR_CLASS}` }} /> Class average</span>
+                </div>
+              )}
+              {canEdit && (
+                <label className="print:hidden flex items-center gap-1.5 text-[10px] text-text-secondary cursor-pointer select-none">
+                  <input type="checkbox" checked={hideComparison} onChange={toggleHideComparison} />
+                  Hide for this student
+                </label>
+              )}
             </div>
+          </div>
+          {hideComparison ? (
+            <div className="text-[11px] text-[#94a3b8] italic py-2">Class comparison hidden for this student (not assessed against the class average).</div>
+          ) : (
+            <ComparisonBars domainGrades={d.domainGrades} domainNa={d.domainNa} classAverages={d.classAverages} />
+          )}
+        </div>
 
-            {/* Right: Teacher comment editor (matches the printed layout) */}
-            <div>
+        {/* ─── Teacher Comment (full width) ─── */}
+        <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
+          <div>
               <div className="flex items-center justify-between mb-2.5">
                 <div className="flex items-center gap-2.5">
                   {/* Teacher avatar — clickable to upload */}
@@ -1086,7 +888,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               )}
             </div>
           </div>
-        </div>
 
         {/* ─── Student Reference Panel (full width, screen only) ─── */}
         {showRefPanel && (
@@ -1220,6 +1021,150 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   )
 }
 
+// ─── Report Card HTML (shared by single + batch print) ──────────────
+
+// Horizontal student-vs-class bars, one row per domain
+function comparisonBarsHtml(domainGrades: Record<string, number | null>, domainNa: Record<string, boolean>, classAverages: Record<string, number | null>): string {
+  return DOMAINS.map(dom => {
+    const na = !!domainNa[dom]
+    const v = na ? null : domainGrades[dom]
+    const cv = classAverages?.[dom]
+    if (na || v == null) {
+      return `<div style="display:grid;grid-template-columns:118px 1fr;align-items:center;gap:14px;padding:6px 0">
+        <div style="font-size:11px;font-weight:600;color:#475569">${DOMAIN_SHORT[dom]}</div>
+        <div style="font-size:10px;color:#94a3b8;font-style:italic">${na ? 'N/A — not assessed' : 'No grade recorded'}</div>
+      </div>`
+    }
+    const w = Math.max(2, Math.min(100, v))
+    const tick = cv != null ? `<div style="position:absolute;top:-3px;bottom:-3px;left:${Math.min(100, cv)}%;width:0;border-left:2px dashed ${RADAR_CLASS}"></div>` : ''
+    const clsTxt = cv != null ? `<span style="color:#94a3b8">cls ${cv.toFixed(0)}</span>` : `<span style="color:#cbd5e1">cls —</span>`
+    return `<div style="display:grid;grid-template-columns:118px 1fr 80px;align-items:center;gap:14px;padding:6px 0">
+      <div style="font-size:11px;font-weight:600;color:#475569">${DOMAIN_SHORT[dom]}</div>
+      <div style="position:relative;height:15px;background:#EDF1F8;border-radius:8px;border:1px solid #DFE4EB">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:${w}%;background:${RADAR_STUDENT};border-radius:8px"></div>
+        ${tick}
+      </div>
+      <div style="font-size:10px;white-space:nowrap;text-align:right"><strong style="color:${RADAR_STUDENT};font-size:12px">${v.toFixed(0)}</strong> &nbsp;${clsTxt}</div>
+    </div>`
+  }).join('')
+}
+
+// Full report card page (header → info → tiles → comparison → comment → scale).
+// The comment band flexes to fill the page; its box is class="cmt" so the print
+// wrapper's shrink script can auto-fit a long comment to one page.
+function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean, hideComparison: boolean): string {
+  const gc = d.overallGrade != null ? letterColor(d.overallLetter) : '#94a3b8'
+  const pct = (d.overallGrade || 0) / 100
+  const radius = 50, stroke = 8, circ = 2 * Math.PI * radius
+  const displayGrade = d.semesterGrade || s.grade
+  const displayClass = d.semesterClass || s.english_class
+  const overallDelta = growthDelta(d.overallGrade, d.prevOverall)
+
+  const tiles = DOMAINS.map((dom) => {
+    if (d.domainNa[dom]) return `<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f5f5f5">
+      <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
+      <div style="font-size:20px;font-weight:800;color:#94a3b8;margin-top:6px">N/A</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:3px">Not assessed</div>
+    </div>`
+    const v = d.domainGrades[dom]; if (v == null) return '<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px">--</div>'
+    const g = getLetterGrade(v); const t = tileBgPrint(v)
+    const dlt = growthDelta(v, d.prevDomainGrades?.[dom])
+    return `<div style="text-align:center;padding:14px 8px;background:${t.bg};border:1.5px solid ${t.border};border-radius:12px">
+      <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
+      <div style="font-size:26px;font-weight:800;color:#1e293b;margin-top:6px">${v.toFixed(1)}%</div>
+      <div style="font-size:14px;font-weight:700;color:${letterColor(g)};margin-top:3px">${g}</div>
+      ${dlt ? `<div style="font-size:9px;font-weight:700;color:${dlt.color};margin-top:2px">${dlt.arrow} ${dlt.val}</div>` : ''}
+    </div>`
+  }).join('')
+
+  const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#EDF1F8;border:1px solid #C8CED8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
+
+  const avatarHtml = d.teacherPhotoUrl
+    ? `<img src="${d.teacherPhotoUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #DFE4EB" />`
+    : `<div style="width:32px;height:32px;border-radius:50%;background:#647FBC;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${(d.teacherName || '')[0] || ''}</div>`
+
+  const comparisonBand = hideComparison ? '' : `<div style="background:#fdfcfa;padding:16px 28px 14px;border-bottom:1px solid #C8CED8">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600">Class Comparison</div>
+      <div style="font-size:8px;color:#94a3b8"><span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px"><span style="width:14px;height:8px;border-radius:2px;background:${RADAR_STUDENT};display:inline-block"></span> This student</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;border-left:2px dashed ${RADAR_CLASS};height:11px"></span> Class average</span></div>
+    </div>
+    ${comparisonBarsHtml(d.domainGrades, d.domainNa, d.classAverages || {})}
+  </div>`
+
+  const commentInner = commentSkipped
+    ? `<div style="flex:1 1 auto;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-style:italic;font-size:12px">Comment intentionally omitted for this student.</div>`
+    : `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
+       <div class="cmt" style="flex:1 1 auto;overflow:hidden;min-height:120px;font-size:12px;line-height:1.75;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:16px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>`
+
+  return `<div class="card">
+  <div style="background:#647FBC;padding:18px 28px;color:white;display:flex;justify-content:space-between;align-items:center">
+    <div><div style="font-size:10px;opacity:0.5;letter-spacing:2.5px;text-transform:uppercase">Daewoo Elementary School</div>
+    <div style="font-size:22px;font-weight:700;margin-top:4px;font-family:Georgia,serif">${d.semesterName} Report Card</div>
+    <div style="font-size:11px;opacity:0.6;margin-top:2px;font-style:italic">English Program — Growing together through English.</div></div>
+    <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2)"><img src="/logo.png" style="width:36px;height:36px;object-fit:contain" onerror="this.style.display='none'" /></div>
+  </div>
+  <div style="background:#fdfcfa;padding:14px 28px;border-bottom:1px solid #C8CED8">
+    <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr auto;gap:0 14px">
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Name</div><div style="font-size:13px;font-weight:700;margin-top:1px">${s.korean_name}  ${s.english_name}</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Grade</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayGrade}</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Korean Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.korean_class}반</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Class Number</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.class_number}번</div></div>
+      <div style="grid-row:1/3;display:flex;align-items:center;justify-content:center;padding-left:8px">
+        <div style="position:relative;width:76px;height:76px">
+          <svg width="76" height="76" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${radius}" fill="none" stroke="#C8CED8" stroke-width="${stroke}"/>
+          <circle cx="60" cy="60" r="${radius}" fill="none" stroke="${gc}" stroke-width="${stroke}" stroke-dasharray="${pct * circ} ${circ}" stroke-linecap="round" transform="rotate(-90 60 60)"/></svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div style="font-size:19px;font-weight:800;color:#647FBC;line-height:1.1">${d.overallLetter}</div>
+            <div style="font-size:10px;color:#64748b">${d.overallGrade != null ? d.overallGrade.toFixed(1) + '%' : ''}</div>
+            ${overallDelta ? `<div style="font-size:8px;font-weight:700;color:${overallDelta.color};line-height:1.2">${overallDelta.arrow} ${overallDelta.val}</div>` : ''}
+          </div>
+        </div>
+      </div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">English Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayClass}</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Teacher</div><div style="font-size:13px;font-weight:600;margin-top:1px">${d.teacherName}</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Team Manager</div><div style="font-size:13px;font-weight:600;margin-top:1px">Victoria Park</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Principal</div><div style="font-size:13px;font-weight:600;margin-top:1px">Kwak Cheol Ok</div></div>
+    </div>
+  </div>
+  <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #C8CED8">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance${d.prevSemesterName ? `<span style="text-transform:none;letter-spacing:0;font-weight:500;color:#b8b0a6"> &nbsp;·&nbsp; ▲▼ change vs ${d.prevSemesterName}</span>` : ''}</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
+  </div>
+  ${comparisonBand}
+  <div style="background:#fdfcfa;padding:18px 28px;border-bottom:1px solid #C8CED8;flex:1 1 auto;display:flex;flex-direction:column">
+    ${commentSkipped ? '' : `<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:10px">Teacher's Comment</div>`}
+    ${commentInner}
+  </div>
+  <div style="background:#fdfcfa;padding:14px 28px">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Grading Scale</div>
+    <div style="display:flex;gap:3px;flex-wrap:wrap">${scaleHtml}</div>
+    <div style="text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid #C8CED8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School · English Program · ${d.semesterName}</div>
+  </div>
+  </div>`
+}
+
+// One-page card CSS; the card is a fixed-height flex column so the comment box is bounded.
+function reportCardCss(batch: boolean): string {
+  return `*{box-sizing:border-box}
+  body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .card{max-width:760px;margin:24px auto;overflow:hidden;background:#f5f0eb;display:flex;flex-direction:column;height:1100px;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08)${batch ? ';page-break-after:always;break-after:page' : ''}}
+  ${batch ? '.card:last-child{page-break-after:auto;break-after:auto}' : ''}
+  @media print{@page{size:A4;margin:8mm}body{padding:0}.card{height:281mm;margin:0;box-shadow:none;border-radius:0}}`
+}
+
+// Shrinks each comment box's font until it fits its (page-bounded) box, then optionally prints.
+function reportCardShrinkScript(autoPrint: boolean): string {
+  return `<script>
+  window.addEventListener('load', function(){
+    document.querySelectorAll('.cmt').forEach(function(b){
+      var fs = parseFloat(getComputedStyle(b).fontSize) || 12, g = 0;
+      while (b.scrollHeight > b.clientHeight - 3 && fs > 7.5 && g < 40) { fs -= 0.5; b.style.fontSize = fs + 'px'; b.style.lineHeight = '1.6'; g++; }
+    });
+    ${autoPrint ? 'setTimeout(function(){ window.print(); }, 80);' : ''}
+  });
+  </script>`
+}
+
 // ─── Progress Report Card HTML (shared by single + batch print) ──────
 function progressCardHtml(s: any, d: any, comment: string): string {
   const naMap: Record<string, boolean> = d.domainNa || {}
@@ -1320,7 +1265,7 @@ function printProgressReport(s: any, d: any, comment: string) {
 }
 
 // ─── Batch Print All Progress Reports ────────────────────────────────
-function BatchPrintButton({ students, semesterId, className: cls }: { students: any[]; semesterId: string; className: string }) {
+function BatchPrintButton({ students, semesterId, className: cls, kind = 'progress', allSemesters = [] }: { students: any[]; semesterId: string; className: string; kind?: 'progress' | 'report_card'; allSemesters?: any[] }) {
   const [generating, setGenerating] = useState(false)
   const [progress, setProgress] = useState({ current: 0, total: 0 })
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
@@ -1333,17 +1278,51 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
     setProgress({ current: 0, total: students.length })
 
     try {
+      const isCard = kind === 'report_card'
       // Load semester name + class N/A settings once for the whole class
       const { data: semData } = await supabase.from('semesters').select('name').eq('id', semesterId).single()
       const semesterName = semData?.name || ''
       const grade = students[0]?.grade
+      const studentIds = students.map(s => s.id)
       const { data: classSettings } = await supabase.from('class_report_settings').select('domain, is_na')
         .eq('semester_id', semesterId).eq('english_class', cls).eq('grade', grade)
       const domainClassNa: Record<string, boolean> = {}
       DOMAINS.forEach(dd => { domainClassNa[dd] = false })
       ;(classSettings || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) domainClassNa[r.domain] = !!r.is_na })
 
-      const head = `<!DOCTYPE html><html><head><title>Progress Reports — ${cls} Grade ${grade}</title>
+      // Report cards additionally need class averages + previous-semester deltas
+      const classAverages: Record<string, number | null> = {}
+      const prevByStudent: Record<string, Record<string, number | null>> = {}
+      let prevSemesterName: string | null = null
+      if (isCard) {
+        const { data: classSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na')
+          .eq('semester_id', semesterId).eq('english_class', cls).eq('grade', grade)
+        DOMAINS.forEach(domain => {
+          if (domainClassNa[domain]) { classAverages[domain] = null; return }
+          const vals = (classSemGrades || []).filter((sg: any) => sg.domain === domain && !sg.is_na).map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
+          classAverages[domain] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null
+        })
+        const typeOrder: Record<string, number> = { archive: 0, fall_mid: 1, fall_final: 2, fall: 2, spring_mid: 3, spring_final: 4, spring: 4 }
+        const getYear = (s: any) => { const m = s.name?.match(/\d{4}/); return m ? parseInt(m[0]) : 2025 }
+        const sorted = [...allSemesters].sort((a: any, b: any) => { const yd = getYear(a) - getYear(b); return yd !== 0 ? yd : (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0) })
+        const idx = sorted.findIndex((s: any) => s.id === semesterId)
+        const prevSem = idx > 0 ? sorted[idx - 1] : null
+        if (prevSem) {
+          prevSemesterName = prevSem.name
+          const { data: prevGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade')
+            .eq('semester_id', prevSem.id).in('student_id', studentIds)
+          ;(prevGrades || []).forEach((sg: any) => {
+            if (!DOMAINS.includes(sg.domain)) return
+            if (!prevByStudent[sg.student_id]) prevByStudent[sg.student_id] = {}
+            prevByStudent[sg.student_id][sg.domain] = sg.final_grade ?? sg.calculated_grade ?? null
+          })
+        }
+      }
+
+      const title = isCard ? 'Report Cards' : 'Progress Reports'
+      const head = isCard
+        ? `<!DOCTYPE html><html><head><title>${title} — ${cls} Grade ${grade}</title><style>${reportCardCss(true)}</style></head><body>`
+        : `<!DOCTYPE html><html><head><title>${title} — ${cls} Grade ${grade}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Segoe UI',Arial,sans-serif;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -1370,10 +1349,10 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
         const overallGrade = scored.length > 0 ? Math.round(scored.reduce((acc: number, dd) => acc + (domainGrades[dd] as number), 0) / scored.length * 10) / 10 : null
         const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
 
-        const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', student.id).eq('semester_id', semesterId).eq('report_type', 'report_card').limit(1).single()
+        const { data: commentData } = await supabase.from('comments').select('text, is_skipped, hide_comparison').eq('student_id', student.id).eq('semester_id', semesterId).eq('report_type', 'report_card').limit(1).single()
         const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
-        const data = {
+        const baseData = {
           domainGrades, domainNa, overallGrade, overallLetter, semesterName,
           commentSkipped: !!commentData?.is_skipped,
           teacherName: teacher?.name || currentTeacher?.name || '',
@@ -1381,11 +1360,24 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
           semesterGrade: (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade,
           semesterClass: (myGrades || []).find((sg: any) => sg.english_class)?.english_class || student.english_class,
         }
-        body += progressCardHtml(student, data, commentData?.text || '')
+
+        if (isCard) {
+          const prevDomainGrades = prevByStudent[student.id] || null
+          let prevOverall: number | null = null
+          if (prevDomainGrades) {
+            const ps = DOMAINS.filter(dd => prevDomainGrades[dd] != null)
+            prevOverall = ps.length ? Math.round(ps.reduce((a, dd) => a + (prevDomainGrades[dd] as number), 0) / ps.length * 10) / 10 : null
+          }
+          const data = { ...baseData, classAverages, prevDomainGrades, prevOverall, prevSemesterName }
+          body += reportCardHtml(student, data, commentData?.text || '', !!commentData?.is_skipped, !!commentData?.hide_comparison)
+        } else {
+          body += progressCardHtml(student, baseData, commentData?.text || '')
+        }
         setProgress({ current: i + 1, total: students.length })
       }
 
-      setPreviewHtml(head + body + '</body></html>')
+      const tail = isCard ? reportCardShrinkScript(false) + '</body></html>' : '</body></html>'
+      setPreviewHtml(head + body + tail)
     } catch (err: any) {
       showToast(`Failed to generate reports: ${err?.message || 'unknown error'}`)
     } finally {
@@ -1434,7 +1426,7 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
         <div className="fixed inset-0 bg-black/50 z-50 flex flex-col">
           <div className="bg-white border-b border-border px-6 py-3 flex items-center justify-between flex-shrink-0">
             <div>
-              <div className="text-[14px] font-semibold text-navy">Preview &middot; {students.length} progress reports</div>
+              <div className="text-[14px] font-semibold text-navy">Preview &middot; {students.length} {kind === 'report_card' ? 'report cards' : 'progress reports'}</div>
               <div className="text-[11px] text-text-secondary mt-0.5">Choose <strong>Save as PDF</strong> as the destination in the print dialog to download the whole class as one file.</div>
             </div>
             <div className="flex gap-2">
