@@ -1241,7 +1241,7 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
       supabase.from('reading_assessments').select('*').eq('student_id', student.id).order('date', { ascending: true }),
       supabase.from('behavior_logs').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(100),
       supabase.from('attendance').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(200),
-      supabase.from('comments').select('*, semesters(name, type, academic_year)').eq('student_id', student.id),
+      supabase.from('comments').select('*, semesters(name, type, academic_year)').eq('student_id', student.id).eq('report_type', 'report_card'),
       supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', student.id).eq('is_active', true),
       supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', student.id).eq('is_active', true),
       supabase.from('assessments').select('id, name, domain, date, max_score, standards, sections').eq('english_class', student.english_class).eq('grade', student.grade),

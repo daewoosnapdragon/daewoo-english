@@ -6,7 +6,7 @@ import { useStudents, useSemesters } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord } from '@/lib/utils'
-import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, ChevronDown, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle, AlertTriangle, FileDown } from 'lucide-react'
+import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, ChevronDown, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle, AlertTriangle, FileDown, MessageSquare, Save, Lock } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
 
@@ -107,7 +107,7 @@ interface ReportData {
 export default function ReportsView() {
   const { t, language, currentTeacher } = useApp()
   const lang = language as LangKey
-  const [mode, setMode] = useState<'individual' | 'progress' | 'class' | 'review'>('individual')
+  const [mode, setMode] = useState<'individual' | 'progress' | 'class' | 'review' | 'comments'>('individual')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
@@ -117,8 +117,12 @@ export default function ReportsView() {
   const [selectedSemesterId, setSelectedSemesterId] = useState<string | null>(null)
 
   const isTeacher = currentTeacher?.role === 'teacher'
-  const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
-    ? [currentTeacher.english_class as EnglishClass] : ALL_ENGLISH_CLASSES
+  const isAdmin = currentTeacher?.role === 'admin' || !!currentTeacher?.is_head_teacher
+  // Any teacher can switch to any class to review a partner's report cards.
+  const availableClasses = ALL_ENGLISH_CLASSES
+  // You "own" your own class — only then (or as admin) can you edit its comments/grades.
+  const isOwnClass = isTeacher && currentTeacher?.english_class === selectedClass
+  const canEdit = isAdmin || isOwnClass
   const { students } = useStudents({ grade: selectedGrade, english_class: selectedClass })
   const selectedSemester = semesters.find((s: any) => s.id === selectedSemesterId)
 
@@ -141,6 +145,7 @@ export default function ReportsView() {
         <div className="flex gap-1 mt-4">
           <button onClick={() => setMode('individual')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'individual' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><User size={14} /> Report Card</button>
           <button onClick={() => setMode('progress')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'progress' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><BarChart3 size={14} /> Progress Report</button>
+          <button onClick={() => setMode('comments')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'comments' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><MessageSquare size={14} /> Comments</button>
           <button onClick={() => setMode('class')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'class' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><Users size={14} /> Class Summary</button>
           <button onClick={() => setMode('review')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'review' ? 'bg-amber-600 text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><ClipboardCheck size={14} /> Review & Approve</button>
         </div>
@@ -162,6 +167,11 @@ export default function ReportsView() {
                 style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>{cls}</button>
             ))}
           </div>
+          {!canEdit && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200" title="You can review and leave feedback, but only the class's own teacher can edit its comments.">
+              <Lock size={12} /> Reviewing {selectedClass} — read-only
+            </span>
+          )}
           {(mode === 'individual' || mode === 'progress') && (
             <>
               <div className="w-px h-6 bg-border" />
@@ -180,7 +190,7 @@ export default function ReportsView() {
         </div>
 
         {mode === 'individual' && selectedStudentId && selectedSemesterId && selectedSemester && (
-          <IndividualReport key={selectedStudentId} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} />
+          <IndividualReport key={selectedStudentId} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
         )}
         {mode === 'individual' && !selectedStudentId && selectedSemesterId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center">
@@ -192,7 +202,7 @@ export default function ReportsView() {
           <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a student to generate their report card.</div>
         )}
         {mode === 'progress' && selectedStudentId && selectedSemesterId && selectedSemester && (
-          <ProgressReport key={`prog-${selectedStudentId}`} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} />
+          <ProgressReport key={`prog-${selectedStudentId}`} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
         )}
         {mode === 'progress' && !selectedStudentId && selectedSemesterId && selectedSemester && (
           <ProgressClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
@@ -206,7 +216,13 @@ export default function ReportsView() {
           <ClassSummary students={students} semesterId={selectedSemesterId} semester={selectedSemester} lang={lang} selectedClass={selectedClass} selectedGrade={selectedGrade} />
         )}
         {mode === 'review' && selectedSemesterId && (
-          <ReviewApproval students={students} semesterId={selectedSemesterId} selectedClass={selectedClass} selectedGrade={selectedGrade} />
+          <ReviewApproval students={students} semesterId={selectedSemesterId} selectedClass={selectedClass} selectedGrade={selectedGrade} isOwnClass={isOwnClass} />
+        )}
+        {mode === 'comments' && selectedSemesterId && (
+          <BulkComments students={students} semesterId={selectedSemesterId} selectedClass={selectedClass} selectedGrade={selectedGrade} canEdit={canEdit} />
+        )}
+        {mode === 'comments' && !selectedSemesterId && (
+          <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a semester to write comments.</div>
         )}
       </div>
     </div>
@@ -396,8 +412,8 @@ function RadarChart({ studentGrades, classAverages }: {
   )
 }
 
-function IndividualReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass }: {
-  studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: string
+function IndividualReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass, canEdit = true }: {
+  studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: string; canEdit?: boolean
 }) {
   const { showToast, currentTeacher } = useApp()
   const [data, setData] = useState<ReportData | null>(null)
@@ -535,7 +551,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     }
 
     // ─── STEP 5: Comment, teacher, reading, attendance, behavior, scaffolds, goals ───
-    const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
+    const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', 'report_card').limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
     // Reviewer feedback flagged by partner/admin (graceful if migration not yet run)
@@ -617,7 +633,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
   const saveComment = async () => {
     setSavingComment(true)
-    await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, text: comment.trim(), is_skipped: commentSkipped, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id' })
+    await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, report_type: 'report_card', text: comment.trim(), is_skipped: commentSkipped, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id,report_type' })
     setSavingComment(false)
     showToast(commentSkipped ? 'Comment skipped' : 'Comment saved')
   }
@@ -676,7 +692,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     }).join('')
 
     // Radar chart SVG for print — wide viewBox so labels fit; names match the tiles
-    const RVW = 360, RVH = 300, rcx = RVW / 2, rcy = 140, maxR = 92
+    const RVW = 380, RVH = 320, rcx = RVW / 2, rcy = 150, maxR = 104
     const domains = ['reading', 'phonics', 'writing', 'speaking', 'language']
     const rLabels = ['Reading', 'Phonics', 'Writing', 'Speaking &|Listening', 'Language|Standards']
     const rAngles = domains.map((_, i) => (Math.PI * 2 * i) / 5 - Math.PI / 2)
@@ -704,7 +720,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       return labelTxt + valTxt
     }).join('')
 
-    const radarSvg = `<svg width="100%" viewBox="0 0 ${RVW} ${RVH}" style="max-width:330px;display:block;margin:0 auto">${gridLines}${axisLines}${classPoly}${studentPoly}${classDots}${dots}${radarLabels}</svg>`
+    const radarSvg = `<svg width="100%" viewBox="0 0 ${RVW} ${RVH}" style="max-width:370px;display:block;margin:0 auto">${gridLines}${axisLines}${classPoly}${studentPoly}${classDots}${dots}${radarLabels}</svg>`
 
     const radarLegend = `<div style="text-align:center;margin-top:6px;font-size:8px;color:#94a3b8">
       <span style="display:inline-flex;align-items:center;gap:3px;margin-right:12px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(30,58,138,0.22);border:1.5px solid ${RADAR_STUDENT};display:inline-block"></span> Student</span>
@@ -716,10 +732,10 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       ? `<img src="${d.teacherPhotoUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #DFE4EB" />`
       : `<div style="width:32px;height:32px;border-radius:50%;background:#647FBC;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${d.teacherName[0] || ''}</div>`
 
-    // Teacher comment block (sits beside the radar)
+    // Teacher comment block (sits beside the radar; the box flexes to fill the page)
     const commentBlock = commentSkipped ? '' : `<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Teacher's Comment</div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
-      <div style="font-size:11.5px;line-height:1.7;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 16px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>`
+      <div style="flex:1 1 auto;min-height:190px;font-size:12px;line-height:1.75;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:16px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>`
 
     // Grading scale
     const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#EDF1F8;border:1px solid #C8CED8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
@@ -729,8 +745,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     pw.document.write(`<html><head><title>Report Card \u2014 ${s.english_name}</title>
     <style>
       body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb}
-      @media print{@page{size:A4;margin:8mm}body{padding:0}.card{margin:0;box-shadow:none;border-radius:0;max-height:277mm;overflow:hidden}}
+      .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb;display:flex;flex-direction:column;min-height:1040px}
+      .snap{flex:1 1 auto;display:flex;flex-direction:column}
+      @media print{@page{size:A4;margin:8mm}body{padding:0}.card{margin:0;box-shadow:none;border-radius:0;min-height:281mm;max-height:281mm;overflow:hidden}}
     </style></head>
     <body><div class="card">
     <!-- Header -->
@@ -769,15 +786,15 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance${d.prevSemesterName ? `<span style="text-transform:none;letter-spacing:0;font-weight:500;color:#b8b0a6"> &nbsp;·&nbsp; ▲▼ change vs ${d.prevSemesterName}</span>` : ''}</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
     </div>
-    <!-- Student Snapshot: Class Comparison + Teacher Comment -->
-    <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
-      <div style="display:grid;grid-template-columns:${commentSkipped ? '1fr' : '1.04fr 0.96fr'};gap:26px;align-items:start">
-        <div>
+    <!-- Student Snapshot: Class Comparison + Teacher Comment (stretches to fill the page) -->
+    <div class="snap" style="background:#fdfcfa;padding:22px 28px;border-bottom:1px solid #C8CED8">
+      <div style="flex:1 1 auto;display:grid;grid-template-columns:${commentSkipped ? '1fr' : '1.04fr 0.96fr'};gap:28px;align-items:stretch">
+        <div style="display:flex;flex-direction:column">
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Class Comparison</div>
-          <div style="text-align:center">${radarSvg}</div>
+          <div style="flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;text-align:center">${radarSvg}</div>
           ${radarLegend}
         </div>
-        ${commentSkipped ? '' : `<div>${commentBlock}</div>`}
+        ${commentSkipped ? '' : `<div style="display:flex;flex-direction:column">${commentBlock}</div>`}
       </div>
     </div>
     <!-- Scale + Footer -->
@@ -879,7 +896,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
             <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Academic Performance{d.prevSemesterName && <span className="normal-case tracking-normal font-normal text-[#b8b0a6]"> &nbsp;·&nbsp; ▲▼ vs {d.prevSemesterName}</span>}</div>
-            {!editingGrades ? (
+            {!editingGrades ? (canEdit ? (
               <button onClick={() => {
                 const eg: Record<string, string> = {}
                 const en: Record<string, boolean> = {}
@@ -892,7 +909,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 setEditNaValues(en)
                 setEditingGrades(true)
               }} className="text-[10px] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
-            ) : (
+            ) : null) : (
               <div className="flex items-center gap-2">
                 <button onClick={() => setEditingGrades(false)} className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
                 <button onClick={async () => {
@@ -1031,7 +1048,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   Reference
                 </button>
               </div>
-              {d.reviewerNote && !d.reviewerNoteAck && (
+              {canEdit && d.reviewerNote && !d.reviewerNoteAck && (
                 <div className="mb-2.5 rounded-lg border border-orange-200 bg-orange-50 p-2.5 print:hidden">
                   <div className="flex items-center gap-1.5 mb-1">
                     <AlertTriangle size={13} className="text-orange-600" />
@@ -1047,20 +1064,26 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 </div>
               )}
               <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={8}
-                disabled={commentSkipped}
-                placeholder={commentSkipped ? 'Skipped — uncheck below to write a comment.' : "Write comments about this student's progress..."}
-                className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${commentSkipped ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
-              <div className="flex items-center justify-between mt-2">
-                <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
-                  <input type="checkbox" checked={commentSkipped} onChange={(e: any) => setCommentSkipped(e.target.checked)} />
-                  Skip comment
-                </label>
-                <button onClick={saveComment} disabled={savingComment}
-                  className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-                  {savingComment ? 'Saving...' : 'Save Comment'}
-                </button>
-              </div>
-              {commentSkipped && <div className="text-[10px] text-[#94a3b8] italic mt-1.5">Hidden on the printed report.</div>}
+                disabled={commentSkipped || !canEdit}
+                placeholder={!canEdit ? "Read-only — only this class's teacher can edit the comment." : (commentSkipped ? 'Skipped — uncheck below to write a comment.' : "Write comments about this student's progress...")}
+                className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
+              {canEdit ? (
+                <>
+                  <div className="flex items-center justify-between mt-2">
+                    <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
+                      <input type="checkbox" checked={commentSkipped} onChange={(e: any) => setCommentSkipped(e.target.checked)} />
+                      Skip comment
+                    </label>
+                    <button onClick={saveComment} disabled={savingComment}
+                      className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                      {savingComment ? 'Saving...' : 'Save Comment'}
+                    </button>
+                  </div>
+                  {commentSkipped && <div className="text-[10px] text-[#94a3b8] italic mt-1.5">Hidden on the printed report.</div>}
+                </>
+              ) : (
+                <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] italic mt-2"><Lock size={11} /> Viewing {selectedClass}&apos;s report card — leave feedback in Review &amp; Approve.</div>
+              )}
             </div>
           </div>
         </div>
@@ -1347,7 +1370,7 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
         const overallGrade = scored.length > 0 ? Math.round(scored.reduce((acc: number, dd) => acc + (domainGrades[dd] as number), 0) / scored.length * 10) / 10 : null
         const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
 
-        const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', student.id).eq('semester_id', semesterId).limit(1).single()
+        const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', student.id).eq('semester_id', semesterId).eq('report_type', 'report_card').limit(1).single()
         const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
         const data = {
@@ -1435,8 +1458,8 @@ function BatchPrintButton({ students, semesterId, className: cls }: { students: 
 }
 
 // ─── Progress Report ────────────────────────────────────────────────
-function ProgressReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass }: {
-  studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: EnglishClass
+function ProgressReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass, canEdit = true }: {
+  studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: EnglishClass; canEdit?: boolean
 }) {
   const { showToast, currentTeacher } = useApp()
   const [data, setData] = useState<any>(null)
@@ -1514,7 +1537,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
 
     // Comment, teacher, plus extras for Student Reference panel
-    const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).limit(1).single()
+    const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', 'progress_report').limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
     const [readingRes, ltScoreRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1),
@@ -1569,10 +1592,10 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
   const saveComment = async () => {
     setSavingComment(true)
     const { error } = await supabase.from('comments').upsert({
-      student_id: studentId, semester_id: semesterId, text: comment.trim(),
+      student_id: studentId, semester_id: semesterId, report_type: 'progress_report', text: comment.trim(),
       is_skipped: commentSkipped,
       created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
-    }, { onConflict: 'student_id,semester_id' })
+    }, { onConflict: 'student_id,semester_id,report_type' })
     setSavingComment(false)
     if (error) showToast(`Error: ${error.message}`)
     else { showToast(commentSkipped ? 'Comment skipped' : 'Comment saved'); setData((prev: any) => ({ ...prev, comment: comment.trim(), commentSkipped })) }
@@ -1655,7 +1678,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
             <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Domain Performance</div>
-            {!editingGrades ? (
+            {!editingGrades ? (canEdit ? (
               <button onClick={() => {
                 const eg: Record<string, string> = {}
                 const en: Record<string, boolean> = {}
@@ -1667,7 +1690,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                 setEditNaValues(en)
                 setEditingGrades(true)
               }} className="text-[10px] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
-            ) : (
+            ) : null) : (
               <div className="flex items-center gap-2">
                 <button onClick={() => setEditingGrades(false)} className="text-[10px] text-text-tertiary hover:text-red-500">Cancel</button>
                 <button onClick={async () => {
@@ -1895,23 +1918,29 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
           )}
 
           <div className="flex items-center justify-between mb-2">
-            <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
-              <input type="checkbox" checked={commentSkipped}
-                onChange={(e: any) => setCommentSkipped(e.target.checked)} />
-              Skip comment for this student
-            </label>
-            {commentSkipped && <span className="text-[10px] text-[#94a3b8] italic">Comment section will be hidden on the printed report.</span>}
+            {canEdit ? (
+              <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
+                <input type="checkbox" checked={commentSkipped}
+                  onChange={(e: any) => setCommentSkipped(e.target.checked)} />
+                Skip comment for this student
+              </label>
+            ) : (
+              <span className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] italic"><Lock size={11} /> Read-only — only {selectedClass}&apos;s teacher can edit this comment.</span>
+            )}
+            {commentSkipped && canEdit && <span className="text-[10px] text-[#94a3b8] italic">Comment section will be hidden on the printed report.</span>}
           </div>
           <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={6}
-            disabled={commentSkipped}
-            placeholder={commentSkipped ? 'Skipped — uncheck above to write a comment.' : "Write comments about this student's progress..."}
-            className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${commentSkipped ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
-          <div className="flex justify-end mt-2">
-            <button onClick={saveComment} disabled={savingComment}
-              className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-              {savingComment ? 'Saving...' : 'Save Comment'}
-            </button>
-          </div>
+            disabled={commentSkipped || !canEdit}
+            placeholder={!canEdit ? "Read-only — only this class's teacher can edit the comment." : (commentSkipped ? 'Skipped — uncheck above to write a comment.' : "Write comments about this student's progress...")}
+            className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
+          {canEdit && (
+            <div className="flex justify-end mt-2">
+              <button onClick={saveComment} disabled={savingComment}
+                className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                {savingComment ? 'Saving...' : 'Save Comment'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ─── Grading Scale + Footer ─── */}
@@ -1952,11 +1981,135 @@ interface ReviewStatus {
   reviewer_note_ack?: boolean | null
 }
 
-function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: {
-  students: any[]; semesterId: string; selectedClass: EnglishClass; selectedGrade: Grade
+// ─── Bulk Comments (write a whole class at once) ─────────────────────
+
+function BulkComments({ students, semesterId, selectedClass, selectedGrade, canEdit }: {
+  students: any[]; semesterId: string; selectedClass: EnglishClass; selectedGrade: Grade; canEdit: boolean
+}) {
+  const { showToast, currentTeacher } = useApp()
+  const [rows, setRows] = useState<Record<string, { text: string; skipped: boolean; dirty: boolean }>>({})
+  const [overall, setOverall] = useState<Record<string, { pct: number | null; letter: string }>>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    ;(async () => {
+      setLoading(true)
+      const ids = students.map(s => s.id)
+      const [comRes, grRes] = await Promise.all([
+        supabase.from('comments').select('student_id, text, is_skipped').eq('semester_id', semesterId).eq('report_type', 'report_card').in('student_id', ids),
+        supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na').eq('semester_id', semesterId).in('student_id', ids),
+      ])
+      const rmap: Record<string, { text: string; skipped: boolean; dirty: boolean }> = {}
+      ids.forEach(id => { rmap[id] = { text: '', skipped: false, dirty: false } })
+      ;(comRes.data || []).forEach((c: any) => { rmap[c.student_id] = { text: c.text || '', skipped: !!c.is_skipped, dirty: false } })
+      setRows(rmap)
+      const dmap: Record<string, number[]> = {}
+      ;(grRes.data || []).forEach((sg: any) => {
+        if (!DOMAINS.includes(sg.domain) || sg.is_na) return
+        const v = sg.final_grade ?? sg.calculated_grade
+        if (v == null) return
+        if (!dmap[sg.student_id]) dmap[sg.student_id] = []
+        dmap[sg.student_id].push(v)
+      })
+      const omap: Record<string, { pct: number | null; letter: string }> = {}
+      ids.forEach(id => {
+        const vals = dmap[id] || []
+        const pct = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null
+        omap[id] = { pct, letter: pct != null ? getLetterGrade(pct) : '—' }
+      })
+      setOverall(omap)
+      setLoading(false)
+    })()
+  }, [semesterId, students])
+
+  const setText = (id: string, text: string) => setRows(prev => ({ ...prev, [id]: { ...prev[id], text, dirty: true } }))
+  const toggleSkip = (id: string) => setRows(prev => ({ ...prev, [id]: { ...prev[id], skipped: !prev[id].skipped, dirty: true } }))
+  const dirtyIds = Object.keys(rows).filter(id => rows[id]?.dirty)
+
+  const saveAll = async () => {
+    if (!dirtyIds.length) return
+    setSaving(true)
+    let errors = 0
+    for (const id of dirtyIds) {
+      const r = rows[id]
+      const { error } = await supabase.from('comments').upsert({
+        student_id: id, semester_id: semesterId, report_type: 'report_card',
+        text: r.text.trim(), is_skipped: r.skipped,
+        created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
+      }, { onConflict: 'student_id,semester_id,report_type' })
+      if (error) errors++
+      else setRows(prev => ({ ...prev, [id]: { ...prev[id], dirty: false } }))
+    }
+    setSaving(false)
+    showToast(errors ? `Saved with ${errors} error(s)` : `Saved ${dirtyIds.length} comment${dirtyIds.length === 1 ? '' : 's'}`)
+  }
+
+  if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-surface border border-border rounded-xl p-5 flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-lg font-semibold text-navy">Class Comments</h3>
+          <p className="text-[12px] text-text-secondary">{selectedClass} · Grade {selectedGrade} · {students.length} students · Report Card</p>
+        </div>
+        {canEdit ? (
+          <div className="flex items-center gap-3">
+            {dirtyIds.length > 0 && <span className="text-[11px] text-amber-600 font-medium">{dirtyIds.length} unsaved</span>}
+            <button onClick={saveAll} disabled={saving || dirtyIds.length === 0}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+              <Save size={14} /> {saving ? 'Saving…' : 'Save All'}
+            </button>
+          </div>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200"><Lock size={12} /> Read-only</span>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        {students.map(student => {
+          const r = rows[student.id] || { text: '', skipped: false, dirty: false }
+          const o = overall[student.id] || { pct: null, letter: '—' }
+          return (
+            <div key={student.id} className={`bg-surface border rounded-xl p-4 ${r.dirty ? 'border-amber-300' : 'border-border'}`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[14px] font-semibold text-navy">{student.english_name}</span>
+                  <span className="text-[12px] text-text-tertiary">{student.korean_name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[12px] text-text-secondary">Overall: <strong className="text-navy">{o.pct != null ? `${o.pct.toFixed(1)}% (${o.letter})` : 'N/A'}</strong></span>
+                  {canEdit && (
+                    <label className="flex items-center gap-1.5 text-[11px] text-text-secondary cursor-pointer select-none">
+                      <input type="checkbox" checked={r.skipped} onChange={() => toggleSkip(student.id)} /> Skip
+                    </label>
+                  )}
+                </div>
+              </div>
+              <textarea value={r.text} onChange={e => setText(student.id, e.target.value)} rows={3}
+                disabled={!canEdit || r.skipped}
+                placeholder={r.skipped ? 'Skipped — unskip to write a comment.' : "Write this student's report card comment…"}
+                className={`w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${(!canEdit || r.skipped) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-white'}`} />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Review & Approve ────────────────────────────────────────────────
+
+function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, isOwnClass = false }: {
+  students: any[]; semesterId: string; selectedClass: EnglishClass; selectedGrade: Grade; isOwnClass?: boolean
 }) {
   const { showToast, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
+  // Partner review is done by *another* teacher — never on your own class, and not by admin.
+  const canPartnerApprove = currentTeacher?.role === 'teacher' && !isOwnClass
+  // Reviewers (partner teachers on other classes, or admin) can leave feedback; you don't review your own.
+  const canLeaveFeedback = !isOwnClass
   const [reviews, setReviews] = useState<Record<string, ReviewStatus>>({})
   const [comments, setComments] = useState<Record<string, { text: string; draft_source: string | null; is_skipped: boolean }>>({})
   const [grades, setGrades] = useState<Record<string, { domains: Record<string, number | null>; overall: number | null; letter: string }>>({})
@@ -1973,7 +2126,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
       try {
         const [revRes, comRes, grRes] = await Promise.all([
           supabase.from('report_card_reviews').select('*').eq('semester_id', semesterId).in('student_id', ids),
-          supabase.from('comments').select('student_id, text, draft_source, is_skipped').eq('semester_id', semesterId).in('student_id', ids),
+          supabase.from('comments').select('student_id, text, draft_source, is_skipped').eq('semester_id', semesterId).eq('report_type', 'report_card').in('student_id', ids),
           supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na').eq('semester_id', semesterId).in('student_id', ids),
         ])
         const rmap: Record<string, ReviewStatus> = {}
@@ -2001,6 +2154,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
 
   const toggleApproval = async (studentId: string, field: 'partner_approved' | 'admin_approved') => {
     if (field === 'admin_approved' && !isAdmin) return
+    if (field === 'partner_approved' && !canPartnerApprove) return
     setSaving(studentId)
     const existing = reviews[studentId]
     const newVal = !(existing?.[field])
@@ -2028,6 +2182,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
 
   const approveAll = async (field: 'partner_approved' | 'admin_approved') => {
     if (field === 'admin_approved' && !isAdmin) return
+    if (field === 'partner_approved' && !canPartnerApprove) return
     setSaving('all')
     let errors = 0
     for (const s of students) {
@@ -2153,10 +2308,12 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
 
       {/* Bulk approve buttons */}
       <div className="flex gap-2 flex-wrap">
-        <button onClick={() => approveAll('partner_approved')} disabled={saving === 'all'}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40">
-          <CheckCircle2 size={14} /> Approve All as Partner
-        </button>
+        {canPartnerApprove && (
+          <button onClick={() => approveAll('partner_approved')} disabled={saving === 'all'}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40">
+            <CheckCircle2 size={14} /> Approve All as Partner
+          </button>
+        )}
         {isAdmin && (
           <button onClick={() => approveAll('admin_approved')} disabled={saving === 'all'}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
@@ -2201,14 +2358,21 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
                   {noteUnack && <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-orange-50 text-orange-700 border-orange-200 inline-flex items-center gap-1"><AlertTriangle size={9} /> Needs changes</span>}
                 </div>
                 <div className="flex justify-center" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => toggleApproval(student.id, 'partner_approved')}
-                    disabled={saving === student.id}
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                      partnerOk ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-surface-alt text-text-tertiary border border-border hover:border-blue-300'
-                    }`}>
-                    {partnerOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-                    {partnerOk ? 'Reviewed' : 'Review'}
-                  </button>
+                  {canPartnerApprove ? (
+                    <button onClick={() => toggleApproval(student.id, 'partner_approved')}
+                      disabled={saving === student.id}
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                        partnerOk ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-surface-alt text-text-tertiary border border-border hover:border-blue-300'
+                      }`}>
+                      {partnerOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                      {partnerOk ? 'Reviewed' : 'Review'}
+                    </button>
+                  ) : (
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${partnerOk ? 'text-blue-600' : 'text-text-tertiary'}`}>
+                      {partnerOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                      {partnerOk ? 'Reviewed' : 'Pending'}
+                    </span>
+                  )}
                 </div>
                 <div className="flex justify-center" onClick={e => e.stopPropagation()}>
                   {isAdmin ? (
@@ -2247,21 +2411,30 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade }: 
                   </div>
                   {/* Reviewer feedback */}
                   <div>
-                    <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Reviewer Feedback — flagged to teacher</p>
-                    <textarea value={noteDraft[student.id] ?? r?.reviewer_note ?? ''}
-                      onChange={e => setNoteDraft(prev => ({ ...prev, [student.id]: e.target.value }))}
-                      rows={3}
-                      placeholder="Leave a note for the teacher (e.g. 'Please expand the Writing comment')…"
-                      className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy resize-none bg-white" />
-                    <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-[10px] text-text-tertiary">
-                        {hasNote ? (r?.reviewer_note_ack ? '✓ Acknowledged by teacher' : 'Flagged — awaiting teacher') : 'Saving a note flags it for the teacher to review.'}
-                      </span>
-                      <button onClick={() => saveNote(student.id)} disabled={saving === student.id}
-                        className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-                        {saving === student.id ? 'Saving…' : 'Save Feedback'}
-                      </button>
-                    </div>
+                    <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Reviewer Feedback{canLeaveFeedback ? ' — flagged to teacher' : ''}</p>
+                    {canLeaveFeedback ? (
+                      <>
+                        <textarea value={noteDraft[student.id] ?? r?.reviewer_note ?? ''}
+                          onChange={e => setNoteDraft(prev => ({ ...prev, [student.id]: e.target.value }))}
+                          rows={3}
+                          placeholder="Leave a note for the teacher (e.g. 'Please expand the Writing comment')…"
+                          className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy resize-none bg-white" />
+                        <div className="flex items-center justify-between mt-1.5">
+                          <span className="text-[10px] text-text-tertiary">
+                            {hasNote ? (r?.reviewer_note_ack ? '✓ Acknowledged by teacher' : 'Flagged — awaiting teacher') : 'Saving a note flags it for the teacher to review.'}
+                          </span>
+                          <button onClick={() => saveNote(student.id)} disabled={saving === student.id}
+                            className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                            {saving === student.id ? 'Saving…' : 'Save Feedback'}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-white border border-border rounded-lg p-3 text-[12px] text-text-primary whitespace-pre-wrap">
+                        {hasNote ? r?.reviewer_note : <span className="italic text-text-tertiary">No reviewer feedback yet.</span>}
+                        {hasNote && <div className="text-[10px] text-text-tertiary mt-1.5">{r?.reviewer_note_ack ? '✓ You marked this reviewed' : 'Flagged for your review'}</div>}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -2457,7 +2630,7 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
       supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na')
         .eq('semester_id', semesterId).in('student_id', studentIds),
       supabase.from('comments').select('student_id, text, is_skipped')
-        .eq('semester_id', semesterId).in('student_id', studentIds),
+        .eq('semester_id', semesterId).eq('report_type', 'progress_report').in('student_id', studentIds),
     ])
     const allGrades = allGradesRes.data || []
     const commentsByStudent: Record<string, { text: string; skipped: boolean }> = {}
