@@ -315,10 +315,7 @@ function ComparisonBars({ domainGrades, domainNa, classAverages }: {
               <div className="absolute left-0 top-0 bottom-0 rounded-lg" style={{ width: `${w}%`, background: RADAR_STUDENT }} />
               {cv != null && <div className="absolute" style={{ left: `${Math.min(100, cv)}%`, top: -3, bottom: -3, borderLeft: `2px dashed ${RADAR_CLASS}` }} />}
             </div>
-            <span className="text-[10px] whitespace-nowrap text-right">
-              <strong className="text-[12px]" style={{ color: RADAR_STUDENT }}>{v.toFixed(0)}</strong>{' '}
-              <span className="text-[#94a3b8]">{cv != null ? `cls ${cv.toFixed(0)}` : 'cls —'}</span>
-            </span>
+            <span className="text-[12px] font-bold whitespace-nowrap text-right" style={{ color: RADAR_STUDENT }}>{v.toFixed(0)}</span>
           </div>
         )
       })}
@@ -1037,14 +1034,13 @@ function comparisonBarsHtml(domainGrades: Record<string, number | null>, domainN
     }
     const w = Math.max(2, Math.min(100, v))
     const tick = cv != null ? `<div style="position:absolute;top:-3px;bottom:-3px;left:${Math.min(100, cv)}%;width:0;border-left:2px dashed ${RADAR_CLASS}"></div>` : ''
-    const clsTxt = cv != null ? `<span style="color:#94a3b8">cls ${cv.toFixed(0)}</span>` : `<span style="color:#cbd5e1">cls —</span>`
-    return `<div style="display:grid;grid-template-columns:118px 1fr 80px;align-items:center;gap:14px;padding:6px 0">
+    return `<div style="display:grid;grid-template-columns:118px 1fr 40px;align-items:center;gap:14px;padding:6px 0">
       <div style="font-size:11px;font-weight:600;color:#475569">${DOMAIN_SHORT[dom]}</div>
       <div style="position:relative;height:15px;background:#EDF1F8;border-radius:8px;border:1px solid #DFE4EB">
         <div style="position:absolute;left:0;top:0;bottom:0;width:${w}%;background:${RADAR_STUDENT};border-radius:8px"></div>
         ${tick}
       </div>
-      <div style="font-size:10px;white-space:nowrap;text-align:right"><strong style="color:${RADAR_STUDENT};font-size:12px">${v.toFixed(0)}</strong> &nbsp;${clsTxt}</div>
+      <div style="font-size:12px;font-weight:700;color:${RADAR_STUDENT};white-space:nowrap;text-align:right">${v.toFixed(0)}</div>
     </div>`
   }).join('')
 }
@@ -1094,7 +1090,7 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
   const commentInner = commentSkipped
     ? `<div style="flex:1 1 auto;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-style:italic;font-size:12px">Comment intentionally omitted for this student.</div>`
     : `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
-       <div class="cmt" style="flex:1 1 auto;overflow:hidden;min-height:120px;font-size:12px;line-height:1.75;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:16px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>`
+       <div class="cmt" style="flex:1 1 auto;overflow:hidden;min-height:120px;font-size:13px;line-height:1.7;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:16px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>`
 
   return `<div class="card">
   <div style="background:#647FBC;padding:18px 28px;color:white;display:flex;justify-content:space-between;align-items:center">
