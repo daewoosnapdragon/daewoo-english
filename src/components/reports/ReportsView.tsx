@@ -1075,7 +1075,7 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
   const commentInner = commentSkipped
     ? `<div style="flex:1 1 auto;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-style:italic;font-size:12px">Comment intentionally omitted for this student.</div>`
     : `<div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:8px">${d.teacherName} Teacher<span style="font-weight:400;color:#94a3b8;font-size:11px"> &middot; ${displayClass} Class</span></div>
-       <div class="cmt" style="flex:1 1 auto;overflow:hidden;min-height:120px;font-size:16px;line-height:1.65;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:16px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>`
+       <div class="cmt" style="flex:1 1 auto;min-height:0;overflow:hidden;background:#fafaf8;border-radius:10px;padding:16px 18px;border:1px solid #C8CED8"><div class="cmt-body" style="font-size:16px;line-height:1.65;color:#374151;white-space:pre-wrap">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div></div>`
 
   return `<div class="card">
   <div style="background:#647FBC;padding:18px 28px;color:white;display:flex;justify-content:space-between;align-items:center">
@@ -1112,7 +1112,7 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
   </div>
   ${comparisonBand}
-  <div style="background:#fdfcfa;padding:18px 28px;border-bottom:1px solid #C8CED8;flex:1 1 auto;display:flex;flex-direction:column">
+  <div style="background:#fdfcfa;padding:18px 28px;border-bottom:1px solid #C8CED8;flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column">
     ${commentSkipped ? '' : `<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:10px">Teacher's Comment</div>`}
     ${commentInner}
   </div>
@@ -1128,7 +1128,7 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
 function reportCardCss(batch: boolean): string {
   return `*{box-sizing:border-box}
   body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .card{max-width:760px;margin:24px auto;overflow:hidden;background:#f5f0eb;display:flex;flex-direction:column;height:1100px;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08)${batch ? ';page-break-after:always;break-after:page' : ''}}
+  .card{max-width:760px;margin:24px auto;overflow:hidden;background:#f5f0eb;display:flex;flex-direction:column;height:281mm;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08)${batch ? ';page-break-after:always;break-after:page' : ''}}
   ${batch ? '.card:last-child{page-break-after:auto;break-after:auto}' : ''}
   @media print{@page{size:A4;margin:8mm}body{padding:0}.card{height:281mm;margin:0;box-shadow:none;border-radius:0}}`
 }
@@ -1137,13 +1137,19 @@ function reportCardCss(batch: boolean): string {
 function reportCardShrinkScript(autoPrint: boolean): string {
   return `<script>
   window.addEventListener('load', function(){
-    document.querySelectorAll('.cmt').forEach(function(b){
-      var fs = parseFloat(getComputedStyle(b).fontSize) || 16, g = 0;
+    document.querySelectorAll('.cmt').forEach(function(box){
+      var body = box.querySelector('.cmt-body'); if (!body) return;
+      // Available inner height of the (flex-filled, page-bounded) box, minus padding.
+      // We size the TEXT element — measuring the box's own scrollHeight is unreliable
+      // because a flex-grown box reports scrollHeight === clientHeight until it overflows.
+      var avail = box.clientHeight - 32;
+      var fs = parseFloat(getComputedStyle(body).fontSize) || 16, g = 0;
       // Grow the text to fill the box (kills dead space under short comments)
-      while (b.scrollHeight <= b.clientHeight - 4 && fs < 24 && g < 60) { fs += 0.5; b.style.fontSize = fs + 'px'; g++; }
-      // Then shrink back if a long comment now overflows its one-page box
+      while (body.scrollHeight <= avail - 4 && fs < 24 && g < 80) { fs += 0.5; body.style.fontSize = fs + 'px'; g++; }
+      // Shrink until a long comment fits — the footer must never be pushed off the
+      // page, so shrink down to a small floor rather than overflow.
       g = 0;
-      while (b.scrollHeight > b.clientHeight - 3 && fs > 11 && g < 80) { fs -= 0.5; b.style.fontSize = fs + 'px'; b.style.lineHeight = '1.55'; g++; }
+      while (body.scrollHeight > avail - 2 && fs > 8 && g < 200) { fs -= 0.5; body.style.fontSize = fs + 'px'; body.style.lineHeight = (fs > 12 ? 1.5 : 1.4).toString(); g++; }
     });
     ${autoPrint ? 'setTimeout(function(){ window.print(); }, 80);' : ''}
   });
