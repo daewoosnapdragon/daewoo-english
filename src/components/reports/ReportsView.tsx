@@ -192,25 +192,21 @@ export default function ReportsView() {
         {mode === 'individual' && selectedStudentId && selectedSemesterId && selectedSemester && (
           <IndividualReport key={selectedStudentId} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
         )}
-        {mode === 'individual' && !selectedStudentId && selectedSemesterId && (
-          <div className="bg-surface border border-border rounded-xl p-12 text-center">
-            <p className="text-text-tertiary mb-4">Select a student to generate their report card, or print all at once.</p>
-            <div className="flex items-center justify-center gap-3 flex-wrap">
-              <BatchPrintButton students={students} semesterId={selectedSemesterId} className={selectedClass} kind="report_card" allSemesters={semesters} />
-              {isAdmin && <BatchPrintButton students={students} semesterId={selectedSemesterId} className={selectedClass} kind="report_card" scope="grade" grade={selectedGrade} allSemesters={semesters} />}
-            </div>
-            {isAdmin && <p className="text-[11px] text-text-tertiary mt-3">Whole-grade printing covers every English class, sorted by Korean homeroom (대 → 솔 → 매) then class number.</p>}
-          </div>
+        {mode === 'individual' && !selectedStudentId && selectedSemesterId && selectedSemester && (
+          <ClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
+            selectedClass={selectedClass} selectedGrade={selectedGrade} reportType="report_card"
+            allSemesters={semesters} isAdmin={isAdmin} canEdit={canEdit}
+            onSelectStudent={(id: string) => setSelectedStudentId(id)} />
         )}
         {mode === 'individual' && !selectedStudentId && !selectedSemesterId && (
-          <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a student to generate their report card.</div>
+          <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a semester to view the class overview.</div>
         )}
         {mode === 'progress' && selectedStudentId && selectedSemesterId && selectedSemester && (
           <ProgressReport key={`prog-${selectedStudentId}`} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
         )}
         {mode === 'progress' && !selectedStudentId && selectedSemesterId && selectedSemester && (
-          <ProgressClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
-            selectedClass={selectedClass} selectedGrade={selectedGrade}
+          <ClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
+            selectedClass={selectedClass} selectedGrade={selectedGrade} canEdit={canEdit}
             onSelectStudent={(id: string) => setSelectedStudentId(id)} />
         )}
         {mode === 'progress' && !selectedStudentId && !selectedSemesterId && (
@@ -313,13 +309,14 @@ function ComparisonBars({ domainGrades, domainNa, classAverages }: {
         }
         const w = Math.max(2, Math.min(100, v))
         return (
-          <div key={dom} className="grid items-center gap-3" style={{ gridTemplateColumns: '120px 1fr 78px' }}>
+          <div key={dom} className="grid items-center gap-3" style={{ gridTemplateColumns: '120px 1fr 44px 62px' }}>
             <span className="text-[11px] font-semibold text-[#475569]">{DOMAIN_SHORT[dom]}</span>
             <div className="relative h-[15px] rounded-lg border border-[#DFE4EB]" style={{ background: '#EDF1F8' }}>
               <div className="absolute left-0 top-0 bottom-0 rounded-lg" style={{ width: `${w}%`, background: RADAR_STUDENT }} />
               {cv != null && <div className="absolute" style={{ left: `${Math.min(100, cv)}%`, top: -3, bottom: -3, borderLeft: `2px dashed ${RADAR_CLASS}` }} />}
             </div>
-            <span className="text-[12px] font-bold whitespace-nowrap text-right" style={{ color: RADAR_STUDENT }}>{v.toFixed(0)}</span>
+            <span className="text-[12px] font-bold whitespace-nowrap text-right" style={{ color: RADAR_STUDENT }}>{v.toFixed(1)}</span>
+            <span className="text-[10px] whitespace-nowrap text-right" style={{ color: '#b45309' }}>{cv != null ? `avg ${cv.toFixed(1)}` : ''}</span>
           </div>
         )
       })}
@@ -352,8 +349,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       setReviewStatus(rev || { partner_approved: false, admin_approved: false })
     })()
   }, [studentId, semesterId])
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const loadReport = useCallback(async () => {
     setLoading(true)
@@ -573,19 +568,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     setAckingNote(false)
   }
 
-  const handleTeacherPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !currentTeacher) return
-    const ext = file.name.split('.').pop()
-    const path = `teacher-photos/${currentTeacher.id}.${ext}`
-    const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
-    if (error) { showToast('Upload failed'); return }
-    const { data: urlData } = supabase.storage.from('uploads').getPublicUrl(path)
-    await supabase.from('teachers').update({ photo_url: urlData.publicUrl }).eq('id', currentTeacher.id)
-    showToast('Photo updated')
-    loadReport()
-  }
-
   // ─── Print Handler ──────────────────────────────────────────────────
 
   const handlePrint = () => {
@@ -642,7 +624,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           <div>
             <div className="text-[10px] opacity-50 tracking-[2.5px] uppercase font-medium">Daewoo Elementary School</div>
             <div className="text-[22px] font-bold mt-1 font-display">{d.semesterName} Report Card</div>
-            <div className="text-[11px] opacity-60 mt-0.5 italic">English Program &mdash; Growing together through English.</div>
+            <div className="text-[11px] opacity-75 mt-0.5 font-semibold tracking-wide">Daewoo English Village</div>
           </div>
           <div className="w-[52px] h-[52px] rounded-full bg-white/95 flex items-center justify-center shadow-lg flex-shrink-0">
             <img src="/logo.png" alt="" className="w-9 h-9 object-contain" onError={(e: any) => { (e.target as HTMLImageElement).style.display = 'none' }} />
@@ -659,17 +641,17 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             <InfoCell label="번호 / Class Number" value={`${s.class_number}번`} />
             {/* Donut — spans 2 rows */}
             <div className="flex items-center justify-center pl-2" style={{ gridRow: '1 / 3' }}>
-              <div className="relative" style={{ width: 80, height: 80 }}>
-                <svg width="80" height="80" viewBox="0 0 120 120">
+              <div className="relative" style={{ width: 100, height: 100 }}>
+                <svg width="100" height="100" viewBox="0 0 120 120">
                   <circle cx="60" cy="60" r={radius} fill="none" stroke="#C8CED8" strokeWidth={stroke} />
                   <circle cx="60" cy="60" r={radius} fill="none" stroke={gc} strokeWidth={stroke}
                     strokeDasharray={`${pct * circ} ${circ}`} strokeLinecap="round"
                     style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-[19px] font-extrabold text-navy leading-none">{d.overallLetter}</div>
-                  <div className="text-[10px] text-text-tertiary mt-0.5">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}%` : ''}</div>
-                  {(() => { const dl = growthDelta(d.overallGrade, d.prevOverall); return dl ? <div className="text-[8px] font-bold leading-tight" style={{ color: dl.color }}>{dl.arrow} {dl.val}</div> : null })()}
+                  <div className="text-[26px] font-extrabold text-navy leading-none">{d.overallLetter}</div>
+                  <div className="text-[13px] font-semibold text-text-tertiary mt-0.5">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}%` : ''}</div>
+                  {(() => { const dl = growthDelta(d.overallGrade, d.prevOverall); return dl ? <div className="text-[9px] font-bold leading-tight" style={{ color: dl.color }}>{dl.arrow} {dl.val}</div> : null })()}
                 </div>
               </div>
             </div>
@@ -824,25 +806,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div>
               <div className="flex items-center justify-between mb-2.5">
-                <div className="flex items-center gap-2.5">
-                  {/* Teacher avatar — clickable to upload */}
-                  <label className="cursor-pointer relative group">
-                    <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleTeacherPhotoUpload} />
-                    {d.teacherPhotoUrl ? (
-                      <img src={d.teacherPhotoUrl} className="w-9 h-9 rounded-full object-cover border-2 border-[#DFE4EB]" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-[#C8CED8] text-[#64748b] flex items-center justify-center text-[14px] font-bold border-2 border-[#DFE4EB]">
-                        {d.teacherName[0] || ''}
-                      </div>
-                    )}
-                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-navy flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-                      <Camera size={9} className="text-white" />
-                    </div>
-                  </label>
-                  <div>
-                    <div className="text-[9px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Teacher's Comment</div>
-                    <div className="text-[13px] font-bold text-[#1e293b] leading-tight">{d.teacherName}</div>
-                  </div>
+                <div>
+                  <div className="text-[9px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Teacher's Comment</div>
+                  <div className="text-[14px] font-bold text-[#1e293b] leading-tight mt-0.5">{d.teacherName} Teacher<span className="font-normal text-[#94a3b8] text-[11px]"> &middot; {d.semesterClass || s.english_class} Class</span></div>
                 </div>
                 {/* Student Reference — hidden on print */}
                 <button onClick={() => setShowRefPanel(!showRefPanel)}
@@ -869,7 +835,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={8}
                 disabled={commentSkipped || !canEdit}
                 placeholder={!canEdit ? "Read-only — only this class's teacher can edit the comment." : (commentSkipped ? 'Skipped — uncheck below to write a comment.' : "Write comments about this student's progress...")}
-                className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
+                className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[15px] outline-none focus:border-navy resize-none leading-relaxed ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
               {canEdit ? (
                 <>
                   <div className="flex items-center justify-between mt-2">
@@ -1013,7 +979,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             ))}
           </div>
           <div className="text-center mt-4 pt-3 text-[10px] text-[#b8b0a6] tracking-wider" style={{ borderTop: '1px solid #C8CED8' }}>
-            Daewoo Elementary School &middot; English Program &middot; {d.semesterName}
+            Daewoo Elementary School &middot; Daewoo English Village &middot; {d.semesterName}
           </div>
         </div>
 
@@ -1024,7 +990,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
 // ─── Report Card HTML (shared by single + batch print) ──────────────
 
-// Horizontal student-vs-class bars, one row per domain
+// Horizontal student-vs-class bars, one row per domain.
+// Student score shown unrounded; class average printed as a number too.
 function comparisonBarsHtml(domainGrades: Record<string, number | null>, domainNa: Record<string, boolean>, classAverages: Record<string, number | null>): string {
   return DOMAINS.map(dom => {
     const na = !!domainNa[dom]
@@ -1038,13 +1005,14 @@ function comparisonBarsHtml(domainGrades: Record<string, number | null>, domainN
     }
     const w = Math.max(2, Math.min(100, v))
     const tick = cv != null ? `<div style="position:absolute;top:-3px;bottom:-3px;left:${Math.min(100, cv)}%;width:0;border-left:2px dashed ${RADAR_CLASS}"></div>` : ''
-    return `<div style="display:grid;grid-template-columns:118px 1fr 40px;align-items:center;gap:14px;padding:6px 0">
+    return `<div style="display:grid;grid-template-columns:118px 1fr 44px 62px;align-items:center;gap:14px;padding:6px 0">
       <div style="font-size:11px;font-weight:600;color:#475569">${DOMAIN_SHORT[dom]}</div>
       <div style="position:relative;height:15px;background:#EDF1F8;border-radius:8px;border:1px solid #DFE4EB">
         <div style="position:absolute;left:0;top:0;bottom:0;width:${w}%;background:${RADAR_STUDENT};border-radius:8px"></div>
         ${tick}
       </div>
-      <div style="font-size:12px;font-weight:700;color:${RADAR_STUDENT};white-space:nowrap;text-align:right">${v.toFixed(0)}</div>
+      <div style="font-size:12px;font-weight:700;color:${RADAR_STUDENT};white-space:nowrap;text-align:right">${v.toFixed(1)}</div>
+      <div style="font-size:10px;color:#b45309;white-space:nowrap;text-align:right">${cv != null ? 'avg ' + cv.toFixed(1) : ''}</div>
     </div>`
   }).join('')
 }
@@ -1079,10 +1047,6 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
 
   const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#EDF1F8;border:1px solid #C8CED8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
 
-  const avatarHtml = d.teacherPhotoUrl
-    ? `<img src="${d.teacherPhotoUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #DFE4EB" />`
-    : `<div style="width:32px;height:32px;border-radius:50%;background:#647FBC;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${(d.teacherName || '')[0] || ''}</div>`
-
   const comparisonBand = hideComparison ? '' : `<div style="background:#fdfcfa;padding:16px 28px 14px;border-bottom:1px solid #C8CED8">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600">Class Comparison</div>
@@ -1093,14 +1057,14 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
 
   const commentInner = commentSkipped
     ? `<div style="flex:1 1 auto;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-style:italic;font-size:12px">Comment intentionally omitted for this student.</div>`
-    : `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
-       <div class="cmt" style="flex:1 1 auto;overflow:hidden;min-height:120px;font-size:13px;line-height:1.7;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:16px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>`
+    : `<div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:8px">${d.teacherName} Teacher<span style="font-weight:400;color:#94a3b8;font-size:11px"> &middot; ${displayClass} Class</span></div>
+       <div class="cmt" style="flex:1 1 auto;overflow:hidden;min-height:120px;font-size:16px;line-height:1.65;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:16px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>`
 
   return `<div class="card">
   <div style="background:#647FBC;padding:18px 28px;color:white;display:flex;justify-content:space-between;align-items:center">
     <div><div style="font-size:10px;opacity:0.5;letter-spacing:2.5px;text-transform:uppercase">Daewoo Elementary School</div>
     <div style="font-size:22px;font-weight:700;margin-top:4px;font-family:Georgia,serif">${d.semesterName} Report Card</div>
-    <div style="font-size:11px;opacity:0.6;margin-top:2px;font-style:italic">English Program — Growing together through English.</div></div>
+    <div style="font-size:11px;opacity:0.75;margin-top:2px;font-weight:600;letter-spacing:0.5px">Daewoo English Village</div></div>
     <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2)"><img src="/logo.png" style="width:36px;height:36px;object-fit:contain" onerror="this.style.display='none'" /></div>
   </div>
   <div style="background:#fdfcfa;padding:14px 28px;border-bottom:1px solid #C8CED8">
@@ -1110,13 +1074,13 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
       <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Korean Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.korean_class}반</div></div>
       <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Class Number</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.class_number}번</div></div>
       <div style="grid-row:1/3;display:flex;align-items:center;justify-content:center;padding-left:8px">
-        <div style="position:relative;width:76px;height:76px">
-          <svg width="76" height="76" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${radius}" fill="none" stroke="#C8CED8" stroke-width="${stroke}"/>
+        <div style="position:relative;width:104px;height:104px">
+          <svg width="104" height="104" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${radius}" fill="none" stroke="#C8CED8" stroke-width="${stroke}"/>
           <circle cx="60" cy="60" r="${radius}" fill="none" stroke="${gc}" stroke-width="${stroke}" stroke-dasharray="${pct * circ} ${circ}" stroke-linecap="round" transform="rotate(-90 60 60)"/></svg>
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-            <div style="font-size:19px;font-weight:800;color:#647FBC;line-height:1.1">${d.overallLetter}</div>
-            <div style="font-size:10px;color:#64748b">${d.overallGrade != null ? d.overallGrade.toFixed(1) + '%' : ''}</div>
-            ${overallDelta ? `<div style="font-size:8px;font-weight:700;color:${overallDelta.color};line-height:1.2">${overallDelta.arrow} ${overallDelta.val}</div>` : ''}
+            <div style="font-size:27px;font-weight:800;color:#647FBC;line-height:1.05">${d.overallLetter}</div>
+            <div style="font-size:13px;font-weight:600;color:#64748b">${d.overallGrade != null ? d.overallGrade.toFixed(1) + '%' : ''}</div>
+            ${overallDelta ? `<div style="font-size:9px;font-weight:700;color:${overallDelta.color};line-height:1.2">${overallDelta.arrow} ${overallDelta.val}</div>` : ''}
           </div>
         </div>
       </div>
@@ -1138,7 +1102,7 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
   <div style="background:#fdfcfa;padding:14px 28px">
     <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Grading Scale</div>
     <div style="display:flex;gap:3px;flex-wrap:wrap">${scaleHtml}</div>
-    <div style="text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid #C8CED8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School · English Program · ${d.semesterName}</div>
+    <div style="text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid #C8CED8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School · Daewoo English Village · ${d.semesterName}</div>
   </div>
   </div>`
 }
@@ -1157,8 +1121,8 @@ function reportCardShrinkScript(autoPrint: boolean): string {
   return `<script>
   window.addEventListener('load', function(){
     document.querySelectorAll('.cmt').forEach(function(b){
-      var fs = parseFloat(getComputedStyle(b).fontSize) || 12, g = 0;
-      while (b.scrollHeight > b.clientHeight - 3 && fs > 7.5 && g < 40) { fs -= 0.5; b.style.fontSize = fs + 'px'; b.style.lineHeight = '1.6'; g++; }
+      var fs = parseFloat(getComputedStyle(b).fontSize) || 16, g = 0;
+      while (b.scrollHeight > b.clientHeight - 3 && fs > 11 && g < 40) { fs -= 0.5; b.style.fontSize = fs + 'px'; b.style.lineHeight = '1.55'; g++; }
     });
     ${autoPrint ? 'setTimeout(function(){ window.print(); }, 80);' : ''}
   });
@@ -2546,52 +2510,59 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
     if (students.length === 0) { setLoading(false); return }
     ;(async () => {
       setLoading(true)
-      const { data: assessments } = await supabase.from('assessments').select('*')
-        .eq('semester_id', semesterId).eq('grade', selectedGrade).eq('english_class', selectedClass)
-      const { data: allGrades } = await supabase.from('grades').select('*').in('student_id', students.map((s: any) => s.id))
+      const studentIds = students.map((s: any) => s.id)
+      // Assessment scores (for the calculated component), plus semester_grades (report-card
+      // overrides + per-student N/A) and class-level N/A. The summary mirrors the report card:
+      // a manual final_grade override always wins over the calculated value, and any domain
+      // marked N/A (per-student or whole-class) is excluded from the average.
+      const [assessmentsRes, allGradesRes, semGradesRes, classSettingsRes] = await Promise.all([
+        supabase.from('assessments').select('*')
+          .eq('semester_id', semesterId).eq('grade', selectedGrade).eq('english_class', selectedClass),
+        supabase.from('grades').select('*').in('student_id', studentIds),
+        supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na, behavior_grade')
+          .eq('semester_id', semesterId).in('student_id', studentIds),
+        supabase.from('class_report_settings').select('domain, is_na')
+          .eq('semester_id', semesterId).eq('english_class', selectedClass).eq('grade', selectedGrade),
+      ])
+      const assessments = assessmentsRes.data || []
+      const allGrades = allGradesRes.data || []
+      const semGrades = semGradesRes.data || []
+      const classNa: Record<string, boolean> = {}
+      DOMAINS.forEach((d) => { classNa[d] = false })
+      ;(classSettingsRes.data || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) classNa[r.domain] = !!r.is_na })
 
-      const hasAssessments = (assessments || []).length > 0
-
-      let results: any[]
-      if (hasAssessments) {
-        results = students.map((s: any) => {
-          const domainAvgs: Record<string, number | null> = {}
-          let totalSum = 0, totalCount = 0
-          DOMAINS.forEach((domain) => {
-            const domAssessments = (assessments || []).filter((a: any) => a.domain === domain)
+      const results = students.map((s: any) => {
+        const studentSG = semGrades.filter((sg: any) => sg.student_id === s.id)
+        const domainAvgs: Record<string, number | null> = {}
+        const domainNa: Record<string, boolean> = {}
+        let totalSum = 0, totalCount = 0
+        DOMAINS.forEach((domain) => {
+          const sg = studentSG.find((g: any) => g.domain === domain)
+          const na = classNa[domain] || !!sg?.is_na
+          domainNa[domain] = na
+          if (na) { domainAvgs[domain] = null; return }
+          // Calculated value from raw assessment scores (matches the report card's calc)
+          let calc: number | null = null
+          const domAssessments = assessments.filter((a: any) => a.domain === domain)
+          if (domAssessments.length > 0) {
             const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
             domAssessments.forEach((a: any) => {
-              const g = (allGrades || []).find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
+              const g = allGrades.find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
               if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
               items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
             })
             const avg = calcWeightedAvg(items, Number(selectedGrade))
-            if (avg != null) {
-              domainAvgs[domain] = Math.round(avg * 10) / 10; totalSum += domainAvgs[domain]!; totalCount++
-            } else { domainAvgs[domain] = null }
-          })
-          const overall = totalCount > 0 ? Math.round((totalSum / totalCount) * 10) / 10 : null
-          return { student: s, domainAvgs, overall, letter: overall != null ? getLetterGrade(overall) : '\u2014' }
+            if (avg != null) calc = Math.round(avg * 10) / 10
+          }
+          // Report-card override wins; else calculated; else any stored calculated_grade.
+          const val = sg?.final_grade ?? calc ?? sg?.calculated_grade ?? null
+          domainAvgs[domain] = val
+          if (val != null) { totalSum += val; totalCount++ }
         })
-      } else {
-        // Fallback: semester_grades (historical imports)
-        const { data: semGrades } = await supabase.from('semester_grades').select('*')
-          .eq('semester_id', semesterId).in('student_id', students.map((s: any) => s.id))
-        results = students.map((s: any) => {
-          const domainAvgs: Record<string, number | null> = {}
-          let totalSum = 0, totalCount = 0
-          const studentSG = (semGrades || []).filter((sg: any) => sg.student_id === s.id)
-          DOMAINS.forEach((domain) => {
-            const sg = studentSG.find((g: any) => g.domain === domain)
-            const val = sg ? (sg.final_grade ?? sg.calculated_grade ?? null) : null
-            domainAvgs[domain] = val
-            if (val != null) { totalSum += val; totalCount++ }
-          })
-          const overall = totalCount > 0 ? Math.round((totalSum / totalCount) * 10) / 10 : null
-          const behaviorSG = studentSG.find((g: any) => g.domain === 'overall')
-          return { student: s, domainAvgs, overall, letter: overall != null ? getLetterGrade(overall) : '\u2014', behaviorGrade: behaviorSG?.behavior_grade || null }
-        })
-      }
+        const overall = totalCount > 0 ? Math.round((totalSum / totalCount) * 10) / 10 : null
+        const behaviorSG = studentSG.find((g: any) => g.domain === 'overall')
+        return { student: s, domainAvgs, domainNa, overall, letter: overall != null ? getLetterGrade(overall) : '\u2014', behaviorGrade: behaviorSG?.behavior_grade || null }
+      })
       results.sort((a: any, b: any) => (b.overall || 0) - (a.overall || 0))
       setSummaries(results)
       setLoading(false)
@@ -2602,7 +2573,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
     const rows = summaries.map((s: any, i: number) =>
       `<tr><td style="padding:6px 10px;color:#94a3b8">${i + 1}</td>
        <td style="padding:6px 10px;font-weight:500;color:#647FBC">${s.student.english_name} <span style="color:#94a3b8;font-size:10px">${s.student.korean_name}</span></td>
-       ${DOMAINS.map((d) => `<td style="padding:6px 10px;text-align:center;font-weight:600;color:${s.domainAvgs[d] != null ? (s.domainAvgs[d] >= 80 ? '#16a34a' : s.domainAvgs[d] >= 60 ? '#647FBC' : '#dc2626') : '#94a3b8'}">${s.domainAvgs[d] != null ? s.domainAvgs[d].toFixed(1) : '\u2014'}</td>`).join('')}
+       ${DOMAINS.map((d) => `<td style="padding:6px 10px;text-align:center;font-weight:600;color:${s.domainAvgs[d] != null ? (s.domainAvgs[d] >= 80 ? '#16a34a' : s.domainAvgs[d] >= 60 ? '#647FBC' : '#dc2626') : '#94a3b8'}">${s.domainNa?.[d] ? 'N/A' : (s.domainAvgs[d] != null ? s.domainAvgs[d].toFixed(1) : '\u2014')}</td>`).join('')}
        <td style="padding:6px 10px;text-align:center;font-weight:700;color:#647FBC">${s.overall != null ? s.overall.toFixed(1) : '\u2014'}</td>
        <td style="padding:6px 10px;text-align:center;font-weight:700;color:${s.letter !== '\u2014' ? letterColor(s.letter) : '#999'}">${s.letter}</td></tr>`
     ).join('')
@@ -2672,7 +2643,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
                 <td className="px-4 py-2.5"><span className="font-medium">{s.student.english_name}</span><span className="text-text-tertiary ml-2 text-[11px]">{s.student.korean_name}</span></td>
                 {DOMAINS.map((d) => (
                   <td key={d} className="px-3 py-2.5 text-center">
-                    {s.domainAvgs[d] != null ? <span className={`font-semibold ${s.domainAvgs[d] >= 90 ? 'text-green-600' : s.domainAvgs[d] >= 80 ? 'text-blue-600' : s.domainAvgs[d] >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{s.domainAvgs[d].toFixed(1)}</span> : <span className="text-text-tertiary">&mdash;</span>}
+                    {s.domainNa?.[d] ? <span className="text-[11px] font-semibold text-text-tertiary">N/A</span> : s.domainAvgs[d] != null ? <span className={`font-semibold ${s.domainAvgs[d] >= 90 ? 'text-green-600' : s.domainAvgs[d] >= 80 ? 'text-blue-600' : s.domainAvgs[d] >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{s.domainAvgs[d].toFixed(1)}</span> : <span className="text-text-tertiary">&mdash;</span>}
                   </td>
                 ))}
                 <td className="px-4 py-2.5 text-center font-bold text-navy">{s.overall != null ? s.overall.toFixed(1) : '\u2014'}</td>
@@ -2686,12 +2657,18 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
   )
 }
 
-// ─── Progress Report Class Overview ─────────────────────────────────
-function ProgressClassOverview({ students, semesterId, semester, selectedClass, selectedGrade, onSelectStudent }: {
+// ─── Class Overview (shared by Progress Report + Report Card) ────────
+// Domain averages, completion stats, class-level N/A toggles, and a per-student
+// status table. The class N/A settings live in `class_report_settings`, which is
+// NOT scoped by report type — so toggling N/A here affects both report kinds.
+function ClassOverview({ students, semesterId, semester, selectedClass, selectedGrade, onSelectStudent, reportType = 'progress_report', allSemesters = [], isAdmin = false, canEdit = true }: {
   students: any[]; semesterId: string; semester: any;
   selectedClass: EnglishClass; selectedGrade: Grade;
   onSelectStudent: (studentId: string) => void;
+  reportType?: 'progress_report' | 'report_card';
+  allSemesters?: any[]; isAdmin?: boolean; canEdit?: boolean;
 }) {
+  const isCard = reportType === 'report_card'
   const { showToast, currentTeacher } = useApp()
   const [loading, setLoading] = useState(true)
   const [classNa, setClassNa] = useState<Record<string, boolean>>({})
@@ -2718,7 +2695,7 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
       supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na')
         .eq('semester_id', semesterId).in('student_id', studentIds),
       supabase.from('comments').select('student_id, text, is_skipped')
-        .eq('semester_id', semesterId).eq('report_type', 'progress_report').in('student_id', studentIds),
+        .eq('semester_id', semesterId).eq('report_type', reportType).in('student_id', studentIds),
     ])
     const allGrades = allGradesRes.data || []
     const commentsByStudent: Record<string, { text: string; skipped: boolean }> = {}
@@ -2758,7 +2735,7 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
     setStudentRows(rows)
     setDomainAvgs(avgs)
     setLoading(false)
-  }, [students, semesterId, selectedClass, selectedGrade])
+  }, [students, semesterId, selectedClass, selectedGrade, reportType])
 
   useEffect(() => { load() }, [load])
 
@@ -2792,7 +2769,7 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
       <div className="rounded-xl overflow-hidden shadow-sm" style={{ background: '#f5f0eb' }}>
         {/* Header */}
         <div className="bg-navy px-7 py-5 text-white">
-          <div className="text-[10px] opacity-50 tracking-[2.5px] uppercase font-medium">Progress Report Class Overview</div>
+          <div className="text-[10px] opacity-50 tracking-[2.5px] uppercase font-medium">{isCard ? 'Report Card Class Overview' : 'Progress Report Class Overview'}</div>
           <div className="text-[22px] font-bold mt-1 font-display">{semester.name} &middot; Grade {selectedGrade} &middot; {selectedClass}</div>
           <div className="text-[11px] opacity-60 mt-0.5 italic">{students.length} student{students.length === 1 ? '' : 's'}</div>
         </div>
@@ -2843,14 +2820,16 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
         {/* Class N/A toggles */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-1">Class N/A Settings</div>
-          <p className="text-[11px] text-text-tertiary mb-3">Mark a domain as <strong>not assessed this term</strong> for the entire class. Every student's report will show N/A for that domain (per-student N/A still applies on top).</p>
+          <p className="text-[11px] text-text-tertiary mb-1">Mark a domain as <strong>not assessed this term</strong> for the entire class. Every student's report will show N/A for that domain (per-student N/A still applies on top).</p>
+          <p className="text-[11px] text-amber-700 mb-3">N/A settings are shared between the progress report and the report card. Turn a domain <strong>off here</strong> to clear an N/A that was set for the other report.</p>
+          {!canEdit && <p className="text-[11px] text-text-tertiary italic mb-3">Read-only — only {selectedClass}&apos;s teacher or an admin can change these.</p>}
           <div className="grid grid-cols-5 gap-2.5">
             {DOMAINS.map(dom => {
               const isOn = !!classNa[dom]
               const saving = savingNa === dom
               return (
-                <button key={dom} onClick={() => toggleClassNa(dom)} disabled={saving}
-                  className={`rounded-lg p-3 text-center border transition-all ${isOn ? 'bg-[#94a3b8] text-white border-[#94a3b8]' : 'bg-white text-[#475569] border-border hover:bg-surface-alt'} ${saving ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}>
+                <button key={dom} onClick={() => toggleClassNa(dom)} disabled={saving || !canEdit}
+                  className={`rounded-lg p-3 text-center border transition-all ${isOn ? 'bg-[#94a3b8] text-white border-[#94a3b8]' : 'bg-white text-[#475569] border-border hover:bg-surface-alt'} ${saving ? 'opacity-50 cursor-wait' : !canEdit ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
                   <div className="text-[11px] font-semibold">{DOMAIN_SHORT[dom]}</div>
                   <div className="text-[10px] mt-0.5 opacity-80">{isOn ? '✓ N/A' : 'Mark N/A'}</div>
                 </button>
@@ -2863,7 +2842,7 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3">
             <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Students</div>
-            <div className="text-[10px] text-text-tertiary">Click a student to open their progress report</div>
+            <div className="text-[10px] text-text-tertiary">Click a student to open their {isCard ? 'report card' : 'progress report'}</div>
           </div>
           <table className="w-full text-[12px]">
             <thead>
@@ -2906,9 +2885,12 @@ function ProgressClassOverview({ students, semesterId, semester, selectedClass, 
         </div>
 
         {/* Batch print */}
-        <div className="bg-white px-7 py-4 flex items-center justify-between">
+        <div className="bg-white px-7 py-4 flex items-center justify-between flex-wrap gap-3">
           <div className="text-[11px] text-text-tertiary">Save as PDF in the print dialog to download the whole class as one file.</div>
-          <BatchPrintButton students={students} semesterId={semesterId} className={selectedClass} />
+          <div className="flex items-center gap-3 flex-wrap">
+            <BatchPrintButton students={students} semesterId={semesterId} className={selectedClass} kind={isCard ? 'report_card' : 'progress'} allSemesters={allSemesters} />
+            {isCard && isAdmin && <BatchPrintButton students={students} semesterId={semesterId} className={selectedClass} kind="report_card" scope="grade" grade={selectedGrade} allSemesters={allSemesters} />}
+          </div>
         </div>
       </div>
     </div>

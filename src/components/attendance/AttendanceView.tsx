@@ -6,7 +6,7 @@ import { useStudents, useAvailableClasses } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, UserCheck, UserX, Clock, Download, AlertTriangle, Printer } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, UserCheck, UserX, Clock, Download, AlertTriangle, Printer, CalendarDays, List } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import EmptyState from '@/components/shared/EmptyState'
 import AnimatedNumber from '@/components/shared/AnimatedNumber'
@@ -43,6 +43,19 @@ export default function AttendanceView() {
     return { year: d.getFullYear(), month: d.getMonth() }
   })
   const printDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Month-at-a-glance view: highlights class days with missing attendance
+  const [viewMode, setViewMode] = useState<'day' | 'month'>('day')
+  const [calMonth, setCalMonth] = useState<{ year: number; month: number }>(() => {
+    const d = new Date(getKSTDateString() + 'T12:00:00')
+    return { year: d.getFullYear(), month: d.getMonth() }
+  })
+  // Per-grade summary keyed by `${grade}::${date}`, so the month view can show every
+  // grade of the class at once (teachers run multiple grades of the same class per day).
+  const [monthGradeSummary, setMonthGradeSummary] = useState<Record<string, { count: number; present: number; absent: number; tardy: number }>>({})
+  const [classGrades, setClassGrades] = useState<Grade[]>([])
+  const [gradeTotals, setGradeTotals] = useState<Record<number, number>>({})
+  const [monthLoading, setMonthLoading] = useState(false)
 
   const guardUnsaved = (action: () => void) => {
     if (hasChanges) { setPendingAction(() => action); setShowUnsavedModal(true) }
@@ -233,6 +246,99 @@ export default function AttendanceView() {
       return { year: d.getFullYear(), month: d.getMonth() }
     })
   }
+
+  // ─── Month-at-a-glance ──────────────────────────────────────────────
+  const pad2 = (n: number) => String(n).padStart(2, '0')
+  const toKey = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+  const todayKey = getKSTDateString()
+
+  // For the visible month, count how many students have a record on each (grade, date),
+  // across every grade of the selected class.
+  const loadMonthSummary = useCallback(async () => {
+    setMonthLoading(true)
+    const { year, month } = calMonth
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const startKey = `${year}-${pad2(month + 1)}-01`
+    const endKey = `${year}-${pad2(month + 1)}-${pad2(daysInMonth)}`
+    // Whole class roster across all grades
+    const { data: roster } = await supabase.from('students').select('id, grade')
+      .eq('is_active', true).eq('english_class', selectedClass)
+    const studentGrade: Record<string, number> = {}
+    const totals: Record<number, number> = {}
+    const gradeSet = new Set<number>()
+    ;(roster || []).forEach((s: any) => {
+      studentGrade[s.id] = s.grade
+      totals[s.grade] = (totals[s.grade] || 0) + 1
+      gradeSet.add(s.grade)
+    })
+    const ids = (roster || []).map((s: any) => s.id)
+    const sum: Record<string, { count: number; present: number; absent: number; tardy: number }> = {}
+    if (ids.length > 0) {
+      const { data } = await supabase.from('attendance').select('date, status, student_id')
+        .in('student_id', ids).gte('date', startKey).lte('date', endKey)
+      ;(data || []).forEach((r: any) => {
+        const g = studentGrade[r.student_id]
+        if (g == null) return
+        const k = `${g}::${r.date}`
+        if (!sum[k]) sum[k] = { count: 0, present: 0, absent: 0, tardy: 0 }
+        sum[k].count++
+        if (r.status === 'present') sum[k].present++
+        else if (r.status === 'absent') sum[k].absent++
+        else if (r.status === 'tardy') sum[k].tardy++
+      })
+    }
+    setMonthGradeSummary(sum)
+    setGradeTotals(totals)
+    setClassGrades(Array.from(gradeSet).sort((a, b) => a - b) as Grade[])
+    setMonthLoading(false)
+  }, [selectedClass, calMonth])
+
+  // Reload whenever we enter month view or the class/grade/month changes
+  useEffect(() => { if (viewMode === 'month') loadMonthSummary() }, [viewMode, loadMonthSummary])
+
+  // Weeks of the visible month as Mon–Fri rows (null = padding before/after the month)
+  const calWeeks = useMemo(() => {
+    const { year, month } = calMonth
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const weeks: Array<Array<Date | null>> = []
+    let week: Array<Date | null> = [null, null, null, null, null]
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day)
+      const dow = d.getDay()
+      if (dow === 0 || dow === 6) continue // skip weekends
+      week[dow - 1] = d // Mon=0 … Fri=4
+      if (dow === 5) { weeks.push(week); week = [null, null, null, null, null] }
+    }
+    if (week.some(c => c)) weeks.push(week)
+    return weeks
+  }, [calMonth])
+
+  const calMonthLabel = useMemo(() =>
+    new Date(calMonth.year, calMonth.month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+  [calMonth])
+
+  const stepCalMonth = (delta: number) => {
+    setCalMonth(prev => {
+      const d = new Date(prev.year, prev.month + delta, 1)
+      return { year: d.getFullYear(), month: d.getMonth() }
+    })
+  }
+
+  // Count of past/today (grade, class-day) sessions in the visible month with no attendance
+  const unmarkedCount = useMemo(() => {
+    let n = 0
+    calWeeks.forEach(week => week.forEach(d => {
+      if (!d) return
+      const key = toKey(d)
+      if (key > todayKey) return
+      classGrades.forEach(g => {
+        if (isNonClassDay(key, g)) return
+        if (!monthGradeSummary[`${g}::${key}`]?.count) n++
+      })
+    }))
+    return n
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calWeeks, monthGradeSummary, classGrades, todayKey])
 
   // Build the list of dates to print: either a specific set of weeks, or the month of selectedDate.
   type PrintDate = { date: string; day: number; dayName: string; monthShort: string; year: number; month: number }
@@ -447,6 +553,19 @@ export default function AttendanceView() {
             <div className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white" style={{ backgroundColor: classToTextColor(selectedClass) }}>{selectedClass}</div>
           )}
           <div className="w-px h-6 bg-border" />
+          {/* View toggle */}
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button onClick={() => setViewMode('day')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-all ${viewMode === 'day' ? 'bg-navy text-white' : 'bg-surface text-text-secondary hover:bg-surface-alt'}`}>
+              <List size={13} /> {lang === 'ko' ? '일별' : 'Day'}
+            </button>
+            <button onClick={() => setViewMode('month')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-all ${viewMode === 'month' ? 'bg-navy text-white' : 'bg-surface text-text-secondary hover:bg-surface-alt'}`}>
+              <CalendarDays size={13} /> {lang === 'ko' ? '월별' : 'Month'}
+            </button>
+          </div>
+          {viewMode === 'day' && <>
+          <div className="w-px h-6 bg-border" />
           {/* Date nav */}
           <div className="flex items-center gap-1">
             <button onClick={prevDay} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronLeft size={16} /></button>
@@ -478,8 +597,10 @@ export default function AttendanceView() {
               Clear All
             </button>
           )}
+          </>}
         </div>
 
+        {viewMode === 'day' && (<>
         {/* Date display */}
         <div className="mb-4">
           <h3 className="font-display text-lg font-semibold text-navy">
@@ -621,6 +742,112 @@ export default function AttendanceView() {
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
               {lang === 'ko' ? '출석 저장' : 'Save Attendance'}
             </button>
+          </div>
+        )}
+        </>)}
+
+        {/* ─── Month-at-a-glance ─── */}
+        {viewMode === 'month' && (
+          <div>
+            {/* Month nav + legend */}
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <button onClick={() => stepCalMonth(-1)} className="p-1.5 rounded-lg border border-border hover:bg-surface-alt" aria-label="Previous month"><ChevronLeft size={16} /></button>
+                <h3 className="font-display text-lg font-semibold text-navy min-w-[170px] text-center">{calMonthLabel}</h3>
+                <button onClick={() => stepCalMonth(1)} className="p-1.5 rounded-lg border border-border hover:bg-surface-alt" aria-label="Next month"><ChevronRight size={16} /></button>
+                <button onClick={() => { const d = new Date(getKSTDateString() + 'T12:00:00'); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }) }}
+                  className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light">{lang === 'ko' ? '이번 달' : 'This month'}</button>
+              </div>
+              <div className="flex items-center gap-3 text-[11px] text-text-secondary flex-wrap">
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-50 border border-green-300" /> {lang === 'ko' ? '기록됨' : 'Marked'}</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-50 border border-amber-300" /> {lang === 'ko' ? '일부' : 'Partial'}</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-100 border border-amber-400" /> {lang === 'ko' ? '미기록' : 'Not marked'}</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-surface border border-border" /> {lang === 'ko' ? '예정' : 'Upcoming'}</span>
+              </div>
+            </div>
+
+            {/* Unmarked summary banner */}
+            {!monthLoading && classGrades.length > 0 && (
+              unmarkedCount > 0 ? (
+                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-[13px] text-amber-800">
+                  <AlertTriangle size={16} className="text-amber-500 flex-shrink-0" />
+                  {unmarkedCount} {unmarkedCount === 1 ? 'grade session' : 'grade sessions'} this month {unmarkedCount === 1 ? 'has' : 'have'} no attendance recorded. Click a highlighted grade to fill it in.
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2 text-[13px] text-green-800">
+                  <Check size={16} className="text-green-600 flex-shrink-0" />
+                  Every grade of {selectedClass} is marked up to today.
+                </div>
+              )
+            )}
+
+            {/* Calendar grid — one chip per grade of the class */}
+            <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+              <div className="grid grid-cols-5 bg-surface-alt">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(d => (
+                  <div key={d} className="px-3 py-2 text-[11px] uppercase tracking-wider text-text-secondary font-semibold text-center">{d}</div>
+                ))}
+              </div>
+              {monthLoading ? (
+                <div className="p-12 text-center"><Loader2 size={22} className="animate-spin text-navy mx-auto" /></div>
+              ) : classGrades.length === 0 ? (
+                <div className="p-12 text-center text-text-tertiary text-[13px]">No students in {selectedClass}.</div>
+              ) : (
+                calWeeks.map((week, wi) => (
+                  <div key={wi} className="grid grid-cols-5 border-t border-border">
+                    {week.map((d, di) => {
+                      if (!d) return <div key={di} className="min-h-[96px] border-r border-border last:border-r-0 bg-surface-alt/30" />
+                      const key = toKey(d)
+                      const future = key > todayKey
+                      const todayCell = key === todayKey
+                      return (
+                        <div key={di}
+                          className={`min-h-[96px] border-r border-border last:border-r-0 p-1.5 flex flex-col gap-1 ${todayCell ? 'ring-2 ring-inset ring-navy/40' : ''}`}>
+                          <div className="flex items-center justify-between px-0.5">
+                            <span className={`text-[12px] font-bold ${todayCell ? 'text-navy' : 'text-text-primary'}`}>{d.getDate()}</span>
+                            {todayCell && <span className="text-[8px] font-bold uppercase text-navy bg-accent-light px-1 rounded">Today</span>}
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            {classGrades.map(g => {
+                              const nonClass = isNonClassDay(key, g)
+                              const sm = monthGradeSummary[`${g}::${key}`]
+                              const count = sm?.count || 0
+                              const total = gradeTotals[g] || 0
+                              let chipCls = 'bg-surface-alt/60 text-text-tertiary'
+                              let right: React.ReactNode = '—'
+                              let clickable = false
+                              if (nonClass) {
+                                right = '—'
+                              } else if (count === 0) {
+                                if (future) { right = '·'; clickable = true }
+                                else { chipCls = 'bg-amber-100 text-amber-800 hover:brightness-95'; right = <AlertTriangle size={10} />; clickable = true }
+                              } else if (count < total) {
+                                chipCls = 'bg-amber-50 text-amber-700 hover:brightness-95'; right = `${count}/${total}`; clickable = true
+                              } else {
+                                chipCls = 'bg-green-50 text-green-700 hover:brightness-95'; right = <span className="inline-flex items-center gap-0.5"><Check size={10} /> {count}</span>; clickable = true
+                              }
+                              const titleTxt = nonClass ? `Grade ${g}: no class`
+                                : count === 0 && !future ? `Grade ${g}: not marked`
+                                : count === 0 ? `Grade ${g}: upcoming`
+                                : `Grade ${g}: ${count}/${total} marked`
+                              return (
+                                <div key={g} title={titleTxt}
+                                  onClick={clickable ? (e) => { e.stopPropagation(); guardUnsaved(() => { setSelectedGrade(g); setSelectedDate(key); setViewMode('day') }) } : undefined}
+                                  className={`flex items-center justify-between gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${chipCls} ${clickable ? 'cursor-pointer' : ''}`}>
+                                  <span>G{g}</span>
+                                  <span className="inline-flex items-center">{right}</span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))
+              )}
+            </div>
+            <p className="text-[10px] text-text-tertiary mt-2">Each chip is one grade of {selectedClass}. Click a grade to open that day in Day view and record attendance.</p>
           </div>
         )}
       </div>
