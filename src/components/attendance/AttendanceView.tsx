@@ -325,7 +325,7 @@ export default function AttendanceView() {
   }
 
   // Count of past/today (grade, class-day) sessions in the visible month with no attendance
-  const unmarkedCount = useMemo(() => {
+  const unmarkedSessions = useMemo(() => {
     let n = 0
     calWeeks.forEach(week => week.forEach(d => {
       if (!d) return
@@ -768,10 +768,10 @@ export default function AttendanceView() {
 
             {/* Unmarked summary banner */}
             {!monthLoading && classGrades.length > 0 && (
-              unmarkedCount > 0 ? (
+              unmarkedSessions > 0 ? (
                 <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-[13px] text-amber-800">
                   <AlertTriangle size={16} className="text-amber-500 flex-shrink-0" />
-                  {unmarkedCount} {unmarkedCount === 1 ? 'grade session' : 'grade sessions'} this month {unmarkedCount === 1 ? 'has' : 'have'} no attendance recorded. Click a highlighted grade to fill it in.
+                  {unmarkedSessions} {unmarkedSessions === 1 ? 'grade session' : 'grade sessions'} this month {unmarkedSessions === 1 ? 'has' : 'have'} no attendance recorded. Click a highlighted grade to fill it in.
                 </div>
               ) : (
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2 text-[13px] text-green-800">
