@@ -601,6 +601,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const gc = d.overallGrade != null ? letterColor(d.overallLetter) : '#94a3b8'
   const pct = (d.overallGrade || 0) / 100
   const radius = 50, stroke = 8, circ = 2 * Math.PI * radius
+  // Grade 1 is a student's first semester — no prior term to compare against
+  const firstSemester = Number(d.semesterGrade || s.grade) === 1
 
   return (
     <div className="space-y-5">
@@ -664,7 +666,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <div className="text-[26px] font-extrabold text-navy leading-none">{d.overallLetter}</div>
                   <div className="text-[13px] font-semibold text-text-tertiary mt-0.5">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}%` : ''}</div>
-                  {(() => { const dl = growthDelta(d.overallGrade, d.prevOverall); return dl ? <div className="text-[9px] font-bold leading-tight" style={{ color: dl.color }}>{dl.arrow} {dl.val}</div> : null })()}
+                  {(() => { const dl = firstSemester ? null : growthDelta(d.overallGrade, d.prevOverall); return dl ? <div className="text-[9px] font-bold leading-tight" style={{ color: dl.color }}>{dl.arrow} {dl.val}</div> : null })()}
                 </div>
               </div>
             </div>
@@ -679,7 +681,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Score Tiles ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
-            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Academic Performance{d.prevSemesterName && <span className="normal-case tracking-normal font-normal text-[#b8b0a6]"> &nbsp;·&nbsp; ▲▼ vs {d.prevSemesterName}</span>}</div>
+            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Academic Performance{!firstSemester && d.prevSemesterName && <span className="normal-case tracking-normal font-normal text-[#b8b0a6]"> &nbsp;·&nbsp; ▲▼ vs {d.prevSemesterName}</span>}</div>
             {!editingGrades ? (canEdit ? (
               <button onClick={() => {
                 const eg: Record<string, string> = {}
@@ -776,7 +778,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               const v = d.domainGrades[dom]
               if (v == null) return <div key={dom} className="rounded-xl border border-border p-3.5 text-center text-text-tertiary text-[12px]">--</div>
               const g = getLetterGrade(v)
-              const dl = growthDelta(v, d.prevDomainGrades?.[dom])
+              const dl = firstSemester ? null : growthDelta(v, d.prevDomainGrades?.[dom])
               return (
                 <div key={dom} className={`rounded-xl border-[1.5px] ${tileBgClass(v)} p-3.5 text-center`}>
                   <div className="text-[11px] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
@@ -1039,7 +1041,9 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
   const radius = 50, stroke = 8, circ = 2 * Math.PI * radius
   const displayGrade = d.semesterGrade || s.grade
   const displayClass = d.semesterClass || s.english_class
-  const overallDelta = growthDelta(d.overallGrade, d.prevOverall)
+  // Grade 1 is a student's first semester — no prior term to compare against
+  const firstSemester = Number(displayGrade) === 1
+  const overallDelta = firstSemester ? null : growthDelta(d.overallGrade, d.prevOverall)
 
   const tiles = DOMAINS.map((dom) => {
     if (d.domainNa[dom]) return `<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f5f5f5">
@@ -1049,7 +1053,7 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
     </div>`
     const v = d.domainGrades[dom]; if (v == null) return '<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px">--</div>'
     const g = getLetterGrade(v); const t = tileBgPrint(v)
-    const dlt = growthDelta(v, d.prevDomainGrades?.[dom])
+    const dlt = firstSemester ? null : growthDelta(v, d.prevDomainGrades?.[dom])
     return `<div style="text-align:center;padding:14px 8px;background:${t.bg};border:1.5px solid ${t.border};border-radius:12px">
       <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
       <div style="font-size:26px;font-weight:800;color:#1e293b;margin-top:6px">${v.toFixed(1)}%</div>
@@ -1104,7 +1108,7 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
     </div>
   </div>
   <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #C8CED8">
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance${d.prevSemesterName ? `<span style="text-transform:none;letter-spacing:0;font-weight:500;color:#b8b0a6"> &nbsp;·&nbsp; ▲▼ change vs ${d.prevSemesterName}</span>` : ''}</div>
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Academic Performance${(!firstSemester && d.prevSemesterName) ? `<span style="text-transform:none;letter-spacing:0;font-weight:500;color:#b8b0a6"> &nbsp;·&nbsp; ▲▼ change vs ${d.prevSemesterName}</span>` : ''}</div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
   </div>
   ${comparisonBand}
@@ -1135,7 +1139,11 @@ function reportCardShrinkScript(autoPrint: boolean): string {
   window.addEventListener('load', function(){
     document.querySelectorAll('.cmt').forEach(function(b){
       var fs = parseFloat(getComputedStyle(b).fontSize) || 16, g = 0;
-      while (b.scrollHeight > b.clientHeight - 3 && fs > 11 && g < 40) { fs -= 0.5; b.style.fontSize = fs + 'px'; b.style.lineHeight = '1.55'; g++; }
+      // Grow the text to fill the box (kills dead space under short comments)
+      while (b.scrollHeight <= b.clientHeight - 4 && fs < 24 && g < 60) { fs += 0.5; b.style.fontSize = fs + 'px'; g++; }
+      // Then shrink back if a long comment now overflows its one-page box
+      g = 0;
+      while (b.scrollHeight > b.clientHeight - 3 && fs > 11 && g < 80) { fs -= 0.5; b.style.fontSize = fs + 'px'; b.style.lineHeight = '1.55'; g++; }
     });
     ${autoPrint ? 'setTimeout(function(){ window.print(); }, 80);' : ''}
   });
