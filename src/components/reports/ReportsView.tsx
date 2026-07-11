@@ -107,7 +107,7 @@ interface ReportData {
 export default function ReportsView() {
   const { t, language, currentTeacher } = useApp()
   const lang = language as LangKey
-  const [mode, setMode] = useState<'individual' | 'progress' | 'class' | 'review' | 'comments'>('individual')
+  const [mode, setMode] = useState<'individual' | 'progress' | 'class' | 'review' | 'comments' | 'print'>('individual')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
@@ -133,6 +133,9 @@ export default function ReportsView() {
     }
   }, [semesters, selectedSemesterId])
 
+  // "Class Overview" is a selectable dropdown entry (not a student). Treat an empty
+  // selection as overview too, so landing on a mode shows the overview by default.
+  const isOverview = !selectedStudentId || selectedStudentId === '__overview__'
   const currentIdx = students.findIndex((s: any) => s.id === selectedStudentId)
   const prevStudent = () => { if (currentIdx > 0) setSelectedStudentId(students[currentIdx - 1].id) }
   const nextStudent = () => { if (currentIdx < students.length - 1) setSelectedStudentId(students[currentIdx + 1].id) }
@@ -148,6 +151,7 @@ export default function ReportsView() {
           <button onClick={() => setMode('comments')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'comments' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><MessageSquare size={14} /> Comments</button>
           <button onClick={() => setMode('class')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'class' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><Users size={14} /> Class Summary</button>
           <button onClick={() => setMode('review')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'review' ? 'bg-amber-600 text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><ClipboardCheck size={14} /> Review & Approve</button>
+          <button onClick={() => setMode('print')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${mode === 'print' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><Printer size={14} /> Print</button>
         </div>
       </div>
 
@@ -175,11 +179,13 @@ export default function ReportsView() {
           {(mode === 'individual' || mode === 'progress') && (
             <>
               <div className="w-px h-6 bg-border" />
-              <select value={selectedStudentId || ''} onChange={(e: any) => setSelectedStudentId(e.target.value || null)} className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy min-w-[200px]">
-                <option value="">Select student...</option>
-                {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name} ({s.korean_name})</option>)}
+              <select value={selectedStudentId || '__overview__'} onChange={(e: any) => setSelectedStudentId(e.target.value)} className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy min-w-[200px]">
+                <option value="__overview__">Class Overview</option>
+                <optgroup label="Students">
+                  {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name} ({s.korean_name})</option>)}
+                </optgroup>
               </select>
-              {selectedStudentId && (
+              {!isOverview && selectedStudentId && (
                 <div className="flex gap-1">
                   <button onClick={prevStudent} disabled={currentIdx <= 0} className="p-1.5 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronLeft size={16} /></button>
                   <button onClick={nextStudent} disabled={currentIdx >= students.length - 1} className="p-1.5 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronRight size={16} /></button>
@@ -189,27 +195,27 @@ export default function ReportsView() {
           )}
         </div>
 
-        {mode === 'individual' && selectedStudentId && selectedSemesterId && selectedSemester && (
-          <IndividualReport key={selectedStudentId} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
+        {mode === 'individual' && !isOverview && selectedSemesterId && selectedSemester && (
+          <IndividualReport key={selectedStudentId} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
         )}
-        {mode === 'individual' && !selectedStudentId && selectedSemesterId && selectedSemester && (
+        {mode === 'individual' && isOverview && selectedSemesterId && selectedSemester && (
           <ClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
             selectedClass={selectedClass} selectedGrade={selectedGrade} reportType="report_card"
             allSemesters={semesters} isAdmin={isAdmin} canEdit={canEdit}
             onSelectStudent={(id: string) => setSelectedStudentId(id)} />
         )}
-        {mode === 'individual' && !selectedStudentId && !selectedSemesterId && (
+        {mode === 'individual' && isOverview && !selectedSemesterId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a semester to view the class overview.</div>
         )}
-        {mode === 'progress' && selectedStudentId && selectedSemesterId && selectedSemester && (
-          <ProgressReport key={`prog-${selectedStudentId}`} studentId={selectedStudentId} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
+        {mode === 'progress' && !isOverview && selectedSemesterId && selectedSemester && (
+          <ProgressReport key={`prog-${selectedStudentId}`} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
         )}
-        {mode === 'progress' && !selectedStudentId && selectedSemesterId && selectedSemester && (
+        {mode === 'progress' && isOverview && selectedSemesterId && selectedSemester && (
           <ClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
             selectedClass={selectedClass} selectedGrade={selectedGrade} canEdit={canEdit}
             onSelectStudent={(id: string) => setSelectedStudentId(id)} />
         )}
-        {mode === 'progress' && !selectedStudentId && !selectedSemesterId && (
+        {mode === 'progress' && isOverview && !selectedSemesterId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a semester to view the class overview.</div>
         )}
         {mode === 'class' && selectedSemesterId && selectedSemester && (
@@ -223,6 +229,13 @@ export default function ReportsView() {
         )}
         {mode === 'comments' && !selectedSemesterId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a semester to write comments.</div>
+        )}
+        {mode === 'print' && selectedSemesterId && (
+          <PrintCenter students={students} semesterId={selectedSemesterId} selectedClass={selectedClass}
+            selectedGrade={selectedGrade} isAdmin={isAdmin} allSemesters={semesters} />
+        )}
+        {mode === 'print' && !selectedSemesterId && (
+          <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a semester to print report cards.</div>
         )}
       </div>
     </div>
@@ -2035,6 +2048,25 @@ interface ReviewStatus {
 
 // ─── Bulk Comments (write a whole class at once) ─────────────────────
 
+// Textarea that grows to fit its content so the whole comment is visible at once.
+function AutoGrowTextarea({ value, onChange, disabled, placeholder, className }: {
+  value: string; onChange: (v: string) => void; disabled?: boolean; placeholder?: string; className?: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  const resize = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.max(el.scrollHeight, 64)}px`
+  }, [])
+  useEffect(() => { resize() }, [value, resize])
+  return (
+    <textarea ref={ref} value={value} disabled={disabled} placeholder={placeholder}
+      onChange={e => onChange(e.target.value)} rows={2} style={{ overflow: 'hidden' }}
+      className={className} />
+  )
+}
+
 function BulkComments({ students, semesterId, selectedClass, selectedGrade, canEdit }: {
   students: any[]; semesterId: string; selectedClass: EnglishClass; selectedGrade: Grade; canEdit: boolean
 }) {
@@ -2139,7 +2171,7 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
                   )}
                 </div>
               </div>
-              <textarea value={r.text} onChange={e => setText(student.id, e.target.value)} rows={3}
+              <AutoGrowTextarea value={r.text} onChange={(v) => setText(student.id, v)}
                 disabled={!canEdit || r.skipped}
                 placeholder={r.skipped ? 'Skipped — unskip to write a comment.' : "Write this student's report card comment…"}
                 className={`w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${(!canEdit || r.skipped) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-white'}`} />
@@ -2493,6 +2525,113 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Print Center ────────────────────────────────────────────────────
+// One place to print report cards: whole grade (all classes, admin), a single
+// English class, or a single student. A per-grade "ready to print" flag guards
+// against accidental early printing (soft gate — you can still print anyway).
+function PrintCenter({ students, semesterId, selectedClass, selectedGrade, isAdmin, allSemesters }: {
+  students: any[]; semesterId: string; selectedClass: EnglishClass; selectedGrade: Grade; isAdmin: boolean; allSemesters: any[]
+}) {
+  const { showToast, currentTeacher } = useApp()
+  const [gradeReady, setGradeReady] = useState(false)
+  const [loadingReady, setLoadingReady] = useState(true)
+  const [savingReady, setSavingReady] = useState(false)
+  const [override, setOverride] = useState(false)
+  const [printStudentId, setPrintStudentId] = useState<string>('')
+
+  useEffect(() => {
+    ;(async () => {
+      setLoadingReady(true); setOverride(false); setPrintStudentId('')
+      const { data } = await supabase.from('grade_print_status').select('is_ready')
+        .eq('semester_id', semesterId).eq('grade', selectedGrade).maybeSingle()
+      setGradeReady(!!data?.is_ready)
+      setLoadingReady(false)
+    })()
+  }, [semesterId, selectedGrade])
+
+  const toggleReady = async () => {
+    setSavingReady(true)
+    const next = !gradeReady
+    const { error } = await supabase.from('grade_print_status').upsert({
+      semester_id: semesterId, grade: selectedGrade, is_ready: next,
+      updated_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
+    }, { onConflict: 'semester_id,grade' })
+    setSavingReady(false)
+    if (error) { showToast(error.code === '42P01' ? 'grade_print_status table not set up yet. Run the SQL migration.' : `Error: ${error.message}`); return }
+    setGradeReady(next); if (next) setOverride(false)
+    showToast(next ? `Grade ${selectedGrade} marked ready to print` : `Grade ${selectedGrade} unmarked`)
+  }
+
+  const printStudent = students.find((s: any) => s.id === printStudentId)
+  const gated = !gradeReady && !override // batch prints are soft-gated until ready
+
+  return (
+    <div className="space-y-4">
+      {/* Ready-to-print status */}
+      <div className={`rounded-xl border p-5 flex items-center justify-between flex-wrap gap-3 ${gradeReady ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+        <div className="flex items-center gap-3">
+          {gradeReady ? <CheckCircle2 size={20} className="text-green-600" /> : <AlertTriangle size={20} className="text-amber-500" />}
+          <div>
+            <div className="text-[14px] font-semibold text-navy">Grade {selectedGrade} — {gradeReady ? 'ready to print' : 'not marked ready'}</div>
+            <div className="text-[11px] text-text-secondary">{gradeReady ? 'Report cards for this grade are cleared for printing.' : 'Mark ready once grades and comments are finalized, to avoid accidental early prints.'}</div>
+          </div>
+        </div>
+        <button onClick={toggleReady} disabled={loadingReady || savingReady}
+          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold disabled:opacity-50 ${gradeReady ? 'bg-white border border-green-300 text-green-700 hover:bg-green-100' : 'bg-navy text-white hover:bg-navy-dark'}`}>
+          {savingReady ? <Loader2 size={14} className="animate-spin" /> : gradeReady ? <XCircle size={14} /> : <CheckCircle2 size={14} />}
+          {gradeReady ? `Unmark Grade ${selectedGrade}` : `Mark Grade ${selectedGrade} ready`}
+        </button>
+      </div>
+
+      {/* Whole grade — admin only */}
+      {isAdmin && (
+        <div className="bg-surface border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-1"><Users size={15} className="text-navy" /><h3 className="text-[14px] font-semibold text-navy">Whole grade — all English classes</h3></div>
+          <p className="text-[11px] text-text-tertiary mb-3">Every English class in Grade {selectedGrade}, sorted by Korean homeroom (대 → 솔 → 매) then class number.</p>
+          {gated ? (
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[11px] text-amber-700">Grade {selectedGrade} isn&apos;t marked ready.</span>
+              <button onClick={() => setOverride(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"><Printer size={14} /> Print anyway</button>
+            </div>
+          ) : (
+            <BatchPrintButton students={students} semesterId={semesterId} className={selectedClass} kind="report_card" scope="grade" grade={selectedGrade} allSemesters={allSemesters} />
+          )}
+        </div>
+      )}
+
+      {/* Single English class */}
+      <div className="bg-surface border border-border rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-1"><User size={15} className="text-navy" /><h3 className="text-[14px] font-semibold text-navy">Single English class</h3></div>
+        <p className="text-[11px] text-text-tertiary mb-3">{selectedClass} · Grade {selectedGrade} · {students.length} student{students.length === 1 ? '' : 's'}. Use the class buttons above to switch class.</p>
+        {gated ? (
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-[11px] text-amber-700">Grade {selectedGrade} isn&apos;t marked ready.</span>
+            <button onClick={() => setOverride(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"><Printer size={14} /> Print anyway</button>
+          </div>
+        ) : (
+          <BatchPrintButton students={students} semesterId={semesterId} className={selectedClass} kind="report_card" allSemesters={allSemesters} />
+        )}
+      </div>
+
+      {/* Single student */}
+      <div className="bg-surface border border-border rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-1"><User size={15} className="text-navy" /><h3 className="text-[14px] font-semibold text-navy">Single student</h3></div>
+        <p className="text-[11px] text-text-tertiary mb-3">Print one report card. Not gated by the ready flag.</p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <select value={printStudentId} onChange={(e: any) => setPrintStudentId(e.target.value)}
+            className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy min-w-[220px]">
+            <option value="">Select student…</option>
+            {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name} ({s.korean_name})</option>)}
+          </select>
+          {printStudent && (
+            <BatchPrintButton key={printStudent.id} students={[printStudent]} semesterId={semesterId} className={selectedClass} kind="report_card" allSemesters={allSemesters} />
+          )}
+        </div>
       </div>
     </div>
   )

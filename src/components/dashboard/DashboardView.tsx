@@ -21,7 +21,7 @@ const EVENT_TYPES = [
   { value: 'other', label: 'Other', color: '#6B7280', bg: 'bg-gray-100 text-gray-700' },
 ]
 
-interface CalEvent { id: string; title: string; date: string; type: string; description: string; created_by: string | null; created_at: string; show_on_parent_calendar?: boolean; target_grades?: number[] | null }
+interface CalEvent { id: string; title: string; date: string; end_date?: string | null; type: string; description: string; created_by: string | null; created_at: string; show_on_parent_calendar?: boolean; target_grades?: number[] | null }
 interface FlaggedEntry { id: string; student_id: string; date: string; type: string; note: string; time: string; behaviors: string[]; antecedents: string[]; consequences: string[]; intensity: number; frequency: number; activity: string; duration: string; is_flagged: boolean; teacher_name: string; student_name: string; student_class: string; created_at: string }
 
 // ─── Shared Dashboard Data ───────────────────────────────────────
@@ -230,15 +230,14 @@ export default function DashboardView() {
         )}
       </div>
       <div className="px-10 py-6 space-y-5">
-        {/* ─── Top Row: Status + Calendar ─── */}
-        <div className="grid grid-cols-[280px_1fr_220px] gap-5">
-          <div className="space-y-4">
-            <ActionableSummary shared={shared} />
-            {isAdmin && <ClassOverviewTable />}
-          </div>
+        {/* ─── Today's Status: full-width bar on top ─── */}
+        <ActionableSummary shared={shared} horizontal />
+        {/* ─── Calendar (two months) + Weekly schedule ─── */}
+        <div className="grid grid-cols-[1fr_220px] gap-5">
           <SharedCalendar />
           <WeeklySchedule />
         </div>
+        {isAdmin && <ClassOverviewTable />}
         {/* ─── Below: Insights + Content ─── */}
         <InsightsBanner shared={shared} />
         <div className="grid grid-cols-2 gap-5">
@@ -432,7 +431,7 @@ function InsightsBanner({ shared }: { shared: SharedDashboardData }) {
 }
 
 // ─── Actionable Summary (sidebar) ────────────────────────────────
-function ActionableSummary({ shared }: { shared: SharedDashboardData }) {
+function ActionableSummary({ shared, horizontal = false }: { shared: SharedDashboardData; horizontal?: boolean }) {
   const { currentTeacher, language, navigateTo } = useApp()
   const today = getKSTDateString()
 
@@ -477,6 +476,33 @@ function ActionableSummary({ shared }: { shared: SharedDashboardData }) {
   }, [shared.loading, shared.students.length, shared.todayAttendanceIds.size, shared.todayEvents, shared.activeSemester, shared.todayBehaviorCount, today])
 
   if (shared.loading) return null
+
+  // Horizontal top-bar variant — frees the main row for a wider calendar
+  if (horizontal) {
+    return (
+      <div className="bg-surface border border-border rounded-xl px-5 py-3 flex items-center gap-3 flex-wrap">
+        <span className="text-[11px] font-bold text-navy uppercase tracking-wider flex-shrink-0">Today's Status</span>
+        {items.length === 0 ? (
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-green-700"><CheckCircle size={14} /> All caught up</span>
+        ) : items.map((item, i) => {
+          const Icon = item.icon
+          const cls = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] border ${item.urgent ? 'bg-amber-50 border-amber-200 text-amber-800 font-medium' : 'bg-surface-alt/60 border-border text-text-secondary'}`
+          return item.nav ? (
+            <button key={i} onClick={() => navigateTo({ view: item.nav! })} className={`${cls} hover:brightness-95 transition-all`}>
+              <Icon size={13} className={item.urgent ? 'text-amber-500' : 'text-text-tertiary'} />
+              {item.text}
+              <ArrowRight size={11} className="opacity-60" />
+            </button>
+          ) : (
+            <div key={i} className={cls}>
+              <Icon size={13} className={item.urgent ? 'text-amber-500' : 'text-text-tertiary'} />
+              {item.text}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden">
@@ -890,9 +916,14 @@ function SharedCalendar() {
   const [editEvent, setEditEvent] = useState<any>(null)
 
   const y = cur.getFullYear(), m = cur.getMonth()
-  const first = new Date(y, m, 1).getDay()
-  const days = new Date(y, m + 1, 0).getDate()
   const today = getKSTDateString()
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  const dayN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`
+  // Second visible month
+  const nextM = new Date(y, m + 1, 1)
+  const y2 = nextM.getFullYear(), m2 = nextM.getMonth()
+  const headerLabel = y === y2 ? `${months[m]} – ${months[m2]} ${y}` : `${months[m]} ${y} – ${months[m2]} ${y2}`
 
   const [tableError, setTableError] = useState(false)
   const loadRef = useRef(0)
@@ -900,9 +931,11 @@ function SharedCalendar() {
   const load = useCallback(async () => {
     const token = ++loadRef.current
     setLoading(true)
-    const s = `${y}-${String(m+1).padStart(2,'0')}-01`
-    const e = `${y}-${String(m+1).padStart(2,'0')}-${String(days).padStart(2,'0')}`
-    const { data, error } = await supabase.from('calendar_events').select('*').gte('date', s).lte('date', e).order('date')
+    // Fetch across both visible months, plus a month of lead-in so multi-day
+    // events that start shortly before the window still render inside it.
+    const bufferStart = fmt(new Date(y, m - 1, 1))
+    const windowEnd = fmt(new Date(y, m + 2, 0))
+    const { data, error } = await supabase.from('calendar_events').select('*').gte('date', bufferStart).lte('date', windowEnd).order('date')
     if (token !== loadRef.current) return // stale request, discard
     if (error) {
       console.warn('Calendar table error:', error.message)
@@ -912,11 +945,12 @@ function SharedCalendar() {
       setTableError(false)
     }
     setLoading(false)
-  }, [y, m, days])
+  }, [y, m])
 
   useEffect(() => { load() }, [load])
 
-  const dayEvts = (d: string) => events.filter((e: any) => e.date === d)
+  // An event covers every day in [date, end_date] (end_date null = single day)
+  const dayEvts = (d: string) => events.filter((e: any) => d >= e.date && d <= (e.end_date || e.date))
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this event?')) return
@@ -924,14 +958,53 @@ function SharedCalendar() {
     showToast('Deleted'); load()
   }
 
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
-  const dayN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  const renderMonth = (gy: number, gm: number) => {
+    const first = new Date(gy, gm, 1).getDay()
+    const days = new Date(gy, gm + 1, 0).getDate()
+    return (
+      <div>
+        <div className="text-center text-[12px] font-semibold text-navy mb-2">{months[gm]} {gy}</div>
+        <div className="grid grid-cols-7 mb-1">
+          {dayN.map(d => <div key={d} className="text-center text-[9px] uppercase tracking-wider text-text-tertiary font-semibold py-0.5">{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
+          {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} className="bg-surface-alt/50 min-h-[76px]" />)}
+          {Array.from({ length: days }).map((_, i) => {
+            const d = i + 1
+            const dateStr = fmt(new Date(gy, gm, d))
+            const evts = dayEvts(dateStr)
+            const isToday = dateStr === today
+            const isSelected = dateStr === selDay
+            const isWeekend = [0, 6].includes(new Date(gy, gm, d).getDay())
+            return (
+              <div key={d} onClick={() => setSelDay(dateStr)}
+                className={`bg-surface min-h-[76px] p-1 cursor-pointer transition-all hover:bg-accent-light/50 ${isSelected ? 'ring-2 ring-navy ring-inset' : ''} ${isWeekend ? 'bg-surface-alt/30' : ''}`}>
+                <div className={`text-[10px] font-medium mb-0.5 w-5 h-5 flex items-center justify-center rounded-full ${isToday ? 'bg-navy text-white' : 'text-text-primary'}`}>{d}</div>
+                <div className="space-y-0.5">
+                  {evts.slice(0, 2).map(ev => {
+                    const typeInfo = EVENT_TYPES.find(t => t.value === ev.type)
+                    return (
+                      <div key={ev.id} className="text-[8px] px-1 py-0.5 rounded truncate font-medium" style={{ backgroundColor: `${typeInfo?.color || '#6B7280'}20`, color: typeInfo?.color || '#6B7280' }}>
+                        {ev.title}
+                      </div>
+                    )
+                  })}
+                  {evts.length > 2 && <div className="text-[8px] text-text-tertiary text-center">+{evts.length - 2}</div>}
+                </div>
+              </div>
+            )
+          })}
+          {Array.from({ length: (7 - (first + days) % 7) % 7 }).map((_, i) => <div key={`t${i}`} className="bg-surface-alt/50 min-h-[76px]" />)}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden card-hover">
       <div className="px-5 py-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="font-display text-[16px] font-semibold text-navy">{months[m]} {y}</h3>
+          <h3 className="font-display text-[16px] font-semibold text-navy">{headerLabel}</h3>
           <div className="flex items-center gap-1">
             <button onClick={() => setCur(new Date(y, m-1, 1))} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronLeft size={16} /></button>
             <button onClick={() => setCur(new Date(y, m+1, 1))} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronRight size={16} /></button>
@@ -959,40 +1032,11 @@ function SharedCalendar() {
         </div>
       )}
 
-      {/* Calendar Grid */}
+      {/* Two-month grid */}
       <div className="p-4">
-        <div className="grid grid-cols-7 mb-1">
-          {dayN.map(d => <div key={d} className="text-center text-[10px] uppercase tracking-wider text-text-tertiary font-semibold py-1">{d}</div>)}
-        </div>
-        <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
-          {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} className="bg-surface-alt/50 min-h-[90px]" />)}
-          {Array.from({ length: days }).map((_, i) => {
-            const d = i + 1
-            const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-            const evts = dayEvts(dateStr)
-            const isToday = dateStr === today
-            const isSelected = dateStr === selDay
-            const isWeekend = new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6
-
-            return (
-              <div key={d} onClick={() => setSelDay(dateStr)}
-                className={`bg-surface min-h-[90px] p-1.5 cursor-pointer transition-all hover:bg-accent-light/50 ${isSelected ? 'ring-2 ring-navy ring-inset' : ''} ${isWeekend ? 'bg-surface-alt/30' : ''}`}>
-                <div className={`text-[11px] font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-navy text-white' : 'text-text-primary'}`}>{d}</div>
-                <div className="space-y-0.5">
-                  {evts.slice(0, 3).map(ev => {
-                    const typeInfo = EVENT_TYPES.find(t => t.value === ev.type)
-                    return (
-                      <div key={ev.id} className="text-[9px] px-1 py-0.5 rounded truncate font-medium" style={{ backgroundColor: `${typeInfo?.color || '#6B7280'}20`, color: typeInfo?.color || '#6B7280' }}>
-                        {ev.title}
-                      </div>
-                    )
-                  })}
-                  {evts.length > 3 && <div className="text-[9px] text-text-tertiary text-center">+{evts.length - 3} more</div>}
-                </div>
-              </div>
-            )
-          })}
-          {Array.from({ length: (7 - (first + days) % 7) % 7 }).map((_, i) => <div key={`t${i}`} className="bg-surface-alt/50 min-h-[90px]" />)}
+        <div className="grid grid-cols-2 gap-4">
+          {renderMonth(y, m)}
+          {renderMonth(y2, m2)}
         </div>
       </div>
 
@@ -1018,9 +1062,12 @@ function SharedCalendar() {
                   <div key={ev.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-surface-alt/30">
                     <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: typeInfo?.color || '#6B7280' }} />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[13px] font-medium">{ev.title}</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${typeInfo?.bg || 'bg-gray-100 text-gray-700'}`}>{typeInfo?.label || ev.type}</span>
+                        {(ev as any).end_date && (ev as any).end_date > ev.date && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-navy/10 text-navy font-medium">{ev.date} → {(ev as any).end_date}</span>
+                        )}
                       </div>
                       {ev.description && <p className="text-[11px] text-text-secondary mt-0.5">{ev.description}</p>}
                       <div className="flex gap-1.5 mt-1">
@@ -1049,6 +1096,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
   const { currentTeacher, showToast } = useApp()
   const [title, setTitle] = useState(existingEvent?.title || '')
   const [eventDate, setEventDate] = useState(existingEvent?.date || date)
+  const [endDate, setEndDate] = useState(existingEvent?.end_date || '')
   const [type, setType] = useState(existingEvent?.type || 'event')
   const [desc, setDesc] = useState(existingEvent?.description || '')
   const [showOnParentCalendar, setShowOnParentCalendar] = useState(existingEvent?.show_on_parent_calendar || false)
@@ -1065,6 +1113,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
     setSaving(true)
     const payload: any = {
       title: title.trim(), date: eventDate, type, description: desc.trim(),
+      end_date: endDate && endDate > eventDate ? endDate : null,
       show_on_parent_calendar: showOnParentCalendar,
       target_grades: showOnParentCalendar && targetGrades.length > 0 ? targetGrades : null,
     }
@@ -1080,7 +1129,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
 
     // If columns don't exist, retry without them and warn
     if (error && (error.code === '42703' || error.message?.includes('column') || error.message?.includes('schema'))) {
-      const { show_on_parent_calendar, target_grades, ...basePayload } = payload
+      const { show_on_parent_calendar, target_grades, end_date, ...basePayload } = payload
       if (isEdit) {
         const res = await supabase.from('calendar_events').update(basePayload).eq('id', existingEvent.id)
         error = res.error
@@ -1088,7 +1137,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
         const res = await supabase.from('calendar_events').insert({ ...basePayload, created_by: currentTeacher?.id || null })
         error = res.error
       }
-      if (!error) showToast('Saved -- run add_parent_calendar_fields.sql to enable parent calendar features')
+      if (!error) showToast('Saved — run the calendar migrations (parent-calendar + end_date) to enable multi-day and parent-calendar features')
     }
 
     setSaving(false)
@@ -1108,14 +1157,20 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
             <input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="e.g. Phonics Unit 3 Lesson Plan" autoFocus
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
-              <input type="date" value={eventDate} onChange={(e: any) => setEventDate(e.target.value)}
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Start date</label>
+              <input type="date" value={eventDate} onChange={(e: any) => { setEventDate(e.target.value); if (endDate && endDate < e.target.value) setEndDate('') }}
                 className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
-              <select value={type} onChange={(e: any) => setType(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none">
-                {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select></div>
+            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">End date <span className="normal-case text-text-tertiary">(opt)</span></label>
+              <input type="date" value={endDate} min={eventDate} onChange={(e: any) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
           </div>
+          {endDate && endDate > eventDate && (
+            <p className="text-[10px] text-navy -mt-1">Multi-day event — shows on every day from {eventDate} to {endDate}.</p>
+          )}
+          <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
+            <select value={type} onChange={(e: any) => setType(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none">
+              {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select></div>
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Description <span className="normal-case text-text-tertiary">(opt)</span></label>
             <textarea value={desc} onChange={(e: any) => setDesc(e.target.value)} rows={2} placeholder="Details..."
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
