@@ -1133,25 +1133,33 @@ function reportCardCss(batch: boolean): string {
   @media print{@page{size:A4;margin:8mm}body{padding:0}.card{height:281mm;margin:0;box-shadow:none;border-radius:0}}`
 }
 
-// Shrinks each comment box's font until it fits its (page-bounded) box, then optionally prints.
+// Fits each comment's font to its page-bounded box, then optionally prints.
+// Runs after fonts + layout have settled and leaves a safety margin, because the
+// print raster can render a hair taller than the on-screen measurement — without
+// the margin an off-by-one-line overflow gets clipped by the fixed-height card.
 function reportCardShrinkScript(autoPrint: boolean): string {
   return `<script>
-  window.addEventListener('load', function(){
+  function fitComments(){
     document.querySelectorAll('.cmt').forEach(function(box){
       var body = box.querySelector('.cmt-body'); if (!body) return;
-      // Available inner height of the (flex-filled, page-bounded) box, minus padding.
-      // We size the TEXT element — measuring the box's own scrollHeight is unreliable
-      // because a flex-grown box reports scrollHeight === clientHeight until it overflows.
-      var avail = box.clientHeight - 32;
+      // Available inner height of the (flex-filled, page-bounded) box, minus padding,
+      // minus a safety margin (~1.5 lines) so print rounding can never clip the last line.
+      // We size the TEXT element — a flex-grown box reports scrollHeight === clientHeight
+      // until it actually overflows, so the box's own scrollHeight can't be measured.
+      var SAFE = 22;
+      var target = box.clientHeight - 32 - SAFE;
       var fs = parseFloat(getComputedStyle(body).fontSize) || 16, g = 0;
       // Grow the text to fill the box (kills dead space under short comments)
-      while (body.scrollHeight <= avail - 4 && fs < 24 && g < 80) { fs += 0.5; body.style.fontSize = fs + 'px'; g++; }
-      // Shrink until a long comment fits — the footer must never be pushed off the
-      // page, so shrink down to a small floor rather than overflow.
+      while (body.scrollHeight <= target && fs < 24 && g < 80) { fs += 0.5; body.style.fontSize = fs + 'px'; g++; }
+      // Shrink until the text fits within target — down to a small floor rather than overflow
       g = 0;
-      while (body.scrollHeight > avail - 2 && fs > 8 && g < 200) { fs -= 0.5; body.style.fontSize = fs + 'px'; body.style.lineHeight = (fs > 12 ? 1.5 : 1.4).toString(); g++; }
+      while (body.scrollHeight > target && fs > 8 && g < 200) { fs -= 0.5; body.style.fontSize = fs + 'px'; body.style.lineHeight = (fs > 12 ? 1.5 : 1.4).toString(); g++; }
     });
     ${autoPrint ? 'setTimeout(function(){ window.print(); }, 80);' : ''}
+  }
+  window.addEventListener('load', function(){
+    var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+    ready.then(function(){ requestAnimationFrame(function(){ requestAnimationFrame(fitComments); }); });
   });
   </script>`
 }
