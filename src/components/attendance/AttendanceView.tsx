@@ -20,6 +20,28 @@ const STATUS_CONFIG: Record<Status, { label: string; labelKo: string; icon: type
   tardy: { label: 'Tardy', labelKo: '지각', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100 border-amber-300 text-amber-700', short: 'T' },
 }
 
+// Fetch every attendance row for the given students + date range, paging past
+// PostgREST's default 1000-row cap. Without this, a whole-class month (or a
+// multi-month print) can exceed 1000 rows and silently drop records, making
+// dates that DO have attendance render as unmarked/partial in the month view.
+async function fetchAllAttendance(
+  ids: string[], startKey: string, endKey: string, columns = '*'
+): Promise<any[]> {
+  if (ids.length === 0) return []
+  const PAGE = 1000
+  const all: any[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase.from('attendance').select(columns)
+      .in('student_id', ids).gte('date', startKey).lte('date', endKey)
+      .order('date', { ascending: true }).order('student_id', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error || !data || data.length === 0) break
+    all.push(...data)
+    if (data.length < PAGE) break
+  }
+  return all
+}
+
 export default function AttendanceView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
@@ -274,9 +296,8 @@ export default function AttendanceView() {
     const ids = (roster || []).map((s: any) => s.id)
     const sum: Record<string, { count: number; present: number; absent: number; tardy: number }> = {}
     if (ids.length > 0) {
-      const { data } = await supabase.from('attendance').select('date, status, student_id')
-        .in('student_id', ids).gte('date', startKey).lte('date', endKey)
-      ;(data || []).forEach((r: any) => {
+      const data = await fetchAllAttendance(ids, startKey, endKey, 'date, status, student_id')
+      data.forEach((r: any) => {
         const g = studentGrade[r.student_id]
         if (g == null) return
         const k = `${g}::${r.date}`
@@ -412,10 +433,9 @@ export default function AttendanceView() {
       }
     }
 
-    const { data: monthData } = await supabase.from('attendance').select('*')
-      .in('student_id', students.map((s: any) => s.id)).gte('date', startDate).lte('date', endDate)
+    const monthData = await fetchAllAttendance(students.map((s: any) => s.id), startDate, endDate)
     const lookup: Record<string, Record<string, string>> = {}
-    if (monthData) monthData.forEach((r: any) => { if (!lookup[r.student_id]) lookup[r.student_id] = {}; lookup[r.student_id][r.date] = r.status })
+    monthData.forEach((r: any) => { if (!lookup[r.student_id]) lookup[r.student_id] = {}; lookup[r.student_id][r.date] = r.status })
 
     // Group columns by month so we can render a month-spanning header row when the print covers multiple months
     const monthGroups: { label: string; span: number }[] = []
