@@ -1067,7 +1067,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
 export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
   levelTest: LevelTest; isAdmin: boolean; teacherClass: EnglishClass | null
 }) {
-  const { currentTeacher } = useApp()
+  const { currentTeacher, confirmDialog } = useApp()
   const grade = Number(levelTest.grade)
   const config = getGradeConfig(grade)
 
@@ -1192,7 +1192,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
   // Clear student — removes written keys from DB, preserves oral keys
   const clearStudent = useCallback(async () => {
     if (!student) return
-    if (!confirm(`Clear all written test scores for ${student.english_name || student.korean_name}? This cannot be undone.`)) return
+    if (!await confirmDialog({ title: `Clear written test scores for ${student.english_name || student.korean_name}?`, message: 'This cannot be undone.', danger: true, confirmLabel: 'Clear scores' })) return
     setScores(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
     setSavedSnapshot(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
     try {

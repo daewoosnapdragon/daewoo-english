@@ -303,6 +303,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
 function StudentReadingView({ students, selectedStudentId, setSelectedStudentId, lang, grade, onAddRecord }: {
   students: any[]; selectedStudentId: string | null; setSelectedStudentId: (id: string | null) => void; lang: LangKey; grade: number; onAddRecord: (sid: string) => void
 }) {
+  const { confirmDialog } = useApp()
   const [records, setRecords] = useState<ReadingRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [classBench, setClassBench] = useState<any>(null)
@@ -377,7 +378,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
   const [detailRecord, setDetailRecord] = useState<any>(null)
 
   const handleDeleteRecord = async (id: string) => {
-    if (!confirm('Delete this reading record?')) return
+    if (!await confirmDialog({ title: 'Delete this reading record?', danger: true, confirmLabel: 'Delete' })) return
     await supabase.from('reading_assessments').delete().eq('id', id)
     setRecords(prev => prev.filter(r => r.id !== id))
   }
@@ -767,7 +768,7 @@ function CwpmLineChart({ records, classBench }: { records: any[]; classBench: an
 function FluencyGroups({ students, loading, lang, grade }: {
   students: any[]; loading: boolean; lang: LangKey; grade: number
 }) {
-  const { currentTeacher, showToast } = useApp()
+  const { currentTeacher, showToast, confirmDialog } = useApp()
   const selectedClass = (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as string
   const [latestRecords, setLatestRecords] = useState<Record<string, ReadingRecord>>({})
   const [loadingRecords, setLoadingRecords] = useState(true)
@@ -818,7 +819,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
   }
 
   const deleteSubgroup = async (id: string) => {
-    if (!confirm('Delete this subgroup? Students will be unassigned.')) return
+    if (!await confirmDialog({ title: 'Delete this subgroup?', message: 'Students in it will be unassigned.', danger: true, confirmLabel: 'Delete' })) return
     await supabase.from('fluency_subgroups').delete().eq('id', id)
     setSubgroups(prev => prev.filter(s => s.id !== id))
     setMembers(prev => { const n = { ...prev }; Object.keys(n).forEach(k => { if (n[k] === id) delete n[k] }); return n })
@@ -1565,7 +1566,7 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
 // ─── Passage Library ──────────────────────────────────────────────
 
 function PassageLibrary({ lang }: { lang: LangKey }) {
-  const { currentTeacher, showToast } = useApp()
+  const { currentTeacher, showToast, confirmDialog } = useApp()
   const [passages, setPassages] = useState<any[]>([])
   const [passageUsage, setPassageUsage] = useState<Record<string, any[]>>({})
   const [loading, setLoading] = useState(true)
@@ -1636,7 +1637,7 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
   }
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return
+    if (!await confirmDialog({ title: `Delete "${title}"?`, message: 'This cannot be undone.', danger: true, confirmLabel: 'Delete' })) return
     const { error } = await supabase.from('reading_passages').delete().eq('id', id)
     if (error) { showToast(`Error: ${error.message}`); return }
     setPassages(prev => prev.filter(p => p.id !== id))

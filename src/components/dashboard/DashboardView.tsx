@@ -862,7 +862,7 @@ function AdminAlertPanel() {
 
 // ─── Shared Calendar ───────────────────────────────────────────────
 function SharedCalendar() {
-  const { showToast, currentTeacher } = useApp()
+  const { showToast, currentTeacher, confirmDialog } = useApp()
   const [cur, setCur] = useState(new Date())
   const [events, setEvents] = useState<CalEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -908,7 +908,7 @@ function SharedCalendar() {
   const dayEvts = (d: string) => events.filter((e: any) => d >= e.date && d <= (e.end_date || e.date))
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this event?')) return
+    if (!await confirmDialog({ title: 'Delete this event?', danger: true, confirmLabel: 'Delete' })) return
     await supabase.from('calendar_events').delete().eq('id', id)
     showToast('Deleted'); load()
   }

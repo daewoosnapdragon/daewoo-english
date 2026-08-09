@@ -171,7 +171,7 @@ function LevelingView() {
 // ─── Emergency Leveling (Grade 1 Only) ──────────────────────────────
 
 function EmergencyLeveling() {
-  const { showToast, currentTeacher } = useApp()
+  const { showToast, currentTeacher, confirmDialog } = useApp()
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedStudent, setSelectedStudent] = useState<string>('')
@@ -198,7 +198,7 @@ function EmergencyLeveling() {
     const oldClass = student.english_class
     if (oldClass === newClass) { showToast('Student is already in that class'); return }
 
-    if (!confirm(`Move ${student.english_name} from ${oldClass} to ${newClass}?\n\nReason: ${reason}`)) return
+    if (!await confirmDialog({ title: `Move ${student.english_name} from ${oldClass} to ${newClass}?`, message: `Reason: ${reason}`, confirmLabel: 'Move student' })) return
 
     setSaving(true)
     // Update student class
@@ -1361,7 +1361,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
 // ─── Meeting Phase ──────────────────────────────────────────────────
 
 function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinalize: () => void }) {
-  const { showToast, currentTeacher } = useApp()
+  const { showToast, currentTeacher, confirmDialog } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
   const isLeadTeacher = isAdmin || currentTeacher?.is_head_teacher || currentTeacher?.english_class === 'Snapdragon'
   const [students, setStudents] = useState<Student[]>([])
@@ -1501,8 +1501,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
     return result
   }, [rows])
 
-  const resetToCurrentClasses = () => {
-    if (!confirm('Reset all students to their current class assignments? Any manual moves will be undone.')) return
+  const resetToCurrentClasses = async () => {
+    if (!await confirmDialog({ title: 'Reset all students to their current classes?', message: 'Any manual moves will be undone.', danger: true, confirmLabel: 'Reset' })) return
     const pm: Record<string, EnglishClass> = {}
     students.forEach((s: any) => { pm[s.id] = s.english_class })
     setPlacements(pm)
@@ -1529,7 +1529,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   }
 
   const handleFinalize = async () => {
-    if (!confirm('Finalize placements? This will update all student class assignments. This will merge your moves with other teachers\' saved moves.')) return
+    if (!await confirmDialog({ title: 'Finalise placements?', message: 'This updates every student\'s class assignment and merges your moves with other teachers\' saved moves.', confirmLabel: 'Finalise' })) return
     setSaving(true)
     // 1. Save our dirty moves first
     await handleSave()

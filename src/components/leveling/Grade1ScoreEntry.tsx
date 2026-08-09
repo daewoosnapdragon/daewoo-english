@@ -795,7 +795,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   isAdmin: boolean
   teacherClass?: EnglishClass | null
 }) {
-  const { showToast, currentTeacher } = useApp()
+  const { showToast, currentTeacher, confirmDialog } = useApp()
   const [students, setStudents] = useState<Student[]>([])
   const [scores, setScores] = useState<Record<string, G1Scores>>({})
   const [loading, setLoading] = useState(true)
@@ -1031,7 +1031,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
 
   // Clear all oral data for a student (keep written + teacher fields)
   const clearOralData = useCallback(async (sid: string, name: string) => {
-    if (!confirm(`Clear ALL oral test scores for ${name}? This includes passage data and all previous attempts. This cannot be undone.`)) return
+    if (!await confirmDialog({ title: `Clear all oral test scores for ${name}?`, message: 'This includes passage data and every previous attempt. It cannot be undone.', danger: true, confirmLabel: 'Clear scores' })) return
     // Clear local state: keep only non-oral keys
     setScores(prev => {
       const current = prev[sid] || {}
@@ -2485,6 +2485,7 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
   onClearOral: (sid: string, name: string) => Promise<void>
   onRestoreAttempt: (sid: string, attemptIdx: number) => void
 }) {
+  const { confirmDialog } = useApp()
   const student = students[selectedIdx]
   if (!student) return <div className="p-8 text-center text-text-tertiary">No students found.</div>
 
@@ -2605,10 +2606,10 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
             <label className="text-[11px] font-medium text-text-secondary block mb-2">Passage Level</label>
             <div className="flex gap-2">
               {(['A', 'B', 'C', 'D', 'E', 'F'] as PassageLevel[]).map(level => (
-                <button key={level} onClick={() => {
+                <button key={level} onClick={async () => {
                   if (passageLevel && level !== passageLevel) {
                     const hasData = ['o_orf_raw', 'o_orf_words_read', 'o_comp_q1', 'o_a_q1', 'o_a_q2', 'o_a_q3'].some(f => (sc as any)[f] != null)
-                    if (hasData && !confirm(`Switch from Level ${passageLevel} to Level ${level}? Current scores will be archived. Only the last level attempted is used for scoring.`)) return
+                    if (hasData && !await confirmDialog({ title: `Switch from Level ${passageLevel} to Level ${level}?`, message: 'Current scores will be archived. Only the last level attempted counts towards scoring.', confirmLabel: 'Switch' })) return
                   }
                   updateScore(student.id, 'o_passage_level', level)
                 }}
@@ -2629,8 +2630,8 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
               <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (click to restore)</p>
               <div className="flex gap-2 flex-wrap">
                 {(sc as any).passages_attempted.map((att: any, i: number) => (
-                  <button key={i} onClick={() => {
-                    if (!confirm(`Restore Level ${att.level} attempt? Current passage data will be swapped into the archive.`)) return
+                  <button key={i} onClick={async () => {
+                    if (!await confirmDialog({ title: `Restore the Level ${att.level} attempt?`, message: 'Current passage data will be swapped into the archive.', confirmLabel: 'Restore' })) return
                     onRestoreAttempt(student.id, i)
                   }}
                     className="inline-flex items-center gap-1.5 text-[10px] text-amber-800 bg-amber-100/60 hover:bg-amber-200/80 border border-amber-200 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer">

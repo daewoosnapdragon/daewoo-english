@@ -508,6 +508,7 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
   onClose: () => void
   initialData?: { wordsRead?: number | null; errors?: number | null; timeSeconds?: number | null }
 }) {
+  const { confirmDialog } = useApp()
   const words = passage.text.split(/\s+/)
   const [wordMarks, setWordMarks] = useState<Record<number, 'error' | 'self_correct' | null>>({})
   const [lastWordIdx, setLastWordIdx] = useState<number | null>(null)
@@ -582,9 +583,9 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
   // Detect whether the teacher has done anything worth keeping
   const hasUnsavedData = timing || elapsed > 0 || Object.keys(wordMarks).length > 0 || lastWordIdx !== null || notes.length > 0
 
-  const handleClose = () => {
+  const handleClose = async () => {
     if (!hasUnsavedData) { onClose(); return }
-    if (confirm('You have unsaved reading data. Close without saving?')) onClose()
+    if (await confirmDialog({ title: 'Close without saving?', message: 'You have unsaved reading data.', danger: true, confirmLabel: 'Discard' })) onClose()
   }
 
   // Split words into lines of 10
@@ -926,7 +927,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   teacherClass: EnglishClass | null
   isAdmin: boolean
 }) {
-  const { showToast, currentTeacher } = useApp()
+  const { showToast, currentTeacher, confirmDialog } = useApp()
   const [students, setStudents] = useState<Student[]>([])
   const [scores, setScores] = useState<Record<string, OralScores>>({})
   const [loading, setLoading] = useState(true)
@@ -1182,7 +1183,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
 
   // Clear oral data — removes oral keys from DB, preserves written keys
   const clearStudent = async (sid: string, name: string) => {
-    if (!confirm(`Clear all oral test scores for ${name}? This cannot be undone.`)) return
+    if (!await confirmDialog({ title: `Clear oral test scores for ${name}?`, message: 'This cannot be undone.', danger: true, confirmLabel: 'Clear scores' })) return
     setScores(prev => ({ ...prev, [sid]: {} }))
     setSavedSnapshot(prev => ({ ...prev, [sid]: {} }))
     try {
@@ -1403,9 +1404,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     {(['A', 'B', 'C', 'D', 'E'] as PassageLevel[]).map(level => {
                       const p = config.passages[level]
                       return (
-                        <button key={level} onClick={() => {
+                        <button key={level} onClick={async () => {
                           if (passageLevel && level !== passageLevel && PASSAGE_FIELDS.some(f => sc[f] != null)) {
-                            if (!confirm(`Switch from passage ${passageLevel} to ${level}? Current scores will be archived and a fresh entry started.`)) return
+                            if (!await confirmDialog({ title: `Switch from passage ${passageLevel} to ${level}?`, message: 'Current scores will be archived and a fresh entry started.', confirmLabel: 'Switch' })) return
                           }
                           updateScore(student.id, 'passage_level', level)
                         }}
@@ -1429,8 +1430,8 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       <p className="text-[9px] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (click to restore)</p>
                       <div className="flex gap-2 flex-wrap">
                         {sc.passages_attempted.map((att: any, i: number) => (
-                          <button key={i} onClick={() => {
-                            if (!confirm(`Restore Level ${att.level} attempt? Current passage data will be swapped into the archive.`)) return
+                          <button key={i} onClick={async () => {
+                            if (!await confirmDialog({ title: `Restore the Level ${att.level} attempt?`, message: 'Current passage data will be swapped into the archive.', confirmLabel: 'Restore' })) return
                             restoreAttempt(student.id, i)
                           }}
                             className="inline-flex items-center gap-1.5 text-[10px] text-amber-800 bg-amber-100/60 hover:bg-amber-200/80 border border-amber-200 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer">

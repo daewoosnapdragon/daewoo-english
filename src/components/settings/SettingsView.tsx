@@ -251,7 +251,7 @@ function TeacherSection() {
 }
 
 function SemesterSection() {
-  const { language, showToast } = useApp()
+  const { language, showToast, confirmDialog } = useApp()
   const lang = language as 'en' | 'ko'
   const [semesters, setSemesters] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -331,7 +331,7 @@ function SemesterSection() {
     const msg = total > 0
       ? `This semester has linked data:\n- ${counts.semester_grades} grade(s)\n- ${counts.summative_scores} summative score(s)\n- ${counts.comments} comment(s)\n- ${counts.assessments} assessment(s)\n\nAll linked data will be deleted. Continue?`
       : 'Delete this semester?'
-    if (!confirm(msg)) return
+    if (!await confirmDialog({ title: 'Delete this semester?', message: total > 0 ? msg : undefined, danger: true, confirmLabel: 'Delete' })) return
 
     // Delete all linked records first (order matters for FKs)
     if (counts.semester_grades > 0) await supabase.from('semester_grades').delete().eq('semester_id', id)
@@ -697,7 +697,7 @@ function ProgramBenchmarksSection() {
 }
 
 function ClassManagementSection() {
-  const { showToast, language } = useApp()
+  const { showToast, language, confirmDialog } = useApp()
   const [classes, setClasses] = useState<{ english_class: string; count: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -723,9 +723,9 @@ function ClassManagementSection() {
     }
     const classData = classes.find(c => c.english_class === cls)
     if (classData && classData.count > 0) {
-      if (!confirm(`"${cls}" has ${classData.count} active student(s). Deleting will deactivate all students in this class. This cannot be undone. Continue?`)) return
+      if (!await confirmDialog({ title: `Delete class "${cls}"?`, message: `${classData.count} active student(s) will be deactivated. This cannot be undone.`, danger: true, confirmLabel: 'Delete class' })) return
     } else {
-      if (!confirm(`Delete class "${cls}"? All associated data (grades, attendance, behavior logs) for students in this class will remain but students will be deactivated.`)) return
+      if (!await confirmDialog({ title: `Delete class "${cls}"?`, message: 'Students will be deactivated. Their grades, attendance and behaviour logs are kept.', danger: true, confirmLabel: 'Delete class' })) return
     }
     setDeleting(cls)
     // Deactivate students in this class

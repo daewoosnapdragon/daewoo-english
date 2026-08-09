@@ -76,7 +76,7 @@ export default function CurriculumView() {
 
 // ─── WIDA STUDENT PROFILES ──────────────────────────────────────────
 export function WIDAProfiles() {
-  const { currentTeacher, showToast } = useApp()
+  const { currentTeacher, showToast, confirmDialog, promptDialog } = useApp()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Admin'
   const [cls, setCls] = useState<EnglishClass>((currentTeacher?.english_class as EnglishClass) || 'Snapdragon')
   const [gr, setGr] = useState<Grade>(3)
@@ -125,7 +125,7 @@ export function WIDAProfiles() {
   }, [cls, gr])
 
   const saveSnapshot = async () => {
-    const label = prompt('Snapshot label (e.g. "Midterm Spring 2026"):')
+    const label = await promptDialog({ title: 'Name this snapshot', message: 'A label helps you find it later.', placeholder: 'e.g. Midterm Spring 2026', confirmLabel: 'Create snapshot' })
     if (!label) return
     const { error } = await supabase.from('wida_snapshots').insert({
       english_class: cls, student_grade: gr, label,
@@ -147,7 +147,7 @@ export function WIDAProfiles() {
   }
 
   const deleteSnapshot = async (id: string) => {
-    if (!confirm('Delete this WIDA snapshot? This cannot be undone.')) return
+    if (!await confirmDialog({ title: 'Delete this WIDA snapshot?', message: 'This cannot be undone.', danger: true, confirmLabel: 'Delete' })) return
     const { error } = await supabase.from('wida_snapshots').delete().eq('id', id)
     if (error) { showToast(`Error: ${error.message}`); return }
     showToast('Snapshot deleted')

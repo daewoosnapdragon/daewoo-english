@@ -422,7 +422,7 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
 // ─── Review Queue ───────────────────────────────────────────────────
 
 function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete: () => void }) {
-  const { showToast } = useApp()
+  const { showToast, confirmDialog } = useApp()
   const flagged = students.filter(s => s.needs_review)
   const [edits, setEdits] = useState<Record<string, Partial<Student>>>({})
   const [saving, setSaving] = useState<string | null>(null)
@@ -453,7 +453,7 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
   }
 
   const clearAllFlags = async () => {
-    if (!confirm(`Clear review flag from all ${flagged.length} students? This won't change any student info, just removes the flag.`)) return
+    if (!await confirmDialog({ title: `Clear the review flag from ${flagged.length} students?`, message: 'No student information changes -- this only removes the flag.', confirmLabel: 'Clear flags' })) return
     setClearingAll(true)
     const ids = flagged.map(s => s.id)
     const { error } = await supabase.from('students').update({ needs_review: false, updated_at: new Date().toISOString() }).in('id', ids)
@@ -1191,7 +1191,7 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
 // ─── Student Modal (BIGGER) ─────────────────────────────────────────
 
 function StudentModal({ student, onClose, onUpdated }: { student: Student; onClose: () => void; onUpdated: (s: Student) => void }) {
-  const { language, showToast } = useApp()
+  const { language, showToast, confirmDialog } = useApp()
   const { updateStudent } = useStudentActions()
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<any>({
@@ -1224,7 +1224,7 @@ function StudentModal({ student, onClose, onUpdated }: { student: Student; onClo
       ? `Delete ${student.english_name}?\n\nThis will permanently remove ${total} linked records:\n${details}\n\nThis cannot be undone.`
       : `Delete ${student.english_name}? This cannot be undone.`
     
-    if (!confirm(msg)) return
+    if (!await confirmDialog({ title: `Delete ${student.english_name}?`, message: total > 0 ? `This permanently removes ${total} linked records:\n${details}\n\nThis cannot be undone.` : 'This cannot be undone.', danger: true, confirmLabel: 'Delete' })) return
 
     setDeleting(true)
     const { error } = await supabase.from('students').delete().eq('id', student.id)

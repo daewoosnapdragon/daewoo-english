@@ -1,8 +1,9 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react'
 import { Teacher, Semester, Language } from '@/types'
 import { translations } from '@/i18n/translations'
+import ConfirmDialog, { DialogRequest } from '@/components/ui/ConfirmDialog'
 
 export interface NavigationTarget {
   view: string
@@ -27,6 +28,10 @@ interface AppContextType {
   navigateTo: (target: NavigationTarget) => void
   pendingNavigation: NavigationTarget | null
   clearNavigation: () => void
+  /** Themed replacement for window.confirm. Resolves true if accepted. */
+  confirmDialog: (opts: Omit<DialogRequest, 'kind'>) => Promise<boolean>
+  /** Themed replacement for window.prompt. Resolves null if cancelled. */
+  promptDialog: (opts: Omit<DialogRequest, 'kind'>) => Promise<string | null>
 }
 
 const AppContext = createContext<AppContextType | null>(null)
@@ -38,6 +43,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<string | null>(null)
   const [theme, setThemeState] = useState<'light' | 'dark'>('light')
   const [pendingNavigation, setPendingNavigation] = useState<NavigationTarget | null>(null)
+
+  // One dialog at a time; the pending promise's resolver is held in a ref so
+  // the call site can simply `await` the user's answer.
+  const [dialog, setDialog] = useState<DialogRequest | null>(null)
+  const dialogResolver = useRef<((v: boolean | string | null) => void) | null>(null)
+
+  const openDialog = useCallback((req: DialogRequest) => {
+    // If something is already open, resolve it as cancelled rather than
+    // stranding the awaiting caller forever.
+    dialogResolver.current?.(req.kind === 'prompt' ? null : false)
+    setDialog(req)
+    return new Promise<boolean | string | null>(resolve => { dialogResolver.current = resolve })
+  }, [])
+
+  const resolveDialog = useCallback((value: boolean | string | null) => {
+    const resolve = dialogResolver.current
+    dialogResolver.current = null
+    setDialog(null)
+    resolve?.(value)
+  }, [])
+
+  const confirmDialog = useCallback(
+    (opts: Omit<DialogRequest, 'kind'>) => openDialog({ ...opts, kind: 'confirm' }) as Promise<boolean>,
+    [openDialog])
+
+  const promptDialog = useCallback(
+    (opts: Omit<DialogRequest, 'kind'>) => openDialog({ ...opts, kind: 'prompt' }) as Promise<string | null>,
+    [openDialog])
 
   const navigateTo = useCallback((target: NavigationTarget) => {
     setPendingNavigation(target)
@@ -78,8 +111,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       theme, setTheme,
       t, showToast, toast,
       navigateTo, pendingNavigation, clearNavigation,
+      confirmDialog, promptDialog,
     }}>
       {children}
+      {dialog && <ConfirmDialog request={dialog} onResolve={resolveDialog} />}
     </AppContext.Provider>
   )
 }

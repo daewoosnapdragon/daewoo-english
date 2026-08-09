@@ -47,7 +47,7 @@ const LOG_TYPES = [
 type LangKey = 'en' | 'ko'
 
 export default function BehaviorTracker({ studentId, studentName }: { studentId: string; studentName: string }) {
-  const { language, currentTeacher, showToast } = useApp()
+  const { language, currentTeacher, showToast, confirmDialog } = useApp()
   const lang = language as LangKey
   const [logs, setLogs] = useState<BehaviorLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,7 +72,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
   useEffect(() => { loadLogs() }, [studentId])
 
   const handleDelete = async (id: string) => {
-    if (!confirm(lang === 'ko' ? '이 기록을 삭제하시겠습니까?' : 'Delete this log entry?')) return
+    if (!await confirmDialog({ title: lang === 'ko' ? '이 기록을 삭제하시겠습니까?' : 'Delete this log entry?', danger: true, confirmLabel: lang === 'ko' ? '삭제' : 'Delete', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })) return
     const { error } = await supabase.from('behavior_logs').delete().eq('id', id)
     if (error) showToast(`Error: ${error.message}`)
     else { showToast(lang === 'ko' ? '삭제되었습니다' : 'Deleted'); loadLogs() }

@@ -57,7 +57,7 @@ type LangKey = 'en' | 'ko'
 interface Semester { id: string; name: string; name_ko: string; type: string; is_active: boolean }
 
 export default function GradesView() {
-  const { t, language, currentTeacher, showToast } = useApp()
+  const { t, language, currentTeacher, showToast, confirmDialog } = useApp()
   const lang = language as LangKey
   const [subView, setSubView] = useState<SubView>('entry')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(() => {
@@ -258,7 +258,7 @@ export default function GradesView() {
 
   const handleDeleteAssessment = async (a: Assessment) => {
     const msg = lang === 'ko' ? `"${a.name}" 평가와 모든 점수를 삭제하시겠습니까?` : `Delete "${a.name}" and all its scores? This cannot be undone.`
-    if (!confirm(msg)) return
+    if (!await confirmDialog({ title: lang === 'ko' ? `"${a.name}" 삭제` : `Delete "${a.name}"?`, message: lang === 'ko' ? '모든 점수가 함께 삭제됩니다.' : 'All its scores will be deleted. This cannot be undone.', danger: true, confirmLabel: lang === 'ko' ? '삭제' : 'Delete', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })) return
     await supabase.from('grades').delete().eq('assessment_id', a.id)
     const { error } = await supabase.from('assessments').delete().eq('id', a.id)
     if (error) { showToast(`Error: ${error.message}`) }
@@ -1293,7 +1293,7 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
 // ─── Assessment Modal ───────────────────────────────────────────────
 
 function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onClose, onSaved }: { grade: Grade; englishClass: EnglishClass; domain: Domain; editing: Assessment | null; semesterId: string | null; onClose: () => void; onSaved: (a: Assessment) => void }) {
-  const { language, currentTeacher, showToast } = useApp()
+  const { language, currentTeacher, showToast, promptDialog } = useApp()
   const lang = language as LangKey
   const [name, setName] = useState(editing?.name || '')
   const [maxScore, setMaxScore] = useState(editing?.max_score || 10)
@@ -1773,18 +1773,18 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                   <div className="flex gap-2 flex-wrap">
                     <button onClick={() => setQuestionMap([...questionMap, { num: questionMap.length + 1, type: 'mc', max_points: 1, standard: '', answer_key: '' }])}
                       className="inline-flex items-center gap-1 text-[10px] text-navy font-medium hover:text-navy-dark"><Plus size={11} /> Add Question</button>
-                    <button onClick={() => {
-                      const count = parseInt(prompt('How many MC questions to add?') || '0')
+                    <button onClick={async () => {
+                      const count = parseInt(await promptDialog({ title: 'Bulk add multiple-choice questions', message: 'Up to 50 at a time.', placeholder: 'How many?', confirmLabel: 'Add' }) || '0')
                       if (count > 0 && count <= 50) {
                         const newQs = Array.from({ length: count }, (_, i) => ({ num: questionMap.length + i + 1, type: 'mc', max_points: 1, standard: '', answer_key: '' }))
                         setQuestionMap([...questionMap, ...newQs])
                       }
                     }} className="inline-flex items-center gap-1 text-[10px] text-text-tertiary font-medium hover:text-navy"><Plus size={11} /> Bulk Add</button>
                     {standards.length > 0 && (
-                      <button onClick={() => {
-                        const rangeStr = prompt('Apply standard to which questions? (e.g. "1-5" or "all")')
+                      <button onClick={async () => {
+                        const rangeStr = await promptDialog({ title: 'Apply a standard to a range', message: 'Which questions? Enter a range like 1-5, or "all".', placeholder: 'e.g. 1-5', confirmLabel: 'Next' })
                         if (!rangeStr) return
-                        const stdCode = prompt(`Which standard?\n${standards.join(', ')}`)
+                        const stdCode = await promptDialog({ title: 'Which standard?', message: `Available: ${standards.join(', ')}`, placeholder: 'e.g. RL.3.1', confirmLabel: 'Apply' })
                         if (!stdCode || !standards.includes(stdCode)) return
                         const nm = [...questionMap]
                         if (rangeStr.toLowerCase() === 'all') {
