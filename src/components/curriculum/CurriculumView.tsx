@@ -8,6 +8,7 @@ import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { BookOpen, Users2, Loader2, Info, Save, Globe2, Trash2 } from 'lucide-react'
 import { CCSS_STANDARDS, CCSS_DOMAINS, type CCSSDomain } from './ccss-standards'
+import { invalidateWIDACache } from '@/components/shared/WIDABadge'
 import WIDAGuide from './WIDAGuide'
 
 function getAdjustedGrade(studentGrade: Grade, englishClass: EnglishClass): number {
@@ -200,6 +201,8 @@ export function WIDAProfiles() {
     if (rows.length > 0) {
       const { error } = await supabase.from('student_wida_levels').upsert(rows, { onConflict: 'student_id,domain' })
       if (error) { showToast(`Error: ${error.message}`); setSaving(false); return }
+      // Refresh the shared cache so badges elsewhere show the new levels now.
+      invalidateWIDACache()
       // Record history snapshot (non-blocking)
       supabase.from('student_wida_history').insert(historyRows).then(() => {})
     }

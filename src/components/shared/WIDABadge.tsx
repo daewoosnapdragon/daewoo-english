@@ -4,29 +4,53 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { WIDA_LEVELS } from '@/lib/wida'
 
+// WIDA levels are read by badges on nearly every student row, so they are
+// fetched once and shared rather than queried per badge. Mounted badges
+// subscribe so an edit in WIDA Profiles refreshes them immediately, instead of
+// showing stale levels until the next full page load.
 let widaCache: Record<string, Record<string, number>> = {}
 let cacheLoaded = false
+let inFlight: Promise<typeof widaCache> | null = null
+const subscribers = new Set<() => void>()
 
 export async function loadWIDACache() {
   if (cacheLoaded) return widaCache
-  const { data } = await supabase.from('student_wida_levels').select('student_id, domain, wida_level')
-  if (data) {
-    widaCache = {}
-    data.forEach((r: any) => {
-      if (!widaCache[r.student_id]) widaCache[r.student_id] = {}
-      widaCache[r.student_id][r.domain] = r.wida_level
-    })
-  }
-  cacheLoaded = true
-  return widaCache
+  // Dedupe concurrent first loads: many badges mount in the same tick.
+  if (inFlight) return inFlight
+  inFlight = (async () => {
+    const { data } = await supabase.from('student_wida_levels').select('student_id, domain, wida_level')
+    const next: Record<string, Record<string, number>> = {}
+    if (data) {
+      data.forEach((r: any) => {
+        if (!next[r.student_id]) next[r.student_id] = {}
+        next[r.student_id][r.domain] = r.wida_level
+      })
+    }
+    widaCache = next
+    cacheLoaded = true
+    inFlight = null
+    return widaCache
+  })()
+  return inFlight
+}
+
+/** Call after writing student_wida_levels so every visible badge updates. */
+export function invalidateWIDACache() {
+  cacheLoaded = false
+  inFlight = null
+  loadWIDACache().then(() => { subscribers.forEach(fn => fn()) })
 }
 
 export default function WIDABadge({ studentId, compact }: { studentId: string; compact?: boolean }) {
+  const [, forceRender] = useState(0)
   const [ready, setReady] = useState(cacheLoaded)
   const [showTip, setShowTip] = useState(false)
 
   useEffect(() => {
     if (!cacheLoaded) { loadWIDACache().then(() => setReady(true)) }
+    const onChange = () => { setReady(true); forceRender(n => n + 1) }
+    subscribers.add(onChange)
+    return () => { subscribers.delete(onChange) }
   }, [])
 
   if (!ready) return null
