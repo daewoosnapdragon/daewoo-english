@@ -55,6 +55,9 @@ function ParentCalendarView() {
   const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }[]>>({})
   const [printWeeks, setPrintWeeks] = useState<Set<number>>(new Set()) // selected week indices for printing; empty = all
   const [showPrintOptions, setShowPrintOptions] = useState(false)
+  // Dates that already have a stored row, so we can tell "cleared by the
+  // teacher" apart from "never filled in".
+  const persistedDates = useRef<Set<string>>(new Set())
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
 
@@ -161,6 +164,9 @@ function ParentCalendarView() {
     }
     setCalEvents(ce)
     setDayData(dd)
+    // Remember which days already have a stored row, so clearing one still
+    // saves while a never-saved template-only day stays out of the database.
+    persistedDates.current = new Set(Object.keys(dd))
 
     // Load weekly homework (stored as class_hw entries keyed by Monday date)
     // Extend range to cover Mondays that might fall in adjacent months
@@ -225,11 +231,39 @@ function ParentCalendarView() {
       return { ...prev, [date]: d }
     })
   }
+  // A day is "untouched" if nothing has actually been written into it. Used to
+  // avoid persisting a day that only contains a pre-filled subject template.
+  const isDayEmpty = (c: DayContent) =>
+    !c.objective?.trim() && !c.notes?.trim() &&
+    c.subjects.every(s => !s.content?.trim())
+
+  /**
+   * Subject rows to pre-fill a blank day with. Rather than a fixed list, this
+   * copies the row labels from the most recent day that already has content,
+   * so the template follows whatever structure this class actually teaches
+   * (including custom subjects). Falls back to the standard set.
+   */
+  const templateSubjects = useCallback((forDate: string): { label: string; content: string }[] => {
+    const prior = Object.keys(dayData)
+      .filter(d => d < forDate)
+      .sort()
+      .reverse()
+    for (const d of prior) {
+      const labels = dayData[d].subjects
+        .filter(s => s.label.trim() && s.content?.trim())
+        .map(s => s.label)
+      if (labels.length > 0) return labels.map(label => ({ label, content: '' }))
+    }
+    return DEFAULT_SUBJECTS.map(label => ({ label, content: '' }))
+  }, [dayData])
+
   const openDay = (date: string) => {
     if (!canEdit) return
-    // If this day has no data at all, initialize with one empty subject row
-    if (!dayData[date]) {
-      setDayData(prev => ({ ...prev, [date]: emptyDay() }))
+    // Blank day: pre-fill the usual subject rows so the teacher only has to
+    // type what happened, instead of adding and labelling five rows first.
+    if (!dayData[date] || (dayData[date].subjects.length === 1 && !dayData[date].subjects[0].label && !dayData[date].subjects[0].content)) {
+      const base = dayData[date] || emptyDay()
+      setDayData(prev => ({ ...prev, [date]: { ...base, subjects: templateSubjects(date) } }))
     }
     setEditDate(date)
   }
@@ -244,12 +278,17 @@ function ParentCalendarView() {
   // Save a single day
   const saveDay = async (date: string) => {
     const content = dayData[date] || emptyDay()
+    // Skip days that were only ever opened: the pre-filled subject rows are a
+    // convenience, not content. Days that already exist still save, so
+    // deliberately clearing one persists.
+    if (isDayEmpty(content) && !persistedDates.current.has(date)) return true
     const { error } = await supabase.from('parent_calendar').upsert({
       date, english_class: selectedClass, grade: selectedGrade,
       content: JSON.stringify(content),
       updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
     }, { onConflict: 'date,english_class,grade' })
     if (error) { showToast(`Error: ${error.message}`); return false }
+    persistedDates.current.add(date)
     // Also save weekly homework for this week
     const mon = getMondayOf(date)
     const hw = weeklyHomework[mon] || ''
@@ -299,6 +338,8 @@ function ParentCalendarView() {
     if (!editDate || !canEdit) return
     const content = dayData[editDate]
     if (!content) return
+    // Don't create a row for a day that has only the pre-filled template in it.
+    if (isDayEmpty(content) && !persistedDates.current.has(editDate)) return
     const contentStr = JSON.stringify(content)
     if (contentStr === lastSavedRef.current) return
 
@@ -316,6 +357,7 @@ function ParentCalendarView() {
         updated_by: snapshotTeacherId, updated_at: new Date().toISOString(),
       }, { onConflict: 'date,english_class,grade' })
       lastSavedRef.current = contentStr
+      persistedDates.current.add(snapshotDate)
     }, 2000)
 
     return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current) }
@@ -731,7 +773,87 @@ function ParentCalendarView() {
   )
 }
 
-const SUBJECT_OPTIONS = ['Reading', 'Into Reading', 'Phonics', 'Writing', 'Speaking', 'Grammar', 'Vocabulary', 'Spelling', 'Listening', 'Review', 'Thumbs Up']
+export const SUBJECT_OPTIONS = ['Reading', 'Into Reading', 'Phonics', 'Writing', 'Speaking', 'Grammar', 'Vocabulary', 'Spelling', 'Listening', 'Review', 'Thumbs Up']
+
+/**
+ * Type-to-filter subject picker. Replaces a native <select>, which meant
+ * open-dropdown / hunt / click for every row -- roughly 25 dropdown trips to
+ * fill a week. Here "th" + Enter gets you Thumbs Up without leaving the
+ * keyboard, and anything not in the list can still be typed freely.
+ */
+function SubjectCombobox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [highlight, setHighlight] = useState(0)
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  // Typing filters by substring; an empty box shows the whole list.
+  const matches = value.trim()
+    ? SUBJECT_OPTIONS.filter(s => s.toLowerCase().includes(value.trim().toLowerCase()))
+    : SUBJECT_OPTIONS
+
+  useEffect(() => { setHighlight(0) }, [value])
+
+  // Close when focus or a click leaves the widget entirely.
+  useEffect(() => {
+    if (!open) return
+    const onDocDown = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocDown)
+    return () => document.removeEventListener('mousedown', onDocDown)
+  }, [open])
+
+  const accept = (s: string) => { onChange(s); setOpen(false) }
+
+  return (
+    <div ref={boxRef} className="relative w-[100px] shrink-0">
+      <input
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        placeholder="Subject"
+        aria-label="Subject"
+        autoComplete="off"
+        className="text-[12px] font-bold text-navy w-full text-right py-3 bg-transparent outline-none border-b border-transparent focus:border-navy/30 placeholder:text-navy/25 placeholder:font-medium"
+        onKeyDown={e => {
+          if (e.key === 'ArrowDown' && !open) { setOpen(true); e.preventDefault(); return }
+          if (!open || matches.length === 0) {
+            // Let Escape close, otherwise fall through to the normal row behaviour.
+            if (e.key === 'Escape') setOpen(false)
+            return
+          }
+          if (e.key === 'ArrowDown') { e.preventDefault(); setHighlight(h => (h + 1) % matches.length) }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlight(h => (h - 1 + matches.length) % matches.length) }
+          else if (e.key === 'Enter' || e.key === 'Tab') {
+            // Tab accepts too, so tabbing onward never leaves a half-typed subject.
+            if (e.key === 'Enter') e.preventDefault()
+            accept(matches[highlight])
+          }
+          else if (e.key === 'Escape') { e.preventDefault(); setOpen(false) }
+        }}
+      />
+      {/* Menu is anchored left and overlays the content field: the input is only
+          100px and sits near the modal's left edge, so a right-anchored menu
+          would spill outside the modal. */}
+      {open && matches.length > 0 && (
+        <ul className="absolute left-0 top-full mt-1 z-50 w-[150px] max-h-56 overflow-y-auto bg-surface border border-border rounded-lg shadow-lg py-1">
+          {matches.map((s, i) => (
+            <li key={s}>
+              <button
+                type="button"
+                onMouseDown={e => { e.preventDefault(); accept(s) }}
+                onMouseEnter={() => setHighlight(i)}
+                className={`w-full text-left px-2.5 py-1.5 text-[12px] transition-colors ${
+                  i === highlight ? 'bg-navy text-white' : 'text-text-primary hover:bg-surface-alt'
+                }`}
+              >{s}</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 function SubjectLabelRow({ label, content, onLabelChange, onContentChange, onRemove, autoFocus, onNavigateDay }: {
   label: string; content: string
@@ -741,51 +863,13 @@ function SubjectLabelRow({ label, content, onLabelChange, onContentChange, onRem
   autoFocus?: boolean
   onNavigateDay: (direction: 'prev' | 'next') => void
 }) {
-  const isCustom = label !== '' && !SUBJECT_OPTIONS.includes(label)
-  const [showCustomInput, setShowCustomInput] = useState(isCustom)
-
   return (
     <div className="flex items-center gap-2 group">
-      {showCustomInput ? (
-        <div className="flex items-center w-[100px] shrink-0">
-          <input
-            value={label}
-            onChange={e => onLabelChange(e.target.value)}
-            className="text-[12px] font-bold text-navy w-full text-right py-3 bg-transparent outline-none border-b border-navy/30 placeholder:text-navy/30"
-            placeholder="Custom..."
-            autoFocus
-            onKeyDown={e => {
-              if (e.key === 'Escape') { if (!label) setShowCustomInput(false) }
-            }}
-          />
-          <button onClick={() => { onLabelChange(''); setShowCustomInput(false) }}
-            className="p-0.5 text-text-tertiary hover:text-navy ml-0.5 shrink-0" title="Back to dropdown">
-            <X size={10} />
-          </button>
-        </div>
-      ) : (
-        <select
-          value={label}
-          onChange={e => {
-            if (e.target.value === '__custom__') {
-              setShowCustomInput(true)
-              onLabelChange('')
-            } else {
-              onLabelChange(e.target.value)
-            }
-          }}
-          className="text-[12px] font-bold text-navy w-[100px] text-right shrink-0 py-3 bg-transparent outline-none border-b border-transparent focus:border-navy/30 cursor-pointer"
-          style={{ textAlignLast: 'right' }}
-        >
-          <option value="">Select...</option>
-          {SUBJECT_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-          <option value="__custom__">Custom...</option>
-        </select>
-      )}
+      <SubjectCombobox value={label} onChange={onLabelChange} />
       <input
         value={content}
         onChange={e => onContentChange(e.target.value)}
-        placeholder={label ? `What are students doing in ${label}?` : 'Select a subject first...'}
+        placeholder={label ? `What are students doing in ${label}?` : 'Pick a subject first...'}
         className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-transparent border-b border-border/40 outline-none focus:border-navy transition-colors placeholder:text-text-tertiary/25"
         autoFocus={autoFocus}
         onKeyDown={e => {
