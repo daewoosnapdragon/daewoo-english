@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Calendar, AlertCircle, Save, Copy } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Save, Copy } from 'lucide-react'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 
 interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number; grade?: number }
@@ -16,6 +16,14 @@ interface CalendarEvent { id: string; title: string; date: string; type: string 
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+// Subjects offered when picking a day's lesson. Program names ("Into Reading",
+// "Hand in Hand", "Thumbs Up") come first since those rotate day to day.
+// TODO: move to Settings so this can be edited without a code change.
+export const SUBJECT_OPTIONS = [
+  'Into Reading', 'Hand in Hand', 'Thumbs Up', 'Phonics', 'Reading', 'Writing',
+  'Speaking', 'Grammar', 'Vocabulary', 'Spelling', 'Listening', 'Review',
+]
 
 
 export default function LessonPlanView() {
@@ -42,11 +50,9 @@ function ParentCalendarView() {
   useEffect(() => { localStorage.setItem('daewoo_lesson_grade', String(selectedGrade)) }, [selectedGrade])
   const [year, setYear] = useState(new Date().getFullYear())
   const [month, setMonth] = useState(new Date().getMonth())
-  const [editDate, setEditDate] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  const DEFAULT_SUBJECTS = ['Reading', 'Phonics', 'Writing', 'Speaking', 'Language']
   interface DayContent { subjects: { label: string; content: string }[]; objective: string; notes: string }
   const emptyDay = (): DayContent => ({ subjects: [{ label: '', content: '' }], objective: '', notes: '' })
 
@@ -58,6 +64,24 @@ function ParentCalendarView() {
   // Dates that already have a stored row, so we can tell "cleared by the
   // teacher" apart from "never filled in".
   const persistedDates = useRef<Set<string>>(new Set())
+
+  // Which week's editor is open, and which row's subject picker within it.
+  const [openWeek, setOpenWeek] = useState<number | null>(null)
+  const [openPicker, setOpenPicker] = useState<string | null>(null)
+
+  // Autosave bookkeeping (see flushDirty below).
+  const autosaveTimer = useRef<NodeJS.Timeout | null>(null)
+  const dirtyDates = useRef<Set<string>>(new Set())
+  const dayDataRef = useRef<Record<string, DayContent>>({})
+  const saveTargetRef = useRef<{ cls: EnglishClass; grade: Grade }>({ cls: selectedClass, grade: selectedGrade })
+  // Holds the latest flushDirty so timers and unmount always call the current one.
+  const flushRef = useRef<() => Promise<void>>(async () => {})
+
+  const markDirty = (date: string) => {
+    dirtyDates.current.add(date)
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    autosaveTimer.current = setTimeout(() => { flushRef.current() }, 1200)
+  }
 
   const canEdit = isAdmin || currentTeacher?.english_class === selectedClass
 
@@ -204,6 +228,7 @@ function ParentCalendarView() {
   const nextMonth = () => { if (month === 11) { setYear(y => y + 1); setMonth(0) } else setMonth(m => m + 1) }
 
   const updateSubject = (date: string, idx: number, content: string) => {
+    markDirty(date)
     setDayData(prev => {
       const d = { ...(prev[date] || emptyDay()) }
       d.subjects = [...d.subjects]; d.subjects[idx] = { ...d.subjects[idx], content }
@@ -211,6 +236,7 @@ function ParentCalendarView() {
     })
   }
   const updateSubjectLabel = (date: string, idx: number, label: string) => {
+    markDirty(date)
     setDayData(prev => {
       const d = { ...(prev[date] || emptyDay()) }
       d.subjects = [...d.subjects]; d.subjects[idx] = { ...d.subjects[idx], label }
@@ -218,6 +244,7 @@ function ParentCalendarView() {
     })
   }
   const addSubjectRow = (date: string) => {
+    markDirty(date)
     setDayData(prev => {
       const d = { ...(prev[date] || emptyDay()) }
       d.subjects = [...d.subjects, { label: '', content: '' }]
@@ -225,50 +252,22 @@ function ParentCalendarView() {
     })
   }
   const removeSubjectRow = (date: string, idx: number) => {
+    markDirty(date)
     setDayData(prev => {
       const d = { ...(prev[date] || emptyDay()) }
       d.subjects = d.subjects.filter((_, i) => i !== idx)
+      if (d.subjects.length === 0) d.subjects = [{ label: '', content: '' }]
       return { ...prev, [date]: d }
     })
   }
-  // A day is "untouched" if nothing has actually been written into it. Used to
-  // avoid persisting a day that only contains a pre-filled subject template.
+  // A day is "untouched" if nothing has actually been written into it, so we
+  // never create a row for a day that was merely opened.
   const isDayEmpty = (c: DayContent) =>
     !c.objective?.trim() && !c.notes?.trim() &&
     c.subjects.every(s => !s.content?.trim())
 
-  /**
-   * Subject rows to pre-fill a blank day with. Rather than a fixed list, this
-   * copies the row labels from the most recent day that already has content,
-   * so the template follows whatever structure this class actually teaches
-   * (including custom subjects). Falls back to the standard set.
-   */
-  const templateSubjects = useCallback((forDate: string): { label: string; content: string }[] => {
-    const prior = Object.keys(dayData)
-      .filter(d => d < forDate)
-      .sort()
-      .reverse()
-    for (const d of prior) {
-      const labels = dayData[d].subjects
-        .filter(s => s.label.trim() && s.content?.trim())
-        .map(s => s.label)
-      if (labels.length > 0) return labels.map(label => ({ label, content: '' }))
-    }
-    return DEFAULT_SUBJECTS.map(label => ({ label, content: '' }))
-  }, [dayData])
-
-  const openDay = (date: string) => {
-    if (!canEdit) return
-    // Blank day: pre-fill the usual subject rows so the teacher only has to
-    // type what happened, instead of adding and labelling five rows first.
-    if (!dayData[date] || (dayData[date].subjects.length === 1 && !dayData[date].subjects[0].label && !dayData[date].subjects[0].content)) {
-      const base = dayData[date] || emptyDay()
-      setDayData(prev => ({ ...prev, [date]: { ...base, subjects: templateSubjects(date) } }))
-    }
-    setEditDate(date)
-  }
-
   const updateField = (date: string, field: 'objective' | 'notes', value: string) => {
+    markDirty(date)
     setDayData(prev => ({ ...prev, [date]: { ...(prev[date] || emptyDay()), [field]: value } }))
   }
   const updateHomework = (mondayDate: string, value: string) => {
@@ -344,31 +343,6 @@ function ParentCalendarView() {
     showToast(`Copied ${copied} day${copied > 1 ? 's' : ''} from last week${skipped > 0 ? ` (${skipped} already had content)` : ''}`)
   }
 
-  // Save a single day
-  const saveDay = async (date: string) => {
-    const content = dayData[date] || emptyDay()
-    // Skip days that were only ever opened: the pre-filled subject rows are a
-    // convenience, not content. Days that already exist still save, so
-    // deliberately clearing one persists.
-    if (isDayEmpty(content) && !persistedDates.current.has(date)) return true
-    const { error } = await supabase.from('parent_calendar').upsert({
-      date, english_class: selectedClass, grade: selectedGrade,
-      content: JSON.stringify(content),
-      updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
-    }, { onConflict: 'date,english_class,grade' })
-    if (error) { showToast(`Error: ${error.message}`); return false }
-    persistedDates.current.add(date)
-    // Also save weekly homework for this week
-    const mon = getMondayOf(date)
-    const hw = weeklyHomework[mon] || ''
-    await supabase.from('parent_calendar').upsert({
-      date: mon, english_class: selectedClass + '_hw', grade: selectedGrade,
-      content: JSON.stringify({ homework: hw }),
-      updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
-    }, { onConflict: 'date,english_class,grade' })
-    return true
-  }
-
   // Save all days in the month + all weekly homework
   const saveAll = async () => {
     setSaving(true)
@@ -396,56 +370,60 @@ function ParentCalendarView() {
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : 'Month saved')
   }
 
-  // Debounced autosave -- save current day after 2s of no edits
-  // IMPORTANT: We snapshot class/grade/date at timer-set time to prevent
-  // race conditions where switching class/grade before the timer fires
-  // would save data to the wrong destination.
-  const autosaveTimer = useRef<NodeJS.Timeout | null>(null)
-  const lastSavedRef = useRef<string>('')
-
-  useEffect(() => {
-    if (!editDate || !canEdit) return
-    const content = dayData[editDate]
-    if (!content) return
-    // Don't create a row for a day that has only the pre-filled template in it.
-    if (isDayEmpty(content) && !persistedDates.current.has(editDate)) return
-    const contentStr = JSON.stringify(content)
-    if (contentStr === lastSavedRef.current) return
-
-    // Snapshot current values so the timeout closure uses the correct targets
-    const snapshotDate = editDate
-    const snapshotClass = selectedClass
-    const snapshotGrade = selectedGrade
-    const snapshotTeacherId = currentTeacher?.id
-
-    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
-    autosaveTimer.current = setTimeout(async () => {
-      await supabase.from('parent_calendar').upsert({
-        date: snapshotDate, english_class: snapshotClass, grade: snapshotGrade,
-        content: contentStr,
-        updated_by: snapshotTeacherId, updated_at: new Date().toISOString(),
+  // ─── Autosave ──────────────────────────────────────────────────────────
+  // The week editor lets several days be edited without anything closing, so
+  // edits are collected in a dirty set and flushed together. Class and grade
+  // are snapshotted when the flush is scheduled, so a switch mid-timer cannot
+  // write one class's plan onto another's.
+  const flushDirty = useCallback(async () => {
+    if (autosaveTimer.current) { clearTimeout(autosaveTimer.current); autosaveTimer.current = null }
+    const dates = Array.from(dirtyDates.current)
+    if (dates.length === 0) return
+    dirtyDates.current.clear()
+    const cls = saveTargetRef.current.cls
+    const grd = saveTargetRef.current.grade
+    for (const date of dates) {
+      const content = dayDataRef.current[date]
+      if (!content) continue
+      // Never create a row for a day that holds nothing; days that already
+      // exist still save when emptied, so clearing one persists.
+      if (isDayEmpty(content) && !persistedDates.current.has(date)) continue
+      const { error } = await supabase.from('parent_calendar').upsert({
+        date, english_class: cls, grade: grd,
+        content: JSON.stringify(content),
+        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
       }, { onConflict: 'date,english_class,grade' })
-      lastSavedRef.current = contentStr
-      persistedDates.current.add(snapshotDate)
-    }, 2000)
+      if (!error) persistedDates.current.add(date)
+    }
+  }, [currentTeacher?.id])
 
-    return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current) }
-  }, [dayData, editDate, canEdit, selectedClass, selectedGrade])
+  useEffect(() => { flushRef.current = flushDirty }, [flushDirty])
+  useEffect(() => { dayDataRef.current = dayData }, [dayData])
+  useEffect(() => { saveTargetRef.current = { cls: selectedClass, grade: selectedGrade } }, [selectedClass, selectedGrade])
 
-  // Navigate to adjacent weekday from modal
-  const getAdjacentDate = (date: string, direction: 'prev' | 'next'): string | null => {
-    const idx = monthDays.findIndex(d => d.date === date)
-    if (idx < 0) return null
-    const newIdx = direction === 'next' ? idx + 1 : idx - 1
-    return newIdx >= 0 && newIdx < monthDays.length ? monthDays[newIdx].date : null
+  // Flush on unmount so edits are never stranded by navigating away.
+  useEffect(() => () => { flushRef.current() }, [])
+
+  // Enter/arrows move down the week's fields, so a whole week can be filled in
+  // without reaching for the mouse.
+  const fieldNav = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && !(e.key === 'Enter' && !e.shiftKey)) return
+    e.preventDefault()
+    const fields = Array.from(document.querySelectorAll<HTMLInputElement>('.lp-field'))
+    const cur = fields.indexOf(e.currentTarget)
+    if (cur < 0) return
+    const next = e.key === 'ArrowUp' ? cur - 1 : cur + 1
+    if (next >= 0 && next < fields.length) fields[next].focus()
   }
 
-  const navigateModal = async (direction: 'prev' | 'next') => {
-    if (!editDate) return
-    // Auto-save current day before navigating
-    await saveDay(editDate)
-    const next = getAdjacentDate(editDate, direction)
-    if (next) setEditDate(next)
+  // Open a day's week for editing. Switching weeks flushes pending edits first
+  // so nothing is left unsaved behind a collapsed panel.
+  const openDayWeek = async (weekIdx: number) => {
+    if (!canEdit) return
+    setOpenPicker(null)
+    if (openWeek === weekIdx) { await flushDirty(); setOpenWeek(null); return }
+    await flushDirty()
+    setOpenWeek(weekIdx)
   }
 
   // Print full month
@@ -474,11 +452,14 @@ function ParentCalendarView() {
           inner = '<div class="no-class">No Grade 5</div>'
         } else {
           evts.forEach(ev => { inner += `<div class="event">${ev.title}</div>` })
-          const hasAny = data.subjects.some(s => s.content.trim()) || data.objective
+          // Only rows the teacher actually wrote in. A labelled-but-empty row
+          // would otherwise print as a bare subject name on the parent copy.
           data.subjects.forEach(s => {
-            if (!s.content.trim() && !hasAny) return
-            if (!s.content.trim() && !s.label.trim()) return
-            inner += `<div class="subj"><span class="subj-label">${s.label}${s.content ? ':' : ''}</span>${s.content ? ' ' + s.content : ''}</div>`
+            if (!s.content.trim()) return
+            // Colon belongs to the label; without one, print the text alone
+            // rather than a stray leading ":".
+            const lbl = s.label.trim()
+            inner += `<div class="subj">${lbl ? `<span class="subj-label">${lbl}:</span> ` : ''}${s.content}</div>`
           })
           if (data.objective) inner += `<div class="obj"><span class="obj-pre">Students will</span> ${data.objective}</div>`
           if (!inner) inner = '<div class="empty-day">--</div>'
@@ -557,8 +538,6 @@ function ParentCalendarView() {
     </div>
   )
 
-  const editDay = editDate ? (dayData[editDate] || emptyDay()) : null
-  const editDateIsNoG5 = editDate ? (new Date(editDate + 'T12:00:00').getDay() === 1 && selectedGrade === 5) : false
 
   return (
     <div>
@@ -615,13 +594,13 @@ function ParentCalendarView() {
         <div className="flex items-center gap-4 mt-4">
           <div className="flex gap-1">
             {(isAdmin ? ENGLISH_CLASSES : [teacherClass]).filter(Boolean).map(c => (
-              <button key={c} onClick={() => { if (c !== selectedClass) { setEditDate(null); if (autosaveTimer.current) clearTimeout(autosaveTimer.current); setDayData({}); setWeeklyHomework({}); setSelectedClass(c) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedClass === c ? 'text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'}`}
+              <button key={c} onClick={async () => { if (c !== selectedClass) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setDayData({}); setWeeklyHomework({}); setSelectedClass(c) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedClass === c ? 'text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'}`}
                 style={selectedClass === c ? { backgroundColor: classToColor(c), color: classToTextColor(c) } : {}}>{c}</button>
             ))}
           </div>
           <div className="w-px h-6 bg-border" />
           <div className="flex gap-1">
-            {GRADES.map(g => <button key={g} onClick={() => { if (g !== selectedGrade) { setEditDate(null); if (autosaveTimer.current) clearTimeout(autosaveTimer.current); lastSavedRef.current = ''; setDayData({}); setWeeklyHomework({}); setSelectedGrade(g) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Grade {g}</button>)}
+            {GRADES.map(g => <button key={g} onClick={async () => { if (g !== selectedGrade) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setDayData({}); setWeeklyHomework({}); setSelectedGrade(g) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Grade {g}</button>)}
           </div>
         </div>
       </div>
@@ -661,7 +640,7 @@ function ParentCalendarView() {
                   const hasFill = data.subjects.some(s => s.content.trim()) || data.objective
                   return (
                     <div key={di}
-                      onClick={() => openDay(day.date)}
+                      onClick={() => openDayWeek(wi)}
                       className={`border-r border-border last:border-r-0 min-h-[140px] p-3 transition-all ${
                         canEdit ? 'cursor-pointer hover:bg-blue-50/30' : ''
                       } ${isToday ? 'bg-amber-50/30 ring-2 ring-inset ring-gold/40' : 'bg-white'}`}>
@@ -677,9 +656,11 @@ function ParentCalendarView() {
                       ) : (
                         <>
                           {evts.map((ev, ei) => <div key={ei} className="text-[10px] font-bold text-slate-600 bg-slate-100 rounded px-2 py-1 mb-1.5">{ev.title}</div>)}
-                          {data.subjects.filter(s => s.content.trim() || (hasFill && s.label.trim())).map(s => (
-                            <div key={s.label} className="text-[11px] leading-snug mb-1">
-                              <span className="font-bold text-navy">{s.label}{s.content ? ':' : ''}</span>{s.content ? ' ' : ''}
+                          {/* Only rows with content. A labelled-but-empty row must never
+                              show here or in print -- this is the parent-facing calendar. */}
+                          {data.subjects.filter(s => s.content.trim()).map((s, si) => (
+                            <div key={si} className="text-[11px] leading-snug mb-1">
+                              {s.label.trim() && <><span className="font-bold text-navy">{s.label}:</span>{' '}</>}
                               <span className="text-text-primary">{s.content}</span>
                             </div>
                           ))}
@@ -697,6 +678,96 @@ function ParentCalendarView() {
                   )
                 })}
                 </div>
+
+                {/* ─── Inline week editor ─── */}
+                {openWeek === wi && canEdit && (
+                  <div className="border-b border-border bg-surface-alt/50 px-5 py-4 animate-fade-in">
+                    {fw.map((day, di) => {
+                      if (!day) return null
+                      if (di === 0 && selectedGrade === 5) return null // no Grade 5 Mondays
+                      const data = dayData[day.date] || emptyDay()
+                      return (
+                        <div key={day.date} className="grid grid-cols-[64px_1fr] gap-3 items-start py-2.5 border-b border-border/40 last:border-b-0">
+                          <div className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold pt-2.5">
+                            {DAY_SHORT[di]}
+                            <span className="block text-[12px] text-text-primary font-bold">{month + 1}/{day.dayNum}</span>
+                          </div>
+                          <div className="min-w-0 space-y-2">
+                            {data.subjects.map((sub, si) => {
+                              const pickerKey = `${day.date}-${si}`
+                              return (
+                                <div key={si}>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => setOpenPicker(openPicker === pickerKey ? null : pickerKey)}
+                                      className={`shrink-0 text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors ${
+                                        sub.label
+                                          ? 'bg-accent-light text-navy border border-accent-light hover:border-navy'
+                                          : 'border border-dashed border-border text-text-tertiary hover:border-navy hover:text-navy'
+                                      }`}>
+                                      {sub.label || '+ Subject'}
+                                    </button>
+                                    <input
+                                      value={sub.content}
+                                      onChange={e => updateSubject(day.date, si, e.target.value)}
+                                      placeholder={sub.label ? `What are students doing in ${sub.label}?` : 'Pick a subject, then say what students are doing'}
+                                      className="lp-field flex-1 min-w-0 text-[13.5px] bg-transparent border-b border-border/60 outline-none focus:border-navy py-1.5 placeholder:text-text-tertiary/40"
+                                      onKeyDown={fieldNav}
+                                    />
+                                    {data.subjects.length > 1 && (
+                                      <button onClick={() => removeSubjectRow(day.date, si)}
+                                        title="Remove this subject"
+                                        className="shrink-0 p-1 text-text-tertiary hover:text-red-500 transition-colors"><X size={13} /></button>
+                                    )}
+                                  </div>
+                                  {openPicker === pickerKey && (
+                                    <div className="mt-2 p-3 bg-surface border border-border rounded-xl">
+                                      <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">
+                                        Subject for {DAY_SHORT[di]} {month + 1}/{day.dayNum}
+                                      </p>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {SUBJECT_OPTIONS.map(s => (
+                                          <button key={s}
+                                            onClick={() => { updateSubjectLabel(day.date, si, s); setOpenPicker(null) }}
+                                            className={`text-[12px] font-semibold px-3 py-1.5 rounded-full border transition-colors ${
+                                              sub.label === s
+                                                ? 'bg-navy text-white border-navy'
+                                                : 'bg-surface text-text-secondary border-border hover:border-navy hover:text-navy'
+                                            }`}>{s}</button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                            <div className="flex items-center gap-3">
+                              <input
+                                value={data.objective}
+                                onChange={e => updateField(day.date, 'objective', e.target.value)}
+                                placeholder="Students will…"
+                                className="lp-field flex-1 min-w-0 text-[12px] italic bg-transparent border-b border-border/40 outline-none focus:border-navy py-1 placeholder:text-text-tertiary/35"
+                                onKeyDown={fieldNav}
+                              />
+                              <button onClick={() => addSubjectRow(day.date)}
+                                className="shrink-0 text-[11px] text-text-tertiary hover:text-navy font-medium px-2 py-1 rounded hover:bg-surface transition-colors">
+                                + Another subject
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    <div className="flex items-center justify-between gap-3 pt-3 mt-1">
+                      <span className="text-[11px] text-text-tertiary">Saves as you type. Homework below covers the whole week.</span>
+                      <button onClick={async () => { await flushDirty(); setOpenWeek(null); setOpenPicker(null) }}
+                        className="px-4 py-1.5 rounded-lg text-[12.5px] font-semibold bg-navy text-white hover:bg-navy-dark transition-colors">
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Weekly homework bar */}
                 {(hw || canEdit) && (
                   <div className={`border-b border-border px-3 py-1.5 flex items-center gap-2 ${hw ? 'bg-amber-50/50' : 'bg-gray-50/30'}`}>
@@ -735,245 +806,6 @@ function ParentCalendarView() {
         </div>
       </div>
 
-      {/* ═══ EDIT DAY MODAL ═══ */}
-      {editDate && editDay && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={async () => { await saveDay(editDate); setEditDate(null) }}>
-          <div className="bg-surface rounded-xl shadow-xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
-            {/* Modal header */}
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <div>
-                <h3 className="font-display text-[16px] font-bold text-navy">{fmtDayName(editDate)}</h3>
-                <p className="text-[12px] text-text-secondary">{fmtShort(editDate)} -- {selectedClass} Grade {selectedGrade}</p>
-              </div>
-              <div className="flex items-center gap-1">
-                <button onClick={() => navigateModal('prev')} disabled={!getAdjacentDate(editDate, 'prev')} className="p-1.5 rounded-lg hover:bg-surface-alt disabled:opacity-20" title="Previous day"><ChevronLeft size={18} /></button>
-                <button onClick={() => navigateModal('next')} disabled={!getAdjacentDate(editDate, 'next')} className="p-1.5 rounded-lg hover:bg-surface-alt disabled:opacity-20" title="Next day"><ChevronRight size={18} /></button>
-                <div className="w-px h-5 bg-border mx-1" />
-                <button onClick={async () => { await saveDay(editDate); setEditDate(null) }} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary"><X size={18} /></button>
-              </div>
-            </div>
-
-            {/* Calendar event banner */}
-            {calEvents[editDate]?.length > 0 && (
-              <div className="px-5 py-2.5 bg-slate-100 border-b border-slate-200 space-y-1">
-                {calEvents[editDate].map((ev, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <AlertCircle size={14} className="text-slate-500 shrink-0" />
-                    <span className="text-[12px] font-semibold text-slate-700">{ev.title}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {editDateIsNoG5 ? (
-              <div className="px-5 py-16 text-center">
-                <p className="text-[15px] font-semibold text-text-tertiary">No Grade 5 on Mondays</p>
-              </div>
-            ) : (
-              <div className="px-5 py-5 space-y-0">
-                {/* Subject inputs */}
-                {editDay.subjects.map((sub, idx) => (
-                  <SubjectLabelRow
-                    key={idx}
-                    label={sub.label}
-                    content={sub.content}
-                    onLabelChange={(label: string) => updateSubjectLabel(editDate, idx, label)}
-                    onContentChange={(content: string) => updateSubject(editDate, idx, content)}
-                    onRemove={editDay.subjects.length > 1 ? () => removeSubjectRow(editDate, idx) : undefined}
-                    autoFocus={idx === 0}
-                    onNavigateDay={navigateModal}
-                  />
-                ))}
-                {/* Add subject row */}
-                <div className="flex items-center gap-2 pt-1">
-                  <button onClick={() => addSubjectRow(editDate)} className="ml-[100px] text-[11px] text-text-tertiary hover:text-navy font-medium px-2 py-1 rounded hover:bg-surface-alt transition-colors">+ Add row</button>
-                </div>
-
-                {/* Objective */}
-                <div className="flex items-center gap-3 pt-4 mt-2 border-t border-border/20">
-                  <label className="text-[12px] font-bold text-navy w-[72px] text-right shrink-0 italic">Students will</label>
-                  <input
-                    value={editDay.objective}
-                    onChange={e => updateField(editDate, 'objective', e.target.value)}
-                    placeholder="identify main idea and key details in a nonfiction text"
-                    className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-transparent border-b border-border/40 outline-none focus:border-navy transition-colors placeholder:text-text-tertiary/20 italic"
-                    onKeyDown={e => {
-                      if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
-                        e.preventDefault()
-                        const inputs = document.querySelectorAll('.pcal-modal-input')
-                        const cur = Array.from(inputs).indexOf(e.currentTarget)
-                        if (cur >= 0 && cur < inputs.length - 1) (inputs[cur + 1] as HTMLInputElement).focus()
-                      }
-                      if (e.key === 'ArrowUp') {
-                        e.preventDefault()
-                        const inputs = document.querySelectorAll('.pcal-modal-input')
-                        const cur = Array.from(inputs).indexOf(e.currentTarget)
-                        if (cur > 0) (inputs[cur - 1] as HTMLInputElement).focus()
-                      }
-                      if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); navigateModal('prev') }
-                      if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); navigateModal('next') }
-                    }}
-                  />
-                </div>
-
-                {/* Weekly Homework */}
-                <div className="flex items-center gap-3 pt-2">
-                  <label className="text-[11px] font-bold text-gray-800 w-[72px] text-right shrink-0">Weekly HW</label>
-                  <input
-                    value={weeklyHomework[getMondayOf(editDate)] || ''}
-                    onChange={e => updateHomework(getMondayOf(editDate), e.target.value)}
-                    placeholder="Homework for this week (shared across Mon-Fri)"
-                    className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-amber-50/30 border-b border-amber-200/30 outline-none focus:border-amber-400 transition-colors placeholder:text-amber-300/50 rounded-t"
-                    onKeyDown={e => {
-                      if (e.key === 'ArrowUp') {
-                        e.preventDefault()
-                        const inputs = document.querySelectorAll('.pcal-modal-input')
-                        const cur = Array.from(inputs).indexOf(e.currentTarget)
-                        if (cur > 0) (inputs[cur - 1] as HTMLInputElement).focus()
-                      }
-                      if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); navigateModal('prev') }
-                      if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); navigateModal('next') }
-                      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveDay(editDate).then(() => setEditDate(null)) }
-                      if (e.key === 'Escape') { saveDay(editDate).then(() => setEditDate(null)) }
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Modal footer */}
-            <div className="px-5 py-3 border-t border-border flex items-center justify-between bg-surface-alt/30 rounded-b-xl">
-              <p className="text-[10px] text-text-tertiary">Arrow keys to move between fields -- Cmd+Arrow to change day -- Esc to save and close</p>
-              <button onClick={async () => { await saveDay(editDate); setEditDate(null) }}
-                className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Done</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-export const SUBJECT_OPTIONS = ['Reading', 'Into Reading', 'Phonics', 'Writing', 'Speaking', 'Grammar', 'Vocabulary', 'Spelling', 'Listening', 'Review', 'Thumbs Up']
-
-/**
- * Type-to-filter subject picker. Replaces a native <select>, which meant
- * open-dropdown / hunt / click for every row -- roughly 25 dropdown trips to
- * fill a week. Here "th" + Enter gets you Thumbs Up without leaving the
- * keyboard, and anything not in the list can still be typed freely.
- */
-function SubjectCombobox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false)
-  const [highlight, setHighlight] = useState(0)
-  const boxRef = useRef<HTMLDivElement>(null)
-
-  // Typing filters by substring; an empty box shows the whole list.
-  const matches = value.trim()
-    ? SUBJECT_OPTIONS.filter(s => s.toLowerCase().includes(value.trim().toLowerCase()))
-    : SUBJECT_OPTIONS
-
-  useEffect(() => { setHighlight(0) }, [value])
-
-  // Close when focus or a click leaves the widget entirely.
-  useEffect(() => {
-    if (!open) return
-    const onDocDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onDocDown)
-    return () => document.removeEventListener('mousedown', onDocDown)
-  }, [open])
-
-  const accept = (s: string) => { onChange(s); setOpen(false) }
-
-  return (
-    <div ref={boxRef} className="relative w-[100px] shrink-0">
-      <input
-        value={value}
-        onChange={e => { onChange(e.target.value); setOpen(true) }}
-        onFocus={() => setOpen(true)}
-        placeholder="Subject"
-        aria-label="Subject"
-        autoComplete="off"
-        className="text-[12px] font-bold text-navy w-full text-right py-3 bg-transparent outline-none border-b border-transparent focus:border-navy/30 placeholder:text-navy/25 placeholder:font-medium"
-        onKeyDown={e => {
-          if (e.key === 'ArrowDown' && !open) { setOpen(true); e.preventDefault(); return }
-          if (!open || matches.length === 0) {
-            // Let Escape close, otherwise fall through to the normal row behaviour.
-            if (e.key === 'Escape') setOpen(false)
-            return
-          }
-          if (e.key === 'ArrowDown') { e.preventDefault(); setHighlight(h => (h + 1) % matches.length) }
-          else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlight(h => (h - 1 + matches.length) % matches.length) }
-          else if (e.key === 'Enter' || e.key === 'Tab') {
-            // Tab accepts too, so tabbing onward never leaves a half-typed subject.
-            if (e.key === 'Enter') e.preventDefault()
-            accept(matches[highlight])
-          }
-          else if (e.key === 'Escape') { e.preventDefault(); setOpen(false) }
-        }}
-      />
-      {/* Menu is anchored left and overlays the content field: the input is only
-          100px and sits near the modal's left edge, so a right-anchored menu
-          would spill outside the modal. */}
-      {open && matches.length > 0 && (
-        <ul className="absolute left-0 top-full mt-1 z-50 w-[150px] max-h-56 overflow-y-auto bg-surface border border-border rounded-lg shadow-lg py-1">
-          {matches.map((s, i) => (
-            <li key={s}>
-              <button
-                type="button"
-                onMouseDown={e => { e.preventDefault(); accept(s) }}
-                onMouseEnter={() => setHighlight(i)}
-                className={`w-full text-left px-2.5 py-1.5 text-[12px] transition-colors ${
-                  i === highlight ? 'bg-navy text-white' : 'text-text-primary hover:bg-surface-alt'
-                }`}
-              >{s}</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
-function SubjectLabelRow({ label, content, onLabelChange, onContentChange, onRemove, autoFocus, onNavigateDay }: {
-  label: string; content: string
-  onLabelChange: (label: string) => void
-  onContentChange: (content: string) => void
-  onRemove?: () => void
-  autoFocus?: boolean
-  onNavigateDay: (direction: 'prev' | 'next') => void
-}) {
-  return (
-    <div className="flex items-center gap-2 group">
-      <SubjectCombobox value={label} onChange={onLabelChange} />
-      <input
-        value={content}
-        onChange={e => onContentChange(e.target.value)}
-        placeholder={label ? `What are students doing in ${label}?` : 'Pick a subject first...'}
-        className="pcal-modal-input flex-1 px-3 py-3 text-[14px] bg-transparent border-b border-border/40 outline-none focus:border-navy transition-colors placeholder:text-text-tertiary/25"
-        autoFocus={autoFocus}
-        onKeyDown={e => {
-          if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
-            e.preventDefault()
-            const inputs = document.querySelectorAll('.pcal-modal-input')
-            const cur = Array.from(inputs).indexOf(e.currentTarget)
-            if (cur >= 0 && cur < inputs.length - 1) (inputs[cur + 1] as HTMLInputElement).focus()
-          }
-          if (e.key === 'ArrowUp') {
-            e.preventDefault()
-            const inputs = document.querySelectorAll('.pcal-modal-input')
-            const cur = Array.from(inputs).indexOf(e.currentTarget)
-            if (cur > 0) (inputs[cur - 1] as HTMLInputElement).focus()
-          }
-          if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') { e.preventDefault(); onNavigateDay('prev') }
-          if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') { e.preventDefault(); onNavigateDay('next') }
-        }}
-        ref={el => { if (el) el.classList.add('pcal-modal-input') }}
-      />
-      {onRemove && (
-        <button onClick={onRemove} className="opacity-0 group-hover:opacity-40 hover:!opacity-100 p-1 text-red-400 hover:text-red-600 transition-opacity shrink-0" title="Remove row"><X size={14} /></button>
-      )}
     </div>
   )
 }
