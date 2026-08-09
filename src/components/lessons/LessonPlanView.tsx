@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Calendar, AlertCircle, Save } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Calendar, AlertCircle, Save, Copy } from 'lucide-react'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 
 interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number; grade?: number }
@@ -273,6 +273,75 @@ function ParentCalendarView() {
   }
   const updateHomework = (mondayDate: string, value: string) => {
     setWeeklyHomework(prev => ({ ...prev, [mondayDate]: value }))
+  }
+
+  const shiftDate = (dateStr: string, days: number) => {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const dt = new Date(y, m - 1, d)
+    dt.setDate(dt.getDate() + days)
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+  }
+
+  /**
+   * Copies the previous week's plan into this one, day for day. Queries rather
+   * than reading dayData so it still works on the first week of a month, where
+   * the source week belongs to the month that isn't loaded.
+   *
+   * Deliberately non-destructive: days that already have content are left
+   * alone, so this can never overwrite something already written.
+   */
+  const [copyingWeek, setCopyingWeek] = useState<string | null>(null)
+  const copyLastWeek = async (weekMonday: string) => {
+    if (!canEdit || !weekMonday) return
+    setCopyingWeek(weekMonday)
+    const prevMonday = shiftDate(weekMonday, -7)
+    const { data, error } = await supabase.from('parent_calendar')
+      .select('date, content')
+      .eq('english_class', selectedClass).eq('grade', selectedGrade)
+      .gte('date', prevMonday).lte('date', shiftDate(prevMonday, 4))
+    if (error) { showToast(`Error: ${error.message}`); setCopyingWeek(null); return }
+
+    const source: Record<number, DayContent> = {}
+    ;(data || []).forEach((row: any) => {
+      try {
+        const parsed = typeof row.content === 'string' ? JSON.parse(row.content) : row.content
+        const offset = Math.round((new Date(row.date).getTime() - new Date(prevMonday).getTime()) / 86400000)
+        if (offset >= 0 && offset <= 4) source[offset] = { ...emptyDay(), ...parsed }
+      } catch { /* skip unparseable rows */ }
+    })
+
+    const validDates = new Set(monthDays.map(d => d.date))
+    const updates: Record<string, DayContent> = {}
+    let copied = 0, skipped = 0
+    for (let offset = 0; offset <= 4; offset++) {
+      const src = source[offset]
+      if (!src || isDayEmpty(src)) continue
+      if (offset === 0 && selectedGrade === 5) continue // no Grade 5 on Mondays
+      const target = shiftDate(weekMonday, offset)
+      if (!validDates.has(target)) continue
+      const existing = dayData[target]
+      if (existing && !isDayEmpty(existing)) { skipped++; continue }
+      updates[target] = { subjects: src.subjects.map(s => ({ ...s })), objective: src.objective, notes: src.notes }
+      copied++
+    }
+
+    if (copied === 0) {
+      showToast(skipped > 0 ? 'This week already has content — nothing copied' : 'Last week is empty — nothing to copy')
+      setCopyingWeek(null)
+      return
+    }
+
+    setDayData(prev => ({ ...prev, ...updates }))
+    for (const [date, content] of Object.entries(updates)) {
+      const { error: upErr } = await supabase.from('parent_calendar').upsert({
+        date, english_class: selectedClass, grade: selectedGrade,
+        content: JSON.stringify(content),
+        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
+      }, { onConflict: 'date,english_class,grade' })
+      if (!upErr) persistedDates.current.add(date)
+    }
+    setCopyingWeek(null)
+    showToast(`Copied ${copied} day${copied > 1 ? 's' : ''} from last week${skipped > 0 ? ` (${skipped} already had content)` : ''}`)
   }
 
   // Save a single day
@@ -645,6 +714,18 @@ function ParentCalendarView() {
                         className="flex-1 text-[10px] bg-transparent outline-none text-amber-900 placeholder:text-amber-300 py-0.5" />
                     ) : (
                       <span className="text-[10px] text-amber-900">{hw || '--'}</span>
+                    )}
+                    {canEdit && weekMonday && (
+                      <button
+                        onClick={() => copyLastWeek(weekMonday)}
+                        disabled={copyingWeek === weekMonday}
+                        title="Fill this week's empty days from last week. Days that already have content are left untouched."
+                        className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-text-secondary hover:text-navy px-2 py-0.5 rounded hover:bg-surface-alt transition-colors disabled:opacity-50"
+                      >
+                        {copyingWeek === weekMonday
+                          ? <><Loader2 size={10} className="animate-spin" /> Copying...</>
+                          : <><Copy size={10} /> Copy last week</>}
+                      </button>
                     )}
                   </div>
                 )}
