@@ -107,6 +107,8 @@ export interface Semester {
   grades_due_date: string | null;
   comments_due_date: string | null;
   is_active: boolean;
+  /** Visibility flag only -- hides the semester from pickers, keeps all data. */
+  is_archived: boolean;
 }
 
 export interface Assessment {

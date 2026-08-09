@@ -6,7 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { WIDA_LEVELS, WIDA_DOMAINS } from './CurriculumView'
+import { WIDA_LEVELS, WIDA_DOMAINS } from '@/lib/wida'
 import { CCSS_STANDARDS, CCSS_DOMAINS, type CCSSDomain } from './ccss-standards'
 import {
   BookOpen, Globe2, Layers, ChevronDown, ChevronUp, ChevronRight, Info, Search,

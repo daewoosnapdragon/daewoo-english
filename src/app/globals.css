@@ -87,6 +87,116 @@ html.dark .shadow-neu-raised { box-shadow: 4px 4px 10px rgba(0,0,0,0.5), -4px -4
 html.dark .shadow-neu-inset { box-shadow: inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(50,60,80,0.2) !important; }
 html.dark option { background-color: #1a2332; color: #e2e8f0; }
 
+/* ───────────────────────────────────────────────────
+   Dark mode -- gap fill
+   The rules above cover only the colour utilities that happened to be styled
+   first; anything else kept its light-mode value and glared in dark mode.
+   Below covers every remaining palette class actually used in src/, grouped
+   the same way: dark text -> light, light tints -> dark, pale borders -> dark.
+   If you introduce a new colour utility, add it here too.
+   ─────────────────────────────────────────────────── */
+
+/* Dark text -> light (neutrals) */
+html.dark .text-gray-900, html.dark .text-gray-800 { color: #e2e8f0 !important; }
+html.dark .text-gray-700, html.dark .text-slate-700 { color: #cbd5e1 !important; }
+html.dark .text-gray-600, html.dark .text-slate-600 { color: #94a3b8 !important; }
+
+/* Dark text -> light (hues) */
+html.dark .text-blue-900 { color: #60a5fa !important; }
+html.dark .text-red-900 { color: #f87171 !important; }
+html.dark .text-amber-900 { color: #fbbf24 !important; }
+html.dark .text-purple-600, html.dark .text-purple-800 { color: #c084fc !important; }
+html.dark .text-pink-800 { color: #f472b6 !important; }
+html.dark .text-emerald-600, html.dark .text-emerald-700 { color: #34d399 !important; }
+html.dark .text-teal-600, html.dark .text-teal-700, html.dark .text-teal-800 { color: #2dd4bf !important; }
+html.dark .text-sky-700, html.dark .text-sky-800 { color: #7dd3fc !important; }
+html.dark .text-indigo-600, html.dark .text-indigo-700, html.dark .text-indigo-900 { color: #a5b4fc !important; }
+html.dark .text-violet-700 { color: #c4b5fd !important; }
+html.dark .text-orange-600, html.dark .text-orange-700,
+html.dark .text-orange-800, html.dark .text-orange-900 { color: #fb923c !important; }
+
+/* Light tint backgrounds -> dark */
+html.dark .bg-gray-200, html.dark .bg-slate-50, html.dark .bg-slate-100 { background-color: #1f2937 !important; }
+html.dark .bg-blue-200 { background-color: #1b2a45 !important; }
+html.dark .bg-green-200 { background-color: #17331f !important; }
+html.dark .bg-red-200 { background-color: #331a1e !important; }
+html.dark .bg-amber-200 { background-color: #332c18 !important; }
+html.dark .bg-pink-100 { background-color: #2a1a24 !important; }
+html.dark .bg-emerald-50, html.dark .bg-teal-50, html.dark .bg-teal-100 { background-color: #12241f !important; }
+html.dark .bg-sky-50, html.dark .bg-sky-100 { background-color: #16243a !important; }
+html.dark .bg-indigo-50, html.dark .bg-indigo-100, html.dark .bg-indigo-200,
+html.dark .bg-violet-50 { background-color: #1e1b33 !important; }
+html.dark .bg-orange-50, html.dark .bg-orange-100 { background-color: #2a1e14 !important; }
+
+/* Pale borders -> dark */
+html.dark .border-gray-100, html.dark .border-gray-200,
+html.dark .border-gray-300, html.dark .border-gray-400,
+html.dark .border-slate-200 { border-color: #2d3748 !important; }
+html.dark .border-blue-100, html.dark .border-blue-300,
+html.dark .border-blue-400, html.dark .border-sky-200 { border-color: #1e3a5f !important; }
+html.dark .border-green-100, html.dark .border-green-300, html.dark .border-green-400,
+html.dark .border-emerald-200, html.dark .border-teal-200 { border-color: #1a3d28 !important; }
+html.dark .border-red-100, html.dark .border-red-400 { border-color: #3d1a1a !important; }
+html.dark .border-amber-100, html.dark .border-amber-300, html.dark .border-amber-400,
+html.dark .border-yellow-300, html.dark .border-yellow-400 { border-color: #3d3214 !important; }
+html.dark .border-purple-200, html.dark .border-indigo-200,
+html.dark .border-violet-200 { border-color: #2e2545 !important; }
+html.dark .border-pink-200 { border-color: #3d1f2e !important; }
+html.dark .border-orange-200 { border-color: #3d2a14 !important; }
+
+/* Focus rings + dividers -> dark */
+html.dark .ring-gray-300, html.dark .ring-gray-400 { --tw-ring-color: #2d3748 !important; }
+html.dark .ring-blue-300 { --tw-ring-color: #1e3a5f !important; }
+html.dark .ring-green-200, html.dark .ring-green-300,
+html.dark .ring-green-400, html.dark .ring-green-500 { --tw-ring-color: #1a3d28 !important; }
+html.dark .ring-red-200, html.dark .ring-red-300,
+html.dark .ring-red-400, html.dark .ring-red-500 { --tw-ring-color: #3d1a1a !important; }
+html.dark .ring-amber-200, html.dark .ring-amber-300, html.dark .ring-amber-400 { --tw-ring-color: #3d3214 !important; }
+html.dark .ring-purple-200 { --tw-ring-color: #2e2545 !important; }
+html.dark .divide-blue-100 > * + * { border-color: #1e3a5f !important; }
+html.dark .divide-red-100 > * + * { border-color: #3d1a1a !important; }
+
+/* Opacity-modified utilities.
+   Tailwind emits `bg-blue-50/50` as its own class (.bg-blue-50\/50), so the
+   plain `.bg-blue-50` rule above does NOT apply to it. These translucent
+   tints were the most visible dark-mode offenders. Alpha is preserved so the
+   intended layering over the parent still reads. */
+html.dark .bg-blue-50\/30 { background-color: rgba(23,35,54,0.3) !important; }
+html.dark .bg-blue-50\/40 { background-color: rgba(23,35,54,0.4) !important; }
+html.dark .bg-blue-50\/50 { background-color: rgba(23,35,54,0.5) !important; }
+html.dark .bg-blue-50\/60 { background-color: rgba(23,35,54,0.6) !important; }
+html.dark .bg-amber-50\/30 { background-color: rgba(42,36,20,0.3) !important; }
+html.dark .bg-amber-50\/40 { background-color: rgba(42,36,20,0.4) !important; }
+html.dark .bg-amber-50\/50 { background-color: rgba(42,36,20,0.5) !important; }
+html.dark .bg-amber-50\/60 { background-color: rgba(42,36,20,0.6) !important; }
+html.dark .bg-amber-100\/50 { background-color: rgba(42,36,20,0.5) !important; }
+html.dark .bg-amber-100\/60 { background-color: rgba(42,36,20,0.6) !important; }
+html.dark .bg-amber-100\/80 { background-color: rgba(42,36,20,0.8) !important; }
+html.dark .bg-amber-200\/80 { background-color: rgba(51,44,24,0.8) !important; }
+html.dark .bg-gray-50\/30 { background-color: rgba(31,41,55,0.3) !important; }
+html.dark .bg-gray-50\/50 { background-color: rgba(31,41,55,0.5) !important; }
+html.dark .bg-green-50\/30 { background-color: rgba(20,38,26,0.3) !important; }
+html.dark .bg-green-50\/50 { background-color: rgba(20,38,26,0.5) !important; }
+html.dark .bg-red-50\/20 { background-color: rgba(42,22,25,0.2) !important; }
+html.dark .bg-red-50\/30 { background-color: rgba(42,22,25,0.3) !important; }
+html.dark .bg-red-50\/40 { background-color: rgba(42,22,25,0.4) !important; }
+html.dark .bg-red-50\/50 { background-color: rgba(42,22,25,0.5) !important; }
+html.dark .bg-red-50\/80 { background-color: rgba(42,22,25,0.8) !important; }
+html.dark .bg-red-100\/60 { background-color: rgba(42,20,25,0.6) !important; }
+html.dark .bg-purple-50\/20 { background-color: rgba(34,26,48,0.2) !important; }
+html.dark .bg-purple-50\/50 { background-color: rgba(34,26,48,0.5) !important; }
+html.dark .bg-emerald-50\/40 { background-color: rgba(18,36,31,0.4) !important; }
+html.dark .border-blue-200\/50 { border-color: rgba(30,58,95,0.5) !important; }
+html.dark .border-blue-200\/60 { border-color: rgba(30,58,95,0.6) !important; }
+html.dark .border-amber-200\/30 { border-color: rgba(61,50,20,0.3) !important; }
+html.dark .border-amber-200\/60 { border-color: rgba(61,50,20,0.6) !important; }
+html.dark .ring-amber-200\/50 { --tw-ring-color: rgba(61,50,20,0.5) !important; }
+html.dark .text-green-600\/70 { color: rgba(110,231,160,0.7) !important; }
+
+/* Gradients -> dark (the app uses the /80 opacity variants) */
+html.dark .from-blue-50\/80 { --tw-gradient-from: rgba(23,35,54,0.8) var(--tw-gradient-from-position) !important; }
+html.dark .to-indigo-50\/80 { --tw-gradient-to: rgba(30,27,51,0.8) var(--tw-gradient-to-position) !important; }
+
 /* ═══════════════════════════════════════════════════
    SCROLLBARS
    ═══════════════════════════════════════════════════ */

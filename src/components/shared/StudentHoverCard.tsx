@@ -6,7 +6,7 @@ import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
 import { EnglishClass } from '@/types'
 import WIDABadge from '@/components/shared/WIDABadge'
 import { loadWIDACache } from '@/components/shared/WIDABadge'
-import { WIDA_LEVELS, WIDA_DOMAINS } from '@/components/curriculum/CurriculumView'
+import { WIDA_LEVELS, WIDA_DOMAINS } from '@/lib/wida'
 import { TrendingUp, TrendingDown, Minus, Star, ArrowUp, ArrowDown, Loader2 } from 'lucide-react'
 
 interface StudentHoverCardProps {

@@ -11,14 +11,11 @@ import StudentsView from '@/components/students/StudentsView'
 import GradesView from '@/components/grades/GradesView'
 import AttendanceView from '@/components/attendance/AttendanceView'
 import ReadingLevelsView from '@/components/reading/ReadingLevelsView'
-import GroupsView from '@/components/groups/GroupsView'
 import ReportsView from '@/components/reports/ReportsView'
 import SettingsView from '@/components/settings/SettingsView'
 import LevelingView from '@/components/leveling/LevelingView'
 import CurriculumView from '@/components/curriculum/CurriculumView'
-import TeacherGuidesView from '@/components/guides/TeacherGuidesView'
 import LessonPlanView from '@/components/lessons/LessonPlanView'
-import AdminDashboard from '@/components/admin/AdminDashboard'
 
 import { Loader2 } from 'lucide-react'
 
@@ -55,9 +52,8 @@ export default function Home() {
     const titles: Record<string, string> = {
       dashboard: 'Dashboard', students: 'Students', grades: 'Grades',
       reports: 'Reports', leveling: 'Leveling', attendance: 'Attendance',
-      readingLevels: 'Reading Levels', groups: 'Groups', curriculum: 'Curriculum',
-      teacherGuides: 'Teacher Guides', lessonPlans: 'Lesson Plans',
-      adminDashboard: 'Program Overview', settings: 'Settings',
+      readingLevels: 'Reading Levels', lessonPlans: 'Lesson Plans',
+      curriculum: 'Standards', settings: 'Settings',
     }
     document.title = `${titles[activeView] || 'Dashboard'} | Daewoo English`
   }, [activeView, currentTeacher])
@@ -98,12 +94,8 @@ export default function Home() {
       case 'leveling': return <LevelingView />
       case 'attendance': return <AttendanceView />
       case 'readingLevels': return <ReadingLevelsView />
-      case 'groups': return <GroupsView />
       case 'curriculum': return <CurriculumView />
-      case 'teacherGuides': return <TeacherGuidesView />
       case 'lessonPlans': return <LessonPlanView />
-      case 'adminDashboard': return <AdminDashboard />
-
       case 'settings': return <SettingsView />
       default: return <DashboardView />
     }

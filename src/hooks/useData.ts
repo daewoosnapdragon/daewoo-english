@@ -196,6 +196,7 @@ export function useSemesters() {
       const { data, error } = await supabase
         .from('semesters')
         .select('*')
+        .eq('is_archived', false)
         .order('type')
       if (!error && data) {
         setSemesters(data)

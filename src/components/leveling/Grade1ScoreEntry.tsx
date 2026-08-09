@@ -2086,7 +2086,7 @@ function PhonemeManipulation({ sc, studentId, updateScore }: {
                     className="w-5 h-5 rounded border-2 border-navy/30 text-green-600 focus:ring-green-500" />
                   <div>
                     <span className="text-[12px] font-medium text-text-primary">Can segment</span>
-                    <span className="text-[10px] text-text-tertiary ml-2">("{pw.word}" -> {pw.sounds.join(' - ')})</span>
+                    <span className="text-[10px] text-text-tertiary ml-2">("{pw.word}" &rarr; {pw.sounds.join(' - ')})</span>
                   </div>
                 </label>
 

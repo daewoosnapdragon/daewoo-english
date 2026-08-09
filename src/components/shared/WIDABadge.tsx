@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
+import { WIDA_LEVELS } from '@/lib/wida'
 
 let widaCache: Record<string, Record<string, number>> = {}
 let cacheLoaded = false

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { EnglishClass, Grade } from '@/types'
-import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
+import { WIDA_LEVELS } from '@/lib/wida'
 import { ChevronDown, ChevronRight, Lightbulb, Users } from 'lucide-react'
 
 interface Props {

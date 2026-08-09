@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { EnglishClass, ENGLISH_CLASSES } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
+import { WIDA_LEVELS } from '@/lib/wida'
 
 interface HoverData {
   grades: { domain: string; score: number }[]

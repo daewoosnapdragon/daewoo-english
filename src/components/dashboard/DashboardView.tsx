@@ -147,7 +147,7 @@ export default function DashboardView() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('semesters').select('id, name, name_ko, is_active, type').order('start_date', { ascending: false })
+      const { data } = await supabase.from('semesters').select('id, name, name_ko, is_active, type').eq('is_archived', false).order('start_date', { ascending: false })
       if (data && data.length > 0) {
         const activeSems = data.filter((s: any) => s.type !== 'archive')
         setSemesters(activeSems.length > 0 ? activeSems : data)
@@ -242,7 +242,6 @@ export default function DashboardView() {
         <InsightsBanner shared={shared} />
         <div className="grid grid-cols-2 gap-5">
           <div className="space-y-5">
-            <TodaysPlanPreview />
             <NeedsAttentionWatchlist shared={shared} />
           </div>
           <div className="space-y-5">
@@ -250,50 +249,6 @@ export default function DashboardView() {
             {isAdmin && <AdminAlertPanel />}
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Today's Plan Preview ─────────────────────────────────────────
-function TodaysPlanPreview() {
-  const { currentTeacher } = useApp()
-  const isTeacher = currentTeacher?.role === 'teacher'
-  const [plan, setPlan] = useState<string>('')
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!isTeacher || !currentTeacher?.english_class) { setLoading(false); return }
-    (async () => {
-      try {
-        const today = getKSTDateString()
-        const { data } = await supabase.from('teacher_daily_plans')
-          .select('plan_text')
-          .eq('date', today)
-          .eq('english_class', currentTeacher.english_class)
-          .single()
-        if (data) setPlan(data.plan_text || '')
-      } catch {}
-      setLoading(false)
-    })()
-  }, [currentTeacher, isTeacher])
-
-  if (!isTeacher) return null
-
-  return (
-    <div className="bg-surface border border-gold/30 rounded-xl overflow-hidden shadow-sm">
-      <div className="px-5 py-3 bg-gold/10 border-b border-gold/20 flex items-center gap-2">
-        <BookOpen size={14} className="text-navy" />
-        <p className="text-[13px] font-bold text-navy">Today's Plan</p>
-      </div>
-      <div className="px-5 py-4 min-h-[80px] max-h-[200px] overflow-y-auto">
-        {loading ? (
-          <Loader2 size={14} className="animate-spin text-text-tertiary" />
-        ) : plan ? (
-          <div className="text-[12px] text-text-primary leading-relaxed whitespace-pre-wrap">{plan}</div>
-        ) : (
-          <p className="text-[12px] text-text-tertiary">No plan for today. Head to Teacher Plans to add one.</p>
-        )}
       </div>
     </div>
   )

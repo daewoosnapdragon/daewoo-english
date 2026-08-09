@@ -11,7 +11,7 @@ import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
 import OralTestGrades2to5 from '@/components/leveling/OralTestEntry25'
 import WrittenTestEntry from '@/components/leveling/WrittenTestEntry'
-import { WIDA_LEVELS } from '@/components/curriculum/CurriculumView'
+import { WIDA_LEVELS } from '@/lib/wida'
 import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
@@ -735,7 +735,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
   const openGradeEditor = async (studentId: string) => {
     setEditingManualGrades(true)
     if (allSemesters.length === 0) {
-      const { data } = await supabase.from('semesters').select('id, name, type').order('created_at', { ascending: false })
+      const { data } = await supabase.from('semesters').select('id, name, type').eq('is_archived', false).order('created_at', { ascending: false })
       if (data) setAllSemesters(data)
     }
     // Pre-load existing grades for this student to populate values

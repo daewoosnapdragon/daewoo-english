@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
-import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown } from 'lucide-react'
+import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown, Archive, ArchiveRestore } from 'lucide-react'
 
 export default function SettingsView() {
   const { language, showToast, currentTeacher } = useApp()
@@ -257,6 +257,7 @@ function SemesterSection() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const [newSem, setNewSem] = useState({ name: '', name_ko: '', academic_year: '2025-2026', type: 'spring' as string, start_date: '', end_date: '', midterm_cutoff_date: '', report_card_cutoff_date: '' })
 
   useEffect(() => {
@@ -284,6 +285,19 @@ function SemesterSection() {
     await supabase.from('semesters').update({ is_active: true }).eq('id', id)
     setSemesters((prev: any) => prev.map((s: any) => ({ ...s, is_active: s.id === id })))
     showToast('Active semester updated')
+  }
+
+  // Archiving only hides a semester from the pickers -- no data is touched.
+  const handleToggleArchive = async (sem: any) => {
+    const next = !sem.is_archived
+    if (next && sem.is_active) {
+      showToast('Set another semester active before archiving this one')
+      return
+    }
+    const { error } = await supabase.from('semesters').update({ is_archived: next }).eq('id', sem.id)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setSemesters((prev: any) => prev.map((s: any) => s.id === sem.id ? { ...s, is_archived: next } : s))
+    showToast(next ? 'Semester archived -- hidden from pickers, data kept' : 'Semester restored')
   }
 
   const handleAdd = async () => {
@@ -347,6 +361,9 @@ function SemesterSection() {
     return new Date(date) < new Date()
   }
 
+  const archivedCount = semesters.filter((s: any) => s.is_archived).length
+  const visibleSemesters = showArchived ? semesters : semesters.filter((s: any) => !s.is_archived)
+
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
@@ -354,10 +371,18 @@ function SemesterSection() {
           <CalendarDays size={20} className="text-navy" />
           <h3 className="font-display text-lg font-semibold text-navy">{lang === 'ko' ? '학기 관리' : 'Semesters & Cutoff Dates'}</h3>
         </div>
-        <button onClick={() => setAdding(!adding)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
-          <Plus size={13} /> {lang === 'ko' ? '학기 추가' : 'Add Semester'}
-        </button>
+        <div className="flex items-center gap-2">
+          {archivedCount > 0 && (
+            <button onClick={() => setShowArchived(!showArchived)}
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-all ${showArchived ? 'bg-surface-alt border-border text-text-primary' : 'bg-surface border-border text-text-secondary hover:bg-surface-alt'}`}>
+              <Archive size={13} /> {lang === 'ko' ? `보관됨 (${archivedCount})` : `Archived (${archivedCount})`}
+            </button>
+          )}
+          <button onClick={() => setAdding(!adding)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
+            <Plus size={13} /> {lang === 'ko' ? '학기 추가' : 'Add Semester'}
+          </button>
+        </div>
       </div>
 
       {adding && (
@@ -400,20 +425,28 @@ function SemesterSection() {
       <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
-        ) : semesters.length === 0 ? (
-          <div className="p-8 text-center text-text-tertiary text-sm">No semesters created yet.</div>
+        ) : visibleSemesters.length === 0 ? (
+          <div className="p-8 text-center text-text-tertiary text-sm">
+            {semesters.length === 0 ? 'No semesters created yet.' : 'All semesters are archived. Use the Archived button to show them.'}
+          </div>
         ) : (
           <div className="divide-y divide-border">
-            {semesters.map((sem: any) => (
-              <div key={sem.id} className={`p-4 ${sem.is_active ? 'bg-green-50/50' : ''}`}>
+            {visibleSemesters.map((sem: any) => (
+              <div key={sem.id} className={`p-4 ${sem.is_archived ? 'opacity-60' : sem.is_active ? 'bg-green-50/50' : ''}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-[14px] font-semibold text-navy">{sem.name}</span>
                     {sem.name_ko && <span className="text-[12px] text-text-tertiary">{sem.name_ko}</span>}
                     {sem.is_active && <span className="text-[9px] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">ACTIVE</span>}
+                    {sem.is_archived && <span className="text-[9px] bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-bold">ARCHIVED</span>}
                   </div>
                   <div className="flex items-center gap-2">
-                    {!sem.is_active && <button onClick={() => handleSetActive(sem.id)} className="text-[10px] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium">Set Active</button>}
+                    {!sem.is_active && !sem.is_archived && <button onClick={() => handleSetActive(sem.id)} className="text-[10px] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium">Set Active</button>}
+                    <button onClick={() => handleToggleArchive(sem)}
+                      title={sem.is_archived ? 'Restore to semester pickers' : 'Hide from semester pickers (keeps all data)'}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+                      {sem.is_archived ? <><ArchiveRestore size={10} /> Restore</> : <><Archive size={10} /> Archive</>}
+                    </button>
                     <button onClick={() => handleSave(sem)} disabled={saving === sem.id}
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-navy text-white hover:bg-navy-dark">
                       {saving === sem.id ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} Save
