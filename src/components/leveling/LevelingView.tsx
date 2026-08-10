@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
-import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw } from 'lucide-react'
+import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
@@ -90,6 +90,10 @@ function LevelingView() {
   const [selectedTest, setSelectedTest] = useState<LevelTest | null>(null)
   const [loading, setLoading] = useState(true)
   const [phase, setPhase] = useState<Phase>('setup')
+  const [showArchived, setShowArchived] = useState(false)
+
+  const archivedCount = levelTests.filter(t => (t as any).is_archived).length
+  const visibleTests = showArchived ? levelTests : levelTests.filter(t => !(t as any).is_archived)
 
   useEffect(() => {
     (async () => {
@@ -99,13 +103,25 @@ function LevelingView() {
     })()
   }, [])
 
-  const handleCreateTest = async (grade: Grade, semester: 'fall' | 'spring') => {
-    const name = `${semester === 'fall' ? 'Fall' : 'Spring'} ${new Date().getFullYear()} - Grade ${grade}`
+  // academic_year used to be hardcoded to '2025-2026' while the name used the
+  // current year, so tests were stamped with the wrong year. It is now chosen
+  // when the test is created, and is what pins the test to its question set.
+  const handleCreateTest = async (grade: Grade, semester: 'fall' | 'spring', academicYear: string) => {
+    const label = semester === 'fall' ? 'Fall' : 'Spring'
+    const name = `${label} ${academicYear} - Grade ${grade}`
     const { data, error } = await supabase.from('level_tests').insert({
-      name, grade, academic_year: '2025-2026', semester, created_by: currentTeacher?.id || null,
+      name, grade, academic_year: academicYear, semester, created_by: currentTeacher?.id || null,
     }).select().single()
     if (error) showToast(`Error: ${error.message}`)
     else { setLevelTests(prev => [data, ...prev]); setSelectedTest(data); setPhase('scores'); showToast('Level test created') }
+  }
+
+  const handleToggleArchive = async (test: LevelTest) => {
+    const next = !(test as any).is_archived
+    const { error } = await supabase.from('level_tests').update({ is_archived: next }).eq('id', test.id)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setLevelTests(prev => prev.map(t => t.id === test.id ? { ...t, is_archived: next } as LevelTest : t))
+    showToast(next ? 'Test archived — scores are kept' : 'Test restored')
   }
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
@@ -119,15 +135,46 @@ function LevelingView() {
       <div className="px-10 py-8 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-display text-lg font-semibold text-navy">Level Tests</h3>
-          {isLeadTeacher && <CreateTestBtn onCreate={handleCreateTest} />}
+          <div className="flex items-center gap-2">
+            {archivedCount > 0 && (
+              <button onClick={() => setShowArchived(!showArchived)}
+                className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[12px] font-medium border transition-all ${
+                  showArchived ? 'bg-surface-alt border-border text-text-primary' : 'bg-surface border-border text-text-secondary hover:bg-surface-alt'}`}>
+                <Archive size={13} /> Archived ({archivedCount})
+              </button>
+            )}
+            {isLeadTeacher && <CreateTestBtn onCreate={handleCreateTest} />}
+          </div>
         </div>
-        {levelTests.length === 0 ? <p className="text-text-tertiary text-sm py-8 text-center">No level tests created yet.</p> :
-          <div className="space-y-2">{levelTests.map(t => (
-            <button key={t.id} onClick={() => { setSelectedTest(t); setPhase('scores') }}
-              className="w-full flex items-center justify-between bg-surface border border-border rounded-xl p-4 hover:border-navy/30 transition-all text-left">
-              <div><p className="text-[14px] font-semibold text-navy">{t.name}</p><p className="text-[12px] text-text-tertiary mt-0.5">Grade {t.grade} | {t.semester === 'spring' ? 'Spring' : t.semester === 'fall' ? 'Fall' : t.semester} | {t.academic_year}</p></div>
-              <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${t.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{t.status.toUpperCase()}</span>
-            </button>))}</div>}
+        {visibleTests.length === 0 ? (
+          <p className="text-text-tertiary text-sm py-8 text-center">
+            {levelTests.length === 0 ? 'No level tests created yet.' : 'All tests are archived. Use the Archived button to show them.'}
+          </p>
+        ) : (
+          <div className="space-y-2">{visibleTests.map(t => {
+            const archived = !!(t as any).is_archived
+            return (
+              <div key={t.id}
+                className={`w-full flex items-center justify-between bg-surface border border-border rounded-xl p-4 transition-all ${archived ? 'opacity-60' : 'hover:border-navy/30'}`}>
+                <button onClick={() => { setSelectedTest(t); setPhase('scores') }} className="flex-1 text-left min-w-0">
+                  <p className="text-[14px] font-semibold text-navy">{t.name}</p>
+                  <p className="text-[12px] text-text-tertiary mt-0.5">Grade {t.grade} | {t.semester === 'spring' ? 'Spring' : t.semester === 'fall' ? 'Fall' : t.semester} | {t.academic_year}</p>
+                </button>
+                <div className="flex items-center gap-2 shrink-0 ml-3">
+                  {archived && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-gray-200 text-gray-700">ARCHIVED</span>}
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${t.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{t.status.toUpperCase()}</span>
+                  {isLeadTeacher && (
+                    <button onClick={() => handleToggleArchive(t)}
+                      title={archived ? 'Show this test in the list again' : 'Hide from this list. Scores are kept.'}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-colors">
+                      {archived ? <><ArchiveRestore size={11} /> Restore</> : <><Archive size={11} /> Archive</>}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}</div>
+        )}
 
         {/* Emergency Leveling - Grade 1 Only */}
         {isLeadTeacher && <EmergencyLeveling />}
@@ -278,16 +325,29 @@ function EmergencyLeveling() {
   )
 }
 
-function CreateTestBtn({ onCreate }: { onCreate: (g: Grade, s: 'fall' | 'spring') => void }) {
+/** Best guess at the current academic year, offered as the default so it is
+ *  never silently wrong the way the old hardcoded value was. */
+function defaultAcademicYear(): string {
+  const now = new Date()
+  // Korean school year starts in March, so Jan/Feb still belong to the year before.
+  const startYear = now.getMonth() >= 2 ? now.getFullYear() : now.getFullYear() - 1
+  return `${startYear}-${startYear + 1}`
+}
+
+function CreateTestBtn({ onCreate }: { onCreate: (g: Grade, s: 'fall' | 'spring', academicYear: string) => void }) {
   const [open, setOpen] = useState(false)
   const [g, setG] = useState<Grade>(3)
-  const [sem, setSem] = useState<'fall' | 'spring'>('spring')
+  const [sem, setSem] = useState<'fall' | 'spring'>('fall')
+  const [year, setYear] = useState(defaultAcademicYear())
   if (!open) return <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Plus size={14} /> New Level Test</button>
   return (
-    <div className="flex items-end gap-3">
+    <div className="flex items-end gap-2">
       <select value={g} onChange={(e: any) => setG(Number(e.target.value) as Grade)} className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface">{GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}</select>
       <select value={sem} onChange={(e: any) => setSem(e.target.value)} className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface"><option value="fall">Fall</option><option value="spring">Spring</option></select>
-      <button onClick={() => { onCreate(g, sem); setOpen(false) }} className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark">Create</button>
+      <input value={year} onChange={(e: any) => setYear(e.target.value)} title="Academic year"
+        className="w-[110px] px-3 py-2 border border-border rounded-lg text-[13px] bg-surface" placeholder="2026-2027" />
+      <button onClick={() => { if (year.trim()) { onCreate(g, sem, year.trim()); setOpen(false) } }}
+        className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark">Create</button>
       <button onClick={() => setOpen(false)} className="px-3 py-2 text-[13px] text-text-secondary">Cancel</button>
     </div>
   )

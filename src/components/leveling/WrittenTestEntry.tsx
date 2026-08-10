@@ -227,17 +227,56 @@ const GRADE_5_WRITING: WritingCategory[] = [
 ]
 
 // ═══════════════════════════════════════════════════════════════════════
-// CONFIG LOOKUP
+// TEST VERSIONS
 // ═══════════════════════════════════════════════════════════════════════
+// Scores are stored as answers keyed by question number only -- {7:'b'} -- and
+// never record what Q7 actually was. So a grade's questions must NEVER be
+// edited in place once a test has been scored: every historical result would
+// silently re-point at different questions, standards and domains.
+//
+// Instead each level test resolves to a content version, keyed by its
+// academic_year and semester. Tests created before versioning, and any test
+// whose version has not been authored, fall back to LEGACY_VERSION -- the
+// content that has been in use to date.
+//
+// ── Adding a new test (e.g. Fall 2026) ────────────────────────────────
+//   1. Add the question arrays, e.g. GRADE_3_QUESTIONS_2026_FALL.
+//   2. Register them below under the matching `academic_year:semester` key.
+//   3. Grades left out of that entry keep using the legacy content, and the
+//      scoring screen shows which version it is using, so it is never silent.
 
-function getGradeConfig(grade: number): GradeConfig | null {
-  switch (grade) {
-    case 2: return { grade: 2, totalMC: 32, questionCount: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20 }
-    case 3: return { grade: 3, totalMC: 26, questionCount: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20 }
-    case 4: return { grade: 4, totalMC: 40, questionCount: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20 }
-    case 5: return { grade: 5, totalMC: 37, questionCount: 25, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20 }
-    default: return null
-  }
+export const LEGACY_VERSION = 'legacy'
+
+const LEGACY_CONFIGS: Record<number, GradeConfig> = {
+  2: { grade: 2, totalMC: 32, questionCount: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20 },
+  3: { grade: 3, totalMC: 26, questionCount: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20 },
+  4: { grade: 4, totalMC: 40, questionCount: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20 },
+  5: { grade: 5, totalMC: 37, questionCount: 25, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20 },
+}
+
+/** Content versions. Key format: `${academic_year}:${semester}`. */
+const TEST_VERSIONS: Record<string, Partial<Record<number, GradeConfig>>> = {
+  [LEGACY_VERSION]: LEGACY_CONFIGS,
+  // '2026-2027:fall': { 3: { grade: 3, totalMC: ..., questions: GRADE_3_QUESTIONS_2026_FALL, ... } },
+}
+
+/** Human-readable name for the content a test is scored against. */
+export function versionLabel(versionKey: string): string {
+  if (versionKey === LEGACY_VERSION) return 'Original test'
+  const [year, sem] = versionKey.split(':')
+  return `${sem === 'fall' ? 'Fall' : 'Spring'} ${year} test`
+}
+
+/** Resolve a level test to its content version, falling back to legacy. */
+export function versionKeyForTest(test: { academic_year?: string | null; semester?: string | null } | null | undefined): string {
+  if (!test?.academic_year || !test?.semester) return LEGACY_VERSION
+  const key = `${test.academic_year}:${test.semester}`
+  return TEST_VERSIONS[key] ? key : LEGACY_VERSION
+}
+
+function getGradeConfig(grade: number, versionKey: string = LEGACY_VERSION): GradeConfig | null {
+  const version = TEST_VERSIONS[versionKey] || TEST_VERSIONS[LEGACY_VERSION]
+  return version[grade] || TEST_VERSIONS[LEGACY_VERSION][grade] || null
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1069,7 +1108,10 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
 }) {
   const { currentTeacher, confirmDialog } = useApp()
   const grade = Number(levelTest.grade)
-  const config = getGradeConfig(grade)
+  // Resolve the content this specific test was (or will be) scored against,
+  // so historical tests keep their original questions.
+  const versionKey = versionKeyForTest(levelTest as any)
+  const config = getGradeConfig(grade, versionKey)
 
   const [students, setStudents] = useState<any[]>([])
   const [scores, setScores] = useState<Record<string, StudentScores>>({})
@@ -1429,6 +1471,12 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     <div className="flex h-[calc(100vh-160px)]">
       {/* ─── Sidebar ─── */}
       <div className="w-[220px] bg-surface border-r border-border flex flex-col">
+        {/* Which question set this test is scored against. Shown so a test
+            falling back to the original content is never a silent surprise. */}
+        <div className="px-3 py-2 border-b border-border bg-surface-alt/40" title="The question set this test is scored against. Historical tests keep their original questions.">
+          <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold">Questions</p>
+          <p className="text-[11px] text-text-secondary font-medium">{versionLabel(versionKey)}</p>
+        </div>
         {/* View toggle */}
         <div className="p-3 border-b border-border flex gap-1">
           <button onClick={() => setView('entry')} className={`flex-1 text-[11px] py-1.5 rounded font-medium ${view === 'entry' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
