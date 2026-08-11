@@ -17,6 +17,14 @@ const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
+/** Moves a YYYY-MM-DD date string by whole days, staying in local time. */
+function shiftDate(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + days)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
 // Subjects offered when picking a day's lesson. Program names ("Into Reading",
 // "Hand in Hand", "Thumbs Up") come first since those rotate day to day.
 // TODO: move to Settings so this can be edited without a code change.
@@ -132,10 +140,17 @@ function ParentCalendarView() {
     setLoading(true)
     const firstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`
     const lastDay = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`
+    // Three months of lead-in: enough for any realistic multi-day event that
+    // starts before this month but runs into it, without pulling the whole table.
+    const lookbackDate = new Date(year, month - 3, 1)
+    const eventLookbackStart = `${lookbackDate.getFullYear()}-${String(lookbackDate.getMonth() + 1).padStart(2, '0')}-01`
 
     const [planRes, eventsRes] = await Promise.all([
       supabase.from('parent_calendar').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade).gte('date', firstDay).lte('date', lastDay),
-      supabase.from('calendar_events').select('date, title, type, show_on_parent_calendar, target_grades').gte('date', firstDay).lte('date', lastDay),
+      // A multi-day event can start before this month and still cover days in
+      // it, so the window is opened backwards and the overlap worked out below.
+      supabase.from('calendar_events').select('date, end_date, title, type, show_on_parent_calendar, target_grades')
+        .gte('date', eventLookbackStart).lte('date', lastDay),
     ])
 
     const dd: Record<string, DayContent> = {}
@@ -170,8 +185,9 @@ function ParentCalendarView() {
 
     // Load calendar events for parent calendar
     const ce: Record<string, { title: string; type?: string }[]> = {}
-    let eventsList = eventsRes.data
+    let eventsList: any[] | null = eventsRes.data
     if (eventsRes.error) {
+      // Older databases lack end_date / parent-calendar columns.
       const fallbackRes = await supabase.from('calendar_events').select('date, title, type').gte('date', firstDay).lte('date', lastDay)
       eventsList = fallbackRes.data || null
     }
@@ -180,9 +196,15 @@ function ParentCalendarView() {
         if (!ev.show_on_parent_calendar) return
         const tg = ev.target_grades as number[] | null
         const gradeMatch = !tg || tg.length === 0 || tg.includes(selectedGrade)
-        if (gradeMatch) {
-          if (!ce[ev.date]) ce[ev.date] = []
-          ce[ev.date].push({ title: ev.title, type: ev.type })
+        if (!gradeMatch) return
+        // A multi-day event belongs on every day it covers, not just its first,
+        // clipped to the month being shown.
+        const start = ev.date > firstDay ? ev.date : firstDay
+        const end = (ev.end_date && ev.end_date > ev.date) ? ev.end_date : ev.date
+        const lastShown = end < lastDay ? end : lastDay
+        for (let d = start; d <= lastShown; d = shiftDate(d, 1)) {
+          if (!ce[d]) ce[d] = []
+          ce[d].push({ title: ev.title, type: ev.type })
         }
       })
     }
@@ -272,13 +294,6 @@ function ParentCalendarView() {
   }
   const updateHomework = (mondayDate: string, value: string) => {
     setWeeklyHomework(prev => ({ ...prev, [mondayDate]: value }))
-  }
-
-  const shiftDate = (dateStr: string, days: number) => {
-    const [y, m, d] = dateStr.split('-').map(Number)
-    const dt = new Date(y, m - 1, d)
-    dt.setDate(dt.getDate() + days)
-    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
   }
 
   /**

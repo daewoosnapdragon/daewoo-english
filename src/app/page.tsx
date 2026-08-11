@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
-import { useTeachers, useSemesters } from '@/hooks/useData'
+import { useTeachers } from '@/hooks/useData'
 import LoginPage from '@/components/layout/LoginPage'
 import Sidebar from '@/components/layout/Sidebar'
 import Toast from '@/components/ui/Toast'
@@ -22,9 +22,8 @@ import { Loader2 } from 'lucide-react'
 export default function Home() {
   const [activeView, setActiveView] = useState('dashboard')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { t, currentTeacher, setActiveSemester, pendingNavigation, clearNavigation } = useApp()
+  const { t, currentTeacher, semestersLoading, pendingNavigation, clearNavigation } = useApp()
   const { teachers, loading: teachersLoading } = useTeachers()
-  const { activeSemester, loading: semestersLoading } = useSemesters()
 
   // Listen for navigation requests from context (e.g. dashboard deep links)
   useEffect(() => {
@@ -35,10 +34,6 @@ export default function Home() {
       return () => clearTimeout(timer)
     }
   }, [pendingNavigation, clearNavigation])
-
-  useEffect(() => {
-    if (activeSemester) setActiveSemester(activeSemester)
-  }, [activeSemester, setActiveSemester])
 
   // Persist sidebar state
   useEffect(() => {

@@ -907,6 +907,14 @@ function SharedCalendar() {
   // An event covers every day in [date, end_date] (end_date null = single day)
   const dayEvts = (d: string) => events.filter((e: any) => d >= e.date && d <= (e.end_date || e.date))
 
+  // Escape closes the day modal (but not while a nested add/edit modal is up)
+  useEffect(() => {
+    if (!selDay || showAdd || editEvent) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelDay(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selDay, showAdd, editEvent])
+
   const handleDelete = async (id: string) => {
     if (!await confirmDialog({ title: 'Delete this event?', danger: true, confirmLabel: 'Delete' })) return
     await supabase.from('calendar_events').delete().eq('id', id)
@@ -966,7 +974,9 @@ function SharedCalendar() {
             <button onClick={() => setCur(new Date())} className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light ml-1">Today</button>
           </div>
         </div>
-        <button onClick={() => { if (tableError) { showToast('Run the SQL migration first to create the calendar_events table'); return }; setShowAdd(true); if (!selDay) setSelDay(today) }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Plus size={13} /> Add Event</button>
+        {/* Defaults to today's date inside the modal; deliberately does not select
+            a day, so saving returns you to the calendar rather than a day modal. */}
+        <button onClick={() => { if (tableError) { showToast('Run the SQL migration first to create the calendar_events table'); return }; setShowAdd(true) }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Plus size={13} /> Add Event</button>
       </div>
 
       {/* Legend */}
@@ -995,49 +1005,53 @@ function SharedCalendar() {
         </div>
       </div>
 
-      {/* Day Detail */}
-      {selDay && (
-        <div className="px-5 pb-4 border-t border-border pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-[14px] font-semibold text-navy">
-              {new Date(selDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </h4>
-            <div className="flex items-center gap-2">
-              <button onClick={() => { setShowAdd(true) }} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-accent-light text-navy hover:bg-accent-light/80"><Plus size={11} /> Add</button>
-              <button onClick={() => setSelDay(null)} className="p-1 rounded hover:bg-surface-alt"><X size={14} /></button>
+      {/* Day Detail — a modal, so clicking a square never means scrolling to find it */}
+      {selDay && !showAdd && !editEvent && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setSelDay(null)}>
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <h4 className="text-[15px] font-semibold text-navy">
+                {new Date(selDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              </h4>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setShowAdd(true) }} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-accent-light text-navy hover:bg-accent-light/80"><Plus size={11} /> Add</button>
+                <button onClick={() => setSelDay(null)} aria-label="Close" className="p-1 rounded hover:bg-surface-alt"><X size={16} /></button>
+              </div>
+            </div>
+            <div className="px-5 py-4 overflow-y-auto">
+              {dayEvts(selDay).length === 0 ? (
+                <p className="text-[12px] text-text-tertiary italic py-3">No events this day.</p>
+              ) : (
+                <div className="space-y-2">
+                  {dayEvts(selDay).map(ev => {
+                    const typeInfo = EVENT_TYPES.find(t => t.value === ev.type)
+                    return (
+                      <div key={ev.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-surface-alt/30">
+                        <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: typeInfo?.color || '#6B7280' }} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[13px] font-medium">{ev.title}</span>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${typeInfo?.bg || 'bg-gray-100 text-gray-700'}`}>{typeInfo?.label || ev.type}</span>
+                            {(ev as any).end_date && (ev as any).end_date > ev.date && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-navy/10 text-navy font-medium">{ev.date} → {(ev as any).end_date}</span>
+                            )}
+                          </div>
+                          {ev.description && <p className="text-[11px] text-text-secondary mt-0.5">{ev.description}</p>}
+                          <div className="flex gap-1.5 mt-1">
+                            {(ev as any).show_on_parent_calendar && <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">Parent Cal{(ev as any).target_grades?.length > 0 ? ` (G${(ev as any).target_grades.join(',')})` : ''}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setEditEvent(ev)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy"><Pencil size={13} /></button>
+                          <button onClick={() => handleDelete(ev.id)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-danger"><Trash2 size={13} /></button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
-          {dayEvts(selDay).length === 0 ? (
-            <p className="text-[12px] text-text-tertiary italic py-3">No events this day.</p>
-          ) : (
-            <div className="space-y-2">
-              {dayEvts(selDay).map(ev => {
-                const typeInfo = EVENT_TYPES.find(t => t.value === ev.type)
-                return (
-                  <div key={ev.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-surface-alt/30">
-                    <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: typeInfo?.color || '#6B7280' }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[13px] font-medium">{ev.title}</span>
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${typeInfo?.bg || 'bg-gray-100 text-gray-700'}`}>{typeInfo?.label || ev.type}</span>
-                        {(ev as any).end_date && (ev as any).end_date > ev.date && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-navy/10 text-navy font-medium">{ev.date} → {(ev as any).end_date}</span>
-                        )}
-                      </div>
-                      {ev.description && <p className="text-[11px] text-text-secondary mt-0.5">{ev.description}</p>}
-                      <div className="flex gap-1.5 mt-1">
-                        {(ev as any).show_on_parent_calendar && <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">Parent Cal{(ev as any).target_grades?.length > 0 ? ` (G${(ev as any).target_grades.join(',')})` : ''}</span>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => setEditEvent(ev)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy"><Pencil size={13} /></button>
-                      <button onClick={() => handleDelete(ev.id)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-danger"><Trash2 size={13} /></button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </div>
       )}
 

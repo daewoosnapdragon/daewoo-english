@@ -169,9 +169,12 @@ export default function AttendanceView() {
     setHasChanges(true)
   }
 
+  // reason === '' keeps whatever note each student already has, so the plain
+  // "Mark All Absent" button doesn't wipe individual notes. The Field Trip
+  // checkbox passes a reason and stamps it on everyone.
   const markAllAbsent = (reason: string) => {
     const updated: typeof records = {}
-    students.forEach((s: any) => { updated[s.id] = { status: 'absent', note: reason } })
+    students.forEach((s: any) => { updated[s.id] = { status: 'absent', note: reason || records[s.id]?.note || '' } })
     setRecords(updated)
     setHasChanges(true)
   }
@@ -597,6 +600,10 @@ export default function AttendanceView() {
           <div className="w-px h-6 bg-border" />
           <button onClick={markAllPresent} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-green-100 text-green-700 hover:bg-green-200">
             <UserCheck size={13} /> {lang === 'ko' ? '전원 출석' : 'Mark All Present'}
+          </button>
+          <button onClick={() => markAllAbsent('')} title="Mark every student absent without a reason"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-red-100 text-red-700 hover:bg-red-200">
+            <UserX size={13} /> {lang === 'ko' ? '전원 결석' : 'Mark All Absent'}
           </button>
           <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-red-50 text-red-700 border border-red-200 cursor-pointer hover:bg-red-100 transition-all">
             <input type="checkbox" checked={absentCount === students.length && students.length > 0 && Object.values(records).some((r: any) => r.note === 'Field Trip')}

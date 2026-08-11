@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
-import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore } from 'lucide-react'
+import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
@@ -82,9 +82,12 @@ const DIMS = [
 // ─── Main View ──────────────────────────────────────────────────────
 
 function LevelingView() {
-  const { showToast, currentTeacher } = useApp()
+  const { showToast, currentTeacher, confirmDialog } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
   const isLeadTeacher = isAdmin || currentTeacher?.is_head_teacher || currentTeacher?.english_class === 'Snapdragon'
+  // Deleting a test throws away every score on it, so it is narrower than the
+  // lead-teacher checks above: admin and Snapdragon only.
+  const canDeleteTests = isAdmin || currentTeacher?.english_class === 'Snapdragon'
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class as EnglishClass : null
   const [levelTests, setLevelTests] = useState<LevelTest[]>([])
   const [selectedTest, setSelectedTest] = useState<LevelTest | null>(null)
@@ -122,6 +125,41 @@ function LevelingView() {
     if (error) { showToast(`Error: ${error.message}`); return }
     setLevelTests(prev => prev.map(t => t.id === test.id ? { ...t, is_archived: next } as LevelTest : t))
     showToast(next ? 'Test archived — scores are kept' : 'Test restored')
+  }
+
+  // Permanent, unlike Archive. Everything hanging off the test cascades away
+  // with it, so the confirmation spells out exactly what is being thrown out.
+  const handleDeleteTest = async (test: LevelTest) => {
+    const [scores, ratings, placements] = await Promise.all([
+      supabase.from('level_test_scores').select('*', { count: 'exact', head: true }).eq('level_test_id', test.id),
+      supabase.from('teacher_anecdotal_ratings').select('*', { count: 'exact', head: true }).eq('level_test_id', test.id),
+      supabase.from('level_test_placements').select('*', { count: 'exact', head: true }).eq('level_test_id', test.id),
+    ])
+    const counts = [
+      [scores.count || 0, 'student score'],
+      [ratings.count || 0, 'teacher rating'],
+      [placements.count || 0, 'placement decision'],
+    ] as const
+    const linked = counts.filter(([n]) => n > 0)
+      .map(([n, label]) => `${n} ${label}${n === 1 ? '' : 's'}`)
+
+    const ok = await confirmDialog({
+      title: `Delete "${test.name}"?`,
+      message: linked.length > 0
+        ? `This permanently deletes the test and everything on it:\n- ${linked.join('\n- ')}\n\nThis cannot be undone. Archive it instead if you only want it out of the list.`
+        : 'This test has no scores on it yet. Deleting it cannot be undone.',
+      danger: true,
+      confirmLabel: 'Delete',
+    })
+    if (!ok) return
+
+    // Cascades handle the child rows; the history table has no FK, so clear it here.
+    await supabase.from('level_test_scores_history').delete().eq('level_test_id', test.id)
+    const { error } = await supabase.from('level_tests').delete().eq('id', test.id)
+    if (error) { showToast(`Could not delete: ${error.message}`); return }
+    setLevelTests(prev => prev.filter(t => t.id !== test.id))
+    if (selectedTest?.id === test.id) setSelectedTest(null)
+    showToast('Level test deleted')
   }
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
@@ -168,6 +206,13 @@ function LevelingView() {
                       title={archived ? 'Show this test in the list again' : 'Hide from this list. Scores are kept.'}
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-colors">
                       {archived ? <><ArchiveRestore size={11} /> Restore</> : <><Archive size={11} /> Archive</>}
+                    </button>
+                  )}
+                  {canDeleteTests && (
+                    <button onClick={() => handleDeleteTest(t)}
+                      title="Delete this test and all of its scores. Cannot be undone."
+                      className="p-1 rounded-lg text-text-tertiary hover:bg-red-50 hover:text-red-500 transition-colors">
+                      <Trash2 size={13} />
                     </button>
                   )}
                 </div>

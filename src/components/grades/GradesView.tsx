@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
-import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, QuestionMapItem, ItemResponse } from '@/types'
+import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, Semester, QuestionMapItem, ItemResponse } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
 import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, ChevronUp, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
@@ -54,10 +54,8 @@ interface StudentRow { id: string; english_name: string; korean_name: string; ph
 type SubView = 'entry' | 'overview' | 'student' | 'batch' | 'calendar'
 type LangKey = 'en' | 'ko'
 
-interface Semester { id: string; name: string; name_ko: string; type: string; is_active: boolean }
-
 export default function GradesView() {
-  const { t, language, currentTeacher, showToast, confirmDialog } = useApp()
+  const { t, language, currentTeacher, showToast, confirmDialog, activeSemester, visibleSemesters, canSwitchSemester } = useApp()
   const lang = language as LangKey
   const [subView, setSubView] = useState<SubView>('entry')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(() => {
@@ -96,21 +94,25 @@ export default function GradesView() {
   }, [hasChanges])
 
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
-  const [semesters, setSemesters] = useState<Semester[]>([])
   const [selectedSemester, setSelectedSemester] = useState<string | null>(null)
 
-  // Load semesters
+  // Only semester managers get a picker; everyone else follows the active one.
+  const semesters = useMemo(() => {
+    const nonArchive = visibleSemesters.filter((s: Semester) => String(s.type) !== 'archive')
+    return nonArchive.length > 0 ? nonArchive : visibleSemesters
+  }, [visibleSemesters])
+
+  // Follow the active semester: on first load, and again whenever an admin
+  // changes it out from under a teacher who cannot switch.
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('semesters').select('*').eq('is_archived', false).order('start_date', { ascending: false })
-      if (data && data.length > 0) {
-        const activeSems = data.filter((s: Semester) => s.type !== 'archive')
-        setSemesters(activeSems.length > 0 ? activeSems : data)
-        const active = data.find((s: Semester) => s.is_active)
-        setSelectedSemester(active?.id || data[0].id)
-      }
-    })()
-  }, [])
+    if (semesters.length === 0) return
+    const fallback = activeSemester?.id || semesters[0].id
+    setSelectedSemester(prev => {
+      if (!prev) return fallback
+      if (!canSwitchSemester && prev !== fallback) return fallback
+      return semesters.some(s => s.id === prev) ? prev : fallback
+    })
+  }, [semesters, activeSemester, canSwitchSemester])
 
   const isTeacher = currentTeacher?.role === 'teacher'
   const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
@@ -318,8 +320,8 @@ export default function GradesView() {
 
       <div className="px-10 py-6">
         <div className="flex items-center gap-3 mb-5">
-          {/* Semester Dropdown */}
-          {semesters.length > 0 && (
+          {/* Semester — a picker for admin/Snapdragon, a fixed label for everyone else */}
+          {semesters.length > 0 && (canSwitchSemester ? (
             <select value={selectedSemester || ''} onChange={e => { setSelectedSemester(e.target.value || null); setSelectedAssessment(null) }}
               className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
               {semesters.map(sem => (
@@ -328,7 +330,11 @@ export default function GradesView() {
                 </option>
               ))}
             </select>
-          )}
+          ) : (
+            <span title="The active semester is set by an admin" className="px-3 py-2 rounded-lg text-[13px] font-medium bg-surface-alt text-text-secondary border border-border">
+              {(() => { const sem = semesters.find(s => s.id === selectedSemester) || semesters[0]; return (lang === 'ko' ? sem.name_ko : sem.name) })()}
+            </span>
+          ))}
           <div className="w-px h-6 bg-border" />
           <select value={selectedGrade} onChange={e => { const g = Number(e.target.value) as Grade; setSelectedGrade(g); setSelectedAssessment(null); localStorage.setItem('daewoo_grade_tab_grade', String(g)) }}
             className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">

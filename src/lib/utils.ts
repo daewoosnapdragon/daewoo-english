@@ -90,6 +90,19 @@ export function classToTextColor(cls: EnglishClass): string {
   return colors[cls] || '#5A6275'
 }
 
+// ─── Permissions ─────────────────────────────────────────────────────
+
+/**
+ * Who may set the active semester and browse semesters other than the active
+ * one. Everyone else is pinned to whatever these accounts have made active,
+ * so a teacher can never wander back into a finished semester's data.
+ */
+export function canManageSemesters(
+  teacher: { role?: string; english_class?: string } | null | undefined
+): boolean {
+  return teacher?.role === 'admin' || teacher?.english_class === 'Snapdragon'
+}
+
 // ─── Formatting ──────────────────────────────────────────────────────
 
 export function formatPercent(value: number | null | undefined): string {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Student, Teacher, SchoolSettings, Semester, EnglishClass, Grade, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES } from '@/types'
+import { Student, Teacher, SchoolSettings, EnglishClass, Grade, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES } from '@/types'
 
 // ─── Teachers ────────────────────────────────────────────────────────
 
@@ -185,31 +185,8 @@ export function useSchoolSettings() {
 }
 
 // ─── Semesters ───────────────────────────────────────────────────────
-
-export function useSemesters() {
-  const [semesters, setSemesters] = useState<Semester[]>([])
-  const [activeSemester, setActiveSemester] = useState<Semester | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    async function fetch() {
-      const { data, error } = await supabase
-        .from('semesters')
-        .select('*')
-        .eq('is_archived', false)
-        .order('type')
-      if (!error && data) {
-        setSemesters(data)
-        const active = data.find((s: Semester) => s.is_active)
-        if (active) setActiveSemester(active)
-      }
-      setLoading(false)
-    }
-    fetch()
-  }, [])
-
-  return { semesters, activeSemester, loading }
-}
+// Semesters live in AppContext (see lib/context.tsx) so that every view shares
+// one active semester and non-admin accounts can be pinned to it.
 
 // ─── Student CRUD ────────────────────────────────────────────────────
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
-import { useStudents, useSemesters } from '@/hooks/useData'
+import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, KOREAN_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord } from '@/lib/utils'
@@ -105,7 +105,10 @@ interface ReportData {
 // ─── Main Component ─────────────────────────────────────────────────
 
 export default function ReportsView() {
-  const { t, language, currentTeacher } = useApp()
+  // `allSemesters` feeds the reports themselves (growth is measured against the
+  // preceding semester, which everyone must be able to see on a report card).
+  // `semesters` is only what this account may *select*.
+  const { t, language, currentTeacher, activeSemester, semesters: allSemesters, visibleSemesters: semesters, canSwitchSemester } = useApp()
   const lang = language as LangKey
   const [mode, setMode] = useState<'individual' | 'progress' | 'class' | 'review' | 'comments' | 'print'>('individual')
   const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
@@ -113,7 +116,6 @@ export default function ReportsView() {
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
   )
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
-  const { semesters } = useSemesters()
   const [selectedSemesterId, setSelectedSemesterId] = useState<string | null>(null)
 
   const isTeacher = currentTeacher?.role === 'teacher'
@@ -124,14 +126,19 @@ export default function ReportsView() {
   const isOwnClass = isTeacher && currentTeacher?.english_class === selectedClass
   const canEdit = isAdmin || isOwnClass
   const { students } = useStudents({ grade: selectedGrade, english_class: selectedClass })
-  const selectedSemester = semesters.find((s: any) => s.id === selectedSemesterId)
+  const selectedSemester = allSemesters.find((s: any) => s.id === selectedSemesterId)
 
+  // Follow the active semester. Accounts that cannot switch are pulled back to
+  // it whenever an admin changes which semester is active.
   useEffect(() => {
-    if (semesters.length > 0 && !selectedSemesterId) {
-      const active = semesters.find((s: any) => s.is_active)
-      setSelectedSemesterId(active?.id || semesters[0].id)
-    }
-  }, [semesters, selectedSemesterId])
+    if (semesters.length === 0) return
+    const fallback = activeSemester?.id || semesters[0].id
+    setSelectedSemesterId(prev => {
+      if (!prev) return fallback
+      if (!canSwitchSemester && prev !== fallback) return fallback
+      return semesters.some((s: any) => s.id === prev) ? prev : fallback
+    })
+  }, [semesters, activeSemester, canSwitchSemester])
 
   // "Class Overview" is a selectable dropdown entry (not a student). Treat an empty
   // selection as overview too, so landing on a mode shows the overview by default.
@@ -157,11 +164,15 @@ export default function ReportsView() {
 
       <div className="px-10 py-6">
         <div className="flex items-center gap-3 mb-6 flex-wrap">
-          {semesters.length > 0 && (
+          {semesters.length > 0 && (canSwitchSemester ? (
             <select value={selectedSemesterId || ''} onChange={(e: any) => setSelectedSemesterId(e.target.value)} className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
               {semesters.map((sem: any) => <option key={sem.id} value={sem.id}>{sem.name}</option>)}
             </select>
-          )}
+          ) : (
+            <span title="The active semester is set by an admin" className="px-3 py-2 rounded-lg text-[13px] font-medium bg-surface-alt text-text-secondary border border-border">
+              {(semesters.find((s: any) => s.id === selectedSemesterId) || semesters[0]).name}
+            </span>
+          ))}
           <select value={selectedGrade} onChange={(e: any) => setSelectedGrade(Number(e.target.value) as Grade)} className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
             {GRADES.map((g: any) => <option key={g} value={g}>Grade {g}</option>)}
           </select>
@@ -196,19 +207,19 @@ export default function ReportsView() {
         </div>
 
         {mode === 'individual' && !isOverview && selectedSemesterId && selectedSemester && (
-          <IndividualReport key={selectedStudentId} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
+          <IndividualReport key={selectedStudentId} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={allSemesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
         )}
         {mode === 'individual' && isOverview && selectedSemesterId && selectedSemester && (
           <ClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
             selectedClass={selectedClass} selectedGrade={selectedGrade} reportType="report_card"
-            allSemesters={semesters} isAdmin={isAdmin} canEdit={canEdit}
+            allSemesters={allSemesters} isAdmin={isAdmin} canEdit={canEdit}
             onSelectStudent={(id: string) => setSelectedStudentId(id)} />
         )}
         {mode === 'individual' && isOverview && !selectedSemesterId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a semester to view the class overview.</div>
         )}
         {mode === 'progress' && !isOverview && selectedSemesterId && selectedSemester && (
-          <ProgressReport key={`prog-${selectedStudentId}`} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={semesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
+          <ProgressReport key={`prog-${selectedStudentId}`} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={allSemesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
         )}
         {mode === 'progress' && isOverview && selectedSemesterId && selectedSemester && (
           <ClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
@@ -232,7 +243,7 @@ export default function ReportsView() {
         )}
         {mode === 'print' && selectedSemesterId && (
           <PrintCenter students={students} semesterId={selectedSemesterId} selectedClass={selectedClass}
-            selectedGrade={selectedGrade} isAdmin={isAdmin} allSemesters={semesters} />
+            selectedGrade={selectedGrade} isAdmin={isAdmin} allSemesters={allSemesters} />
         )}
         {mode === 'print' && !selectedSemesterId && (
           <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">Select a semester to print report cards.</div>

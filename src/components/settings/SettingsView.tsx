@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
-import { classToColor, classToTextColor, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
+import { classToColor, classToTextColor, canManageSemesters, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
 import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown, Archive, ArchiveRestore } from 'lucide-react'
 
 export default function SettingsView() {
@@ -251,8 +251,11 @@ function TeacherSection() {
 }
 
 function SemesterSection() {
-  const { language, showToast, confirmDialog } = useApp()
+  const { language, showToast, confirmDialog, currentTeacher, refreshSemesters } = useApp()
   const lang = language as 'en' | 'ko'
+  // Only admin/Snapdragon may create, edit, or activate a semester. Everyone
+  // else is pinned to whichever one they make active.
+  const canManage = canManageSemesters(currentTeacher)
   const [semesters, setSemesters] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -284,7 +287,10 @@ function SemesterSection() {
     await supabase.from('semesters').update({ is_active: false }).neq('id', 'none')
     await supabase.from('semesters').update({ is_active: true }).eq('id', id)
     setSemesters((prev: any) => prev.map((s: any) => ({ ...s, is_active: s.id === id })))
-    showToast('Active semester updated')
+    // Repoint the rest of the app (and every other account on its next focus)
+    // at the newly active semester.
+    await refreshSemesters()
+    showToast('Active semester updated — all accounts now default to it')
   }
 
   // Archiving only hides a semester from the pickers -- no data is touched.
@@ -297,6 +303,7 @@ function SemesterSection() {
     const { error } = await supabase.from('semesters').update({ is_archived: next }).eq('id', sem.id)
     if (error) { showToast(`Error: ${error.message}`); return }
     setSemesters((prev: any) => prev.map((s: any) => s.id === sem.id ? { ...s, is_archived: next } : s))
+    await refreshSemesters()
     showToast(next ? 'Semester archived -- hidden from pickers, data kept' : 'Semester restored')
   }
 
@@ -347,6 +354,7 @@ function SemesterSection() {
       showToast(`Could not delete: ${error.message}`)
     } else {
       setSemesters((prev: any) => prev.filter((s: any) => s.id !== id))
+      await refreshSemesters()
       showToast('Deleted')
     }
   }
@@ -362,7 +370,10 @@ function SemesterSection() {
   }
 
   const archivedCount = semesters.filter((s: any) => s.is_archived).length
-  const visibleSemesters = showArchived ? semesters : semesters.filter((s: any) => !s.is_archived)
+  const visibleSemesters = !canManage
+    // A teacher only ever sees the semester they are pinned to.
+    ? semesters.filter((s: any) => s.is_active)
+    : showArchived ? semesters : semesters.filter((s: any) => !s.is_archived)
 
   return (
     <div className="mb-8">
@@ -372,20 +383,30 @@ function SemesterSection() {
           <h3 className="font-display text-lg font-semibold text-navy">{lang === 'ko' ? '학기 관리' : 'Semesters & Cutoff Dates'}</h3>
         </div>
         <div className="flex items-center gap-2">
-          {archivedCount > 0 && (
+          {canManage && archivedCount > 0 && (
             <button onClick={() => setShowArchived(!showArchived)}
               className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-all ${showArchived ? 'bg-surface-alt border-border text-text-primary' : 'bg-surface border-border text-text-secondary hover:bg-surface-alt'}`}>
               <Archive size={13} /> {lang === 'ko' ? `보관됨 (${archivedCount})` : `Archived (${archivedCount})`}
             </button>
           )}
-          <button onClick={() => setAdding(!adding)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
-            <Plus size={13} /> {lang === 'ko' ? '학기 추가' : 'Add Semester'}
-          </button>
+          {canManage && (
+            <button onClick={() => setAdding(!adding)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
+              <Plus size={13} /> {lang === 'ko' ? '학기 추가' : 'Add Semester'}
+            </button>
+          )}
         </div>
       </div>
 
-      {adding && (
+      {!canManage && (
+        <p className="text-[11px] text-text-tertiary mb-3">
+          {lang === 'ko'
+            ? '활성 학기는 관리자 또는 Snapdragon 계정만 설정할 수 있습니다.'
+            : 'Only admin and Snapdragon accounts can set the active semester. Your account always follows whichever semester they make active.'}
+        </p>
+      )}
+
+      {adding && canManage && (
         <div className="bg-accent-light border border-border rounded-xl p-4 mb-4 space-y-3">
           <div className="grid grid-cols-4 gap-3">
             <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name *</label>
@@ -427,7 +448,9 @@ function SemesterSection() {
           <div className="p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
         ) : visibleSemesters.length === 0 ? (
           <div className="p-8 text-center text-text-tertiary text-sm">
-            {semesters.length === 0 ? 'No semesters created yet.' : 'All semesters are archived. Use the Archived button to show them.'}
+            {semesters.length === 0 ? 'No semesters created yet.'
+              : !canManage ? 'No semester is currently active. An admin needs to set one.'
+              : 'All semesters are archived. Use the Archived button to show them.'}
           </div>
         ) : (
           <div className="divide-y divide-border">
@@ -440,39 +463,45 @@ function SemesterSection() {
                     {sem.is_active && <span className="text-[9px] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">ACTIVE</span>}
                     {sem.is_archived && <span className="text-[9px] bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-bold">ARCHIVED</span>}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {!sem.is_active && !sem.is_archived && <button onClick={() => handleSetActive(sem.id)} className="text-[10px] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium">Set Active</button>}
-                    <button onClick={() => handleToggleArchive(sem)}
-                      title={sem.is_archived ? 'Restore to semester pickers' : 'Hide from semester pickers (keeps all data)'}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
-                      {sem.is_archived ? <><ArchiveRestore size={10} /> Restore</> : <><Archive size={10} /> Archive</>}
-                    </button>
-                    <button onClick={() => handleSave(sem)} disabled={saving === sem.id}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-navy text-white hover:bg-navy-dark">
-                      {saving === sem.id ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} Save
-                    </button>
-                    <button onClick={() => handleDelete(sem.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500"><Trash2 size={13} /></button>
-                  </div>
+                  {canManage && (
+                    <div className="flex items-center gap-2">
+                      {!sem.is_active && !sem.is_archived && <button onClick={() => handleSetActive(sem.id)} className="text-[10px] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium">Set Active</button>}
+                      <button onClick={() => handleToggleArchive(sem)}
+                        title={sem.is_archived ? 'Restore to semester pickers' : 'Hide from semester pickers (keeps all data)'}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+                        {sem.is_archived ? <><ArchiveRestore size={10} /> Restore</> : <><Archive size={10} /> Archive</>}
+                      </button>
+                      <button onClick={() => handleSave(sem)} disabled={saving === sem.id}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-navy text-white hover:bg-navy-dark">
+                        {saving === sem.id ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} Save
+                      </button>
+                      <button onClick={() => handleDelete(sem.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500"><Trash2 size={13} /></button>
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-4 gap-3">
                   <div><label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Start Date</label>
                     <input type="date" value={sem.start_date || ''} onChange={(e: any) => updateField(sem.id, 'start_date', e.target.value)}
-                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+                      disabled={!canManage}
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div><label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">End Date</label>
                     <input type="date" value={sem.end_date || ''} onChange={(e: any) => updateField(sem.id, 'end_date', e.target.value)}
-                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+                      disabled={!canManage}
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div>
                     <label className="text-[9px] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.midterm_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
                       Midterm Cutoff {isPast(sem.midterm_cutoff_date) && <span className="text-[8px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
                     </label>
                     <input type="date" value={sem.midterm_cutoff_date || ''} onChange={(e: any) => updateField(sem.id, 'midterm_cutoff_date', e.target.value)}
-                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+                      disabled={!canManage}
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div>
                     <label className="text-[9px] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.report_card_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
                       Report Card Cutoff {isPast(sem.report_card_cutoff_date) && <span className="text-[8px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
                     </label>
                     <input type="date" value={sem.report_card_cutoff_date || ''} onChange={(e: any) => updateField(sem.id, 'report_card_cutoff_date', e.target.value)}
-                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+                      disabled={!canManage}
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                 </div>
                 <p className="text-[9px] text-text-tertiary mt-2">Grades entered before the midterm cutoff count toward progress reports. All grades in the semester count toward the final report card. Grades auto-lock after each cutoff date.</p>
               </div>
