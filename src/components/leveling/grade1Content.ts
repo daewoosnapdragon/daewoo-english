@@ -204,6 +204,15 @@ export interface G1Content {
    * kept for the original test so its results do not shift.
    */
   usesClassImpression: boolean
+  /**
+   * Which teacher judgement carries weight in the composite.
+   *   'class_impression'  — a guessed placement class (the original test).
+   *   'retention_rating'  — how the student sits within the class they are
+   *                         already in: weak / core / strong. Anchored to a
+   *                         class they have been taught in all term, so it is
+   *                         a steadier signal than guessing a new one.
+   */
+  teacherSignal: 'class_impression' | 'retention_rating'
   /** Surfaced on the entry screens as administration cautions. */
   adminNotes: string[]
   timing: {
@@ -573,6 +582,7 @@ const LEGACY_CONTENT: G1Content = {
   },
   standards: LEGACY_STANDARDS,
   usesClassImpression: true,
+  teacherSignal: 'class_impression',
   adminNotes: [],
   timing: {
     struggleStopSeconds: 60,
@@ -959,11 +969,10 @@ const FALL_2026_CONTENT: G1Content = {
   },
   standards: F26_STANDARDS,
   usesClassImpression: false,
+  teacherSignal: 'retention_rating',
   adminNotes: [
     'Levels A, B and C have no comprehension questions and no NAEP rating.',
     'Comprehension is asked only when the student finishes the passage. If the student was cut off, mark "comprehension not administered" rather than scoring the questions 0.',
-    'Item 15 uses the same snowman image that is the writing stimulus for item 21. A student who anchors on it may miss item 15 for reasons unrelated to listening.',
-    'Item 20 sits under a "Listening" page header on the student copy, but it is a written response.',
   ],
   timing: {
     struggleStopSeconds: 60,

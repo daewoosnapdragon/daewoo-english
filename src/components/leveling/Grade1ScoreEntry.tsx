@@ -116,7 +116,7 @@ interface G1Scores {
   wave2_retention_rating?: 'weak' | 'core' | 'strong' | null
 }
 
-function calculateG1Composite(scores: G1Scores, content: G1Content): {
+function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass?: EnglishClass | null): {
   writtenPct: number
   writtenMC: number
   writingBonus: number
@@ -128,6 +128,8 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
   passageLevel: string
   cwpm: number | null
   weightedCwpm: number | null
+  accuracy: number | null
+  effectiveLevel: string
   compTotal: number | null
   compMax: number | null
   compAnswered: number
@@ -182,6 +184,7 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
   let orfPct = 0
   let cwpm: number | null = null
   let weightedCwpm: number | null = null
+  let accuracy: number | null = null
 
   if (passageLevel === 'A') {
     const aMax = content.levelA.max || 1
@@ -205,6 +208,9 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
     const timeSeconds = scores.o_orf_time_seconds ?? 60
     const wordsCorrect = Math.max(0, wordsRead - errors)
 
+    if (wordsRead > 0) {
+      accuracy = Math.round((wordsCorrect / wordsRead) * 1000) / 10
+    }
     if (timeSeconds > 0) {
       cwpm = Math.round((wordsCorrect / timeSeconds) * 60)
     }
@@ -303,26 +309,71 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
 
   let oralScore = band.floor + (withinBandAvg * bandWidth)
 
-  // Teacher class impression. Dropped from Fall 2026 on: placement now rests on
-  // what the student demonstrated. The original test collected and weighted it,
-  // so it is still read for those results rather than changing them after the
-  // fact. Where it is not used, teacherPct is not part of the composite at all
-  // -- feeding in a constant 50 would just drag everyone toward the middle.
+  // ── Cut off mid-passage ──
+  // The band floor assumes the student handled the passage they were given. A
+  // student stopped partway through demonstrably did not: the teacher's guide
+  // says outright that "a student who is cut off is usually placed too high."
+  // Pull them down toward the level below rather than leaving them sitting on
+  // a floor they never earned. Their subtest position within the band is kept,
+  // so a strong-alphabet student still lands above a weak one.
+  //
+  // Reading accuracy below ~90% is frustration level: the words on the page are
+  // too hard, whatever the rate. Without this a student who ground through
+  // passage F at 64% accuracy still collected F's floor and landed in the top
+  // class. Both signals mean the same thing -- this passage was above them.
+  const FRUSTRATION_ACCURACY = 90
+  const belowFrustration = accuracy != null && accuracy < FRUSTRATION_ACCURACY
+  const passageNotSustained = compNotAdministered || belowFrustration
+  const LEVEL_ORDER: PassageLevel[] = ['A', 'B', 'C', 'D', 'E', 'F']
+  // The level the student actually held. Everything downstream -- the band and
+  // the suggested class -- keys off this rather than the level the teacher
+  // happened to hand them, so the two cannot disagree.
+  const effectiveLevel: PassageLevel = passageNotSustained
+    ? LEVEL_ORDER[Math.max(0, LEVEL_ORDER.indexOf(passageLevel) - 1)]
+    : passageLevel
+  if (passageNotSustained) {
+    const belowBand = LEVEL_BANDS[effectiveLevel] || band
+    oralScore = belowBand.floor + (withinBandAvg * (belowBand.ceiling - belowBand.floor))
+  }
+
+  // ── Teacher judgement ──
+  // The original test asked the teacher to guess a placement class outright.
+  // From Fall 2026 the signal is the retention rating instead: where the
+  // student sits inside the class they have actually been taught in all term.
+  // That is anchored to something the teacher has watched for months rather
+  // than a guess about a class they have not seen the student in.
+  //
+  // A rating is read as a position within the current class's composite band:
+  // weak sits at its floor, core in the middle, strong at its ceiling -- so
+  // "strong in Daisy" lands just below "weak in Sunflower", which is the
+  // ordering teachers mean by it.
   const CLASS_IMPRESSION_MAP: Record<string, number> = {
     Lily: 8, Camellia: 25, Daisy: 42, Sunflower: 58, Marigold: 75, Snapdragon: 92
   }
-  const usesImpression = content.usesClassImpression
+  const usesImpression = content.teacherSignal === 'class_impression'
+  const usesRetention = content.teacherSignal === 'retention_rating'
+
   const hasW2Impression = usesImpression && scores.wave2_class_impression && scores.wave2_class_impression !== 'Unsure'
   const hasW1Impression = usesImpression && scores.wave1_class_impression && scores.wave1_class_impression !== 'Unsure'
+  const activeImpression = hasW2Impression ? scores.wave2_class_impression : scores.wave1_class_impression
+
   const hasClassImpression = !!(hasW2Impression || hasW1Impression)
   const hasNumericImpression = usesImpression && scores.teacher_impression != null
-  // Prefer Wave 2 impression when available
-  const activeImpression = hasW2Impression ? scores.wave2_class_impression : scores.wave1_class_impression
+
   const teacherPct = hasClassImpression
     ? (CLASS_IMPRESSION_MAP[activeImpression as string] ?? 50)
     : hasNumericImpression
       ? ((scores.teacher_impression! - 1) / 4) * 100
       : 50
+
+  // The retention rating is applied further down as a bounded nudge, NOT as a
+  // position inside the current class's band. Anchoring it to the band made the
+  // current class outrank the test: a Lily student now reading passage E scored
+  // below a Daisy student reading the same passage just as well, which is
+  // exactly the student leveling exists to catch. A nudge lets the teacher
+  // adjust at the margin without the old placement overriding new evidence.
+  const RETENTION_NUDGE: Record<string, number> = { weak: -6, core: 0, strong: 6 }
+  const retentionRating = usesRetention ? scores.wave2_retention_rating : null
 
   // Presence of answers, not their value: a student who got everything wrong
   // has still sat the written test, and scoring them as "oral only" would hide
@@ -360,6 +411,12 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
     wave = 2
   }
 
+  // Retention nudge: about a third of a class band, so it can tip a borderline
+  // student either way but never move them a full class on its own.
+  if (retentionRating && RETENTION_NUDGE[retentionRating] != null) {
+    composite = Math.max(0, Math.min(100, composite + RETENTION_NUDGE[retentionRating]))
+  }
+
   // ── Passage-level composite cap ──
   // A strong written MC score shouldn't let a Level A/B student outrank kids who
   // demonstrated actual reading on higher passages. Cap the composite so the
@@ -369,7 +426,7 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
     B: 48,   // can reach low-Daisy at most
     C: 60,   // can reach low-Sunflower at most
   }
-  const cap = LEVEL_COMPOSITE_CAP[passageLevel]
+  const cap = LEVEL_COMPOSITE_CAP[effectiveLevel]
   if (cap != null && composite > cap) {
     composite = cap
   }
@@ -411,15 +468,20 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
     }
   })
 
-  const suggestedClass = suggestG1Class(passageLevel, composite, writtenMC, scores, cwpm, writingBonus, content)
+  const suggestedClass = suggestG1Class(effectiveLevel, composite, writtenMC, scores, cwpm, writingBonus, content)
 
   return {
     writtenPct, writtenMC, writingBonus, writingShort, oralScore, teacherPct, composite, wave,
-    passageLevel, cwpm, weightedCwpm,
+    passageLevel, cwpm, weightedCwpm, accuracy, effectiveLevel,
     compTotal, compMax, compAnswered, compNotAdministered, standardsBaseline, suggestedClass,
   }
 }
 
+/**
+ * `passageLevel` here is the EFFECTIVE level -- the one the student sustained.
+ * A student stopped mid-passage, or reading below 90% accuracy, is judged
+ * against the level below the one they were handed.
+ */
 function suggestG1Class(
   passageLevel: string,
   composite: number,
@@ -677,7 +739,8 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
           if (aTotal > 0) finalRaw.o_orf_raw = aTotal
         }
 
-        const metrics = calculateG1Composite(finalRaw, content)
+        const currentClass = (students.find(s => s.id === sid)?.english_class ?? null) as EnglishClass | null
+        const metrics = calculateG1Composite(finalRaw, content, currentClass)
 
         const { error } = await supabase.from('level_test_scores').upsert({
           level_test_id: levelTest.id,
@@ -695,6 +758,8 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
             passage_level: metrics.passageLevel,
             cwpm: metrics.cwpm,
             weighted_cwpm: metrics.weightedCwpm,
+            accuracy_pct: metrics.accuracy,
+            effective_passage_level: metrics.effectiveLevel,
             comp_total: metrics.compTotal,
             comp_max: metrics.compMax,
             comp_answered: metrics.compAnswered,
@@ -768,15 +833,19 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
 
   // Clear all oral data for a student (keep written + teacher fields)
   const clearOralData = useCallback(async (sid: string, name: string) => {
-    if (!await confirmDialog({ title: `Clear all oral test scores for ${name}?`, message: 'This includes passage data and every previous attempt. It cannot be undone.', danger: true, confirmLabel: 'Clear scores' })) return
+    if (!await confirmDialog({ title: `Clear all oral test scores for ${name}?`, message: 'This includes passage data, every previous attempt, and anything recorded during the oral session. It cannot be undone.', danger: true, confirmLabel: 'Clear scores' })) return
+    // Everything captured during the oral session, including the teacher's
+    // notes and impression -- otherwise the sidebar keeps showing a chip for a
+    // student whose scores have been wiped.
+    const isOralKey = (k: string) =>
+      k.startsWith('o_') || k === 'passages_attempted' ||
+      k === 'wave1_class_impression' || k === 'teacher_notes'
     // Clear local state: keep only non-oral keys
     setScores(prev => {
       const current = prev[sid] || {}
       const kept: Record<string, any> = {}
       Object.entries(current).forEach(([k, v]) => {
-        if (!k.startsWith('o_') && !k.startsWith('o_ph_') && !k.startsWith('o_a_') && k !== 'passages_attempted') {
-          kept[k] = v
-        }
+        if (!isOralKey(k)) kept[k] = v
       })
       return { ...prev, [sid]: kept as G1Scores }
     })
@@ -784,9 +853,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       const current = prev[sid] || {}
       const kept: Record<string, any> = {}
       Object.entries(current).forEach(([k, v]) => {
-        if (!k.startsWith('o_') && !k.startsWith('o_ph_') && !k.startsWith('o_a_') && k !== 'passages_attempted') {
-          kept[k] = v
-        }
+        if (!isOralKey(k)) kept[k] = v
       })
       return { ...prev, [sid]: kept as G1Scores }
     })
@@ -941,14 +1008,17 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
               test whose version has not been authored falls back to legacy. */}
           <span
             title={versionKey === G1_LEGACY_VERSION
-              ? 'This test is scored against the original Grade 1 question set.'
-              : `Scored against the ${content.label} question set.`}
+              ? `This test is scored against the ORIGINAL Grade 1 question set, not the Fall 2026 one. Content is chosen by the test's academic year and semester, and this test is recorded as ${levelTest.academic_year || 'no academic year'} / ${levelTest.semester || 'no semester'}. The Fall 2026 test is 2026-2027 / fall.`
+              : `Scored against the ${content.label} question set (${levelTest.academic_year} / ${levelTest.semester}).`}
             className={`ml-auto inline-flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-full ${
               versionKey === G1_LEGACY_VERSION
                 ? 'bg-amber-50 text-amber-700 border border-amber-200'
                 : 'bg-surface-alt text-text-secondary border border-border'
             }`}>
             <FileText size={10} /> {content.label}
+            {versionKey === G1_LEGACY_VERSION && (
+              <span className="opacity-70">({levelTest.academic_year || '?'} / {levelTest.semester || '?'})</span>
+            )}
           </span>
         </div>
       </div>
@@ -1166,7 +1236,7 @@ function G1AnalyticsView({ scores, students, content }: { scores: Record<string,
         <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
           <div className="px-4 py-3 bg-surface-alt border-b border-border">
             <h4 className="text-[12px] font-semibold text-navy flex items-center gap-2">
-              <Star size={12} /> Writing Bonus Scores ({writingStudents.length} students)
+              <Star size={12} /> {content.extendedWriting.scoring === 'in_total' ? 'Extended Writing Scores' : 'Writing Bonus Scores'} ({writingStudents.length} students)
             </h4>
           </div>
           <table className="w-full text-[11px]">
@@ -1245,6 +1315,8 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
   const shortWriting = content.shortWriting
   const writingInTotal = content.extendedWriting.scoring === 'in_total'
   const writtenTotalMax = g1WrittenTotalMax(content)
+  // Items differ in how many choices they offer, so the hint follows the paper.
+  const maxChoices = GRADE_1_QUESTIONS.reduce((m, q) => Math.max(m, q.choices.length), 0)
 
   const [view, setView] = useState<'entry' | 'analytics'>('entry')
   const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>(teacherClass || 'all')
@@ -1447,7 +1519,16 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
             {/* Keyboard hint */}
             <div className="mb-3 flex items-center gap-3 text-[10px] text-text-tertiary bg-surface-alt/60 rounded-lg px-3 py-1.5">
               <span className="font-semibold">Keyboard:</span>
-              <span>Click row, then <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">A</kbd> <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">B</kbd> <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">C</kbd> to answer</span>
+              <span>
+                Click row, then
+                {Array.from({ length: maxChoices }, (_, i) => (
+                  <kbd key={i} className="ml-1 px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">
+                    {String.fromCharCode(65 + i)}
+                  </kbd>
+                ))}
+                <span className="ml-1">to answer</span>
+                {maxChoices > 3 && <span className="ml-1 text-text-tertiary/80">(D only where there are four choices)</span>}
+              </span>
               <span><kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">↑↓</kbd> nav</span>
             </div>
 
@@ -1678,6 +1759,11 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                     ? (content.administration === 'single_sitting' ? 'Teacher Impression' : 'Wave 2 Teacher Impression')
                     : 'Performance in Current Class'}
                 </h4>
+                {content.teacherSignal === 'retention_rating' && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-navy/10 text-navy font-semibold">
+                    Counts toward the composite
+                  </span>
+                )}
               </div>
               <div className="border border-border rounded-lg overflow-hidden">
                 {/* Class impression */}
@@ -1712,9 +1798,9 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                   </div>
                 </div>
                 )}
-                {/* Retention rating -- how the student sits within their current
-                    class. Not a placement guess, and not part of the composite;
-                    it is context for the leveling meeting. */}
+                {/* Retention rating -- where the student sits inside the class
+                    they are already in. From Fall 2026 this is the teacher
+                    signal in the composite, replacing the placement guess. */}
                 <div className={`px-4 py-3 bg-gray-50/50 ${content.usesClassImpression ? 'border-t border-border' : ''}`}>
                   <p className="text-[11px] text-text-secondary mb-2">
                     Within their current class ({student.english_class}), how is this student performing?
@@ -2367,10 +2453,27 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate, cont
                   {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> | Accuracy: <strong className={accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}>{accuracy}%</strong> | </>}
                   Errors: <strong className="text-red-600">{errCount}</strong> | SC: <strong className="text-amber-600">{scCount}</strong>
                 </div>
-                <button onClick={handleSave}
-                  className="px-5 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy/90 transition-all">
-                  Save & Close
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Stop the clock the moment the student finishes, without
+                      closing the passage -- the teacher still has to mark the
+                      last word and any errors, and the timer must not keep
+                      running while they do. */}
+                  {timing && (
+                    <button onClick={() => { setTiming(false); setFinished(true) }}
+                      className="px-4 py-2 rounded-xl text-[12px] font-semibold bg-red-500 text-white hover:bg-red-600 transition-all animate-pulse">
+                      Done reading -- stop timer
+                    </button>
+                  )}
+                  {!timing && finished && elapsed > 0 && (
+                    <span className="text-[11px] text-text-tertiary">
+                      Timer stopped at <strong className="text-navy">{formatTime(elapsed)}</strong>
+                    </span>
+                  )}
+                  <button onClick={handleSave}
+                    className="px-5 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy/90 transition-all">
+                    Save & Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -2949,13 +3052,45 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           </div>
         </div>
 
-        {/* Section 6: Teacher notes */}
+        {/* Section 6: Teacher judgement + notes */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[13px] font-semibold text-navy mb-1">Teacher Notes</h4>
           <p className="text-[11px] text-text-secondary mb-3">
             Anything worth remembering at the leveling meeting: reading behaviours, error patterns,
             how the student handled the session.
           </p>
+
+          {/* Retention rating. Feeds the composite from Fall 2026 on, so it is
+              offered here as well as on the written tab -- whichever the
+              teacher reaches first. Both write the same field. */}
+          {content.teacherSignal === 'retention_rating' && (
+            <div className="rounded-lg p-3 mb-3 bg-blue-50/60 border border-blue-200/60">
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-[11px] text-text-secondary">
+                  Within {student.english_class}, how is this student performing?
+                </p>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-navy/10 text-navy font-semibold shrink-0">
+                  Counts toward the composite
+                </span>
+              </div>
+              <div className="flex gap-2">
+                {([
+                  { value: 'weak', label: 'Weak', desc: 'Struggling, may need extra support', color: 'bg-red-100 text-red-700 border-red-300', active: 'bg-red-500 text-white ring-2 ring-red-400' },
+                  { value: 'core', label: 'Core', desc: 'Right where they should be', color: 'bg-gray-100 text-gray-700 border-gray-300', active: 'bg-gray-600 text-white ring-2 ring-gray-400' },
+                  { value: 'strong', label: 'Strong', desc: 'Excelling, could move up', color: 'bg-green-100 text-green-700 border-green-300', active: 'bg-green-500 text-white ring-2 ring-green-400' },
+                ] as const).map(opt => (
+                  <button key={opt.value}
+                    onClick={() => updateScore(student.id, 'wave2_retention_rating', sc.wave2_retention_rating === opt.value ? null : opt.value)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-[11px] font-medium transition-all border ${
+                      sc.wave2_retention_rating === opt.value ? opt.active + ' ring-offset-1' : opt.color
+                    }`}>
+                    <div className="font-bold">{opt.label}</div>
+                    <div className="text-[9px] opacity-80 mt-0.5">{opt.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {content.usesClassImpression && (
           <div className="rounded-lg p-3 mb-3 bg-blue-50/60 border border-blue-200/60">
@@ -3011,7 +3146,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
 // ============================================================================
 
 function StudentScorePreview({ scores, student, content }: { scores: G1Scores; student: Student; content: G1Content }) {
-  const metrics = calculateG1Composite(scores, content)
+  const metrics = calculateG1Composite(scores, content, student.english_class as EnglishClass)
 
   return (
     <div className="bg-gradient-to-br from-navy/5 to-navy/10 border border-navy/20 rounded-xl p-5 mb-4">
@@ -3051,13 +3186,26 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
       </div>
 
       {metrics.cwpm != null && (
-        <div className="flex items-center gap-4 mb-3 text-[11px]">
+        <div className="flex items-center gap-4 mb-3 text-[11px] flex-wrap">
           <span className="text-text-secondary">Passage {metrics.passageLevel}</span>
           <span className="text-navy font-semibold">Raw CWPM: {metrics.cwpm}</span>
+          {metrics.accuracy != null && (
+            <span className={metrics.accuracy >= 95 ? 'text-green-600' : metrics.accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}>
+              Accuracy: <strong>{metrics.accuracy}%</strong>
+            </span>
+          )}
           {metrics.weightedCwpm != null && <span className="text-text-secondary">Weighted: {metrics.weightedCwpm}</span>}
           {metrics.compNotAdministered
             ? <span className="text-text-tertiary italic" title="Student was stopped during the passage; the questions were never asked.">Comp: not administered</span>
             : metrics.compTotal != null && <span className="text-text-secondary">Comp: {metrics.compTotal}/{metrics.compMax}</span>}
+          {metrics.effectiveLevel !== metrics.passageLevel && (
+            <span className="w-full text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+              Scored as level {metrics.effectiveLevel}. The student did not sustain level {metrics.passageLevel}
+              {metrics.compNotAdministered ? ' — stopped before the end' : ''}
+              {metrics.accuracy != null && metrics.accuracy < 90 ? ` — ${metrics.accuracy}% accuracy is below the 90% frustration threshold` : ''}.
+              Consider re-testing at level {metrics.effectiveLevel}.
+            </span>
+          )}
         </div>
       )}
 
@@ -3099,13 +3247,15 @@ function ResultsView({ students, scores, levelTest }: {
   const G1_WRITING_CATEGORIES = content.extendedWriting.categories
   const G1_WRITING_MAX = content.extendedWriting.max
   const G1_MC_MAX = content.written.mcMax
+  const writingInTotal = content.extendedWriting.scoring === 'in_total'
+  const writtenTotalMax = g1WrittenTotalMax(content)
   const G1_SECTION_LABELS: Record<string, string> = {}
   GRADE_1_QUESTIONS.forEach(q => { if (!G1_SECTION_LABELS[q.section]) G1_SECTION_LABELS[q.section] = q.domain })
 
   const rows = useMemo(() => {
     return students.map(s => {
       const sc = scores[s.id] || {}
-      const metrics = calculateG1Composite(sc, content)
+      const metrics = calculateG1Composite(sc, content, s.english_class as EnglishClass)
       return { student: s, scores: sc, ...metrics }
     }).filter(r => r.scores.o_passage_level || r.scores.w_letter_names != null || (r.scores.written_answers && Object.keys(r.scores.written_answers).length > 0))
       .sort((a, b) => {
@@ -3181,8 +3331,12 @@ function ResultsView({ students, scores, levelTest }: {
               <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">#</th>
               <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Student</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Passage</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">MC<br/>/25</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-600 font-semibold">Wr Bonus<br/>/20</th>
+              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">MC<br/>/{G1_MC_MAX}</th>
+              {content.shortWriting && <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Short<br/>/{content.shortWriting.max}</th>}
+              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-600 font-semibold">
+                {writingInTotal ? 'Writing' : 'Wr Bonus'}<br/>/{G1_WRITING_MAX}
+              </th>
+              {writingInTotal && <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-semibold">Written<br/>/{writtenTotalMax}</th>}
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">CWPM</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Comp</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Oral</th>
@@ -3219,7 +3373,13 @@ function ResultsView({ students, scores, levelTest }: {
                     <span className="font-bold text-navy">{row.passageLevel}</span>
                   </td>
                   <td className="text-center px-3 py-2.5">{mcScore}</td>
+                  {content.shortWriting && <td className="text-center px-3 py-2.5">{row.writingShort ?? '--'}</td>}
                   <td className="text-center px-3 py-2.5">{wrBonus > 0 ? wrBonus : '--'}</td>
+                  {writingInTotal && (
+                    <td className="text-center px-3 py-2.5 font-semibold text-navy">
+                      {mcScore + (row.writingShort ?? 0) + wrBonus}
+                    </td>
+                  )}
                   <td className="text-center px-3 py-2.5">{row.cwpm ?? '--'}</td>
                   <td className="text-center px-3 py-2.5">
                     {row.compNotAdministered
@@ -3327,7 +3487,7 @@ function ResultsView({ students, scores, levelTest }: {
                             )}
                           </div>
                           <div className="bg-white rounded-lg border border-border p-3">
-                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1"><Star size={10} /> Writing Bonus ({wrBonus}/{G1_WRITING_MAX})</p>
+                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1"><Star size={10} /> {writingInTotal ? 'Extended Writing' : 'Writing Bonus'} ({wrBonus}/{G1_WRITING_MAX})</p>
                             {row.scores.written_rubric && Object.keys(row.scores.written_rubric).length > 0 ? (
                               G1_WRITING_CATEGORIES.map(cat => {
                                 const val = row.scores.written_rubric![cat.key] ?? 0

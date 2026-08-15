@@ -386,6 +386,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
   const [anecdotals, setAnecdotals] = useState<Record<string, any>>({})
   const [benchmarks, setBenchmarks] = useState<Record<string, any>>({})
   const [semGrades, setSemGrades] = useState<Record<string, any[]>>({})
+  const [lastSemesterName, setLastSemesterName] = useState<string | null>(null)
   const [prevTest, setPrevTest] = useState<LevelTest | null>(null)
   const [prevScores, setPrevScores] = useState<Record<string, any>>({})
   const [activeSection, setActiveSection] = useState<'overview' | 'domains' | 'standards' | 'passages' | 'comprehension'>('overview')
@@ -402,8 +403,27 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       ])
       if (studs) {
         setStudents(studs)
-        const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').in('student_id', studs.map((s: Student) => s.id))
-        const sgm: Record<string, any[]> = {}; sg?.forEach((g: any) => { if (!sgm[g.student_id]) sgm[g.student_id] = []; sgm[g.student_id].push({ ...g, score: g.final_grade ?? g.calculated_grade ?? null, semester_name: g.semesters?.name || '' }) }); setSemGrades(sgm)
+        const { data: sg } = await supabase.from('semester_grades')
+          .select('*, semesters(name, type, start_date, is_active)')
+          .in('student_id', studs.map((s: Student) => s.id))
+        // "Last semester" is the most recently started semester that has
+        // finished -- not whichever one happens to be called "fall".
+        const finished = (sg || []).filter((g: any) => g.semesters && !g.semesters.is_active)
+        const lastStart = finished.reduce((max: string | null, g: any) =>
+          !max || (g.semesters.start_date || '') > max ? (g.semesters.start_date || null) : max, null as string | null)
+        setLastSemesterName(finished.find((g: any) => g.semesters.start_date === lastStart)?.semesters?.name || null)
+        const sgm: Record<string, any[]> = {}
+        sg?.forEach((g: any) => {
+          if (!sgm[g.student_id]) sgm[g.student_id] = []
+          sgm[g.student_id].push({
+            ...g,
+            score: g.final_grade ?? g.calculated_grade ?? null,
+            semester_name: g.semesters?.name || '',
+            semester_start: g.semesters?.start_date || null,
+            is_last_semester: lastStart != null && g.semesters?.start_date === lastStart,
+          })
+        })
+        setSemGrades(sgm)
       }
       const sm: Record<string, any> = {}; sd?.forEach((s: any) => { sm[s.student_id] = s }); setScores(sm)
       const am: Record<string, any> = {}; ad?.forEach((a: any) => { am[a.student_id] = a }); setAnecdotals(am)
@@ -443,7 +463,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
   const { classMetrics, allComposites } = useMemo(() => {
     const metrics: ClassMetrics[] = []
 
-    type RowData = { student: Student; oral: number | null; writing: number | null; mc: number | null; gradeAvg: number | null; anecAvg: number | null; composite: number; suggestedClass: EnglishClass }
+    type RowData = { student: Student; oral: number | null; writing: number | null; mc: number | null; gradeAvg: number | null; anecAvg: number | null; composite: number; tested: boolean; suggestedClass: EnglishClass }
     const allRows: RowData[] = []
 
     // Use Snapdragon benchmark as shared oral reference for cross-class comparability
@@ -467,7 +487,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const mcRatio = mcRaw != null ? mcRaw / WRITTEN_MC_TOTAL : null
       const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
 
-      const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall')))
+      const gv = grades.filter((g: any) => g.score != null && g.is_last_semester)
       const gradeAvg = gv.length > 0 ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length : null
 
       const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
@@ -495,10 +515,23 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
         composite = testRatios.length > 0 ? testRatios.reduce((a, b) => a + b, 0) / testRatios.length : 0.5
       }
 
-      allRows.push({ student: s, oral, writing, mc: mcRaw, gradeAvg, anecAvg, composite, suggestedClass: s.english_class as EnglishClass })
+      // Has this student actually been tested? An untested student has no
+      // composite -- they fall back to the 0.5 default, which is data about
+      // nothing. Ranking them alongside real results invents a placement.
+      const tested = oral != null || writing != null || mcRaw != null
+        || calc.comp_total != null || sc.passage_level != null || sc.o_passage_level != null
+
+      allRows.push({ student: s, oral, writing, mc: mcRaw, gradeAvg, anecAvg, composite, tested, suggestedClass: s.english_class as EnglishClass })
     })
 
-    const sorted = [...allRows].sort((a, b) => a.composite - b.composite)
+    // The projection is a forced even split: rank the tested students by
+    // composite and cut into six equal groups. It answers "if classes had to be
+    // the same size, who sits where" -- not "who should move", which is what
+    // the per-student suggestion on the Results tab answers. Untested students
+    // are left in their current class so they read as "staying" rather than
+    // being pushed to the bottom of a ranking they were never in.
+    const rankable = allRows.filter(r => r.tested)
+    const sorted = [...rankable].sort((a, b) => a.composite - b.composite)
     sorted.forEach((row, idx) => {
       const sc = scores[row.student.id]?.raw_scores || {}
       if (sc.word_reading_correct != null && sc.word_reading_correct < 4) { row.suggestedClass = 'Lily'; return }
@@ -526,7 +559,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
 
       const movements: ClassMetrics['movements'] = []
       let stay = 0, up = 0, down = 0
-      classRows.forEach(r => {
+      classRows.filter(r => r.tested).forEach(r => {
         if (r.suggestedClass === cls) stay++
         else {
           const fromIdx = PLACEMENT_CLASSES.indexOf(cls)
@@ -718,6 +751,9 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
   const totalStudents = students.length
   const totalMoving = classMetrics.reduce((sum, cm) => sum + cm.moveUpCount + cm.moveDownCount, 0)
   const totalStaying = classMetrics.reduce((sum, cm) => sum + cm.stayCount, 0)
+  // Denominator is the students who were actually scored, not the whole grade;
+  // otherwise the percentages shrink as untested students inflate the total.
+  const totalRanked = totalStaying + totalMoving
 
   const allDomains = new Set<string>()
   Object.values(domainBreakdown).forEach(cd => Object.keys(cd.domains).forEach(d => allDomains.add(d)))
@@ -766,15 +802,21 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
               <p className="text-[28px] font-bold text-navy mt-1">{totalStudents}</p>
               <p className="text-[11px] text-text-secondary">Grade {levelTest.grade}</p>
             </div>
-            <div className="bg-surface border border-border rounded-xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Suggested to Stay</p>
+            <div className="bg-surface border border-border rounded-xl p-4"
+              title="Even-split projection: tested students ranked by composite and cut into six equal groups. Not the same as the per-student suggestion on the Results tab.">
+              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Even Split: Stays</p>
               <p className="text-[28px] font-bold text-green-600 mt-1">{totalStaying}</p>
-              <p className="text-[11px] text-text-secondary">{totalStudents > 0 ? Math.round(totalStaying / totalStudents * 100) : 0}% of students</p>
+              <p className="text-[11px] text-text-secondary">
+                {totalRanked > 0 ? Math.round(totalStaying / totalRanked * 100) : 0}% of {totalRanked} scored
+              </p>
             </div>
-            <div className="bg-surface border border-border rounded-xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Suggested to Move</p>
+            <div className="bg-surface border border-border rounded-xl p-4"
+              title="Even-split projection: tested students ranked by composite and cut into six equal groups. Because the groups are forced to be equal, some movement is guaranteed regardless of ability.">
+              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Even Split: Moves</p>
               <p className="text-[28px] font-bold text-amber-600 mt-1">{totalMoving}</p>
-              <p className="text-[11px] text-text-secondary">{totalStudents > 0 ? Math.round(totalMoving / totalStudents * 100) : 0}% of students</p>
+              <p className="text-[11px] text-text-secondary">
+                {totalRanked > 0 ? Math.round(totalMoving / totalRanked * 100) : 0}% of {totalRanked} scored
+              </p>
             </div>
             <div className="bg-surface border border-border rounded-xl p-4">
               <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Outliers Flagged</p>
@@ -816,7 +858,10 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
                   <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Oral</th>
                   <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
                   <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
-                  <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Grades</th>
+                  <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold"
+                    title={lastSemesterName ? `Semester grades from ${lastSemesterName}` : 'No completed semester found — students new to the programme have no prior grades.'}>
+                    Grades{lastSemesterName ? <><br/><span className="normal-case font-normal opacity-70">{lastSemesterName}</span></> : ''}
+                  </th>
                   <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Anecdotal</th>
                   <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Composite</th>
                 </tr></thead>
