@@ -70,12 +70,15 @@ function useDashboardData(currentTeacher: any): SharedDashboardData {
 
       const [studRes, semRes] = await Promise.all([
         studQuery,
-        supabase.from('semesters').select('*').eq('is_active', true).single(),
+        // Ordered + limit(1) rather than .single(): .single() errors outright if
+        // more than one semester is flagged active, and every screen has to pick
+        // the same one as the app context does.
+        supabase.from('semesters').select('*').eq('is_active', true).order('start_date', { ascending: false }).limit(1),
       ])
       if (cancelled) return
 
       const students: DashboardStudent[] = studRes.data || []
-      const activeSemester = semRes.data
+      const activeSemester = semRes.data?.[0] || null
       const studentIds = students.map(s => s.id)
 
       if (studentIds.length === 0) {

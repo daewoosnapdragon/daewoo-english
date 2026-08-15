@@ -94,13 +94,19 @@ export default function GradesView() {
   }, [hasChanges])
 
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
-  const [selectedSemester, setSelectedSemester] = useState<string | null>(null)
 
   // Only semester managers get a picker; everyone else follows the active one.
   const semesters = useMemo(() => {
     const nonArchive = visibleSemesters.filter((s: Semester) => String(s.type) !== 'archive')
     return nonArchive.length > 0 ? nonArchive : visibleSemesters
   }, [visibleSemesters])
+
+  // Seeded from the active semester on the very first render, not from an
+  // effect: an effect runs after the first fetch has already been queued, so
+  // that fetch would go out with no semester filter and pull in assessments
+  // from every semester.
+  const [selectedSemester, setSelectedSemester] = useState<string | null>(
+    () => activeSemester?.id || semesters[0]?.id || null)
 
   // Follow the active semester: on first load, and again whenever an admin
   // changes it out from under a teacher who cannot switch.
@@ -120,7 +126,23 @@ export default function GradesView() {
 
   const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
 
+  // Every load below is keyed to the grade/class/domain/semester that started
+  // it. Switching any of them fires a new request while the old one is still in
+  // flight, and the old one can come back last -- these counters make sure only
+  // the newest response is allowed to write to state.
+  const assessmentsReq = useRef(0)
+  const allAssessmentsReq = useRef(0)
+  const scoresReq = useRef(0)
+  const selectedAssessmentRef = useRef<Assessment | null>(null)
+  selectedAssessmentRef.current = selectedAssessment
+
+  // Nothing is scoped correctly until we know which semester to filter on, and
+  // an unfiltered query returns every semester's assessments at once.
+  const semesterUnresolved = !selectedSemester && semesters.length > 0
+
   const loadAssessments = useCallback(async () => {
+    const req = ++assessmentsReq.current
+    if (semesterUnresolved) { setLoadingAssessments(true); return }
     setLoadingAssessments(true)
     // Load assessments for the selected domain
     let query = supabase.from('assessments').select('*')
@@ -145,33 +167,51 @@ export default function GradesView() {
     const allAssessments = [...(data || []), ...crossDomainAssessments]
       .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
 
+    // A newer switch already fired while this was in flight -- drop the answer
+    // rather than painting the previous grade/class/semester over it.
+    if (req !== assessmentsReq.current) return
+
     if (!error) {
+      // Read through a ref: this callback is only rebuilt when the filters
+      // change, so a captured `selectedAssessment` goes stale as soon as the
+      // teacher picks a different assessment.
+      const current = selectedAssessmentRef.current
       setAssessments(allAssessments)
-      if (allAssessments.length > 0 && !selectedAssessment) { setSelectedAssessment(allAssessments[allAssessments.length - 1]) }
-      else if (allAssessments.length > 0 && selectedAssessment) {
-        if (!allAssessments.find(a => a.id === selectedAssessment.id)) setSelectedAssessment(allAssessments[allAssessments.length - 1])
-      } else { setSelectedAssessment(null) }
+      if (allAssessments.length === 0) setSelectedAssessment(null)
+      else if (!current || !allAssessments.find(a => a.id === current.id)) {
+        setSelectedAssessment(allAssessments[allAssessments.length - 1])
+      }
     }
     setLoadingAssessments(false)
-  }, [selectedGrade, selectedClass, selectedDomain, selectedSemester])
+  }, [selectedGrade, selectedClass, selectedDomain, selectedSemester, semesterUnresolved])
 
   const loadAllAssessments = useCallback(async () => {
+    const req = ++allAssessmentsReq.current
+    if (semesterUnresolved) return
     let query = supabase.from('assessments').select('*')
       .eq('grade', selectedGrade).eq('english_class', selectedClass)
     if (selectedSemester) query = query.eq('semester_id', selectedSemester)
     const { data } = await query.order('domain').order('created_at', { ascending: true })
+    if (req !== allAssessmentsReq.current) return
     if (data) setAllAssessments(data)
-  }, [selectedGrade, selectedClass, selectedSemester])
+  }, [selectedGrade, selectedClass, selectedSemester, semesterUnresolved])
 
   useEffect(() => { loadAssessments() }, [loadAssessments])
   useEffect(() => { loadAllAssessments() }, [loadAllAssessments])
 
   const selectedAssessmentId = selectedAssessment?.id
   useEffect(() => {
+    const req = ++scoresReq.current
     if (!selectedAssessmentId) { setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); return }
     const aid = selectedAssessmentId
+    // Blank the table first so the previous assessment's numbers are never on
+    // screen underneath the new assessment's header.
+    setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({})
     async function loadScores() {
       const { data } = await supabase.from('grades').select('student_id, score, is_absent, is_exempt').eq('assessment_id', aid)
+      // Another assessment was selected while this was loading -- these numbers
+      // belong to the old one and must not land in the visible table.
+      if (req !== scoresReq.current) return
       const map: Record<string, number | null> = {}
       const abs: Record<string, boolean> = {}
       const exm: Record<string, boolean> = {}
@@ -563,12 +603,19 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasChanges])
 
+  // Keyed on the actual student ids, not the count: switching to a class with
+  // the same number of students would otherwise leave the previous class's
+  // section scores in place.
+  const studentKey = students.map(s => s.id).join(',')
+
   useEffect(() => {
-    (async () => {
+    let cancelled = false
+    ;(async () => {
       setLoading(true)
       const { data } = await supabase.from('grades').select('student_id, score, section_scores')
         .eq('assessment_id', assessment.id)
         .in('student_id', students.map(s => s.id))
+      if (cancelled) return
       const map: Record<string, Record<string, number | null>> = {}
       students.forEach(s => { map[s.id] = {} })
       data?.forEach((g: any) => {
@@ -583,7 +630,9 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
       setLoading(false)
       setHasChanges(false)
     })()
-  }, [assessment.id, students.length])
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assessment.id, studentKey])
 
   const handleChange = (sid: string, secIdx: number, value: string) => {
     setSectionScores(prev => ({
@@ -815,13 +864,20 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
 
   const domainAssessments = allAssessments.filter(a => a.domain === selectedDomain)
 
+  // Identity, not counts: a different semester with the same number of
+  // assessments (or a different class with the same headcount) has to reload,
+  // otherwise the grid keeps showing the scores it already had.
+  const gridKey = `${students.map(s => s.id).join(',')}|${domainAssessments.map(a => a.id).join(',')}`
+
   useEffect(() => {
-    if (domainAssessments.length === 0 || students.length === 0) { setLoading(false); return }
+    let cancelled = false
+    if (domainAssessments.length === 0 || students.length === 0) { setScores({}); setSectionScores({}); setLoading(false); return }
     ;(async () => {
       setLoading(true)
       const { data } = await supabase.from('grades').select('student_id, assessment_id, score, section_scores')
         .in('assessment_id', domainAssessments.map(a => a.id))
         .in('student_id', students.map(s => s.id))
+      if (cancelled) return
       const map: any = {}
       const secMap: any = {}
       students.forEach(s => { map[s.id] = {}; secMap[s.id] = {} })
@@ -836,7 +892,9 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
       setLoading(false)
       setHasChanges(false)
     })()
-  }, [selectedDomain, students.length, allAssessments.length])
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDomain, gridKey])
 
   const handleChange = (studentId: string, assessmentId: string, value: string) => {
     setScores((prev: any) => ({
@@ -1179,17 +1237,21 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
 
   useEffect(() => {
     if (!selectedStudentId || allAssessments.length === 0) return
+    let cancelled = false
     async function load() {
       setLoading(true)
       const ids = allAssessments.map(a => a.id)
       const { data: sg } = await supabase.from('grades').select('assessment_id, score').eq('student_id', selectedStudentId!).in('assessment_id', ids)
+      if (cancelled) return
       const gm: Record<string, number | null> = {}; if (sg) sg.forEach(g => { gm[g.assessment_id] = g.score }); setStudentGrades(gm)
       const { data: ag } = await supabase.from('grades').select('assessment_id, score').in('assessment_id', ids).not('score', 'is', null)
+      if (cancelled) return
       const am: Record<string, number | null> = {}
       if (ag) { const grouped: Record<string, number[]> = {}; ag.forEach(g => { if (!grouped[g.assessment_id]) grouped[g.assessment_id] = []; grouped[g.assessment_id].push(g.score) }); for (const [id, sc] of Object.entries(grouped)) { am[id] = sc.reduce((a, b) => a + b, 0) / sc.length } }
       setClassAvgs(am); setLoading(false)
     }
     load()
+    return () => { cancelled = true }
   }, [selectedStudentId, allAssessments])
 
   return (

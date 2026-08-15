@@ -623,7 +623,9 @@ function WIDAPerformanceInsight({ studentId, lang }: { studentId: string; lang: 
       if (Object.keys(widaMap).length === 0) { setMissingWida(true); setLoading(false); return }
 
       // Get semester grades
-      const { data: semArr } = await supabase.from('semesters').select('id').eq('is_active', true).limit(1)
+      // Ordered so this resolves to the same semester the app context uses.
+      const { data: semArr } = await supabase.from('semesters').select('id')
+        .eq('is_active', true).order('start_date', { ascending: false }).limit(1)
       const sem = semArr?.[0] || null
       if (!sem) { setLoading(false); return }
 
@@ -2417,7 +2419,9 @@ function GoalsTab({ studentId, studentName }: { studentId: string; studentName: 
 
   useEffect(() => {
     ;(async () => {
-      const { data: semArr2 } = await supabase.from('semesters').select('id').eq('is_active', true).limit(1)
+      // Ordered so this resolves to the same semester the app context uses.
+      const { data: semArr2 } = await supabase.from('semesters').select('id')
+        .eq('is_active', true).order('start_date', { ascending: false }).limit(1)
       if (semArr2?.[0]) setSemId(semArr2[0].id)
       const { data } = await supabase.from('student_goals').select('*').eq('student_id', studentId).order('created_at', { ascending: false })
       if (data) setGoals(data)

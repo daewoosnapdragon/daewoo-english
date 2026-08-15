@@ -276,16 +276,24 @@ function SemesterSection() {
     const { error } = await supabase.from('semesters').update({
       name: sem.name, name_ko: sem.name_ko, start_date: sem.start_date || null,
       end_date: sem.end_date || null, midterm_cutoff_date: sem.midterm_cutoff_date || null,
-      report_card_cutoff_date: sem.report_card_cutoff_date || null, is_active: sem.is_active,
+      report_card_cutoff_date: sem.report_card_cutoff_date || null,
     }).eq('id', sem.id)
     setSaving(null)
     if (error) showToast(`Error: ${error.message}`)
     else showToast('Saved')
   }
 
+  // Exactly one semester may be active. Clearing the others has to compare
+  // uuid-to-uuid: the old `.neq('id', 'none')` asked Postgres to parse 'none'
+  // as a uuid, so that request failed and only the second one landed -- which
+  // is how two semesters could end up marked active with no way back.
   const handleSetActive = async (id: string) => {
-    await supabase.from('semesters').update({ is_active: false }).neq('id', 'none')
-    await supabase.from('semesters').update({ is_active: true }).eq('id', id)
+    setSaving(id)
+    const { error: clearErr } = await supabase.from('semesters').update({ is_active: false }).neq('id', id)
+    if (clearErr) { setSaving(null); showToast(`Error: ${clearErr.message}`); return }
+    const { error } = await supabase.from('semesters').update({ is_active: true }).eq('id', id)
+    setSaving(null)
+    if (error) { showToast(`Error: ${error.message}`); return }
     setSemesters((prev: any) => prev.map((s: any) => ({ ...s, is_active: s.id === id })))
     // Repoint the rest of the app (and every other account on its next focus)
     // at the newly active semester.
@@ -296,13 +304,18 @@ function SemesterSection() {
   // Archiving only hides a semester from the pickers -- no data is touched.
   const handleToggleArchive = async (sem: any) => {
     const next = !sem.is_archived
-    if (next && sem.is_active) {
+    // Only block when this is the *last* active semester. If several are active
+    // (from the bug above) archiving one is exactly how you dig yourself out.
+    if (next && sem.is_active && activeCount <= 1) {
       showToast('Set another semester active before archiving this one')
       return
     }
-    const { error } = await supabase.from('semesters').update({ is_archived: next }).eq('id', sem.id)
+    // An archived semester is hidden from every picker, so it must not stay
+    // marked active -- otherwise the app is pinned to a semester nobody can see.
+    const patch = next && sem.is_active ? { is_archived: true, is_active: false } : { is_archived: next }
+    const { error } = await supabase.from('semesters').update(patch).eq('id', sem.id)
     if (error) { showToast(`Error: ${error.message}`); return }
-    setSemesters((prev: any) => prev.map((s: any) => s.id === sem.id ? { ...s, is_archived: next } : s))
+    setSemesters((prev: any) => prev.map((s: any) => s.id === sem.id ? { ...s, ...patch } : s))
     await refreshSemesters()
     showToast(next ? 'Semester archived -- hidden from pickers, data kept' : 'Semester restored')
   }
@@ -370,6 +383,7 @@ function SemesterSection() {
   }
 
   const archivedCount = semesters.filter((s: any) => s.is_archived).length
+  const activeCount = semesters.filter((s: any) => s.is_active).length
   const visibleSemesters = !canManage
     // A teacher only ever sees the semester they are pinned to.
     ? semesters.filter((s: any) => s.is_active)
@@ -404,6 +418,16 @@ function SemesterSection() {
             ? '활성 학기는 관리자 또는 Snapdragon 계정만 설정할 수 있습니다.'
             : 'Only admin and Snapdragon accounts can set the active semester. Your account always follows whichever semester they make active.'}
         </p>
+      )}
+
+      {canManage && activeCount > 1 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
+          <p className="text-[12px] text-red-800 leading-relaxed">
+            <strong>{activeCount} semesters are marked active.</strong> Different screens can then disagree about
+            which one they are showing, so grades from the wrong semester may appear. Click
+            <strong> Keep Only This Active</strong> on the semester you actually want to fix it.
+          </p>
+        </div>
       )}
 
       {adding && canManage && (
@@ -465,7 +489,13 @@ function SemesterSection() {
                   </div>
                   {canManage && (
                     <div className="flex items-center gap-2">
-                      {!sem.is_active && !sem.is_archived && <button onClick={() => handleSetActive(sem.id)} className="text-[10px] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium">Set Active</button>}
+                      {!sem.is_archived && (!sem.is_active || activeCount > 1) && (
+                        <button onClick={() => handleSetActive(sem.id)} disabled={saving === sem.id}
+                          title={sem.is_active ? 'Make this the only active semester' : 'Make this the active semester for every account'}
+                          className="text-[10px] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium disabled:opacity-50">
+                          {sem.is_active ? 'Keep Only This Active' : 'Set Active'}
+                        </button>
+                      )}
                       <button onClick={() => handleToggleArchive(sem)}
                         title={sem.is_archived ? 'Restore to semester pickers' : 'Hide from semester pickers (keeps all data)'}
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">

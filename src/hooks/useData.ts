@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, Teacher, SchoolSettings, EnglishClass, Grade, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES } from '@/types'
 
@@ -39,8 +39,13 @@ export function useStudents(options: UseStudentsOptions = {}) {
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Changing grade/class starts a new fetch while the previous one is still in
+  // flight. Without this counter the slower (older) response can land last and
+  // leave another class's roster on screen.
+  const requestId = useRef(0)
 
   const fetchStudents = useCallback(async () => {
+    const req = ++requestId.current
     setLoading(true)
     setError(null)
 
@@ -59,6 +64,7 @@ export function useStudents(options: UseStudentsOptions = {}) {
     query = query.order('grade').order('english_class').order('korean_name')
 
     const { data, error: err } = await query
+    if (req !== requestId.current) return
 
     if (err) {
       setError(err.message)

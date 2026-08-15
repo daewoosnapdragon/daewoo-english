@@ -650,7 +650,12 @@ function ClusterTracker() {
   // Load averages + quick check pulse in single effect (parallel fetches)
   useEffect(() => {
     (async () => {
-      const { data: sem } = await supabase.from('semesters').select('id').eq('is_active', true).single()
+      // Ordered + limit(1) rather than .single(): .single() errors outright if
+      // more than one semester is flagged active, and every screen has to pick
+      // the same one as the app context does.
+      const { data: semArr } = await supabase.from('semesters').select('id')
+        .eq('is_active', true).order('start_date', { ascending: false }).limit(1)
+      const sem = semArr?.[0]
       if (!sem) { setStdAverages({}); setQcPulse({}); return }
 
       const [assessRes, qcRes] = await Promise.all([
