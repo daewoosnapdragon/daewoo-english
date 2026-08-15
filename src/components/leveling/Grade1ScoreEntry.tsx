@@ -869,16 +869,22 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         const calc = existing.calculated_metrics || {}
         const writtenRaw: Record<string, any> = {}
         const writtenCalc: Record<string, any> = {}
-        // Keep written keys (w_ prefix) + teacher fields
+        // Keep everything that is NOT part of the oral session. This has to be
+        // the exact inverse of isOralKey: the old version kept only keys with a
+        // `w_` prefix, which silently threw away written_answers,
+        // written_rubric, written_mc, writing_bonus, writing_short and the
+        // retention rating -- clearing a student's oral test destroyed their
+        // written test with it.
         Object.entries(raw).forEach(([k, v]) => {
-          if (k.startsWith('w_') || k === 'teacher_impression' || k === 'teacher_notes' || k === 'wave1_class_impression') {
-            writtenRaw[k] = v
-          }
+          if (!isOralKey(k)) writtenRaw[k] = v
         })
+        const ORAL_CALC_KEYS = new Set([
+          'oral_score', 'passage_level', 'effective_passage_level', 'cwpm', 'weighted_cwpm',
+          'accuracy_pct', 'comp_total', 'comp_max', 'comp_answered',
+          'comp_not_administered', 'standards_baseline', 'teacher_pct',
+        ])
         Object.entries(calc).forEach(([k, v]) => {
-          if (k.startsWith('written_') || k === 'teacher_pct') {
-            writtenCalc[k] = v
-          }
+          if (!ORAL_CALC_KEYS.has(k)) writtenCalc[k] = v
         })
         await supabase.from('level_test_scores').delete()
           .eq('level_test_id', levelTest.id).eq('student_id', sid)
@@ -1406,6 +1412,10 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
     updateScore(student.id, 'w_writing', null as any)
     updateScore(student.id, 'wave2_class_impression', null)
     updateScore(student.id, 'wave2_retention_rating', null)
+    // Persist immediately. Otherwise the cleared values sit in local state until
+    // the next save or the 30s autosave, and anything reading the database in
+    // the meantime -- Results, Analytics -- still shows the old scores.
+    setTimeout(() => { onSave([student.id]) }, 0)
   }
 
   return (

@@ -251,7 +251,11 @@ function LevelingView() {
           : (['scores', 'written_test', 'anecdotal', 'results', 'analytics', 'meeting'] as Phase[])
         ).map(p => (
           <button key={p} onClick={() => setPhase(p)} className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${phase === p ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface'}`}>
-            {p === 'scores' ? 'Oral Test' : p === 'written_test' ? 'Written Test' : p === 'anecdotal' ? 'Teacher Ratings' : p === 'results' ? 'Results' : p === 'analytics' ? 'Analytics' : 'Leveling Meeting'}
+            {p === 'scores'
+              // Grade 1 has no separate Written Test phase -- both tests are
+              // entered as tabs inside this one, so "Oral Test" undersells it.
+              ? (String(selectedTest.grade) === '1' ? 'Tests' : 'Oral Test')
+              : p === 'written_test' ? 'Written Test' : p === 'anecdotal' ? 'Teacher Ratings' : p === 'results' ? 'Results' : p === 'analytics' ? 'Analytics' : 'Leveling Meeting'}
           </button>
         ))}
         <span className={`ml-auto text-[10px] font-bold px-2 py-1 rounded-full ${selectedTest.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{selectedTest.status.toUpperCase()}</span>

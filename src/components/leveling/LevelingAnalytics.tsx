@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor, compIsCountable } from '@/lib/utils'
-import { Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, BarChart3, ArrowRight, BookOpen, FileText, Target, PieChart, Layers } from 'lucide-react'
+import { Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, BarChart3, ArrowRight, BookOpen, FileText, Target, PieChart, Layers, RotateCcw } from 'lucide-react'
 
 // ── Helpers ────────────────────────────────────────────────────────
 
@@ -387,6 +387,9 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
   const [benchmarks, setBenchmarks] = useState<Record<string, any>>({})
   const [semGrades, setSemGrades] = useState<Record<string, any[]>>({})
   const [lastSemesterName, setLastSemesterName] = useState<string | null>(null)
+  // Bumped to refetch. Analytics is a snapshot of the scores at the moment it
+  // loaded, so after clearing scores elsewhere a teacher needs a way to reread.
+  const [reloadKey, setReloadKey] = useState(0)
   const [prevTest, setPrevTest] = useState<LevelTest | null>(null)
   const [prevScores, setPrevScores] = useState<Record<string, any>>({})
   const [activeSection, setActiveSection] = useState<'overview' | 'domains' | 'standards' | 'passages' | 'comprehension'>('overview')
@@ -439,7 +442,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
 
       setLoading(false)
     })()
-  }, [levelTest.id, levelTest.grade])
+  }, [levelTest.id, levelTest.grade, reloadKey])
 
   // ── Auto-benchmarks ────────────────────────────────────────────
   const autoBenchmarks = useMemo(() => {
@@ -748,7 +751,15 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
 
-  const totalStudents = students.length
+  // Students who actually have data on THIS test. Counting the whole grade made
+  // the figure look unchanged after scores were cleared.
+  const totalStudents = students.filter(s => {
+    const raw = scores[s.id]?.raw_scores
+    if (!raw) return false
+    return Object.values(raw).some(v => v != null && v !== '' &&
+      !(Array.isArray(v) && v.length === 0) &&
+      !(typeof v === 'object' && !Array.isArray(v) && Object.keys(v as object).length === 0))
+  }).length
   const totalMoving = classMetrics.reduce((sum, cm) => sum + cm.moveUpCount + cm.moveDownCount, 0)
   const totalStaying = classMetrics.reduce((sum, cm) => sum + cm.stayCount, 0)
   // Denominator is the students who were actually scored, not the whole grade;
@@ -775,12 +786,19 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
   return (
     <div className="px-10 py-6 space-y-6">
       {/* Header */}
-      <div>
-        <h3 className="font-display text-lg font-semibold text-navy">Level Test Analytics</h3>
-        <p className="text-[12px] text-text-secondary mt-1">
-          Program-wide view of {totalStudents} students across {classMetrics.filter(cm => cm.count > 0).length} classes.
-          Benchmarks are auto-calculated from class medians.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="font-display text-lg font-semibold text-navy">Level Test Analytics</h3>
+          <p className="text-[12px] text-text-secondary mt-1">
+            Program-wide view of {totalStudents} scored student{totalStudents === 1 ? '' : 's'} across {classMetrics.filter(cm => cm.count > 0).length} classes.
+            Benchmarks are auto-calculated from class medians.
+          </p>
+        </div>
+        <button onClick={() => { setLoading(true); setReloadKey(k => k + 1) }}
+          title="Re-read scores from the database. This page is a snapshot from when it loaded, so scores cleared elsewhere since then still appear."
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary border border-border hover:bg-border transition-colors shrink-0">
+          <RotateCcw size={12} /> Refresh
+        </button>
       </div>
 
       {/* Tab navigation */}
@@ -800,7 +818,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
             <div className="bg-surface border border-border rounded-xl p-4">
               <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Students Tested</p>
               <p className="text-[28px] font-bold text-navy mt-1">{totalStudents}</p>
-              <p className="text-[11px] text-text-secondary">Grade {levelTest.grade}</p>
+              <p className="text-[11px] text-text-secondary">of {students.length} in Grade {levelTest.grade}</p>
             </div>
             <div className="bg-surface border border-border rounded-xl p-4"
               title="Even-split projection: tested students ranked by composite and cut into six equal groups. Not the same as the per-student suggestion on the Results tab.">
