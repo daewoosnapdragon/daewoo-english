@@ -324,6 +324,31 @@ export function calculateWeightedAverage(
   return groupAvgs.reduce((s, g) => s + (g.avg * (g.weight / totalWeight)), 0)
 }
 
+// ─── Comprehension: does this score carry information? ───────────────
+// Three states have to stay apart when reading a stored level test score:
+//   • not administered — the student was stopped mid-passage and never heard
+//     the questions. Carries nothing; excluded.
+//   • not entered yet  — the teacher has not scored them. Carries nothing.
+//   • scored           — including a genuine 0, which IS evidence of weak
+//     comprehension and should count against placement.
+//
+// Scores saved from the entry screens record `comp_answered` (how many
+// questions were scored) and store a null `comp_total` when none were, so the
+// three states are distinguishable. Rows saved before that field existed cannot
+// tell a real 0 from an unscored set, so they keep the old behaviour of
+// counting only positive totals rather than being retroactively penalised.
+export function compIsCountable(calc: {
+  comp_total?: number | null
+  comp_answered?: number | null
+  comp_not_administered?: boolean | null
+} | null | undefined): boolean {
+  if (!calc) return false
+  if (calc.comp_not_administered) return false
+  if (calc.comp_total == null) return false
+  if (calc.comp_answered != null) return calc.comp_answered > 0
+  return calc.comp_total > 0
+}
+
 // ─── Level test → reading record adapter ─────────────────────────────
 // Level placement tests (oral section) measure CWPM, accuracy, NAEP, etc.
 // These should surface in the Reading Fluency views alongside ad-hoc reading_assessments.

@@ -5,186 +5,20 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X, RotateCcw, Check, Star } from 'lucide-react'
+import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X, RotateCcw, Check, Star, Ban } from 'lucide-react'
+import {
+  g1ContentForTest, g1VersionKeyForTest, getG1Content, g1WrittenCoreMax, g1WrittenTotalMax,
+  G1_LEGACY_VERSION,
+} from './grade1Content'
+import type { G1Content, G1QuestionDef, G1WritingCategory, PassageLevel } from './grade1Content'
 
 // ============================================================================
 // GRADE 1 TEST CONFIGURATION
 // ============================================================================
-
-const WRITTEN_SECTIONS = [
-  { key: 'w_letter_names', label: 'Letter Names', shortLabel: 'LN', max: 5, standards: ['RF.K.1d'] },
-  { key: 'w_letter_sounds', label: 'Letter Sounds', shortLabel: 'LS', max: 5, standards: ['RF.K.3a'] },
-  { key: 'w_word_picture', label: 'Word-Picture', shortLabel: 'WP', max: 10, standards: ['RF.K.3c', 'RF.1.3g'] },
-  { key: 'w_passage_comp', label: 'Passage Comp', shortLabel: 'PC', max: 5, standards: ['RL.K.1', 'SL.K.2'] },
-  { key: 'w_writing', label: 'Writing', shortLabel: 'Wr', max: 5, standards: ['W.K.2', 'W.1.2'] },
-]
-const WRITTEN_TOTAL = 30
-
-// ============================================================================
-// GRADE 1 PER-QUESTION WRITTEN TEST DATA (Bubble-Sheet Format)
-// ============================================================================
-
-interface G1QuestionDef {
-  qNum: number
-  section: string
-  sectionLabel: string
-  text: string
-  choices: string[]
-  correct: string // positional: 'a'=0, 'b'=1, 'c'=2, 'd'=3
-  standard: string
-  standardDesc: string
-  domain: string
-}
-
-const GRADE_1_QUESTIONS: G1QuestionDef[] = [
-  // Letter Names (Q1-5)
-  { qNum: 1, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['A', 'E', 'I', 'U'], correct: 'c', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
-  { qNum: 2, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['B', 'd', 'b', 'P'], correct: 'b', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
-  { qNum: 3, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['I', 'e', 'O', 'a'], correct: 'c', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
-  { qNum: 4, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['W', 's', 'X', 'V'], correct: 'a', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
-  { qNum: 5, section: 'letter_names', sectionLabel: 'Letter Names', text: 'Circle the correct letter', choices: ['t', 'A', 'O', 'E'], correct: 'd', standard: 'RF.K.1d', standardDesc: 'Recognize upper/lowercase letters', domain: 'Letter Names' },
-  // Letter Sounds (Q6-10)
-  { qNum: 6, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['s', 'T', 'd', 'z'], correct: 'b', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
-  { qNum: 7, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['f', 'p', 'n', 'R'], correct: 'a', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
-  { qNum: 8, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['D', 'B', 'c', 'S'], correct: 'b', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
-  { qNum: 9, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['F', 'P', 'd', 'q'], correct: 'd', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
-  { qNum: 10, section: 'letter_sounds', sectionLabel: 'Letter Sounds', text: 'Circle the correct sound', choices: ['m', 'N', 'L', 'r'], correct: 'c', standard: 'RF.K.3a', standardDesc: 'Letter-sound correspondences', domain: 'Letter Sounds' },
-  // Word-Picture Match (Q11-20) — 3 choices each
-  { qNum: 11, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['red', 'had', 'led'], correct: 'a', standard: 'RF.K.3c', standardDesc: 'Read common high-frequency words', domain: 'Word-Picture' },
-  { qNum: 12, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['ran', 'did', 'man'], correct: 'c', standard: 'RF.K.3c', standardDesc: 'Read common high-frequency words', domain: 'Word-Picture' },
-  { qNum: 13, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['see', 'tree', 'three'], correct: 'b', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
-  { qNum: 14, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['eat', 'lite', 'light'], correct: 'c', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
-  { qNum: 15, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['play', 'pay', 'day'], correct: 'a', standard: 'RF.K.3c', standardDesc: 'Read common high-frequency words', domain: 'Word-Picture' },
-  { qNum: 16, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['hold', 'call', 'old'], correct: 'c', standard: 'RF.K.3c', standardDesc: 'Read common high-frequency words', domain: 'Word-Picture' },
-  { qNum: 17, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['draw', 'ring', 'drink'], correct: 'b', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
-  { qNum: 18, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['first', 'grow', 'girl'], correct: 'c', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
-  { qNum: 19, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['walk', 'work', 'warm'], correct: 'a', standard: 'RF.K.3c', standardDesc: 'Read common high-frequency words', domain: 'Word-Picture' },
-  { qNum: 20, section: 'word_picture', sectionLabel: 'Word-Picture Match', text: 'Match the picture', choices: ['sleep', 'feet', 'five'], correct: 'b', standard: 'RF.1.3g', standardDesc: 'Recognize common irregularly spelled words', domain: 'Word-Picture' },
-  // Passage Comprehension "My Bag" (Q21-25)
-  { qNum: 21, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'How many books are in the bag?', choices: ['1', '2', '3', '4'], correct: 'c', standard: 'RL.K.1', standardDesc: 'Key details in text', domain: 'Passage Comp' },
-  { qNum: 22, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'What color is the pencil case?', choices: ['blue', 'red', 'yellow'], correct: 'c', standard: 'RL.K.1', standardDesc: 'Key details in text', domain: 'Passage Comp' },
-  { qNum: 23, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'What shape is on the bag?', choices: ['square', 'circle', 'triangle'], correct: 'b', standard: 'SL.K.2', standardDesc: 'Key ideas from text read aloud', domain: 'Passage Comp' },
-  { qNum: 24, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'Is there a red book?', choices: ['Yes, there is.', 'No, there isn\'t.'], correct: 'a', standard: 'RL.K.1', standardDesc: 'Key details in text', domain: 'Passage Comp' },
-  { qNum: 25, section: 'passage_comp', sectionLabel: 'Passage: "My Bag"', text: 'Is the circle pink?', choices: ['Yes, it is.', 'No, it isn\'t.'], correct: 'a', standard: 'SL.K.2', standardDesc: 'Key ideas from text read aloud', domain: 'Passage Comp' },
-]
-
-const G1_MC_MAX = 25
-const G1_QUESTION_SECTIONS = ['letter_names', 'letter_sounds', 'word_picture', 'passage_comp'] as const
-
-interface G1WritingCategory {
-  key: string
-  label: string
-  max: number
-  standard: string
-  standardDesc: string
-}
-
-const G1_WRITING_CATEGORIES: G1WritingCategory[] = [
-  { key: 'completeness', label: 'Completeness', max: 5, standard: 'W.K.2', standardDesc: 'Informative writing: name topic, supply detail' },
-  { key: 'content', label: 'Content & Vocabulary', max: 5, standard: 'W.K.2', standardDesc: 'Use words to supply information about topic' },
-  { key: 'sentence_structure', label: 'Sentence Structure', max: 5, standard: 'L.K.1f', standardDesc: 'Produce complete sentences' },
-  { key: 'mechanics', label: 'Mechanics', max: 5, standard: 'L.K.2', standardDesc: 'Capitalization, punctuation, spelling' },
-]
-const G1_WRITING_MAX = 20
-
-const G1_WRITING_RUBRIC: Record<string, Record<number, string>> = {
-  completeness: {
-    0: 'Blank, draws pictures, or writes in Korean only',
-    1: 'Draws pictures or writes 1-2 English letters',
-    2: 'Writes 1-3 English words (any spelling)',
-    3: 'Writes a phrase or short sentence',
-    4: '2-3 sentences about bag contents',
-    5: '4+ sentences with detail about the bag',
-  },
-  content: {
-    0: 'No English content about the bag',
-    1: 'Copies words from the passage only',
-    2: '1-2 own words related to bag items',
-    3: 'Uses colors, numbers, or items from bag',
-    4: 'Describes multiple items with detail',
-    5: 'Rich description with adjectives, numbers, colors combined',
-  },
-  sentence_structure: {
-    0: 'No attempt at English writing',
-    1: 'Letter strings or single isolated words',
-    2: '2+ words together but no verb',
-    3: 'Simple "I see ___" pattern',
-    4: 'Varied sentence starts or compound ideas',
-    5: 'Multiple sentence types with connecting words',
-  },
-  mechanics: {
-    0: 'No recognizable English letters',
-    1: 'Letter-like forms or random letters',
-    2: 'Some correctly formed letters, L-R directionality',
-    3: 'Spaces between words visible',
-    4: 'Capitals and periods attempted',
-    5: 'Consistent caps, periods, mostly correct spelling',
-  },
-}
-
-const ORAL_SECTIONS = {
-  alphabet: [
-    { key: 'o_alpha_names', label: 'Letter Names', max: 16 },
-    { key: 'o_alpha_sounds', label: 'Letter Sounds', max: 16 },
-    { key: 'o_alpha_words', label: 'Words Given', max: 5 },
-  ],
-  phoneme: [
-    { key: 'o_phoneme', label: 'Phoneme Total', max: 12 },
-  ],
-}
-
-type PassageLevel = 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
-
-const PASSAGE_CONFIGS: Record<PassageLevel, {
-  label: string
-  description: string
-  orfMax: number | null
-  hasCwpm: boolean
-  hasNaep: boolean
-  compQuestions: number
-  compMax: number
-  wordCount: number | null
-  passageWeight: number
-  bumpUpThreshold?: number
-  bumpDownThreshold?: number
-}> = {
-  A: {
-    label: 'Level A: Oral Interview',
-    description: 'For students with little or no English. Teacher asks 5 basic questions, scoring each 0-4.',
-    orfMax: 20, hasCwpm: false, hasNaep: false, compQuestions: 0, compMax: 0,
-    wordCount: null, passageWeight: 0, bumpUpThreshold: 10,
-  },
-  B: {
-    label: 'Level B: HF Word List',
-    description: '20 high-frequency words. Student reads each word aloud.',
-    orfMax: 20, hasCwpm: false, hasNaep: false, compQuestions: 0, compMax: 0,
-    wordCount: null, passageWeight: 0, bumpUpThreshold: 15, bumpDownThreshold: 0,
-  },
-  C: {
-    label: 'Level C: Simple Sentences',
-    description: '3 simple sentences (11 words total). Score per word correct. If they can produce a full sentence, try Level D.',
-    orfMax: 11, hasCwpm: false, hasNaep: false, compQuestions: 0, compMax: 0,
-    wordCount: 11, passageWeight: 0, bumpDownThreshold: 0,
-  },
-  D: {
-    label: 'Level D: "My Cat" (25 words)',
-    description: 'Short decodable passage. Timed reading with CWPM + comprehension.',
-    orfMax: null, hasCwpm: true, hasNaep: true, compQuestions: 4, compMax: 8,
-    wordCount: 25, passageWeight: 1.1, bumpDownThreshold: 10,
-  },
-  E: {
-    label: 'Level E: "Lunch Time" (47 words)',
-    description: 'Narrative passage. Timed reading with CWPM + comprehension.',
-    orfMax: null, hasCwpm: true, hasNaep: true, compQuestions: 5, compMax: 10,
-    wordCount: 47, passageWeight: 1.2, bumpDownThreshold: 10,
-  },
-  F: {
-    label: 'Level F: "Rainy Day" (59 words)',
-    description: 'Longer narrative with dialogue. Timed reading with CWPM + comprehension.',
-    orfMax: null, hasCwpm: true, hasNaep: true, compQuestions: 5, compMax: 10,
-    wordCount: 59, passageWeight: 1.3, bumpDownThreshold: 10,
-  },
-}
+// All test content -- questions, passages, word lists, rubrics, standards --
+// lives in grade1Content.ts, versioned by academic year and semester so that
+// editing a test never re-points historical scores. Everything in this file
+// reads the resolved `content` for the level test being scored.
 
 const NAEP_LABELS: Record<number, string> = {
   1: 'Word-by-word, no expression',
@@ -194,213 +28,20 @@ const NAEP_LABELS: Record<number, string> = {
 }
 const NAEP_MULTIPLIERS: Record<number, number> = { 1: 0.85, 2: 0.95, 3: 1.0, 4: 1.1 }
 
-const COMP_QUESTIONS: Record<string, { q: string; dok: string }[]> = {
-  D: [
-    { q: 'What pet do they have?', dok: 'DOK 1' },
-    { q: 'What can the cat do?', dok: 'DOK 1' },
-    { q: 'Can the cat swim?', dok: 'DOK 2' },
-    { q: 'If you had a pet, what would it be? Why?', dok: 'Oral Production' },
-  ],
-  E: [
-    { q: 'What is in the lunch box?', dok: 'DOK 1' },
-    { q: 'What do they eat first?', dok: 'DOK 1' },
-    { q: 'How does the child feel before/after lunch?', dok: 'DOK 2' },
-    { q: 'Why is lunch their favorite time?', dok: 'DOK 2' },
-    { q: 'What is YOUR favorite time at school? Why?', dok: 'Oral Production' },
-  ],
-  F: [
-    { q: 'What was the weather like?', dok: 'DOK 1' },
-    { q: 'What did Mina and her mom make?', dok: 'DOK 1' },
-    { q: 'How did Mina\'s feelings change?', dok: 'DOK 2' },
-    { q: 'Why did Mina say "I like rainy days now"?', dok: 'DOK 2' },
-    { q: 'What do YOU like to do on a rainy day? Why?', dok: 'Oral Production' },
-  ],
-}
-
-// Per-question scoring examples: [0-response, 1-response, 2-response]
-const COMP_SCORING_EXAMPLES: Record<string, string[][]> = {
-  D: [
-    ['No answer or says animal in Korean', '"Animal" or "pet" without specifying', '"A cat" or "They have a cat"'],
-    ['No answer or unrelated', '"Run" or single word', '"The cat can run and jump" or lists 2+ actions'],
-    ['Says yes or no answer only in Korean', '"No" with no elaboration', '"No, the cat cannot swim" or gives reason'],
-    ['No answer or repeats question', 'Names an animal only', 'Names animal and gives a reason why'],
-  ],
-  E: [
-    ['No answer or in Korean', '"Food" or one vague item', '"Rice and soup" -- names both items from the passage'],
-    ['No answer or wrong item', 'Gets the item but vague', '"The rice" or "They eat the rice first"'],
-    ['No answer', 'Says "happy" or one emotion only', '"First hungry, then not hungry" or "hungry then happy"'],
-    ['No answer', '"Because lunch" or circular', '"Because they get to eat" or "rice and soup taste good"'],
-    ['No answer or Korean only', 'One word: "recess" or "lunch"', 'Names a time and explains why with 2+ words'],
-  ],
-  F: [
-    ['No answer or Korean', '"Bad" or "rain"', '"It was rainy" or "raining outside"'],
-    ['No answer', 'One item only: "cookies"', '"Mina and her mom made paper animals" or "paper animals"'],
-    ['No answer or "happy"', 'One feeling only: "sad"', '"First sad then happy" -- shows change over time'],
-    ['No answer', '"Because rain" or circular', '"Because she had fun making paper animals inside"'],
-    ['No answer or Korean', 'One word answer', 'Names activity and gives reason in English'],
-  ],
-}
-
-// ============================================================================
-// LEVEL TEST PASSAGE CONTENT (A-F) -- NOT in passage library, test-only
-// ============================================================================
-
-const LEVEL_A_QUESTIONS = [
-  { q: 'What is your name?', prompt: 'Say: "What is your name?"' },
-  { q: 'How old are you?', prompt: 'Say: "How old are you?"' },
-  { q: 'Who is in your family?', prompt: 'Say: "Who is in your family?"' },
-  { q: 'What color do you like?', prompt: 'Say: "What color do you like?"' },
-  { q: 'What animal do you like?', prompt: 'Say: "What animal do you like?"' },
-]
-
-const LEVEL_A_RUBRIC = [
-  { score: 0, label: 'No response', desc: 'No response. Does not attempt English.' },
-  { score: 1, label: 'Korean only', desc: 'Responds in Korean only, or single English word with heavy prompting.' },
-  { score: 2, label: 'Single words', desc: 'Produces single English words independently (e.g., "seven," "blue," "dog").' },
-  { score: 3, label: 'Phrases', desc: 'Produces English phrases or simple sentences (e.g., "I like blue," "my mom, my dad").' },
-  { score: 4, label: 'Full sentences', desc: 'Produces full English sentences with some detail (e.g., "My name is Mina. I am seven years old. I like cats.").' },
-]
-
-const LEVEL_B_WORDS = ['I', 'a', 'the', 'is', 'my', 'see', 'can', 'go', 'it', 'big', 'like', 'and', 'we', 'to', 'you', 'she', 'he', 'was', 'are', 'have']
-
-const LEVEL_C_SENTENCES = [
-  { text: 'I see a cat.', words: ['I', 'see', 'a', 'cat.'] },
-  { text: 'The dog is big.', words: ['The', 'dog', 'is', 'big.'] },
-  { text: 'I can run.', words: ['I', 'can', 'run.'] },
-]
-
-const LEVEL_TEST_PASSAGES: Record<string, { title: string; text: string; wordCount: number }> = {
-  D: {
-    title: 'My Cat',
-    text: 'I have a pet. My pet is a cat. The cat is fat. The cat can sit. The cat can nap. I like my cat.',
-    wordCount: 25,
-  },
-  E: {
-    title: 'Lunch Time',
-    text: 'It is time for lunch. I am hungry. I open my lunch box. I see rice and soup. The rice is white. The soup is hot. I eat my rice. Then I drink my soup. Now I am not hungry. Lunch is my favorite time at school.',
-    wordCount: 47,
-  },
-  F: {
-    title: 'Rainy Day',
-    text: 'Mina woke up and looked out the window. It was raining. The sky was gray. "Oh no," said Mina. "I wanted to play outside." Her mom said, "Let\'s make something fun." They got paper and scissors. They made paper animals. Mina made a cat. Her mom made a dog. "This is fun!" said Mina. "I like rainy days now."',
-    wordCount: 59,
-  },
-}
-
-const WRITING_RUBRIC = [
-  { score: 0, level: 'Pre-writer', desc: 'Blank, draws pictures, or writes in Korean only' },
-  { score: 1, level: 'Letter level', desc: 'Writes some letters or initial sounds, not recognizable words' },
-  { score: 2, level: 'Word level', desc: 'Writes 1-3 recognizable English words (spelling errors OK)' },
-  { score: 3, level: 'Phrase level', desc: 'Writes a phrase or simple sentence with some errors' },
-  { score: 4, level: 'Sentence level', desc: 'Writes 1-2 complete sentences, mostly correct spelling' },
-  { score: 5, level: 'Strong writer', desc: 'Writes 3+ sentences with details (numbers, colors, adjectives)' },
-]
-
-// ============================================================================
-// COMPONENT 1: ALPHABET LETTERS
-// ============================================================================
-
-const ALPHABET_LETTERS = ['s', 'a', 't', 'm', 'p', 'i', 'n', 'd', 'o', 'g', 'c', 'e', 'k', 'j', 'x', 'y']
-
-// ============================================================================
-// COMPONENT 2: PHONEME MANIPULATION WORDS
-// ============================================================================
-
-const PHONEME_WORDS = [
-  {
-    word: 'sun',
-    sounds: ['/s/', '/u/', '/n/'],
-    soundCount: 3,
-    beginning: '/s/',
-    middle: '/u/',
-    end: '/n/',
-  },
-  {
-    word: 'map',
-    sounds: ['/m/', '/a/', '/p/'],
-    soundCount: 3,
-    beginning: '/m/',
-    middle: '/a/',
-    end: '/p/',
-  },
-  {
-    word: 'leg',
-    sounds: ['/l/', '/e/', '/g/'],
-    soundCount: 3,
-    beginning: '/l/',
-    middle: '/e/',
-    end: '/g/',
-  },
-  {
-    word: 'fish',
-    sounds: ['/f/', '/i/', '/sh/'],
-    soundCount: 3,
-    beginning: '/f/',
-    middle: '/i/',
-    end: '/sh/',
-  },
-]
-
-// ============================================================================
-// STANDARDS BASELINE MAPPING
-// ============================================================================
-
-interface StandardBaseline {
-  code: string
-  domain: string
-  gradeLevel: string  // 'K' or '1'
-  description: string
-  testSection: string
-  masteryThreshold: number
-  alsoChecks?: string
-}
-
-const STANDARDS_BASELINE: StandardBaseline[] = [
-  { code: 'RF.K.1d', domain: 'Print Concepts', gradeLevel: 'K',
-    description: 'Recognize and name all upper- and lowercase letters',
-    testSection: 'w_letter_names', masteryThreshold: 4, alsoChecks: 'o_alpha_names' },
-  { code: 'RF.K.3a', domain: 'Phonics', gradeLevel: 'K',
-    description: 'Letter-sound correspondences for consonants',
-    testSection: 'w_letter_sounds', masteryThreshold: 4, alsoChecks: 'o_alpha_sounds' },
-  { code: 'RF.K.2', domain: 'Phonological Awareness', gradeLevel: 'K',
-    description: 'Demonstrate understanding of spoken words, syllables, and sounds',
-    testSection: 'o_phoneme', masteryThreshold: 8 },
-  { code: 'RF.K.3c', domain: 'Phonics', gradeLevel: 'K',
-    description: 'Read common high-frequency words by sight',
-    testSection: 'w_word_picture', masteryThreshold: 7 },
-  { code: 'RF.1.3g', domain: 'Phonics', gradeLevel: '1',
-    description: 'Recognize grade-appropriate irregularly spelled words',
-    testSection: 'w_word_picture', masteryThreshold: 9 },
-  { code: 'SL.K.2', domain: 'Listening', gradeLevel: 'K',
-    description: 'Confirm understanding of a text read aloud',
-    testSection: 'w_passage_comp', masteryThreshold: 3 },
-  { code: 'RL.K.1', domain: 'Reading Lit', gradeLevel: 'K',
-    description: 'Ask and answer questions about key details',
-    testSection: 'w_passage_comp', masteryThreshold: 4 },
-  { code: 'W.K.2', domain: 'Writing', gradeLevel: 'K',
-    description: 'Use drawing, dictating, and writing to compose texts',
-    testSection: 'w_writing', masteryThreshold: 2 },
-  { code: 'W.1.2', domain: 'Writing', gradeLevel: '1',
-    description: 'Write informative texts - name a topic, supply facts',
-    testSection: 'w_writing', masteryThreshold: 4 },
-  { code: 'L.K.2d', domain: 'Language', gradeLevel: 'K',
-    description: 'Spell simple words phonetically',
-    testSection: 'w_writing', masteryThreshold: 2 },
-  { code: 'RF.1.4', domain: 'Fluency', gradeLevel: '1',
-    description: 'Read with sufficient accuracy and fluency',
-    testSection: 'o_naep', masteryThreshold: 3 },
-]
 
 // ============================================================================
 // PLACEMENT ALGORITHM - GRADE 1 SPECIFIC
 // ============================================================================
 
 interface G1Scores {
-  // Written
+  // Written -- backward-compatible section subtotals, derived at save time.
   w_letter_names?: number | null
   w_letter_sounds?: number | null
-  w_word_picture?: number | null
-  w_passage_comp?: number | null
+  w_word_picture?: number | null    // legacy sections only
+  w_passage_comp?: number | null    // legacy sections only
+  w_picture_match?: number | null   // Fall 2026 onward
+  w_story_comp?: number | null      // Fall 2026 onward
+  w_short_writing?: number | null   // Fall 2026 onward
   w_writing?: number | null
   // Oral
   o_alpha_names?: number | null
@@ -419,6 +60,12 @@ interface G1Scores {
   o_comp_q3?: number | null
   o_comp_q4?: number | null
   o_comp_q5?: number | null
+  /**
+   * The student was stopped during the passage, so the comprehension questions
+   * were never asked. Distinct from scoring them 0: comprehension is excluded
+   * from the composite and rendered as "not administered" rather than a zero.
+   */
+  o_comp_not_administered?: boolean | null
   o_open_response?: number | null
   // Level A per-question scores
   o_a_q1?: number | null
@@ -447,11 +94,17 @@ interface G1Scores {
   o_ph_bme_fish_b?: boolean | null
   o_ph_bme_fish_m?: boolean | null
   o_ph_bme_fish_e?: boolean | null
-  // Per-question written test data (new bubble-sheet format)
+  // Per-question written test data (bubble-sheet format)
   written_answers?: Record<number, string>   // qNum -> 'a'|'b'|'c'|'d'
-  written_rubric?: Record<string, number>    // category key -> 0-5
-  written_mc?: number                        // total MC correct (0-25)
-  writing_bonus?: number                     // total rubric score (0-20)
+  written_rubric?: Record<string, number>    // category key -> 0..max
+  /** Checklist categories: category key -> checked box keys. */
+  written_checklist?: Record<string, string[]>
+  written_mc?: number                        // total MC correct
+  writing_bonus?: number                     // extended writing rubric total (0-20)
+  /** Short constructed-response item (Fall 2026 onward), 0-3. */
+  writing_short?: number | null
+  // Phoneme per-word scores are stored under version-specific keys
+  // (o_ph_* legacy, o_ph26_* Fall 2026), read through the content registry.
   // Teacher
   teacher_impression?: number | null
   teacher_notes?: string
@@ -463,10 +116,11 @@ interface G1Scores {
   wave2_retention_rating?: 'weak' | 'core' | 'strong' | null
 }
 
-function calculateG1Composite(scores: G1Scores): {
+function calculateG1Composite(scores: G1Scores, content: G1Content): {
   writtenPct: number
   writtenMC: number
   writingBonus: number
+  writingShort: number | null
   oralScore: number  // 0-100 normalized
   teacherPct: number
   composite: number
@@ -476,19 +130,27 @@ function calculateG1Composite(scores: G1Scores): {
   weightedCwpm: number | null
   compTotal: number | null
   compMax: number | null
+  compAnswered: number
+  compNotAdministered: boolean
   standardsBaseline: { code: string; met: boolean; score: number; threshold: number }[]
   suggestedClass: EnglishClass
 } {
   // -- Written score (simple percentage) --
+  // "Core written" is the multiple choice plus the short constructed-response
+  // item. Extended writing is weighted separately below as a bonus, so that the
+  // tuned bonus thresholds keep meaning across versions.
   let writtenPct = 0
   let writtenMC = 0
   let writingBonus = 0
+  let writingShort: number | null = null
 
   if (scores.written_answers && Object.keys(scores.written_answers).length > 0) {
-    // New per-question format
-    writtenMC = GRADE_1_QUESTIONS.reduce((sum, q) =>
+    // Per-question format
+    writtenMC = content.written.questions.reduce((sum, q) =>
       sum + (scores.written_answers![q.qNum] === q.correct ? 1 : 0), 0)
-    writtenPct = (writtenMC / G1_MC_MAX) * 100
+    writingShort = content.shortWriting ? (scores.writing_short ?? 0) : null
+    const coreMax = g1WrittenCoreMax(content)
+    writtenPct = coreMax > 0 ? ((writtenMC + (writingShort ?? 0)) / coreMax) * 100 : 0
     writingBonus = scores.writing_bonus ?? 0
   } else {
     // Old section-subtotal format (backward compat)
@@ -497,20 +159,21 @@ function calculateG1Composite(scores: G1Scores): {
       scores.w_word_picture, scores.w_passage_comp, scores.w_writing
     ].filter(v => v != null) as number[]
     const writtenRaw = wScores.reduce((a, b) => a + b, 0)
+    const legacySectionTotal = content.written.sections.reduce((a, s) => a + s.max, 0)
     writtenMC = writtenRaw
-    writtenPct = WRITTEN_TOTAL > 0 ? (writtenRaw / WRITTEN_TOTAL) * 100 : 0
+    writtenPct = legacySectionTotal > 0 ? (writtenRaw / legacySectionTotal) * 100 : 0
   }
 
   // -- Oral score (normalized 0-100) --
   const passageLevel = (scores.o_passage_level || 'A') as PassageLevel
-  const config = PASSAGE_CONFIGS[passageLevel]
+  const config = content.passageConfigs[passageLevel]
 
-  // Alphabet subscore (0-37 raw -> normalize)
+  // Alphabet subscore (raw -> normalize)
   const alphaRaw = ((scores.o_alpha_names ?? 0) + (scores.o_alpha_sounds ?? 0) + (scores.o_alpha_words ?? 0))
-  const alphaPct = (alphaRaw / 37) * 100
+  const alphaPct = content.alphabet.total > 0 ? (alphaRaw / content.alphabet.total) * 100 : 0
 
-  // Phoneme subscore (new UI has 20 checkboxes: 4 words x 5 checks)
-  const phonemePct = ((scores.o_phoneme ?? 0) / 20) * 100
+  // Phoneme subscore
+  const phonemePct = content.phoneme.max > 0 ? ((scores.o_phoneme ?? 0) / content.phoneme.max) * 100 : 0
 
   // ORF subscore - this varies dramatically by level
   let orfPct = 0
@@ -518,15 +181,20 @@ function calculateG1Composite(scores: G1Scores): {
   let weightedCwpm: number | null = null
 
   if (passageLevel === 'A') {
-    // Level A: sum of per-question scores /20
-    const aTotal = (scores.o_a_q1 ?? 0) + (scores.o_a_q2 ?? 0) + (scores.o_a_q3 ?? 0) + (scores.o_a_q4 ?? 0) + (scores.o_a_q5 ?? 0)
-    // Also check legacy o_orf_raw for backward compat
-    const rawScore = aTotal > 0 ? aTotal : (scores.o_orf_raw ?? 0)
-    orfPct = (rawScore / 20) * 100
+    const aMax = content.levelA.max || 1
+    let rawScore: number
+    if (content.levelA.mode === 'holistic') {
+      // One rating for the whole interview, stored in o_orf_raw.
+      rawScore = scores.o_orf_raw ?? 0
+    } else {
+      const aTotal = (scores.o_a_q1 ?? 0) + (scores.o_a_q2 ?? 0) + (scores.o_a_q3 ?? 0) + (scores.o_a_q4 ?? 0) + (scores.o_a_q5 ?? 0)
+      rawScore = aTotal > 0 ? aTotal : (scores.o_orf_raw ?? 0)
+    }
+    orfPct = (rawScore / aMax) * 100
   } else if (passageLevel === 'B') {
-    orfPct = ((scores.o_orf_raw ?? 0) / 20) * 100
+    orfPct = ((scores.o_orf_raw ?? 0) / (content.levelB.max || 1)) * 100
   } else if (passageLevel === 'C') {
-    orfPct = ((scores.o_orf_raw ?? 0) / 11) * 100
+    orfPct = ((scores.o_orf_raw ?? 0) / (content.levelC.max || 1)) * 100
   } else {
     // Levels D-F: Calculate CWPM
     const wordsRead = scores.o_orf_words_read ?? 0
@@ -546,19 +214,30 @@ function calculateG1Composite(scores: G1Scores): {
   }
 
   // ── Comprehension subscore ──
+  // A student who was stopped mid-passage never heard the questions. That is
+  // not a score of 0 -- it carries no information about comprehension -- so the
+  // subtest is dropped and the remaining weights renormalize around it.
+  const compNotAdministered = !!scores.o_comp_not_administered && config.compQuestions > 0
   let compTotal: number | null = null
   let compMax: number | null = null
-  if (config.compQuestions > 0) {
+  let compAnswered = 0
+  if (config.compQuestions > 0 && !compNotAdministered) {
     const compScores = [scores.o_comp_q1, scores.o_comp_q2, scores.o_comp_q3, scores.o_comp_q4]
     if (config.compQuestions >= 5) compScores.push(scores.o_comp_q5)
     const validComp = compScores.filter(v => v != null) as number[]
-    compTotal = validComp.reduce((a, b) => a + b, 0)
-    compMax = config.compMax
+    compAnswered = validComp.length
+    // Null when nothing has been scored yet -- distinct from a scored 0.
+    if (compAnswered > 0) {
+      compTotal = validComp.reduce((a, b) => a + b, 0)
+      compMax = config.compMax
+    }
   }
   const compPct = compMax && compMax > 0 && compTotal != null ? (compTotal / compMax) * 100 : 0
 
   // Open response
-  const openPct = ((scores.o_open_response ?? 0) / 5) * 100
+  const openPct = content.openResponse.max > 0
+    ? ((scores.o_open_response ?? 0) / content.openResponse.max) * 100
+    : 0
 
   // ── Oral score: passage-level-gated scoring ──
   // The passage level is the strongest signal of where a Grade 1 student belongs.
@@ -604,8 +283,10 @@ function calculateG1Composite(scores: G1Scores): {
   if ((scores.o_phoneme ?? 0) > 0) withinBandParts.push({ value: phonemePct / 100, weight: phonemeWeight })
   // ORF (passage-level-specific performance)
   if (orfPct > 0) withinBandParts.push({ value: Math.min(orfPct / 100, 1), weight: orfWeight })
-  // Comprehension (levels with comp questions)
-  if (compPct > 0) withinBandParts.push({ value: Math.min(compPct / 100, 1), weight: compWeight })
+  // Comprehension (levels with comp questions). Gated on whether it was
+  // actually scored, not on the value: a scored 0 is real evidence of weak
+  // comprehension and counts, while "not asked" and "not scored yet" do not.
+  if (compTotal != null) withinBandParts.push({ value: Math.min(compPct / 100, 1), weight: compWeight })
   // Open response
   if ((scores.o_open_response ?? 0) > 0) withinBandParts.push({ value: openPct / 100, weight: openWeight })
 
@@ -692,14 +373,16 @@ function calculateG1Composite(scores: G1Scores): {
   }
 
   // -- Standards baseline --
-  const standardsBaseline = STANDARDS_BASELINE.map(std => {
+  const standardsBaseline = content.standards.map(std => {
     let score = (scores as any)[std.testSection] ?? 0
     if (std.alsoChecks) {
       const altScore = (scores as any)[std.alsoChecks] ?? 0
-      const primaryMax = WRITTEN_SECTIONS.find(s => s.key === std.testSection)?.max ?? 1
-      const altMax = std.alsoChecks === 'o_alpha_names' ? 16 : std.alsoChecks === 'o_alpha_sounds' ? 16 : 1
+      const primaryMax = content.written.sections.find(s => s.key === std.testSection)?.max ?? 1
+      const altMax = std.alsoChecks === 'o_alpha_names'
+        ? content.alphabet.nameMax
+        : std.alsoChecks === 'o_alpha_sounds' ? content.alphabet.soundMax : 1
       const primaryPct = score / primaryMax
-      const altPct = altScore / altMax
+      const altPct = altMax > 0 ? altScore / altMax : 0
       if (altPct > primaryPct) {
         score = Math.round(altPct * primaryMax)
       }
@@ -712,12 +395,12 @@ function calculateG1Composite(scores: G1Scores): {
     }
   })
 
-  const suggestedClass = suggestG1Class(passageLevel, composite, writtenMC, scores, cwpm, writingBonus)
+  const suggestedClass = suggestG1Class(passageLevel, composite, writtenMC, scores, cwpm, writingBonus, content)
 
   return {
-    writtenPct, writtenMC, writingBonus, oralScore, teacherPct, composite, wave,
+    writtenPct, writtenMC, writingBonus, writingShort, oralScore, teacherPct, composite, wave,
     passageLevel, cwpm, weightedCwpm,
-    compTotal, compMax, standardsBaseline, suggestedClass,
+    compTotal, compMax, compAnswered, compNotAdministered, standardsBaseline, suggestedClass,
   }
 }
 
@@ -728,6 +411,7 @@ function suggestG1Class(
   scores: G1Scores,
   cwpm: number | null,
   writingBonus: number = 0,
+  content: G1Content,
 ): EnglishClass {
   // Writing bonus lowers Snapdragon threshold for upper-band discrimination
   const snapBoost = writingBonus >= 12 ? 5 : 0
@@ -753,9 +437,12 @@ function suggestG1Class(
   }
 
   if (passageLevel === 'C') {
-    // Level C: beginning fluency. Still use composite, but ORF < 3 is a strong
-    // signal the student isn't reading at sentence level yet.
-    if ((scores.o_orf_raw ?? 0) < 3 && composite < 40) return 'Camellia'
+    // Level C: beginning fluency. Still use composite, but reading under about
+    // a quarter of the words is a strong signal the student isn't reading at
+    // sentence level yet. Expressed as a fraction so it survives a word-count
+    // change between test versions (11 words legacy, 30 words Fall 2026).
+    const sentenceFloor = Math.max(1, Math.round(content.levelC.max * 0.27))
+    if ((scores.o_orf_raw ?? 0) < sentenceFloor && composite < 40) return 'Camellia'
     if (composite < 45) return 'Daisy'
     return 'Sunflower'
   }
@@ -796,6 +483,10 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   teacherClass?: EnglishClass | null
 }) {
   const { showToast, currentTeacher, confirmDialog } = useApp()
+  // Resolve the content this test was (or will be) scored against, so historical
+  // tests keep their original questions, passages and word lists.
+  const versionKey = g1VersionKeyForTest(levelTest as any)
+  const content = getG1Content(versionKey)
   const [students, setStudents] = useState<Student[]>([])
   const [scores, setScores] = useState<Record<string, G1Scores>>({})
   const [loading, setLoading] = useState(true)
@@ -843,10 +534,13 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
   }, [])
 
-  // Fields that belong to the current passage level and must be cleared on switch
+  // Fields that belong to the current passage level and must be cleared on switch.
+  // The teacher may re-test at another level if they misjudged; the previous
+  // attempt is archived into passages_attempted rather than discarded.
   const G1_PASSAGE_FIELDS = [
     'o_orf_raw', 'o_orf_words_read', 'o_orf_errors', 'o_orf_time_seconds',
     'o_naep', 'o_comp_q1', 'o_comp_q2', 'o_comp_q3', 'o_comp_q4', 'o_comp_q5',
+    'o_comp_not_administered',
     'o_a_q1', 'o_a_q2', 'o_a_q3', 'o_a_q4', 'o_a_q5',
   ]
 
@@ -888,6 +582,21 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     })
   }, [])
 
+  // Checklist categories score by count of checked boxes, not by a ladder row.
+  // The boxes are independent: checking a later one does not imply the earlier.
+  const toggleWrittenChecklist = useCallback((studentId: string, category: string, boxKey: string) => {
+    setScores(prev => {
+      const current = prev[studentId] || {}
+      const all = { ...(current.written_checklist || {}) }
+      const checked = new Set(all[category] || [])
+      if (checked.has(boxKey)) checked.delete(boxKey)
+      else checked.add(boxKey)
+      all[category] = Array.from(checked)
+      const rubric = { ...(current.written_rubric || {}), [category]: checked.size }
+      return { ...prev, [studentId]: { ...current, written_checklist: all, written_rubric: rubric } }
+    })
+  }, [])
+
   const saveScores = useCallback(async (studentIds: string[], silent = false) => {
     if (savingRef.current) return
     savingRef.current = true
@@ -897,64 +606,71 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       for (const sid of studentIds) {
         const raw = scoresRef.current[sid] || {}
 
-        // Compute o_phoneme from individual checkboxes
+        // Compute o_phoneme from this version's probe checkboxes.
+        // Only fall back to a stored total when the record has no probe keys at
+        // all -- i.e. it predates the checkbox UI. Taking the max unconditionally
+        // (as this once did) meant unchecking a box could never lower the score.
         let phonemeTotal = 0
-        for (const pw of PHONEME_WORDS) {
-          const w = pw.word
-          if ((raw as any)[`o_ph_seg_${w}`]) phonemeTotal++
-          if ((raw as any)[`o_ph_count_${w}`]) phonemeTotal++
-          if ((raw as any)[`o_ph_bme_${w}_b`]) phonemeTotal++
-          if ((raw as any)[`o_ph_bme_${w}_m`]) phonemeTotal++
-          if ((raw as any)[`o_ph_bme_${w}_e`]) phonemeTotal++
+        let hasProbeData = false
+        for (const pw of content.phoneme.words) {
+          for (const probe of pw.probes) {
+            if (probe.key in (raw as any)) hasProbeData = true
+            if ((raw as any)[probe.key]) phonemeTotal++
+          }
         }
-        // But also keep manually set o_phoneme if it's higher (backward compat)
-        const existingPhoneme = raw.o_phoneme ?? 0
-        const finalRaw: any = { ...raw, o_phoneme: Math.max(phonemeTotal, existingPhoneme) }
+        const finalRaw: any = {
+          ...raw,
+          o_phoneme: hasProbeData ? phonemeTotal : (raw.o_phoneme ?? 0),
+        }
 
         // Compute backward-compat section subtotals from per-question answers
         if (finalRaw.written_answers && Object.keys(finalRaw.written_answers).length > 0) {
           const answers = finalRaw.written_answers as Record<number, string>
-          let letterNames = 0, letterSounds = 0, wordPicture = 0, passageComp = 0
-          GRADE_1_QUESTIONS.forEach(q => {
-            if (answers[q.qNum] === q.correct) {
-              if (q.section === 'letter_names') letterNames++
-              else if (q.section === 'letter_sounds') letterSounds++
-              else if (q.section === 'word_picture') wordPicture++
-              else if (q.section === 'passage_comp') passageComp++
-            }
+          const bySection: Record<string, number> = {}
+          content.written.sectionKeys.forEach(k => { bySection[k] = 0 })
+          content.written.questions.forEach(q => {
+            if (answers[q.qNum] === q.correct) bySection[q.section] = (bySection[q.section] ?? 0) + 1
           })
-          finalRaw.w_letter_names = letterNames
-          finalRaw.w_letter_sounds = letterSounds
-          finalRaw.w_word_picture = wordPicture
-          finalRaw.w_passage_comp = passageComp
-          finalRaw.written_mc = letterNames + letterSounds + wordPicture + passageComp
+          // Section subtotals are stored under the `w_` key matching each section.
+          content.written.sectionKeys.forEach(k => { finalRaw[`w_${k}`] = bySection[k] ?? 0 })
+          finalRaw.written_mc = Object.values(bySection).reduce((a, b) => a + b, 0)
         }
-        // Compute writing bonus from rubric categories
+        // Short constructed-response item, where the version has one
+        if (content.shortWriting) {
+          finalRaw.w_short_writing = finalRaw.writing_short ?? null
+        }
+        // Compute extended writing bonus from rubric categories
         if (finalRaw.written_rubric && Object.keys(finalRaw.written_rubric).length > 0) {
           const rubric = finalRaw.written_rubric as Record<string, number>
-          const rubricTotal = Object.values(rubric).reduce((a, b) => a + b, 0)
+          const rubricTotal = content.extendedWriting.categories
+            .reduce((sum, cat) => sum + (rubric[cat.key] || 0), 0)
           finalRaw.writing_bonus = rubricTotal
           finalRaw.writing = rubricTotal  // Dashboard reads raw_scores.writing
-          // Backward compat: map 0-20 bonus to old 0-5 w_writing scale
-          finalRaw.w_writing = Math.round(rubricTotal / 4)
+          // Backward compat: w_writing is a 0-5 field that predates the 20-point
+          // rubric and is still read by the standards baseline and the dashboard.
+          finalRaw.w_writing = Math.round(rubricTotal / (content.extendedWriting.max / 5))
         }
 
-        // For Level A, compute o_orf_raw from per-question scores
-        if (finalRaw.o_passage_level === 'A') {
+        // For Level A, derive o_orf_raw. Holistic versions store the single
+        // rating directly; per-question versions sum the five items.
+        if (finalRaw.o_passage_level === 'A' && content.levelA.mode === 'per_question') {
           const aTotal = (finalRaw.o_a_q1 ?? 0) + (finalRaw.o_a_q2 ?? 0) + (finalRaw.o_a_q3 ?? 0) + (finalRaw.o_a_q4 ?? 0) + (finalRaw.o_a_q5 ?? 0)
           if (aTotal > 0) finalRaw.o_orf_raw = aTotal
         }
 
-        const metrics = calculateG1Composite(finalRaw)
+        const metrics = calculateG1Composite(finalRaw, content)
 
         const { error } = await supabase.from('level_test_scores').upsert({
           level_test_id: levelTest.id,
           student_id: sid,
           raw_scores: finalRaw,
           calculated_metrics: {
+            content_version: content.version,
             written_pct: metrics.writtenPct,
             written_mc: metrics.writtenMC,
+            written_mc_max: content.written.mcMax,
             writing_bonus: metrics.writingBonus,
+            writing_short: metrics.writingShort,
             oral_score: metrics.oralScore,
             teacher_pct: metrics.teacherPct,
             passage_level: metrics.passageLevel,
@@ -962,6 +678,8 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
             weighted_cwpm: metrics.weightedCwpm,
             comp_total: metrics.compTotal,
             comp_max: metrics.compMax,
+            comp_answered: metrics.compAnswered,
+            comp_not_administered: metrics.compNotAdministered,
             standards_baseline: metrics.standardsBaseline,
           },
           composite_index: metrics.composite,
@@ -1128,7 +846,12 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     let writtenDone = 0, oralDone = 0
     classStudents.forEach(s => {
       const sc = scores[s.id] || {}
-      if (sc.w_letter_names != null || sc.w_letter_sounds != null || sc.w_word_picture != null || (sc.written_answers && Object.keys(sc.written_answers).length > 0)) writtenDone++
+      // Any written evidence counts: per-question answers, the short writing
+      // item, the rubric, or a legacy section subtotal.
+      if (sc.w_letter_names != null || sc.w_letter_sounds != null || sc.w_word_picture != null
+        || sc.writing_short != null
+        || (sc.written_rubric && Object.keys(sc.written_rubric).length > 0)
+        || (sc.written_answers && Object.keys(sc.written_answers).length > 0)) writtenDone++
       if (sc.o_passage_level) oralDone++
     })
     return { writtenDone, oralDone, total: classStudents.length }
@@ -1195,6 +918,19 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
               {tab.sub && <span className={`text-[10px] ml-1 ${activeTab === tab.key ? 'opacity-70' : 'text-text-tertiary'}`}>{tab.sub}</span>}
             </button>
           ))}
+          {/* Which question set this test is scored against. Never silent: a
+              test whose version has not been authored falls back to legacy. */}
+          <span
+            title={versionKey === G1_LEGACY_VERSION
+              ? 'This test is scored against the original Grade 1 question set.'
+              : `Scored against the ${content.label} question set.`}
+            className={`ml-auto inline-flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-full ${
+              versionKey === G1_LEGACY_VERSION
+                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                : 'bg-surface-alt text-text-secondary border border-border'
+            }`}>
+            <FileText size={10} /> {content.label}
+          </span>
         </div>
       </div>
 
@@ -1205,6 +941,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         <>
           {activeTab === 'oral' && (
             <OralTestEntry
+              content={content}
               students={classStudents}
               scores={scores}
               updateScore={updateScore}
@@ -1219,10 +956,12 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
           )}
           {activeTab === 'written' && (
             <WrittenTestEntry
+              content={content}
               students={students}
               scores={scores}
               updateWrittenAnswer={updateWrittenAnswer}
               updateWrittenRubric={updateWrittenRubric}
+              toggleWrittenChecklist={toggleWrittenChecklist}
               updateScore={updateScore}
               onSave={saveScores}
               saving={saving}
@@ -1240,7 +979,9 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
 // GRADE 1 WRITTEN TEST ANALYTICS
 // ============================================================================
 
-function computeG1Analytics(scores: Record<string, G1Scores>, students: Student[]) {
+function computeG1Analytics(scores: Record<string, G1Scores>, students: Student[], content: G1Content) {
+  const GRADE_1_QUESTIONS = content.written.questions
+  const G1_QUESTION_SECTIONS = content.written.sectionKeys
   const studentIds = students.map(s => s.id).filter(sid => {
     const sc = scores[sid]
     return sc?.written_answers && Object.keys(sc.written_answers).length > 0
@@ -1308,13 +1049,17 @@ function computeG1Analytics(scores: Record<string, G1Scores>, students: Student[
   return { itemDifficulty, domains, discrimination, studentCount: n, studentTotals }
 }
 
-const G1_SECTION_LABELS: Record<string, string> = {
-  letter_names: 'Letter Names', letter_sounds: 'Letter Sounds',
-  word_picture: 'Word-Picture', passage_comp: 'Passage Comp',
-}
+function G1AnalyticsView({ scores, students, content }: { scores: Record<string, G1Scores>; students: Student[]; content: G1Content }) {
+  const GRADE_1_QUESTIONS = content.written.questions
+  const G1_QUESTION_SECTIONS = content.written.sectionKeys
+  // Section label comes from the first question in that section.
+  const G1_SECTION_LABELS: Record<string, string> = {}
+  GRADE_1_QUESTIONS.forEach(q => { if (!G1_SECTION_LABELS[q.section]) G1_SECTION_LABELS[q.section] = q.domain })
 
-function G1AnalyticsView({ scores, students }: { scores: Record<string, G1Scores>; students: Student[] }) {
-  const analytics = useMemo(() => computeG1Analytics(scores, students), [scores, students])
+  const G1_WRITING_CATEGORIES = content.extendedWriting.categories
+  const G1_WRITING_MAX = content.extendedWriting.max
+
+  const analytics = useMemo(() => computeG1Analytics(scores, students, content), [scores, students, content])
   if (!analytics) return <div className="p-12 text-center text-text-tertiary">No written test data entered yet.</div>
 
   const missed = GRADE_1_QUESTIONS
@@ -1328,7 +1073,7 @@ function G1AnalyticsView({ scores, students }: { scores: Record<string, G1Scores
       <h3 className="text-[16px] font-display font-semibold text-navy mb-4">Written Test Analytics</h3>
       <p className="text-[11px] text-text-tertiary mb-4">{analytics.studentCount} students scored</p>
 
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: `repeat(${G1_QUESTION_SECTIONS.length}, minmax(0, 1fr))` }}>
         {G1_QUESTION_SECTIONS.map(sec => {
           const d = analytics.domains[sec]
           const pct = d.total > 0 ? Math.round((d.correct / d.total) * 100) : 0
@@ -1459,17 +1204,27 @@ function G1StandardBadge({ code, description }: { code: string; description: str
 // WRITTEN TEST ENTRY - Bubble-Sheet UI (matching Grade 2-5)
 // ============================================================================
 
-function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWrittenRubric, updateScore, onSave, saving, teacherClass, isStudentDirty }: {
+function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, updateWrittenRubric, toggleWrittenChecklist, updateScore, onSave, saving, teacherClass, isStudentDirty }: {
+  content: G1Content
   students: Student[]
   scores: Record<string, G1Scores>
   updateWrittenAnswer: (sid: string, qNum: number, choice: string) => void
   updateWrittenRubric: (sid: string, category: string, score: number) => void
+  toggleWrittenChecklist: (sid: string, category: string, boxKey: string) => void
   updateScore: (sid: string, key: string, val: string | number | boolean | null) => void
   onSave: (sids: string[]) => Promise<void>
   saving: boolean
   teacherClass: EnglishClass
   isStudentDirty: (sid: string) => boolean
 }) {
+  const GRADE_1_QUESTIONS = content.written.questions
+  const G1_QUESTION_SECTIONS = content.written.sectionKeys
+  const G1_WRITING_CATEGORIES = content.extendedWriting.categories
+  const G1_WRITING_RUBRIC = content.extendedWriting.rubric
+  const G1_WRITING_MAX = content.extendedWriting.max
+  const G1_MC_MAX = content.written.mcMax
+  const shortWriting = content.shortWriting
+
   const [view, setView] = useState<'entry' | 'analytics'>('entry')
   const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>(teacherClass || 'all')
   const [selectedIdx, setSelectedIdx] = useState(0)
@@ -1488,15 +1243,16 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
   const answers = sc.written_answers || {}
   const rubric = sc.written_rubric || {}
 
-  const mcCorrect = useMemo(() => GRADE_1_QUESTIONS.reduce((sum, q) => sum + (answers[q.qNum] === q.correct ? 1 : 0), 0), [answers])
-  const writingTotal = useMemo(() => G1_WRITING_CATEGORIES.reduce((sum, cat) => sum + (rubric[cat.key] || 0), 0), [rubric])
-  const studentHasData = Object.keys(answers).length > 0 || Object.keys(rubric).length > 0
+  const mcCorrect = useMemo(() => GRADE_1_QUESTIONS.reduce((sum, q) => sum + (answers[q.qNum] === q.correct ? 1 : 0), 0), [answers, GRADE_1_QUESTIONS])
+  const writingTotal = useMemo(() => G1_WRITING_CATEGORIES.reduce((sum, cat) => sum + (rubric[cat.key] || 0), 0), [rubric, G1_WRITING_CATEGORIES])
+  const shortScore = sc.writing_short ?? null
+  const studentHasData = Object.keys(answers).length > 0 || Object.keys(rubric).length > 0 || shortScore != null
 
   const sections = useMemo(() => {
     const groups: Record<string, G1QuestionDef[]> = {}
     GRADE_1_QUESTIONS.forEach(q => { if (!groups[q.section]) groups[q.section] = []; groups[q.section].push(q) })
     return groups
-  }, [])
+  }, [GRADE_1_QUESTIONS])
   const allQNums = GRADE_1_QUESTIONS.map(q => q.qNum)
 
   // Keyboard shortcuts
@@ -1617,7 +1373,7 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
       {/* Main content */}
       <div className="flex-1 overflow-y-auto">
         {view === 'analytics' ? (
-          <G1AnalyticsView scores={scores} students={classStudents} />
+          <G1AnalyticsView scores={scores} students={classStudents} content={content} />
         ) : !student ? (
           <div className="p-12 text-center text-text-tertiary">Select a student from the sidebar</div>
         ) : (
@@ -1673,7 +1429,15 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
                       const chosen = answers[q.qNum]
                       const isCorrect = chosen === q.correct
                       const isFocused = focusedQ === q.qNum
-                      const isWordQ = q.section === 'word_picture' || q.section === 'passage_comp'
+                      // Picture items have no letters printed on the student page,
+                      // so the teacher records which position was circled.
+                      const isPositional = q.choiceStyle === 'position'
+                      const positionLabels = q.choices.length === 3
+                        ? ['L', 'M', 'R']
+                        : q.choices.map((_, i) => String(i + 1))
+                      // Wide buttons whenever the labels are words rather than
+                      // single characters, whatever the section is called.
+                      const isWordQ = !isPositional && q.choices.some(c => c.length > 2)
                       return (
                         <div key={q.qNum} id={`g1-q-row-${q.qNum}`} onClick={() => setFocusedQ(q.qNum)}
                           className={`flex items-center gap-3 px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-blue-50/30' : ''}`}>
@@ -1689,13 +1453,17 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
                               else if (chosen && isCorrectAnswer) bg = 'bg-green-100 border-green-300 text-green-700'
                               return (
                                 <button key={letter} onClick={(e) => { e.stopPropagation(); updateWrittenAnswer(student.id, q.qNum, letter); setFocusedQ(q.qNum) }}
+                                  title={isPositional ? choice : undefined}
                                   className={`${isWordQ ? 'min-w-[60px] px-2' : 'w-9'} h-8 rounded text-[11px] font-bold border-2 transition-all ${bg}`}>
-                                  {choice}
+                                  {isPositional ? positionLabels[ci] : choice}
                                 </button>
                               )
                             })}
                           </div>
-                          <span className="flex-1 text-[10px] text-text-tertiary truncate">{q.text}</span>
+                          <span className="flex-1 text-[10px] text-text-tertiary truncate"
+                            title={isPositional ? `${q.text} — correct: ${q.choices[q.correct.charCodeAt(0) - 97]}` : q.text}>
+                            {q.text}
+                          </span>
                           <G1StandardBadge code={q.standard} description={q.standardDesc} />
                           {chosen && (isCorrect ? <Check size={12} className="text-green-500" /> : <X size={12} className="text-red-400" />)}
                         </div>
@@ -1705,6 +1473,50 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
                 </div>
               )
             })}
+
+            {/* Short constructed-response item, where the version has one */}
+            {shortWriting && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-[13px] font-semibold text-navy flex items-center gap-1.5">
+                      <PenTool size={13} className="text-navy" /> Short Writing
+                    </h4>
+                    <span className="text-[9px] text-text-tertiary">{shortWriting.prompt}</span>
+                  </div>
+                  <span className="text-[11px] text-text-tertiary">{shortScore ?? '--'}/{shortWriting.max}</span>
+                </div>
+                <div className="border border-border rounded-lg overflow-hidden">
+                  {shortWriting.rubric.map((row, ri) => (
+                    <button key={row.score}
+                      onClick={() => updateScore(student.id, 'writing_short', shortScore === row.score ? null : row.score)}
+                      className={`w-full flex items-start gap-3 px-3 py-2 text-left transition-all ${
+                        shortScore === row.score
+                          ? 'bg-navy/10 ring-1 ring-inset ring-navy/30'
+                          : ri % 2 === 0 ? 'bg-white hover:bg-surface-alt' : 'bg-gray-50/50 hover:bg-surface-alt'
+                      }`}>
+                      <span className={`w-7 h-7 rounded text-[12px] font-bold border-2 flex items-center justify-center shrink-0 ${
+                        shortScore === row.score ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200'
+                      }`}>{row.score}</span>
+                      <span className="min-w-0">
+                        <span className="block text-[11px] font-medium text-text-primary">{row.label}</span>
+                        <span className="block text-[10px] text-text-tertiary leading-snug">{row.desc}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {shortWriting.notes.length > 0 && (
+                  <details className="mt-1.5">
+                    <summary className="text-[10px] text-purple-600 cursor-pointer hover:underline font-medium">Scoring notes</summary>
+                    <ul className="mt-1.5 space-y-1 pl-4 list-disc">
+                      {shortWriting.notes.map((n, i) => (
+                        <li key={i} className="text-[10px] text-text-tertiary leading-snug">{n}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </div>
+            )}
 
             {/* Writing Bonus Rubric */}
             <div className="mb-6">
@@ -1727,6 +1539,48 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
                 {G1_WRITING_CATEGORIES.map((cat, ci) => {
                   const val = rubric[cat.key] || 0
                   const descriptors = G1_WRITING_RUBRIC[cat.key]
+
+                  // Checklist categories are NOT a ladder: the features are
+                  // independent and the score is simply how many are present.
+                  // Rendering them as 0-5 buttons would invite scoring them as
+                  // a ladder, which is the one thing the rubric warns against.
+                  if (cat.kind === 'checklist' && cat.checklist) {
+                    const checked = new Set(sc.written_checklist?.[cat.key] || [])
+                    return (
+                      <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                        <div className="flex items-start gap-3 px-3 py-2">
+                          <div className="w-44 shrink-0">
+                            <div className="text-[12px] font-medium">{cat.label}</div>
+                            <div className="text-[9px] text-text-tertiary">{cat.standard} -- {cat.standardDesc}</div>
+                            <div className="text-[9px] text-amber-700 font-semibold mt-1">
+                              Checklist -- check every feature present, in any order
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0 space-y-1">
+                            {cat.checklist.map(box => {
+                              const on = checked.has(box.key)
+                              return (
+                                <label key={box.key}
+                                  className="flex items-start gap-2 px-2 py-1 rounded hover:bg-surface-alt cursor-pointer">
+                                  <input type="checkbox" checked={on}
+                                    onChange={() => toggleWrittenChecklist(student.id, cat.key, box.key)}
+                                    className="w-4 h-4 mt-0.5 rounded border-2 border-navy/30 text-green-600 focus:ring-green-500 shrink-0" />
+                                  <span className="min-w-0">
+                                    <span className="text-[11px] font-medium text-text-primary">{box.label}</span>
+                                    {showRubricGuide && (
+                                      <span className="block text-[9px] text-text-tertiary leading-snug">{box.desc}</span>
+                                    )}
+                                  </span>
+                                </label>
+                              )
+                            })}
+                          </div>
+                          <span className="text-[12px] font-bold text-navy ml-2 shrink-0">{checked.size}/{cat.max}</span>
+                        </div>
+                      </div>
+                    )
+                  }
+
                   return (
                     <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                       <div className="flex items-center gap-3 px-3 py-2">
@@ -1760,12 +1614,25 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
                   )
                 })}
               </div>
+              {content.extendedWriting.notes.length > 0 && (
+                <details className="mt-1.5">
+                  <summary className="text-[10px] text-purple-600 cursor-pointer hover:underline font-medium">Scoring notes</summary>
+                  <ul className="mt-1.5 space-y-1 pl-4 list-disc">
+                    {content.extendedWriting.notes.map((n, i) => (
+                      <li key={i} className="text-[10px] text-text-tertiary leading-snug">{n}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </div>
 
-            {/* Wave 2 Teacher Impression */}
+            {/* Teacher class impression. The stored keys are still named for the
+                original two-wave test; only the labels change per version. */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[13px] font-semibold text-navy">Wave 2 Teacher Impression</h4>
+                <h4 className="text-[13px] font-semibold text-navy">
+                  {content.administration === 'single_sitting' ? 'Teacher Impression' : 'Wave 2 Teacher Impression'}
+                </h4>
               </div>
               <div className="border border-border rounded-lg overflow-hidden">
                 {/* Class impression */}
@@ -1839,11 +1706,15 @@ function WrittenTestEntry({ students, scores, updateWrittenAnswer, updateWritten
 
 // ─── COMPONENT 1: Clickable Letter Grids ────────────────────────────────────
 
-function AlphabetGrids({ sc, studentId, updateScore }: {
+function AlphabetGrids({ sc, studentId, updateScore, content }: {
   sc: G1Scores
   studentId: string
   updateScore: (sid: string, key: string, val: number | string | boolean | null) => void
+  content: G1Content
 }) {
+  const ALPHABET_LETTERS = content.alphabet.letters
+  const NAME_MAX = content.alphabet.nameMax
+  const SOUND_MAX = content.alphabet.soundMax
   // Letter names grid
   const [nameStatus, setNameStatus] = useState<Record<number, boolean>>({})
   const [soundStatus, setSoundStatus] = useState<Record<number, boolean>>({})
@@ -1902,8 +1773,8 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[11px] font-semibold text-navy">Letter Names</p>
-          <span className={`text-[12px] font-bold ${nameCount >= 12 ? 'text-green-600' : nameCount >= 8 ? 'text-amber-600' : 'text-text-secondary'}`}>
-            {nameCount}/16
+          <span className={`text-[12px] font-bold ${nameCount >= NAME_MAX * 0.75 ? 'text-green-600' : nameCount >= NAME_MAX * 0.5 ? 'text-amber-600' : 'text-text-secondary'}`}>
+            {nameCount}/{NAME_MAX}
           </span>
         </div>
         <div className="bg-blue-50 rounded-lg px-4 py-2 border border-blue-100 mb-2">
@@ -1922,7 +1793,7 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
         </div>
         <div className="flex gap-2 mt-2">
           <button onClick={() => {
-            const ns: Record<number, boolean> = {}; ALPHABET_LETTERS.forEach((_, i) => { ns[i] = true }); setNameStatus(ns); updateScore(studentId, 'o_alpha_names', 16); setInitialized(true)
+            const ns: Record<number, boolean> = {}; ALPHABET_LETTERS.forEach((_, i) => { ns[i] = true }); setNameStatus(ns); updateScore(studentId, 'o_alpha_names', ALPHABET_LETTERS.length); setInitialized(true)
           }} className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
           <button onClick={() => { setNameStatus({}); updateScore(studentId, 'o_alpha_names', 0); setInitialized(true) }}
             className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
@@ -1933,8 +1804,8 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[11px] font-semibold text-navy">Letter Sounds</p>
-          <span className={`text-[12px] font-bold ${soundCount >= 12 ? 'text-green-600' : soundCount >= 8 ? 'text-amber-600' : 'text-text-secondary'}`}>
-            {soundCount}/16
+          <span className={`text-[12px] font-bold ${soundCount >= SOUND_MAX * 0.75 ? 'text-green-600' : soundCount >= SOUND_MAX * 0.5 ? 'text-amber-600' : 'text-text-secondary'}`}>
+            {soundCount}/{SOUND_MAX}
           </span>
         </div>
         <div className="bg-blue-50 rounded-lg px-4 py-2 border border-blue-100 mb-2">
@@ -1953,7 +1824,7 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
         </div>
         <div className="flex gap-2 mt-2">
           <button onClick={() => {
-            const ss: Record<number, boolean> = {}; ALPHABET_LETTERS.forEach((_, i) => { ss[i] = true }); setSoundStatus(ss); updateScore(studentId, 'o_alpha_sounds', 16); setInitialized(true)
+            const ss: Record<number, boolean> = {}; ALPHABET_LETTERS.forEach((_, i) => { ss[i] = true }); setSoundStatus(ss); updateScore(studentId, 'o_alpha_sounds', ALPHABET_LETTERS.length); setInitialized(true)
           }} className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
           <button onClick={() => { setSoundStatus({}); updateScore(studentId, 'o_alpha_sounds', 0); setInitialized(true) }}
             className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
@@ -2004,66 +1875,55 @@ function AlphabetGrids({ sc, studentId, updateScore }: {
   )
 }
 
-// ─── COMPONENT 2: Phoneme Manipulation (redesigned) ─────────────────────────
+// ─── COMPONENT 2: Phoneme Manipulation ──────────────────────────────────────
 
-function PhonemeManipulation({ sc, studentId, updateScore }: {
+function PhonemeManipulation({ sc, studentId, updateScore, content }: {
   sc: G1Scores
   studentId: string
   updateScore: (sid: string, key: string, val: number | boolean | null) => void
+  content: G1Content
 }) {
-  // Compute phoneme total from checkboxes
-  const getPhonemeTotal = () => {
-    let total = 0
-    for (const pw of PHONEME_WORDS) {
-      const w = pw.word
-      if ((sc as any)[`o_ph_seg_${w}`]) total++
-      if ((sc as any)[`o_ph_count_${w}`]) total++
-      if ((sc as any)[`o_ph_bme_${w}_b`]) total++
-      if ((sc as any)[`o_ph_bme_${w}_m`]) total++
-      if ((sc as any)[`o_ph_bme_${w}_e`]) total++
-    }
-    return total
-  }
+  const { modelWord, words, max, stoppingRule, l1Note } = content.phoneme
 
-  const phonemeTotal = getPhonemeTotal()
+  const phonemeTotal = words.reduce(
+    (total, pw) => total + pw.probes.filter(pr => !!(sc as any)[pr.key]).length, 0)
 
   return (
     <div className="space-y-4">
-      {/* Teacher Model Reminder */}
-      <div className="bg-amber-50 rounded-xl px-5 py-4 border border-amber-200">
-        <p className="text-[12px] font-bold text-amber-900 mb-2">Teacher Model First!</p>
-        <p className="text-[11px] text-amber-800 leading-relaxed">
-          Model with the first word before the student tries. Example with "big":
-        </p>
-        <div className="mt-2 bg-white/60 rounded-lg px-4 py-3 text-[11px] text-amber-900 space-y-1.5">
-          <p><span className="font-bold">1.</span> Say the word: <span className="font-semibold">"big"</span></p>
-          <p><span className="font-bold">2.</span> Segment it: <span className="font-semibold">"b - i - g"</span> (stretch each sound)</p>
-          <p><span className="font-bold">3.</span> Blend with sweeping motion: <span className="font-semibold">"biiig"</span></p>
-          <p><span className="font-bold">4.</span> Count: <span className="font-semibold">"One, two, three -- three sounds"</span></p>
-          <p><span className="font-bold">5.</span> Ask: <span className="font-semibold">"What sound is in the beginning? /b/. The middle? /i/. The end? /g/."</span></p>
+      {/* Teacher model word -- demonstrated, never scored */}
+      {modelWord ? (
+        <div className="bg-amber-50 rounded-xl px-5 py-4 border border-amber-200">
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-[12px] font-bold text-amber-900">Teacher model first</p>
+            <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
+              Not scored
+            </span>
+          </div>
+          <p className="text-[11px] text-amber-800 leading-relaxed">
+            Demonstrate the task with <span className="font-bold font-serif">{modelWord.word}</span> before the student
+            tries. This word appears on the student copy for this purpose only &mdash; do not record points for it.
+          </p>
+          <div className="mt-2 bg-white/60 rounded-lg px-4 py-3 text-[11px] text-amber-900 space-y-1.5">
+            <p><span className="font-bold">1.</span> Push a counter for each sound while saying <span className="font-semibold">{modelWord.sounds.join(' ')}</span></p>
+            <p><span className="font-bold">2.</span> Say: <span className="font-semibold">"{modelWord.sounds.length} sounds. The first sound is {modelWord.sounds[0]}."</span></p>
+          </div>
         </div>
-        <p className="text-[10px] text-amber-700 mt-2 italic">Model ALL steps with "big", then have the student try each word below.</p>
-      </div>
+      ) : (
+        <div className="bg-amber-50 rounded-xl px-5 py-4 border border-amber-200">
+          <p className="text-[12px] font-bold text-amber-900 mb-2">Teacher Model First!</p>
+          <p className="text-[11px] text-amber-800 leading-relaxed">
+            Model the whole task with an example word before the student tries each word below.
+          </p>
+        </div>
+      )}
 
       {/* Per-word assessment */}
       <div className="space-y-4">
-        {PHONEME_WORDS.map((pw) => {
-          const w = pw.word
-          const segKey = `o_ph_seg_${w}`
-          const countKey = `o_ph_count_${w}`
-          const bKey = `o_ph_bme_${w}_b`
-          const mKey = `o_ph_bme_${w}_m`
-          const eKey = `o_ph_bme_${w}_e`
-
-          const segChecked = !!(sc as any)[segKey]
-          const countChecked = !!(sc as any)[countKey]
-          const bChecked = !!(sc as any)[bKey]
-          const mChecked = !!(sc as any)[mKey]
-          const eChecked = !!(sc as any)[eKey]
-          const wordTotal = (segChecked ? 1 : 0) + (countChecked ? 1 : 0) + (bChecked ? 1 : 0) + (mChecked ? 1 : 0) + (eChecked ? 1 : 0)
-
+        {words.map((pw) => {
+          const wordTotal = pw.probes.filter(pr => !!(sc as any)[pr.key]).length
+          const wordMax = pw.probes.length
           return (
-            <div key={w} className="bg-surface border border-border rounded-xl p-4">
+            <div key={pw.word} className="bg-surface border border-border rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <span className="text-[20px] font-bold font-serif text-navy">{pw.word}</span>
@@ -2073,73 +1933,57 @@ function PhonemeManipulation({ sc, studentId, updateScore }: {
                     ))}
                   </div>
                 </div>
-                <span className={`text-[12px] font-bold ${wordTotal >= 4 ? 'text-green-600' : wordTotal >= 2 ? 'text-amber-600' : 'text-text-tertiary'}`}>
-                  {wordTotal}/5
+                <span className={`text-[12px] font-bold ${
+                  wordTotal === wordMax ? 'text-green-600' : wordTotal > 0 ? 'text-amber-600' : 'text-text-tertiary'
+                }`}>
+                  {wordTotal}/{wordMax}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 gap-2">
-                {/* Segmenting */}
-                <label className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-alt cursor-pointer transition-all">
-                  <input type="checkbox" checked={segChecked}
-                    onChange={() => updateScore(studentId, segKey, !segChecked)}
-                    className="w-5 h-5 rounded border-2 border-navy/30 text-green-600 focus:ring-green-500" />
-                  <div>
-                    <span className="text-[12px] font-medium text-text-primary">Can segment</span>
-                    <span className="text-[10px] text-text-tertiary ml-2">("{pw.word}" &rarr; {pw.sounds.join(' - ')})</span>
-                  </div>
-                </label>
-
-                {/* Sound count */}
-                <label className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-alt cursor-pointer transition-all">
-                  <input type="checkbox" checked={countChecked}
-                    onChange={() => updateScore(studentId, countKey, !countChecked)}
-                    className="w-5 h-5 rounded border-2 border-navy/30 text-green-600 focus:ring-green-500" />
-                  <div>
-                    <span className="text-[12px] font-medium text-text-primary">Correct # of sounds</span>
-                    <span className="text-[10px] text-text-tertiary ml-2">({pw.soundCount} sounds)</span>
-                  </div>
-                </label>
-
-                {/* B/M/E sounds */}
-                <div className="flex items-center gap-2 px-3 py-2">
-                  <span className="text-[11px] font-medium text-text-secondary w-28">Correct sound:</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" checked={bChecked}
-                      onChange={() => updateScore(studentId, bKey, !bChecked)}
-                      className="w-4 h-4 rounded border-2 border-navy/30 text-green-600" />
-                    <span className="text-[11px]">B <span className="text-text-tertiary">{pw.beginning}</span></span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer ml-3">
-                    <input type="checkbox" checked={mChecked}
-                      onChange={() => updateScore(studentId, mKey, !mChecked)}
-                      className="w-4 h-4 rounded border-2 border-navy/30 text-green-600" />
-                    <span className="text-[11px]">M <span className="text-text-tertiary">{pw.middle}</span></span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer ml-3">
-                    <input type="checkbox" checked={eChecked}
-                      onChange={() => updateScore(studentId, eKey, !eChecked)}
-                      className="w-4 h-4 rounded border-2 border-navy/30 text-green-600" />
-                    <span className="text-[11px]">E <span className="text-text-tertiary">{pw.end}</span></span>
-                  </label>
-                </div>
+                {pw.probes.map(probe => {
+                  const checked = !!(sc as any)[probe.key]
+                  return (
+                    <label key={probe.key}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-alt cursor-pointer transition-all">
+                      <input type="checkbox" checked={checked}
+                        onChange={() => updateScore(studentId, probe.key, !checked)}
+                        className="w-5 h-5 rounded border-2 border-navy/30 text-green-600 focus:ring-green-500" />
+                      <div>
+                        <span className="text-[12px] font-medium text-text-primary">{probe.label}</span>
+                        <span className="text-[10px] text-text-tertiary ml-2">&rarr; {probe.answer}</span>
+                      </div>
+                    </label>
+                  )
+                })}
               </div>
             </div>
           )
         })}
       </div>
 
-      <div className="flex items-center justify-between bg-navy/5 rounded-xl px-4 py-3 border border-navy/10">
-        <span className="text-[13px] font-bold text-navy">Phoneme Total: {phonemeTotal} / 20</span>
-        <span className="text-[10px] text-text-tertiary italic">Stopping rule: If student cannot segment "sun" after one model, record 0.</span>
+      {l1Note && (
+        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+          <p className="text-[10px] font-semibold text-blue-800 mb-1">Note on L1 interference</p>
+          <p className="text-[10px] text-blue-700 leading-relaxed">{l1Note}</p>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between bg-navy/5 rounded-xl px-4 py-3 border border-navy/10 gap-4">
+        <span className="text-[13px] font-bold text-navy whitespace-nowrap">Phoneme Total: {phonemeTotal} / {max}</span>
+        <span className="text-[10px] text-text-tertiary italic text-right">{stoppingRule}</span>
       </div>
     </div>
   )
 }
 
+
 // ─── Level B: HFW clickable word grid (unchanged) ───────────────────────────
 
-function LevelBWordGrid({ score, onScore }: { score: number | null | undefined; onScore: (n: number | null) => void }) {
+function LevelBWordGrid({ score, onScore, content }: { score: number | null | undefined; onScore: (n: number | null) => void; content: G1Content }) {
+  const LEVEL_B_WORDS = content.levelB.words
+  const bMax = content.levelB.max
+  const bumpUp = content.passageConfigs.B.bumpUpThreshold ?? Math.ceil(bMax * 0.75)
   const [wordStatus, setWordStatus] = useState<Record<number, boolean>>({})
   const [initialized, setInitialized] = useState(false)
 
@@ -2183,25 +2027,27 @@ function LevelBWordGrid({ score, onScore }: { score: number | null | undefined; 
         ))}
       </div>
       <div className="flex items-center justify-between">
-        <span className={`text-[13px] font-bold ${correctCount >= 15 ? 'text-green-600' : correctCount >= 8 ? 'text-amber-600' : 'text-text-secondary'}`}>
-          {correctCount}/20 correct
+        <span className={`text-[13px] font-bold ${correctCount >= bumpUp ? 'text-green-600' : correctCount >= bMax * 0.4 ? 'text-amber-600' : 'text-text-secondary'}`}>
+          {correctCount}/{bMax} correct
         </span>
         <div className="flex gap-2">
-          <button onClick={() => { const ws: Record<number, boolean> = {}; LEVEL_B_WORDS.forEach((_, i) => { ws[i] = true }); setWordStatus(ws); onScore(20); setInitialized(true) }}
+          <button onClick={() => { const ws: Record<number, boolean> = {}; LEVEL_B_WORDS.forEach((_, i) => { ws[i] = true }); setWordStatus(ws); onScore(LEVEL_B_WORDS.length); setInitialized(true) }}
             className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
           <button onClick={() => { setWordStatus({}); onScore(0); setInitialized(true) }}
             className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
       </div>
-      {correctCount >= 15 && <p className="text-[10px] text-blue-600 font-medium">Bump-up: Score is 15+. Consider moving to Level C.</p>}
-      {initialized && correctCount === 0 && <p className="text-[10px] text-amber-600 font-medium">Bump-down: Cannot read any words. Consider moving to Level A.</p>}
+      {correctCount >= bumpUp && <p className="text-[10px] text-blue-600 font-medium">Score is {bumpUp}+. You may want to re-test at Level C.</p>}
+      {initialized && correctCount === 0 && <p className="text-[10px] text-amber-600 font-medium">Cannot read any words. You may want to re-test at Level A.</p>}
     </div>
   )
 }
 
 // ─── Level C: Clickable sentence words ──────────────────────────────────────
 
-function LevelCSentences({ score, onScore }: { score: number | null | undefined; onScore: (n: number | null) => void }) {
+function LevelCSentences({ score, onScore, content }: { score: number | null | undefined; onScore: (n: number | null) => void; content: G1Content }) {
+  const LEVEL_C_SENTENCES = content.levelC.sentences
+  const cMax = content.levelC.max
   const allWords = LEVEL_C_SENTENCES.flatMap((s, si) => s.words.map((w, wi) => ({ word: w, sentIdx: si, wordIdx: wi, key: `${si}-${wi}` })))
   const [wordStatus, setWordStatus] = useState<Record<string, boolean>>({})
   const [initialized, setInitialized] = useState(false)
@@ -2257,27 +2103,28 @@ function LevelCSentences({ score, onScore }: { score: number | null | undefined;
         ))}
       </div>
       <div className="flex items-center justify-between">
-        <span className={`text-[13px] font-bold ${correctCount >= 9 ? 'text-green-600' : correctCount >= 5 ? 'text-amber-600' : 'text-text-secondary'}`}>
-          {correctCount}/11 correct
+        <span className={`text-[13px] font-bold ${correctCount >= cMax * 0.8 ? 'text-green-600' : correctCount >= cMax * 0.45 ? 'text-amber-600' : 'text-text-secondary'}`}>
+          {correctCount}/{cMax} correct
         </span>
         <div className="flex gap-2">
-          <button onClick={() => { const ws: Record<string, boolean> = {}; allWords.forEach(w => { ws[w.key] = true }); setWordStatus(ws); onScore(11); setInitialized(true) }}
+          <button onClick={() => { const ws: Record<string, boolean> = {}; allWords.forEach(w => { ws[w.key] = true }); setWordStatus(ws); onScore(allWords.length); setInitialized(true) }}
             className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
           <button onClick={() => { setWordStatus({}); onScore(0); setInitialized(true) }}
             className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
       </div>
-      {correctCount >= 9 && <p className="text-[10px] text-blue-600 font-medium">If they can give you a full sentence, try them with Level D.</p>}
-      {initialized && correctCount === 0 && <p className="text-[10px] text-amber-600 font-medium">Bump-down: Cannot read any words. Consider moving to Level B.</p>}
+      {correctCount >= cMax * 0.8 && <p className="text-[10px] text-blue-600 font-medium">If they can give you a full sentence, you may want to re-test at Level D.</p>}
+      {initialized && correctCount === 0 && <p className="text-[10px] text-amber-600 font-medium">Cannot read any words. You may want to re-test at Level B.</p>}
     </div>
   )
 }
 
 // ─── Level D/E/F: Passage reader (unchanged from original) ─────────────────
 
-function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
+function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate, content }: {
   level: string; wordsRead: number | null | undefined; errors: number | null | undefined; timeSeconds: number | null | undefined;
   onUpdate: (field: string, val: number | null) => void
+  content: G1Content
 }) {
   const [showPassage, setShowPassage] = useState(false)
   const [wordMarks, setWordMarks] = useState<Record<number, 'error' | 'self_correct' | null>>({})
@@ -2289,7 +2136,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
   const startRef = useRef<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const passage = LEVEL_TEST_PASSAGES[level]
+  const passage = content.passages[level]
   if (!passage) return null
   const words = passage.text.split(/\s+/)
 
@@ -2331,7 +2178,10 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
   const handleSave = () => {
     onUpdate('o_orf_words_read', wRead)
     onUpdate('o_orf_errors', errCount)
-    onUpdate('o_orf_time_seconds', elapsed > 0 && elapsed < 60 ? elapsed : null)
+    // Record the ACTUAL elapsed time, including past 60 seconds. The old code
+    // discarded any time >= 60s, and the composite then assumed exactly 60 --
+    // so a reader who took 95 seconds was scored as if they had taken 60.
+    onUpdate('o_orf_time_seconds', elapsed > 0 ? elapsed : null)
     setFinished(true)
     setTiming(false)
     setShowPassage(false)
@@ -2395,7 +2245,19 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
                     Reset
                   </button>
                 )}
-                <span className="text-[24px] font-mono font-bold tabular-nums">{formatTime(elapsed)}</span>
+                <span className={`text-[24px] font-mono font-bold tabular-nums ${
+                  elapsed >= content.timing.ceilingSeconds ? 'text-red-400'
+                    : elapsed >= content.timing.struggleStopSeconds ? 'text-gold' : ''
+                }`}>{formatTime(elapsed)}</span>
+                {timing && elapsed >= content.timing.struggleStopSeconds && (
+                  <span className={`text-[10px] leading-tight max-w-[230px] ${
+                    elapsed >= content.timing.ceilingSeconds ? 'text-red-300 font-semibold' : 'text-white/70'
+                  }`}>
+                    {elapsed >= content.timing.ceilingSeconds
+                      ? 'Two minutes. End the passage and move on.'
+                      : 'Reading capably? Let them finish. Struggling? Stop and skip comprehension.'}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-5 text-[11px]">
                 <div className="text-center"><div className="text-[18px] font-bold">{errCount}</div><div className="text-white/60 text-[8px] uppercase">Errors</div></div>
@@ -2473,7 +2335,8 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate }: {
 // ORAL TEST ENTRY MAIN
 // ============================================================================
 
-function OralTestEntry({ students, scores, updateScore, onSave, saving, selectedIdx, onSelectIdx, activeWave, onClearOral, onRestoreAttempt }: {
+function OralTestEntry({ content, students, scores, updateScore, onSave, saving, selectedIdx, onSelectIdx, activeWave, onClearOral, onRestoreAttempt }: {
+  content: G1Content
   students: Student[]
   scores: Record<string, G1Scores>
   updateScore: (sid: string, key: string, val: number | string | boolean | null) => void
@@ -2486,12 +2349,42 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
   onRestoreAttempt: (sid: string, attemptIdx: number) => void
 }) {
   const { confirmDialog } = useApp()
+  const PASSAGE_CONFIGS = content.passageConfigs
+  const COMP_QUESTIONS = content.compQuestions
+  const COMP_SCORING_EXAMPLES = content.compScoringExamples
+  const LEVEL_A_QUESTIONS = content.levelA.questions
+  const LEVEL_A_RUBRIC = content.levelA.rubric
+
   const student = students[selectedIdx]
   if (!student) return <div className="p-8 text-center text-text-tertiary">No students found.</div>
 
   const sc = scores[student.id] || {}
   const passageLevel = (sc.o_passage_level || '') as PassageLevel | ''
   const config = passageLevel ? PASSAGE_CONFIGS[passageLevel as PassageLevel] : null
+  const compNotAdministered = !!sc.o_comp_not_administered
+
+  // Turning the flag on clears any comprehension scores already entered, so the
+  // record cannot hold both "not asked" and a set of answers. Confirm first if
+  // there is something to lose.
+  const handleToggleCompNotAdministered = async (sid: string, cur: G1Scores) => {
+    const compKeys = ['o_comp_q1', 'o_comp_q2', 'o_comp_q3', 'o_comp_q4', 'o_comp_q5'] as const
+    if (cur.o_comp_not_administered) {
+      updateScore(sid, 'o_comp_not_administered', null)
+      return
+    }
+    const entered = compKeys.filter(k => cur[k] != null)
+    if (entered.length > 0) {
+      const ok = await confirmDialog({
+        title: 'Clear comprehension scores?',
+        message: `${entered.length} comprehension ${entered.length === 1 ? 'answer has' : 'answers have'} already been scored. Marking the questions as not administered will clear ${entered.length === 1 ? 'it' : 'them'}.`,
+        confirmLabel: 'Clear and mark',
+        danger: true,
+      })
+      if (!ok) return
+      compKeys.forEach(k => updateScore(sid, k, null))
+    }
+    updateScore(sid, 'o_comp_not_administered', true)
+  }
 
   const studentHasOralData = (sid: string) => {
     const s = scores[sid] || {}
@@ -2536,7 +2429,7 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {getClassImpression(s.id) && (
-                    <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200" title="Wave 1 impression">
+                    <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200" title={content.administration === 'single_sitting' ? 'Impression from the oral session' : 'Wave 1 impression'}>
                       {getClassImpression(s.id)!.slice(0, 3)}
                     </span>
                   )}
@@ -2584,18 +2477,35 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
           </div>
         </div>
 
+        {/* Administration cautions specific to this test version */}
+        {content.adminNotes.length > 0 && (
+          <details className="mb-4 bg-amber-50/60 border border-amber-200 rounded-xl px-4 py-2.5">
+            <summary className="text-[11px] font-semibold text-amber-900 cursor-pointer flex items-center gap-1.5">
+              <Info size={12} /> Before you start &mdash; {content.label} notes ({content.adminNotes.length})
+            </summary>
+            <ul className="mt-2 space-y-1 pl-4 list-disc">
+              {content.adminNotes.map((n, i) => (
+                <li key={i} className="text-[10px] text-amber-800 leading-snug">{n}</li>
+              ))}
+            </ul>
+          </details>
+        )}
+
         {/* Section 1: Alphabet Recognition -- clickable grids */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[13px] font-semibold text-navy mb-1">Component 1: Alphabet Recognition</h4>
-          <p className="text-[11px] text-text-secondary mb-4">Letters: s, a, t, m, p, i, n, d, o, g, c, e, k, j, x, y (16 letters)</p>
-          <AlphabetGrids key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} />
+          <p className="text-[11px] text-text-secondary mb-4">Letters: {content.alphabet.letters.join(', ')} ({content.alphabet.letters.length} letters)</p>
+          <AlphabetGrids key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} content={content} />
         </div>
 
         {/* Section 2: Phoneme Manipulation -- redesigned */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[13px] font-semibold text-navy mb-1">Component 2: Phoneme Manipulation</h4>
-          <p className="text-[11px] text-text-secondary mb-4">Words: sun, map, leg, fish -- segmenting, counting, isolating sounds</p>
-          <PhonemeManipulation key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} />
+          <p className="text-[11px] text-text-secondary mb-4">
+            Words: {content.phoneme.words.map(w => w.word).join(', ')} &mdash; segmenting, counting, isolating sounds
+            {content.phoneme.modelWord && <> (model word <span className="font-semibold">{content.phoneme.modelWord.word}</span> is not scored)</>}
+          </p>
+          <PhonemeManipulation key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} content={content} />
         </div>
 
         {/* Section 3: Oral Reading Fluency -- Passage Level Selection */}
@@ -2638,7 +2548,7 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
                     <RotateCcw size={10} />
                     <span className="font-bold">Lv {att.level}</span>
                     {att.o_orf_raw != null && <span className="text-text-tertiary">Score: {att.o_orf_raw}</span>}
-                    {att.o_a_q1 != null && <span className="text-text-tertiary">Interview: {(att.o_a_q1 || 0) + (att.o_a_q2 || 0) + (att.o_a_q3 || 0) + (att.o_a_q4 || 0) + (att.o_a_q5 || 0)}/20</span>}
+                    {att.o_a_q1 != null && <span className="text-text-tertiary">Interview: {(att.o_a_q1 || 0) + (att.o_a_q2 || 0) + (att.o_a_q3 || 0) + (att.o_a_q4 || 0) + (att.o_a_q5 || 0)}</span>}
                   </button>
                 ))}
               </div>
@@ -2649,17 +2559,76 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
             <div className="bg-blue-50/50 rounded-lg px-4 py-3 mb-4 border border-blue-100">
               <p className="text-[12px] font-semibold text-navy">{config.label}</p>
               <p className="text-[11px] text-text-secondary mt-0.5">{config.description}</p>
+              <p className="text-[10px] text-text-tertiary mt-1">
+                You choose the level. If you misjudged, pick another one &mdash; the current scores are archived, not lost,
+                and you can restore an earlier attempt at any time.
+              </p>
               {config.bumpUpThreshold != null && (
-                <p className="text-[10px] text-blue-600 mt-1">Bump up if score reaches {config.bumpUpThreshold}+. Click the next level above -- previous scores are archived automatically.</p>
+                <p className="text-[10px] text-blue-600 mt-0.5">A score of {config.bumpUpThreshold}+ suggests re-testing at the next level up.</p>
               )}
               {config.bumpDownThreshold != null && (
-                <p className="text-[10px] text-amber-600">Bump down if student cannot read any words. Click the level below -- previous scores are archived automatically.</p>
+                <p className="text-[10px] text-amber-600">If the student cannot read any words, consider the level below.</p>
               )}
             </div>
           )}
 
-          {/* Level A: Per-question rubric scoring */}
-          {passageLevel === 'A' && (
+          {/* Level A -- holistic: ONE rating for the whole interview */}
+          {passageLevel === 'A' && content.levelA.mode === 'holistic' && (
+            <div className="space-y-3">
+              <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
+                <p className="text-[11px] font-semibold text-blue-800">Say: "I'm going to ask you some questions. Just try your best."</p>
+              </div>
+
+              <div className="bg-surface-alt/50 rounded-xl p-4">
+                <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-wide mb-2">Ask all five questions</p>
+                <ol className="space-y-1 list-decimal list-inside">
+                  {LEVEL_A_QUESTIONS.map((q, qi) => (
+                    <li key={qi} className="text-[12px] text-text-primary">{q.q}</li>
+                  ))}
+                </ol>
+              </div>
+
+              <div>
+                <p className="text-[11px] font-semibold text-navy mb-2">
+                  Rate the interview as a whole <span className="text-text-tertiary font-normal">/{content.levelA.max}</span>
+                </p>
+                <div className="space-y-1.5">
+                  {LEVEL_A_RUBRIC.map(r => {
+                    const selected = sc.o_orf_raw === r.score
+                    return (
+                      <button key={r.score}
+                        onClick={() => updateScore(student.id, 'o_orf_raw', selected ? null : r.score)}
+                        className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all border ${
+                          selected
+                            ? 'bg-navy text-white border-navy ring-2 ring-navy/20'
+                            : 'bg-surface text-text-secondary border-border hover:bg-surface-alt'
+                        }`}>
+                        <span className={`w-7 h-7 rounded-lg text-[13px] font-bold flex items-center justify-center shrink-0 ${
+                          selected ? 'bg-white/20 text-white' : 'bg-navy/10 text-navy'
+                        }`}>{r.score}</span>
+                        <span className="min-w-0">
+                          <span className={`block text-[12px] font-semibold ${selected ? '' : 'text-navy'}`}>{r.label}</span>
+                          <span className={`block text-[10px] leading-snug ${selected ? 'opacity-85' : 'text-text-tertiary'}`}>{r.desc}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between bg-navy/5 rounded-xl px-4 py-3 border border-navy/10">
+                <span className="text-[13px] font-bold text-navy">
+                  Level A Score: {sc.o_orf_raw ?? '--'} / {content.levelA.max}
+                </span>
+                {config?.bumpUpThreshold != null && (sc.o_orf_raw ?? 0) >= config.bumpUpThreshold && (
+                  <span className="text-[10px] text-blue-600 font-medium">You may want to re-test at Level B.</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Level A -- per-question rubric scoring (original test) */}
+          {passageLevel === 'A' && content.levelA.mode === 'per_question' && (
             <div className="space-y-3">
               <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
                 <p className="text-[11px] font-semibold text-blue-800">Say: "I'm going to ask you some questions. Just try your best."</p>
@@ -2700,8 +2669,8 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
               </div>
 
               <div className="flex items-center justify-between bg-navy/5 rounded-xl px-4 py-3 border border-navy/10 mt-3">
-                <span className="text-[13px] font-bold text-navy">Total: {aTotal} / 20</span>
-                {aTotal >= 10 && <span className="text-[10px] text-blue-600 font-medium">Bump-up: Score is 10+. Try Level B.</span>}
+                <span className="text-[13px] font-bold text-navy">Total: {aTotal} / {content.levelA.max}</span>
+                {config?.bumpUpThreshold != null && aTotal >= config.bumpUpThreshold && <span className="text-[10px] text-blue-600 font-medium">Score is {config.bumpUpThreshold}+. You may want to re-test at Level B.</span>}
                 {aTotal > 0 && aTotal < 5 && <span className="text-[10px] text-red-600 font-medium">Very limited English production.</span>}
               </div>
 
@@ -2721,11 +2690,11 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
           )}
 
           {passageLevel === 'B' && (
-            <LevelBWordGrid key={student.id} score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} />
+            <LevelBWordGrid key={student.id} score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} content={content} />
           )}
 
           {passageLevel === 'C' && (
-            <LevelCSentences key={student.id} score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} />
+            <LevelCSentences key={student.id} score={sc.o_orf_raw} onScore={(n: number | null) => updateScore(student.id, 'o_orf_raw', n)} content={content} />
           )}
 
           {passageLevel && config?.hasCwpm && (
@@ -2737,6 +2706,7 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
                 errors={sc.o_orf_errors}
                 timeSeconds={sc.o_orf_time_seconds}
                 onUpdate={(field: string, val: number | null) => updateScore(student.id, field, val)}
+                content={content}
               />
 
               <div className="grid grid-cols-3 gap-4">
@@ -2809,6 +2779,30 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
               Comprehension <span className="text-text-tertiary font-normal">/{config.compMax}</span>
             </h4>
             <p className="text-[11px] text-text-secondary mb-2">Ask after reading. Passage turned over.</p>
+
+            {/* Not-administered switch. A student stopped mid-passage never heard
+                these questions -- recording zeros would read as "answered wrong". */}
+            <label className={`flex items-start gap-2.5 rounded-lg px-3 py-2.5 mb-3 cursor-pointer border transition-all ${
+              compNotAdministered
+                ? 'bg-slate-100 border-slate-300'
+                : 'bg-surface-alt/60 border-border hover:border-navy/30'
+            }`}>
+              <input type="checkbox" checked={compNotAdministered}
+                onChange={() => handleToggleCompNotAdministered(student.id, sc)}
+                className="w-4 h-4 mt-0.5 rounded border-2 border-navy/30 text-slate-600 focus:ring-slate-500 shrink-0" />
+              <span>
+                <span className="text-[11px] font-semibold text-text-primary flex items-center gap-1.5">
+                  <Ban size={11} className="text-slate-500" />
+                  Student struggled &mdash; comprehension not administered
+                </span>
+                <span className="block text-[10px] text-text-tertiary mt-0.5">
+                  Check this when the student was stopped during the passage and never heard the questions.
+                  Comprehension is then excluded from the score rather than counted as zero.
+                </span>
+              </span>
+            </label>
+
+            {!compNotAdministered && (
             <div className="bg-amber-50/50 border border-amber-100 rounded-lg px-3 py-2 mb-3">
               <p className="text-[9px] text-amber-800 font-semibold mb-1">Scoring Guide</p>
               <div className="flex gap-4 text-[9px] text-amber-700">
@@ -2817,7 +2811,12 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
                 <span><span className="font-bold text-green-600">2</span> = Correct and reasonably complete in English</span>
               </div>
             </div>
-            <div className="space-y-3">
+            )}
+
+            <div
+              aria-disabled={compNotAdministered}
+              className={`space-y-3 transition-opacity ${compNotAdministered ? 'opacity-40 pointer-events-none select-none' : ''}`}
+            >
               {COMP_QUESTIONS[passageLevel]?.map((cq, qi) => {
                 const key = `o_comp_q${qi + 1}` as keyof G1Scores
                 const examples = COMP_SCORING_EXAMPLES[passageLevel]?.[qi]
@@ -2938,7 +2937,7 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
 
         {/* Live Preview of Calculated Scores */}
         {(sc.o_passage_level || sc.o_alpha_names != null) && (
-          <StudentScorePreview scores={sc} student={student} />
+          <StudentScorePreview scores={sc} student={student} content={content} />
         )}
       </div>
     </div>
@@ -2949,15 +2948,17 @@ function OralTestEntry({ students, scores, updateScore, onSave, saving, selected
 // STUDENT SCORE PREVIEW (live calculation while entering)
 // ============================================================================
 
-function StudentScorePreview({ scores, student }: { scores: G1Scores; student: Student }) {
-  const metrics = calculateG1Composite(scores)
+function StudentScorePreview({ scores, student, content }: { scores: G1Scores; student: Student; content: G1Content }) {
+  const metrics = calculateG1Composite(scores, content)
 
   return (
     <div className="bg-gradient-to-br from-navy/5 to-navy/10 border border-navy/20 rounded-xl p-5 mb-4">
       <h4 className="text-[13px] font-semibold text-navy mb-3 flex items-center gap-2">
         <Eye size={14} /> Live Score Preview
         <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${metrics.wave === 1 ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-          {metrics.wave === 1 ? 'Wave 1: Oral + Teacher Impression' : 'Wave 2: 30% oral + 30% written + 40% teacher'}
+          {content.administration === 'single_sitting'
+            ? (metrics.wave === 1 ? 'Oral only -- written test not entered yet' : 'Complete: oral + written + teacher')
+            : (metrics.wave === 1 ? 'Wave 1: Oral + Teacher Impression' : 'Wave 2: 30% oral + 30% written + 40% teacher')}
         </span>
       </h4>
       <div className="grid grid-cols-4 gap-3 mb-4">
@@ -2987,7 +2988,9 @@ function StudentScorePreview({ scores, student }: { scores: G1Scores; student: S
           <span className="text-text-secondary">Passage {metrics.passageLevel}</span>
           <span className="text-navy font-semibold">Raw CWPM: {metrics.cwpm}</span>
           {metrics.weightedCwpm != null && <span className="text-text-secondary">Weighted: {metrics.weightedCwpm}</span>}
-          {metrics.compTotal != null && <span className="text-text-secondary">Comp: {metrics.compTotal}/{metrics.compMax}</span>}
+          {metrics.compNotAdministered
+            ? <span className="text-text-tertiary italic" title="Student was stopped during the passage; the questions were never asked.">Comp: not administered</span>
+            : metrics.compTotal != null && <span className="text-text-secondary">Comp: {metrics.compTotal}/{metrics.compMax}</span>}
         </div>
       )}
 
@@ -3022,11 +3025,20 @@ function ResultsView({ students, scores, levelTest }: {
 }) {
   const [sortBy, setSortBy] = useState<'composite' | 'name' | 'suggested'>('composite')
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null)
+  const content = g1ContentForTest(levelTest as any)
+  const GRADE_1_QUESTIONS = content.written.questions
+  const G1_QUESTION_SECTIONS = content.written.sectionKeys
+  const WRITTEN_SECTIONS = content.written.sections
+  const G1_WRITING_CATEGORIES = content.extendedWriting.categories
+  const G1_WRITING_MAX = content.extendedWriting.max
+  const G1_MC_MAX = content.written.mcMax
+  const G1_SECTION_LABELS: Record<string, string> = {}
+  GRADE_1_QUESTIONS.forEach(q => { if (!G1_SECTION_LABELS[q.section]) G1_SECTION_LABELS[q.section] = q.domain })
 
   const rows = useMemo(() => {
     return students.map(s => {
       const sc = scores[s.id] || {}
-      const metrics = calculateG1Composite(sc)
+      const metrics = calculateG1Composite(sc, content)
       return { student: s, scores: sc, ...metrics }
     }).filter(r => r.scores.o_passage_level || r.scores.w_letter_names != null || (r.scores.written_answers && Object.keys(r.scores.written_answers).length > 0))
       .sort((a, b) => {
@@ -3051,7 +3063,11 @@ function ResultsView({ students, scores, levelTest }: {
   if (rows.length === 0) {
     return (
       <div className="px-10 py-12 text-center">
-        <p className="text-text-tertiary">No scores entered yet. Complete the Oral test (Wave 1) or Written test (Wave 2) first.</p>
+        <p className="text-text-tertiary">
+          {content.administration === 'single_sitting'
+            ? 'No scores entered yet. Enter the Oral test or the Written test first.'
+            : 'No scores entered yet. Complete the Oral test (Wave 1) or Written test (Wave 2) first.'}
+        </p>
       </div>
     )
   }
@@ -3061,7 +3077,12 @@ function ResultsView({ students, scores, levelTest }: {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-display text-lg font-semibold text-navy">Results & Suggested Placement</h3>
-          <p className="text-[12px] text-text-secondary mt-1">{rows.length} students scored. Wave 1 = 50% oral + 50% teacher impression. Wave 2 = 30% oral + 30% written + 40% teacher ratings.</p>
+          <p className="text-[12px] text-text-secondary mt-1">
+            {rows.length} students scored.{' '}
+            {content.administration === 'single_sitting'
+              ? 'Students with oral data only are weighted 50% oral + 50% teacher impression until the written test is entered; complete records use 30% oral + 30% written + 40% teacher.'
+              : 'Wave 1 = 50% oral + 50% teacher impression. Wave 2 = 30% oral + 30% written + 40% teacher ratings.'}
+          </p>
         </div>
         <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
           className="px-3 py-2 border border-border rounded-lg text-[12px] bg-surface">
@@ -3133,7 +3154,11 @@ function ResultsView({ students, scores, levelTest }: {
                   <td className="text-center px-3 py-2.5">{mcScore}</td>
                   <td className="text-center px-3 py-2.5">{wrBonus > 0 ? wrBonus : '--'}</td>
                   <td className="text-center px-3 py-2.5">{row.cwpm ?? '--'}</td>
-                  <td className="text-center px-3 py-2.5">{row.compTotal != null ? `${row.compTotal}/${row.compMax}` : '--'}</td>
+                  <td className="text-center px-3 py-2.5">
+                    {row.compNotAdministered
+                      ? <span className="text-text-tertiary italic text-[10px]" title="Not administered — student was stopped during the passage.">n/a</span>
+                      : row.compTotal != null ? `${row.compTotal}/${row.compMax}` : '--'}
+                  </td>
                   <td className="text-center px-3 py-2.5">{Math.round(row.oralScore)}</td>
                   <td className="text-center px-3 py-2.5">
                     <span className={`text-[13px] font-bold ${
@@ -3253,7 +3278,7 @@ function ResultsView({ students, scores, levelTest }: {
                             <div className="space-y-1 text-[10px]">
                               <div className="flex justify-between"><span className="text-text-secondary">Passage Level</span><span className="font-bold text-navy">{row.passageLevel}</span></div>
                               <div className="flex justify-between"><span className="text-text-secondary">CWPM</span><span className="font-bold">{row.cwpm ?? '--'}</span></div>
-                              <div className="flex justify-between"><span className="text-text-secondary">Comprehension</span><span className="font-bold">{row.compTotal != null ? `${row.compTotal}/${row.compMax}` : '--'}</span></div>
+                              <div className="flex justify-between"><span className="text-text-secondary">Comprehension</span><span className={row.compNotAdministered ? 'text-text-tertiary italic' : 'font-bold'}>{row.compNotAdministered ? 'not administered' : row.compTotal != null ? `${row.compTotal}/${row.compMax}` : '--'}</span></div>
                               <div className="flex justify-between"><span className="text-text-secondary">Oral Score</span><span className="font-bold">{Math.round(row.oralScore)}</span></div>
                               <div className="flex justify-between border-t border-border pt-1 mt-1"><span className="text-text-secondary font-semibold">Composite</span><span className={`font-extrabold text-[12px] ${row.composite >= 70 ? 'text-green-600' : row.composite >= 40 ? 'text-amber-600' : 'text-red-600'}`}>{Math.round(row.composite)}</span></div>
                             </div>
@@ -3310,5 +3335,5 @@ function ResultsView({ students, scores, levelTest }: {
 // ============================================================================
 
 export default Grade1ScoreEntry
-export { calculateG1Composite, suggestG1Class, ResultsView as G1ResultsView, WRITTEN_SECTIONS, PASSAGE_CONFIGS, STANDARDS_BASELINE, NAEP_MULTIPLIERS, GRADE_1_QUESTIONS, G1_WRITING_CATEGORIES, G1_MC_MAX, G1_WRITING_MAX }
+export { calculateG1Composite, suggestG1Class, ResultsView as G1ResultsView, NAEP_MULTIPLIERS }
 export type { G1Scores, PassageLevel }

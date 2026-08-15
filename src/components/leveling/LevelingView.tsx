@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
-import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
+import { classToColor, classToTextColor, domainLabel, compIsCountable } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
@@ -23,9 +23,19 @@ type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'an
 
 // Written MC total — update here when test format changes
 // Written MC total varies by grade: G2=25, G3=21, G4=28, G5=20
-function getWrittenMcTotal(grade: number | string): number {
+/**
+ * Points available on the written multiple choice.
+ *
+ * Grade 1's total is version-dependent (25 on the original test, 19 from Fall
+ * 2026), so it is recorded on each score as calculated_metrics.written_mc_max.
+ * Pass that in wherever it is to hand; the grade fallback is only for records
+ * saved before the field existed.
+ */
+function getWrittenMcTotal(grade: number | string, storedMax?: number | null): number {
+  if (storedMax != null && storedMax > 0) return storedMax
   // DOK-weighted: DOK1=1pt, DOK2+=2pt
   const g = Number(grade)
+  if (g === 1) return 25 // original Grade 1 test; Fall 2026 onward supplies storedMax
   if (g === 2) return 32; if (g === 3) return 26; if (g === 4) return 40; if (g === 5) return 37
   return 26 // fallback
 }
@@ -932,7 +942,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
       {(levelTest.grade === 1 || levelTest.grade === '1' as any) && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
           <p className="text-[12px] text-blue-800 leading-relaxed">
-            <strong>Grade 1 -- Wave 2 Ratings:</strong> These teacher ratings are for the Wave 2 (end of March) assessment. Wave 1 class impressions were captured during the oral test phase. These ratings combined with the written test will produce the final placement recommendation.
+            <strong>Grade 1 Ratings:</strong> Class impressions captured during the oral test session sit alongside these ratings. Together with the written test they produce the final placement recommendation.
           </p>
         </div>
       )}
@@ -1011,8 +1021,10 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                       <div className="space-y-0.5">
                         {(studentData[modalStudent.id].calc?.best_weighted_cwpm ?? studentData[modalStudent.id].calc?.weighted_cwpm ?? studentData[modalStudent.id].scores.passage_cwpm ?? studentData[modalStudent.id].scores.orf_cwpm) != null && <p>Oral: <span className="font-bold text-navy">{Math.round(studentData[modalStudent.id].calc?.best_weighted_cwpm ?? studentData[modalStudent.id].calc?.weighted_cwpm ?? studentData[modalStudent.id].scores.passage_cwpm ?? studentData[modalStudent.id].scores.orf_cwpm)}</span>{studentData[modalStudent.id].calc?.best_passage_level && <span className="text-text-tertiary text-[10px] ml-1">(Lv {studentData[modalStudent.id].calc.best_passage_level})</span>}{studentData[modalStudent.id].calc?.best_weighted_cwpm != null && studentData[modalStudent.id].calc?.weighted_cwpm != null && studentData[modalStudent.id].calc.best_weighted_cwpm > studentData[modalStudent.id].calc.weighted_cwpm && <span className="text-green-600 text-[9px] ml-1">best</span>}</p>}
                         {studentData[modalStudent.id].scores.writing != null && <p>Writing: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.writing}/20</span></p>}
-                        {studentData[modalStudent.id].scores.written_mc != null && <p>MC: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.written_mc}/{getWrittenMcTotal(levelTest.grade)}</span></p>}
-                        {studentData[modalStudent.id].calc?.comp_total != null && <p>Comp: <span className="font-bold text-navy">{studentData[modalStudent.id].calc.comp_total}/15</span></p>}
+                        {studentData[modalStudent.id].scores.written_mc != null && <p>MC: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.written_mc}/{getWrittenMcTotal(levelTest.grade, studentData[modalStudent.id].calc?.written_mc_max)}</span></p>}
+                        {studentData[modalStudent.id].calc?.comp_not_administered
+                          ? <p>Comp: <span className="text-text-tertiary italic" title="Student was stopped during the passage; the questions were never asked.">not administered</span></p>
+                          : studentData[modalStudent.id].calc?.comp_total != null && <p>Comp: <span className="font-bold text-navy">{studentData[modalStudent.id].calc.comp_total}/{studentData[modalStudent.id].calc.comp_max ?? 15}</span></p>}
                         {studentData[modalStudent.id].scores.word_reading_correct != null && <p>WR: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.word_reading_correct}{studentData[modalStudent.id].scores.word_reading_attempted ? `/${studentData[modalStudent.id].scores.word_reading_attempted}` : ''}</span></p>}
                       </div>) : <p className="text-text-tertiary italic">No scores yet</p>}
                   </div>
@@ -1408,7 +1420,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                   const calc = sc?.calculated_metrics || {}
                   return [sid, stu?.english_name || '', stu?.korean_name || '', stu?.english_class || '',
                     raw.passage_level ?? '', calc.cwpm ?? '', calc.accuracy_pct ?? '', raw.naep ?? '',
-                    calc.comp_total ?? '', calc.phonics_total ?? '', calc.sentence_total ?? '',
+                    calc.comp_not_administered ? 'not administered' : (calc.comp_total ?? ''), calc.phonics_total ?? '', calc.sentence_total ?? '',
                     calc.written_mc_total ?? '', calc.writing_total ?? '',
                     sc?.composite_index ?? '', sc?.composite_band ?? '']
                 })
@@ -1720,7 +1732,10 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
           {compareStudents.length < 2 && <p className="text-[11px] text-blue-600 mb-3">Click student cards below to add them to the comparison (2-4 students).</p>}
           {compareStudents.length >= 2 && (() => {
             const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b']
-            const mcMax = getWrittenMcTotal(levelTest.grade)
+            // Shared normalisation axis: take the max any compared student was
+            // actually scored against, so the bars stay comparable.
+            const mcMax = getWrittenMcTotal(levelTest.grade,
+              Math.max(0, ...compareStudents.map(sid => scores[sid]?.calculated_metrics?.written_mc_max ?? 0)) || null)
             // Build normalized data per student
             const compStudents = compareStudents.map((sid, i) => {
               const s = students.find(st => st.id === sid)
@@ -1891,7 +1906,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                         {anec?.is_watchlist && <Star size={9} className="text-amber-500 fill-amber-500" />}{isOvr && <AlertTriangle size={9} className="text-amber-500" />}
                       </div>
                     </div>
-                    {score?.raw_scores && <div className="flex gap-1 mt-1 text-[8px] text-text-tertiary">{(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm) != null && <span>O:{Math.round(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm)}{score.calculated_metrics?.best_passage_level ? `(${score.calculated_metrics.best_passage_level})` : score.calculated_metrics?.passage_level ? `(${score.calculated_metrics.passage_level})` : ''}</span>}{score.calculated_metrics?.comp_total != null && <span>C:{score.calculated_metrics.comp_total}</span>}{score.raw_scores.writing != null && <span>W:{score.raw_scores.writing}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
+                    {score?.raw_scores && <div className="flex gap-1 mt-1 text-[8px] text-text-tertiary">{(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm) != null && <span>O:{Math.round(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm)}{score.calculated_metrics?.best_passage_level ? `(${score.calculated_metrics.best_passage_level})` : score.calculated_metrics?.passage_level ? `(${score.calculated_metrics.passage_level})` : ''}</span>}{score.calculated_metrics?.comp_not_administered ? <span title="Comprehension not administered">C:n/a</span> : score.calculated_metrics?.comp_total != null && <span>C:{score.calculated_metrics.comp_total}</span>}{score.raw_scores.writing != null && <span>W:{score.raw_scores.writing}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
                     {anec && <div className="flex gap-0.5 mt-1">{DIMS.map(d => { const v = anec[d.key]; const c = !v ? '#e5e7eb' : v <= 1 ? '#ef4444' : v === 2 ? '#f59e0b' : v === 3 ? '#3b82f6' : '#22c55e'; return <div key={d.key} className="w-3 h-3 rounded-sm flex items-center justify-center" style={{ backgroundColor: c, color: v ? '#fff' : '#d1d5db', fontSize: '7px', fontWeight: 700 }}>{v || '—'}</div> })}</div>}
                     {anec?.teacher_recommends && <p className={`text-[7px] font-bold mt-0.5 ${anec.teacher_recommends === 'keep' ? 'text-blue-600' : anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{anec.teacher_recommends === 'keep' ? 'KEEP' : anec.teacher_recommends === 'move_up' ? 'UP' : 'DOWN'}</p>}
                     {expandedCard === student.id && (
@@ -1961,7 +1976,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
 
 function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, grade: number | string, excludedQuestions?: number[]) {
   const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
-  const gradeMcTotal = getWrittenMcTotal(grade)
+  const gradeMcTotal = getWrittenMcTotal(grade, calc.written_mc_max)
   // CWPM: prefer best_weighted_cwpm (highest across all passage attempts), then weighted_cwpm, then raw
   // Oral uses a SHARED grade-wide benchmark (Snapdragon cwpm_end) so all students are
   // compared on the same absolute scale — just like writing (/20) and MC (/total).
@@ -2005,8 +2020,9 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   }
 
   const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
-  // Comprehension: comp_total / 15 (5 questions × 0-3 scale)
-  const compRatio = calc.comp_total != null && calc.comp_total > 0 ? calc.comp_total / (calc.comp_max || 15) : null
+  // Comprehension: comp_total / 15 (5 questions × 0-3 scale). A scored 0 counts;
+  // "not administered" and "not scored yet" do not. See compIsCountable.
+  const compRatio = compIsCountable(calc) ? calc.comp_total / (calc.comp_max || 15) : null
   // Grade 2 only: phonics / 25 and sentences / 35
   const studentGrade = Number(s.grade)
   const phonicsRatio = studentGrade === 2 && calc.phonics_total != null && calc.phonics_total > 0 ? calc.phonics_total / 25 : null
@@ -2068,18 +2084,19 @@ function suggestClass(row: any, idx: number, total: number): EnglishClass {
 function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, w: { oral: number; mc: number; writing: number; anecdotal: number }, grade: number | string): Record<string, EnglishClass> {
   const result: Record<string, EnglishClass> = {}
   const metrics: Record<string, number> = {}
-  const gradeMcTotal = getWrittenMcTotal(grade)
   // Use Snapdragon benchmark as shared oral reference for cross-class comparability
   const snapBench = benchmarks['Snapdragon'] || {}
   students.forEach(s => {
     const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
+    // Grade 1's MC total varies by test version, so read it off the score.
+    const gradeMcTotal = getWrittenMcTotal(grade, calc.written_mc_max)
     const rawCwpmValue = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
     const sharedCwpmEnd = snapBench.cwpm_end > 0 ? snapBench.cwpm_end : (bench.cwpm_end > 0 ? bench.cwpm_end : 0)
     // Oral components
     const oralRatios: number[] = []
     if (rawCwpmValue != null && sharedCwpmEnd > 0) oralRatios.push(Math.min(rawCwpmValue / sharedCwpmEnd, 1.2))
     if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) oralRatios.push(sc.word_reading_correct / sc.word_reading_attempted)
-    if (calc.comp_total != null && calc.comp_total > 0) oralRatios.push(calc.comp_total / (calc.comp_max || 15))
+    if (compIsCountable(calc)) oralRatios.push(calc.comp_total / (calc.comp_max || 15))
     const oralScore = oralRatios.length > 0 ? oralRatios.reduce((a, b) => a + b, 0) / oralRatios.length : null
     // Written test split: MC and writing rubric scored separately
     const mcRatios: number[] = []

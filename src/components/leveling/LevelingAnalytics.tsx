@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
+import { classToColor, classToTextColor, compIsCountable } from '@/lib/utils'
 import { Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, BarChart3, ArrowRight, BookOpen, FileText, Target, PieChart, Layers } from 'lucide-react'
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -476,7 +476,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
 
       const oralRatios2 = [oralRatio, wrAcc].filter(v => v != null) as number[]
       // Include comprehension in oral score (matching LevelingView composite)
-      const compTotal = calc.comp_total != null && calc.comp_total > 0 ? calc.comp_total : null
+      const compTotal = compIsCountable(calc) ? calc.comp_total : null
       const compRatio = compTotal != null ? compTotal / (calc.comp_max || 15) : null
       if (compRatio != null) oralRatios2.push(compRatio)
       const oralScoreCalc = oralRatios2.length > 0 ? oralRatios2.reduce((a, b) => a + b, 0) / oralRatios2.length : null
@@ -693,7 +693,9 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const cwpm = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
       const comp = calc.comp_total
       const compMax = calc.comp_max || 15
-      if (cwpm != null && comp != null) {
+      // Students with no countable comprehension have no point to plot -- omit
+      // them rather than charting them at the origin. A scored 0 does plot.
+      if (cwpm != null && compIsCountable(calc)) {
         data.push({ studentId: s.id, cwpm, comp, compMax, cls: s.english_class as EnglishClass, name: s.english_name || s.korean_name })
       }
     })

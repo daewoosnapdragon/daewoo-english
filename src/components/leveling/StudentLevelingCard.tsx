@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { Student, EnglishClass, ENGLISH_CLASSES } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { CheckCircle2, Circle, AlertTriangle, Star } from 'lucide-react'
+import { getG1Content, G1_LEGACY_VERSION } from './grade1Content'
 
 // ============================================================================
 // TYPES
@@ -35,34 +36,23 @@ const CLS_COLORS: Record<string, { bg: string; text: string; border: string }> =
 }
 
 // ============================================================================
-// G1 STANDARDS (duplicated from Grade1ScoreEntry to avoid circular imports)
+// GRADE 1 TEST CONTENT
 // ============================================================================
+// Sections and passage titles differ per test version, so they are resolved
+// from the version recorded on the score rather than hardcoded. Scores saved
+// before versioning carry no version and fall back to the original test.
 
-const G1_STANDARDS = [
-  { code: 'RF.K.1d', short: 'Letter Names' },
-  { code: 'RF.K.3a', short: 'Letter Sounds' },
-  { code: 'RF.K.2', short: 'Phon Awareness' },
-  { code: 'RF.K.3c', short: 'HF Words (K)' },
-  { code: 'RF.1.3g', short: 'HF Words (1)' },
-  { code: 'SL.K.2', short: 'Listening' },
-  { code: 'RL.K.1', short: 'Key Details' },
-  { code: 'W.K.2', short: 'Writing (K)' },
-  { code: 'W.1.2', short: 'Writing (1)' },
-  { code: 'L.K.2d', short: 'Spelling' },
-  { code: 'RF.1.4', short: 'Fluency' },
-]
+function g1SectionsFor(versionKey: string | undefined) {
+  return getG1Content(versionKey || G1_LEGACY_VERSION).written.sections
+}
 
-const G1_WRITTEN_SECTIONS = [
-  { key: 'w_letter_names', label: 'Letter Names', max: 5 },
-  { key: 'w_letter_sounds', label: 'Letter Sounds', max: 5 },
-  { key: 'w_word_picture', label: 'Word-Picture', max: 10 },
-  { key: 'w_passage_comp', label: 'Passage Comp', max: 5 },
-  { key: 'w_writing', label: 'Writing', max: 5 },
-]
-
-const PASSAGE_TITLES: Record<string, string> = {
-  A: 'Oral Interview', B: 'HF Word List', C: 'Simple Sentences',
-  D: 'My Cat', E: 'Lunch Time', F: 'Rainy Day',
+function g1PassageTitlesFor(versionKey: string | undefined): Record<string, string> {
+  const c = getG1Content(versionKey || G1_LEGACY_VERSION)
+  const titles: Record<string, string> = {
+    A: 'Oral Interview', B: 'HF Word List', C: 'Simple Sentences',
+  }
+  Object.entries(c.passages).forEach(([lvl, p]) => { titles[lvl] = p.title })
+  return titles
 }
 
 const NAEP_LABELS: Record<number, string> = {
@@ -85,6 +75,8 @@ export default function StudentLevelingCard({
 }: StudentLevelingCardProps) {
   const raw = scoreRow?.raw_scores || {}
   const calc = scoreRow?.calculated_metrics || {}
+  const g1Sections = g1SectionsFor(calc.content_version)
+  const PASSAGE_TITLES = g1PassageTitlesFor(calc.content_version)
   const isG1 = String(grade) === '1'
   const numGrade = Number(grade)
 
@@ -276,6 +268,17 @@ export default function StudentLevelingCard({
             const compKeys = isG1
               ? [raw.o_comp_q1, raw.o_comp_q2, raw.o_comp_q3, raw.o_comp_q4, raw.o_comp_q5]
               : [raw.comp_1, raw.comp_2, raw.comp_3, raw.comp_4, raw.comp_5]
+            // Never asked (student stopped mid-passage) is not the same as zero.
+            if (calc.comp_not_administered) {
+              return (
+                <div className="mt-2.5 bg-surface-alt rounded-lg p-2.5">
+                  <div className="text-[9px] font-bold text-text-secondary mb-1">COMPREHENSION</div>
+                  <div className="text-[10px] text-text-tertiary italic">
+                    Not administered &mdash; student was stopped during the passage.
+                  </div>
+                </div>
+              )
+            }
             const compVals = compKeys.filter(v => v != null)
             if (compVals.length === 0) return null
             const compTotal = compVals.reduce((a, b) => a + b, 0)
@@ -314,10 +317,12 @@ export default function StudentLevelingCard({
           {isG1 ? (
             <>
               <div className="text-[8px] font-bold text-gold uppercase tracking-widest mb-2">
-                Written Test <span className="text-text-tertiary font-normal">{G1_WRITTEN_SECTIONS.reduce((a, s) => a + ((raw as any)[s.key] ?? 0), 0)}/30</span>
+                Written Test <span className="text-text-tertiary font-normal">
+                  {g1Sections.reduce((a, s) => a + ((raw as any)[s.key] ?? 0), 0)}/{g1Sections.reduce((a, s) => a + s.max, 0)}
+                </span>
               </div>
               <div className="space-y-0.5 mb-3">
-                {G1_WRITTEN_SECTIONS.map(sec => (
+                {g1Sections.map(sec => (
                   <ScoreLine key={sec.key} label={sec.label} value={(raw as any)[sec.key]} max={sec.max} />
                 ))}
               </div>

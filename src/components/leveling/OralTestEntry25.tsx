@@ -7,7 +7,7 @@ import { classToColor, classToTextColor } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import {
   Save, Loader2, ChevronLeft, ChevronRight, BookOpen, Clock,
-  CheckCircle2, Circle, X, Info, RotateCcw, Play, Square, Mic, Trash2
+  CheckCircle2, Circle, X, Info, RotateCcw, Play, Square, Mic, Trash2, Ban
 } from 'lucide-react'
 
 // ============================================================================
@@ -62,6 +62,12 @@ interface OralScores {
   orf_accuracy?: number | null
   // NAEP
   naep?: number | null
+  /**
+   * The student was stopped during the passage, so the comprehension questions
+   * were never asked. Distinct from scoring them 0: comprehension is excluded
+   * from the totals and rendered as "not administered" rather than a zero.
+   */
+  comp_not_administered?: boolean | null
   // Comprehension (0-3 per question)
   comp_1?: number | null
   comp_2?: number | null
@@ -70,7 +76,7 @@ interface OralScores {
   comp_5?: number | null
   // Teacher notes
   notes?: string | null
-  [key: string]: number | string | null | undefined
+  [key: string]: number | string | boolean | null | undefined
 }
 
 // ============================================================================
@@ -191,7 +197,10 @@ const CCSS_STANDARDS: Record<number, CcssStandard[]> = {
 // Calculate standards mastery from scores
 function calculateStandards(grade: number, sc: OralScores): { code: string; met: boolean; score: number; threshold: number }[] {
   const standards = CCSS_STANDARDS[grade] || []
-  return standards.map(std => {
+  // Comprehension questions that were never asked cannot show mastery either
+  // way, so the comprehension standards are dropped rather than scored 0.
+  const compSkipped = !!sc.comp_not_administered
+  return standards.filter(std => !(compSkipped && std.testSection.startsWith('comp_dok'))).map(std => {
     let score = 0
     if (std.testSection === 'naep') {
       score = (sc.naep as number) || 0
@@ -1005,9 +1014,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   }, [students, scores])
 
   // Fields that belong to the current passage and should be cleared on passage switch
-  const PASSAGE_FIELDS = ['orf_words_read', 'orf_errors', 'orf_time_seconds', 'naep', 'comp_1', 'comp_2', 'comp_3', 'comp_4', 'comp_5', 'notes']
+  const PASSAGE_FIELDS = ['orf_words_read', 'orf_errors', 'orf_time_seconds', 'naep', 'comp_1', 'comp_2', 'comp_3', 'comp_4', 'comp_5', 'comp_not_administered', 'notes']
 
-  const updateScore = useCallback((sid: string, key: string, val: number | string | null) => {
+  const updateScore = useCallback((sid: string, key: string, val: number | string | boolean | null) => {
     setScores(prev => {
       const current = prev[sid] || {}
       // If changing passage_level, archive current passage data and clear fields
@@ -1068,7 +1077,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           }
         }
       }
-      const cTotal = [raw.comp_1, raw.comp_2, raw.comp_3, raw.comp_4, raw.comp_5].reduce((a: number, b) => a + ((b as number) || 0), 0)
+      // Comprehension that was never asked, or not yet scored, carries no
+      // information: store null rather than 0 so neither is read as "answered
+      // everything wrong". A scored 0 is real evidence and IS stored as 0.
+      const compSkipped = !!raw.comp_not_administered
+      const compScored = [raw.comp_1, raw.comp_2, raw.comp_3, raw.comp_4, raw.comp_5].filter(v => v != null) as number[]
+      const compAnswered = compSkipped ? 0 : compScored.length
+      const cTotal = compAnswered > 0 ? compScored.reduce((a, b) => a + b, 0) : null
       const pTotal = [raw.phonics_row1, raw.phonics_row2, raw.phonics_row3, raw.phonics_row4, raw.phonics_row5].reduce((a: number, b) => a + ((b as number) || 0), 0)
       const sTotal = [raw.sent_1, raw.sent_2, raw.sent_3, raw.sent_4, raw.sent_5].reduce((a: number, b) => a + ((b as number) || 0), 0)
 
@@ -1088,7 +1103,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           naep_multiplier: naepMult,
           accuracy_pct: calcAccuracy,
           comp_total: cTotal,
-          comp_max: 15,
+          comp_max: cTotal != null ? 15 : null,
+          comp_answered: compAnswered,
+          comp_not_administered: compSkipped,
           phonics_total: pTotal || null,
           sentence_total: sTotal || null,
           passages_attempted: raw.passages_attempted || [],
@@ -1240,6 +1257,29 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const livePassageMult = passageLevel ? (PASSAGE_MULTIPLIERS[passageLevel] || 1.0) : 1.0
   const liveNaepMult = sc.naep ? (NAEP_MULTIPLIERS[sc.naep] || 1) : 1
   const weightedCwpm = cwpm ? Math.round(cwpm * livePassageMult * liveNaepMult) : cwpm
+  const compNotAdministered = !!sc.comp_not_administered
+
+  // Turning the flag on clears any comprehension scores already entered, so a
+  // record cannot hold both "not asked" and a set of answers.
+  const handleToggleCompNotAdministered = async (sid: string, cur: OralScores) => {
+    const compKeys = ['comp_1', 'comp_2', 'comp_3', 'comp_4', 'comp_5'] as const
+    if (cur.comp_not_administered) {
+      updateScore(sid, 'comp_not_administered', null)
+      return
+    }
+    const entered = compKeys.filter(k => cur[k] != null)
+    if (entered.length > 0) {
+      const ok = await confirmDialog({
+        title: 'Clear comprehension scores?',
+        message: `${entered.length} comprehension ${entered.length === 1 ? 'answer has' : 'answers have'} already been scored. Marking the questions as not administered will clear ${entered.length === 1 ? 'it' : 'them'}.`,
+        confirmLabel: 'Clear and mark',
+        danger: true,
+      })
+      if (!ok) return
+      compKeys.forEach(k => updateScore(sid, k, null))
+    }
+    updateScore(sid, 'comp_not_administered', true)
+  }
   const compTotal = [sc.comp_1, sc.comp_2, sc.comp_3, sc.comp_4, sc.comp_5].reduce((a: number, b) => a + (b || 0), 0)
   const phonicsTotal = [sc.phonics_row1, sc.phonics_row2, sc.phonics_row3, sc.phonics_row4, sc.phonics_row5].reduce((a: number, b) => a + (b || 0), 0)
   const sentTotal = [sc.sent_1, sc.sent_2, sc.sent_3, sc.sent_4, sc.sent_5].reduce((a: number, b) => a + (b || 0), 0)
@@ -1442,11 +1482,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                                 {Math.round(((att.orf_words_read - att.orf_errors) / (att.orf_time_seconds || 60)) * 60)} CWPM
                               </span>
                             ) : null}
-                            {att.comp_1 != null && (
+                            {att.comp_not_administered ? (
+                              <span className="text-text-tertiary italic">Comp n/a</span>
+                            ) : att.comp_1 != null ? (
                               <span className="text-text-tertiary">
                                 Comp {[att.comp_1, att.comp_2, att.comp_3, att.comp_4, att.comp_5].reduce((a: number, b: any) => a + (b || 0), 0)}/15
                               </span>
-                            )}
+                            ) : null}
                           </button>
                         ))}
                       </div>
@@ -1563,8 +1605,38 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {passage && compQuestions.length > 0 && (
                   <div className="bg-surface border border-border rounded-xl p-5 mb-4">
                     <h4 className="text-[13px] font-semibold text-navy mb-1">Comprehension Questions</h4>
-                    <p className="text-[10px] text-text-tertiary mb-4">Score each question 0-3. Total: {compTotal} / 15</p>
-                    <div className="space-y-4">
+                    <p className="text-[10px] text-text-tertiary mb-3">
+                      {compNotAdministered
+                        ? 'Not administered — excluded from this student\'s score.'
+                        : <>Score each question 0-3. Total: {compTotal} / 15</>}
+                    </p>
+
+                    {/* Not-administered switch. A student stopped mid-passage never
+                        heard these questions -- zeros would read as "answered wrong". */}
+                    <label className={`flex items-start gap-2.5 rounded-lg px-3 py-2.5 mb-4 cursor-pointer border transition-all ${
+                      compNotAdministered
+                        ? 'bg-slate-100 border-slate-300'
+                        : 'bg-surface-alt/60 border-border hover:border-navy/30'
+                    }`}>
+                      <input type="checkbox" checked={compNotAdministered}
+                        onChange={() => handleToggleCompNotAdministered(student.id, sc)}
+                        className="w-4 h-4 mt-0.5 rounded border-2 border-navy/30 text-slate-600 focus:ring-slate-500 shrink-0" />
+                      <span>
+                        <span className="text-[11px] font-semibold text-text-primary flex items-center gap-1.5">
+                          <Ban size={11} className="text-slate-500" />
+                          Student struggled &mdash; comprehension not administered
+                        </span>
+                        <span className="block text-[10px] text-text-tertiary mt-0.5">
+                          Check this when the student was stopped during the passage and never heard the questions.
+                          Comprehension is then excluded from the score rather than counted as zero.
+                        </span>
+                      </span>
+                    </label>
+
+                    <div
+                      aria-disabled={compNotAdministered}
+                      className={`space-y-4 transition-opacity ${compNotAdministered ? 'opacity-40 pointer-events-none select-none' : ''}`}
+                    >
                       {compQuestions.map((cq, qi) => {
                         const key = `comp_${qi + 1}` as keyof OralScores
                         const val = sc[key] as number | null | undefined
@@ -1598,9 +1670,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       })}
                     </div>
                     <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
-                      <span className="text-[12px] font-semibold text-navy">Comprehension Total: {compTotal} / 15</span>
+                      <span className="text-[12px] font-semibold text-navy">
+                        Comprehension Total: {compNotAdministered ? <span className="text-text-tertiary">Not administered</span> : `${compTotal} / 15`}
+                      </span>
                       <span className="text-[10px] text-text-tertiary">
-                        {compTotal >= 12 ? 'Strong comprehension' : compTotal >= 8 ? 'Adequate comprehension' : compTotal > 0 ? 'Below expectations' : ''}
+                        {compNotAdministered
+                          ? 'Excluded from scoring'
+                          : compTotal >= 12 ? 'Strong comprehension' : compTotal >= 8 ? 'Adequate comprehension' : compTotal > 0 ? 'Below expectations' : ''}
                       </span>
                     </div>
                   </div>
@@ -1642,7 +1718,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       </div>
                       <div className="text-center">
                         <div className="text-[10px] text-text-tertiary uppercase">Comprehension</div>
-                        <div className="text-[16px] font-bold text-navy">{compTotal} / 15</div>
+                        <div className="text-[16px] font-bold text-navy" title={compNotAdministered ? 'Student was stopped during the passage; the questions were never asked.' : undefined}>
+                          {compNotAdministered ? <span className="text-text-tertiary text-[13px]">n/a</span> : `${compTotal} / 15`}
+                        </div>
                       </div>
                     </div>
                     {config.hasPhonics && (
