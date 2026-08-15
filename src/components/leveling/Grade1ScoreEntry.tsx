@@ -7,7 +7,7 @@ import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X, RotateCcw, Check, Star, Ban } from 'lucide-react'
 import {
-  g1ContentForTest, g1VersionKeyForTest, getG1Content, g1WrittenCoreMax, g1WrittenTotalMax,
+  g1ContentForTest, g1VersionKeyForTest, getG1Content, g1WrittenScoredMax, g1WrittenTotalMax,
   G1_LEGACY_VERSION,
 } from './grade1Content'
 import type { G1Content, G1QuestionDef, G1WritingCategory, PassageLevel } from './grade1Content'
@@ -135,10 +135,12 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
   standardsBaseline: { code: string; met: boolean; score: number; threshold: number }[]
   suggestedClass: EnglishClass
 } {
-  // -- Written score (simple percentage) --
-  // "Core written" is the multiple choice plus the short constructed-response
-  // item. Extended writing is weighted separately below as a bonus, so that the
-  // tuned bonus thresholds keep meaning across versions.
+  // -- Written score --
+  // Where writing counts in the total (Fall 2026 on) the percentage spans the
+  // whole paper: multiple choice + short writing + extended writing. Where it
+  // is a bonus (original test) extended writing is left out here and added
+  // afterwards, so the tuned bonus thresholds keep their meaning.
+  const writingInTotal = content.extendedWriting.scoring === 'in_total'
   let writtenPct = 0
   let writtenMC = 0
   let writingBonus = 0
@@ -149,9 +151,10 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
     writtenMC = content.written.questions.reduce((sum, q) =>
       sum + (scores.written_answers![q.qNum] === q.correct ? 1 : 0), 0)
     writingShort = content.shortWriting ? (scores.writing_short ?? 0) : null
-    const coreMax = g1WrittenCoreMax(content)
-    writtenPct = coreMax > 0 ? ((writtenMC + (writingShort ?? 0)) / coreMax) * 100 : 0
     writingBonus = scores.writing_bonus ?? 0
+    const scoredMax = g1WrittenScoredMax(content)
+    const scored = writtenMC + (writingShort ?? 0) + (writingInTotal ? writingBonus : 0)
+    writtenPct = scoredMax > 0 ? (scored / scoredMax) * 100 : 0
   } else {
     // Old section-subtotal format (backward compat)
     const wScores = [
@@ -300,14 +303,19 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
 
   let oralScore = band.floor + (withinBandAvg * bandWidth)
 
-  // Teacher impression -- wave-aware (Wave 2 preferred over Wave 1)
+  // Teacher class impression. Dropped from Fall 2026 on: placement now rests on
+  // what the student demonstrated. The original test collected and weighted it,
+  // so it is still read for those results rather than changing them after the
+  // fact. Where it is not used, teacherPct is not part of the composite at all
+  // -- feeding in a constant 50 would just drag everyone toward the middle.
   const CLASS_IMPRESSION_MAP: Record<string, number> = {
     Lily: 8, Camellia: 25, Daisy: 42, Sunflower: 58, Marigold: 75, Snapdragon: 92
   }
-  const hasW2Impression = scores.wave2_class_impression && scores.wave2_class_impression !== 'Unsure'
-  const hasW1Impression = scores.wave1_class_impression && scores.wave1_class_impression !== 'Unsure'
-  const hasClassImpression = hasW2Impression || hasW1Impression
-  const hasNumericImpression = scores.teacher_impression != null
+  const usesImpression = content.usesClassImpression
+  const hasW2Impression = usesImpression && scores.wave2_class_impression && scores.wave2_class_impression !== 'Unsure'
+  const hasW1Impression = usesImpression && scores.wave1_class_impression && scores.wave1_class_impression !== 'Unsure'
+  const hasClassImpression = !!(hasW2Impression || hasW1Impression)
+  const hasNumericImpression = usesImpression && scores.teacher_impression != null
   // Prefer Wave 2 impression when available
   const activeImpression = hasW2Impression ? scores.wave2_class_impression : scores.wave1_class_impression
   const teacherPct = hasClassImpression
@@ -316,14 +324,18 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
       ? ((scores.teacher_impression! - 1) / 4) * 100
       : 50
 
-  const hasWrittenData = writtenMC > 0 || writtenPct > 0
+  // Presence of answers, not their value: a student who got everything wrong
+  // has still sat the written test, and scoring them as "oral only" would hide
+  // that. Matters more now that writing counts, since a blank paper is 0 too.
+  const hasWrittenData = (!!scores.written_answers && Object.keys(scores.written_answers).length > 0)
+    || writtenMC > 0 || writtenPct > 0
   const hasOralData = scores.o_passage_level != null
 
   let composite: number
   let wave: 1 | 2
 
   if (!hasWrittenData) {
-    // Wave 1: oral only
+    // Oral only -- the written test has not been entered yet
     if (hasClassImpression) {
       composite = oralScore * 0.65 + teacherPct * 0.35
     } else {
@@ -331,15 +343,15 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
     }
     wave = 1
   } else {
-    // Wave 2: oral + written MC + teacher
+    // Oral + written
     if (hasOralData && hasClassImpression) {
       composite = oralScore * 0.40 + writtenPct * 0.35 + teacherPct * 0.25
     } else if (hasOralData) {
       composite = oralScore * 0.55 + writtenPct * 0.45
     } else {
-      // Written-only: no oral assessment was done. Cap composite so a strong MC
-      // score alone can't outrank students who demonstrated actual reading ability
-      // on higher passage levels. Max ~35 = top of Camellia range.
+      // Written-only: no oral assessment was done. Cap composite so a strong
+      // written score alone can't outrank students who demonstrated actual
+      // reading ability on higher passage levels. Max ~35 = top of Camellia.
       composite = Math.min(writtenPct * 0.55, 35)
       if (hasClassImpression) {
         composite = composite * 0.65 + teacherPct * 0.35
@@ -364,12 +376,16 @@ function calculateG1Composite(scores: G1Scores, content: G1Content): {
 
   // Writing bonus: sliding scale based on bonus score itself
   // 0-4 = no effect, 5-9 = small nudge, 10-14 = meaningful, 15-20 = major
-  if (writingBonus >= 15) {
-    composite += writingBonus * 0.50  // max +10
-  } else if (writingBonus >= 10) {
-    composite += writingBonus * 0.35  // max +4.9
-  } else if (writingBonus >= 5) {
-    composite += writingBonus * 0.20  // max +1.8
+  // Skipped where writing already counts inside writtenPct, which would
+  // otherwise credit the same 20 points twice.
+  if (!writingInTotal) {
+    if (writingBonus >= 15) {
+      composite += writingBonus * 0.50  // max +10
+    } else if (writingBonus >= 10) {
+      composite += writingBonus * 0.35  // max +4.9
+    } else if (writingBonus >= 5) {
+      composite += writingBonus * 0.20  // max +1.8
+    }
   }
 
   // -- Standards baseline --
@@ -413,8 +429,11 @@ function suggestG1Class(
   writingBonus: number = 0,
   content: G1Content,
 ): EnglishClass {
-  // Writing bonus lowers Snapdragon threshold for upper-band discrimination
-  const snapBoost = writingBonus >= 12 ? 5 : 0
+  // A strong writing score lowers the Snapdragon threshold for upper-band
+  // discrimination. Only where writing is a bonus: when it counts in the
+  // written total it has already lifted the composite, and applying this too
+  // would reward the same 20 points twice.
+  const snapBoost = content.extendedWriting.scoring === 'bonus' && writingBonus >= 12 ? 5 : 0
 
   // ── Low-end placement: composite-driven ──
   // At Levels A-C, the composite (which includes alphabet, phoneme, teacher
@@ -1224,6 +1243,8 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
   const G1_WRITING_MAX = content.extendedWriting.max
   const G1_MC_MAX = content.written.mcMax
   const shortWriting = content.shortWriting
+  const writingInTotal = content.extendedWriting.scoring === 'in_total'
+  const writtenTotalMax = g1WrittenTotalMax(content)
 
   const [view, setView] = useState<'entry' | 'analytics'>('entry')
   const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>(teacherClass || 'all')
@@ -1297,16 +1318,19 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
 
   const clearStudent = () => {
     if (!student) return
-    // Fully clear written_answers, written_rubric, and wave2 fields
+    // Clear every written-test field, including the derived section subtotals
+    // for whichever version this test uses.
     updateScore(student.id, 'written_answers', null as any)
     updateScore(student.id, 'written_rubric', null as any)
+    updateScore(student.id, 'written_checklist', null as any)
     updateScore(student.id, 'written_mc', null as any)
     updateScore(student.id, 'writing_bonus', null as any)
     updateScore(student.id, 'writing', null as any)
-    updateScore(student.id, 'w_letter_names', null as any)
-    updateScore(student.id, 'w_letter_sounds', null as any)
+    updateScore(student.id, 'writing_short', null)
+    content.written.sectionKeys.forEach(k => updateScore(student.id, `w_${k}`, null as any))
     updateScore(student.id, 'w_word_picture', null as any)
     updateScore(student.id, 'w_passage_comp', null as any)
+    updateScore(student.id, 'w_short_writing', null as any)
     updateScore(student.id, 'w_writing', null as any)
     updateScore(student.id, 'wave2_class_impression', null)
     updateScore(student.id, 'wave2_retention_rating', null)
@@ -1389,10 +1413,24 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                   <div className="text-[20px] font-bold text-navy">{mcCorrect}<span className="text-[14px] text-text-tertiary">/{G1_MC_MAX}</span></div>
                   <div className="text-[10px] text-text-tertiary">MC ({Math.round(mcCorrect / G1_MC_MAX * 100)}%)</div>
                 </div>
+                {shortWriting && (
+                  <div className="text-right mr-3">
+                    <div className="text-[20px] font-bold text-navy">{shortScore ?? '--'}<span className="text-[14px] text-text-tertiary">/{shortWriting.max}</span></div>
+                    <div className="text-[10px] text-text-tertiary">Short</div>
+                  </div>
+                )}
                 <div className="text-right mr-3">
                   <div className="text-[20px] font-bold text-amber-600">{writingTotal}<span className="text-[14px] text-text-tertiary">/{G1_WRITING_MAX}</span></div>
-                  <div className="text-[10px] text-amber-600 flex items-center gap-0.5 justify-end"><Star size={9} /> Bonus</div>
+                  <div className="text-[10px] text-amber-600 flex items-center gap-0.5 justify-end"><Star size={9} /> {writingInTotal ? 'Writing' : 'Bonus'}</div>
                 </div>
+                {writingInTotal && (
+                  <div className="text-right mr-3 pl-3 border-l border-border">
+                    <div className="text-[20px] font-bold text-navy">
+                      {mcCorrect + (shortScore ?? 0) + writingTotal}<span className="text-[14px] text-text-tertiary">/{writtenTotalMax}</span>
+                    </div>
+                    <div className="text-[10px] text-text-tertiary">Total</div>
+                  </div>
+                )}
                 {studentHasData && (
                   <button onClick={clearStudent} className="text-[11px] text-red-500 hover:text-red-700 border border-red-200 px-2 py-1 rounded flex items-center gap-1">
                     <RotateCcw size={12} /> Clear
@@ -1518,15 +1556,20 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
               </div>
             )}
 
-            {/* Writing Bonus Rubric */}
+            {/* Extended writing rubric */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <h4 className="text-[13px] font-semibold text-navy flex items-center gap-1.5">
-                    <Star size={13} className="text-amber-500" /> Writing Bonus
+                    <Star size={13} className="text-amber-500" />
+                    {writingInTotal ? 'Extended Writing' : 'Writing Bonus'}
                   </h4>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">
-                    Does not penalize -- discriminates advanced students
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${
+                    writingInTotal ? 'bg-navy/10 text-navy' : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    {writingInTotal
+                      ? `Part of the written test -- ${G1_WRITING_MAX} of ${writtenTotalMax} points`
+                      : 'Does not penalize -- discriminates advanced students'}
                   </span>
                   <button onClick={() => setShowRubricGuide(!showRubricGuide)}
                     className={`text-[10px] px-2 py-0.5 rounded-full transition-all flex items-center gap-1 ${showRubricGuide ? 'bg-navy text-white' : 'bg-surface-alt text-text-tertiary hover:bg-border'}`}>
@@ -1626,16 +1669,19 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
               )}
             </div>
 
-            {/* Teacher class impression. The stored keys are still named for the
+            {/* Teacher judgement. The stored keys are still named for the
                 original two-wave test; only the labels change per version. */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-[13px] font-semibold text-navy">
-                  {content.administration === 'single_sitting' ? 'Teacher Impression' : 'Wave 2 Teacher Impression'}
+                  {content.usesClassImpression
+                    ? (content.administration === 'single_sitting' ? 'Teacher Impression' : 'Wave 2 Teacher Impression')
+                    : 'Performance in Current Class'}
                 </h4>
               </div>
               <div className="border border-border rounded-lg overflow-hidden">
                 {/* Class impression */}
+                {content.usesClassImpression && (
                 <div className="px-4 py-3 bg-white">
                   <p className="text-[11px] text-text-secondary mb-2">
                     After seeing oral + written data, which class do you think this student belongs in?
@@ -1665,8 +1711,11 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                     </button>
                   </div>
                 </div>
-                {/* Retention rating */}
-                <div className="px-4 py-3 bg-gray-50/50 border-t border-border">
+                )}
+                {/* Retention rating -- how the student sits within their current
+                    class. Not a placement guess, and not part of the composite;
+                    it is context for the leveling meeting. */}
+                <div className={`px-4 py-3 bg-gray-50/50 ${content.usesClassImpression ? 'border-t border-border' : ''}`}>
                   <p className="text-[11px] text-text-secondary mb-2">
                     Within their current class ({student.english_class}), how is this student performing?
                   </p>
@@ -2393,7 +2442,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
 
   const getClassImpression = (sid: string): string | null => {
     const s = scores[sid] || {}
-    return s.wave1_class_impression || null
+    return content.usesClassImpression ? (s.wave1_class_impression || null) : null
   }
 
   // For Level A: compute per-question total
@@ -2864,43 +2913,55 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           </div>
         )}
 
-        {/* Section 5: Open Response */}
+        {/* Section 5: Open Response -- compare the two pictures */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-          <h4 className="text-[13px] font-semibold text-navy mb-1">Open Response (Picture Description)</h4>
-          <p className="text-[11px] text-text-secondary mb-2">"Look at this picture. Tell me about it. What do you see?"</p>
-          <div className="bg-blue-50/50 border border-blue-100 rounded-lg px-3 py-2 mb-3">
-            <p className="text-[9px] text-blue-800 font-semibold mb-1">Scoring Guide</p>
-            <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-[9px] text-blue-700">
-              <span><span className="font-bold">0</span> = No response / Korean only</span>
-              <span><span className="font-bold">1</span> = Single English word</span>
-              <span><span className="font-bold">2</span> = 2-3 words or a phrase</span>
-              <span><span className="font-bold">3</span> = Simple sentence</span>
-              <span><span className="font-bold">4</span> = 2+ sentences with detail</span>
-              <span><span className="font-bold">5</span> = Fluent description with variety</span>
-            </div>
+          <h4 className="text-[13px] font-semibold text-navy mb-1">Open Response (Two Pictures)</h4>
+          <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100 mb-2">
+            <p className="text-[11px] font-semibold text-blue-800">Say: "{content.openResponse.say}"</p>
           </div>
-          <div className="flex gap-2">
-            {[0, 1, 2, 3, 4, 5].map(v => (
-              <button key={v} onClick={() => updateScore(student.id, 'o_open_response', sc.o_open_response === v ? null : v)}
-                className={`w-11 h-11 rounded-xl text-[13px] font-bold transition-all ${
-                  sc.o_open_response === v
-                    ? 'bg-navy text-white ring-2 ring-navy/30'
-                    : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80 border border-border'
-                }`}>
-                {v}
-              </button>
-            ))}
+          <p className="text-[10px] text-text-tertiary mb-1"><span className="font-semibold text-text-secondary">On the page:</span> {content.openResponse.stimulus}</p>
+          <p className="text-[11px] text-text-secondary mb-3">{content.openResponse.instructions}</p>
+
+          <div className="space-y-1.5 mb-3">
+            {content.openResponse.rubric.map(r => {
+              const selected = sc.o_open_response === r.score
+              return (
+                <button key={r.score}
+                  onClick={() => updateScore(student.id, 'o_open_response', selected ? null : r.score)}
+                  className={`w-full flex items-start gap-3 px-3 py-2 rounded-xl text-left transition-all border ${
+                    selected
+                      ? 'bg-navy text-white border-navy ring-2 ring-navy/20'
+                      : 'bg-surface text-text-secondary border-border hover:bg-surface-alt'
+                  }`}>
+                  <span className={`w-7 h-7 rounded-lg text-[13px] font-bold flex items-center justify-center shrink-0 ${
+                    selected ? 'bg-white/20 text-white' : 'bg-navy/10 text-navy'
+                  }`}>{r.score}</span>
+                  <span className="min-w-0">
+                    <span className={`block text-[12px] font-semibold ${selected ? '' : 'text-navy'}`}>{r.label}</span>
+                    <span className={`block text-[10px] leading-snug ${selected ? 'opacity-85' : 'text-text-tertiary'}`}>{r.desc}</span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          <div className="text-[11px] font-bold text-navy">
+            Open Response: {sc.o_open_response ?? '--'} / {content.openResponse.max}
           </div>
         </div>
 
-        {/* Section 6: Class Impression (no Teacher Rating for G1) */}
+        {/* Section 6: Teacher notes */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-          <h4 className="text-[13px] font-semibold text-navy mb-1">Class Impression</h4>
+          <h4 className="text-[13px] font-semibold text-navy mb-1">Teacher Notes</h4>
           <p className="text-[11px] text-text-secondary mb-3">
-            Which class do you think this student belongs in based on this oral test? Pick "Unsure" if you need the algorithm to decide.
+            Anything worth remembering at the leveling meeting: reading behaviours, error patterns,
+            how the student handled the session.
           </p>
 
+          {content.usesClassImpression && (
           <div className="rounded-lg p-3 mb-3 bg-blue-50/60 border border-blue-200/60">
+            <p className="text-[11px] text-text-secondary mb-2">
+              Which class do you think this student belongs in based on this oral test? Pick "Unsure" if you need the algorithm to decide.
+            </p>
             <div className="flex gap-1.5 flex-wrap">
               {ENGLISH_CLASSES.map(cls => (
                 <button key={cls} onClick={() => updateScore(student.id, 'wave1_class_impression', sc.wave1_class_impression === cls ? null : cls)}
@@ -2926,6 +2987,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
               </button>
             </div>
           </div>
+          )}
 
           <textarea
             value={sc.teacher_notes || ''}
@@ -2956,15 +3018,20 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
       <h4 className="text-[13px] font-semibold text-navy mb-3 flex items-center gap-2">
         <Eye size={14} /> Live Score Preview
         <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${metrics.wave === 1 ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-          {content.administration === 'single_sitting'
-            ? (metrics.wave === 1 ? 'Oral only -- written test not entered yet' : 'Complete: oral + written + teacher')
-            : (metrics.wave === 1 ? 'Wave 1: Oral + Teacher Impression' : 'Wave 2: 30% oral + 30% written + 40% teacher')}
+          {content.usesClassImpression
+            ? (metrics.wave === 1 ? 'Wave 1: Oral + Teacher Impression' : 'Wave 2: 30% oral + 30% written + 40% teacher')
+            : (metrics.wave === 1 ? 'Oral only -- written test not entered yet' : 'Complete: 55% oral + 45% written')}
         </span>
       </h4>
       <div className="grid grid-cols-4 gap-3 mb-4">
         <div className="bg-surface rounded-lg p-3 text-center">
           <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Written</p>
           <p className="text-[18px] font-bold text-navy">{Math.round(metrics.writtenPct)}%</p>
+          {content.extendedWriting.scoring === 'in_total' && (
+            <p className="text-[9px] text-text-tertiary">
+              {metrics.writtenMC + (metrics.writingShort ?? 0) + metrics.writingBonus}/{g1WrittenTotalMax(content)} incl. writing
+            </p>
+          )}
         </div>
         <div className="bg-surface rounded-lg p-3 text-center">
           <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Oral</p>
@@ -3079,9 +3146,9 @@ function ResultsView({ students, scores, levelTest }: {
           <h3 className="font-display text-lg font-semibold text-navy">Results & Suggested Placement</h3>
           <p className="text-[12px] text-text-secondary mt-1">
             {rows.length} students scored.{' '}
-            {content.administration === 'single_sitting'
-              ? 'Students with oral data only are weighted 50% oral + 50% teacher impression until the written test is entered; complete records use 30% oral + 30% written + 40% teacher.'
-              : 'Wave 1 = 50% oral + 50% teacher impression. Wave 2 = 30% oral + 30% written + 40% teacher ratings.'}
+            {content.usesClassImpression
+              ? 'Wave 1 = 50% oral + 50% teacher impression. Wave 2 = 30% oral + 30% written + 40% teacher ratings.'
+              : `Students with oral data only are scored on the oral test alone until the written test is entered; complete records use 55% oral + 45% written, where the written score is all ${g1WrittenTotalMax(content)} points including writing.`}
           </p>
         </div>
         <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
@@ -3121,7 +3188,7 @@ function ResultsView({ students, scores, levelTest }: {
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Oral</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-bold">Composite</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Suggested</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-700 font-semibold">W2 Impression</th>
+              {content.usesClassImpression && <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-700 font-semibold">Impression</th>}
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Retention</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Standards</th>
             </tr>
@@ -3171,6 +3238,7 @@ function ResultsView({ students, scores, levelTest }: {
                       {row.suggestedClass}
                     </span>
                   </td>
+                  {content.usesClassImpression && (
                   <td className="text-center px-3 py-2.5">
                     {(row.scores.wave2_class_impression || row.scores.wave1_class_impression) ? (
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${row.scores.wave2_class_impression ? 'border-2 border-navy' : 'border-2 border-amber-300 opacity-60'}`}
@@ -3180,6 +3248,7 @@ function ResultsView({ students, scores, levelTest }: {
                       </span>
                     ) : <span className="text-text-tertiary text-[10px]">--</span>}
                   </td>
+                  )}
                   <td className="text-center px-3 py-2.5">
                     {row.scores.wave2_retention_rating ? (
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${

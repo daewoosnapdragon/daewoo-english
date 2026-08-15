@@ -147,6 +147,14 @@ export interface G1Content {
     prompt: string
     categories: G1WritingCategory[]
     max: number
+    /**
+     * 'in_total' — writing is part of the written test score, counted with the
+     *              multiple choice out of the paper total.
+     * 'bonus'    — writing sits outside the written score and is added on a
+     *              sliding scale afterwards, so it can only ever help. This is
+     *              how the original test worked; kept so its results stand.
+     */
+    scoring: 'in_total' | 'bonus'
     /** Ladder descriptions keyed by category key, then score. */
     rubric: Record<string, Record<number, string>>
     notes: string[]
@@ -180,8 +188,22 @@ export interface G1Content {
   passageConfigs: Record<PassageLevel, G1PassageConfig>
   compQuestions: Record<string, { q: string; dok: string }[]>
   compScoringExamples: Record<string, string[][]>
-  openResponse: { max: number; rubric: G1RubricRow[]; instructions: string }
+  openResponse: {
+    max: number
+    rubric: G1RubricRow[]
+    instructions: string
+    /** What the teacher says to the student, verbatim. */
+    say: string
+    /** Describes the stimulus so the teacher knows what is on the page. */
+    stimulus: string
+  }
   standards: G1StandardBaseline[]
+  /**
+   * Whether the teacher records a gut-feel class placement alongside the
+   * scores, and whether it feeds the composite. Dropped from Fall 2026 on;
+   * kept for the original test so its results do not shift.
+   */
+  usesClassImpression: boolean
   /** Surfaced on the entry screens as administration cautions. */
   adminNotes: string[]
   timing: {
@@ -512,6 +534,7 @@ const LEGACY_CONTENT: G1Content = {
     prompt: 'Write about your bag.',
     categories: LEGACY_WRITING_CATEGORIES,
     max: 20,
+    scoring: 'bonus',
     rubric: LEGACY_WRITING_RUBRIC,
     notes: [],
     bands: [
@@ -545,8 +568,11 @@ const LEGACY_CONTENT: G1Content = {
     max: 5,
     rubric: LEGACY_OPEN_RESPONSE_RUBRIC,
     instructions: 'Show the student the two pictures. Ask what is the same and what is different.',
+    say: 'Look at these two pictures. What is the same? What is different?',
+    stimulus: 'Two pictures on the student copy.',
   },
   standards: LEGACY_STANDARDS,
+  usesClassImpression: true,
   adminNotes: [],
   timing: {
     struggleStopSeconds: 60,
@@ -887,6 +913,7 @@ const FALL_2026_CONTENT: G1Content = {
     prompt: 'Write a story about the picture. (Snowman picture)',
     categories: F26_WRITING_CATEGORIES,
     max: 20,
+    scoring: 'in_total',
     rubric: F26_WRITING_RUBRIC,
     notes: [
       'Score the four categories independently. Strong ideas with weak spelling should earn a high Content score and a low Mechanics score.',
@@ -926,9 +953,12 @@ const FALL_2026_CONTENT: G1Content = {
   openResponse: {
     max: 5,
     rubric: F26_OPEN_RESPONSE_RUBRIC,
-    instructions: 'Show the student the two pictures. Say: "Look at these two pictures. What is the same? What is different?" It is okay if they do not compare and contrast and only describe the picture. Give 30-60 seconds. Do not prompt or help beyond "What else?"',
+    say: 'Look at these two pictures. What is the same? What is different?',
+    stimulus: 'Two nearly identical pictures of the same birthday party, one above the other. A number of small details differ between them — the cake, what is on the table, and what the children are wearing and doing.',
+    instructions: 'Show the student both pictures together. Comparing them is the task, but it is okay if a student does not compare and contrast and only describes what they see — lower-level students often will, and the rubric still rewards whatever English they produce. Give 30-60 seconds. Do not prompt or help beyond "What else?"',
   },
   standards: F26_STANDARDS,
+  usesClassImpression: false,
   adminNotes: [
     'Levels A, B and C have no comprehension questions and no NAEP rating.',
     'Comprehension is asked only when the student finishes the passage. If the student was cut off, mark "comprehension not administered" rather than scoring the questions 0.',
@@ -974,14 +1004,20 @@ export function g1ContentForTest(
 }
 
 /**
- * Core written points: multiple choice plus the short writing item. Extended
- * writing is weighted separately as a bonus, so it is excluded here.
+ * Points that make up the written test score.
+ *
+ * Where writing counts in the total this is the whole paper. Where writing is a
+ * bonus it is only the multiple choice plus the short item, because the bonus
+ * is applied separately after the composite is formed.
  */
-export function g1WrittenCoreMax(content: G1Content): number {
-  return content.written.mcMax + (content.shortWriting?.max ?? 0)
+export function g1WrittenScoredMax(content: G1Content): number {
+  const base = content.written.mcMax + (content.shortWriting?.max ?? 0)
+  return content.extendedWriting.scoring === 'in_total'
+    ? base + content.extendedWriting.max
+    : base
 }
 
 /** Every point on the written paper, for reporting. */
 export function g1WrittenTotalMax(content: G1Content): number {
-  return g1WrittenCoreMax(content) + content.extendedWriting.max
+  return content.written.mcMax + (content.shortWriting?.max ?? 0) + content.extendedWriting.max
 }
