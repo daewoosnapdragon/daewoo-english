@@ -23,6 +23,7 @@
 import { G2Content, G2PassageLevel } from './grade2Content'
 import { G3Content } from './grade3Content'
 import { G4Content } from './grade4Content'
+import { G5Content } from './grade5Content'
 
 /**
  * The band only needs the component maxes, not a whole test definition, so both
@@ -64,6 +65,16 @@ export function bandScalesFromG3(c: G3Content): BandScales {
 }
 
 export function bandScalesFromG4(c: G4Content): BandScales {
+  return {
+    phonicsMax: 0, syllableMax: 0, sentenceMax: 0,
+    compMax: c.oral.compMax,
+    frustrationCompMax: c.oral.frustrationCompMax,
+    accuracyAloneDowngrades: false,
+  }
+}
+
+/** Grade 5 states the same comprehension-decides rule as Grade 4. */
+export function bandScalesFromG5(c: G5Content): BandScales {
   return {
     phonicsMax: 0, syllableMax: 0, sentenceMax: 0,
     compMax: c.oral.compMax,

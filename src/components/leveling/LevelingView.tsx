@@ -15,7 +15,8 @@ import { WIDA_LEVELS } from '@/lib/wida'
 import { getG2Content, g2VersionKeyForTest } from '@/components/leveling/grade2Content'
 import { getG3Content, g3VersionKeyForTest } from '@/components/leveling/grade3Content'
 import { getG4Content, g4VersionKeyForTest } from '@/components/leveling/grade4Content'
-import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4 } from '@/components/leveling/grade2Band'
+import { getG5Content, g5VersionKeyForTest } from '@/components/leveling/grade5Content'
+import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4, bandScalesFromG5 } from '@/components/leveling/grade2Band'
 import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
@@ -51,6 +52,7 @@ function versionKeyForTest(test: { academic_year?: string | null; semester?: str
   const g = Number((test as any).grade)
   if (g === 3) return g3VersionKeyForTest(test as any)
   if (g === 4) return g4VersionKeyForTest(test as any)
+  if (g === 5) return g5VersionKeyForTest(test as any)
   return g2VersionKeyForTest(test as any)
 }
 
@@ -107,6 +109,15 @@ function getGradeConfigForComposite(grade: number, versionKey?: string): { quest
     {qNum:18,correct:'c',dok:1},{qNum:19,correct:'c',dok:2},{qNum:20,correct:'b',dok:2},{qNum:21,correct:'b',dok:2},{qNum:22,correct:'a',dok:2},
     {qNum:23,correct:'b',dok:1},{qNum:24,correct:'a',dok:1},{qNum:25,correct:'d',dok:1},{qNum:26,correct:'b',dok:1},{qNum:27,correct:'a',dok:1},{qNum:28,correct:'d',dok:1},
   ]}
+  if (grade === 5 && versionKey) {
+    const g5 = getG5Content(versionKey)
+    if (g5) {
+      return {
+        questions: g5.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, dok: q.dok ?? 1 })),
+        dokWeighted: false,
+      }
+    }
+  }
   // Grade 5: 25 questions
   if (grade === 5) return { dokWeighted: true, questions: [
     {qNum:1,correct:'c',dok:1},{qNum:2,correct:'d',dok:2},{qNum:3,correct:'b',dok:2},{qNum:4,correct:'b',dok:2},{qNum:5,correct:'d',dok:2},
@@ -2152,7 +2163,11 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   const g2 = studentGrade === 2 && versionKey ? getG2Content(versionKey) : null
   const g3 = studentGrade === 3 && versionKey ? getG3Content(versionKey) : null
   const g4 = studentGrade === 4 && versionKey ? getG4Content(versionKey) : null
-  const bandScales = g2 ? bandScalesFromG2(g2) : g3 ? bandScalesFromG3(g3) : g4 ? bandScalesFromG4(g4) : null
+  const g5 = studentGrade === 5 && versionKey ? getG5Content(versionKey) : null
+  const bandScales = g2 ? bandScalesFromG2(g2)
+    : g3 ? bandScalesFromG3(g3)
+    : g4 ? bandScalesFromG4(g4)
+    : g5 ? bandScalesFromG5(g5) : null
   const band = bandScales
     ? calculateG2Band({
         passageLevel: calc.passage_level ?? null,

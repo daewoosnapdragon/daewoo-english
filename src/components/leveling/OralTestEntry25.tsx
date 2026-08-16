@@ -12,6 +12,7 @@ import {
 import { g2ContentForTest, G2Content } from './grade2Content'
 import { g3ContentForTest, G3Content } from './grade3Content'
 import { g4ContentForTest, G4Content } from './grade4Content'
+import { g5ContentForTest, G5Content } from './grade5Content'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -266,6 +267,8 @@ function calculateVersionedStandards(
     o_g3_naep: num(sc.naep),
     o_g4_comp: compSkipped ? null : compSum,
     o_g4_naep: num(sc.naep),
+    o_g5_comp: compSkipped ? null : compSum,
+    o_g5_naep: num(sc.naep),
   }
   return standards
     .filter(std => std.testSection in totals)
@@ -596,8 +599,41 @@ const GRADE_CONFIGS: Record<number, GradeTestData> = {
 // Grade 2 tests predating the Fall 2026 rewrite -- keeps the constants above,
 // so historical results are read against exactly the content they were sat on.
 
-function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null, g4: G4Content | null): GradeTestConfig | null {
+function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null, g4: G4Content | null, g5: G5Content | null): GradeTestConfig | null {
   const data = GRADE_CONFIGS[grade]
+
+  if (g5) {
+    // Grade 5 is fluency plus comprehension only, across five levels A-E.
+    const passages: Partial<Record<PassageLevel, PassageData>> = {}
+    const comprehension: Partial<Record<PassageLevel, CompQuestion[]>> = {}
+    const levels = Object.keys(g5.oral.passages) as PassageLevel[]
+    const multipliers: Record<string, number> = {}
+    levels.forEach(lv => {
+      const p = g5.oral.passages[lv as keyof typeof g5.oral.passages]
+      passages[lv] = { title: p.title, text: p.text, wordCount: p.wordCount, lexile: p.textType, genre: p.textType }
+      comprehension[lv] = g5.oral.compQuestions[lv as keyof typeof g5.oral.compQuestions].map(cq => ({
+        q: cq.q, dok: cq.dok, expected: cq.anchors[2], anchors: cq.anchors,
+        note: cq.examples ? cq.examples.join('  ') : undefined,
+      }))
+      multipliers[lv] = p.passageWeight
+    })
+    return {
+      hasPhonics: false,
+      hasSentences: false,
+      passages,
+      comprehension,
+      naepLevels: levels,
+      levels,
+      compScoreMax: 2,
+      compMax: g5.oral.compMax,
+      phonicsRows: [], phonicsMax: 0,
+      sentences: [], sentenceMax: 0,
+      syllables: null, syllableMax: 0,
+      passageMultipliers: multipliers,
+      scripts: { reading: g5.oral.say },
+      contentLabel: g5.label,
+    }
+  }
 
   if (g4) {
     // Grade 4 is fluency plus comprehension only, across five levels A-E.
@@ -764,7 +800,15 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
   initialData?: { wordsRead?: number | null; errors?: number | null; timeSeconds?: number | null }
 }) {
   const { confirmDialog } = useApp()
-  const words = passage.text.split(/\s+/)
+  // An em-dash joins two words with no space ("kids\u2014and"), so splitting on
+  // whitespace alone would give the teacher one box holding two words to mark.
+  // Split on the dash too, keeping it on the word it followed so the passage
+  // still reads as printed.
+  const words = passage.text.split(/\s+/).flatMap(w =>
+    /[\u2014\u2013]/.test(w)
+      ? w.split(/(?<=[\u2014\u2013])/).filter(Boolean)
+      : [w]
+  )
   const [wordMarks, setWordMarks] = useState<Record<number, 'error' | 'self_correct' | null>>({})
   const [lastWordIdx, setLastWordIdx] = useState<number | null>(null)
   const [timing, setTiming] = useState(false)
@@ -1271,9 +1315,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     () => (grade === 4 ? g4ContentForTest(levelTest as any) : null),
     [grade, levelTest]
   )
+  const g5Content = useMemo(
+    () => (grade === 5 ? g5ContentForTest(levelTest as any) : null),
+    [grade, levelTest]
+  )
   const config = useMemo(
-    () => resolveConfig(grade, g2Content, g3Content, g4Content),
-    [grade, g2Content, g3Content, g4Content]
+    () => resolveConfig(grade, g2Content, g3Content, g4Content, g5Content),
+    [grade, g2Content, g3Content, g4Content, g5Content]
   )
 
   const [activeSection, setActiveSection] = useState<'phonics' | 'syllables' | 'sentences' | 'passage'>(config?.hasPhonics ? 'phonics' : 'passage')
@@ -1382,7 +1430,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     let errors = 0
     for (const sid of toSave) {
       const raw = scores[sid] || {}
-      const versioned = g2Content?.standards ?? g3Content?.standards ?? g4Content?.standards ?? null
+      const versioned = g2Content?.standards ?? g3Content?.standards ?? g4Content?.standards ?? g5Content?.standards ?? null
       const standards = versioned
         ? calculateVersionedStandards(versioned, raw, config)
         : calculateStandards(grade, raw)
@@ -1460,7 +1508,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           syllable_max: config.syllables ? config.syllableMax : null,
           // Which content the score is to be read against. Without this a
           // future edit to the word lists would silently re-point old results.
-          oral_content_version: g2Content?.version ?? g3Content?.version ?? g4Content?.version ?? null,
+          oral_content_version: g2Content?.version ?? g3Content?.version ?? g4Content?.version ?? g5Content?.version ?? null,
           passages_attempted: raw.passages_attempted || [],
           standards_baseline: standards,
         },
@@ -2155,7 +2203,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
 
                     {/* CCSS Standards */}
                     {(() => {
-                      const versionedStds = g2Content?.standards ?? g3Content?.standards ?? g4Content?.standards ?? null
+                      const versionedStds = g2Content?.standards ?? g3Content?.standards ?? g4Content?.standards ?? g5Content?.standards ?? null
                       const stds = versionedStds
                         ? calculateVersionedStandards(versionedStds, sc, config)
                         : calculateStandards(grade, sc)

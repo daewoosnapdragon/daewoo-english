@@ -76,10 +76,14 @@ export interface G4WritingCategory {
   kind: 'ladder' | 'checklist'
   checklist?: { key: string; label: string; desc: string }[]
   /**
-   * A checklist category that is capped by something the boxes cannot express.
-   * The teacher sets the condition; the score becomes min(checked, cap).
+   * A checklist category capped by something the boxes cannot express. The
+   * teacher picks the applicable tier and the score becomes min(checked, cap).
+   * Grade 4 has one tier; Grade 5 has two, so this is a list either way.
    */
-  checklistCap?: { label: string; desc: string; cap: number }
+  checklistCap?: {
+    note: string
+    tiers: { key: string; label: string; desc: string; cap: number }[]
+  }
 }
 
 export interface G4StandardBaseline {
@@ -311,9 +315,10 @@ const F26_WRITING_CATEGORIES: G4WritingCategory[] = [
       { key: 'beyond_summary', label: 'Beyond the summary', desc: 'Any one of: dialogue, an inner thought, a sensory detail, a specific moment described closely, or a reflection on why it mattered.' },
     ],
     checklistCap: {
-      label: 'Fewer than five sentences',
-      desc: 'A response of fewer than five sentences caps this category at 2, however many features it shows. This is the only place length affects the score.',
-      cap: 2,
+      note: 'Length gate. This is the only place length affects the score.',
+      tiers: [
+        { key: 'under5', label: 'Fewer than 5 sentences', desc: 'Caps this category at 2, however many features it shows.', cap: 2 },
+      ],
     },
   },
   { key: 'language_grammar', label: 'Language and Grammar', max: 4, standard: 'L.4.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
