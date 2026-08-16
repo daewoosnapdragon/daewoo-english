@@ -21,6 +21,32 @@
 // ============================================================================
 
 import { G2Content, G2PassageLevel } from './grade2Content'
+import { G3Content } from './grade3Content'
+
+/**
+ * The band only needs the component maxes, not a whole test definition, so both
+ * grades adapt onto this. Grade 3 has no phonics, syllables or sentence
+ * reading, and its band is positioned by comprehension alone.
+ */
+export interface BandScales {
+  phonicsMax: number
+  syllableMax: number
+  sentenceMax: number
+  compMax: number
+}
+
+export function bandScalesFromG2(c: G2Content): BandScales {
+  return {
+    phonicsMax: c.oral.phonics.max,
+    syllableMax: c.oral.syllables.max,
+    sentenceMax: c.oral.sentences.max,
+    compMax: c.oral.reading.compMax,
+  }
+}
+
+export function bandScalesFromG3(c: G3Content): BandScales {
+  return { phonicsMax: 0, syllableMax: 0, sentenceMax: 0, compMax: c.oral.compMax }
+}
 
 export type EnglishClassName = 'Lily' | 'Camellia' | 'Daisy' | 'Sunflower' | 'Marigold' | 'Snapdragon'
 
@@ -113,13 +139,13 @@ export interface G2BandResult {
  * band, and inventing one from the components alone would rank a student on
  * the easy half of the test.
  */
-export function calculateG2Band(input: G2BandInput, content: G2Content): G2BandResult | null {
+export function calculateG2Band(input: G2BandInput, scales: BandScales): G2BandResult | null {
   const attempted = LEVEL_ORDER.find(l => l === input.passageLevel)
   if (!attempted) return null
 
   // ── Was the passage sustained? ──
   const belowFrustration = input.accuracyPct != null && input.accuracyPct < FRUSTRATION_ACCURACY
-  const compMax = content.oral.reading.compMax
+  const compMax = scales.compMax
   const nonComprehension = !input.compNotAdministered
     && input.compTotal != null
     && compMax > 0
@@ -142,11 +168,11 @@ export function calculateG2Band(input: G2BandInput, content: G2Content): G2BandR
     parts.push({ value: Math.max(0, Math.min(1, raw / max)), weight })
   }
 
-  push(input.phonicsTotal, content.oral.phonics.max, isLow ? 0.35 : 0.20)
-  push(input.syllableTotal, content.oral.syllables.max, isLow ? 0.15 : 0.10)
-  push(input.sentenceTotal, content.oral.sentences.max, isLow ? 0.30 : 0.25)
+  push(input.phonicsTotal, scales.phonicsMax, isLow ? 0.35 : 0.20)
+  push(input.syllableTotal, scales.syllableMax, isLow ? 0.15 : 0.10)
+  push(input.sentenceTotal, scales.sentenceMax, isLow ? 0.30 : 0.25)
   if (!input.compNotAdministered) {
-    push(input.compTotal, content.oral.reading.compMax, isLow ? 0.20 : 0.45)
+    push(input.compTotal, scales.compMax, isLow ? 0.20 : 0.45)
   }
 
   const withinBand = parts.length > 0

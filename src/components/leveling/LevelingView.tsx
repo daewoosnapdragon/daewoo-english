@@ -13,7 +13,8 @@ import OralTestGrades2to5 from '@/components/leveling/OralTestEntry25'
 import WrittenTestEntry from '@/components/leveling/WrittenTestEntry'
 import { WIDA_LEVELS } from '@/lib/wida'
 import { getG2Content, g2VersionKeyForTest } from '@/components/leveling/grade2Content'
-import { calculateG2Band } from '@/components/leveling/grade2Band'
+import { getG3Content, g3VersionKeyForTest } from '@/components/leveling/grade3Content'
+import { calculateG2Band, bandScalesFromG2, bandScalesFromG3 } from '@/components/leveling/grade2Band'
 import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
@@ -44,6 +45,13 @@ function getWrittenMcTotal(grade: number | string, storedMax?: number | null): n
 
 // Minimal grade config for recalculating adjusted MC from per-question answers
 // This mirrors WrittenTestEntry's question data but only needs qNum, correct, dok
+/** Both grade modules key versions the same way; either resolver will do. */
+function versionKeyForTest(test: { academic_year?: string | null; semester?: string | null; grade?: number | string }): string {
+  return Number((test as any).grade) === 3
+    ? g3VersionKeyForTest(test as any)
+    : g2VersionKeyForTest(test as any)
+}
+
 function getGradeConfigForComposite(grade: number, versionKey?: string): { questions: { qNum: number; correct: string; dok: number }[]; dokWeighted: boolean } | null {
   // Grade 2 from Fall 2026 on is authored in grade2Content.ts and scores flat
   // (one point per item), so the key and the weighting both come from there.
@@ -64,6 +72,15 @@ function getGradeConfigForComposite(grade: number, versionKey?: string): { quest
     {qNum:16,correct:'a',dok:1},{qNum:17,correct:'b',dok:1},{qNum:18,correct:'a',dok:1},{qNum:19,correct:'b',dok:1},{qNum:20,correct:'c',dok:1},
     {qNum:21,correct:'a',dok:1},{qNum:22,correct:'d',dok:1},{qNum:23,correct:'b',dok:1},{qNum:24,correct:'c',dok:1},{qNum:25,correct:'a',dok:1},
   ]}
+  if (grade === 3 && versionKey) {
+    const g3 = getG3Content(versionKey)
+    if (g3) {
+      return {
+        questions: g3.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, dok: q.dok ?? 1 })),
+        dokWeighted: false,
+      }
+    }
+  }
   // Grade 3: 21 questions
   if (grade === 3) return { dokWeighted: true, questions: [
     {qNum:1,correct:'d',dok:1},{qNum:2,correct:'a',dok:1},{qNum:3,correct:'d',dok:1},{qNum:4,correct:'b',dok:2},{qNum:5,correct:'b',dok:2},
@@ -1334,7 +1351,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   }, [students, scores, benchmarks])
 
   const rows = useMemo(() => {
-    const r = students.map(s => computeRow(s, scores, anecdotals, enhancedBenchmarks, semGrades, levelTest.grade, excludedQuestions, g2VersionKeyForTest(levelTest as any)))
+    const r = students.map(s => computeRow(s, scores, anecdotals, enhancedBenchmarks, semGrades, levelTest.grade, excludedQuestions, versionKeyForTest(levelTest)))
     const sorted = [...r].sort((a, b) => a.composite - b.composite)
     return sorted.map((row, idx) => ({
       ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
@@ -1628,7 +1645,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   const rows = useMemo(() => {
     if (students.length === 0) return []
     const enhBench: Record<string, any> = { ...benchmarks }
-    const r = students.map(s => computeRow(s, scores, anecdotals, enhBench, semGrades, levelTest.grade, meetingExcludedQ, g2VersionKeyForTest(levelTest as any)))
+    const r = students.map(s => computeRow(s, scores, anecdotals, enhBench, semGrades, levelTest.grade, meetingExcludedQ, versionKeyForTest(levelTest)))
     const sorted = [...r].sort((a, b) => a.composite - b.composite)
     return sorted.map((row, idx) => ({
       ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
@@ -2110,8 +2127,10 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   if (mcReliable && sc.written_mc != null && (sc.written_mc === 0 || (bench._auto_mc_median > 0 && sc.written_mc < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
   // Absolute band -- reference only, alongside the rank-based placement. Null
   // for grades without an authored band and for students with no passage.
-  const bandContent = studentGrade === 2 && versionKey ? getG2Content(versionKey) : null
-  const band = bandContent
+  const g2 = studentGrade === 2 && versionKey ? getG2Content(versionKey) : null
+  const g3 = studentGrade === 3 && versionKey ? getG3Content(versionKey) : null
+  const bandScales = g2 ? bandScalesFromG2(g2) : g3 ? bandScalesFromG3(g3) : null
+  const band = bandScales
     ? calculateG2Band({
         passageLevel: calc.passage_level ?? null,
         phonicsTotal: calc.phonics_total ?? null,
@@ -2120,7 +2139,7 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
         compTotal: calc.comp_total ?? null,
         compNotAdministered: calc.comp_not_administered ?? null,
         accuracyPct: calc.accuracy_pct ?? null,
-      }, bandContent)
+      }, bandScales)
     : null
 
   return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags, band }

@@ -10,6 +10,7 @@ import {
   CheckCircle2, Circle, X, Info, RotateCcw, Play, Square, Mic, Trash2, Ban
 } from 'lucide-react'
 import { g2ContentForTest, G2Content } from './grade2Content'
+import { g3ContentForTest, G3Content } from './grade3Content'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -39,6 +40,8 @@ interface CompQuestion {
   dok: string
   /** Per-score anchors, index = score. Supplied from Fall 2026 on. */
   anchors?: string[]
+  /** Guidance the guide attaches to this specific question. */
+  note?: string
 }
 
 /** The per-grade passage data baked into this file (the legacy test). */
@@ -243,22 +246,25 @@ const CCSS_STANDARDS: Record<number, CcssStandard[]> = {
  * moderate out of 3 but full credit out of 2), so a version that ships its own
  * baseline is scored against that instead.
  */
-function calculateG2Standards(
-  content: G2Content,
+function calculateVersionedStandards(
+  standards: { code: string; testSection: string; masteryThreshold: number }[],
   sc: OralScores,
   config: GradeTestConfig,
 ): { code: string; met: boolean; score: number; threshold: number }[] {
   const compSkipped = !!sc.comp_not_administered
   const num = (v: unknown) => (typeof v === 'number' ? v : 0)
+  const compSum = [sc.comp_1, sc.comp_2, sc.comp_3, sc.comp_4, sc.comp_5].reduce((a: number, b) => a + num(b), 0)
   const totals: Record<string, number | null> = {
     o_g2_phonics: config.phonicsRows.reduce((a, _, i) => a + num(sc[`phonics_row${i + 1}`]), 0),
     o_g2_syllables: config.syllables ? config.syllables.reduce((a, w) => a + num(sc[w.key]), 0) : 0,
     o_g2_sentences: config.sentences.reduce((a, _, i) => a + num(sc[`sent_${i + 1}`]), 0),
     // Comprehension never asked cannot show mastery either way.
-    o_g2_comp: compSkipped ? null : [sc.comp_1, sc.comp_2, sc.comp_3, sc.comp_4].reduce((a: number, b) => a + num(b), 0),
+    o_g2_comp: compSkipped ? null : compSum,
     o_g2_naep: num(sc.naep),
+    o_g3_comp: compSkipped ? null : compSum,
+    o_g3_naep: num(sc.naep),
   }
-  return content.standards
+  return standards
     .filter(std => std.testSection in totals)
     .filter(std => totals[std.testSection] !== null)
     .map(std => {
@@ -587,8 +593,55 @@ const GRADE_CONFIGS: Record<number, GradeTestData> = {
 // Grade 2 tests predating the Fall 2026 rewrite -- keeps the constants above,
 // so historical results are read against exactly the content they were sat on.
 
-function resolveConfig(grade: number, g2: G2Content | null): GradeTestConfig | null {
+function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null): GradeTestConfig | null {
   const data = GRADE_CONFIGS[grade]
+
+  if (g3) {
+    // Grade 3 is fluency plus comprehension only -- no phonics, syllables or
+    // sentence reading -- so the component sections stay empty and the screen
+    // opens straight on the passage.
+    const passages: Partial<Record<PassageLevel, PassageData>> = {}
+    const comprehension: Partial<Record<PassageLevel, CompQuestion[]>> = {}
+    const levels = Object.keys(g3.oral.passages) as PassageLevel[]
+    const multipliers: Record<string, number> = {}
+    levels.forEach(lv => {
+      const p = g3.oral.passages[lv as keyof typeof g3.oral.passages]
+      passages[lv] = {
+        title: p.title,
+        text: p.text,
+        wordCount: p.wordCount,
+        lexile: p.lexile ?? `×${p.passageWeight.toFixed(1)}`,
+      }
+      comprehension[lv] = g3.oral.compQuestions[lv as keyof typeof g3.oral.compQuestions].map(cq => ({
+        q: cq.q,
+        dok: cq.dok,
+        expected: cq.anchors[2],
+        anchors: cq.anchors,
+        note: cq.note,
+      }))
+      multipliers[lv] = p.passageWeight
+    })
+
+    return {
+      hasPhonics: false,
+      hasSentences: false,
+      passages,
+      comprehension,
+      naepLevels: levels,
+      levels,
+      compScoreMax: 2,
+      compMax: g3.oral.compMax,
+      phonicsRows: [],
+      phonicsMax: 0,
+      sentences: [],
+      sentenceMax: 0,
+      syllables: null,
+      syllableMax: 0,
+      passageMultipliers: multipliers,
+      scripts: { reading: g3.oral.say },
+      contentLabel: g3.label,
+    }
+  }
 
   if (g2) {
     const r = g2.oral.reading
@@ -1175,7 +1228,11 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     () => (grade === 2 ? g2ContentForTest(levelTest as any) : null),
     [grade, levelTest]
   )
-  const config = useMemo(() => resolveConfig(grade, g2Content), [grade, g2Content])
+  const g3Content = useMemo(
+    () => (grade === 3 ? g3ContentForTest(levelTest as any) : null),
+    [grade, levelTest]
+  )
+  const config = useMemo(() => resolveConfig(grade, g2Content, g3Content), [grade, g2Content, g3Content])
 
   const [activeSection, setActiveSection] = useState<'phonics' | 'syllables' | 'sentences' | 'passage'>(config?.hasPhonics ? 'phonics' : 'passage')
 
@@ -1283,8 +1340,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     let errors = 0
     for (const sid of toSave) {
       const raw = scores[sid] || {}
-      const standards = g2Content
-        ? calculateG2Standards(g2Content, raw, config)
+      const versioned = g2Content?.standards ?? g3Content?.standards ?? null
+      const standards = versioned
+        ? calculateVersionedStandards(versioned, raw, config)
         : calculateStandards(grade, raw)
       const wordsRead = (raw.orf_words_read as number) || 0
       const orfErrors = (raw.orf_errors as number) || 0
@@ -1360,7 +1418,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           syllable_max: config.syllables ? config.syllableMax : null,
           // Which content the score is to be read against. Without this a
           // future edit to the word lists would silently re-point old results.
-          oral_content_version: g2Content?.version ?? null,
+          oral_content_version: g2Content?.version ?? g3Content?.version ?? null,
           passages_attempted: raw.passages_attempted || [],
           standards_baseline: standards,
         },
@@ -1961,6 +2019,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                                     ))}
                                   </ul>
                                 )}
+                                {cq.note && (
+                                  <p className="text-[10px] text-amber-700 bg-amber-50/60 border border-amber-100 rounded px-2 py-1 mt-1.5">{cq.note}</p>
+                                )}
                               </div>
                               <div className="flex gap-1 shrink-0">
                                 {Array.from({ length: config.compScoreMax + 1 }, (_, score) => (
@@ -2052,8 +2113,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
 
                     {/* CCSS Standards */}
                     {(() => {
-                      const stds = g2Content
-                        ? calculateG2Standards(g2Content, sc, config)
+                      const versionedStds = g2Content?.standards ?? g3Content?.standards ?? null
+                      const stds = versionedStds
+                        ? calculateVersionedStandards(versionedStds, sc, config)
                         : calculateStandards(grade, sc)
                       const met = stds.filter(s => s.met).length
                       return stds.length > 0 ? (

@@ -4,6 +4,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye } from 'lucide-react'
 import { getG2Content, G2Content } from './grade2Content'
+import { getG3Content, G3Content } from './grade3Content'
 
 // ═══════════════════════════════════════════════════════════════════════
 // TYPES
@@ -66,8 +67,25 @@ interface GradeConfig {
   writingPrompt?: string
   writingNotes?: string[]
   /** Reference material shown to the teacher while marking. */
-  listeningScript?: { script: string; closingLine: string; instructions: string }
+  listeningScript?: { script: string; closingLine?: string; instructions: string }
+  /**
+   * A short constructed-response item scored on its own small rubric, separate
+   * from both the multiple choice and the extended writing. Grade 3 Fall 2026
+   * has one (item 25); Grade 2 does not.
+   */
+  shortWriting?: {
+    item: number
+    prompt: string
+    starters: string[]
+    max: number
+    contentMax: number
+    contentRule: string
+    sentencePointRule: string
+    sayBeforeStarting: string
+    notes: string[]
+  }
   readingPassages?: { key: string; title: string | null; text: string; range: [number, number] }[]
+
   scoringNote?: string
 }
 
@@ -89,6 +107,12 @@ interface StudentScores {
    * student loses which features earned the score.
    */
   checklist?: Record<string, string[]>
+  /**
+   * The short constructed-response item, where the paper has one. Kept apart
+   * from `writing` so the extended-writing rubric total stays comparable across
+   * grades and versions.
+   */
+  shortWriting?: number | null
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -339,10 +363,66 @@ function gradeConfigFromG2(content: G2Content): GradeConfig {
   }
 }
 
+/**
+ * Grade 3 from Fall 2026 on, adapted from grade3Content.ts the same way.
+ * Its paper carries a short-writing item between the two reading sections, so
+ * the multiple-choice numbering skips it.
+ */
+function gradeConfigFromG3(content: G3Content): GradeConfig {
+  return {
+    grade: 3,
+    totalMC: content.written.mcMax,
+    questionCount: content.written.questions.length,
+    questions: content.written.questions.map(q => ({
+      qNum: q.qNum,
+      section: q.section,
+      sectionLabel: q.sectionLabel,
+      text: q.text,
+      choices: q.choices,
+      correct: q.correct,
+      standard: q.standard,
+      standardDesc: q.standardDesc,
+      dok: q.dok ?? 1,
+      domain: q.domain,
+    })),
+    writingCategories: content.writing.categories.map(c => ({
+      key: c.key,
+      label: c.label,
+      max: c.max,
+      standard: c.standard,
+      standardDesc: c.standardDesc,
+      kind: c.kind,
+      checklist: c.checklist,
+    })),
+    writingMax: content.writing.max,
+    dokWeighted: false,
+    writingRubric: content.writing.rubric,
+    writingPrompt: content.writing.prompt,
+    writingNotes: content.writing.notes,
+    listeningScript: content.written.listening,
+    readingPassages: content.written.passages.map(p => ({ ...p })),
+    scoringNote: content.written.scoringNote,
+    shortWriting: {
+      item: content.shortWriting.item,
+      prompt: content.shortWriting.prompt,
+      starters: content.shortWriting.starters,
+      max: content.shortWriting.max,
+      contentMax: content.shortWriting.contentMax,
+      contentRule: content.shortWriting.contentRule,
+      sentencePointRule: content.shortWriting.sentencePointRule,
+      sayBeforeStarting: content.shortWriting.sayBeforeStarting,
+      notes: content.shortWriting.notes,
+    },
+  }
+}
+
 /** Content versions. Key format: `${academic_year}:${semester}`. */
 const TEST_VERSIONS: Record<string, Partial<Record<number, GradeConfig>>> = {
   [LEGACY_VERSION]: LEGACY_CONFIGS,
-  '2026-2027:fall': { 2: gradeConfigFromG2(getG2Content('2026-2027:fall')!) },
+  '2026-2027:fall': {
+    2: gradeConfigFromG2(getG2Content('2026-2027:fall')!),
+    3: gradeConfigFromG3(getG3Content('2026-2027:fall')!),
+  },
 }
 
 /** Human-readable name for the content a test is scored against. */
@@ -738,10 +818,11 @@ function StandardBadge({ code, description }: { code: string; description: strin
   )
 }
 
-function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, toggleChecklistBox, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
+function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, toggleChecklistBox, setShortWriting, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
   student: any; config: GradeConfig; sc: StudentScores; sections: Record<string, QuestionDef[]>; sectionKeys: string[]
   mcCorrect: number; writingTotal: number; setAnswer: (q: number, l: string) => void; setWritingScore: (k: string, v: number) => void
   toggleChecklistBox: (catKey: string, boxKey: string) => void
+  setShortWriting: (v: number | null) => void
   clearStudent: () => void; studentHasData: boolean; selectedIdx: number; setSelectedIdx: (i: number) => void; totalStudents: number
 }) {
   const [focusedQ, setFocusedQ] = useState<number | null>(null)
@@ -910,11 +991,51 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         )
       })}
 
+      {/* Short writing item, where the paper has one (Grade 3 item 25). */}
+      {config.shortWriting && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-[13px] font-semibold text-navy">
+              Item {config.shortWriting.item} &mdash; short writing
+            </h4>
+            <span className="text-[11px] text-text-tertiary">
+              {sc.shortWriting ?? '—'}/{config.shortWriting.max}
+            </span>
+          </div>
+          <div className="border border-border rounded-lg px-3 py-3">
+            <p className="text-[11px] text-text-primary mb-1">{config.shortWriting.prompt}</p>
+            <p className="text-[10px] text-text-tertiary mb-2">
+              Starters: {config.shortWriting.starters.map(st => `"${st}"`).join('  ')}
+            </p>
+            <div className="flex gap-1 mb-2">
+              {Array.from({ length: config.shortWriting.max + 1 }, (_, i) => (
+                <button key={i} onClick={() => setShortWriting(sc.shortWriting === i ? null : i)}
+                  className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${
+                    sc.shortWriting === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'
+                  }`}>
+                  {i}
+                </button>
+              ))}
+            </div>
+            {showRubricGuide && (
+              <div className="bg-surface-alt/60 rounded-lg px-3 py-2 space-y-1">
+                <p className="text-[10px] text-text-secondary"><span className="font-semibold">0&ndash;{config.shortWriting.contentMax} content.</span> {config.shortWriting.contentRule}</p>
+                <p className="text-[10px] text-text-secondary"><span className="font-semibold">+1 sentence writing.</span> {config.shortWriting.sentencePointRule}</p>
+                <ul className="text-[10px] text-text-tertiary list-disc pl-4 pt-1 space-y-0.5">
+                  {config.shortWriting.notes.map((n, i) => <li key={i}>{n}</li>)}
+                </ul>
+                <p className="text-[10px] text-amber-700 pt-1">Say before students begin: &ldquo;{config.shortWriting.sayBeforeStarting}&rdquo;</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Writing Rubric */}
       <div className="mb-6">
         {config.writingPrompt && (
           <div className="mb-2 bg-surface-alt/60 border border-border rounded-lg px-3 py-2">
-            <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-0.5">Item {config.questions.length + 1} prompt</p>
+            <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-0.5">Extended writing prompt</p>
             <p className="text-[11px] text-text-primary">{config.writingPrompt}</p>
           </div>
         )}
@@ -1030,7 +1151,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Listening script</p>
                 <p className="text-[11px] text-text-primary leading-relaxed">{config.listeningScript.script}</p>
-                <p className="text-[11px] text-text-tertiary italic mt-1">{config.listeningScript.closingLine}</p>
+                {config.listeningScript.closingLine && <p className="text-[11px] text-text-tertiary italic mt-1">{config.listeningScript.closingLine}</p>}
                 <p className="text-[10px] text-text-tertiary mt-1.5">{config.listeningScript.instructions}</p>
               </div>
             )}
@@ -1340,6 +1461,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
             answers: row.raw_scores.written_answers || {},
             writing: row.raw_scores.written_rubric || {},
             checklist: row.raw_scores.written_checklist || {},
+            shortWriting: row.raw_scores.written_short_writing ?? null,
           }
         }
       })
@@ -1433,6 +1555,14 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     })
   }, [student])
 
+  const setShortWriting = useCallback((val: number | null) => {
+    if (!student) return
+    setScores(prev => ({
+      ...prev,
+      [student.id]: { ...(prev[student.id] || { answers: {}, writing: {} }), shortWriting: val },
+    }))
+  }, [student])
+
   const setWritingScore = useCallback((key: string, val: number) => {
     if (!student) return
     setScores(prev => ({
@@ -1459,7 +1589,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       if (existing) {
         const raw = { ...(existing.raw_scores || {}) }
         const calc = { ...(existing.calculated_metrics || {}) }
-        delete raw.written_answers; delete raw.written_rubric; delete raw.written_checklist; delete raw.written_mc; delete raw.writing
+        delete raw.written_answers; delete raw.written_rubric; delete raw.written_checklist; delete raw.written_short_writing; delete raw.written_mc; delete raw.writing
         delete calc.written_mc_total; delete calc.written_mc_max; delete calc.written_mc_pct
         delete calc.writing_total; delete calc.writing_max; delete calc.written_domain_scores; delete calc.written_standards_mastery
         // DELETE first to bypass merge trigger, then re-insert oral-only data if any
@@ -1549,8 +1679,8 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       // Upsert with only written keys — DB trigger merges with existing oral keys
       const { error } = await supabase.from('level_test_scores').upsert({
         level_test_id: levelTest.id, student_id: stu.id,
-        raw_scores: { written_answers: sc.answers, written_rubric: sc.writing, written_checklist: sc.checklist || {}, written_mc: mcTotal, writing: wTotal },
-        calculated_metrics: { written_mc_total: mcTotal, written_mc_max: config.totalMC, written_mc_pct: Math.round((mcTotal / config.totalMC) * 100), writing_total: wTotal, writing_max: config.writingMax, written_domain_scores: domainScores, written_standards_mastery: standardsMastery },
+        raw_scores: { written_answers: sc.answers, written_rubric: sc.writing, written_checklist: sc.checklist || {}, written_short_writing: sc.shortWriting ?? null, written_mc: mcTotal, writing: wTotal },
+        calculated_metrics: { written_mc_total: mcTotal, written_mc_max: config.totalMC, written_mc_pct: Math.round((mcTotal / config.totalMC) * 100), writing_total: wTotal, writing_max: config.writingMax, short_writing_total: sc.shortWriting ?? null, short_writing_max: config.shortWriting?.max ?? null, written_domain_scores: domainScores, written_standards_mastery: standardsMastery },
         previous_class: students.find(s => s.id === stu.id)?.english_class || null, entered_by: currentTeacher?.id || null,
       }, { onConflict: 'level_test_id,student_id' })
       if (error) errors++
@@ -1632,6 +1762,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           written_answers: sc.answers,
           written_rubric: sc.writing,
           written_checklist: sc.checklist || {},
+          written_short_writing: sc.shortWriting ?? null,
           written_mc: mcTotal,
           writing: wTotal,
         },
@@ -1640,6 +1771,8 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           written_mc_max: config.totalMC,
           written_mc_pct: Math.round((mcTotal / config.totalMC) * 100),
           writing_total: wTotal,
+          short_writing_total: sc.shortWriting ?? null,
+          short_writing_max: config.shortWriting?.max ?? null,
           writing_max: config.writingMax,
           written_domain_scores: domainScores,
           written_standards_mastery: standardsMastery,
@@ -1757,6 +1890,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
             setAnswer={setAnswer}
             setWritingScore={setWritingScore}
             toggleChecklistBox={toggleChecklistBox}
+            setShortWriting={setShortWriting}
             clearStudent={clearStudent}
             studentHasData={student ? studentHasData(student.id) : false}
             selectedIdx={selectedIdx}
