@@ -116,7 +116,28 @@ interface G1Scores {
   wave2_retention_rating?: 'weak' | 'core' | 'strong' | null
 }
 
-function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass?: EnglishClass | null): {
+/**
+ * The four Teacher Ratings dimensions, each 1-4, as every other grade records
+ * them. Passed in rather than read off `scores` because they live in their own
+ * table and their own phase, not on the test score.
+ */
+export interface G1AnecdotalRating {
+  receptive_language?: number | null
+  productive_language?: number | null
+  engagement_pace?: number | null
+  placement_recommendation?: number | null
+}
+
+/** 0-1, or null when the teacher has rated nothing. Mirrors grades 2-5. */
+function anecdotalScore(anec: G1AnecdotalRating | null | undefined): number | null {
+  if (!anec) return null
+  const vals = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation]
+    .filter(v => v != null) as number[]
+  if (vals.length === 0) return null
+  return vals.reduce((a, b) => a + b, 0) / (vals.length * 4)
+}
+
+function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass?: EnglishClass | null, anecdotal?: G1AnecdotalRating | null): {
   writtenPct: number
   writtenMC: number
   writingBonus: number
@@ -382,6 +403,8 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   }
   const usesImpression = content.teacherSignal === 'class_impression'
   const usesRetention = content.teacherSignal === 'retention_rating'
+  const usesAnecdotal = content.teacherSignal === 'anecdotal_ratings'
+  const anecPct = usesAnecdotal ? anecdotalScore(anecdotal) : null
 
   const hasW2Impression = usesImpression && scores.wave2_class_impression && scores.wave2_class_impression !== 'Unsure'
   const hasW1Impression = usesImpression && scores.wave1_class_impression && scores.wave1_class_impression !== 'Unsure'
@@ -390,11 +413,13 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   const hasClassImpression = !!(hasW2Impression || hasW1Impression)
   const hasNumericImpression = usesImpression && scores.teacher_impression != null
 
-  const teacherPct = hasClassImpression
-    ? (CLASS_IMPRESSION_MAP[activeImpression as string] ?? 50)
-    : hasNumericImpression
-      ? ((scores.teacher_impression! - 1) / 4) * 100
-      : 50
+  const teacherPct = anecPct != null
+    ? anecPct * 100
+    : hasClassImpression
+      ? (CLASS_IMPRESSION_MAP[activeImpression as string] ?? 50)
+      : hasNumericImpression
+        ? ((scores.teacher_impression! - 1) / 4) * 100
+        : 50
 
   // The retention rating is applied further down as a bounded nudge, NOT as a
   // position inside the current class's band. Anchoring it to the band made the
@@ -526,14 +551,17 @@ function g1WeightedComposite(
   metrics: { oralScore: number; writtenMC: number; writingBonus: number; teacherPct: number },
   scores: G1Scores,
   content: G1Content,
+  anecdotal?: G1AnecdotalRating | null,
 ): number | null {
   const hasOral = scores.o_passage_level != null
   const hasWritten = (!!scores.written_answers && Object.keys(scores.written_answers).length > 0)
     || metrics.writtenMC > 0
   const hasWriting = scores.writing_bonus != null
-  const hasTeacher = content.teacherSignal === 'retention_rating'
-    ? scores.wave2_retention_rating != null
-    : !!(scores.wave2_class_impression || scores.wave1_class_impression || scores.teacher_impression != null)
+  const hasTeacher = content.teacherSignal === 'anecdotal_ratings'
+    ? anecdotalScore(anecdotal) != null
+    : content.teacherSignal === 'retention_rating'
+      ? scores.wave2_retention_rating != null
+      : !!(scores.wave2_class_impression || scores.wave1_class_impression || scores.teacher_impression != null)
 
   const parts: { score: number; weight: number }[] = []
   if (hasOral) parts.push({ score: metrics.oralScore / 100, weight: G1_PLACEMENT_WEIGHTS.oral })
@@ -1892,9 +1920,19 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                   </div>
                 </div>
                 )}
-                {/* Retention rating -- where the student sits inside the class
-                    they are already in. From Fall 2026 this is the teacher
-                    signal in the composite, replacing the placement guess. */}
+                {/* From Fall 2026 the teacher signal is the four-dimension
+                    Teacher Ratings every other grade uses, entered on their own
+                    phase. Nothing to fill in here. */}
+                {content.teacherSignal === 'anecdotal_ratings' && (
+                  <div className="px-4 py-3 bg-blue-50/40">
+                    <p className="text-[11px] text-text-secondary">
+                      Teacher judgement for this student is recorded on the{' '}
+                      <strong className="text-navy">Teacher Ratings</strong> phase, the same as every other grade.
+                      It feeds the composite from there.
+                    </p>
+                  </div>
+                )}
+                {content.teacherSignal === 'retention_rating' && (
                 <div className={`px-4 py-3 bg-gray-50/50 ${content.usesClassImpression ? 'border-t border-border' : ''}`}>
                   <p className="text-[11px] text-text-secondary mb-2">
                     Within their current class ({student.english_class}), how is this student performing?
@@ -1916,6 +1954,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                     ))}
                   </div>
                 </div>
+                )}
               </div>
             </div>
           </div>
@@ -3154,9 +3193,9 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
             how the student handled the session.
           </p>
 
-          {/* Retention rating. Feeds the composite from Fall 2026 on, so it is
-              offered here as well as on the written tab -- whichever the
-              teacher reaches first. Both write the same field. */}
+          {/* Retention rating, on the tests that use it. From Fall 2026 the
+              teacher signal is the Teacher Ratings phase instead, so nothing
+              appears here. */}
           {content.teacherSignal === 'retention_rating' && (
             <div className="rounded-lg p-3 mb-3 bg-blue-50/60 border border-blue-200/60">
               <div className="flex items-center gap-2 mb-2">
@@ -3327,10 +3366,12 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
 // RESULTS VIEW - All Students Summary + Placement
 // ============================================================================
 
-function ResultsView({ students, scores, levelTest }: {
+function ResultsView({ students, scores, levelTest, anecdotals }: {
   students: Student[]
   scores: Record<string, G1Scores>
   levelTest: LevelTest
+  /** Teacher Ratings, keyed by student id. Empty on tests that predate them. */
+  anecdotals?: Record<string, G1AnecdotalRating>
 }) {
   const [sortBy, setSortBy] = useState<'composite' | 'name' | 'suggested'>('composite')
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null)
@@ -3349,16 +3390,18 @@ function ResultsView({ students, scores, levelTest }: {
   const rows = useMemo(() => {
     const tested = students.map(s => {
       const sc = scores[s.id] || {}
-      const metrics = calculateG1Composite(sc, content, s.english_class as EnglishClass)
+      const anec = anecdotals?.[s.id] ?? null
+      const metrics = calculateG1Composite(sc, content, s.english_class as EnglishClass, anec)
       return {
         student: s,
         scores: sc,
+        anecdotal: anec,
         ...metrics,
         // The absolute band keeps its own names so it stays readable beside
         // the placement that actually decides.
         absoluteComposite: metrics.composite,
         absoluteClass: metrics.suggestedClass,
-        weighted: g1WeightedComposite(metrics, sc, content),
+        weighted: g1WeightedComposite(metrics, sc, content, anec),
       }
     }).filter(r => r.scores.o_passage_level || r.scores.w_letter_names != null || (r.scores.written_answers && Object.keys(r.scores.written_answers).length > 0))
 
@@ -3386,7 +3429,7 @@ function ResultsView({ students, scores, levelTest }: {
       }
       return 0
     })
-  }, [students, scores, sortBy, content])
+  }, [students, scores, sortBy, content, anecdotals])
 
   const classCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -3441,7 +3484,7 @@ function ResultsView({ students, scores, levelTest }: {
           ))}
         </div>
         <p className="text-[10px] text-text-tertiary mt-3 leading-relaxed">
-          Placement ranks students on the weighted composite (40% oral, 15% MC, 35% writing, 10% teacher rating,
+          Placement ranks students on the weighted composite (40% oral, 15% MC, 35% writing, 10% Teacher Ratings,
           rescaled when a part is missing) and cuts the grade into six equal groups &mdash; the same rule grades 2&ndash;5 use.
           Because the groups are forced equal, some movement is guaranteed regardless of ability.
           The <strong>Band</strong> column is the absolute score from the passage the student sustained; it is reference
@@ -3471,7 +3514,10 @@ function ResultsView({ students, scores, levelTest }: {
                 title="Absolute band from the passage the student sustained. Reference only -- it does not decide placement.">Band<br/><span className="normal-case">(ref)</span></th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Suggested</th>
               {content.usesClassImpression && <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-700 font-semibold">Impression</th>}
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Retention</th>
+              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold"
+                title="Average of the four Teacher Ratings dimensions, on the 1-4 scale every grade uses.">
+                {content.teacherSignal === 'anecdotal_ratings' ? 'Teacher' : 'Retention'}
+              </th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Standards</th>
             </tr>
           </thead>
@@ -3549,7 +3595,21 @@ function ResultsView({ students, scores, levelTest }: {
                   </td>
                   )}
                   <td className="text-center px-3 py-2.5">
-                    {row.scores.wave2_retention_rating ? (
+                    {content.teacherSignal === 'anecdotal_ratings' ? (() => {
+                      const a = row.anecdotal
+                      const vals = a ? [a.receptive_language, a.productive_language, a.engagement_pace, a.placement_recommendation].filter(v => v != null) as number[] : []
+                      if (vals.length === 0) return <span className="text-text-tertiary text-[10px]">--</span>
+                      const avg = vals.reduce((x, y) => x + y, 0) / vals.length
+                      return (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          avg >= 3.5 ? 'bg-green-100 text-green-700' :
+                          avg >= 2.5 ? 'bg-blue-100 text-blue-700' :
+                          avg >= 1.5 ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-red-700'
+                        }`} title={`${vals.length} of 4 dimensions rated`}>
+                          {avg.toFixed(1)}
+                        </span>
+                      )
+                    })() : row.scores.wave2_retention_rating ? (
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         row.scores.wave2_retention_rating === 'strong' ? 'bg-green-100 text-green-700' :
                         row.scores.wave2_retention_rating === 'weak' ? 'bg-red-100 text-red-700' :

@@ -206,13 +206,18 @@ export interface G1Content {
   usesClassImpression: boolean
   /**
    * Which teacher judgement carries weight in the composite.
-   *   'class_impression'  — a guessed placement class (the original test).
-   *   'retention_rating'  — how the student sits within the class they are
-   *                         already in: weak / core / strong. Anchored to a
-   *                         class they have been taught in all term, so it is
-   *                         a steadier signal than guessing a new one.
+   *   'class_impression'   — a guessed placement class (the original test).
+   *   'retention_rating'   — how the student sits within the class they are
+   *                          already in: weak / core / strong.
+   *   'anecdotal_ratings'  — the four-dimension Teacher Ratings every other
+   *                          grade uses (receptive, productive, engagement,
+   *                          placement), entered on their own phase rather
+   *                          than inside the test screens. Grade 1 now shares
+   *                          this so a teacher rates the same way in every
+   *                          grade and the ratings sit alongside the other
+   *                          grades' in the analytics.
    */
-  teacherSignal: 'class_impression' | 'retention_rating'
+  teacherSignal: 'class_impression' | 'retention_rating' | 'anecdotal_ratings'
   /** Surfaced on the entry screens as administration cautions. */
   adminNotes: string[]
   timing: {
@@ -969,7 +974,7 @@ const FALL_2026_CONTENT: G1Content = {
   },
   standards: F26_STANDARDS,
   usesClassImpression: false,
-  teacherSignal: 'retention_rating',
+  teacherSignal: 'anecdotal_ratings',
   adminNotes: [
     'Levels A, B and C have no comprehension questions and no NAEP rating.',
     'Comprehension is asked only when the student finishes the passage. If the student was cut off, mark "comprehension not administered" rather than scoring the questions 0.',

@@ -288,7 +288,9 @@ function LevelingView() {
         <span className="text-[14px] font-semibold text-navy mr-4">{selectedTest.name}</span>
         {/* Grade 1 Wave 1 (oral only): skip Teacher Ratings. Wave 2 (has written): show all phases. */}
         {(String(selectedTest.grade) === '1'
-          ? (['scores', 'results', 'analytics', 'meeting'] as Phase[])
+          // Grade 1 enters both tests on one phase, but rates teachers on the
+          // same Teacher Ratings phase as every other grade.
+          ? (['scores', 'anecdotal', 'results', 'analytics', 'meeting'] as Phase[])
           : (['scores', 'written_test', 'anecdotal', 'results', 'analytics', 'meeting'] as Phase[])
         ).map(p => (
           <button key={p} onClick={() => setPhase(p)} className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${phase === p ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface'}`}>
@@ -301,7 +303,9 @@ function LevelingView() {
         ))}
         <span className={`ml-auto text-[10px] font-bold px-2 py-1 rounded-full ${selectedTest.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{selectedTest.status.toUpperCase()}</span>
       </div>
-      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isLeadTeacher} onContinue={() => setPhase('written_test')} />}
+      {/* Grade 1 has no separate Written Test phase, so "continue" from the
+          test screens goes to Teacher Ratings, which is genuinely next. */}
+      {phase === 'scores' && <ScoreEntryPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isLeadTeacher} onContinue={() => setPhase(String(selectedTest.grade) === '1' ? 'anecdotal' : 'written_test')} />}
       {phase === 'written_test' && <WrittenTestPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isLeadTeacher} />}
       {phase === 'anecdotal' && <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isLeadTeacher} />}
       {phase === 'results' && <ResultsPhase levelTest={selectedTest} />}
@@ -987,7 +991,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
       {(levelTest.grade === 1 || levelTest.grade === '1' as any) && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
           <p className="text-[12px] text-blue-800 leading-relaxed">
-            <strong>Grade 1 Ratings:</strong> Class impressions captured during the oral test session sit alongside these ratings. Together with the written test they produce the final placement recommendation.
+            <strong>Grade 1 Ratings:</strong> These are the teacher judgement in the Grade 1 composite &mdash; the same four dimensions, on the same scale, as every other grade. They carry 10% of the weighted composite, and the placement ranks on that.
           </p>
         </div>
       )}
@@ -1181,25 +1185,32 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
 function G1ResultsWrapper({ levelTest }: { levelTest: LevelTest }) {
   const [students, setStudents] = useState<Student[]>([])
   const [scores, setScores] = useState<Record<string, any>>({})
+  const [anecdotals, setAnecdotals] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     (async () => {
-      const [{ data: studs }, { data: testScores }] = await Promise.all([
+      // Teacher Ratings are the teacher signal in the Grade 1 composite from
+      // Fall 2026 on, so the results screen needs them alongside the scores.
+      const [{ data: studs }, { data: testScores }, { data: anec }] = await Promise.all([
         supabase.from('students').select('*').eq('grade', 1).eq('is_active', true).order('english_name'),
         supabase.from('level_test_scores').select('*').eq('level_test_id', levelTest.id),
+        supabase.from('teacher_anecdotal_ratings').select('*').eq('level_test_id', levelTest.id),
       ])
       setStudents(studs || [])
       const sm: Record<string, any> = {}
       testScores?.forEach((ts: any) => { sm[ts.student_id] = ts.raw_scores || {} })
       setScores(sm)
+      const am: Record<string, any> = {}
+      anec?.forEach((r: any) => { am[r.student_id] = r })
+      setAnecdotals(am)
       setLoading(false)
     })()
   }, [levelTest.id])
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
-  return <G1ResultsView students={students} scores={scores} levelTest={levelTest} />
+  return <G1ResultsView students={students} scores={scores} levelTest={levelTest} anecdotals={anecdotals} />
 }
 
 // ─── Results Phase ──────────────────────────────────────────────────
