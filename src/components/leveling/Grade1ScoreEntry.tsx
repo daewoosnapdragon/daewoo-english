@@ -261,13 +261,29 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   //   E = 67-83 (fluent readers, Marigold territory)
   //   F = 84-100 (advanced, Snapdragon territory)
 
-  const LEVEL_BANDS: Record<string, { floor: number; ceiling: number }> = {
-    A: { floor: 0, ceiling: 16 },
-    B: { floor: 17, ceiling: 32 },
-    C: { floor: 33, ceiling: 49 },
-    D: { floor: 50, ceiling: 66 },
-    E: { floor: 67, ceiling: 83 },
-    F: { floor: 84, ceiling: 100 },
+  // The bands OVERLAP by design. Teachers do not hand every strong reader the
+  // hardest passage -- a Snapdragon student is often given E rather than F.
+  // With hard-walled bands that choice alone decided the class: a student on E
+  // had to score essentially 100% on the subtests to reach Snapdragon, and at
+  // 80% landed in Marigold. The passage the teacher picked was outranking the
+  // performance. Overlapping the ceilings means acing a passage carries you
+  // into the class above, so reading E well and reading F adequately land in
+  // the same place. Floors are unchanged, so a weak showing still sits where
+  // the passage puts it.
+  //
+  // `ceiling` applies to a student who held their passage. `unsustainedCeiling`
+  // is the old tight ceiling, used when the passage was NOT held: the overlap
+  // is an inference from sustaining a passage, and a student who was cut off,
+  // read at frustration level, or followed none of the story has not earned it.
+  // Without the distinction the downgrade below is toothless -- it moves the
+  // band down and the overlap hands the class straight back.
+  const LEVEL_BANDS: Record<string, { floor: number; ceiling: number; unsustainedCeiling: number }> = {
+    A: { floor: 0, ceiling: 24, unsustainedCeiling: 16 },
+    B: { floor: 17, ceiling: 41, unsustainedCeiling: 32 },
+    C: { floor: 33, ceiling: 58, unsustainedCeiling: 49 },
+    D: { floor: 50, ceiling: 75, unsustainedCeiling: 66 },
+    E: { floor: 67, ceiling: 92, unsustainedCeiling: 83 },
+    F: { floor: 84, ceiling: 100, unsustainedCeiling: 100 },
   }
   const band = LEVEL_BANDS[passageLevel] || LEVEL_BANDS['A']
   const bandWidth = band.ceiling - band.floor
@@ -321,9 +337,23 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   // too hard, whatever the rate. Without this a student who ground through
   // passage F at 64% accuracy still collected F's floor and landed in the top
   // class. Both signals mean the same thing -- this passage was above them.
+  //
+  // Comprehension far below the ceiling is the same conclusion reached a
+  // different way: the student got through the words without following the
+  // story. Without it, a student who read passage F accurately but answered
+  // every comprehension question wrong still collected F's floor and read as
+  // Snapdragon. This extends the guide rather than quoting it -- the guide
+  // speaks only about being cut off -- so it is set low enough to catch
+  // near-total non-comprehension and not merely weak comprehension.
   const FRUSTRATION_ACCURACY = 90
+  const NON_COMPREHENSION_RATIO = 0.25
   const belowFrustration = accuracy != null && accuracy < FRUSTRATION_ACCURACY
-  const passageNotSustained = compNotAdministered || belowFrustration
+  const nonComprehension = !compNotAdministered
+    && compTotal != null
+    && compMax != null
+    && compMax > 0
+    && compTotal / compMax < NON_COMPREHENSION_RATIO
+  const passageNotSustained = compNotAdministered || belowFrustration || nonComprehension
   const LEVEL_ORDER: PassageLevel[] = ['A', 'B', 'C', 'D', 'E', 'F']
   // The level the student actually held. Everything downstream -- the band and
   // the suggested class -- keys off this rather than the level the teacher
@@ -333,7 +363,7 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
     : passageLevel
   if (passageNotSustained) {
     const belowBand = LEVEL_BANDS[effectiveLevel] || band
-    oralScore = belowBand.floor + (withinBandAvg * (belowBand.ceiling - belowBand.floor))
+    oralScore = belowBand.floor + (withinBandAvg * (belowBand.unsustainedCeiling - belowBand.floor))
   }
 
   // ── Teacher judgement ──
@@ -475,6 +505,60 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
     passageLevel, cwpm, weightedCwpm, accuracy, effectiveLevel,
     compTotal, compMax, compAnswered, compNotAdministered, standardsBaseline, suggestedClass,
   }
+}
+
+// ── Cohort-relative placement ────────────────────────────────────────
+// The composite above is absolute: a student's band is set by the passage they
+// sustained, so a whole grade can land in the same class and nothing forces
+// them apart. Placement itself is decided the way grades 2-5 have always
+// decided it -- a weighted blend of the test parts, ranked across the grade and
+// cut into six equal groups. The absolute band and passage level stay visible
+// beside it as the reference for why a student sits where they do.
+//
+// Weights mirror the grades 2-5 Results tab. A part with no data drops out and
+// its weight is shared among the rest, so an oral-only student is ranked on
+// what they actually sat rather than being punished for the missing paper.
+const G1_PLACEMENT_WEIGHTS = { oral: 0.40, mc: 0.15, writing: 0.35, teacher: 0.10 }
+
+const G1_PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
+
+function g1WeightedComposite(
+  metrics: { oralScore: number; writtenMC: number; writingBonus: number; teacherPct: number },
+  scores: G1Scores,
+  content: G1Content,
+): number | null {
+  const hasOral = scores.o_passage_level != null
+  const hasWritten = (!!scores.written_answers && Object.keys(scores.written_answers).length > 0)
+    || metrics.writtenMC > 0
+  const hasWriting = scores.writing_bonus != null
+  const hasTeacher = content.teacherSignal === 'retention_rating'
+    ? scores.wave2_retention_rating != null
+    : !!(scores.wave2_class_impression || scores.wave1_class_impression || scores.teacher_impression != null)
+
+  const parts: { score: number; weight: number }[] = []
+  if (hasOral) parts.push({ score: metrics.oralScore / 100, weight: G1_PLACEMENT_WEIGHTS.oral })
+  if (hasWritten && content.written.mcMax > 0) {
+    parts.push({ score: metrics.writtenMC / content.written.mcMax, weight: G1_PLACEMENT_WEIGHTS.mc })
+  }
+  if (hasWriting && content.extendedWriting.max > 0) {
+    parts.push({ score: metrics.writingBonus / content.extendedWriting.max, weight: G1_PLACEMENT_WEIGHTS.writing })
+  }
+  if (hasTeacher) parts.push({ score: metrics.teacherPct / 100, weight: G1_PLACEMENT_WEIGHTS.teacher })
+
+  if (parts.length === 0) return null
+  const totalWeight = parts.reduce((s, p) => s + p.weight, 0)
+  return parts.reduce((s, p) => s + p.score * (p.weight / totalWeight), 0)
+}
+
+/**
+ * Forced even split: rank ascending, cut into six equal groups. Identical in
+ * shape to `suggestClass` on the grades 2-5 Results tab, so the two grades
+ * place students by the same rule.
+ */
+function g1ClassFromRank(idx: number, total: number): EnglishClass {
+  const p = total > 1 ? idx / (total - 1) : 0.5
+  const bi = Math.min(Math.floor(p / (1 / G1_PLACEMENT_CLASSES.length)), G1_PLACEMENT_CLASSES.length - 1)
+  return G1_PLACEMENT_CLASSES[bi]
 }
 
 /**
@@ -3263,22 +3347,46 @@ function ResultsView({ students, scores, levelTest }: {
   GRADE_1_QUESTIONS.forEach(q => { if (!G1_SECTION_LABELS[q.section]) G1_SECTION_LABELS[q.section] = q.domain })
 
   const rows = useMemo(() => {
-    return students.map(s => {
+    const tested = students.map(s => {
       const sc = scores[s.id] || {}
       const metrics = calculateG1Composite(sc, content, s.english_class as EnglishClass)
-      return { student: s, scores: sc, ...metrics }
+      return {
+        student: s,
+        scores: sc,
+        ...metrics,
+        // The absolute band keeps its own names so it stays readable beside
+        // the placement that actually decides.
+        absoluteComposite: metrics.composite,
+        absoluteClass: metrics.suggestedClass,
+        weighted: g1WeightedComposite(metrics, sc, content),
+      }
     }).filter(r => r.scores.o_passage_level || r.scores.w_letter_names != null || (r.scores.written_answers && Object.keys(r.scores.written_answers).length > 0))
-      .sort((a, b) => {
-        if (sortBy === 'composite') return b.composite - a.composite
-        if (sortBy === 'name') return a.student.english_name.localeCompare(b.student.english_name)
-        if (sortBy === 'suggested') {
-          const ai = ENGLISH_CLASSES.indexOf(a.suggestedClass)
-          const bi = ENGLISH_CLASSES.indexOf(b.suggestedClass)
-          return ai !== bi ? ai - bi : b.composite - a.composite
-        }
-        return 0
-      })
-  }, [students, scores, sortBy])
+
+    // Placement: rank the tested students by the weighted composite and cut
+    // into six equal groups. A student with nothing to weight keeps the
+    // absolute suggestion rather than being ranked on a fabricated number.
+    const rankable = tested.filter(r => r.weighted != null)
+    const ordered = [...rankable].sort((a, b) => (a.weighted as number) - (b.weighted as number))
+    const placement = new Map<string, EnglishClass>()
+    ordered.forEach((r, idx) => placement.set(r.student.id, g1ClassFromRank(idx, ordered.length)))
+
+    return tested.map(r => ({
+      ...r,
+      suggestedClass: placement.get(r.student.id) ?? r.absoluteClass,
+      percentile: r.weighted != null && ordered.length > 1
+        ? ordered.findIndex(o => o.student.id === r.student.id) / (ordered.length - 1)
+        : null,
+    })).sort((a, b) => {
+      if (sortBy === 'composite') return (b.weighted ?? -1) - (a.weighted ?? -1)
+      if (sortBy === 'name') return a.student.english_name.localeCompare(b.student.english_name)
+      if (sortBy === 'suggested') {
+        const ai = ENGLISH_CLASSES.indexOf(a.suggestedClass)
+        const bi = ENGLISH_CLASSES.indexOf(b.suggestedClass)
+        return ai !== bi ? ai - bi : (b.weighted ?? -1) - (a.weighted ?? -1)
+      }
+      return 0
+    })
+  }, [students, scores, sortBy, content])
 
   const classCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -3332,6 +3440,13 @@ function ResultsView({ students, scores, levelTest }: {
             </div>
           ))}
         </div>
+        <p className="text-[10px] text-text-tertiary mt-3 leading-relaxed">
+          Placement ranks students on the weighted composite (40% oral, 15% MC, 35% writing, 10% teacher rating,
+          rescaled when a part is missing) and cuts the grade into six equal groups &mdash; the same rule grades 2&ndash;5 use.
+          Because the groups are forced equal, some movement is guaranteed regardless of ability.
+          The <strong>Band</strong> column is the absolute score from the passage the student sustained; it is reference
+          only, and where it disagrees with the placement the row says so.
+        </p>
       </div>
 
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
@@ -3350,7 +3465,10 @@ function ResultsView({ students, scores, levelTest }: {
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">CWPM</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Comp</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Oral</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-bold">Composite</th>
+              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-bold"
+                title="Weighted composite: 40% oral + 15% MC + 35% writing + 10% teacher rating, rescaled when a part is missing. This is what placement ranks on.">Composite</th>
+              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold"
+                title="Absolute band from the passage the student sustained. Reference only -- it does not decide placement.">Band<br/><span className="normal-case">(ref)</span></th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Suggested</th>
               {content.usesClassImpression && <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-700 font-semibold">Impression</th>}
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Retention</th>
@@ -3398,15 +3516,26 @@ function ResultsView({ students, scores, levelTest }: {
                   </td>
                   <td className="text-center px-3 py-2.5">{Math.round(row.oralScore)}</td>
                   <td className="text-center px-3 py-2.5">
-                    <span className={`text-[13px] font-bold ${
-                      row.composite >= 70 ? 'text-green-600' : row.composite >= 40 ? 'text-amber-600' : 'text-red-600'
-                    }`}>{Math.round(row.composite)}</span>
+                    {row.weighted != null ? (
+                      <span className={`text-[13px] font-bold ${
+                        row.weighted >= 0.70 ? 'text-green-600' : row.weighted >= 0.40 ? 'text-amber-600' : 'text-red-600'
+                      }`}>{Math.round(row.weighted * 100)}</span>
+                    ) : <span className="text-text-tertiary text-[10px]">--</span>}
+                  </td>
+                  {/* Absolute band, kept beside the placement as the reference
+                      for why a student reads where they do. */}
+                  <td className="text-center px-3 py-2.5">
+                    <span className="text-[10px] text-text-tertiary">{Math.round(row.absoluteComposite)}</span>
+                    <span className="block text-[9px] text-text-tertiary opacity-70">{row.absoluteClass}</span>
                   </td>
                   <td className="text-center px-3 py-2.5">
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
                       style={{ backgroundColor: classToColor(row.suggestedClass), color: classToTextColor(row.suggestedClass) }}>
                       {row.suggestedClass}
                     </span>
+                    {row.suggestedClass !== row.absoluteClass && (
+                      <span className="block text-[8px] text-amber-600 mt-0.5" title="The rank-based placement and the absolute band disagree for this student.">differs from band</span>
+                    )}
                   </td>
                   {content.usesClassImpression && (
                   <td className="text-center px-3 py-2.5">

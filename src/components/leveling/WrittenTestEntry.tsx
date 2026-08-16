@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye } from 'lucide-react'
+import { getG2Content, G2Content } from './grade2Content'
 
 // ═══════════════════════════════════════════════════════════════════════
 // TYPES
@@ -17,6 +18,12 @@ interface QuestionDef {
   section: string        // 'listening' | 'reading1' | 'reading2' | 'language1' | 'language2' | 'reading3'
   sectionLabel: string   // Display name e.g. "Listening", "Reading: Kate's Cake"
   text: string           // Short question text
+  /**
+   * The options printed on the student page, positionally: choices[0] = 'a'.
+   * Absent on tests authored before Fall 2026, where only the key was recorded
+   * and the marker works from the paper.
+   */
+  choices?: string[]
   correct: string        // 'a' | 'b' | 'c' | 'd'
   standard: string       // e.g. 'RI.2.2'
   standardDesc: string   // Brief description
@@ -30,23 +37,58 @@ interface WritingCategory {
   max: number
   standard: string
   standardDesc: string
+  /**
+   * 'ladder'    — pick the single highest row that describes the writing.
+   * 'checklist' — independent features; the score is the number checked.
+   * Absent means ladder, which is how every category scored before Fall 2026.
+   */
+  kind?: 'ladder' | 'checklist'
+  /** Present when kind === 'checklist'. One entry per box, in display order. */
+  checklist?: { key: string; label: string; desc: string }[]
 }
 
 interface GradeConfig {
   grade: number
-  totalMC: number       // weighted max (DOK1=1pt, DOK2+=2pt)
+  totalMC: number       // max multiple-choice points under this config's rule
   questionCount: number  // raw question count (for progress tracking)
   questions: QuestionDef[]
   writingCategories: WritingCategory[]
   writingMax: number
+  /**
+   * Whether items are weighted by depth of knowledge (DOK 1 = 1pt, DOK 2+ =
+   * 2pt). True for every test up to and including Spring 2026. The Fall 2026
+   * Grade 2 paper states outright that items are worth one point each with no
+   * partial credit, so it scores flat.
+   */
+  dokWeighted: boolean
+  /** Overrides WRITING_RUBRIC_BY_GRADE where a version supplies its own. */
+  writingRubric?: Record<string, Record<number, string>>
+  writingPrompt?: string
+  writingNotes?: string[]
+  /** Reference material shown to the teacher while marking. */
+  listeningScript?: { script: string; closingLine: string; instructions: string }
+  readingPassages?: { key: string; title: string | null; text: string; range: [number, number] }[]
+  scoringNote?: string
 }
 
 // DOK weighting: DOK 1 = 1 point, DOK 2+ = 2 points
 function dokWeight(dok: number): number { return dok >= 2 ? 2 : 1 }
 
+/** What one item is worth under this config's scoring rule. */
+function qWeight(config: GradeConfig, q: QuestionDef): number {
+  return config.dokWeighted ? dokWeight(q.dok) : 1
+}
+
 interface StudentScores {
   answers: Record<number, string>   // qNum -> 'a'|'b'|'c'|'d'
   writing: Record<string, number>   // category key -> score
+  /**
+   * Which boxes are ticked, for checklist categories: category key -> box keys.
+   * The count is mirrored into `writing` so everything downstream keeps reading
+   * a single number, but the boxes themselves have to persist or reopening a
+   * student loses which features earned the score.
+   */
+  checklist?: Record<string, string[]>
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -248,16 +290,59 @@ const GRADE_5_WRITING: WritingCategory[] = [
 export const LEGACY_VERSION = 'legacy'
 
 const LEGACY_CONFIGS: Record<number, GradeConfig> = {
-  2: { grade: 2, totalMC: 32, questionCount: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20 },
-  3: { grade: 3, totalMC: 26, questionCount: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20 },
-  4: { grade: 4, totalMC: 40, questionCount: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20 },
-  5: { grade: 5, totalMC: 37, questionCount: 25, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20 },
+  2: { grade: 2, totalMC: 32, questionCount: 25, questions: GRADE_2_QUESTIONS, writingCategories: GRADE_2_WRITING, writingMax: 20, dokWeighted: true },
+  3: { grade: 3, totalMC: 26, questionCount: 21, questions: GRADE_3_QUESTIONS, writingCategories: GRADE_3_WRITING, writingMax: 20, dokWeighted: true },
+  4: { grade: 4, totalMC: 40, questionCount: 28, questions: GRADE_4_QUESTIONS, writingCategories: GRADE_4_WRITING, writingMax: 20, dokWeighted: true },
+  5: { grade: 5, totalMC: 37, questionCount: 25, questions: GRADE_5_QUESTIONS, writingCategories: GRADE_5_WRITING, writingMax: 20, dokWeighted: true },
+}
+
+/**
+ * Grade 2 from Fall 2026 on is authored in grade2Content.ts, next to its oral
+ * half, rather than as another block of constants in this file. Adapted here so
+ * the scoring screen sees the same GradeConfig shape either way.
+ */
+function gradeConfigFromG2(content: G2Content): GradeConfig {
+  return {
+    grade: 2,
+    totalMC: content.written.mcMax,
+    questionCount: content.written.questions.length,
+    questions: content.written.questions.map(q => ({
+      qNum: q.qNum,
+      section: q.section,
+      sectionLabel: q.sectionLabel,
+      text: q.text,
+      choices: q.choices,
+      correct: q.correct,
+      standard: q.standard,
+      standardDesc: q.standardDesc,
+      dok: q.dok ?? 1,
+      domain: q.domain,
+    })),
+    writingCategories: content.writing.categories.map(c => ({
+      key: c.key,
+      label: c.label,
+      max: c.max,
+      standard: c.standard,
+      standardDesc: c.standardDesc,
+      kind: c.kind,
+      checklist: c.checklist,
+    })),
+    writingMax: content.writing.max,
+    // Every item is one point, no partial credit.
+    dokWeighted: false,
+    writingRubric: content.writing.rubric,
+    writingPrompt: content.writing.prompt,
+    writingNotes: content.writing.notes,
+    listeningScript: content.written.listening,
+    readingPassages: content.written.passages,
+    scoringNote: content.written.scoringNote,
+  }
 }
 
 /** Content versions. Key format: `${academic_year}:${semester}`. */
 const TEST_VERSIONS: Record<string, Partial<Record<number, GradeConfig>>> = {
   [LEGACY_VERSION]: LEGACY_CONFIGS,
-  // '2026-2027:fall': { 3: { grade: 3, totalMC: ..., questions: GRADE_3_QUESTIONS_2026_FALL, ... } },
+  '2026-2027:fall': { 2: gradeConfigFromG2(getG2Content('2026-2027:fall')!) },
 }
 
 /** Human-readable name for the content a test is scored against. */
@@ -317,7 +402,7 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
     const ans = allScores[sid].answers
     config.questions.forEach(q => {
       if (ans[q.qNum]) {
-        const w = dokWeight(q.dok)
+        const w = qWeight(config, q)
         if (!domains[q.domain]) domains[q.domain] = { correct: 0, total: 0 }
         domains[q.domain].total += w
         if (ans[q.qNum] === q.correct) domains[q.domain].correct += w
@@ -332,7 +417,7 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
     const ans = allScores[sid].answers
     config.questions.forEach(q => {
       if (ans[q.qNum]) {
-        const w = dokWeight(q.dok)
+        const w = qWeight(config, q)
         if (!studentStandards[sid][q.standard]) studentStandards[sid][q.standard] = { met: 0, total: 0 }
         studentStandards[sid][q.standard].total += w
         if (ans[q.qNum] === q.correct) studentStandards[sid][q.standard].met += w
@@ -346,7 +431,7 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
   const totalScores: Record<string, number> = {}
   studentIds.forEach(sid => {
     const ans = allScores[sid].answers
-    totalScores[sid] = config.questions.reduce((sum, q) => sum + (ans[q.qNum] === q.correct ? dokWeight(q.dok) : 0), 0)
+    totalScores[sid] = config.questions.reduce((sum, q) => sum + (ans[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
   })
   const allTotals = studentIds.map(sid => totalScores[sid])
   const meanTotal = allTotals.length > 0 ? allTotals.reduce((a, b) => a + b, 0) / allTotals.length : 0
@@ -569,8 +654,12 @@ const WRITING_RUBRIC_BY_GRADE: Record<number, Record<string, Record<number, stri
 }
 
 // Grade-aware rubric descriptor lookup
-function getRubricDescriptors(key: string, grade: number): Record<number, string> | undefined {
-  return WRITING_RUBRIC_BY_GRADE[grade]?.[key]
+/**
+ * A version that ships its own rubric wins; otherwise fall back to the
+ * per-grade descriptors, which is where every pre-Fall-2026 test lives.
+ */
+function getRubricDescriptors(key: string, config: GradeConfig): Record<number, string> | undefined {
+  return config.writingRubric?.[key] ?? WRITING_RUBRIC_BY_GRADE[config.grade]?.[key]
 }
 
 // ── CCSS Standard Progressions (Grades 2-5) ──────────────────────
@@ -649,9 +738,10 @@ function StandardBadge({ code, description }: { code: string; description: strin
   )
 }
 
-function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
+function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, toggleChecklistBox, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
   student: any; config: GradeConfig; sc: StudentScores; sections: Record<string, QuestionDef[]>; sectionKeys: string[]
   mcCorrect: number; writingTotal: number; setAnswer: (q: number, l: string) => void; setWritingScore: (k: string, v: number) => void
+  toggleChecklistBox: (catKey: string, boxKey: string) => void
   clearStudent: () => void; studentHasData: boolean; selectedIdx: number; setSelectedIdx: (i: number) => void; totalStudents: number
 }) {
   const [focusedQ, setFocusedQ] = useState<number | null>(null)
@@ -754,8 +844,8 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
       {sectionKeys.map(sKey => {
         const qs = sections[sKey]
         const sectionLabel = qs[0].sectionLabel
-        const sCorrect = qs.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? dokWeight(q.dok) : 0), 0)
-        const sMax = qs.reduce((sum, q) => sum + dokWeight(q.dok), 0)
+        const sCorrect = qs.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
+        const sMax = qs.reduce((sum, q) => sum + qWeight(config, q), 0)
         return (
           <div key={sKey} className="mb-5">
             <div className="flex items-center justify-between mb-2">
@@ -770,29 +860,47 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                 return (
                   <div key={q.qNum} id={`q-row-${q.qNum}`}
                     onClick={() => setFocusedQ(q.qNum)}
-                    className={`flex items-center gap-3 px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-blue-50/30' : ''}`}>
-                    <span className={`w-5 text-[11px] text-right font-mono ${q.dok >= 2 ? 'text-amber-600 font-bold' : isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
-                    <div className="flex gap-1">
-                      {['a', 'b', 'c', 'd'].map(letter => {
-                        const isChosen = chosen === letter
-                        const isCorrectAnswer = q.correct === letter
-                        let bg = 'bg-white border-gray-200 hover:border-navy/40'
-                        if (isChosen && isCorrect) bg = 'bg-green-500 border-green-500 text-white'
-                        else if (isChosen && !isCorrect) bg = 'bg-red-400 border-red-400 text-white'
-                        else if (chosen && isCorrectAnswer) bg = 'bg-green-100 border-green-300 text-green-700'
-                        return (
-                          <button key={letter} onClick={(e) => { e.stopPropagation(); setAnswer(q.qNum, isChosen ? '' : letter); setFocusedQ(q.qNum) }}
-                            className={`w-7 h-7 rounded-full text-[11px] font-bold border-2 transition-all ${bg}`}>
-                            {letter.toUpperCase()}
-                          </button>
-                        )
-                      })}
+                    className={`px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-blue-50/30' : ''}`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`w-5 text-[11px] text-right font-mono ${q.dok >= 2 && config.dokWeighted ? 'text-amber-600 font-bold' : isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
+                      <div className="flex gap-1">
+                        {(q.choices ? q.choices.map((_, i) => String.fromCharCode(97 + i)) : ['a', 'b', 'c', 'd']).map(letter => {
+                          const isChosen = chosen === letter
+                          const isCorrectAnswer = q.correct === letter
+                          let bg = 'bg-white border-gray-200 hover:border-navy/40'
+                          if (isChosen && isCorrect) bg = 'bg-green-500 border-green-500 text-white'
+                          else if (isChosen && !isCorrect) bg = 'bg-red-400 border-red-400 text-white'
+                          else if (chosen && isCorrectAnswer) bg = 'bg-green-100 border-green-300 text-green-700'
+                          return (
+                            <button key={letter} onClick={(e) => { e.stopPropagation(); setAnswer(q.qNum, isChosen ? '' : letter); setFocusedQ(q.qNum) }}
+                              className={`w-7 h-7 rounded-full text-[11px] font-bold border-2 transition-all ${bg}`}>
+                              {letter.toUpperCase()}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <span className="flex-1 text-[10px] text-text-tertiary truncate">{q.text}</span>
+                      <StandardBadge code={q.standard} description={q.standardDesc} />
+                      {chosen && (isCorrect
+                        ? <Check size={12} className="text-green-500" />
+                        : <X size={12} className="text-red-400" />
+                      )}
                     </div>
-                    <span className="flex-1 text-[10px] text-text-tertiary truncate">{q.text}</span>
-                    <StandardBadge code={q.standard} description={q.standardDesc} />
-                    {chosen && (isCorrect
-                      ? <Check size={12} className="text-green-500" />
-                      : <X size={12} className="text-red-400" />
+                    {/* The options as printed on the student page. Shown on the
+                        focused row so a marker can check what was circled
+                        without reaching for the paper. */}
+                    {isFocused && q.choices && (
+                      <div className="mt-1.5 ml-8 pl-2 border-l-2 border-navy/15 space-y-0.5">
+                        <p className="text-[10px] text-text-secondary font-medium">{q.text}</p>
+                        {q.choices.map((choice, i) => {
+                          const letter = String.fromCharCode(97 + i)
+                          return (
+                            <p key={letter} className={`text-[10px] ${q.correct === letter ? 'text-green-700 font-semibold' : 'text-text-tertiary'}`}>
+                              {letter}. {choice}
+                            </p>
+                          )
+                        })}
+                      </div>
                     )}
                   </div>
                 )
@@ -804,6 +912,12 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
 
       {/* Writing Rubric */}
       <div className="mb-6">
+        {config.writingPrompt && (
+          <div className="mb-2 bg-surface-alt/60 border border-border rounded-lg px-3 py-2">
+            <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-0.5">Item {config.questions.length + 1} prompt</p>
+            <p className="text-[11px] text-text-primary">{config.writingPrompt}</p>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <h4 className="text-[13px] font-semibold text-navy">Writing Rubric</h4>
@@ -817,7 +931,47 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         <div className="border border-border rounded-lg overflow-hidden">
           {config.writingCategories.map((cat, ci) => {
             const val = sc.writing[cat.key] || 0
-            const descriptors = getRubricDescriptors(cat.key, config.grade)
+            const descriptors = getRubricDescriptors(cat.key, config)
+
+            // A checklist category is scored by ticking independent features,
+            // so it gets boxes instead of a 0..max ladder.
+            if (cat.kind === 'checklist' && cat.checklist) {
+              const checked = new Set(sc.checklist?.[cat.key] || [])
+              return (
+                <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                  <div className="flex items-start gap-3 px-3 py-2">
+                    <div className="w-40 shrink-0">
+                      <div className="text-[12px] font-medium">{cat.label}</div>
+                      <div className="text-[9px] text-text-tertiary">{cat.standard} -- {cat.standardDesc}</div>
+                      <div className="text-[9px] text-amber-700 mt-0.5 font-semibold">Checklist -- tick what is present</div>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      {cat.checklist.map(box => {
+                        const on = checked.has(box.key)
+                        return (
+                          <button key={box.key} onClick={() => toggleChecklistBox(cat.key, box.key)}
+                            className={`w-full flex items-start gap-2 text-left rounded-lg px-2.5 py-1.5 border transition-all ${
+                              on ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:border-navy/40'
+                            }`}>
+                            <span className={`w-4 h-4 mt-0.5 rounded border-2 shrink-0 flex items-center justify-center ${
+                              on ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                            }`}>
+                              {on && <Check size={11} className="text-white" />}
+                            </span>
+                            <span>
+                              <span className="text-[11px] font-semibold text-text-primary">{box.label}</span>
+                              <span className="block text-[9px] text-text-tertiary leading-snug">{box.desc}</span>
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <span className="text-[12px] font-bold text-navy ml-2 shrink-0">{val}/{cat.max}</span>
+                  </div>
+                </div>
+              )
+            }
+
             return (
               <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                 <div className="flex items-center gap-3 px-3 py-2">
@@ -854,7 +1008,43 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             )
           })}
         </div>
+        {showRubricGuide && config.writingNotes && config.writingNotes.length > 0 && (
+          <ul className="mt-2 text-[10px] text-text-tertiary space-y-1 list-disc pl-4">
+            {config.writingNotes.map((n, i) => <li key={i}>{n}</li>)}
+          </ul>
+        )}
       </div>
+
+      {/* Reference material -- what the students were given, so a marker never
+          has to go and find the paper to settle a query. */}
+      {(config.listeningScript || (config.readingPassages && config.readingPassages.length > 0)) && (
+        <details className="mb-6 border border-border rounded-lg overflow-hidden">
+          <summary className="px-3 py-2 text-[12px] font-semibold text-navy cursor-pointer bg-surface-alt/60 select-none">
+            Test reference: listening script and reading passages
+          </summary>
+          <div className="px-3 py-3 space-y-3">
+            {config.scoringNote && (
+              <p className="text-[10px] text-amber-700 bg-amber-50/60 border border-amber-100 rounded px-2.5 py-1.5">{config.scoringNote}</p>
+            )}
+            {config.listeningScript && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Listening script</p>
+                <p className="text-[11px] text-text-primary leading-relaxed">{config.listeningScript.script}</p>
+                <p className="text-[11px] text-text-tertiary italic mt-1">{config.listeningScript.closingLine}</p>
+                <p className="text-[10px] text-text-tertiary mt-1.5">{config.listeningScript.instructions}</p>
+              </div>
+            )}
+            {config.readingPassages?.map(p => (
+              <div key={p.key}>
+                <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">
+                  {p.title || 'Reading passage'} <span className="normal-case tracking-normal">(items {p.range[0]}&ndash;{p.range[1]})</span>
+                </p>
+                <p className="text-[11px] text-text-primary leading-relaxed">{p.text}</p>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
     </div>
   )
 }
@@ -999,7 +1189,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
                 <div className="px-6 py-3 bg-blue-50/50 border-b border-border text-[11px]">
                   <div className="grid grid-cols-2 gap-x-8 gap-y-1">
                     <div><span className="text-text-tertiary">Standard:</span> <span className="font-medium">{q.standard} -- {q.standardDesc}</span></div>
-                    <div><span className="text-text-tertiary">DOK Level:</span> <span className="font-medium">{q.dok} ({dokWeight(q.dok)}pt)</span></div>
+                    <div><span className="text-text-tertiary">DOK Level:</span> <span className="font-medium">{q.dok} ({qWeight(config, q)}pt)</span></div>
                     <div><span className="text-text-tertiary">Correct Answer:</span> <span className="font-bold text-green-700">{q.correct.toUpperCase()}</span></div>
                     <div><span className="text-text-tertiary">Students answered:</span> <span className="font-medium">{item.total}</span></div>
                     {disc && <div><span className="text-text-tertiary">Discrimination (r_pb):</span> <span className={`font-bold ${disc.rpb < 0 ? 'text-red-600' : disc.rpb > 0.2 ? 'text-green-600' : 'text-amber-600'}`}>{disc.rpb.toFixed(3)}</span></div>}
@@ -1149,6 +1339,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           map[row.student_id] = {
             answers: row.raw_scores.written_answers || {},
             writing: row.raw_scores.written_rubric || {},
+            checklist: row.raw_scores.written_checklist || {},
           }
         }
       })
@@ -1220,6 +1411,28 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
   }, [student])
 
   // Set writing score
+  // Checklist categories score by count of checked boxes, not by a ladder row.
+  // The boxes are independent: checking a later one does not imply the earlier.
+  const toggleChecklistBox = useCallback((catKey: string, boxKey: string) => {
+    if (!student) return
+    setScores(prev => {
+      const cur = prev[student.id] || { answers: {}, writing: {} }
+      const all = { ...(cur.checklist || {}) }
+      const checked = new Set(all[catKey] || [])
+      if (checked.has(boxKey)) checked.delete(boxKey)
+      else checked.add(boxKey)
+      all[catKey] = Array.from(checked)
+      return {
+        ...prev,
+        [student.id]: {
+          ...cur,
+          checklist: all,
+          writing: { ...(cur.writing || {}), [catKey]: checked.size },
+        },
+      }
+    })
+  }, [student])
+
   const setWritingScore = useCallback((key: string, val: number) => {
     if (!student) return
     setScores(prev => ({
@@ -1246,7 +1459,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       if (existing) {
         const raw = { ...(existing.raw_scores || {}) }
         const calc = { ...(existing.calculated_metrics || {}) }
-        delete raw.written_answers; delete raw.written_rubric; delete raw.written_mc; delete raw.writing
+        delete raw.written_answers; delete raw.written_rubric; delete raw.written_checklist; delete raw.written_mc; delete raw.writing
         delete calc.written_mc_total; delete calc.written_mc_max; delete calc.written_mc_pct
         delete calc.writing_total; delete calc.writing_max; delete calc.written_domain_scores; delete calc.written_standards_mastery
         // DELETE first to bypass merge trigger, then re-insert oral-only data if any
@@ -1267,7 +1480,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
   // Count weighted score for current student (DOK1=1pt, DOK2+=2pt)
   const mcCorrect = useMemo(() => {
     if (!config) return 0
-    return config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? dokWeight(q.dok) : 0), 0)
+    return config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
   }, [sc, config])
 
   const writingTotal = useMemo(() => {
@@ -1327,16 +1540,16 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     let errors = 0
     for (const stu of dirty) {
       const sc = currentScores[stu.id]
-      const mcTotal = config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? dokWeight(q.dok) : 0), 0)
+      const mcTotal = config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
       const wTotal = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
       const domainScores: Record<string, { correct: number; total: number }> = {}
-      config.questions.forEach(q => { if (sc.answers[q.qNum]) { const w = dokWeight(q.dok); if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }; domainScores[q.domain].total += w; if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct += w } })
+      config.questions.forEach(q => { if (sc.answers[q.qNum]) { const w = qWeight(config, q); if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }; domainScores[q.domain].total += w; if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct += w } })
       const standardsMastery: Record<string, { met: number; total: number }> = {}
-      config.questions.forEach(q => { if (sc.answers[q.qNum]) { const w = dokWeight(q.dok); if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }; standardsMastery[q.standard].total += w; if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met += w } })
+      config.questions.forEach(q => { if (sc.answers[q.qNum]) { const w = qWeight(config, q); if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }; standardsMastery[q.standard].total += w; if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met += w } })
       // Upsert with only written keys — DB trigger merges with existing oral keys
       const { error } = await supabase.from('level_test_scores').upsert({
         level_test_id: levelTest.id, student_id: stu.id,
-        raw_scores: { written_answers: sc.answers, written_rubric: sc.writing, written_mc: mcTotal, writing: wTotal },
+        raw_scores: { written_answers: sc.answers, written_rubric: sc.writing, written_checklist: sc.checklist || {}, written_mc: mcTotal, writing: wTotal },
         calculated_metrics: { written_mc_total: mcTotal, written_mc_max: config.totalMC, written_mc_pct: Math.round((mcTotal / config.totalMC) * 100), writing_total: wTotal, writing_max: config.writingMax, written_domain_scores: domainScores, written_standards_mastery: standardsMastery },
         previous_class: students.find(s => s.id === stu.id)?.english_class || null, entered_by: currentTeacher?.id || null,
       }, { onConflict: 'level_test_id,student_id' })
@@ -1386,14 +1599,14 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
 
     for (const stu of toSave) {
       const sc = scores[stu.id]
-      const mcTotal = config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? dokWeight(q.dok) : 0), 0)
+      const mcTotal = config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
       const wTotal = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
 
       // Domain breakdown (weighted)
       const domainScores: Record<string, { correct: number; total: number }> = {}
       config.questions.forEach(q => {
         if (sc.answers[q.qNum]) {
-          const w = dokWeight(q.dok)
+          const w = qWeight(config, q)
           if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }
           domainScores[q.domain].total += w
           if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct += w
@@ -1404,7 +1617,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       const standardsMastery: Record<string, { met: number; total: number }> = {}
       config.questions.forEach(q => {
         if (sc.answers[q.qNum]) {
-          const w = dokWeight(q.dok)
+          const w = qWeight(config, q)
           if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }
           standardsMastery[q.standard].total += w
           if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met += w
@@ -1418,6 +1631,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         raw_scores: {
           written_answers: sc.answers,
           written_rubric: sc.writing,
+          written_checklist: sc.checklist || {},
           written_mc: mcTotal,
           writing: wTotal,
         },
@@ -1542,6 +1756,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
             writingTotal={writingTotal}
             setAnswer={setAnswer}
             setWritingScore={setWritingScore}
+            toggleChecklistBox={toggleChecklistBox}
             clearStudent={clearStudent}
             studentHasData={student ? studentHasData(student.id) : false}
             selectedIdx={selectedIdx}

@@ -9,12 +9,21 @@ import {
   Save, Loader2, ChevronLeft, ChevronRight, BookOpen, Clock,
   CheckCircle2, Circle, X, Info, RotateCcw, Play, Square, Mic, Trash2, Ban
 } from 'lucide-react'
+import { g2ContentForTest, G2Content } from './grade2Content'
 
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
 
-type PassageLevel = 'A' | 'B' | 'C' | 'D' | 'E'
+// Legacy passages run A-E. The Fall 2026 Grade 2 test adds F, so anything that
+// indexes a passage map is keyed by the wider union and the level list itself
+// comes from the resolved content.
+type PassageLevel = 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
+
+/** A phonics row as the grid renders it, whichever version supplied it. */
+interface PhonicsRowView { label: string; words: string[]; max: number }
+/** A sentence as the grid renders it. `focus` is the phonics pattern shown. */
+interface SentenceView { text: string; max: number; focus: string }
 
 interface PassageData {
   title: string
@@ -28,14 +37,45 @@ interface CompQuestion {
   q: string
   expected: string
   dok: string
+  /** Per-score anchors, index = score. Supplied from Fall 2026 on. */
+  anchors?: string[]
 }
 
-interface GradeTestConfig {
+/** The per-grade passage data baked into this file (the legacy test). */
+interface GradeTestData {
   hasPhonics: boolean
   hasSentences: boolean
-  passages: Record<PassageLevel, PassageData>
-  comprehension: Record<PassageLevel, CompQuestion[]>
+  /** Partial: the legacy configs stop at E, the Fall 2026 Grade 2 test adds F. */
+  passages: Partial<Record<PassageLevel, PassageData>>
+  comprehension: Partial<Record<PassageLevel, CompQuestion[]>>
   naepLevels: PassageLevel[] // which levels get NAEP rating
+}
+
+/**
+ * What the screen actually renders against. Built by `resolveConfig` from
+ * either the legacy data above or an authored Grade 2 content version, so the
+ * component never branches on which test it is scoring.
+ */
+interface GradeTestConfig extends GradeTestData {
+  /** Levels offered on the selector, in order. */
+  levels: PassageLevel[]
+  /** Highest score a single comprehension question can earn. */
+  compScoreMax: number
+  /** Total comprehension points available. */
+  compMax: number
+  phonicsRows: PhonicsRowView[]
+  phonicsMax: number
+  sentences: SentenceView[]
+  sentenceMax: number
+  /** Fall 2026 Grade 2 only; legacy tests have no syllable component. */
+  syllables: { key: string; word: string; answer: number }[] | null
+  syllableMax: number
+  /** Passage difficulty weights, keyed by level. */
+  passageMultipliers: Record<string, number>
+  /** Teacher-facing scripts, where the content version supplies them. */
+  scripts: { phonics?: string; syllables?: string; sentences?: string; reading?: string }
+  /** Null on legacy tests, which are scored against this file's constants. */
+  contentLabel: string | null
 }
 
 // Scores stored per student
@@ -194,6 +234,39 @@ const CCSS_STANDARDS: Record<number, CcssStandard[]> = {
   ],
 }
 
+/**
+ * Standards mastery for a test with authored content.
+ *
+ * The legacy thresholds below are calibrated to the old scales -- comprehension
+ * out of 3 per question, phonics rows out of 5. Reading a Fall 2026 score
+ * against them would silently move the bar (a comprehension threshold of 2 is
+ * moderate out of 3 but full credit out of 2), so a version that ships its own
+ * baseline is scored against that instead.
+ */
+function calculateG2Standards(
+  content: G2Content,
+  sc: OralScores,
+  config: GradeTestConfig,
+): { code: string; met: boolean; score: number; threshold: number }[] {
+  const compSkipped = !!sc.comp_not_administered
+  const num = (v: unknown) => (typeof v === 'number' ? v : 0)
+  const totals: Record<string, number | null> = {
+    o_g2_phonics: config.phonicsRows.reduce((a, _, i) => a + num(sc[`phonics_row${i + 1}`]), 0),
+    o_g2_syllables: config.syllables ? config.syllables.reduce((a, w) => a + num(sc[w.key]), 0) : 0,
+    o_g2_sentences: config.sentences.reduce((a, _, i) => a + num(sc[`sent_${i + 1}`]), 0),
+    // Comprehension never asked cannot show mastery either way.
+    o_g2_comp: compSkipped ? null : [sc.comp_1, sc.comp_2, sc.comp_3, sc.comp_4].reduce((a: number, b) => a + num(b), 0),
+    o_g2_naep: num(sc.naep),
+  }
+  return content.standards
+    .filter(std => std.testSection in totals)
+    .filter(std => totals[std.testSection] !== null)
+    .map(std => {
+      const score = totals[std.testSection] as number
+      return { code: std.code, met: score >= std.masteryThreshold, score, threshold: std.masteryThreshold }
+    })
+}
+
 // Calculate standards mastery from scores
 function calculateStandards(grade: number, sc: OralScores): { code: string; met: boolean; score: number; threshold: number }[] {
   const standards = CCSS_STANDARDS[grade] || []
@@ -244,7 +317,7 @@ const SENTENCES = [
 // PASSAGE DATA — ALL GRADES
 // ============================================================================
 
-const GRADE_CONFIGS: Record<number, GradeTestConfig> = {
+const GRADE_CONFIGS: Record<number, GradeTestData> = {
   2: {
     hasPhonics: true,
     hasSentences: true,
@@ -507,6 +580,91 @@ const GRADE_CONFIGS: Record<number, GradeTestConfig> = {
 }
 
 // ============================================================================
+// CONTENT RESOLUTION
+// ============================================================================
+// A Grade 2 test whose academic_year/semester matches an authored content
+// version is scored against that version. Everything else -- grades 3-5, and
+// Grade 2 tests predating the Fall 2026 rewrite -- keeps the constants above,
+// so historical results are read against exactly the content they were sat on.
+
+function resolveConfig(grade: number, g2: G2Content | null): GradeTestConfig | null {
+  const data = GRADE_CONFIGS[grade]
+
+  if (g2) {
+    const r = g2.oral.reading
+    const passages: Partial<Record<PassageLevel, PassageData>> = {}
+    const comprehension: Partial<Record<PassageLevel, CompQuestion[]>> = {}
+    const levels = Object.keys(r.passages) as PassageLevel[]
+    levels.forEach(lv => {
+      const p = r.passages[lv as keyof typeof r.passages]
+      passages[lv] = {
+        title: p.title,
+        text: p.text,
+        wordCount: p.wordCount,
+        // This test weights passages by its own scale rather than by Lexile,
+        // so the band is shown as the weight instead of a fabricated level.
+        lexile: `×${p.passageWeight.toFixed(1)}`,
+      }
+      comprehension[lv] = r.compQuestions[lv as keyof typeof r.compQuestions].map(cq => ({
+        q: cq.q,
+        dok: cq.dok,
+        // The guide's 2-point anchor is what a full-credit answer looks like.
+        expected: cq.anchors[2],
+        anchors: cq.anchors,
+      }))
+    })
+    const multipliers: Record<string, number> = {}
+    levels.forEach(lv => { multipliers[lv] = r.passages[lv as keyof typeof r.passages].passageWeight })
+
+    return {
+      hasPhonics: true,
+      hasSentences: true,
+      passages,
+      comprehension,
+      naepLevels: levels,
+      levels,
+      compScoreMax: 2,
+      compMax: r.compMax,
+      phonicsRows: g2.oral.phonics.rows.map(row => ({
+        label: `${row.label}: ${row.focus}`,
+        words: row.words,
+        max: row.max,
+      })),
+      phonicsMax: g2.oral.phonics.max,
+      sentences: g2.oral.sentences.items.map(s => ({ text: s.text, max: s.max, focus: s.focus })),
+      sentenceMax: g2.oral.sentences.max,
+      syllables: g2.oral.syllables.words.map(w => ({ key: w.key, word: w.word, answer: w.answer })),
+      syllableMax: g2.oral.syllables.max,
+      passageMultipliers: multipliers,
+      scripts: {
+        phonics: g2.oral.phonics.say,
+        syllables: g2.oral.syllables.say,
+        sentences: g2.oral.sentences.say,
+        reading: r.say,
+      },
+      contentLabel: g2.label,
+    }
+  }
+
+  if (!data) return null
+  return {
+    ...data,
+    levels: ['A', 'B', 'C', 'D', 'E'],
+    compScoreMax: 3,
+    compMax: 15,
+    phonicsRows: PHONICS_ROWS.map(r => ({ label: r.label, words: r.words, max: 5 })),
+    phonicsMax: 25,
+    sentences: SENTENCES.map(s => ({ text: s.text, max: s.max, focus: s.level })),
+    sentenceMax: SENTENCES.reduce((a, s) => a + s.max, 0),
+    syllables: null,
+    syllableMax: 0,
+    passageMultipliers: PASSAGE_MULTIPLIERS,
+    scripts: {},
+    contentLabel: null,
+  }
+}
+
+// ============================================================================
 // PASSAGE READER MODAL
 // ============================================================================
 
@@ -723,10 +881,14 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
 // CLICKABLE PHONICS GRID (Grade 2 - like Grade 1 Level B)
 // ============================================================================
 
-function PhonicsClickableGrid({ sc, studentId, updateScore }: {
+function PhonicsClickableGrid({ sc, studentId, updateScore, rows, max, stoppingRule }: {
   sc: OralScores
   studentId: string
   updateScore: (sid: string, key: string, val: number | string | null) => void
+  rows: PhonicsRowView[]
+  max: number
+  /** Present from Fall 2026 on; absent means the legacy per-row ceiling rule. */
+  stoppingRule?: string
 }) {
   const [wordStatus, setWordStatus] = useState<Record<string, boolean>>({})
   const [initialized, setInitialized] = useState(false)
@@ -734,7 +896,7 @@ function PhonicsClickableGrid({ sc, studentId, updateScore }: {
   useEffect(() => {
     if (!initialized) {
       const ws: Record<string, boolean> = {}
-      PHONICS_ROWS.forEach((row, ri) => {
+      rows.forEach((row, ri) => {
         const saved = sc[`phonics_row${ri + 1}` as keyof OralScores] as number | null | undefined
         if (saved != null && saved > 0) {
           row.words.forEach((_, wi) => {
@@ -745,14 +907,14 @@ function PhonicsClickableGrid({ sc, studentId, updateScore }: {
       setWordStatus(ws)
       setInitialized(true)
     }
-  }, [sc, initialized])
+  }, [sc, initialized, rows])
 
   const toggle = (rowIdx: number, wordIdx: number) => {
     const key = `${rowIdx}-${wordIdx}`
     setWordStatus(prev => {
       const next = { ...prev }
       if (next[key]) { delete next[key] } else { next[key] = true }
-      const rowCount = PHONICS_ROWS[rowIdx].words.reduce((acc, _, wi) => {
+      const rowCount = rows[rowIdx].words.reduce((acc, _, wi) => {
         return acc + (next[`${rowIdx}-${wi}`] ? 1 : 0)
       }, 0)
       updateScore(studentId, `phonics_row${rowIdx + 1}`, rowCount)
@@ -762,21 +924,21 @@ function PhonicsClickableGrid({ sc, studentId, updateScore }: {
   }
 
   const getRowCount = (ri: number) => {
-    return PHONICS_ROWS[ri].words.reduce((acc, _, wi) => acc + (wordStatus[`${ri}-${wi}`] ? 1 : 0), 0)
+    return rows[ri].words.reduce((acc, _, wi) => acc + (wordStatus[`${ri}-${wi}`] ? 1 : 0), 0)
   }
 
-  const totalCorrect = PHONICS_ROWS.reduce((acc, _, ri) => acc + getRowCount(ri), 0)
+  const totalCorrect = rows.reduce((acc, _, ri) => acc + getRowCount(ri), 0)
 
   return (
     <div className="space-y-4">
-      {PHONICS_ROWS.map((row, ri) => {
+      {rows.map((row, ri) => {
         const rowCount = getRowCount(ri)
         return (
           <div key={ri}>
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[11px] font-semibold text-text-secondary">{row.label}</span>
               <span className={`text-[11px] font-bold ${rowCount >= 4 ? 'text-green-600' : rowCount >= 2 ? 'text-amber-600' : 'text-text-tertiary'}`}>
-                {rowCount}/5
+                {rowCount}/{row.max}
               </span>
             </div>
             <div className="flex gap-2">
@@ -793,28 +955,88 @@ function PhonicsClickableGrid({ sc, studentId, updateScore }: {
                 )
               })}
             </div>
-            {rowCount <= 1 && initialized && PHONICS_ROWS[ri].words.some((_, wi) => wordStatus[`${ri}-${wi}`] !== undefined) && (
+            {!stoppingRule && rowCount <= 1 && initialized && rows[ri].words.some((_, wi) => wordStatus[`${ri}-${wi}`] !== undefined) && (
               <p className="text-[9px] text-amber-600 mt-1 italic">Stopping rule: 0-1 correct -- this is the ceiling. Stop here.</p>
+            )}
+            {/* Fall 2026 stops on two consecutive rows missed outright, so the
+                warning belongs on the second such row, not on any weak one. */}
+            {stoppingRule && ri > 0 && rowCount === 0 && getRowCount(ri - 1) === 0 && initialized && (
+              <p className="text-[9px] text-amber-600 mt-1 italic">Stopping rule met: all 5 missed on two rows in a row. Stop here and move on.</p>
             )}
           </div>
         )
       })}
+      {stoppingRule && (
+        <p className="text-[10px] text-text-tertiary italic">Stopping rule: {stoppingRule}</p>
+      )}
       <div className="flex items-center justify-between pt-3 border-t border-border">
-        <span className="text-[12px] font-semibold text-navy">Total: {totalCorrect} / 25</span>
+        <span className="text-[12px] font-semibold text-navy">Total: {totalCorrect} / {max}</span>
         <div className="flex gap-2">
           <button onClick={() => {
             const ws: Record<string, boolean> = {}
-            PHONICS_ROWS.forEach((row, ri) => {
+            rows.forEach((row, ri) => {
               row.words.forEach((_, wi) => { ws[`${ri}-${wi}`] = true })
-              updateScore(studentId, `phonics_row${ri + 1}`, 5)
+              updateScore(studentId, `phonics_row${ri + 1}`, row.max)
             })
             setWordStatus(ws); setInitialized(true)
           }} className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
           <button onClick={() => {
             setWordStatus({})
-            PHONICS_ROWS.forEach((_, ri) => { updateScore(studentId, `phonics_row${ri + 1}`, 0) })
+            rows.forEach((_, ri) => { updateScore(studentId, `phonics_row${ri + 1}`, 0) })
             setInitialized(true)
           }} className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// SYLLABLE COUNTING (Fall 2026 Grade 2 onward)
+// ============================================================================
+// Scored 0/1 on the count alone. The teacher may read the word for the student
+// -- reading it is not what is being probed here.
+
+function SyllableGrid({ sc, studentId, updateScore, words, max }: {
+  sc: OralScores
+  studentId: string
+  updateScore: (sid: string, key: string, val: number | string | null) => void
+  words: { key: string; word: string; answer: number }[]
+  max: number
+}) {
+  const total = words.reduce((acc, w) => acc + ((sc[w.key] as number) || 0), 0)
+  const anyEntered = words.some(w => sc[w.key] != null)
+
+  return (
+    <div className="space-y-2">
+      {words.map(w => {
+        const val = sc[w.key] as number | null | undefined
+        return (
+          <div key={w.key} className="flex items-center gap-3 bg-surface-alt/50 rounded-lg px-4 py-2.5">
+            <span className="text-[16px] font-serif font-bold text-gray-800 flex-1">{w.word}</span>
+            <span className="text-[10px] text-text-tertiary shrink-0">answer: {w.answer}</span>
+            <div className="flex gap-1 shrink-0">
+              {[0, 1].map(score => (
+                <button key={score} onClick={() => updateScore(studentId, w.key, val === score ? null : score)}
+                  className={`w-9 h-9 rounded-lg text-[12px] font-bold transition-all ${
+                    val === score
+                      ? score === 0 ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+                      : 'bg-surface border border-border text-text-secondary hover:bg-surface-alt'
+                  }`} style={{ touchAction: 'manipulation' }}>
+                  {score}
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+      <div className="flex items-center justify-between pt-3 border-t border-border">
+        <span className="text-[12px] font-semibold text-navy">Total: {anyEntered ? total : '--'} / {max}</span>
+        <div className="flex gap-2">
+          <button onClick={() => words.forEach(w => updateScore(studentId, w.key, 1))}
+            className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          <button onClick={() => words.forEach(w => updateScore(studentId, w.key, null))}
+            className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
       </div>
     </div>
@@ -825,10 +1047,11 @@ function PhonicsClickableGrid({ sc, studentId, updateScore }: {
 // CLICKABLE SENTENCE GRID (Grade 2 - like Grade 1 Level C)
 // ============================================================================
 
-function SentenceClickableGrid({ sc, studentId, updateScore }: {
+function SentenceClickableGrid({ sc, studentId, updateScore, sentences }: {
   sc: OralScores
   studentId: string
   updateScore: (sid: string, key: string, val: number | string | null) => void
+  sentences: SentenceView[]
 }) {
   const [wordStatus, setWordStatus] = useState<Record<string, boolean>>({})
   const [initialized, setInitialized] = useState(false)
@@ -836,7 +1059,7 @@ function SentenceClickableGrid({ sc, studentId, updateScore }: {
   useEffect(() => {
     if (!initialized) {
       const ws: Record<string, boolean> = {}
-      SENTENCES.forEach((sent, si) => {
+      sentences.forEach((sent, si) => {
         const saved = sc[`sent_${si + 1}` as keyof OralScores] as number | null | undefined
         if (saved != null && saved > 0) {
           const words = sent.text.split(/\s+/)
@@ -848,14 +1071,14 @@ function SentenceClickableGrid({ sc, studentId, updateScore }: {
       setWordStatus(ws)
       setInitialized(true)
     }
-  }, [sc, initialized])
+  }, [sc, initialized, sentences])
 
   const toggle = (sentIdx: number, wordIdx: number) => {
     const key = `${sentIdx}-${wordIdx}`
     setWordStatus(prev => {
       const next = { ...prev }
       if (next[key]) { delete next[key] } else { next[key] = true }
-      const words = SENTENCES[sentIdx].text.split(/\s+/)
+      const words = sentences[sentIdx].text.split(/\s+/)
       const sentCount = words.reduce((acc, _, wi) => acc + (next[`${sentIdx}-${wi}`] ? 1 : 0), 0)
       updateScore(studentId, `sent_${sentIdx + 1}`, sentCount)
       return next
@@ -864,16 +1087,16 @@ function SentenceClickableGrid({ sc, studentId, updateScore }: {
   }
 
   const getSentCount = (si: number) => {
-    const words = SENTENCES[si].text.split(/\s+/)
+    const words = sentences[si].text.split(/\s+/)
     return words.reduce((acc, _, wi) => acc + (wordStatus[`${si}-${wi}`] ? 1 : 0), 0)
   }
 
-  const totalCorrect = SENTENCES.reduce((acc, _, si) => acc + getSentCount(si), 0)
-  const totalMax = SENTENCES.reduce((acc, s) => acc + s.max, 0)
+  const totalCorrect = sentences.reduce((acc, _, si) => acc + getSentCount(si), 0)
+  const totalMax = sentences.reduce((acc, s) => acc + s.max, 0)
 
   return (
     <div className="space-y-4">
-      {SENTENCES.map((sent, si) => {
+      {sentences.map((sent, si) => {
         const words = sent.text.split(/\s+/)
         const sentCount = getSentCount(si)
         return (
@@ -881,7 +1104,7 @@ function SentenceClickableGrid({ sc, studentId, updateScore }: {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-navy/10 text-navy text-[10px] font-bold flex items-center justify-center shrink-0">{si + 1}</span>
-                <span className="text-[9px] text-text-tertiary">{sent.level}</span>
+                <span className="text-[9px] text-text-tertiary">{sent.focus}</span>
               </div>
               <span className={`text-[11px] font-bold ${sentCount >= sent.max - 1 ? 'text-green-600' : sentCount >= Math.floor(sent.max / 2) ? 'text-amber-600' : 'text-text-tertiary'}`}>
                 {sentCount}/{sent.max}
@@ -909,7 +1132,7 @@ function SentenceClickableGrid({ sc, studentId, updateScore }: {
         <div className="flex gap-2">
           <button onClick={() => {
             const ws: Record<string, boolean> = {}
-            SENTENCES.forEach((sent, si) => {
+            sentences.forEach((sent, si) => {
               const words = sent.text.split(/\s+/)
               words.forEach((_, wi) => { ws[`${si}-${wi}`] = true })
               updateScore(studentId, `sent_${si + 1}`, sent.max)
@@ -918,7 +1141,7 @@ function SentenceClickableGrid({ sc, studentId, updateScore }: {
           }} className="text-[10px] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
           <button onClick={() => {
             setWordStatus({})
-            SENTENCES.forEach((_, si) => { updateScore(studentId, `sent_${si + 1}`, 0) })
+            sentences.forEach((_, si) => { updateScore(studentId, `sent_${si + 1}`, 0) })
             setInitialized(true)
           }} className="text-[10px] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
@@ -946,17 +1169,34 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const [showPassageReader, setShowPassageReader] = useState(false)
 
   const grade = typeof levelTest.grade === 'string' ? parseInt(levelTest.grade) : levelTest.grade
-  const config = GRADE_CONFIGS[grade]
+  // Only Grade 2 has authored content versions; every other grade resolves to
+  // the legacy constants in this file.
+  const g2Content = useMemo(
+    () => (grade === 2 ? g2ContentForTest(levelTest as any) : null),
+    [grade, levelTest]
+  )
+  const config = useMemo(() => resolveConfig(grade, g2Content), [grade, g2Content])
 
-  const [activeSection, setActiveSection] = useState<'phonics' | 'sentences' | 'passage'>(config?.hasPhonics ? 'phonics' : 'passage')
+  const [activeSection, setActiveSection] = useState<'phonics' | 'syllables' | 'sentences' | 'passage'>(config?.hasPhonics ? 'phonics' : 'passage')
 
   // Keys that belong to oral scoring — used to strip written keys on load
+  // Everything that belongs to the current passage and is cleared when the
+  // teacher switches level. Also the tail of the oral key list below -- the two
+  // were maintained separately, and `comp_not_administered` ended up in this
+  // one but not that one, so the "not administered" mark was written to the
+  // database and then dropped on the next load. Deriving one from the other
+  // means a new field cannot go missing from persistence again.
+  const PASSAGE_FIELDS = [
+    'orf_words_read', 'orf_errors', 'orf_time_seconds', 'naep',
+    'comp_1', 'comp_2', 'comp_3', 'comp_4', 'comp_5', 'comp_not_administered', 'notes',
+  ]
+
   const ORAL_RAW_KEYS = new Set([
     'phonics_row1','phonics_row2','phonics_row3','phonics_row4','phonics_row5',
+    'syllable_1','syllable_2','syllable_3','syllable_4','syllable_5',
     'sent_1','sent_2','sent_3','sent_4','sent_5',
-    'passage_level','orf_words_read','orf_errors','orf_time_seconds','orf_cwpm','orf_accuracy',
-    'naep','comp_1','comp_2','comp_3','comp_4','comp_5',
-    'passages_attempted','notes',
+    'passage_level','orf_cwpm','orf_accuracy','passages_attempted',
+    ...PASSAGE_FIELDS,
   ])
 
   // Lock to prevent overlapping async saves
@@ -1014,8 +1254,6 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   }, [students, scores])
 
   // Fields that belong to the current passage and should be cleared on passage switch
-  const PASSAGE_FIELDS = ['orf_words_read', 'orf_errors', 'orf_time_seconds', 'naep', 'comp_1', 'comp_2', 'comp_3', 'comp_4', 'comp_5', 'comp_not_administered', 'notes']
-
   const updateScore = useCallback((sid: string, key: string, val: number | string | boolean | null) => {
     setScores(prev => {
       const current = prev[sid] || {}
@@ -1045,7 +1283,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     let errors = 0
     for (const sid of toSave) {
       const raw = scores[sid] || {}
-      const standards = calculateStandards(grade, raw)
+      const standards = g2Content
+        ? calculateG2Standards(g2Content, raw, config)
+        : calculateStandards(grade, raw)
       const wordsRead = (raw.orf_words_read as number) || 0
       const orfErrors = (raw.orf_errors as number) || 0
       const time = (raw.orf_time_seconds as number) || 60
@@ -1053,7 +1293,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       const calcCwpm = wordsRead > 0 && time > 0 ? Math.round(((wordsRead - orfErrors) / time) * 60) : null
       const calcAccuracy = wordsRead > 0 ? Math.round(((wordsRead - orfErrors) / wordsRead) * 1000) / 10 : null
       const naepVal = (raw.naep as number) || null
-      const passageMult = PASSAGE_MULTIPLIERS[raw.passage_level as string] || 1.0
+      const passageMult = config.passageMultipliers[raw.passage_level as string] || 1.0
       const naepMult = naepVal ? (NAEP_MULTIPLIERS[naepVal] || 1) : 1
       const wCwpm = calcCwpm != null && calcCwpm > 0 ? Math.round(calcCwpm * passageMult * naepMult) : null
 
@@ -1068,7 +1308,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         const attTime = (att.orf_time_seconds as number) || 60
         const attCwpm = attTime > 0 ? Math.round(((attWords - attErrors) / attTime) * 60) : null
         if (attCwpm != null && attCwpm > 0) {
-          const attPassageMult = PASSAGE_MULTIPLIERS[att.level as string] || 1.0
+          const attPassageMult = config.passageMultipliers[att.level as string] || 1.0
           const attNaepMult = att.naep ? (NAEP_MULTIPLIERS[att.naep] || 1) : 1
           const attWeighted = Math.round(attCwpm * attPassageMult * attNaepMult)
           if (bestWeightedCwpm == null || attWeighted > bestWeightedCwpm) {
@@ -1086,6 +1326,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       const cTotal = compAnswered > 0 ? compScored.reduce((a, b) => a + b, 0) : null
       const pTotal = [raw.phonics_row1, raw.phonics_row2, raw.phonics_row3, raw.phonics_row4, raw.phonics_row5].reduce((a: number, b) => a + ((b as number) || 0), 0)
       const sTotal = [raw.sent_1, raw.sent_2, raw.sent_3, raw.sent_4, raw.sent_5].reduce((a: number, b) => a + ((b as number) || 0), 0)
+      // Syllable counting exists only from Fall 2026 on. Null on older tests so
+      // it is never read as "scored zero on a component they never sat".
+      const sylScored = config.syllables
+        ? config.syllables.map(w => raw[w.key]).filter(v => v != null) as number[]
+        : []
+      const sylTotal = sylScored.length > 0 ? sylScored.reduce((a, b) => a + b, 0) : null
 
       // Upsert with only oral keys — DB trigger merges with existing written keys
       const { error } = await supabase.from('level_test_scores').upsert({
@@ -1103,11 +1349,18 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           naep_multiplier: naepMult,
           accuracy_pct: calcAccuracy,
           comp_total: cTotal,
-          comp_max: cTotal != null ? 15 : null,
+          comp_max: cTotal != null ? config.compMax : null,
           comp_answered: compAnswered,
           comp_not_administered: compSkipped,
           phonics_total: pTotal || null,
+          phonics_max: config.phonicsMax,
           sentence_total: sTotal || null,
+          sentence_max: config.sentenceMax,
+          syllable_total: sylTotal,
+          syllable_max: config.syllables ? config.syllableMax : null,
+          // Which content the score is to be read against. Without this a
+          // future edit to the word lists would silently re-point old results.
+          oral_content_version: g2Content?.version ?? null,
           passages_attempted: raw.passages_attempted || [],
           standards_baseline: standards,
         },
@@ -1254,7 +1507,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const accuracy = sc.orf_words_read && sc.orf_errors != null
     ? Math.round(((sc.orf_words_read - sc.orf_errors) / sc.orf_words_read) * 1000) / 10
     : null
-  const livePassageMult = passageLevel ? (PASSAGE_MULTIPLIERS[passageLevel] || 1.0) : 1.0
+  const livePassageMult = passageLevel ? (config.passageMultipliers[passageLevel] || 1.0) : 1.0
   const liveNaepMult = sc.naep ? (NAEP_MULTIPLIERS[sc.naep] || 1) : 1
   const weightedCwpm = cwpm ? Math.round(cwpm * livePassageMult * liveNaepMult) : cwpm
   const compNotAdministered = !!sc.comp_not_administered
@@ -1283,6 +1536,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const compTotal = [sc.comp_1, sc.comp_2, sc.comp_3, sc.comp_4, sc.comp_5].reduce((a: number, b) => a + (b || 0), 0)
   const phonicsTotal = [sc.phonics_row1, sc.phonics_row2, sc.phonics_row3, sc.phonics_row4, sc.phonics_row5].reduce((a: number, b) => a + (b || 0), 0)
   const sentTotal = [sc.sent_1, sc.sent_2, sc.sent_3, sc.sent_4, sc.sent_5].reduce((a: number, b) => a + (b || 0), 0)
+  const syllableTotal = config.syllables
+    ? config.syllables.reduce((a, w) => a + ((sc[w.key] as number) || 0), 0)
+    : 0
+  const hasSyllableData = !!config.syllables && config.syllables.some(w => sc[w.key] != null)
 
 
   return (
@@ -1385,17 +1642,24 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
               <div className="flex gap-1 mb-5 bg-surface-alt rounded-xl p-1">
                 <button onClick={() => setActiveSection('phonics')}
                   className={`flex-1 px-4 py-2 rounded-lg text-[11px] font-semibold transition-all ${activeSection === 'phonics' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
-                  1. Phonics Screener
-                  {phonicsTotal > 0 && <span className="ml-1 text-[9px] opacity-70">({phonicsTotal}/25)</span>}
+                  1. Phonics
+                  {phonicsTotal > 0 && <span className="ml-1 text-[9px] opacity-70">({phonicsTotal}/{config.phonicsMax})</span>}
                 </button>
+                {config.syllables && (
+                  <button onClick={() => setActiveSection('syllables')}
+                    className={`flex-1 px-4 py-2 rounded-lg text-[11px] font-semibold transition-all ${activeSection === 'syllables' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
+                    2. Syllables
+                    {hasSyllableData && <span className="ml-1 text-[9px] opacity-70">({syllableTotal}/{config.syllableMax})</span>}
+                  </button>
+                )}
                 <button onClick={() => setActiveSection('sentences')}
                   className={`flex-1 px-4 py-2 rounded-lg text-[11px] font-semibold transition-all ${activeSection === 'sentences' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
-                  2. Sentence Reading
-                  {sentTotal > 0 && <span className="ml-1 text-[9px] opacity-70">({sentTotal}/35)</span>}
+                  {config.syllables ? '3' : '2'}. Sentences
+                  {sentTotal > 0 && <span className="ml-1 text-[9px] opacity-70">({sentTotal}/{config.sentenceMax})</span>}
                 </button>
                 <button onClick={() => setActiveSection('passage')}
                   className={`flex-1 px-4 py-2 rounded-lg text-[11px] font-semibold transition-all ${activeSection === 'passage' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
-                  3. Passage Reading
+                  {config.syllables ? '4' : '3'}. Passage
                   {passageLevel && <span className="ml-1 text-[9px] opacity-70">(Lv {passageLevel})</span>}
                 </button>
               </div>
@@ -1408,10 +1672,38 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                   <Mic size={15} /> Component 1: Phonics Screener
                 </h4>
                 <p className="text-[11px] text-text-secondary mb-4">
-                  Show the word card. Say: "Read each word out loud. Do your best."
-                  Tap each word: green = correct, tap again = incorrect. If student gets 0-1 on a row, stop.
+                  {config.scripts.phonics
+                    ? <>Say: &ldquo;{config.scripts.phonics}&rdquo; Tap each word: green = correct, tap again = incorrect. Self-corrections count as correct.</>
+                    : <>Show the word card. Say: &ldquo;Read each word out loud. Do your best.&rdquo; Tap each word: green = correct, tap again = incorrect. If student gets 0-1 on a row, stop.</>}
                 </p>
-                <PhonicsClickableGrid key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} />
+                {g2Content && (
+                  <p className="text-[10px] text-text-tertiary italic mb-3">{g2Content.oral.phonics.l1Note}</p>
+                )}
+                <PhonicsClickableGrid key={student.id} sc={sc} studentId={student.id} updateScore={updateScore}
+                  rows={config.phonicsRows} max={config.phonicsMax}
+                  stoppingRule={g2Content?.oral.phonics.stoppingRule} />
+              </div>
+            )}
+
+            {/* ═══ SYLLABLE COUNTING (Fall 2026 Grade 2 onward) ═══ */}
+            {activeSection === 'syllables' && config.syllables && (
+              <div className="bg-surface border border-border rounded-xl p-5 mb-4">
+                <h4 className="text-[13px] font-semibold text-navy mb-1 flex items-center gap-2">
+                  <Mic size={15} /> Component 2: Syllable Counting
+                </h4>
+                <p className="text-[11px] text-text-secondary mb-3">
+                  Say: &ldquo;{config.scripts.syllables}&rdquo;
+                </p>
+                {g2Content?.oral.syllables.modelWord && (
+                  <p className="text-[11px] text-amber-700 bg-amber-50/60 border border-amber-100 rounded-lg px-3 py-2 mb-3">
+                    Model <strong>{g2Content.oral.syllables.modelWord.word}</strong> ({g2Content.oral.syllables.modelWord.answer}) first. The model is not scored.
+                  </p>
+                )}
+                <ul className="text-[10px] text-text-tertiary space-y-1 mb-4 list-disc pl-4">
+                  {g2Content?.oral.syllables.notes.map((n, i) => <li key={i}>{n}</li>)}
+                </ul>
+                <SyllableGrid key={student.id} sc={sc} studentId={student.id} updateScore={updateScore}
+                  words={config.syllables} max={config.syllableMax} />
               </div>
             )}
 
@@ -1419,12 +1711,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
             {activeSection === 'sentences' && config.hasSentences && (
               <div className="bg-surface border border-border rounded-xl p-5 mb-4">
                 <h4 className="text-[13px] font-semibold text-navy mb-1 flex items-center gap-2">
-                  <BookOpen size={15} /> Component 2: Sentence Reading
+                  <BookOpen size={15} /> Component {config.syllables ? 3 : 2}: Sentence Reading
                 </h4>
                 <p className="text-[11px] text-text-secondary mb-4">
-                  Say: "Now read these sentences out loud. Do your best." Tap each word: green = correct, tap again = incorrect.
+                  Say: &ldquo;{config.scripts.sentences || 'Now read these sentences out loud. Do your best.'}&rdquo; Tap each word: green = correct, tap again = incorrect.
                 </p>
-                <SentenceClickableGrid key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} />
+                <SentenceClickableGrid key={student.id} sc={sc} studentId={student.id} updateScore={updateScore}
+                  sentences={config.sentences} />
               </div>
             )}
 
@@ -1441,8 +1734,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                   </p>
 
                   <div className="flex gap-2 mb-4">
-                    {(['A', 'B', 'C', 'D', 'E'] as PassageLevel[]).map(level => {
+                    {config.levels.map(level => {
                       const p = config.passages[level]
+                      if (!p) return null
                       return (
                         <button key={level} onClick={async () => {
                           if (passageLevel && level !== passageLevel && PASSAGE_FIELDS.some(f => sc[f] != null)) {
@@ -1457,8 +1751,8 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                           }`}>
                           <div className="text-[14px] font-bold">{level}</div>
                           <div className="text-[10px] mt-0.5 opacity-80">{p.title}</div>
-                          <div className="text-[9px] mt-0.5 opacity-60">{p.lexile} | {p.wordCount}w</div>
-                          <div className={`text-[8px] mt-0.5 font-semibold ${PASSAGE_MULTIPLIERS[level] === 1.0 ? 'opacity-80' : 'opacity-60'}`}>×{PASSAGE_MULTIPLIERS[level]?.toFixed(2)}</div>
+                          <div className="text-[9px] mt-0.5 opacity-60">{p.wordCount}w</div>
+                          <div className={`text-[8px] mt-0.5 font-semibold ${config.passageMultipliers[level] === 1.0 ? 'opacity-80' : 'opacity-60'}`}>×{config.passageMultipliers[level]?.toFixed(2)}</div>
                         </button>
                       )
                     })}
@@ -1486,7 +1780,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                               <span className="text-text-tertiary italic">Comp n/a</span>
                             ) : att.comp_1 != null ? (
                               <span className="text-text-tertiary">
-                                Comp {[att.comp_1, att.comp_2, att.comp_3, att.comp_4, att.comp_5].reduce((a: number, b: any) => a + (b || 0), 0)}/15
+                                Comp {[att.comp_1, att.comp_2, att.comp_3, att.comp_4, att.comp_5].reduce((a: number, b: any) => a + (b || 0), 0)}/{config.compMax}
                               </span>
                             ) : null}
                           </button>
@@ -1500,7 +1794,11 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     <div className="bg-green-50/50 rounded-lg px-4 py-3 border border-green-100 flex items-center justify-between">
                       <div>
                         <p className="text-[12px] font-semibold text-navy">Level {passageLevel}: {passage.title}</p>
-                        <p className="text-[10px] text-text-secondary">{passage.lexile} | {passage.wordCount} words | {passage.genre}</p>
+                        <p className="text-[10px] text-text-secondary">
+                          {passage.wordCount} words
+                          {passage.genre ? ` | ${passage.genre}` : ''}
+                          {` | weight ${(config.passageMultipliers[passageLevel] ?? 1).toFixed(2)}`}
+                        </p>
                       </div>
                       <button onClick={() => setShowPassageReader(true)}
                         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-green-600 text-white hover:bg-green-700 transition-all">
@@ -1608,7 +1906,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     <p className="text-[10px] text-text-tertiary mb-3">
                       {compNotAdministered
                         ? 'Not administered — excluded from this student\'s score.'
-                        : <>Score each question 0-3. Total: {compTotal} / 15</>}
+                        : <>Score each question 0-{config.compScoreMax}. Total: {compTotal} / {config.compMax}</>}
                     </p>
 
                     {/* Not-administered switch. A student stopped mid-passage never
@@ -1648,16 +1946,30 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                                 <p className="text-[12px] font-medium text-text-primary">{cq.q}</p>
                                 <p className="text-[10px] text-text-tertiary mt-0.5">
                                   <span className={`font-semibold ${cq.dok === 'DOK 1' ? 'text-blue-600' : cq.dok === 'DOK 2' ? 'text-amber-600' : 'text-green-600'}`}>{cq.dok}</span>
-                                  <span className="mx-1.5">--</span>
-                                  Expected: {cq.expected}
+                                  {!cq.anchors && <><span className="mx-1.5">--</span>Expected: {cq.expected}</>}
                                 </p>
+                                {/* Where the guide gives an anchor per score, show
+                                    them all: picking between 1 and 2 is the whole
+                                    judgement, and one "expected" line hides it. */}
+                                {cq.anchors && (
+                                  <ul className="mt-1 space-y-0.5">
+                                    {cq.anchors.map((a, ai) => (
+                                      <li key={ai} className="text-[10px] text-text-tertiary flex gap-1.5">
+                                        <span className={`font-bold shrink-0 ${ai === 0 ? 'text-red-500' : ai === cq.anchors!.length - 1 ? 'text-green-600' : 'text-amber-600'}`}>{ai}</span>
+                                        <span>{a}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
                               </div>
                               <div className="flex gap-1 shrink-0">
-                                {[0, 1, 2, 3].map(score => (
+                                {Array.from({ length: config.compScoreMax + 1 }, (_, score) => (
                                   <button key={score} onClick={() => updateScore(student.id, key as string, val === score ? null : score)}
                                     className={`w-8 h-8 rounded-lg text-[12px] font-bold transition-all ${
                                       val === score
-                                        ? score === 0 ? 'bg-red-500 text-white' : score === 1 ? 'bg-amber-500 text-white' : score === 2 ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'
+                                        ? score === 0 ? 'bg-red-500 text-white'
+                                          : score === config.compScoreMax ? 'bg-green-500 text-white'
+                                          : score === 1 ? 'bg-amber-500 text-white' : 'bg-blue-500 text-white'
                                         : 'bg-surface border border-border text-text-secondary hover:bg-surface-alt'
                                     }`}>
                                     {score}
@@ -1671,12 +1983,14 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     </div>
                     <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
                       <span className="text-[12px] font-semibold text-navy">
-                        Comprehension Total: {compNotAdministered ? <span className="text-text-tertiary">Not administered</span> : `${compTotal} / 15`}
+                        Comprehension Total: {compNotAdministered ? <span className="text-text-tertiary">Not administered</span> : `${compTotal} / ${config.compMax}`}
                       </span>
                       <span className="text-[10px] text-text-tertiary">
                         {compNotAdministered
                           ? 'Excluded from scoring'
-                          : compTotal >= 12 ? 'Strong comprehension' : compTotal >= 8 ? 'Adequate comprehension' : compTotal > 0 ? 'Below expectations' : ''}
+                          : compTotal >= config.compMax * 0.8 ? 'Strong comprehension'
+                          : compTotal >= config.compMax * 0.53 ? 'Adequate comprehension'
+                          : compTotal > 0 ? 'Below expectations' : ''}
                       </span>
                     </div>
                   </div>
@@ -1727,18 +2041,20 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-navy/10">
                         <div className="text-center">
                           <div className="text-[10px] text-text-tertiary uppercase">Phonics</div>
-                          <div className="text-[14px] font-bold text-navy">{phonicsTotal} / 25</div>
+                          <div className="text-[14px] font-bold text-navy">{phonicsTotal} / {config.phonicsMax}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-[10px] text-text-tertiary uppercase">Sentences</div>
-                          <div className="text-[14px] font-bold text-navy">{sentTotal} / 35</div>
+                          <div className="text-[14px] font-bold text-navy">{sentTotal} / {config.sentenceMax}</div>
                         </div>
                       </div>
                     )}
 
                     {/* CCSS Standards */}
                     {(() => {
-                      const stds = calculateStandards(grade, sc)
+                      const stds = g2Content
+                        ? calculateG2Standards(g2Content, sc, config)
+                        : calculateStandards(grade, sc)
                       const met = stds.filter(s => s.met).length
                       return stds.length > 0 ? (
                         <div className="mt-3 pt-3 border-t border-navy/10">
