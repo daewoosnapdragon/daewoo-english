@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye } from 'lucide-react'
 import { getG2Content, G2Content } from './grade2Content'
 import { getG3Content, G3Content } from './grade3Content'
+import { getG4Content, G4Content } from './grade4Content'
 
 // ═══════════════════════════════════════════════════════════════════════
 // TYPES
@@ -46,6 +47,13 @@ interface WritingCategory {
   kind?: 'ladder' | 'checklist'
   /** Present when kind === 'checklist'. One entry per box, in display order. */
   checklist?: { key: string; label: string; desc: string }[]
+  /**
+   * A cap the boxes themselves cannot express -- Grade 4 caps Content at 2 for
+   * a response under five sentences, however many features it shows. The
+   * teacher sets the condition and the score becomes min(checked, cap), so the
+   * record of which features were present is not destroyed by the cap.
+   */
+  checklistCap?: { label: string; desc: string; cap: number }
 }
 
 interface GradeConfig {
@@ -107,6 +115,8 @@ interface StudentScores {
    * student loses which features earned the score.
    */
   checklist?: Record<string, string[]>
+  /** Category keys whose cap condition the teacher has switched on. */
+  checklistCapped?: string[]
   /**
    * The short constructed-response item, where the paper has one. Kept apart
    * from `writing` so the extended-writing rubric total stays comparable across
@@ -416,12 +426,52 @@ function gradeConfigFromG3(content: G3Content): GradeConfig {
   }
 }
 
+/** Grade 4 from Fall 2026 on, adapted from grade4Content.ts. */
+function gradeConfigFromG4(content: G4Content): GradeConfig {
+  return {
+    grade: 4,
+    totalMC: content.written.mcMax,
+    questionCount: content.written.questions.length,
+    questions: content.written.questions.map(q => ({
+      qNum: q.qNum,
+      section: q.section,
+      sectionLabel: q.sectionLabel,
+      text: q.text,
+      choices: q.choices,
+      correct: q.correct,
+      standard: q.standard,
+      standardDesc: q.standardDesc,
+      dok: q.dok ?? 1,
+      domain: q.domain,
+    })),
+    writingCategories: content.writing.categories.map(c => ({
+      key: c.key,
+      label: c.label,
+      max: c.max,
+      standard: c.standard,
+      standardDesc: c.standardDesc,
+      kind: c.kind,
+      checklist: c.checklist,
+      checklistCap: c.checklistCap,
+    })),
+    writingMax: content.writing.max,
+    dokWeighted: false,
+    writingRubric: content.writing.rubric,
+    writingPrompt: content.writing.prompt,
+    writingNotes: content.writing.notes,
+    listeningScript: content.written.listening,
+    readingPassages: content.written.passages.map(p => ({ ...p })),
+    scoringNote: content.written.scoringNote,
+  }
+}
+
 /** Content versions. Key format: `${academic_year}:${semester}`. */
 const TEST_VERSIONS: Record<string, Partial<Record<number, GradeConfig>>> = {
   [LEGACY_VERSION]: LEGACY_CONFIGS,
   '2026-2027:fall': {
     2: gradeConfigFromG2(getG2Content('2026-2027:fall')!),
     3: gradeConfigFromG3(getG3Content('2026-2027:fall')!),
+    4: gradeConfigFromG4(getG4Content('2026-2027:fall')!),
   },
 }
 
@@ -818,10 +868,11 @@ function StandardBadge({ code, description }: { code: string; description: strin
   )
 }
 
-function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, toggleChecklistBox, setShortWriting, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
+function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, toggleChecklistBox, toggleChecklistCap, setShortWriting, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
   student: any; config: GradeConfig; sc: StudentScores; sections: Record<string, QuestionDef[]>; sectionKeys: string[]
   mcCorrect: number; writingTotal: number; setAnswer: (q: number, l: string) => void; setWritingScore: (k: string, v: number) => void
   toggleChecklistBox: (catKey: string, boxKey: string) => void
+  toggleChecklistCap: (catKey: string) => void
   setShortWriting: (v: number | null) => void
   clearStudent: () => void; studentHasData: boolean; selectedIdx: number; setSelectedIdx: (i: number) => void; totalStudents: number
 }) {
@@ -1089,6 +1140,21 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                     </div>
                     <span className="text-[12px] font-bold text-navy ml-2 shrink-0">{val}/{cat.max}</span>
                   </div>
+                  {cat.checklistCap && (
+                    <div className="px-3 pb-2 pl-[172px]">
+                      <label className={`flex items-start gap-2 rounded-lg px-2.5 py-1.5 border cursor-pointer transition-all ${
+                        (sc.checklistCapped || []).includes(cat.key) ? 'bg-amber-50 border-amber-300' : 'bg-white border-gray-200 hover:border-navy/40'
+                      }`}>
+                        <input type="checkbox" className="w-3.5 h-3.5 mt-0.5 shrink-0"
+                          checked={(sc.checklistCapped || []).includes(cat.key)}
+                          onChange={() => toggleChecklistCap(cat.key)} />
+                        <span>
+                          <span className="text-[11px] font-semibold text-text-primary">{cat.checklistCap.label}</span>
+                          <span className="block text-[9px] text-text-tertiary leading-snug">{cat.checklistCap.desc}</span>
+                        </span>
+                      </label>
+                    </div>
+                  )}
                 </div>
               )
             }
@@ -1461,6 +1527,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
             answers: row.raw_scores.written_answers || {},
             writing: row.raw_scores.written_rubric || {},
             checklist: row.raw_scores.written_checklist || {},
+            checklistCapped: row.raw_scores.written_checklist_capped || [],
             shortWriting: row.raw_scores.written_short_writing ?? null,
           }
         }
@@ -1544,16 +1611,44 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       if (checked.has(boxKey)) checked.delete(boxKey)
       else checked.add(boxKey)
       all[catKey] = Array.from(checked)
+      const cap = (cur.checklistCapped || []).includes(catKey)
+        ? config.writingCategories.find(c => c.key === catKey)?.checklistCap?.cap
+        : undefined
+      const score = cap != null ? Math.min(checked.size, cap) : checked.size
+      return {
+        ...prev,
+        [student.id]: { ...cur, checklist: all, writing: { ...(cur.writing || {}), [catKey]: score } },
+      }
+    })
+  }, [student, config])
+
+  /**
+   * The cap condition is about the response as a whole (Grade 4: fewer than
+   * five sentences), not about any one feature, so it is stored separately and
+   * applied on top. Turning it on never unchecks a box -- the record of what
+   * the writing actually showed survives the cap.
+   */
+  const toggleChecklistCap = useCallback((catKey: string) => {
+    if (!student) return
+    setScores(prev => {
+      const cur = prev[student.id] || { answers: {}, writing: {} }
+      const capped = new Set(cur.checklistCapped || [])
+      const nowCapped = !capped.has(catKey)
+      if (nowCapped) capped.add(catKey)
+      else capped.delete(catKey)
+      const checkedCount = (cur.checklist?.[catKey] || []).length
+      const cap = config.writingCategories.find(c => c.key === catKey)?.checklistCap?.cap
+      const score = nowCapped && cap != null ? Math.min(checkedCount, cap) : checkedCount
       return {
         ...prev,
         [student.id]: {
           ...cur,
-          checklist: all,
-          writing: { ...(cur.writing || {}), [catKey]: checked.size },
+          checklistCapped: Array.from(capped),
+          writing: { ...(cur.writing || {}), [catKey]: score },
         },
       }
     })
-  }, [student])
+  }, [student, config])
 
   const setShortWriting = useCallback((val: number | null) => {
     if (!student) return
@@ -1589,7 +1684,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       if (existing) {
         const raw = { ...(existing.raw_scores || {}) }
         const calc = { ...(existing.calculated_metrics || {}) }
-        delete raw.written_answers; delete raw.written_rubric; delete raw.written_checklist; delete raw.written_short_writing; delete raw.written_mc; delete raw.writing
+        delete raw.written_answers; delete raw.written_rubric; delete raw.written_checklist; delete raw.written_checklist_capped; delete raw.written_short_writing; delete raw.written_mc; delete raw.writing
         delete calc.written_mc_total; delete calc.written_mc_max; delete calc.written_mc_pct
         delete calc.writing_total; delete calc.writing_max; delete calc.written_domain_scores; delete calc.written_standards_mastery
         // DELETE first to bypass merge trigger, then re-insert oral-only data if any
@@ -1679,7 +1774,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       // Upsert with only written keys — DB trigger merges with existing oral keys
       const { error } = await supabase.from('level_test_scores').upsert({
         level_test_id: levelTest.id, student_id: stu.id,
-        raw_scores: { written_answers: sc.answers, written_rubric: sc.writing, written_checklist: sc.checklist || {}, written_short_writing: sc.shortWriting ?? null, written_mc: mcTotal, writing: wTotal },
+        raw_scores: { written_answers: sc.answers, written_rubric: sc.writing, written_checklist: sc.checklist || {}, written_checklist_capped: sc.checklistCapped || [], written_short_writing: sc.shortWriting ?? null, written_mc: mcTotal, writing: wTotal },
         calculated_metrics: { written_mc_total: mcTotal, written_mc_max: config.totalMC, written_mc_pct: Math.round((mcTotal / config.totalMC) * 100), writing_total: wTotal, writing_max: config.writingMax, short_writing_total: sc.shortWriting ?? null, short_writing_max: config.shortWriting?.max ?? null, written_domain_scores: domainScores, written_standards_mastery: standardsMastery },
         previous_class: students.find(s => s.id === stu.id)?.english_class || null, entered_by: currentTeacher?.id || null,
       }, { onConflict: 'level_test_id,student_id' })
@@ -1762,6 +1857,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           written_answers: sc.answers,
           written_rubric: sc.writing,
           written_checklist: sc.checklist || {},
+          written_checklist_capped: sc.checklistCapped || [],
           written_short_writing: sc.shortWriting ?? null,
           written_mc: mcTotal,
           writing: wTotal,
@@ -1890,6 +1986,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
             setAnswer={setAnswer}
             setWritingScore={setWritingScore}
             toggleChecklistBox={toggleChecklistBox}
+            toggleChecklistCap={toggleChecklistCap}
             setShortWriting={setShortWriting}
             clearStudent={clearStudent}
             studentHasData={student ? studentHasData(student.id) : false}

@@ -14,7 +14,8 @@ import WrittenTestEntry from '@/components/leveling/WrittenTestEntry'
 import { WIDA_LEVELS } from '@/lib/wida'
 import { getG2Content, g2VersionKeyForTest } from '@/components/leveling/grade2Content'
 import { getG3Content, g3VersionKeyForTest } from '@/components/leveling/grade3Content'
-import { calculateG2Band, bandScalesFromG2, bandScalesFromG3 } from '@/components/leveling/grade2Band'
+import { getG4Content, g4VersionKeyForTest } from '@/components/leveling/grade4Content'
+import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4 } from '@/components/leveling/grade2Band'
 import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
@@ -47,9 +48,10 @@ function getWrittenMcTotal(grade: number | string, storedMax?: number | null): n
 // This mirrors WrittenTestEntry's question data but only needs qNum, correct, dok
 /** Both grade modules key versions the same way; either resolver will do. */
 function versionKeyForTest(test: { academic_year?: string | null; semester?: string | null; grade?: number | string }): string {
-  return Number((test as any).grade) === 3
-    ? g3VersionKeyForTest(test as any)
-    : g2VersionKeyForTest(test as any)
+  const g = Number((test as any).grade)
+  if (g === 3) return g3VersionKeyForTest(test as any)
+  if (g === 4) return g4VersionKeyForTest(test as any)
+  return g2VersionKeyForTest(test as any)
 }
 
 function getGradeConfigForComposite(grade: number, versionKey?: string): { questions: { qNum: number; correct: string; dok: number }[]; dokWeighted: boolean } | null {
@@ -88,6 +90,15 @@ function getGradeConfigForComposite(grade: number, versionKey?: string): { quest
     {qNum:14,correct:'d',dok:1},{qNum:15,correct:'b',dok:1},{qNum:16,correct:'c',dok:2},
     {qNum:17,correct:'b',dok:1},{qNum:18,correct:'c',dok:1},{qNum:19,correct:'d',dok:1},{qNum:20,correct:'c',dok:2},{qNum:21,correct:'b',dok:3},
   ]}
+  if (grade === 4 && versionKey) {
+    const g4 = getG4Content(versionKey)
+    if (g4) {
+      return {
+        questions: g4.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, dok: q.dok ?? 1 })),
+        dokWeighted: false,
+      }
+    }
+  }
   // Grade 4: 28 questions
   if (grade === 4) return { dokWeighted: true, questions: [
     {qNum:1,correct:'b',dok:2},{qNum:2,correct:'c',dok:1},{qNum:3,correct:'a',dok:1},{qNum:4,correct:'c',dok:2},{qNum:5,correct:'d',dok:2},
@@ -2129,7 +2140,8 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   // for grades without an authored band and for students with no passage.
   const g2 = studentGrade === 2 && versionKey ? getG2Content(versionKey) : null
   const g3 = studentGrade === 3 && versionKey ? getG3Content(versionKey) : null
-  const bandScales = g2 ? bandScalesFromG2(g2) : g3 ? bandScalesFromG3(g3) : null
+  const g4 = studentGrade === 4 && versionKey ? getG4Content(versionKey) : null
+  const bandScales = g2 ? bandScalesFromG2(g2) : g3 ? bandScalesFromG3(g3) : g4 ? bandScalesFromG4(g4) : null
   const band = bandScales
     ? calculateG2Band({
         passageLevel: calc.passage_level ?? null,

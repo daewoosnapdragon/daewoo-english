@@ -22,6 +22,7 @@
 
 import { G2Content, G2PassageLevel } from './grade2Content'
 import { G3Content } from './grade3Content'
+import { G4Content } from './grade4Content'
 
 /**
  * The band only needs the component maxes, not a whole test definition, so both
@@ -33,6 +34,20 @@ export interface BandScales {
   syllableMax: number
   sentenceMax: number
   compMax: number
+  /**
+   * Comprehension at or below this many points means the passage was not
+   * sustained. Grade 4's guide states this outright (0-4 of 10 is Frustration,
+   * move down one level); grades 2 and 3 say nothing, so they fall back to the
+   * ratio below. Where this is set it wins.
+   */
+  frustrationCompMax?: number
+  /**
+   * Whether accuracy under 90% is on its own enough to call the passage
+   * unsustained. Grade 4 says no -- "when accuracy and comprehension disagree,
+   * comprehension decides", and it gives a worked example of a student at 89%
+   * accuracy with 8/10 comprehension who stays at that level.
+   */
+  accuracyAloneDowngrades?: boolean
 }
 
 export function bandScalesFromG2(c: G2Content): BandScales {
@@ -46,6 +61,15 @@ export function bandScalesFromG2(c: G2Content): BandScales {
 
 export function bandScalesFromG3(c: G3Content): BandScales {
   return { phonicsMax: 0, syllableMax: 0, sentenceMax: 0, compMax: c.oral.compMax }
+}
+
+export function bandScalesFromG4(c: G4Content): BandScales {
+  return {
+    phonicsMax: 0, syllableMax: 0, sentenceMax: 0,
+    compMax: c.oral.compMax,
+    frustrationCompMax: c.oral.frustrationCompMax,
+    accuracyAloneDowngrades: false,
+  }
 }
 
 export type EnglishClassName = 'Lily' | 'Camellia' | 'Daisy' | 'Sunflower' | 'Marigold' | 'Snapdragon'
@@ -144,12 +168,26 @@ export function calculateG2Band(input: G2BandInput, scales: BandScales): G2BandR
   if (!attempted) return null
 
   // ── Was the passage sustained? ──
-  const belowFrustration = input.accuracyPct != null && input.accuracyPct < FRUSTRATION_ACCURACY
   const compMax = scales.compMax
-  const nonComprehension = !input.compNotAdministered
-    && input.compTotal != null
-    && compMax > 0
-    && input.compTotal / compMax < NON_COMPREHENSION_RATIO
+  const compKnown = !input.compNotAdministered && input.compTotal != null
+
+  // Where the guide names a comprehension cut point, use it. Otherwise fall
+  // back to the ratio, which approximates the same judgement for the grades
+  // whose guides are silent.
+  const nonComprehension = compKnown && (
+    scales.frustrationCompMax != null
+      ? (input.compTotal as number) <= scales.frustrationCompMax
+      : compMax > 0 && (input.compTotal as number) / compMax < NON_COMPREHENSION_RATIO
+  )
+
+  // Accuracy below 90% is frustration level on its own, EXCEPT where the guide
+  // says comprehension decides -- there, a student who read inaccurately but
+  // understood the passage keeps their level.
+  const accuracyCounts = scales.accuracyAloneDowngrades !== false
+  const belowFrustration = accuracyCounts
+    && input.accuracyPct != null
+    && input.accuracyPct < FRUSTRATION_ACCURACY
+
   const notSustained = !!input.compNotAdministered || belowFrustration || nonComprehension
   const effectiveLevel = notSustained
     ? LEVEL_ORDER[Math.max(0, LEVEL_ORDER.indexOf(attempted) - 1)]
