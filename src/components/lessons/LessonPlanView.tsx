@@ -26,11 +26,15 @@ function shiftDate(dateStr: string, days: number): string {
 }
 
 // Subjects offered when picking a day's lesson. Program names ("Into Reading",
-// "Hand in Hand", "Thumbs Up") come first since those rotate day to day.
+// "Hand in Hand", "Thumbs Up", "Rich Reading", "Easy Reading",
+// "Wonderskills Reading", "Super Phonics") come first since those rotate day to
+// day, then general skills, then Debate/Project/Review/Test.
 // TODO: move to Settings so this can be edited without a code change.
 export const SUBJECT_OPTIONS = [
-  'Into Reading', 'Hand in Hand', 'Thumbs Up', 'Phonics', 'Reading', 'Writing',
-  'Speaking', 'Grammar', 'Vocabulary', 'Spelling', 'Listening', 'Review',
+  'Into Reading', 'Hand in Hand', 'Thumbs Up', 'Rich Reading', 'Easy Reading',
+  'Wonderskills Reading', 'Super Phonics', 'Phonics', 'Reading', 'Writing',
+  'Speaking', 'Grammar', 'Vocabulary', 'Spelling', 'Listening', 'Debate',
+  'Project', 'Review', 'Test',
 ]
 
 
