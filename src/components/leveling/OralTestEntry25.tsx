@@ -13,6 +13,9 @@ import { g2ContentForTest, G2Content } from './grade2Content'
 import { g3ContentForTest, G3Content } from './grade3Content'
 import { g4ContentForTest, G4Content } from './grade4Content'
 import { g5ContentForTest, G5Content } from './grade5Content'
+// Below-grade passages are diagnostic only -- the full rationale, and the
+// reason they are never re-weighted onto this grade's scale, lives here.
+import { PassageKey, belowKey, parseBelowKey, isBelowKey, passageKeyLabel } from './belowGradePassage'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -50,10 +53,14 @@ interface CompQuestion {
 interface GradeTestData {
   hasPhonics: boolean
   hasSentences: boolean
-  /** Partial: the legacy configs stop at E, the Fall 2026 Grade 2 test adds F. */
-  passages: Partial<Record<PassageLevel, PassageData>>
-  comprehension: Partial<Record<PassageLevel, CompQuestion[]>>
-  naepLevels: PassageLevel[] // which levels get NAEP rating
+  /**
+   * Partial: the legacy configs stop at E, the Fall 2026 Grade 2 test adds F.
+   * Keyed by PassageKey rather than PassageLevel because below-grade passages
+   * are merged into these same maps under their `G3-C` keys.
+   */
+  passages: Partial<Record<PassageKey, PassageData>>
+  comprehension: Partial<Record<PassageKey, CompQuestion[]>>
+  naepLevels: PassageKey[] // which levels get NAEP rating
 }
 
 /**
@@ -62,8 +69,18 @@ interface GradeTestData {
  * component never branches on which test it is scoring.
  */
 interface GradeTestConfig extends GradeTestData {
-  /** Levels offered on the selector, in order. */
-  levels: PassageLevel[]
+  /** In-grade levels offered on the selector, in order. */
+  levels: PassageKey[]
+  /**
+   * Passages borrowed from the grade below, keyed `G3-C`, in order. Empty when
+   * this test has no grade below that this screen can score -- Grade 2's grade
+   * below is Grade 1, which is a different test on its own entry screen.
+   */
+  belowLevels: PassageKey[]
+  /** Which grade the borrowed passages came from, or null when none are offered. */
+  belowGrade: number | null
+  /** Comprehension points available on a below-grade passage. */
+  belowCompMax: number
   /** Highest score a single comprehension question can earn. */
   compScoreMax: number
   /** Total comprehension points available. */
@@ -252,23 +269,28 @@ function calculateVersionedStandards(
   standards: { code: string; testSection: string; masteryThreshold: number }[],
   sc: OralScores,
   config: GradeTestConfig,
+  onBelowGradePassage = false,
 ): { code: string; met: boolean; score: number; threshold: number }[] {
-  const compSkipped = !!sc.comp_not_administered
   const num = (v: unknown) => (typeof v === 'number' ? v : 0)
   const compSum = [sc.comp_1, sc.comp_2, sc.comp_3, sc.comp_4, sc.comp_5].reduce((a: number, b) => a + num(b), 0)
+  // Comprehension and fluency standards describe this grade's text. A passage
+  // from the grade below is evidence neither way, so both are dropped rather
+  // than scored -- the same treatment questions that were never asked get.
+  const compScore = (!!sc.comp_not_administered || onBelowGradePassage) ? null : compSum
+  const naepScore = onBelowGradePassage ? null : num(sc.naep)
   const totals: Record<string, number | null> = {
     o_g2_phonics: config.phonicsRows.reduce((a, _, i) => a + num(sc[`phonics_row${i + 1}`]), 0),
     o_g2_syllables: config.syllables ? config.syllables.reduce((a, w) => a + num(sc[w.key]), 0) : 0,
     o_g2_sentences: config.sentences.reduce((a, _, i) => a + num(sc[`sent_${i + 1}`]), 0),
     // Comprehension never asked cannot show mastery either way.
-    o_g2_comp: compSkipped ? null : compSum,
-    o_g2_naep: num(sc.naep),
-    o_g3_comp: compSkipped ? null : compSum,
-    o_g3_naep: num(sc.naep),
-    o_g4_comp: compSkipped ? null : compSum,
-    o_g4_naep: num(sc.naep),
-    o_g5_comp: compSkipped ? null : compSum,
-    o_g5_naep: num(sc.naep),
+    o_g2_comp: compScore,
+    o_g2_naep: naepScore,
+    o_g3_comp: compScore,
+    o_g3_naep: naepScore,
+    o_g4_comp: compScore,
+    o_g4_naep: naepScore,
+    o_g5_comp: compScore,
+    o_g5_naep: naepScore,
   }
   return standards
     .filter(std => std.testSection in totals)
@@ -280,29 +302,34 @@ function calculateVersionedStandards(
 }
 
 // Calculate standards mastery from scores
-function calculateStandards(grade: number, sc: OralScores): { code: string; met: boolean; score: number; threshold: number }[] {
+function calculateStandards(grade: number, sc: OralScores, onBelowGradePassage = false): { code: string; met: boolean; score: number; threshold: number }[] {
   const standards = CCSS_STANDARDS[grade] || []
   // Comprehension questions that were never asked cannot show mastery either
-  // way, so the comprehension standards are dropped rather than scored 0.
-  const compSkipped = !!sc.comp_not_administered
-  return standards.filter(std => !(compSkipped && std.testSection.startsWith('comp_dok'))).map(std => {
-    let score = 0
-    if (std.testSection === 'naep') {
-      score = (sc.naep as number) || 0
-    } else if (std.testSection.startsWith('phonics_row')) {
-      score = (sc[std.testSection] as number) || 0
-    } else if (std.testSection === 'comp_dok1') {
-      // Average of DOK 1 questions (Q1, Q2 — typically first two)
-      score = Math.max((sc.comp_1 as number) || 0, (sc.comp_2 as number) || 0)
-    } else if (std.testSection === 'comp_dok2') {
-      // Average of DOK 2 questions (Q3, Q4)
-      score = Math.max((sc.comp_3 as number) || 0, (sc.comp_4 as number) || 0)
-    } else if (std.testSection === 'comp_dok3') {
-      // Open question (Q5)
-      score = (sc.comp_5 as number) || 0
-    }
-    return { code: std.code, met: score >= std.masteryThreshold, score, threshold: std.masteryThreshold }
-  })
+  // way, so the comprehension standards are dropped rather than scored 0. A
+  // passage from the grade below is dropped for the same reason, and takes the
+  // fluency rating with it: neither describes this grade's text.
+  const compSkipped = !!sc.comp_not_administered || onBelowGradePassage
+  return standards
+    .filter(std => !(compSkipped && std.testSection.startsWith('comp_dok')))
+    .filter(std => !(onBelowGradePassage && std.testSection === 'naep'))
+    .map(std => {
+      let score = 0
+      if (std.testSection === 'naep') {
+        score = (sc.naep as number) || 0
+      } else if (std.testSection.startsWith('phonics_row')) {
+        score = (sc[std.testSection] as number) || 0
+      } else if (std.testSection === 'comp_dok1') {
+        // Average of DOK 1 questions (Q1, Q2 — typically first two)
+        score = Math.max((sc.comp_1 as number) || 0, (sc.comp_2 as number) || 0)
+      } else if (std.testSection === 'comp_dok2') {
+        // Average of DOK 2 questions (Q3, Q4)
+        score = Math.max((sc.comp_3 as number) || 0, (sc.comp_4 as number) || 0)
+      } else if (std.testSection === 'comp_dok3') {
+        // Open question (Q5)
+        score = (sc.comp_5 as number) || 0
+      }
+      return { code: std.code, met: score >= std.masteryThreshold, score, threshold: std.masteryThreshold }
+    })
 }
 
 // ============================================================================
@@ -599,7 +626,7 @@ const GRADE_CONFIGS: Record<number, GradeTestData> = {
 // Grade 2 tests predating the Fall 2026 rewrite -- keeps the constants above,
 // so historical results are read against exactly the content they were sat on.
 
-function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null, g4: G4Content | null, g5: G5Content | null): GradeTestConfig | null {
+function resolveBaseConfig(grade: number, g2: G2Content | null, g3: G3Content | null, g4: G4Content | null, g5: G5Content | null): BaseConfig | null {
   const data = GRADE_CONFIGS[grade]
 
   if (g5) {
@@ -788,13 +815,68 @@ function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null
   }
 }
 
+/**
+ * The test's own passages, before any below-grade ones are merged in. Split out
+ * so each `return` above states only what that test actually defines.
+ */
+type BaseConfig = Omit<GradeTestConfig, 'belowLevels' | 'belowGrade' | 'belowCompMax'>
+
+/** A test's own passages, with no below-grade ladder attached yet. */
+function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null, g4: G4Content | null, g5: G5Content | null): GradeTestConfig | null {
+  const base = resolveBaseConfig(grade, g2, g3, g4, g5)
+  return base ? { ...base, belowLevels: [], belowGrade: null, belowCompMax: 0 } : null
+}
+
+/**
+ * Merge the grade below's passages into a test's config under `G3-C` keys, so
+ * one selector can offer both ladders. The below-grade half is diagnostic only
+ * -- see the note on PassageKey -- which is enforced at scoring time, not here.
+ */
+function withBelowGradePassages(
+  config: GradeTestConfig | null,
+  belowGrade: number | null,
+  below: GradeTestConfig | null,
+): GradeTestConfig | null {
+  if (!config || !belowGrade || !below) return config
+  const passages = { ...config.passages }
+  const comprehension = { ...config.comprehension }
+  const passageMultipliers = { ...config.passageMultipliers }
+  const belowLevels: PassageKey[] = []
+  below.levels.forEach(lv => {
+    const p = below.passages[lv]
+    if (!p) return
+    const key = belowKey(belowGrade, lv)
+    passages[key] = p
+    comprehension[key] = below.comprehension[lv]
+    // Carried for display only. A below-grade reading is never weighted: each
+    // grade's ladder restarts at x1.0, so Grade 2's Level A and Grade 5's
+    // Level A both weigh 1.0 despite being nothing alike. Applying one grade's
+    // weight to another grade's text is exactly the comparison to avoid.
+    passageMultipliers[key] = below.passageMultipliers[lv] ?? 1
+    belowLevels.push(key)
+  })
+  return {
+    ...config,
+    passages,
+    comprehension,
+    passageMultipliers,
+    // The NAEP rating describes how the student sounded, which is worth
+    // recording on an easier text too. It is kept out of the standards rather
+    // than off the screen.
+    naepLevels: [...config.naepLevels, ...belowLevels],
+    belowLevels,
+    belowGrade,
+    belowCompMax: below.compMax,
+  }
+}
+
 // ============================================================================
 // PASSAGE READER MODAL
 // ============================================================================
 
 function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
   passage: PassageData
-  level: PassageLevel
+  level: PassageKey
   onSave: (data: { wordsRead: number; errors: number; timeSeconds: number; notes?: string }) => void
   onClose: () => void
   initialData?: { wordsRead?: number | null; errors?: number | null; timeSeconds?: number | null }
@@ -1299,6 +1381,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const [activeClass, setActiveClass] = useState<EnglishClass>(teacherClass || 'Lily')
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [showPassageReader, setShowPassageReader] = useState(false)
+  // The below-grade ladder stays folded away until a teacher reaches for it,
+  // so the common case still opens on this grade's passages alone.
+  const [showBelowPassages, setShowBelowPassages] = useState(false)
 
   const grade = typeof levelTest.grade === 'string' ? parseInt(levelTest.grade) : levelTest.grade
   // Only Grade 2 has authored content versions; every other grade resolves to
@@ -1319,9 +1404,35 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     () => (grade === 5 ? g5ContentForTest(levelTest as any) : null),
     [grade, levelTest]
   )
+  // The grade below, offered on the same selector for students who cannot
+  // access this grade's easiest passage. Grade 2's grade below is Grade 1,
+  // which is a different test on its own entry screen, so Grade 2 offers none.
+  const belowGrade = grade >= 3 && grade <= 5 ? grade - 1 : null
+  const belowG2Content = useMemo(
+    () => (belowGrade === 2 ? g2ContentForTest(levelTest as any) : null),
+    [belowGrade, levelTest]
+  )
+  const belowG3Content = useMemo(
+    () => (belowGrade === 3 ? g3ContentForTest(levelTest as any) : null),
+    [belowGrade, levelTest]
+  )
+  const belowG4Content = useMemo(
+    () => (belowGrade === 4 ? g4ContentForTest(levelTest as any) : null),
+    [belowGrade, levelTest]
+  )
+  // Resolved through the same path as the test's own content, so a below-grade
+  // passage is normalised identically and picks up the same content version.
+  const belowConfig = useMemo(
+    () => (belowGrade ? resolveConfig(belowGrade, belowG2Content, belowG3Content, belowG4Content, null) : null),
+    [belowGrade, belowG2Content, belowG3Content, belowG4Content]
+  )
   const config = useMemo(
-    () => resolveConfig(grade, g2Content, g3Content, g4Content, g5Content),
-    [grade, g2Content, g3Content, g4Content, g5Content]
+    () => withBelowGradePassages(
+      resolveConfig(grade, g2Content, g3Content, g4Content, g5Content),
+      belowGrade,
+      belowConfig,
+    ),
+    [grade, g2Content, g3Content, g4Content, g5Content, belowGrade, belowConfig]
   )
 
   const [activeSection, setActiveSection] = useState<'phonics' | 'syllables' | 'sentences' | 'passage'>(config?.hasPhonics ? 'phonics' : 'passage')
@@ -1430,10 +1541,18 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     let errors = 0
     for (const sid of toSave) {
       const raw = scores[sid] || {}
+      // A below-grade passage is diagnostic only. It is recorded in full, but
+      // it produces no weighted score, contributes nothing that placement
+      // reads, and takes the student out of contention to level up.
+      const belowCurrent = parseBelowKey(raw.passage_level)
+      const attempts = Array.isArray(raw.passages_attempted) ? raw.passages_attempted : []
+      // Reaching below grade at any point during this test counts -- an
+      // archived below-grade attempt says as much as the current one does.
+      const belowGradeUsed = !!belowCurrent || attempts.some((a: any) => isBelowKey(a?.level))
       const versioned = g2Content?.standards ?? g3Content?.standards ?? g4Content?.standards ?? g5Content?.standards ?? null
       const standards = versioned
-        ? calculateVersionedStandards(versioned, raw, config)
-        : calculateStandards(grade, raw)
+        ? calculateVersionedStandards(versioned, raw, config, !!belowCurrent)
+        : calculateStandards(grade, raw, !!belowCurrent)
       const wordsRead = (raw.orf_words_read as number) || 0
       const orfErrors = (raw.orf_errors as number) || 0
       const time = (raw.orf_time_seconds as number) || 60
@@ -1441,16 +1560,18 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       const calcCwpm = wordsRead > 0 && time > 0 ? Math.round(((wordsRead - orfErrors) / time) * 60) : null
       const calcAccuracy = wordsRead > 0 ? Math.round(((wordsRead - orfErrors) / wordsRead) * 1000) / 10 : null
       const naepVal = (raw.naep as number) || null
-      const passageMult = config.passageMultipliers[raw.passage_level as string] || 1.0
+      const passageMult = belowCurrent ? 1.0 : (config.passageMultipliers[raw.passage_level as string] || 1.0)
       const naepMult = naepVal ? (NAEP_MULTIPLIERS[naepVal] || 1) : 1
-      const wCwpm = calcCwpm != null && calcCwpm > 0 ? Math.round(calcCwpm * passageMult * naepMult) : null
+      const wCwpm = !belowCurrent && calcCwpm != null && calcCwpm > 0 ? Math.round(calcCwpm * passageMult * naepMult) : null
 
       // Best weighted CWPM across ALL attempts (current + archived)
       // If a student tries a harder passage and does better, that score should count
       let bestWeightedCwpm = wCwpm
-      let bestPassageLevel = raw.passage_level || null
-      const attempts = Array.isArray(raw.passages_attempted) ? raw.passages_attempted : []
+      let bestPassageLevel = belowCurrent ? null : (raw.passage_level || null)
       for (const att of attempts) {
+        // Below-grade attempts are skipped outright: a strong reading of an
+        // easier text must never win "best" and become the placement score.
+        if (isBelowKey(att?.level)) continue
         const attWords = (att.orf_words_read as number) || 0
         const attErrors = (att.orf_errors as number) || 0
         const attTime = (att.orf_time_seconds as number) || 60
@@ -1487,18 +1608,23 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         student_id: sid,
         raw_scores: raw,
         calculated_metrics: {
-          passage_level: raw.passage_level || null,
-          passage_multiplier: passageMult,
-          cwpm: calcCwpm,
+          // Everything from here to `syllable_max` is what placement reads, so
+          // a below-grade reading contributes null to all of it and is carried
+          // in the `diagnostic_*` keys below instead. Writing the raw CWPM here
+          // would be enough to leak it back in: every consumer falls back
+          // `best_weighted_cwpm ?? weighted_cwpm ?? cwpm`.
+          passage_level: belowCurrent ? null : (raw.passage_level || null),
+          passage_multiplier: belowCurrent ? null : passageMult,
+          cwpm: belowCurrent ? null : calcCwpm,
           weighted_cwpm: wCwpm,
           best_weighted_cwpm: bestWeightedCwpm,
           best_passage_level: bestPassageLevel,
-          naep: naepVal,
-          naep_multiplier: naepMult,
-          accuracy_pct: calcAccuracy,
-          comp_total: cTotal,
-          comp_max: cTotal != null ? config.compMax : null,
-          comp_answered: compAnswered,
+          naep: belowCurrent ? null : naepVal,
+          naep_multiplier: belowCurrent ? null : naepMult,
+          accuracy_pct: belowCurrent ? null : calcAccuracy,
+          comp_total: belowCurrent ? null : cTotal,
+          comp_max: belowCurrent || cTotal == null ? null : config.compMax,
+          comp_answered: belowCurrent ? 0 : compAnswered,
           comp_not_administered: compSkipped,
           phonics_total: pTotal || null,
           phonics_max: config.phonicsMax,
@@ -1511,6 +1637,22 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           oral_content_version: g2Content?.version ?? g3Content?.version ?? g4Content?.version ?? g5Content?.version ?? null,
           passages_attempted: raw.passages_attempted || [],
           standards_baseline: standards,
+          // Below-grade reading, kept apart from everything above. `below_grade_passage`
+          // is true if the student read below grade at any point this test;
+          // `level_up_eligible` is false alongside it and null otherwise, so an
+          // ordinary result is left undetermined rather than asserted eligible.
+          below_grade_passage: belowGradeUsed,
+          level_up_eligible: belowGradeUsed ? false : null,
+          // Which passage was actually read, recorded so a future content edit
+          // cannot silently re-point it -- the source grade travels with it.
+          diagnostic_passage_key: belowCurrent ? raw.passage_level : null,
+          diagnostic_passage_grade: belowCurrent ? belowCurrent.grade : null,
+          diagnostic_passage_level: belowCurrent ? belowCurrent.level : null,
+          diagnostic_cwpm: belowCurrent ? calcCwpm : null,
+          diagnostic_accuracy_pct: belowCurrent ? calcAccuracy : null,
+          diagnostic_naep: belowCurrent ? naepVal : null,
+          diagnostic_comp_total: belowCurrent ? cTotal : null,
+          diagnostic_comp_max: belowCurrent && cTotal != null ? config.belowCompMax : null,
         },
         previous_class: students.find(s => s.id === sid)?.english_class || null,
         entered_by: currentTeacher?.id || null,
@@ -1638,10 +1780,14 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
 
   const student = classStudents[selectedIdx]
   const sc = student ? (scores[student.id] || {}) : {}
-  const passageLevel = (sc.passage_level || '') as PassageLevel | ''
-  const passage = passageLevel ? config.passages[passageLevel as PassageLevel] : null
-  const compQuestions = passageLevel ? config.comprehension[passageLevel as PassageLevel] : []
-  const hasNaep = passageLevel ? config.naepLevels.includes(passageLevel as PassageLevel) : false
+  const passageLevel = (sc.passage_level || '') as PassageKey
+  const passage = passageLevel ? config.passages[passageLevel] : null
+  const compQuestions = passageLevel ? config.comprehension[passageLevel] : []
+  const hasNaep = passageLevel ? config.naepLevels.includes(passageLevel) : false
+  // The selected passage came from the grade below: everything below it is
+  // recorded for the teacher, but none of it counts toward placement.
+  const belowSelection = parseBelowKey(passageLevel)
+  const compMaxForPassage = belowSelection ? config.belowCompMax : config.compMax
 
   const studentHasData = (sid: string) => {
     const s = scores[sid] || {}
@@ -1655,9 +1801,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const accuracy = sc.orf_words_read && sc.orf_errors != null
     ? Math.round(((sc.orf_words_read - sc.orf_errors) / sc.orf_words_read) * 1000) / 10
     : null
-  const livePassageMult = passageLevel ? (config.passageMultipliers[passageLevel] || 1.0) : 1.0
+  const livePassageMult = passageLevel && !belowSelection ? (config.passageMultipliers[passageLevel] || 1.0) : 1.0
   const liveNaepMult = sc.naep ? (NAEP_MULTIPLIERS[sc.naep] || 1) : 1
-  const weightedCwpm = cwpm ? Math.round(cwpm * livePassageMult * liveNaepMult) : cwpm
+  // No weighted score for a below-grade passage, on screen or in the database.
+  const weightedCwpm = belowSelection ? null : (cwpm ? Math.round(cwpm * livePassageMult * liveNaepMult) : cwpm)
   const compNotAdministered = !!sc.comp_not_administered
 
   // Turning the flag on clears any comprehension scores already entered, so a
@@ -1888,7 +2035,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       return (
                         <button key={level} onClick={async () => {
                           if (passageLevel && level !== passageLevel && PASSAGE_FIELDS.some(f => sc[f] != null)) {
-                            if (!await confirmDialog({ title: `Switch from passage ${passageLevel} to ${level}?`, message: 'Current scores will be archived and a fresh entry started.', confirmLabel: 'Switch' })) return
+                            if (!await confirmDialog({ title: `Switch from passage ${passageKeyLabel(passageLevel)} to ${level}?`, message: 'Current scores will be archived and a fresh entry started.', confirmLabel: 'Switch' })) return
                           }
                           updateScore(student.id, 'passage_level', level)
                         }}
@@ -1906,6 +2053,60 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     })}
                   </div>
 
+                  {/* Grade below -- diagnostic only, see the note on PassageKey */}
+                  {config.belowLevels.length > 0 && (
+                    <div className="mb-4">
+                      {!showBelowPassages && !belowSelection ? (
+                        <button onClick={() => setShowBelowPassages(true)}
+                          className="text-[11px] font-semibold text-amber-700 hover:text-amber-800 underline decoration-dotted underline-offset-2">
+                          Student can&rsquo;t access Grade {grade} text? Use a Grade {config.belowGrade} passage
+                        </button>
+                      ) : (
+                        <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-4">
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
+                              Grade {config.belowGrade} passages &mdash; diagnostic only
+                            </p>
+                            {!belowSelection && (
+                              <button onClick={() => setShowBelowPassages(false)}
+                                className="text-[10px] text-amber-700 hover:text-amber-900">Hide</button>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-amber-800/80 mb-3 leading-relaxed">
+                            For a student who cannot access Grade {grade} text. You get a real running
+                            record instead of a floor score, and it is kept as your information: no
+                            weighted CWPM, no effect on placement, and the student is not in contention
+                            to level up this cycle.
+                          </p>
+                          <div className="flex gap-2 flex-wrap">
+                            {config.belowLevels.map(key => {
+                              const bp = config.passages[key]
+                              if (!bp) return null
+                              const lv = parseBelowKey(key)?.level || key
+                              return (
+                                <button key={key} onClick={async () => {
+                                  if (passageLevel && key !== passageLevel && PASSAGE_FIELDS.some(f => sc[f] != null)) {
+                                    if (!await confirmDialog({ title: `Switch from passage ${passageKeyLabel(passageLevel)} to Grade ${config.belowGrade} ${lv}?`, message: 'Current scores will be archived and a fresh entry started.', confirmLabel: 'Switch' })) return
+                                  }
+                                  updateScore(student.id, 'passage_level', key)
+                                }}
+                                  className={`flex-1 min-w-[96px] px-3 py-2.5 rounded-xl text-center border transition-all ${
+                                    passageLevel === key
+                                      ? 'bg-amber-600 text-white border-amber-600 shadow-sm ring-2 ring-amber-600/30'
+                                      : 'bg-surface text-amber-900 border-amber-200 hover:border-amber-500'
+                                  }`}>
+                                  <div className="text-[13px] font-bold">G{config.belowGrade} {lv}</div>
+                                  <div className="text-[10px] mt-0.5 opacity-80">{bp.title}</div>
+                                  <div className="text-[9px] mt-0.5 opacity-60">{bp.wordCount}w</div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Previous attempts -- click to restore */}
                   {Array.isArray(sc.passages_attempted) && sc.passages_attempted.length > 0 && (
                     <div className="mb-4 bg-amber-50/50 border border-amber-100 rounded-lg px-3 py-2">
@@ -1913,12 +2114,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       <div className="flex gap-2 flex-wrap">
                         {sc.passages_attempted.map((att: any, i: number) => (
                           <button key={i} onClick={async () => {
-                            if (!await confirmDialog({ title: `Restore the Level ${att.level} attempt?`, message: 'Current passage data will be swapped into the archive.', confirmLabel: 'Restore' })) return
+                            if (!await confirmDialog({ title: `Restore the ${isBelowKey(att.level) ? 'Grade ' + parseBelowKey(att.level)!.grade + ' Level ' + parseBelowKey(att.level)!.level : 'Level ' + att.level} attempt?`, message: 'Current passage data will be swapped into the archive.', confirmLabel: 'Restore' })) return
                             restoreAttempt(student.id, i)
                           }}
                             className="inline-flex items-center gap-1.5 text-[10px] text-amber-800 bg-amber-100/60 hover:bg-amber-200/80 border border-amber-200 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer">
                             <RotateCcw size={10} />
-                            <span className="font-bold">Lv {att.level}</span>
+                            <span className="font-bold">Lv {passageKeyLabel(att.level)}</span>
                             {att.orf_words_read != null && att.orf_errors != null && att.orf_time_seconds ? (
                               <span className="text-text-tertiary">
                                 {Math.round(((att.orf_words_read - att.orf_errors) / (att.orf_time_seconds || 60)) * 60)} CWPM
@@ -1928,7 +2129,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                               <span className="text-text-tertiary italic">Comp n/a</span>
                             ) : att.comp_1 != null ? (
                               <span className="text-text-tertiary">
-                                Comp {[att.comp_1, att.comp_2, att.comp_3, att.comp_4, att.comp_5].reduce((a: number, b: any) => a + (b || 0), 0)}/{config.compMax}
+                                Comp {[att.comp_1, att.comp_2, att.comp_3, att.comp_4, att.comp_5].reduce((a: number, b: any) => a + (b || 0), 0)}/{isBelowKey(att.level) ? config.belowCompMax : config.compMax}
                               </span>
                             ) : null}
                           </button>
@@ -1939,17 +2140,25 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
 
                   {/* Selected passage info + open button */}
                   {passage && (
-                    <div className="bg-green-50/50 rounded-lg px-4 py-3 border border-green-100 flex items-center justify-between">
+                    <div className={`rounded-lg px-4 py-3 border flex items-center justify-between ${
+                      belowSelection ? 'bg-amber-50/60 border-amber-200' : 'bg-green-50/50 border-green-100'
+                    }`}>
                       <div>
-                        <p className="text-[12px] font-semibold text-navy">Level {passageLevel}: {passage.title}</p>
-                        <p className="text-[10px] text-text-secondary">
+                        <p className={`text-[12px] font-semibold ${belowSelection ? 'text-amber-900' : 'text-navy'}`}>
+                          {belowSelection ? `Grade ${belowSelection.grade} Level ${belowSelection.level}` : `Level ${passageLevel}`}: {passage.title}
+                        </p>
+                        <p className={`text-[10px] ${belowSelection ? 'text-amber-800/80' : 'text-text-secondary'}`}>
                           {passage.wordCount} words
                           {passage.genre ? ` | ${passage.genre}` : ''}
-                          {` | weight ${(config.passageMultipliers[passageLevel] ?? 1).toFixed(2)}`}
+                          {belowSelection
+                            ? ' | below grade level — diagnostic only, not counted toward placement'
+                            : ` | weight ${(config.passageMultipliers[passageLevel] ?? 1).toFixed(2)}`}
                         </p>
                       </div>
                       <button onClick={() => setShowPassageReader(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-green-600 text-white hover:bg-green-700 transition-all">
+                        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold text-white transition-all ${
+                          belowSelection ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'
+                        }`}>
                         <BookOpen size={14} />
                         {sc.orf_words_read ? 'Re-open' : 'Open'} Passage
                       </button>
@@ -1961,6 +2170,15 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {passage && (
                   <div className="bg-surface border border-border rounded-xl p-5 mb-4">
                     <h4 className="text-[13px] font-semibold text-navy mb-4">Oral Reading Fluency Results</h4>
+                    {belowSelection && (
+                      <p className="text-[10px] text-amber-800 bg-amber-50/60 border border-amber-200 rounded-lg px-3 py-2 mb-4 leading-relaxed">
+                        Read on a Grade {belowSelection.grade} passage. These numbers describe how the
+                        student handled easier text, so they are recorded as diagnostic information
+                        only: no weighted CWPM is produced, the result does not feed placement, and
+                        Grade {grade} comprehension and fluency standards are left unscored rather
+                        than marked met or unmet on text below their grade.
+                      </p>
+                    )}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div>
                         <label className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider block mb-1">Words Read</label>
@@ -2167,8 +2385,11 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="text-center">
                         <div className="text-[10px] text-text-tertiary uppercase">Passage</div>
-                        <div className="text-[16px] font-bold text-navy">Level {passageLevel}</div>
+                        <div className={`text-[16px] font-bold ${belowSelection ? 'text-amber-700' : 'text-navy'}`}>
+                          {belowSelection ? `G${belowSelection.grade} ${belowSelection.level}` : `Level ${passageLevel}`}
+                        </div>
                         <div className="text-[9px] text-text-tertiary">{passage?.title}</div>
+                        {belowSelection && <div className="text-[8px] font-bold text-amber-700 uppercase tracking-wide mt-0.5">Below grade</div>}
                       </div>
                       <div className="text-center">
                         <div className="text-[10px] text-text-tertiary uppercase">CWPM</div>
@@ -2184,7 +2405,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       <div className="text-center">
                         <div className="text-[10px] text-text-tertiary uppercase">Comprehension</div>
                         <div className="text-[16px] font-bold text-navy" title={compNotAdministered ? 'Student was stopped during the passage; the questions were never asked.' : undefined}>
-                          {compNotAdministered ? <span className="text-text-tertiary text-[13px]">n/a</span> : `${compTotal} / 15`}
+                          {compNotAdministered ? <span className="text-text-tertiary text-[13px]">n/a</span> : `${compTotal} / ${compMaxForPassage}`}
                         </div>
                       </div>
                     </div>
@@ -2205,8 +2426,8 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     {(() => {
                       const versionedStds = g2Content?.standards ?? g3Content?.standards ?? g4Content?.standards ?? g5Content?.standards ?? null
                       const stds = versionedStds
-                        ? calculateVersionedStandards(versionedStds, sc, config)
-                        : calculateStandards(grade, sc)
+                        ? calculateVersionedStandards(versionedStds, sc, config, !!belowSelection)
+                        : calculateStandards(grade, sc, !!belowSelection)
                       const met = stds.filter(s => s.met).length
                       return stds.length > 0 ? (
                         <div className="mt-3 pt-3 border-t border-navy/10">
@@ -2233,7 +2454,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       {showPassageReader && passage && passageLevel && (
         <PassageReaderModal
           passage={passage}
-          level={passageLevel as PassageLevel}
+          level={passageLevel}
           initialData={{ wordsRead: sc.orf_words_read, errors: sc.orf_errors, timeSeconds: sc.orf_time_seconds }}
           onSave={(data) => {
             updateScore(student.id, 'orf_words_read', data.wordsRead)

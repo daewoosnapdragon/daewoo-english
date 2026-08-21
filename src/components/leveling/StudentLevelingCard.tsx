@@ -5,6 +5,7 @@ import { Student, EnglishClass, ENGLISH_CLASSES } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { CheckCircle2, Circle, AlertTriangle, Star } from 'lucide-react'
 import { getG1Content, G1_LEGACY_VERSION } from './grade1Content'
+import { parseBelowKey, usedBelowGradePassage } from './belowGradePassage'
 
 // ============================================================================
 // TYPES
@@ -101,12 +102,23 @@ export default function StudentLevelingCard({
 
   // Passage info
   const passageLevel = isG1 ? (raw.o_passage_level || calc.passage_level || null) : (raw.passage_level || calc.passage_level || null)
-  const passageTitle = passageLevel ? (PASSAGE_TITLES[passageLevel] || `Level ${passageLevel}`) : null
+  // A passage pulled from the grade below reads as 'G3-C'. It is shown as what
+  // it is rather than dressed up as a level on this grade's ladder.
+  const belowPassage = parseBelowKey(passageLevel)
+  const readBelowGrade = !isG1 && usedBelowGradePassage(calc, raw)
+  const passageLabel = belowPassage
+    ? `Grade ${belowPassage.grade} Level ${belowPassage.level}`
+    : passageLevel ? `Level ${passageLevel}` : null
+  const passageTitle = belowPassage
+    ? null
+    : passageLevel ? (PASSAGE_TITLES[passageLevel] || `Level ${passageLevel}`) : null
 
-  // CWPM / accuracy
-  const cwpm = isG1 ? calc.cwpm : (calc.weighted_cwpm ?? calc.cwpm ?? null)
-  const accuracy = isG1 ? null : (calc.accuracy_pct ?? null)
-  const naep = isG1 ? raw.o_naep : raw.naep
+  // CWPM / accuracy. A below-grade reading is stored in the diagnostic keys and
+  // deliberately absent from the placement ones, so it is read back from there
+  // and labelled -- never silently shown as if it were an on-grade result.
+  const cwpm = isG1 ? calc.cwpm : (calc.weighted_cwpm ?? calc.cwpm ?? calc.diagnostic_cwpm ?? null)
+  const accuracy = isG1 ? null : (calc.accuracy_pct ?? calc.diagnostic_accuracy_pct ?? null)
+  const naep = isG1 ? raw.o_naep : (raw.naep ?? calc.diagnostic_naep ?? null)
 
   // Watchlist
   const isWatchlist = anecdotal?.is_watchlist || false
@@ -193,9 +205,14 @@ export default function StudentLevelingCard({
           {passageLevel && (
             <div className="bg-surface-alt rounded-lg p-2.5 mb-2.5">
               <div className="flex items-baseline justify-between">
-                <span className="text-[13px] font-bold text-navy">Level {passageLevel}</span>
+                <span className={`text-[13px] font-bold ${belowPassage ? 'text-amber-700' : 'text-navy'}`}>{passageLabel}</span>
                 <span className="text-[9px] text-text-tertiary">{passageTitle}</span>
               </div>
+              {readBelowGrade && (
+                <div className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mt-1">
+                  Below grade &mdash; diagnostic only, not in contention to level up
+                </div>
+              )}
               {cwpm != null && (
                 <div className="flex gap-3 mt-1.5 text-[10px]">
                   <span><strong className="text-navy">{cwpm}</strong> <span className="text-text-tertiary">CWPM</span></span>
