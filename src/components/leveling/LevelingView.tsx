@@ -17,6 +17,7 @@ import { getG3Content, g3VersionKeyForTest } from '@/components/leveling/grade3C
 import { getG4Content, g4VersionKeyForTest } from '@/components/leveling/grade4Content'
 import { getG5Content, g5VersionKeyForTest } from '@/components/leveling/grade5Content'
 import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4, bandScalesFromG5 } from '@/components/leveling/grade2Band'
+import { usedBelowGradePassage, parseBelowKey } from '@/components/leveling/belowGradePassage'
 import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
@@ -1388,7 +1389,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
     const sorted = [...r].sort((a, b) => a.composite - b.composite)
     return sorted.map((row, idx) => ({
       ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
-      suggestedClass: suggestClass(row, idx, sorted.length),
+      suggestedClass: capBelowGradeSuggestion(suggestClass(row, idx, sorted.length), row.student, { raw_scores: row.score, calculated_metrics: row.calc }),
     }))
   }, [students, scores, anecdotals, enhancedBenchmarks, semGrades, excludedQuestions])
 
@@ -1550,7 +1551,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                   </td>
                 )}
                 <td className="px-2 py-2 text-center">{(row.percentile * 100).toFixed(0)}%</td>
-                <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${move ? 'ring-2 ring-amber-400' : ''}`} style={{ backgroundColor: classToColor(row.suggestedClass) + '40', color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span>{row.band && row.band.suggestedClass !== row.suggestedClass && <span className="block text-[8px] text-amber-600 mt-0.5" title="The rank-based placement and the absolute band disagree for this student.">differs from band</span>}</td>
+                <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${move ? 'ring-2 ring-amber-400' : ''}`} style={{ backgroundColor: classToColor(row.suggestedClass) + '40', color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span>{row.band && row.band.suggestedClass !== row.suggestedClass && <span className="block text-[8px] text-amber-600 mt-0.5" title="The rank-based placement and the absolute band disagree for this student.">differs from band</span>}{row.readBelowGrade && <span className="block text-[8px] font-bold text-amber-700 mt-0.5" title={`Read a below-grade passage${row.diagnosticPassage ? ` (${row.diagnosticPassage})` : ''}. That reading is diagnostic only, so it does not feed placement and the student is not in contention to level up.`}>held &mdash; below grade</span>}</td>
                 <td className="px-2 py-2 text-center">{row.anec?.teacher_recommends ? <span className={`text-[9px] font-bold ${row.anec.teacher_recommends === 'keep' ? 'text-blue-600' : row.anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{row.anec.teacher_recommends === 'keep' ? 'Keep' : row.anec.teacher_recommends === 'move_up' ? 'Up' : 'Down'}</span> : '—'}</td>
               </tr>)})}</tbody>
         </table>
@@ -1682,7 +1683,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
     const sorted = [...r].sort((a, b) => a.composite - b.composite)
     return sorted.map((row, idx) => ({
       ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
-      suggestedClass: suggestClass(row, idx, sorted.length),
+      suggestedClass: capBelowGradeSuggestion(suggestClass(row, idx, sorted.length), row.student, { raw_scores: row.score, calculated_metrics: row.calc }),
     }))
   }, [students, scores, anecdotals, benchmarks, semGrades, meetingExcludedQ])
 
@@ -1991,7 +1992,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                         {anec?.is_watchlist && <Star size={9} className="text-amber-500 fill-amber-500" />}{isOvr && <AlertTriangle size={9} className="text-amber-500" />}
                       </div>
                     </div>
-                    {score?.raw_scores && <div className="flex gap-1 mt-1 text-[8px] text-text-tertiary">{(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm) != null && <span>O:{Math.round(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm)}{score.calculated_metrics?.best_passage_level ? `(${score.calculated_metrics.best_passage_level})` : score.calculated_metrics?.passage_level ? `(${score.calculated_metrics.passage_level})` : ''}</span>}{score.calculated_metrics?.comp_not_administered ? <span title="Comprehension not administered">C:n/a</span> : score.calculated_metrics?.comp_total != null && <span>C:{score.calculated_metrics.comp_total}</span>}{score.raw_scores.writing != null && <span>W:{score.raw_scores.writing}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
+                    {score?.calculated_metrics && usedBelowGradePassage(score.calculated_metrics, score.raw_scores || {}) && <p className="text-[7px] font-bold text-amber-700 uppercase tracking-wide mt-0.5" title="Read a below-grade passage. Diagnostic only -- not in contention to level up.">Below grade &mdash; diag</p>}{score?.raw_scores && <div className="flex gap-1 mt-1 text-[8px] text-text-tertiary">{(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm) != null && <span>O:{Math.round(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm)}{score.calculated_metrics?.best_passage_level ? `(${score.calculated_metrics.best_passage_level})` : score.calculated_metrics?.passage_level ? `(${score.calculated_metrics.passage_level})` : ''}</span>}{score.calculated_metrics?.comp_not_administered ? <span title="Comprehension not administered">C:n/a</span> : score.calculated_metrics?.comp_total != null && <span>C:{score.calculated_metrics.comp_total}</span>}{score.raw_scores.writing != null && <span>W:{score.raw_scores.writing}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
                     {anec && <div className="flex gap-0.5 mt-1">{DIMS.map(d => { const v = anec[d.key]; const c = !v ? '#e5e7eb' : v <= 1 ? '#ef4444' : v === 2 ? '#f59e0b' : v === 3 ? '#3b82f6' : '#22c55e'; return <div key={d.key} className="w-3 h-3 rounded-sm flex items-center justify-center" style={{ backgroundColor: c, color: v ? '#fff' : '#d1d5db', fontSize: '7px', fontWeight: 700 }}>{v || '—'}</div> })}</div>}
                     {anec?.teacher_recommends && <p className={`text-[7px] font-bold mt-0.5 ${anec.teacher_recommends === 'keep' ? 'text-blue-600' : anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{anec.teacher_recommends === 'keep' ? 'KEEP' : anec.teacher_recommends === 'move_up' ? 'UP' : 'DOWN'}</p>}
                     {expandedCard === student.id && (
@@ -2180,7 +2181,30 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
       }, bandScales)
     : null
 
-  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags, band }
+  // Tested on a passage below their grade: recorded, flagged, and held out of
+  // level-up contention. The oral metrics above are already null for these
+  // students -- the oral component simply drops out of the composite.
+  const readBelowGrade = usedBelowGradePassage(calc, sc)
+  const diagnosticPassage = calc.diagnostic_passage_grade != null && calc.diagnostic_passage_level != null
+    ? `G${calc.diagnostic_passage_grade} ${calc.diagnostic_passage_level}`
+    : (parseBelowKey(sc.passage_level) ? `G${parseBelowKey(sc.passage_level)!.grade} ${parseBelowKey(sc.passage_level)!.level}` : null)
+  return { student: s, score: sc, calc, bench, anec, grades, readBelowGrade, diagnosticPassage, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags, band }
+}
+
+/**
+ * Hold a student who was tested below grade at or below their current class.
+ * The oral evidence that would justify moving them up was taken on easier
+ * text, so it cannot support a move up -- it can still support a hold or a
+ * move down, which is why this caps the suggestion rather than freezing it.
+ */
+function capBelowGradeSuggestion(suggested: EnglishClass, student: Student, scoreRow: any): EnglishClass {
+  if (!scoreRow) return suggested
+  if (!usedBelowGradePassage(scoreRow.calculated_metrics || {}, scoreRow.raw_scores || {})) return suggested
+  const ladder: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
+  const cur = ladder.indexOf(student.english_class as EnglishClass)
+  const sug = ladder.indexOf(suggested)
+  if (cur < 0 || sug < 0) return suggested
+  return sug > cur ? ladder[cur] : suggested
 }
 
 function suggestClass(row: any, idx: number, total: number): EnglishClass {
@@ -2240,7 +2264,8 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
     if (sc.word_reading_correct != null && sc.word_reading_correct < 4) { result[item.id] = 'Lily'; return }
     if (sc.word_reading_correct != null && sc.word_reading_attempted > 0 && sc.word_reading_correct / sc.word_reading_attempted < 0.1) { result[item.id] = 'Lily'; return }
     const p = sorted.length > 1 ? idx / (sorted.length - 1) : 0.5
-    result[item.id] = PLACEMENT_CLASSES[Math.min(Math.floor(p / (1 / PLACEMENT_CLASSES.length)), PLACEMENT_CLASSES.length - 1)]
+    const suggested = PLACEMENT_CLASSES[Math.min(Math.floor(p / (1 / PLACEMENT_CLASSES.length)), PLACEMENT_CLASSES.length - 1)]
+    result[item.id] = capBelowGradeSuggestion(suggested, s, scores[s.id])
   })
   return result
 }
