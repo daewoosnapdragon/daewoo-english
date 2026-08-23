@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
-import { classToColor, classToTextColor, domainLabel, compIsCountable } from '@/lib/utils'
+import { classToColor, classToTextColor, domainLabel, compRatioForComposite } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
@@ -1083,7 +1083,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                         {studentData[modalStudent.id].scores.writing != null && <p>Writing: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.writing}/20</span></p>}
                         {studentData[modalStudent.id].scores.written_mc != null && <p>MC: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.written_mc}/{getWrittenMcTotal(levelTest.grade, studentData[modalStudent.id].calc?.written_mc_max)}</span></p>}
                         {studentData[modalStudent.id].calc?.comp_not_administered
-                          ? <p>Comp: <span className="text-text-tertiary italic" title="Student was stopped during the passage; the questions were never asked.">not administered</span></p>
+                          ? <p>Comp: <span className="text-amber-700 font-semibold" title="The student was stopped during the passage and never heard the questions. Counted in the composite at the top of the Frustration band, not as a zero.">not administered</span></p>
                           : studentData[modalStudent.id].calc?.comp_total != null && <p>Comp: <span className="font-bold text-navy">{studentData[modalStudent.id].calc.comp_total}/{studentData[modalStudent.id].calc.comp_max ?? 15}</span></p>}
                         {studentData[modalStudent.id].scores.word_reading_correct != null && <p>WR: <span className="font-bold text-navy">{studentData[modalStudent.id].scores.word_reading_correct}{studentData[modalStudent.id].scores.word_reading_attempted ? `/${studentData[modalStudent.id].scores.word_reading_attempted}` : ''}</span></p>}
                       </div>) : <p className="text-text-tertiary italic">No scores yet</p>}
@@ -1526,7 +1526,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                 <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" title={`Outlier: ${flags.join(', ')}`} />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span></td>
                 <td className="px-2 py-2 text-center"><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass) + '40', color: classToTextColor(row.student.english_class as EnglishClass) }}>{row.student.english_class}</span></td>
                 <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}>{row.rawCwpm != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(row.rawCwpm)}{row.passageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.passageLevel})</span>}</span> : '—'}</td>
-                <td className="px-2 py-2 text-center">{row.calc?.comp_not_administered ? <span className="text-text-tertiary/60 italic text-[10px]" title="Not administered — student was stopped during the passage.">n/a</span> : row.rawComp != null ? <span>{row.rawComp}<span className="text-text-tertiary/50">/{row.calc?.comp_max || 15}</span></span> : '—'}</td>
+                <td className="px-2 py-2 text-center">{row.compUnmeasured ? <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold" title="Not administered — the student was stopped during the passage and never heard the questions. Scored at the top of the Frustration band in the composite, not dropped.">comp n/a</span> : row.rawComp != null ? <span>{row.rawComp}<span className="text-text-tertiary/50">/{row.calc?.comp_max || 15}</span></span> : '—'}</td>
                 <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.rawWriting != null ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawWriting}<span className="text-text-tertiary/50">/20</span></span> : '—'}</td>
                 <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.rawMc != null ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawMc}<span className="text-text-tertiary/50">/{GRADE_MC_TOTAL}</span></span> : '—'}</td>
                 {excludedQuestions.length > 0 && (
@@ -1555,7 +1555,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = 40% oral test + 15% MC + 35% writing rubric + 10% teacher rating. Rank = position within the grade (higher = stronger). {hasBands && <>Band = absolute score from the passage the student sustained, reference only; it does not decide placement. </>} <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 40% oral test + 15% MC + 35% writing rubric + 10% teacher rating. Rank = position within the grade (higher = stronger). <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; it counts as the top of the Frustration band in the composite, not as a zero and not as missing. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. {hasBands && <>Band = absolute score from the passage the student sustained, reference only; it does not decide placement. </>} <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
     </div>
   )
 }
@@ -2105,9 +2105,11 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   }
 
   const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
-  // Comprehension: comp_total / 15 (5 questions × 0-3 scale). A scored 0 counts;
-  // "not administered" and "not scored yet" do not. See compIsCountable.
-  const compRatio = compIsCountable(calc) ? calc.comp_total / (calc.comp_max || 15) : null
+  // Comprehension: comp_total / comp_max. A scored 0 counts. "Not scored yet"
+  // carries nothing. "Not administered" is scored at the top of the Frustration
+  // band rather than dropped -- see compRatioForComposite.
+  const compRatio = compRatioForComposite(calc)
+  const compUnmeasured = !!calc.comp_not_administered
   // Grade 2 only: phonics / 25 and sentences / 35
   const studentGrade = Number(s.grade)
   // The Fall 2026 sentence set is 36 points, not the legacy 35, and a future
@@ -2180,7 +2182,7 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
       }, bandScales)
     : null
 
-  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags, band }
+  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compUnmeasured, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags, band }
 }
 
 function suggestClass(row: any, idx: number, total: number): EnglishClass {
@@ -2207,7 +2209,8 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
     const oralRatios: number[] = []
     if (rawCwpmValue != null && sharedCwpmEnd > 0) oralRatios.push(Math.min(rawCwpmValue / sharedCwpmEnd, 1.2))
     if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) oralRatios.push(sc.word_reading_correct / sc.word_reading_attempted)
-    if (compIsCountable(calc)) oralRatios.push(calc.comp_total / (calc.comp_max || 15))
+    const compAuto = compRatioForComposite(calc)
+    if (compAuto != null) oralRatios.push(compAuto)
     const oralScore = oralRatios.length > 0 ? oralRatios.reduce((a, b) => a + b, 0) / oralRatios.length : null
     // Written test split: MC and writing rubric scored separately
     const mcRatios: number[] = []

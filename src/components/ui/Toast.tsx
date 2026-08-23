@@ -16,8 +16,13 @@ export default function Toast() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (!toast) return
-    // Only react to genuinely new toast messages
+    // The context nulls `toast` on its own timer, which is shorter than the
+    // dismiss timer below. Reset the dedupe marker so an identical message
+    // (two autosaves in a row) shows again, and — critically — do NOT tear
+    // down the dismiss timer here: this effect re-runs on that null, and
+    // clearing the timer on the way through is what used to leave every
+    // autosave toast sitting on screen until it was clicked.
+    if (!toast) { lastToastRef.current = null; return }
     if (toast === lastToastRef.current) return
     lastToastRef.current = toast
 
@@ -35,9 +40,10 @@ export default function Toast() {
       setLeaving(true)
       setTimeout(() => { setVisible(false); setLeaving(false) }, 250)
     }, duration)
-
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
   }, [toast])
+
+  // Only on unmount — see above.
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
 
   const dismiss = () => {
     if (timerRef.current) clearTimeout(timerRef.current)

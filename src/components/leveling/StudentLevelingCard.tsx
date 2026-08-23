@@ -271,10 +271,12 @@ export default function StudentLevelingCard({
             // Never asked (student stopped mid-passage) is not the same as zero.
             if (calc.comp_not_administered) {
               return (
-                <div className="mt-2.5 bg-surface-alt rounded-lg p-2.5">
-                  <div className="text-[9px] font-bold text-text-secondary mb-1">COMPREHENSION</div>
-                  <div className="text-[10px] text-text-tertiary italic">
-                    Not administered &mdash; student was stopped during the passage.
+                <div className="mt-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                  <div className="text-[9px] font-bold text-amber-800 mb-1">COMPREHENSION &mdash; NOT ADMINISTERED</div>
+                  <div className="text-[10px] text-amber-800/90 leading-snug">
+                    The student was stopped during the passage and never heard the questions.
+                    Counted in the composite at the top of the Frustration band, not as a zero.
+                    If they were stopped for a reason other than reading, check the placement by hand.
                   </div>
                 </div>
               )

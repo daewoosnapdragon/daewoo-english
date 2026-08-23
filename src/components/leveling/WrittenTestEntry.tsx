@@ -7,6 +7,7 @@ import { getG2Content, G2Content } from './grade2Content'
 import { getG3Content, G3Content } from './grade3Content'
 import { getG4Content, G4Content } from './grade4Content'
 import { getG5Content, G5Content } from './grade5Content'
+import TestNotesPanel from './TestNotesPanel'
 
 // ═══════════════════════════════════════════════════════════════════════
 // TYPES
@@ -1043,6 +1044,11 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         </div>
       </div>
 
+      {/* Before-you-start notes. The written paper is sat as a group, so the
+          universal notes are the ones that apply; the grade's own cautions are
+          shown next to the sections they belong to. */}
+      <TestNotesPanel storageKey={`written-g${config.grade}`} />
+
       {/* Keyboard hint */}
       <div className="mb-3 flex items-center gap-3 text-[10px] text-text-tertiary bg-surface-alt/60 rounded-lg px-3 py-1.5">
         <span className="font-semibold">Keyboard:</span>
@@ -1822,7 +1828,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     setSavedSnapshot(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
     try {
       const { data: existing } = await supabase.from('level_test_scores')
-        .select('raw_scores, calculated_metrics')
+        .select('raw_scores, calculated_metrics, previous_class')
         .eq('level_test_id', levelTest.id)
         .eq('student_id', student.id)
         .maybeSingle()
@@ -1832,6 +1838,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         delete raw.written_answers; delete raw.written_rubric; delete raw.written_checklist; delete raw.written_checklist_capped; delete raw.written_short_writing; delete raw.written_mc; delete raw.writing
         delete calc.written_mc_total; delete calc.written_mc_max; delete calc.written_mc_pct
         delete calc.writing_total; delete calc.writing_max; delete calc.written_domain_scores; delete calc.written_standards_mastery
+        delete calc.short_writing_total; delete calc.short_writing_max
         // DELETE first to bypass merge trigger, then re-insert oral-only data if any
         await supabase.from('level_test_scores').delete()
           .eq('level_test_id', levelTest.id).eq('student_id', student.id)

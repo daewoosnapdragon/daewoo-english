@@ -11,6 +11,8 @@ import {
   G1_LEGACY_VERSION,
 } from './grade1Content'
 import type { G1Content, G1QuestionDef, G1WritingCategory, PassageLevel } from './grade1Content'
+import TestNotesPanel from './TestNotesPanel'
+import { G1_ORAL_NOTES, STOPPING_NOTES } from './testNotes'
 
 // ============================================================================
 // GRADE 1 TEST CONFIGURATION
@@ -2762,19 +2764,17 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           </div>
         </div>
 
-        {/* Administration cautions specific to this test version */}
-        {content.adminNotes.length > 0 && (
-          <details className="mb-4 bg-amber-50/60 border border-amber-200 rounded-xl px-4 py-2.5">
-            <summary className="text-[11px] font-semibold text-amber-900 cursor-pointer flex items-center gap-1.5">
-              <Info size={12} /> Before you start &mdash; {content.label} notes ({content.adminNotes.length})
-            </summary>
-            <ul className="mt-2 space-y-1 pl-4 list-disc">
-              {content.adminNotes.map((n, i) => (
-                <li key={i} className="text-[10px] text-amber-800 leading-snug">{n}</li>
-              ))}
-            </ul>
-          </details>
-        )}
+        {/* Before-you-start notes: universal, then Grade 1 oral, then the
+            cautions specific to this test version. */}
+        <TestNotesPanel
+          storageKey="oral-g1"
+          groups={[
+            { label: 'Grade 1 oral test', notes: G1_ORAL_NOTES },
+            ...(content.adminNotes.length > 0
+              ? [{ label: `${content.label} notes`, notes: content.adminNotes }]
+              : []),
+          ]}
+        />
 
         {/* Section 1: Alphabet Recognition -- clickable grids */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
@@ -3154,6 +3154,13 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           <h4 className="text-[13px] font-semibold text-navy mb-1">Open Response (Two Pictures)</h4>
           <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100 mb-2">
             <p className="text-[11px] font-semibold text-blue-800">Say: "{content.openResponse.say}"</p>
+            {/* Kept directly under the script: this is the section where a
+                student most often has nothing to give. */}
+            <ul className="mt-1.5 space-y-0.5 pl-4 list-disc">
+              {STOPPING_NOTES.map((n, i) => (
+                <li key={i} className="text-[10px] text-blue-700/90 leading-snug">{n}</li>
+              ))}
+            </ul>
           </div>
           <p className="text-[10px] text-text-tertiary mb-1"><span className="font-semibold text-text-secondary">On the page:</span> {content.openResponse.stimulus}</p>
           <p className="text-[11px] text-text-secondary mb-3">{content.openResponse.instructions}</p>

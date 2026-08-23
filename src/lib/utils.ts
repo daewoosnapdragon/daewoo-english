@@ -349,6 +349,45 @@ export function compIsCountable(calc: {
   return calc.comp_total > 0
 }
 
+// ─── Comprehension: what an unadministered set is worth ──────────────
+// Every grade's guide puts the top of the Frustration band at 40% of the
+// comprehension total (4/10 where the guide states it outright). Used when a
+// grade's content does not carry its own `frustrationCompMax`.
+export const COMP_FRUSTRATION_RATIO = 0.4
+
+/**
+ * The comprehension ratio to feed the composite, or null when comprehension
+ * carries nothing at all.
+ *
+ * "Not administered" is NOT missing data. The teacher stops the passage and
+ * skips the questions precisely BECAUSE the student was struggling, so the
+ * fact of it is evidence of the bottom band. Dropping it from the composite
+ * used to leave the student ranked on fluency alone — which put them ABOVE a
+ * classmate who sat the questions and scored badly. It is scored instead at
+ * the top of the Frustration band: low, but not the zero of a student who
+ * genuinely answered nothing right.
+ *
+ * Flagged on the placement table either way, so a student who was stopped for
+ * a reason other than ability can be caught by eye.
+ */
+export function compRatioForComposite(calc: {
+  comp_total?: number | null
+  comp_max?: number | null
+  comp_answered?: number | null
+  comp_not_administered?: boolean | null
+  comp_frustration_max?: number | null
+} | null | undefined): number | null {
+  if (!calc) return null
+  if (compIsCountable(calc)) return calc.comp_total! / (calc.comp_max || 15)
+  if (calc.comp_not_administered) {
+    const max = calc.comp_max || 15
+    return calc.comp_frustration_max != null
+      ? calc.comp_frustration_max / max
+      : COMP_FRUSTRATION_RATIO
+  }
+  return null
+}
+
 // ─── Level test → reading record adapter ─────────────────────────────
 // Level placement tests (oral section) measure CWPM, accuracy, NAEP, etc.
 // These should surface in the Reading Fluency views alongside ad-hoc reading_assessments.

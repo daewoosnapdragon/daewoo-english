@@ -124,7 +124,14 @@ const LEVEL_BANDS: Record<G2PassageLevel, { floor: number; ceiling: number; unsu
  * Reading accuracy below this is frustration level: the words on the page are
  * too hard whatever the rate, so the passage was not actually sustained.
  */
-const FRUSTRATION_ACCURACY = 90
+export const FRUSTRATION_ACCURACY = 90
+
+/**
+ * Reading accuracy at or above this is independent level: the passage is too
+ * easy and the student should be tried one level up. Every grade's guide gives
+ * the same 97%, so it lives here rather than in each content file.
+ */
+export const INDEPENDENT_ACCURACY = 97
 
 /**
  * Comprehension this far below the ceiling means the student got through the

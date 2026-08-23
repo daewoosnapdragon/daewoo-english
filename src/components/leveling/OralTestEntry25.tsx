@@ -13,6 +13,9 @@ import { g2ContentForTest, G2Content } from './grade2Content'
 import { g3ContentForTest, G3Content } from './grade3Content'
 import { g4ContentForTest, G4Content } from './grade4Content'
 import { g5ContentForTest, G5Content } from './grade5Content'
+import { FRUSTRATION_ACCURACY, INDEPENDENT_ACCURACY } from './grade2Band'
+import TestNotesPanel from './TestNotesPanel'
+import { ORAL_TEST_NOTES, STOPPING_NOTES } from './testNotes'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -79,6 +82,20 @@ interface GradeTestConfig extends GradeTestData {
   passageMultipliers: Record<string, number>
   /** Teacher-facing scripts, where the content version supplies them. */
   scripts: { phonics?: string; syllables?: string; sentences?: string; reading?: string }
+  /** Administration cautions from the grade's guide. Empty on legacy tests. */
+  adminNotes: string[]
+  /**
+   * The guide's Independent / Instructional / Frustration table. Shown at the
+   * top of the passage reader so the teacher can read the live accuracy
+   * against the band without leaving the modal.
+   */
+  readingLevels: { level: string; accuracy: string; comprehension?: string; action: string }[]
+  /**
+   * Comprehension score at the top of the Frustration band, out of compMax.
+   * Stored on the score so a comprehension that was never administered can be
+   * ranked at the bottom band rather than dropped from the composite.
+   */
+  frustrationCompMax: number | null
   /** Null on legacy tests, which are scored against this file's constants. */
   contentLabel: string | null
 }
@@ -631,6 +648,9 @@ function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null
       syllables: null, syllableMax: 0,
       passageMultipliers: multipliers,
       scripts: { reading: g5.oral.say },
+      adminNotes: g5.oral.adminNotes,
+      readingLevels: g5.oral.readingLevels,
+      frustrationCompMax: g5.oral.frustrationCompMax ?? null,
       contentLabel: g5.label,
     }
   }
@@ -663,6 +683,9 @@ function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null
       syllables: null, syllableMax: 0,
       passageMultipliers: multipliers,
       scripts: { reading: g4.oral.say },
+      adminNotes: g4.oral.adminNotes,
+      readingLevels: g4.oral.readingLevels,
+      frustrationCompMax: g4.oral.frustrationCompMax ?? null,
       contentLabel: g4.label,
     }
   }
@@ -710,6 +733,9 @@ function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null
       syllableMax: 0,
       passageMultipliers: multipliers,
       scripts: { reading: g3.oral.say },
+      adminNotes: g3.oral.adminNotes,
+      readingLevels: g3.oral.readingLevels,
+      frustrationCompMax: null,
       contentLabel: g3.label,
     }
   }
@@ -766,6 +792,9 @@ function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null
         sentences: g2.oral.sentences.say,
         reading: r.say,
       },
+      adminNotes: [...g2.adminNotes, ...r.adminNotes],
+      readingLevels: [],
+      frustrationCompMax: null,
       contentLabel: g2.label,
     }
   }
@@ -784,6 +813,9 @@ function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null
     syllableMax: 0,
     passageMultipliers: PASSAGE_MULTIPLIERS,
     scripts: {},
+    adminNotes: [],
+    readingLevels: [],
+    frustrationCompMax: null,
     contentLabel: null,
   }
 }
@@ -792,9 +824,13 @@ function resolveConfig(grade: number, g2: G2Content | null, g3: G3Content | null
 // PASSAGE READER MODAL
 // ============================================================================
 
-function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
+function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, onClose, initialData }: {
   passage: PassageData
   level: PassageLevel
+  /** The guide's Independent / Instructional / Frustration table, if authored. */
+  readingLevels: { level: string; accuracy: string; comprehension?: string; action: string }[]
+  /** The passage below this one, or null on the lowest level offered. */
+  prevLevel: PassageLevel | null
   onSave: (data: { wordsRead: number; errors: number; timeSeconds: number; notes?: string }) => void
   onClose: () => void
   initialData?: { wordsRead?: number | null; errors?: number | null; timeSeconds?: number | null }
@@ -848,6 +884,25 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
   const cwpm = Math.round(((wRead - errCount) / t) * 60)
   const accuracy = wRead > 0 ? Math.round(((wRead - errCount) / wRead) * 1000) / 10 : 0
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+  // Which band the live accuracy falls in, and the reference row to show for
+  // each. Grades whose guide authors the table use its exact wording; the rest
+  // fall back to the thresholds every guide shares.
+  const liveBand = accuracy >= INDEPENDENT_ACCURACY ? 'independent'
+    : accuracy >= FRUSTRATION_ACCURACY ? 'instructional'
+    : 'frustration'
+  const FALLBACK_BANDS = [
+    { level: 'Independent', accuracy: `${INDEPENDENT_ACCURACY}% or higher`, action: 'The passage is too easy. Try one level up.' },
+    { level: 'Instructional', accuracy: `${FRUSTRATION_ACCURACY}-${INDEPENDENT_ACCURACY - 1}%`, action: 'This is the placement level. Stop here.' },
+    { level: 'Frustration', accuracy: `below ${FRUSTRATION_ACCURACY}%`, action: 'The passage is too hard. Try one level down.' },
+  ]
+  const refBands = (readingLevels.length > 0 ? readingLevels : FALLBACK_BANDS).map(b => ({
+    key: b.level.toLowerCase(),
+    label: b.level,
+    accuracy: b.accuracy,
+    comprehension: (b as any).comprehension as string | undefined,
+    action: b.action,
+  }))
 
   const handleWordClick = (idx: number) => {
     if (lastWordIdx !== null && idx > lastWordIdx) return
@@ -905,6 +960,49 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
           <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
         </div>
 
+        {/* Reading-level reference. Kept at the top of the modal so the teacher
+            can read the live accuracy against the guide's bands without
+            closing the passage. Highlights the band the reading is currently
+            in once there is a timed reading to judge. */}
+        <div className="px-6 py-2 border-b border-border bg-surface-alt/40 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mr-0.5">Reading level</span>
+            {refBands.map(b => {
+              const live = elapsed > 0 && b.key === liveBand
+              return (
+                <span key={b.key} title={b.action}
+                  className={`text-[9.5px] px-2 py-1 rounded-lg border transition-all ${
+                    live
+                      ? b.key === 'frustration' ? 'bg-red-100 border-red-300 text-red-800 font-bold'
+                      : b.key === 'instructional' ? 'bg-amber-100 border-amber-300 text-amber-800 font-bold'
+                      : 'bg-green-100 border-green-300 text-green-800 font-bold'
+                      : 'bg-surface border-border text-text-secondary'
+                  }`}>
+                  <span className="font-semibold">{b.label}</span> {b.accuracy}
+                  {b.comprehension && <span className="opacity-70"> {'\u00B7'} comp {b.comprehension}</span>}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Frustration flag. Held back until the timer stops: appearing mid-read
+            would push the whole word grid down while the teacher is clicking
+            words. Advisory only -- the guide's rule is to try one level down,
+            but a tired or shy student does not always need a re-read, so the
+            call stays with the teacher. */}
+        {!timing && elapsed > 0 && liveBand === 'frustration' && (
+          <div className="px-6 py-2 bg-red-50 border-b border-red-200 text-[10px] text-red-800 shrink-0 flex items-start gap-2">
+            <Info size={12} className="mt-0.5 shrink-0" />
+            <span>
+              <strong>{accuracy}% accuracy is Frustration level</strong> for this passage.
+              {prevLevel
+                ? <> You may want to stop here and try Passage {prevLevel} instead {'\u2014'} but that is your call, not a rule. A student who is nearly at {FRUSTRATION_ACCURACY}%, tired, or just nervous does not always need a re-read.</>
+                : <> This is the lowest passage, so there is nothing to move down to. Record it and move on {'\u2014'} the placement is Level {level}.</>}
+            </span>
+          </div>
+        )}
+
         {/* Timer bar — 3 states: idle, timing, finished */}
         <div className="flex items-center justify-between px-6 py-2.5 bg-navy-dark text-white shrink-0">
           <div className="flex items-center gap-3">
@@ -932,7 +1030,7 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
             <div className="text-center"><div className="text-[18px] font-bold">{errCount}</div><div className="text-white/60 text-[8px] uppercase">Errors</div></div>
             <div className="text-center"><div className="text-[18px] font-bold">{scCount}</div><div className="text-white/60 text-[8px] uppercase">SC</div></div>
             <div className="text-center"><div className="text-[18px] font-bold text-gold">{elapsed > 0 ? cwpm : '\u2014'}</div><div className="text-white/60 text-[8px] uppercase">CWPM</div></div>
-            <div className="text-center"><div className={`text-[18px] font-bold ${accuracy >= 95 ? 'text-green-400' : accuracy >= 90 ? 'text-amber-400' : elapsed > 0 ? 'text-red-400' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '\u2014'}</div><div className="text-white/60 text-[8px] uppercase">Acc</div></div>
+            <div className="text-center"><div className={`text-[18px] font-bold ${accuracy >= INDEPENDENT_ACCURACY ? 'text-green-400' : accuracy >= FRUSTRATION_ACCURACY ? 'text-amber-400' : elapsed > 0 ? 'text-red-400' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '\u2014'}</div><div className="text-white/60 text-[8px] uppercase">Acc</div></div>
             <div className="text-center"><div className="text-[18px] font-bold">{wRead}/{words.length}</div><div className="text-white/60 text-[8px] uppercase">Words</div></div>
           </div>
         </div>
@@ -988,11 +1086,11 @@ function PassageReaderModal({ passage, level, onSave, onClose, initialData }: {
             className="w-full px-3 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white" />
           <div className="flex items-center justify-between">
             <div className="text-[10px] text-text-tertiary">
-              {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> {'\u00B7'} Accuracy: <strong className={accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}>{accuracy}%</strong> {'\u00B7'} </>}
+              {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> {'\u00B7'} Accuracy: <strong className={accuracy >= INDEPENDENT_ACCURACY ? 'text-green-600' : accuracy >= FRUSTRATION_ACCURACY ? 'text-amber-600' : 'text-red-600'}>{accuracy}%</strong> {'\u00B7'} </>}
               Errors: <strong className="text-red-600">{errCount}</strong> {'\u00B7'} SC: <strong className="text-amber-600">{scCount}</strong>
-              {accuracy >= 95 && elapsed > 0 && <span className="ml-2 text-green-600">(Independent)</span>}
-              {accuracy >= 90 && accuracy < 95 && elapsed > 0 && <span className="ml-2 text-amber-600">(Instructional)</span>}
-              {accuracy < 90 && elapsed > 0 && <span className="ml-2 text-red-600">(Frustration -- try easier passage)</span>}
+              {elapsed > 0 && liveBand === 'independent' && <span className="ml-2 text-green-600">(Independent)</span>}
+              {elapsed > 0 && liveBand === 'instructional' && <span className="ml-2 text-amber-600">(Instructional)</span>}
+              {elapsed > 0 && liveBand === 'frustration' && <span className="ml-2 text-red-600">(Frustration -- consider one level down)</span>}
             </div>
             <button onClick={handleSaveAndClose}
               className="px-5 py-2 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy/90 transition-all">
@@ -1497,9 +1595,14 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           naep_multiplier: naepMult,
           accuracy_pct: calcAccuracy,
           comp_total: cTotal,
-          comp_max: cTotal != null ? config.compMax : null,
+          // Carried even when nothing was scored, so a set that was never
+          // administered can still be read against the right denominator.
+          comp_max: cTotal != null || compSkipped ? config.compMax : null,
           comp_answered: compAnswered,
           comp_not_administered: compSkipped,
+          // Top of the Frustration band. What an unadministered set is scored
+          // at in the composite -- see compRatioForComposite.
+          comp_frustration_max: config.frustrationCompMax,
           phonics_total: pTotal || null,
           phonics_max: config.phonicsMax,
           sentence_total: sTotal || null,
@@ -1606,7 +1709,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     setSavedSnapshot(prev => ({ ...prev, [sid]: {} }))
     try {
       const { data: existing } = await supabase.from('level_test_scores')
-        .select('raw_scores, calculated_metrics')
+        .select('raw_scores, calculated_metrics, previous_class')
         .eq('level_test_id', levelTest.id)
         .eq('student_id', sid)
         .maybeSingle()
@@ -1616,8 +1719,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         // Keep only written keys
         const writtenRaw: Record<string, any> = {}
         const writtenCalc: Record<string, any> = {}
-        ;['written_answers', 'written_rubric', 'written_mc', 'writing'].forEach(k => { if (raw[k] != null) writtenRaw[k] = raw[k] })
-        ;['written_mc_total', 'written_mc_max', 'written_mc_pct', 'writing_total', 'writing_max', 'written_domain_scores', 'written_standards_mastery'].forEach(k => { if (calc[k] != null) writtenCalc[k] = calc[k] })
+        // Every key WrittenTestEntry writes has to be listed here, or clearing
+        // the oral half silently discards part of the written half.
+        ;['written_answers', 'written_rubric', 'written_checklist', 'written_checklist_capped', 'written_short_writing', 'written_mc', 'writing'].forEach(k => { if (raw[k] != null) writtenRaw[k] = raw[k] })
+        ;['written_mc_total', 'written_mc_max', 'written_mc_pct', 'writing_total', 'writing_max', 'short_writing_total', 'short_writing_max', 'written_domain_scores', 'written_standards_mastery'].forEach(k => { if (calc[k] != null) writtenCalc[k] = calc[k] })
         // DELETE first to bypass merge trigger, then re-insert written-only data if any
         await supabase.from('level_test_scores').delete()
           .eq('level_test_id', levelTest.id).eq('student_id', sid)
@@ -1785,6 +1890,18 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
               </div>
             </div>
 
+            {/* Before-you-start notes: the universal ones, then the oral-test
+                ones, then whatever this grade's guide adds. */}
+            <TestNotesPanel
+              storageKey={`oral-g${grade}`}
+              groups={[
+                { label: 'Oral test', notes: ORAL_TEST_NOTES },
+                ...(config.adminNotes.length > 0
+                  ? [{ label: config.contentLabel ? `${config.contentLabel} notes` : 'This test', notes: config.adminNotes }]
+                  : []),
+              ]}
+            />
+
             {/* Section tabs (Grade 2 has Phonics + Sentences + Passage; others just Passage) */}
             {config.hasPhonics && (
               <div className="flex gap-1 mb-5 bg-surface-alt rounded-xl p-1">
@@ -1877,9 +1994,24 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                   <h4 className="text-[13px] font-semibold text-navy mb-3 flex items-center gap-2">
                     <BookOpen size={15} /> {config.hasPhonics ? 'Component 3: ' : ''}Passage Reading
                   </h4>
-                  <p className="text-[11px] text-text-secondary mb-4">
+                  <p className="text-[11px] text-text-secondary mb-3">
                     Select a passage level based on the student's reading ability. Click "Open Passage" to do a timed reading with word-by-word marking.
+                    You do not have to start at {config.levels[0]} {'\u2014'} start where the student will be comfortable.
                   </p>
+
+                  {/* Teacher script, with the stopping guidance directly under
+                      it: that is the moment it is needed, not the top of the
+                      screen. */}
+                  {config.scripts.reading && (
+                    <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/60 px-3.5 py-2.5">
+                      <p className="text-[11px] font-semibold text-blue-800">Say: &ldquo;{config.scripts.reading}&rdquo;</p>
+                      <ul className="mt-1.5 space-y-0.5 pl-4 list-disc">
+                        {STOPPING_NOTES.map((n, i) => (
+                          <li key={i} className="text-[10px] text-blue-700/90 leading-snug">{n}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   <div className="flex gap-2 mb-4">
                     {config.levels.map(level => {
@@ -1999,11 +2131,11 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     {accuracy != null && (
                       <div className="flex items-center gap-3 text-[11px]">
                         <span className="text-text-secondary">Accuracy:</span>
-                        <span className={`font-bold ${accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>
+                        <span className={`font-bold ${accuracy >= INDEPENDENT_ACCURACY ? 'text-green-600' : accuracy >= FRUSTRATION_ACCURACY ? 'text-amber-600' : 'text-red-600'}`}>
                           {accuracy}%
                         </span>
                         <span className="text-text-tertiary">
-                          {accuracy >= 95 ? '(Independent)' : accuracy >= 90 ? '(Instructional)' : '(Frustration -- try easier passage)'}
+                          {accuracy >= INDEPENDENT_ACCURACY ? '(Independent)' : accuracy >= FRUSTRATION_ACCURACY ? '(Instructional)' : '(Frustration -- consider one level down)'}
                         </span>
                         {weightedCwpm && weightedCwpm !== cwpm && (
                           <>
@@ -2177,7 +2309,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       </div>
                       <div className="text-center">
                         <div className="text-[10px] text-text-tertiary uppercase">Accuracy</div>
-                        <div className={`text-[16px] font-bold ${accuracy != null && accuracy >= 95 ? 'text-green-600' : accuracy != null && accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>
+                        <div className={`text-[16px] font-bold ${accuracy != null && accuracy >= INDEPENDENT_ACCURACY ? 'text-green-600' : accuracy != null && accuracy >= FRUSTRATION_ACCURACY ? 'text-amber-600' : 'text-red-600'}`}>
                           {accuracy}%
                         </div>
                       </div>
@@ -2234,6 +2366,8 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         <PassageReaderModal
           passage={passage}
           level={passageLevel as PassageLevel}
+          readingLevels={config.readingLevels}
+          prevLevel={config.levels[config.levels.indexOf(passageLevel as PassageLevel) - 1] ?? null}
           initialData={{ wordsRead: sc.orf_words_read, errors: sc.orf_errors, timeSeconds: sc.orf_time_seconds }}
           onSave={(data) => {
             updateScore(student.id, 'orf_words_read', data.wordsRead)

@@ -970,7 +970,7 @@ const FALL_2026_CONTENT: G1Content = {
     rubric: F26_OPEN_RESPONSE_RUBRIC,
     say: 'Look at these two pictures. What is the same? What is different?',
     stimulus: 'Two nearly identical pictures of the same birthday party, one above the other. A number of small details differ between them — the cake, what is on the table, and what the children are wearing and doing.',
-    instructions: 'Show the student both pictures together. Comparing them is the task, but it is okay if a student does not compare and contrast and only describes what they see — lower-level students often will, and the rubric still rewards whatever English they produce. Give 30-60 seconds. Do not prompt or help beyond "What else?"',
+    instructions: 'Show the student both pictures together. Comparing them is the task, but it is okay if a student does not compare and contrast and only describes what they see — lower-level students often will, and the rubric still rewards whatever English they produce. Prompt for more than "What else?": ask real questions and see what comes back — "Can you see something yummy?", "Can you find something that starts with /h/?", "How many children are there?" The point is to get them talking so you can hear how much vocabulary is there, so a stronger student will need less of this than a weaker one. Give it 30-60 seconds of real conversation, and do not supply the words for them. If the student clearly has nothing, say thank you and let them go.',
   },
   standards: F26_STANDARDS,
   usesClassImpression: false,
