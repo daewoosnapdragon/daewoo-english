@@ -1444,6 +1444,17 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     ...PASSAGE_FIELDS,
   ])
 
+  /** The metrics side of ORAL_RAW_KEYS — what Clear removes. */
+  const ORAL_CALC_KEYS = [
+    'passage_level', 'passage_multiplier', 'cwpm', 'weighted_cwpm',
+    'best_weighted_cwpm', 'best_passage_level', 'naep', 'naep_multiplier',
+    'accuracy_pct', 'comp_total', 'comp_max', 'comp_answered',
+    'comp_not_administered', 'comp_frustration_max',
+    'phonics_total', 'phonics_max', 'sentence_total', 'sentence_max',
+    'syllable_total', 'syllable_max', 'oral_content_version',
+    'passages_attempted', 'standards_baseline',
+  ]
+
   // Lock to prevent overlapping async saves
   const savingRef = useRef(false)
 
@@ -1483,6 +1494,48 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
   }, [])
 
+  // Bumped on every write, so the refresh below can tell whether a save landed
+  // while it was fetching.
+  const saveSeqRef = useRef(0)
+
+  /**
+   * Pull in what other teachers have entered.
+   *
+   * Saves already skip any student whose scores match the last snapshot, so a
+   * stale screen cannot overwrite someone else's work by sitting open. What it
+   * COULD do is show a student as blank after another teacher tested them,
+   * which invites a second teacher to enter scores over the top. Re-reading
+   * every fifteen seconds closes that: students with unsaved local edits are
+   * left alone, everyone else picks up whatever is now on the row.
+   */
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      if (savingRef.current) return
+      const seqBefore = saveSeqRef.current
+      const { data, error } = await supabase.from('level_test_scores')
+        .select('student_id, raw_scores').eq('level_test_id', levelTest.id)
+      if (error || !data || saveSeqRef.current !== seqBefore || savingRef.current) return
+
+      const cur = scoresRef.current
+      const next = { ...cur }
+      let changed = false
+      data.forEach((row: any) => {
+        const sid = row.student_id
+        if (isStudentDirty(sid)) return
+        const oral: OralScores = {}
+        for (const k of Object.keys(row.raw_scores || {})) {
+          if (ORAL_RAW_KEYS.has(k)) (oral as any)[k] = row.raw_scores[k]
+        }
+        if (JSON.stringify(oral) !== JSON.stringify(cur[sid] || {})) { next[sid] = oral; changed = true }
+      })
+      if (changed) {
+        setScores(next)
+        setSavedSnapshot(JSON.parse(JSON.stringify(next)))
+      }
+    }, 15000)
+    return () => clearInterval(timer)
+  }, [levelTest.id, isStudentDirty])
+
   // Auto-save: saves dirty students via existing handleSave, then updates snapshot
   const autoSaveRef = useRef<(() => Promise<void>) | null>(null)
 
@@ -1521,6 +1574,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const handleSave = async (sids?: string[]) => {
     if (savingRef.current) return
     savingRef.current = true
+    saveSeqRef.current++
     setSaving(true)
     // Only save dirty students (not all class students) unless specific sids given
     const toSave = sids || classStudents.filter(s => isStudentDirty(s.id)).map(s => s.id)
@@ -1702,39 +1756,21 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     })
   }, [])
 
-  // Clear oral data — removes oral keys from DB, preserves written keys
+  // Clear oral data — drops the oral keys server-side, in one transaction, so
+  // a teacher marking the written paper at the same moment never sees the row
+  // vanish and never has their work re-inserted from this screen's snapshot.
   const clearStudent = async (sid: string, name: string) => {
     if (!await confirmDialog({ title: `Clear oral test scores for ${name}?`, message: 'This cannot be undone.', danger: true, confirmLabel: 'Clear scores' })) return
+    const { error } = await supabase.rpc('clear_score_keys', {
+      p_level_test_id: levelTest.id,
+      p_student_id: sid,
+      p_raw_keys: Array.from(ORAL_RAW_KEYS).concat('notes'),
+      p_calc_keys: ORAL_CALC_KEYS,
+    })
+    if (error) { console.error('Clear DB error:', error); showToast('Error clearing scores'); return }
     setScores(prev => ({ ...prev, [sid]: {} }))
     setSavedSnapshot(prev => ({ ...prev, [sid]: {} }))
-    try {
-      const { data: existing } = await supabase.from('level_test_scores')
-        .select('raw_scores, calculated_metrics, previous_class')
-        .eq('level_test_id', levelTest.id)
-        .eq('student_id', sid)
-        .maybeSingle()
-      if (existing) {
-        const raw = existing.raw_scores || {}
-        const calc = existing.calculated_metrics || {}
-        // Keep only written keys
-        const writtenRaw: Record<string, any> = {}
-        const writtenCalc: Record<string, any> = {}
-        // Every key WrittenTestEntry writes has to be listed here, or clearing
-        // the oral half silently discards part of the written half.
-        ;['written_answers', 'written_rubric', 'written_checklist', 'written_checklist_capped', 'written_short_writing', 'written_mc', 'writing'].forEach(k => { if (raw[k] != null) writtenRaw[k] = raw[k] })
-        ;['written_mc_total', 'written_mc_max', 'written_mc_pct', 'writing_total', 'writing_max', 'short_writing_total', 'short_writing_max', 'written_domain_scores', 'written_standards_mastery'].forEach(k => { if (calc[k] != null) writtenCalc[k] = calc[k] })
-        // DELETE first to bypass merge trigger, then re-insert written-only data if any
-        await supabase.from('level_test_scores').delete()
-          .eq('level_test_id', levelTest.id).eq('student_id', sid)
-        if (Object.keys(writtenRaw).length > 0) {
-          await supabase.from('level_test_scores').insert({
-            level_test_id: levelTest.id, student_id: sid,
-            raw_scores: writtenRaw, calculated_metrics: writtenCalc,
-            previous_class: existing.previous_class || null,
-          })
-        }
-      }
-    } catch (e) { console.error('Clear DB error:', e) }
+    saveSeqRef.current++
     showToast(`Cleared oral scores for ${name}`)
   }
 

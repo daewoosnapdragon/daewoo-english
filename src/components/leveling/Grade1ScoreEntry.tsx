@@ -35,6 +35,23 @@ const NAEP_MULTIPLIERS: Record<number, number> = { 1: 0.85, 2: 0.95, 3: 1.0, 4: 
 // PLACEMENT ALGORITHM - GRADE 1 SPECIFIC
 // ============================================================================
 
+/**
+ * Which half of the Grade 1 record a key belongs to.
+ *
+ * The oral half is everything captured in the one-to-one session, including
+ * the teacher's notes and impression. Everything else -- the `w_` subtotals,
+ * the multiple choice, the writing rubric -- is the written half. The two
+ * halves are entered by different teachers at the same time, so a save carries
+ * only the half it changed.
+ */
+function isG1OralKey(k: string): boolean {
+  return k.startsWith('o_') || k === 'passages_attempted'
+    || k === 'wave1_class_impression' || k === 'teacher_notes'
+}
+
+/** Written keys holding an object that two markers may fill in between them. */
+const G1_WRITTEN_NESTED = ['written_answers', 'written_rubric']
+
 interface G1Scores {
   // Written -- backward-compatible section subtotals, derived at save time.
   w_letter_names?: number | null
@@ -720,6 +737,8 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   // Auto-save infrastructure
   const [savedSnapshot, setSavedSnapshot] = useState<Record<string, G1Scores>>({})
   const savingRef = useRef(false)
+  // Bumped on every write, so the refresh can tell a save landed mid-fetch.
+  const saveSeqRef = useRef(0)
   const scoresRef = useRef(scores)
   const savedSnapshotRef = useRef(savedSnapshot)
   useEffect(() => { scoresRef.current = scores }, [scores])
@@ -795,6 +814,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   const saveScores = useCallback(async (studentIds: string[], silent = false) => {
     if (savingRef.current) return
     savingRef.current = true
+    saveSeqRef.current++
     setSaving(true)
     let errors = 0
     try {
@@ -856,36 +876,81 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         const currentClass = (students.find(s => s.id === sid)?.english_class ?? null) as EnglishClass | null
         const metrics = calculateG1Composite(finalRaw, content, currentClass)
 
-        const { error } = await supabase.from('level_test_scores').upsert({
-          level_test_id: levelTest.id,
-          student_id: sid,
-          raw_scores: finalRaw,
-          calculated_metrics: {
-            content_version: content.version,
-            written_pct: metrics.writtenPct,
-            written_mc: metrics.writtenMC,
-            written_mc_max: content.written.mcMax,
-            writing_bonus: metrics.writingBonus,
-            writing_short: metrics.writingShort,
-            oral_score: metrics.oralScore,
-            teacher_pct: metrics.teacherPct,
-            passage_level: metrics.passageLevel,
-            cwpm: metrics.cwpm,
-            weighted_cwpm: metrics.weightedCwpm,
-            accuracy_pct: metrics.accuracy,
-            effective_passage_level: metrics.effectiveLevel,
-            comp_total: metrics.compTotal,
-            comp_max: metrics.compMax,
-            comp_answered: metrics.compAnswered,
-            comp_not_administered: metrics.compNotAdministered,
-            standards_baseline: metrics.standardsBaseline,
-          },
-          composite_index: metrics.composite,
-          composite_band: metrics.suggestedClass,
-          previous_class: students.find(s => s.id === sid)?.english_class || null,
-          entered_by: currentTeacher?.id || null,
-        }, { onConflict: 'level_test_id,student_id' })
-        if (error) errors++
+        // Grade 1 keeps the oral and written halves in one record, and the two
+        // are often entered by different teachers at the same time. Send only
+        // the half that actually changed, so an oral save cannot write the
+        // written keys back from a snapshot taken before the other teacher
+        // started -- and vice versa.
+        const savedRaw: any = savedSnapshotRef.current[sid] || {}
+        // Which half is dirty is judged on what the teacher actually edited --
+        // `raw`, not `finalRaw`. finalRaw carries derived keys (o_phoneme, the
+        // w_ subtotals, writing_bonus) that are recomputed on every save and
+        // compare as changed the first time they appear, which would mark BOTH
+        // halves dirty for every student and put the clobbering straight back.
+        // Each derived key belongs to the same half as the keys it is derived
+        // from, so the payload below can still be split off finalRaw.
+        let oralChanged = false, writtenChanged = false
+        const editedKeys = new Set([...Object.keys(raw), ...Object.keys(savedRaw)])
+        editedKeys.forEach(k => {
+          if (JSON.stringify((raw as any)[k]) === JSON.stringify(savedRaw[k])) return
+          if (isG1OralKey(k)) oralChanged = true; else writtenChanged = true
+        })
+
+        const oralRaw: any = {}, writtenRaw: any = {}
+        for (const k of Object.keys(finalRaw)) {
+          if (isG1OralKey(k)) oralRaw[k] = finalRaw[k]; else writtenRaw[k] = finalRaw[k]
+        }
+
+        const oralMetrics = {
+          oral_score: metrics.oralScore,
+          teacher_pct: metrics.teacherPct,
+          passage_level: metrics.passageLevel,
+          cwpm: metrics.cwpm,
+          weighted_cwpm: metrics.weightedCwpm,
+          accuracy_pct: metrics.accuracy,
+          effective_passage_level: metrics.effectiveLevel,
+          comp_total: metrics.compTotal,
+          comp_max: metrics.compMax,
+          comp_answered: metrics.compAnswered,
+          comp_not_administered: metrics.compNotAdministered,
+          standards_baseline: metrics.standardsBaseline,
+        }
+        const writtenMetrics = {
+          content_version: content.version,
+          written_pct: metrics.writtenPct,
+          written_mc: metrics.writtenMC,
+          written_mc_max: content.written.mcMax,
+          writing_bonus: metrics.writingBonus,
+          writing_short: metrics.writingShort,
+        }
+
+        const groups: { raw: any; metrics: any; nested: string[] }[] = []
+        if (oralChanged) groups.push({ raw: oralRaw, metrics: oralMetrics, nested: [] })
+        if (writtenChanged) groups.push({ raw: writtenRaw, metrics: writtenMetrics, nested: G1_WRITTEN_NESTED })
+        // An explicit save with nothing dirty still writes, so the teacher's
+        // Save button does something they can see.
+        if (groups.length === 0 && !silent) {
+          groups.push({ raw: oralRaw, metrics: oralMetrics, nested: [] })
+          groups.push({ raw: writtenRaw, metrics: writtenMetrics, nested: G1_WRITTEN_NESTED })
+        }
+
+        for (const g of groups) {
+          const { error } = await supabase.rpc('upsert_score_group', {
+            p_level_test_id: levelTest.id,
+            p_student_id: sid,
+            p_raw: g.raw,
+            p_metrics: g.metrics,
+            p_nested_keys: g.nested,
+            p_previous_class: students.find(s => s.id === sid)?.english_class || null,
+            p_entered_by: currentTeacher?.id || null,
+            // Derived from this screen's view of the record. Every reader that
+            // decides a placement recomputes it from raw_scores, so a value
+            // written from half a record is a stale cache, not a wrong result.
+            p_composite_index: metrics.composite,
+            p_composite_band: metrics.suggestedClass,
+          })
+          if (error) { console.error('G1 save error:', error); errors++ }
+        }
       }
       if (errors === 0) {
         setSavedSnapshot(JSON.parse(JSON.stringify(scoresRef.current)))
@@ -916,6 +981,56 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
 
   const autoSaveRef = useRef<(() => Promise<void>) | null>(null)
   useEffect(() => { autoSaveRef.current = autoSave }, [autoSave])
+
+  /**
+   * Pull in the other teacher's half.
+   *
+   * Grade 1's oral and written halves are one record, entered by two people at
+   * once. Saves already carry only the half they changed, so nothing is
+   * overwritten in the database — but a screen that never re-reads shows the
+   * other half as blank all morning, which is how a teacher ends up entering
+   * scores that already exist. Every fifteen seconds, take the server's value
+   * for each key the local record has NOT edited since its last save.
+   */
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      if (savingRef.current) return
+      const seqBefore = saveSeqRef.current
+      const { data, error } = await supabase.from('level_test_scores')
+        .select('student_id, raw_scores').eq('level_test_id', levelTest.id)
+      if (error || !data || saveSeqRef.current !== seqBefore || savingRef.current) return
+
+      const cur = scoresRef.current
+      const snap = savedSnapshotRef.current
+      const nextScores: Record<string, G1Scores> = { ...cur }
+      const nextSnap: Record<string, G1Scores> = { ...snap }
+      let changed = false
+
+      data.forEach((row: any) => {
+        const sid = row.student_id
+        const server = row.raw_scores || {}
+        const local: any = cur[sid] || {}
+        const saved: any = snap[sid] || {}
+        const merged: any = { ...local }
+        let touched = false
+        for (const k of Object.keys(server)) {
+          // Edited locally and not yet saved: leave it alone.
+          if (JSON.stringify(local[k]) !== JSON.stringify(saved[k])) continue
+          if (JSON.stringify(local[k]) === JSON.stringify(server[k])) continue
+          merged[k] = server[k]
+          touched = true
+        }
+        if (touched) {
+          nextScores[sid] = merged
+          nextSnap[sid] = JSON.parse(JSON.stringify(merged))
+          changed = true
+        }
+      })
+
+      if (changed) { setScores(nextScores); setSavedSnapshot(nextSnap) }
+    }, 15000)
+    return () => clearInterval(timer)
+  }, [levelTest.id])
 
   useEffect(() => {
     const timer = setInterval(() => { autoSaveRef.current?.() }, 30000)
@@ -951,9 +1066,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     // Everything captured during the oral session, including the teacher's
     // notes and impression -- otherwise the sidebar keeps showing a chip for a
     // student whose scores have been wiped.
-    const isOralKey = (k: string) =>
-      k.startsWith('o_') || k === 'passages_attempted' ||
-      k === 'wave1_class_impression' || k === 'teacher_notes'
+    const isOralKey = isG1OralKey
     // Clear local state: keep only non-oral keys
     setScores(prev => {
       const current = prev[sid] || {}
@@ -971,47 +1084,23 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       })
       return { ...prev, [sid]: kept as G1Scores }
     })
-    // Update DB: delete row and re-insert with only written/teacher data
-    try {
-      const { data: existing } = await supabase.from('level_test_scores')
-        .select('*')
-        .eq('level_test_id', levelTest.id)
-        .eq('student_id', sid)
-        .maybeSingle()
-      if (existing) {
-        const raw = existing.raw_scores || {}
-        const calc = existing.calculated_metrics || {}
-        const writtenRaw: Record<string, any> = {}
-        const writtenCalc: Record<string, any> = {}
-        // Keep everything that is NOT part of the oral session. This has to be
-        // the exact inverse of isOralKey: the old version kept only keys with a
-        // `w_` prefix, which silently threw away written_answers,
-        // written_rubric, written_mc, writing_bonus, writing_short and the
-        // retention rating -- clearing a student's oral test destroyed their
-        // written test with it.
-        Object.entries(raw).forEach(([k, v]) => {
-          if (!isOralKey(k)) writtenRaw[k] = v
-        })
-        const ORAL_CALC_KEYS = new Set([
-          'oral_score', 'passage_level', 'effective_passage_level', 'cwpm', 'weighted_cwpm',
-          'accuracy_pct', 'comp_total', 'comp_max', 'comp_answered',
-          'comp_not_administered', 'standards_baseline', 'teacher_pct',
-        ])
-        Object.entries(calc).forEach(([k, v]) => {
-          if (!ORAL_CALC_KEYS.has(k)) writtenCalc[k] = v
-        })
-        await supabase.from('level_test_scores').delete()
-          .eq('level_test_id', levelTest.id).eq('student_id', sid)
-        if (Object.keys(writtenRaw).length > 0) {
-          await supabase.from('level_test_scores').insert({
-            level_test_id: levelTest.id, student_id: sid,
-            raw_scores: writtenRaw, calculated_metrics: writtenCalc,
-            previous_class: existing.previous_class || null,
-            entered_by: currentTeacher?.id || null,
-          })
-        }
-      }
-    } catch (e) { console.error('Clear oral DB error:', e) }
+    // Drop the oral keys server-side, in one transaction. Doing it from here
+    // as a delete followed by an insert meant the row did not exist for a
+    // moment -- and that the written half came back as whatever THIS screen
+    // was holding, which is wrong the instant a second teacher is marking it.
+    const { error } = await supabase.rpc('clear_score_keys', {
+      p_level_test_id: levelTest.id,
+      p_student_id: sid,
+      p_raw_keys: ['passages_attempted', 'wave1_class_impression', 'teacher_notes'],
+      p_calc_keys: [
+        'oral_score', 'passage_level', 'effective_passage_level', 'cwpm', 'weighted_cwpm',
+        'accuracy_pct', 'comp_total', 'comp_max', 'comp_answered',
+        'comp_not_administered', 'standards_baseline', 'teacher_pct',
+      ],
+      p_raw_prefixes: ['o_'],
+    })
+    if (error) { console.error('Clear oral DB error:', error); showToast('Error clearing scores'); return }
+    saveSeqRef.current++
     showToast(`Cleared all oral scores for ${name}`)
   }, [levelTest.id, currentTeacher?.id, showToast])
 

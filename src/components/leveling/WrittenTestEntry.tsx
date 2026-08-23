@@ -131,6 +131,115 @@ function qWeight(config: GradeConfig, q: QuestionDef): number {
   return config.dokWeighted ? dokWeight(q.dok) : 1
 }
 
+// ─── Concurrent entry: who owns which keys ──────────────────────────
+// The written paper is marked by two teachers at once -- one takes the
+// multiple choice, the other takes the writing rubric -- so a save must carry
+// ONLY the keys that teacher edited. Writing the whole record back, as this
+// screen used to, meant the MC teacher's save also wrote `written_rubric` from
+// the snapshot loaded when their screen opened, wiping whatever the writing
+// teacher had entered since.
+//
+// The two groups are disjoint by construction. `nested` names the keys that
+// upsert_score_group merges one level deeper, so even two teachers inside the
+// SAME group -- splitting the questions between them -- keep each other's work.
+
+type ScoreGroup = { raw: Record<string, any>; metrics: Record<string, any>; nested: string[] }
+
+/** Every key this screen owns — the exact set that Clear removes. */
+const WRITTEN_RAW_KEYS = [
+  'written_answers', 'written_rubric', 'written_checklist', 'written_checklist_capped',
+  'written_short_writing', 'written_mc', 'writing',
+]
+const WRITTEN_CALC_KEYS = [
+  'written_mc_total', 'written_mc_max', 'written_mc_pct',
+  'writing_total', 'writing_max', 'short_writing_total', 'short_writing_max',
+  'written_domain_scores', 'written_standards_mastery',
+]
+
+const MC_NESTED = ['written_answers']
+const WRITING_NESTED = ['written_rubric', 'written_checklist', 'written_checklist_capped']
+
+/** True when this half of the paper differs from what we last saved. */
+function mcDirty(cur: StudentScores | undefined, saved: StudentScores | undefined): boolean {
+  return JSON.stringify(cur?.answers || {}) !== JSON.stringify(saved?.answers || {})
+}
+function writingDirty(cur: StudentScores | undefined, saved: StudentScores | undefined): boolean {
+  const shape = (v: StudentScores | undefined) => JSON.stringify({
+    w: v?.writing || {}, c: v?.checklist || {}, cc: v?.checklistCapped || {}, sw: v?.shortWriting ?? null,
+  })
+  return shape(cur) !== shape(saved)
+}
+
+function buildMcGroup(sc: StudentScores, config: GradeConfig): ScoreGroup {
+  const mcTotal = config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
+  const domainScores: Record<string, { correct: number; total: number }> = {}
+  const standardsMastery: Record<string, { met: number; total: number }> = {}
+  config.questions.forEach(q => {
+    if (!sc.answers[q.qNum]) return
+    const w = qWeight(config, q)
+    if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }
+    domainScores[q.domain].total += w
+    if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct += w
+    if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }
+    standardsMastery[q.standard].total += w
+    if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met += w
+  })
+  return {
+    raw: { written_answers: sc.answers, written_mc: mcTotal },
+    metrics: {
+      written_mc_total: mcTotal,
+      written_mc_max: config.totalMC,
+      written_mc_pct: config.totalMC > 0 ? Math.round((mcTotal / config.totalMC) * 100) : 0,
+      written_domain_scores: domainScores,
+      written_standards_mastery: standardsMastery,
+    },
+    nested: MC_NESTED,
+  }
+}
+
+/**
+ * Reads a stored row into the screen's shape, or null when it holds no written
+ * data at all.
+ *
+ * Keyed off any written key, not off `written_answers`: with the paper split
+ * between two markers, a student can perfectly well have a writing rubric and
+ * no multiple choice yet, and testing for the MC alone used to drop that
+ * student's writing on the floor at load.
+ */
+function hydrateWritten(raw: any, config: GradeConfig): StudentScores | null {
+  if (!raw) return null
+  const hasAny = ['written_answers', 'written_rubric', 'written_checklist', 'written_checklist_capped', 'written_short_writing']
+    .some(k => raw[k] != null)
+  if (!hasAny) return null
+  return {
+    answers: raw.written_answers || {},
+    writing: raw.written_rubric || {},
+    checklist: raw.written_checklist || {},
+    checklistCapped: migrateCapped(raw.written_checklist_capped, config),
+    shortWriting: raw.written_short_writing ?? null,
+  }
+}
+
+function buildWritingGroup(sc: StudentScores, config: GradeConfig): ScoreGroup {
+  const wTotal = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
+  return {
+    raw: {
+      written_rubric: sc.writing,
+      written_checklist: sc.checklist || {},
+      written_checklist_capped: sc.checklistCapped || {},
+      written_short_writing: sc.shortWriting ?? null,
+      writing: wTotal,
+    },
+    metrics: {
+      writing_total: wTotal,
+      writing_max: config.writingMax,
+      short_writing_total: sc.shortWriting ?? null,
+      short_writing_max: config.shortWriting?.max ?? null,
+    },
+    nested: WRITING_NESTED,
+  }
+}
+
 interface StudentScores {
   answers: Record<number, string>   // qNum -> 'a'|'b'|'c'|'d'
   writing: Record<string, number>   // category key -> score
@@ -1655,15 +1764,8 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       const map: Record<string, StudentScores> = {}
       studs.forEach(s => { map[s.id] = { answers: {}, writing: {} } })
       ;(scoreRes.data || []).forEach((row: any) => {
-        if (row.raw_scores?.written_answers) {
-          map[row.student_id] = {
-            answers: row.raw_scores.written_answers || {},
-            writing: row.raw_scores.written_rubric || {},
-            checklist: row.raw_scores.written_checklist || {},
-            checklistCapped: migrateCapped(row.raw_scores.written_checklist_capped, config),
-            shortWriting: row.raw_scores.written_short_writing ?? null,
-          }
-        }
+        const h = hydrateWritten(row.raw_scores, config)
+        if (h) map[row.student_id] = h
       })
       setScores(map)
       setSavedSnapshot(JSON.parse(JSON.stringify(map)))
@@ -1820,37 +1922,22 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     }))
   }, [student])
 
-  // Clear student — removes written keys from DB, preserves oral keys
+  // Clear student — drops the written keys server-side, in one transaction, so
+  // a teacher entering the oral half at the same moment never sees the row
+  // vanish and never has their work re-inserted from this screen's snapshot.
   const clearStudent = useCallback(async () => {
     if (!student) return
     if (!await confirmDialog({ title: `Clear written test scores for ${student.english_name || student.korean_name}?`, message: 'This cannot be undone.', danger: true, confirmLabel: 'Clear scores' })) return
+    const { error } = await supabase.rpc('clear_score_keys', {
+      p_level_test_id: levelTest.id,
+      p_student_id: student.id,
+      p_raw_keys: WRITTEN_RAW_KEYS,
+      p_calc_keys: WRITTEN_CALC_KEYS,
+    })
+    if (error) { console.error('Clear DB error:', error); showToast('Error clearing scores'); return }
     setScores(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
     setSavedSnapshot(prev => ({ ...prev, [student.id]: { answers: {}, writing: {} } }))
-    try {
-      const { data: existing } = await supabase.from('level_test_scores')
-        .select('raw_scores, calculated_metrics, previous_class')
-        .eq('level_test_id', levelTest.id)
-        .eq('student_id', student.id)
-        .maybeSingle()
-      if (existing) {
-        const raw = { ...(existing.raw_scores || {}) }
-        const calc = { ...(existing.calculated_metrics || {}) }
-        delete raw.written_answers; delete raw.written_rubric; delete raw.written_checklist; delete raw.written_checklist_capped; delete raw.written_short_writing; delete raw.written_mc; delete raw.writing
-        delete calc.written_mc_total; delete calc.written_mc_max; delete calc.written_mc_pct
-        delete calc.writing_total; delete calc.writing_max; delete calc.written_domain_scores; delete calc.written_standards_mastery
-        delete calc.short_writing_total; delete calc.short_writing_max
-        // DELETE first to bypass merge trigger, then re-insert oral-only data if any
-        await supabase.from('level_test_scores').delete()
-          .eq('level_test_id', levelTest.id).eq('student_id', student.id)
-        if (Object.keys(raw).length > 0) {
-          await supabase.from('level_test_scores').insert({
-            level_test_id: levelTest.id, student_id: student.id,
-            raw_scores: raw, calculated_metrics: calc,
-            previous_class: existing.previous_class || null,
-          })
-        }
-      }
-    } catch (e) { console.error('Clear DB error:', e) }
+    saveSeqRef.current++
     showToast('Cleared written test scores')
   }, [student, levelTest.id])
 
@@ -1895,49 +1982,90 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
   const scoresRef = useRef(scores)
   const savedSnapshotRef = useRef(savedSnapshot)
   const savingRef = useRef(false)
+  // Bumped on every write. The background refresh compares it across its own
+  // await so a save that lands mid-fetch is never overwritten by older rows.
+  const saveSeqRef = useRef(0)
   useEffect(() => { scoresRef.current = scores }, [scores])
   useEffect(() => { savedSnapshotRef.current = savedSnapshot }, [savedSnapshot])
 
-  // Auto-save function (saves all dirty students silently via atomic RPC)
-  const autoSave = useCallback(async () => {
-    if (!config || savingRef.current) return
+  /**
+   * Writes every student whose scores differ from the last-saved snapshot,
+   * one key group at a time.
+   *
+   * Only the group the teacher actually edited is sent, and it goes through
+   * upsert_score_group so the write merges into whatever else is on the row.
+   * That is what lets the MC teacher and the writing teacher mark the same
+   * student at the same time without either one erasing the other.
+   *
+   * Returns the students that were written, so the caller can advance only
+   * those in the snapshot -- a student who failed to save stays dirty and is
+   * retried on the next pass rather than being silently dropped.
+   */
+  const saveDirty = useCallback(async (): Promise<{ saved: string[]; errors: number }> => {
+    if (!config) return { saved: [], errors: 0 }
+    saveSeqRef.current++
     const currentScores = scoresRef.current
     const snapshot = savedSnapshotRef.current
-    const dirty = students.filter(s => {
-      const cur = currentScores[s.id]
-      const sav = snapshot[s.id]
-      if (!cur) return false
-      const hasData = Object.keys(cur.answers).length > 0 || Object.values(cur.writing).some((v: any) => v > 0)
-      if (!hasData) return false
-      return JSON.stringify(cur) !== JSON.stringify(sav)
-    })
-    if (dirty.length === 0) return
-
-    savingRef.current = true
+    const saved: string[] = []
     let errors = 0
-    for (const stu of dirty) {
+
+    for (const stu of students) {
       const sc = currentScores[stu.id]
-      const mcTotal = config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
-      const wTotal = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
-      const domainScores: Record<string, { correct: number; total: number }> = {}
-      config.questions.forEach(q => { if (sc.answers[q.qNum]) { const w = qWeight(config, q); if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }; domainScores[q.domain].total += w; if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct += w } })
-      const standardsMastery: Record<string, { met: number; total: number }> = {}
-      config.questions.forEach(q => { if (sc.answers[q.qNum]) { const w = qWeight(config, q); if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }; standardsMastery[q.standard].total += w; if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met += w } })
-      // Upsert with only written keys — DB trigger merges with existing oral keys
-      const { error } = await supabase.from('level_test_scores').upsert({
-        level_test_id: levelTest.id, student_id: stu.id,
-        raw_scores: { written_answers: sc.answers, written_rubric: sc.writing, written_checklist: sc.checklist || {}, written_checklist_capped: sc.checklistCapped || {}, written_short_writing: sc.shortWriting ?? null, written_mc: mcTotal, writing: wTotal },
-        calculated_metrics: { written_mc_total: mcTotal, written_mc_max: config.totalMC, written_mc_pct: Math.round((mcTotal / config.totalMC) * 100), writing_total: wTotal, writing_max: config.writingMax, short_writing_total: sc.shortWriting ?? null, short_writing_max: config.shortWriting?.max ?? null, written_domain_scores: domainScores, written_standards_mastery: standardsMastery },
-        previous_class: students.find(s => s.id === stu.id)?.english_class || null, entered_by: currentTeacher?.id || null,
-      }, { onConflict: 'level_test_id,student_id' })
-      if (error) errors++
+      if (!sc) continue
+      const sav = snapshot[stu.id]
+      const groups: ScoreGroup[] = []
+      if (mcDirty(sc, sav) && Object.keys(sc.answers).length > 0) groups.push(buildMcGroup(sc, config))
+      if (writingDirty(sc, sav)) groups.push(buildWritingGroup(sc, config))
+      if (groups.length === 0) continue
+
+      let ok = true
+      for (const g of groups) {
+        const { error } = await supabase.rpc('upsert_score_group', {
+          p_level_test_id: levelTest.id,
+          p_student_id: stu.id,
+          p_raw: g.raw,
+          p_metrics: g.metrics,
+          p_nested_keys: g.nested,
+          p_previous_class: stu.english_class || null,
+          p_entered_by: currentTeacher?.id || null,
+        })
+        if (error) { console.error('Save error:', error); ok = false; errors++ }
+      }
+      if (ok) saved.push(stu.id)
     }
-    savingRef.current = false
-    if (errors === 0) {
-      setSavedSnapshot(JSON.parse(JSON.stringify(scoresRef.current)))
-      showToast(`Auto-saved ${dirty.length} student${dirty.length === 1 ? '' : 's'}`)
-    }
+    return { saved, errors }
   }, [config, students, levelTest.id, currentTeacher?.id])
+
+  /**
+   * Advances the snapshot for the students that saved, taking their CURRENT
+   * local state rather than a snapshot captured before the await -- otherwise
+   * anything typed during the save reads as already-saved and is never written.
+   */
+  const markSaved = useCallback((ids: string[]) => {
+    if (ids.length === 0) return
+    setSavedSnapshot(prev => {
+      const next = { ...prev }
+      ids.forEach(id => { if (scoresRef.current[id]) next[id] = JSON.parse(JSON.stringify(scoresRef.current[id])) })
+      return next
+    })
+  }, [])
+
+  // Auto-save (silent unless something was written)
+  const autoSave = useCallback(async () => {
+    if (!config || savingRef.current) return
+    savingRef.current = true
+    try {
+      const { saved, errors } = await saveDirty()
+      markSaved(saved)
+      if (saved.length > 0 && errors === 0) {
+        showToast(`Auto-saved ${saved.length} student${saved.length === 1 ? '' : 's'}`)
+      } else if (errors > 0) {
+        showToast(`Error saving ${errors} change${errors === 1 ? '' : 's'} -- will retry`)
+      }
+    } finally {
+      savingRef.current = false
+    }
+  }, [config, saveDirty, markSaved])
 
   // Auto-save every 30 seconds
   useEffect(() => {
@@ -1957,90 +2085,86 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     return () => { autoSave() }
   }, [autoSave])
 
-  // Save — saves dirty students with data via atomic RPC
+  /**
+   * Pull in the other marker's work.
+   *
+   * Nothing on this screen was live before: a teacher who opened it at nine
+   * o'clock saw a blank writing column all morning, however much the writing
+   * teacher had entered — and an empty column invites someone to fill it in.
+   * Every fifteen seconds we re-read the row and take over the half this
+   * teacher is NOT editing. A half with unsaved local edits is left alone, so
+   * this can never pull the ground out from under someone mid-entry.
+   */
+  useEffect(() => {
+    if (!config) return
+    const timer = setInterval(async () => {
+      if (savingRef.current) return
+      const seqBefore = saveSeqRef.current
+      const { data, error } = await supabase.from('level_test_scores')
+        .select('student_id, raw_scores').eq('level_test_id', levelTest.id)
+      // A save landed while we were fetching: these rows may predate it.
+      if (error || !data || saveSeqRef.current !== seqBefore || savingRef.current) return
+
+      const cur = scoresRef.current
+      const snap = savedSnapshotRef.current
+      const nextScores = { ...cur }
+      const nextSnap = { ...snap }
+      let changed = false
+
+      // Walk the students, not the rows: a student whose written half another
+      // teacher CLEARED has no row to iterate, and iterating rows alone would
+      // leave the cleared scores sitting on this screen.
+      const byStudent = new Map<string, any>()
+      data.forEach((row: any) => byStudent.set(row.student_id, row.raw_scores))
+      const EMPTY: StudentScores = { answers: {}, writing: {}, checklist: {}, checklistCapped: {}, shortWriting: null }
+
+      students.forEach(stu => {
+        const server = hydrateWritten(byStudent.get(stu.id), config) || EMPTY
+        const sid = stu.id
+        const local = cur[sid] || { answers: {}, writing: {} }
+        const sav = snap[sid]
+        const merged: StudentScores = { ...local }
+        let touched = false
+        if (!mcDirty(local, sav) && JSON.stringify(local.answers) !== JSON.stringify(server.answers)) {
+          merged.answers = server.answers
+          touched = true
+        }
+        if (!writingDirty(local, sav) && writingDirty(server, local)) {
+          merged.writing = server.writing
+          merged.checklist = server.checklist
+          merged.checklistCapped = server.checklistCapped
+          merged.shortWriting = server.shortWriting
+          touched = true
+        }
+        if (touched) {
+          nextScores[sid] = merged
+          nextSnap[sid] = JSON.parse(JSON.stringify(merged))
+          changed = true
+        }
+      })
+
+      if (changed) { setScores(nextScores); setSavedSnapshot(nextSnap) }
+    }, 15000)
+    return () => clearInterval(timer)
+  }, [config, levelTest.id, students])
+
+  // Manual save — same path as the auto-save, just louder about the result.
   const handleSave = async () => {
     if (!config || savingRef.current) return
     savingRef.current = true
     setSaving(true)
-    let errors = 0
-    // Only save students whose scores differ from the last-saved snapshot
-    // This prevents overwriting another teacher's concurrent edits with stale local data
-    const toSave = students.filter(s => {
-      const current = scores[s.id]
-      const saved = savedSnapshot[s.id]
-      if (!current) return false
-      const hasData = Object.keys(current.answers).length > 0 || Object.values(current.writing).some((v: any) => v > 0)
-      if (!hasData) return false
-      return JSON.stringify(current) !== JSON.stringify(saved)
-    })
-
-    for (const stu of toSave) {
-      const sc = scores[stu.id]
-      const mcTotal = config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
-      const wTotal = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
-
-      // Domain breakdown (weighted)
-      const domainScores: Record<string, { correct: number; total: number }> = {}
-      config.questions.forEach(q => {
-        if (sc.answers[q.qNum]) {
-          const w = qWeight(config, q)
-          if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }
-          domainScores[q.domain].total += w
-          if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct += w
-        }
-      })
-
-      // Standards mastery (weighted)
-      const standardsMastery: Record<string, { met: number; total: number }> = {}
-      config.questions.forEach(q => {
-        if (sc.answers[q.qNum]) {
-          const w = qWeight(config, q)
-          if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }
-          standardsMastery[q.standard].total += w
-          if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met += w
-        }
-      })
-
-      // Upsert with only written keys — DB trigger merges with existing oral keys
-      const { error } = await supabase.from('level_test_scores').upsert({
-        level_test_id: levelTest.id,
-        student_id: stu.id,
-        raw_scores: {
-          written_answers: sc.answers,
-          written_rubric: sc.writing,
-          written_checklist: sc.checklist || {},
-          written_checklist_capped: sc.checklistCapped || {},
-          written_short_writing: sc.shortWriting ?? null,
-          written_mc: mcTotal,
-          writing: wTotal,
-        },
-        calculated_metrics: {
-          written_mc_total: mcTotal,
-          written_mc_max: config.totalMC,
-          written_mc_pct: Math.round((mcTotal / config.totalMC) * 100),
-          writing_total: wTotal,
-          short_writing_total: sc.shortWriting ?? null,
-          short_writing_max: config.shortWriting?.max ?? null,
-          writing_max: config.writingMax,
-          written_domain_scores: domainScores,
-          written_standards_mastery: standardsMastery,
-        },
-        previous_class: stu.english_class || null,
-        entered_by: currentTeacher?.id || null,
-      }, { onConflict: 'level_test_id,student_id' })
-      if (error) errors++
+    try {
+      const { saved, errors } = await saveDirty()
+      markSaved(saved)
+      showToast(
+        errors > 0 ? `Error: ${errors} change${errors === 1 ? '' : 's'} did not save`
+          : saved.length === 0 ? 'No unsaved changes'
+          : `Saved ${saved.length} student${saved.length === 1 ? '' : 's'}`
+      )
+    } finally {
+      setSaving(false)
+      savingRef.current = false
     }
-
-    setSaving(false)
-    savingRef.current = false
-    if (errors === 0) {
-      setSavedSnapshot(prev => {
-        const updated = { ...prev }
-        toSave.forEach(stu => { updated[stu.id] = JSON.parse(JSON.stringify(scores[stu.id])) })
-        return updated
-      })
-    }
-    showToast(errors > 0 ? `Saved with ${errors} error(s)` : toSave.length === 0 ? 'No unsaved changes' : `Saved ${toSave.length} student${toSave.length === 1 ? '' : 's'}`)
   }
 
   // Analytics
