@@ -176,11 +176,11 @@ const F26_PASSAGES: Record<G4PassageLevel, G4Passage> = {
   },
   D: {
     title: 'Coral Reefs',
-    text: 'Most people picture the surface of the ocean when they think about sea life. But just below the waves, coral reefs are full of life. A single reef can be home to thousands of different animals.\n\nCoral is not a plant or a rock. It is actually made of tiny animals called polyps. Each polyp builds a hard skeleton around itself for protection. Over hundreds of years, many of these skeletons stack together to form the reef.\n\nInside each polyp lives a tiny plant-like organism called algae. The algae use sunlight to make food. They share this food with the coral. The coral gives the algae a safe place to live. Scientists call this kind of partnership "symbiosis," because both living things need each other to survive.\n\nNot all reefs are the same. Fringing reefs grow close to the shore. Barrier reefs grow farther out in the ocean. Atolls are ring-shaped reefs that grow around an island. Each type of reef is home to different plants and animals.\n\nThe next time you see a picture of the ocean, remember that hidden beneath the waves lies one of the most complex ecosystems on the planet.',
-    // The guide's table says 193; the passage as printed is 194 words.
-    // Recorded as the true count -- the running record splits this text.
-    wordCount: 194, passageWeight: 1.40, textType: 'Informational, technical vocabulary',
-    note: 'Do not pre-teach. Polyps, algae, symbiosis, atolls and ecosystems are content words the passage defines in context. Supplying them before the read invalidates the accuracy score. If the student stalls on one for more than 3 seconds during the read, supply it and mark it as an error, as with any other word.',
+    text: 'Most people think of the top of the ocean when they think about sea life. But just below the waves, coral reefs are full of life. One reef can be home to thousands of different animals.\n\nCoral is not a plant or a rock. It is made of tiny animals called polyps. Each polyp builds a hard shell around itself to stay safe. Over hundreds of years, these shells stack up and form the reef.\n\nTiny plants called algae live inside each polyp. The algae use sunlight to make food. They share the food with the coral. The coral gives the algae a safe place to live. Scientists call this teamwork "symbiosis," because both of them need each other to live.\n\nNot all reefs are the same. Some reefs grow close to the shore. Others grow far out in the ocean. A reef can even grow in a ring around an island. Each kind of reef is home to different plants and animals.\n\nThe next time you see a picture of the ocean, remember what is hidden under the waves. A coral reef is one of the busiest places on Earth.',
+    // Rewritten from the guide's Passage D: same content, plainer wording.
+    // 191 words as printed here -- the running record splits this text.
+    wordCount: 191, passageWeight: 1.40, textType: 'Informational, technical vocabulary',
+    note: 'Do not pre-teach. Polyps, algae and symbiosis are content words the passage defines in context. Supplying them before the read invalidates the accuracy score. If the student stalls on one for more than 3 seconds during the read, supply it and mark it as an error, as with any other word.',
   },
   E: {
     title: 'The Science Fair',
@@ -215,8 +215,8 @@ const F26_COMP_QUESTIONS: Record<G4PassageLevel, G4CompQuestion[]> = {
   D: [
     { q: 'What is coral actually made of?', dok: 'DOK 1', anchors: ['wrong', 'vague ("animals")', 'tiny animals called polyps'] },
     { q: 'What does the algae use sunlight to make?', dok: 'DOK 1', anchors: ['wrong', 'vague ("something")', 'food'] },
-    { q: 'What is the partnership between coral and algae called, and why?', dok: 'DOK 2', anchors: ['wrong', 'names the term OR the reason, not both', 'symbiosis, because both living things need each other to survive'] },
-    { q: 'How are fringing reefs and atolls different?', dok: 'DOK 2', anchors: ['wrong', 'names one detail only', 'names a clear difference (fringing reefs grow close to shore; atolls are ring-shaped reefs around an island)'] },
+    { q: 'What is the partnership between coral and algae called, and why?', dok: 'DOK 2', anchors: ['wrong', 'names the term OR the reason, not both', 'symbiosis, because both of them need each other to live'] },
+    { q: 'How is a coral reef formed?', dok: 'DOK 2', anchors: ['wrong', 'names one step only (polyps build shells / shells stack up)', 'connects the steps (each polyp builds a hard shell, and over hundreds of years the shells stack up to form the reef)'] },
     { q: 'Would you like to explore a coral reef? Why or why not?', dok: 'Oral production', anchors: ['no response', 'yes/no with no reason', 'yes/no with a reason'] },
   ],
   E: [
@@ -475,7 +475,7 @@ const FALL_2026_CONTENT: G4Content = {
   documentNotes: [
     'Item 36 rubric: the teacher\'s guide and the rubric page reprinted on the student copy score DIFFERENT categories. The guide scores Story Structure, Content and Detail, Language and Grammar, Mechanics, and Word Choice and Voice. The student copy scores Brainstorm/Planning, Story Structure, Content and Detail, Language and Grammar, and Mechanics — awarding up to 4 points for the planning box that the guide states three separate times is not scored at all, and omitting Word Choice and Voice entirely. The guide is used here. The student copy\'s rubric page should be replaced before teachers mark from it.',
     'Item 36 Content and Detail: the guide scores this as a four-feature checklist with a length gate (under five sentences caps it at 2). The student copy scores it as a sentence-count ladder (1-4 sentences = 1, 10+ = 4). The guide is used here.',
-    'Passage D (Coral Reefs): the guide\'s table says 193 words. The passage as printed is 194. Recorded as 194, since the running record splits the real text. Grade 3\'s Passage D is off by one in the same direction, so the two guides were probably counted by the same tool.',
+    'Passage D (Coral Reefs): rewritten from the guide\'s version into plainer wording for Grade 4 — the reef types are now described rather than named (fringing/barrier/atoll), and the closing line drops "ecosystem." Word count is 191 as printed here, not the guide\'s 193. Score the running record against this text, not the guide\'s.',
     'All 35 multiple-choice keys agree between the guide\'s per-item tables, the guide\'s consolidated key, and the printed student copy. No answer-key conflicts on this paper.',
   ],
 }
