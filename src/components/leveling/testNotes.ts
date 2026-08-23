@@ -20,7 +20,7 @@ export const UNIVERSAL_TEST_NOTES: string[] = [
 
 /** True of the oral test in every grade. */
 export const ORAL_TEST_NOTES: string[] = [
-  'You do NOT need to work through the passages from A. Start where the student will be comfortable — if that is C, start at C. The levels are there so you can find the student quickly, not so every student reads all of them.',
+  'You do NOT need to work through the passages from A. Start where the student will be comfortable — if that is C, start at C. The levels exist because the program covers a wide range of English levels, not because every student reads all of them.',
   'Reading level is the reference, not the rule: at Frustration the student is usually on the wrong passage and you should try one level down, but it is your call. A student who is tired, shy, or nearly at Instructional does not always need a re-read.',
 ]
 
