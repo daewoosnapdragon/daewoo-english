@@ -784,7 +784,7 @@ function ClassManagementSection() {
     if (classData && classData.count > 0) {
       if (!await confirmDialog({ title: `Delete class "${cls}"?`, message: `${classData.count} active student(s) will be deactivated. This cannot be undone.`, danger: true, confirmLabel: 'Delete class' })) return
     } else {
-      if (!await confirmDialog({ title: `Delete class "${cls}"?`, message: 'Students will be deactivated. Their grades, attendance and behaviour logs are kept.', danger: true, confirmLabel: 'Delete class' })) return
+      if (!await confirmDialog({ title: `Delete class "${cls}"?`, message: 'Students will be deactivated. Their grades, attendance and behavior logs are kept.', danger: true, confirmLabel: 'Delete class' })) return
     }
     setDeleting(cls)
     // Deactivate students in this class

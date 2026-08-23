@@ -190,7 +190,7 @@ export function calculateG2Band(input: G2BandInput, scales: BandScales): G2BandR
   const compKnown = !input.compNotAdministered && input.compTotal != null
 
   // Where the guide names a comprehension cut point, use it. Otherwise fall
-  // back to the ratio, which approximates the same judgement for the grades
+  // back to the ratio, which approximates the same judgment for the grades
   // whose guides are silent.
   const nonComprehension = compKnown && (
     scales.frustrationCompMax != null

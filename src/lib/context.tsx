@@ -116,7 +116,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const activeSemester = useMemo(() => semesters.find(s => s.is_active) || null, [semesters])
   const canSwitchSemester = canManageSemesters(currentTeacher)
-  // Memoised: consumers put this in effect dependency arrays.
+  // Memoized: consumers put this in effect dependency arrays.
   const visibleSemesters = useMemo(() => (
     canSwitchSemester ? semesters
       : activeSemester ? [activeSemester] : semesters.slice(0, 1)

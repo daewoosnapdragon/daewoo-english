@@ -15,7 +15,7 @@ export const UNIVERSAL_TEST_NOTES: string[] = [
   'Never let a student think they are doing badly. Use the same warm tone for a wrong answer as for a right one — no corrections, no sighing, no "are you sure?" that you only ask when they are wrong. They should leave the room not knowing how they did.',
   'If a student needs a break, give them one. Stop the timer, let them have water, come back to it.',
   'If a student cannot do a section, it is fine to stop that section. Say thank you, move on to the next part, or send them back to class if there is nothing left they can do. Record what you got and leave the rest blank — a section you did not administer is more useful to us than a section you pushed them through in tears.',
-  'This test is subjective by definition. Try to be consistent in how you administer it from student to student, but do not stress yourself out about it. A reasonable, kind, consistent judgement is what we are asking for.',
+  'This test is subjective by definition. Try to be consistent in how you administer it from student to student, but do not stress yourself out about it. A reasonable, kind, consistent judgment is what we are asking for.',
 ]
 
 /** True of the oral test in every grade. */

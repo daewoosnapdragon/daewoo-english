@@ -451,7 +451,7 @@ const FALL_2026_CONTENT: G3Content = {
       'The teacher selects ONE passage. Every passage has 5 comprehension questions worth 0/1/2 each, for 10 points.',
       'Start the timer when the student reads the first word, then follow along and mark errors as they read. Let the timer run — the app handles timing, CWPM and accuracy.',
       'If the student is reading capably, let them read to the end however long it takes, then ask the comprehension questions.',
-      'If the student is clearly struggling — labouring word by word, guessing at most words, or plainly not following the passage — stop at about 60 seconds and do NOT ask the comprehension questions. Mark comprehension not administered.',
+      'If the student is clearly struggling — laboring word by word, guessing at most words, or plainly not following the passage — stop at about 60 seconds and do NOT ask the comprehension questions. Mark comprehension not administered.',
       'Retest at one adjacent level only. Do not move a student more than one level in a single sitting, and record both attempts.',
       'Ask the comprehension questions with the passage turned over, and only if the student finished it.',
       'Give a NAEP rating for every student who reads, including one who is cut off.',

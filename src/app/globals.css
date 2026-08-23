@@ -89,11 +89,11 @@ html.dark option { background-color: #1a2332; color: #e2e8f0; }
 
 /* ───────────────────────────────────────────────────
    Dark mode -- gap fill
-   The rules above cover only the colour utilities that happened to be styled
+   The rules above cover only the color utilities that happened to be styled
    first; anything else kept its light-mode value and glared in dark mode.
    Below covers every remaining palette class actually used in src/, grouped
    the same way: dark text -> light, light tints -> dark, pale borders -> dark.
-   If you introduce a new colour utility, add it here too.
+   If you introduce a new color utility, add it here too.
    ─────────────────────────────────────────────────── */
 
 /* Dark text -> light (neutrals) */

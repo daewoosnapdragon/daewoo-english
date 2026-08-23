@@ -538,7 +538,7 @@ const FALL_2026_CONTENT: G2Content = {
         'The teacher selects ONE passage based on estimated ability. Every passage has 4 comprehension questions worth 0/1/2 each, for 8 points.',
         'Start the timer when the student reads the first word, then mark errors as they read. Let the timer run — the app handles the timing and the CWPM calculation.',
         'If the student is reading capably, let them read to the end however long it takes, then ask the comprehension questions. Finishing over a minute is fine.',
-        'If the student is clearly struggling — labouring word by word, guessing at most words, or plainly not following the story — stop at about 60 seconds and do NOT ask the comprehension questions. Mark comprehension not administered rather than scoring the questions 0.',
+        'If the student is clearly struggling — laboring word by word, guessing at most words, or plainly not following the story — stop at about 60 seconds and do NOT ask the comprehension questions. Mark comprehension not administered rather than scoring the questions 0.',
         'A student who is cut off is usually placed too high. Try the next passage down. If Passage A is too high, record that and move on.',
         'Give a NAEP rating for every student who reads, including one who is cut off.',
       ],

@@ -1002,7 +1002,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
       {(levelTest.grade === 1 || levelTest.grade === '1' as any) && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
           <p className="text-[12px] text-blue-800 leading-relaxed">
-            <strong>Grade 1 Ratings:</strong> These are the teacher judgement in the Grade 1 composite &mdash; the same four dimensions, on the same scale, as every other grade. They carry 10% of the weighted composite, and the placement ranks on that.
+            <strong>Grade 1 Ratings:</strong> These are the teacher judgment in the Grade 1 composite &mdash; the same four dimensions, on the same scale, as every other grade. They carry 10% of the weighted composite, and the placement ranks on that.
           </p>
         </div>
       )}
@@ -1817,7 +1817,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
           {compareStudents.length < 2 && <p className="text-[11px] text-blue-600 mb-3">Click student cards below to add them to the comparison (2-4 students).</p>}
           {compareStudents.length >= 2 && (() => {
             const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b']
-            // Shared normalisation axis: take the max any compared student was
+            // Shared normalization axis: take the max any compared student was
             // actually scored against, so the bars stay comparable.
             const mcMax = getWrittenMcTotal(levelTest.grade,
               Math.max(0, ...compareStudents.map(sid => scores[sid]?.calculated_metrics?.written_mc_max ?? 0)) || null)

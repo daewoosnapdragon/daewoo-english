@@ -298,7 +298,7 @@ const F26_QUESTIONS: G5QuestionDef[] = [
 // ─── Item 25: Writing ────────────────────────────────────────────────
 
 const F26_WRITING_CATEGORIES: G5WritingCategory[] = [
-  { key: 'story_structure', label: 'Story Structure', max: 4, standard: 'W.5.3', standardDesc: 'Organisation of the response', kind: 'ladder' },
+  { key: 'story_structure', label: 'Story Structure', max: 4, standard: 'W.5.3', standardDesc: 'Organization of the response', kind: 'ladder' },
   {
     key: 'content', label: 'Content and Detail', max: 4, standard: 'W.5.2', standardDesc: 'What the response shows', kind: 'checklist',
     checklist: [

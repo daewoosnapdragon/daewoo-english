@@ -181,7 +181,7 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   // Where writing counts in the total (Fall 2026 on) the percentage spans the
   // whole paper: multiple choice + short writing + extended writing. Where it
   // is a bonus (original test) extended writing is left out here and added
-  // afterwards, so the tuned bonus thresholds keep their meaning.
+  // afterward, so the tuned bonus thresholds keep their meaning.
   const writingInTotal = content.extendedWriting.scoring === 'in_total'
   let writtenPct = 0
   let writtenMC = 0
@@ -406,7 +406,7 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
     oralScore = belowBand.floor + (withinBandAvg * (belowBand.unsustainedCeiling - belowBand.floor))
   }
 
-  // ── Teacher judgement ──
+  // ── Teacher judgment ──
   // The original test asked the teacher to guess a placement class outright.
   // From Fall 2026 the signal is the retention rating instead: where the
   // student sits inside the class they have actually been taught in all term.
@@ -1963,7 +1963,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
               )}
             </div>
 
-            {/* Teacher judgement. The stored keys are still named for the
+            {/* Teacher judgment. The stored keys are still named for the
                 original two-wave test; only the labels change per version. */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
@@ -2017,7 +2017,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                 {content.teacherSignal === 'anecdotal_ratings' && (
                   <div className="px-4 py-3 bg-blue-50/40">
                     <p className="text-[11px] text-text-secondary">
-                      Teacher judgement for this student is recorded on the{' '}
+                      Teacher judgment for this student is recorded on the{' '}
                       <strong className="text-navy">Teacher Ratings</strong> phase, the same as every other grade.
                       It feeds the composite from there.
                     </p>
@@ -2893,7 +2893,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
                 <button key={level} onClick={async () => {
                   if (passageLevel && level !== passageLevel) {
                     const hasData = ['o_orf_raw', 'o_orf_words_read', 'o_comp_q1', 'o_a_q1', 'o_a_q2', 'o_a_q3'].some(f => (sc as any)[f] != null)
-                    if (hasData && !await confirmDialog({ title: `Switch from Level ${passageLevel} to Level ${level}?`, message: 'Current scores will be archived. Only the last level attempted counts towards scoring.', confirmLabel: 'Switch' })) return
+                    if (hasData && !await confirmDialog({ title: `Switch from Level ${passageLevel} to Level ${level}?`, message: 'Current scores will be archived. Only the last level attempted counts toward scoring.', confirmLabel: 'Switch' })) return
                   }
                   updateScore(student.id, 'o_passage_level', level)
                 }}
@@ -3281,11 +3281,11 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           </div>
         </div>
 
-        {/* Section 6: Teacher judgement + notes */}
+        {/* Section 6: Teacher judgment + notes */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[13px] font-semibold text-navy mb-1">Teacher Notes</h4>
           <p className="text-[11px] text-text-secondary mb-3">
-            Anything worth remembering at the leveling meeting: reading behaviours, error patterns,
+            Anything worth remembering at the leveling meeting: reading behaviors, error patterns,
             how the student handled the session.
           </p>
 

@@ -2266,7 +2266,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                                 </p>
                                 {/* Where the guide gives an anchor per score, show
                                     them all: picking between 1 and 2 is the whole
-                                    judgement, and one "expected" line hides it. */}
+                                    judgment, and one "expected" line hides it. */}
                                 {cq.anchors && (
                                   <ul className="mt-1 space-y-0.5">
                                     {cq.anchors.map((a, ai) => (

@@ -1255,7 +1255,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
               </p>
             )}
             {/* Grade 5 scores this item as a checklist of elements rather than
-                a single 0..max judgement, so it gets tickboxes like the
+                a single 0..max judgment, so it gets tickboxes like the
                 writing rubric's Content category. */}
             {config.shortWriting.checklist ? (
               <div className="space-y-1 mb-2">

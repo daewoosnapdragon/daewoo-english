@@ -152,7 +152,7 @@ function ParentCalendarView() {
     const [planRes, eventsRes] = await Promise.all([
       supabase.from('parent_calendar').select('*').eq('english_class', selectedClass).eq('grade', selectedGrade).gte('date', firstDay).lte('date', lastDay),
       // A multi-day event can start before this month and still cover days in
-      // it, so the window is opened backwards and the overlap worked out below.
+      // it, so the window is opened backward and the overlap worked out below.
       supabase.from('calendar_events').select('date, end_date, title, type, show_on_parent_calendar, target_grades')
         .gte('date', eventLookbackStart).lte('date', lastDay),
     ])
@@ -471,7 +471,7 @@ function ParentCalendarView() {
           inner = '<div class="no-class">No Grade 5</div>'
         } else {
           evts.forEach(ev => { inner += `<div class="event">${ev.title}</div>` })
-          // Only rows the teacher actually wrote in. A labelled-but-empty row
+          // Only rows the teacher actually wrote in. A labeled-but-empty row
           // would otherwise print as a bare subject name on the parent copy.
           data.subjects.forEach(s => {
             if (!s.content.trim()) return
@@ -675,7 +675,7 @@ function ParentCalendarView() {
                       ) : (
                         <>
                           {evts.map((ev, ei) => <div key={ei} className="text-[10px] font-bold text-slate-600 bg-slate-100 rounded px-2 py-1 mb-1.5">{ev.title}</div>)}
-                          {/* Only rows with content. A labelled-but-empty row must never
+                          {/* Only rows with content. A labeled-but-empty row must never
                               show here or in print -- this is the parent-facing calendar. */}
                           {data.subjects.filter(s => s.content.trim()).map((s, si) => (
                             <div key={si} className="text-[11px] leading-snug mb-1">

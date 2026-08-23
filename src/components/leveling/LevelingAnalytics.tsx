@@ -877,7 +877,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
                   <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
                   <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
                   <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold"
-                    title={lastSemesterName ? `Semester grades from ${lastSemesterName}` : 'No completed semester found — students new to the programme have no prior grades.'}>
+                    title={lastSemesterName ? `Semester grades from ${lastSemesterName}` : 'No completed semester found — students new to the program have no prior grades.'}>
                     Grades{lastSemesterName ? <><br/><span className="normal-case font-normal opacity-70">{lastSemesterName}</span></> : ''}
                   </th>
                   <th className="text-center px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Anecdotal</th>

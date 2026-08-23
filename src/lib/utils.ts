@@ -335,8 +335,8 @@ export function calculateWeightedAverage(
 // Scores saved from the entry screens record `comp_answered` (how many
 // questions were scored) and store a null `comp_total` when none were, so the
 // three states are distinguishable. Rows saved before that field existed cannot
-// tell a real 0 from an unscored set, so they keep the old behaviour of
-// counting only positive totals rather than being retroactively penalised.
+// tell a real 0 from an unscored set, so they keep the old behavior of
+// counting only positive totals rather than being retroactively penalized.
 export function compIsCountable(calc: {
   comp_total?: number | null
   comp_answered?: number | null

@@ -151,7 +151,7 @@ export interface G1Content {
      * 'in_total' — writing is part of the written test score, counted with the
      *              multiple choice out of the paper total.
      * 'bonus'    — writing sits outside the written score and is added on a
-     *              sliding scale afterwards, so it can only ever help. This is
+     *              sliding scale afterward, so it can only ever help. This is
      *              how the original test worked; kept so its results stand.
      */
     scoring: 'in_total' | 'bonus'
@@ -205,7 +205,7 @@ export interface G1Content {
    */
   usesClassImpression: boolean
   /**
-   * Which teacher judgement carries weight in the composite.
+   * Which teacher judgment carries weight in the composite.
    *   'class_impression'   — a guessed placement class (the original test).
    *   'retention_rating'   — how the student sits within the class they are
    *                          already in: weak / core / strong.

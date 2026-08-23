@@ -67,8 +67,8 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 --
 -- INSERT ... ON CONFLICT DO UPDATE evaluates the merge against the current row
 -- while holding its lock, so two teachers saving the same student at the same
--- moment serialise rather than race. The BEFORE UPDATE merge trigger from
--- 20260306 still runs afterwards; it is a no-op here, because the value this
+-- moment serialize rather than race. The BEFORE UPDATE merge trigger from
+-- 20260306 still runs afterward; it is a no-op here, because the value this
 -- function computes is already a superset of the old row for the keys it
 -- touches.
 
