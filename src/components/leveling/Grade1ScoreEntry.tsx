@@ -73,6 +73,8 @@ interface G1Scores {
   o_orf_words_read?: number | null
   o_orf_errors?: number | null
   o_orf_time_seconds?: number | null
+  /** Which word got which mark, so a reopened passage is not a clean page. */
+  o_orf_word_marks?: Record<number, 'error' | 'self_correct' | null> | null
   o_naep?: number | null
   o_comp_q1?: number | null
   o_comp_q2?: number | null
@@ -752,13 +754,13 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   // The teacher may re-test at another level if they misjudged; the previous
   // attempt is archived into passages_attempted rather than discarded.
   const G1_PASSAGE_FIELDS = [
-    'o_orf_raw', 'o_orf_words_read', 'o_orf_errors', 'o_orf_time_seconds',
+    'o_orf_raw', 'o_orf_words_read', 'o_orf_errors', 'o_orf_time_seconds', 'o_orf_word_marks',
     'o_naep', 'o_comp_q1', 'o_comp_q2', 'o_comp_q3', 'o_comp_q4', 'o_comp_q5',
     'o_comp_not_administered',
     'o_a_q1', 'o_a_q2', 'o_a_q3', 'o_a_q4', 'o_a_q5',
   ]
 
-  const updateScore = useCallback((studentId: string, key: string, value: number | string | boolean | null) => {
+  const updateScore = useCallback((studentId: string, key: string, value: number | string | boolean | null | Record<string, unknown>) => {
     setScores(prev => {
       const current = prev[studentId] || {}
       // If changing passage level, archive current passage data and clear fields
@@ -2480,9 +2482,16 @@ function LevelCSentences({ score, onScore, content }: { score: number | null | u
 
 // ─── Level D/E/F: Passage reader (unchanged from original) ─────────────────
 
-function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate, content }: {
+function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMarks, onUpdate, content }: {
   level: string; wordsRead: number | null | undefined; errors: number | null | undefined; timeSeconds: number | null | undefined;
-  onUpdate: (field: string, val: number | null) => void
+  /**
+   * Which word got which mark, so reopening the passage shows the reading as
+   * it was left. Without it a teacher who closes the modal -- for a long break,
+   * or by accident -- comes back to a clean passage, and saving again writes
+   * the error count back as zero over a real one.
+   */
+  initialWordMarks?: Record<number, 'error' | 'self_correct' | null> | null
+  onUpdate: (field: string, val: number | null | Record<string, unknown>) => void
   content: G1Content
 }) {
   const [showPassage, setShowPassage] = useState(false)
@@ -2491,6 +2500,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate, cont
   const [timing, setTiming] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [finished, setFinished] = useState(false)
+  const [pausedForBreak, setPausedForBreak] = useState(false)
   const [notes, setNotes] = useState('')
   const startRef = useRef<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -2518,6 +2528,11 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate, cont
   const cwpm = Math.round(((wRead - errCount) / t) * 60)
   const accuracy = wRead > 0 ? Math.round(((wRead - errCount) / wRead) * 1000) / 10 : 0
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  // The clock is stopped part-way and the reading can carry on. True after a
+  // Pause, and also when a saved passage is reopened -- so `pausedForBreak`,
+  // set only by the button, is what labels the break; a reopened passage that
+  // was actually finished must not claim someone is on a break.
+  const canResume = !timing && !finished && elapsed > 0
 
   const handleWordClick = (idx: number) => {
     if (lastWordIdx !== null && idx > lastWordIdx) return
@@ -2541,6 +2556,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate, cont
     // discarded any time >= 60s, and the composite then assumed exactly 60 --
     // so a reader who took 95 seconds was scored as if they had taken 60.
     onUpdate('o_orf_time_seconds', elapsed > 0 ? elapsed : null)
+    onUpdate('o_orf_word_marks', wordMarks)
     setFinished(true)
     setTiming(false)
     setShowPassage(false)
@@ -2552,6 +2568,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate, cont
     setTiming(false)
     setElapsed(0)
     setFinished(false)
+    setPausedForBreak(false)
     setNotes('')
   }
 
@@ -2560,6 +2577,15 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate, cont
       setLastWordIdx(wordsRead - 1)
     }
   }, [wordsRead])
+
+  // Bring back the marks and the clock, so reopening the passage shows the
+  // reading where it was left rather than a clean page.
+  useEffect(() => {
+    if (initialWordMarks && Object.keys(initialWordMarks).length > 0 && Object.keys(wordMarks).length === 0) {
+      setWordMarks(initialWordMarks)
+    }
+    if (timeSeconds != null && timeSeconds > 0 && elapsed === 0) setElapsed(timeSeconds)
+  }, [])
 
   const lines: { word: string; idx: number }[][] = []
   for (let i = 0; i < words.length; i += 10) {
@@ -2587,14 +2613,23 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate, cont
             <div className="flex items-center justify-between px-6 py-2.5 bg-navy-dark text-white shrink-0">
               <div className="flex items-center gap-3">
                 {!timing && !finished && (
-                  <button onClick={() => { setTiming(true); setFinished(false) }}
+                  <button onClick={() => { setTiming(true); setFinished(false); setPausedForBreak(false) }}
                     className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-[12px] font-semibold">
-                    Start
+                    {canResume ? 'Resume' : 'Start'}
                   </button>
                 )}
+                {/* Pause is for a break, not for the end of the reading. The
+                    clock picks up where it stopped, so the break is not
+                    counted in the CWPM -- which is the whole point of it. */}
                 {timing && (
-                  <button onClick={() => { setTiming(false); setFinished(true) }}
-                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold animate-pulse">
+                  <button onClick={() => { setTiming(false); setPausedForBreak(true) }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[12px] font-semibold">
+                    Pause
+                  </button>
+                )}
+                {(timing || canResume) && (
+                  <button onClick={() => { setTiming(false); setPausedForBreak(false); setFinished(true) }}
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold ${timing ? 'animate-pulse' : ''}`}>
                     Stop
                   </button>
                 )}
@@ -2605,9 +2640,15 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, onUpdate, cont
                   </button>
                 )}
                 <span className={`text-[24px] font-mono font-bold tabular-nums ${
-                  elapsed >= content.timing.ceilingSeconds ? 'text-red-400'
+                  pausedForBreak ? 'text-amber-300'
+                    : elapsed >= content.timing.ceilingSeconds ? 'text-red-400'
                     : elapsed >= content.timing.struggleStopSeconds ? 'text-gold' : ''
                 }`}>{formatTime(elapsed)}</span>
+                {pausedForBreak && (
+                  <span className="text-[10px] font-semibold text-amber-300 uppercase tracking-wider">
+                    Paused &mdash; clock stopped for a break
+                  </span>
+                )}
                 {timing && elapsed >= content.timing.struggleStopSeconds && (
                   <span className={`text-[10px] leading-tight max-w-[230px] ${
                     elapsed >= content.timing.ceilingSeconds ? 'text-red-300 font-semibold' : 'text-white/70'
@@ -3077,6 +3118,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
                 key={student.id + '-' + passageLevel}
                 level={passageLevel}
                 wordsRead={sc.o_orf_words_read}
+                initialWordMarks={sc.o_orf_word_marks}
                 errors={sc.o_orf_errors}
                 timeSeconds={sc.o_orf_time_seconds}
                 onUpdate={(field: string, val: number | null) => updateScore(student.id, field, val)}

@@ -7,7 +7,7 @@ import { classToColor, classToTextColor } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import {
   Save, Loader2, ChevronLeft, ChevronRight, BookOpen, Clock,
-  CheckCircle2, Circle, X, Info, RotateCcw, Play, Square, Mic, Trash2, Ban
+  CheckCircle2, Circle, X, Info, RotateCcw, Play, Pause, Square, Mic, Trash2, Ban
 } from 'lucide-react'
 import { g2ContentForTest, G2Content } from './grade2Content'
 import { g3ContentForTest, G3Content } from './grade3Content'
@@ -117,6 +117,13 @@ interface OralScores {
   // Passage selection
   passage_level?: string | null
   // ORF data
+  /**
+   * Which word got which mark, so reopening the passage shows the reading as
+   * it was left. Without it a teacher who closes the modal -- for a long break,
+   * or by accident -- comes back to a clean passage, and saving again writes
+   * the error count back as zero over a real one.
+   */
+  orf_word_marks?: Record<number, 'error' | 'self_correct' | null> | null
   orf_words_read?: number | null
   orf_errors?: number | null
   orf_time_seconds?: number | null
@@ -138,7 +145,9 @@ interface OralScores {
   comp_5?: number | null
   // Teacher notes
   notes?: string | null
-  [key: string]: number | string | boolean | null | undefined
+  // `passages_attempted` and `orf_word_marks` are objects, so the catch-all has
+  // to allow one -- everything here is written straight to a JSONB column.
+  [key: string]: number | string | boolean | null | undefined | Record<string, any> | any[]
 }
 
 // ============================================================================
@@ -831,9 +840,12 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
   readingLevels: { level: string; accuracy: string; comprehension?: string; action: string }[]
   /** The passage below this one, or null on the lowest level offered. */
   prevLevel: PassageLevel | null
-  onSave: (data: { wordsRead: number; errors: number; timeSeconds: number; notes?: string }) => void
+  onSave: (data: { wordsRead: number; errors: number; timeSeconds: number; notes?: string; wordMarks: Record<number, 'error' | 'self_correct' | null> }) => void
   onClose: () => void
-  initialData?: { wordsRead?: number | null; errors?: number | null; timeSeconds?: number | null }
+  initialData?: {
+    wordsRead?: number | null; errors?: number | null; timeSeconds?: number | null
+    wordMarks?: Record<number, 'error' | 'self_correct' | null> | null
+  }
 }) {
   const { confirmDialog } = useApp()
   // An em-dash joins two words with no space ("kids\u2014and"), so splitting on
@@ -850,6 +862,7 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
   const [timing, setTiming] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [finished, setFinished] = useState(false)
+  const [pausedForBreak, setPausedForBreak] = useState(false)
   const [notes, setNotes] = useState('')
   const startRef = useRef<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -861,6 +874,9 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
     }
     if (initialData?.timeSeconds != null && initialData.timeSeconds > 0) {
       setElapsed(initialData.timeSeconds)
+    }
+    if (initialData?.wordMarks && Object.keys(initialData.wordMarks).length > 0) {
+      setWordMarks(initialData.wordMarks)
     }
   }, [])
 
@@ -884,6 +900,12 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
   const cwpm = Math.round(((wRead - errCount) / t) * 60)
   const accuracy = wRead > 0 ? Math.round(((wRead - errCount) / wRead) * 1000) / 10 : 0
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+  // The clock is stopped part-way and the reading can carry on. True after a
+  // Pause, and also when a saved passage is reopened -- so `pausedForBreak`,
+  // set only by the button, is what labels the break; a reopened passage that
+  // was actually finished must not claim someone is on a break.
+  const canResume = !timing && !finished && elapsed > 0
 
   // Which band the live accuracy falls in, and the reference row to show for
   // each. Grades whose guide authors the table use its exact wording; the rest
@@ -920,7 +942,7 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
   }
 
   const handleSaveAndClose = () => {
-    onSave({ wordsRead: wRead, errors: errCount, timeSeconds: elapsed > 0 && elapsed < 60 ? elapsed : (elapsed || 60), notes: notes || undefined })
+    onSave({ wordsRead: wRead, errors: errCount, timeSeconds: elapsed > 0 && elapsed < 60 ? elapsed : (elapsed || 60), notes: notes || undefined, wordMarks })
     setFinished(true)
     setTiming(false)
     onClose()
@@ -932,6 +954,7 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
     setTiming(false)
     setElapsed(0)
     setFinished(false)
+    setPausedForBreak(false)
   }
 
   // Detect whether the teacher has done anything worth keeping
@@ -986,12 +1009,12 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
           </div>
         </div>
 
-        {/* Frustration flag. Held back until the timer stops: appearing mid-read
-            would push the whole word grid down while the teacher is clicking
-            words. Advisory only -- the guide's rule is to try one level down,
+        {/* Frustration flag. Held back until the reading is finished -- a
+            banner appearing mid-read, or during a break, would push the whole
+            word grid down under the teacher's finger. Advisory only -- the guide's rule is to try one level down,
             but a tired or shy student does not always need a re-read, so the
             call stays with the teacher. */}
-        {!timing && elapsed > 0 && liveBand === 'frustration' && (
+        {finished && elapsed > 0 && liveBand === 'frustration' && (
           <div className="px-6 py-2 bg-red-50 border-b border-red-200 text-[10px] text-red-800 shrink-0 flex items-start gap-2">
             <Info size={12} className="mt-0.5 shrink-0" />
             <span>
@@ -1003,18 +1026,27 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
           </div>
         )}
 
-        {/* Timer bar — 3 states: idle, timing, finished */}
+        {/* Timer bar — idle, running, paused for a break, finished */}
         <div className="flex items-center justify-between px-6 py-2.5 bg-navy-dark text-white shrink-0">
           <div className="flex items-center gap-3">
             {!timing && !finished && (
-              <button onClick={() => { setTiming(true); setFinished(false) }}
+              <button onClick={() => { setTiming(true); setFinished(false); setPausedForBreak(false) }}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-[12px] font-semibold">
-                <Play size={12} /> Start
+                <Play size={12} /> {canResume ? 'Resume' : 'Start'}
               </button>
             )}
+            {/* Pause is for a break, not for the end of the reading. The clock
+                picks up where it stopped, so the break is not counted in the
+                CWPM -- which is the whole point of having it. */}
             {timing && (
-              <button onClick={() => { setTiming(false); setFinished(true) }}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold animate-pulse">
+              <button onClick={() => { setTiming(false); setPausedForBreak(true) }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[12px] font-semibold">
+                <Pause size={12} /> Pause
+              </button>
+            )}
+            {(timing || canResume) && (
+              <button onClick={() => { setTiming(false); setPausedForBreak(false); setFinished(true) }}
+                className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold ${timing ? 'animate-pulse' : ''}`}>
                 <Square size={12} /> Stop
               </button>
             )}
@@ -1024,7 +1056,12 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
                 <RotateCcw size={11} /> Reset
               </button>
             )}
-            <span className="text-[24px] font-mono font-bold tabular-nums">{formatTime(elapsed)}</span>
+            <span className={`text-[24px] font-mono font-bold tabular-nums ${pausedForBreak ? 'text-amber-300' : ''}`}>{formatTime(elapsed)}</span>
+            {pausedForBreak && (
+              <span className="text-[10px] font-semibold text-amber-300 uppercase tracking-wider">
+                Paused {'\u2014'} clock stopped for a break
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-5 text-[11px]">
             <div className="text-center"><div className="text-[18px] font-bold">{errCount}</div><div className="text-white/60 text-[8px] uppercase">Errors</div></div>
@@ -1432,7 +1469,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   // database and then dropped on the next load. Deriving one from the other
   // means a new field cannot go missing from persistence again.
   const PASSAGE_FIELDS = [
-    'orf_words_read', 'orf_errors', 'orf_time_seconds', 'naep',
+    'orf_words_read', 'orf_errors', 'orf_time_seconds', 'orf_word_marks', 'naep',
     'comp_1', 'comp_2', 'comp_3', 'comp_4', 'comp_5', 'comp_not_administered', 'notes',
   ]
 
@@ -1552,7 +1589,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   }, [students, scores])
 
   // Fields that belong to the current passage and should be cleared on passage switch
-  const updateScore = useCallback((sid: string, key: string, val: number | string | boolean | null) => {
+  const updateScore = useCallback((sid: string, key: string, val: number | string | boolean | null | Record<string, unknown>) => {
     setScores(prev => {
       const current = prev[sid] || {}
       // If changing passage_level, archive current passage data and clear fields
@@ -2404,11 +2441,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           level={passageLevel as PassageLevel}
           readingLevels={config.readingLevels}
           prevLevel={config.levels[config.levels.indexOf(passageLevel as PassageLevel) - 1] ?? null}
-          initialData={{ wordsRead: sc.orf_words_read, errors: sc.orf_errors, timeSeconds: sc.orf_time_seconds }}
+          initialData={{ wordsRead: sc.orf_words_read, errors: sc.orf_errors, timeSeconds: sc.orf_time_seconds, wordMarks: sc.orf_word_marks }}
           onSave={(data) => {
             updateScore(student.id, 'orf_words_read', data.wordsRead)
             updateScore(student.id, 'orf_errors', data.errors)
             updateScore(student.id, 'orf_time_seconds', data.timeSeconds)
+            updateScore(student.id, 'orf_word_marks', data.wordMarks)
             if (data.notes) updateScore(student.id, 'notes', data.notes)
           }}
           onClose={() => setShowPassageReader(false)}
