@@ -30,6 +30,11 @@ const NAEP_LABELS: Record<number, string> = {
 }
 const NAEP_MULTIPLIERS: Record<number, number> = { 1: 0.85, 2: 0.95, 3: 1.0, 4: 1.1 }
 
+// Accuracy bands. The same two thresholds every grade's guide uses, so the
+// passage screen reads the same in Grade 1 as it does in grades 2-5.
+const G1_INDEPENDENT_ACCURACY = 95
+const G1_FRUSTRATION_ACCURACY = 90
+
 
 // ============================================================================
 // PLACEMENT ALGORITHM - GRADE 1 SPECIFIC
@@ -387,7 +392,7 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   // Snapdragon. This extends the guide rather than quoting it -- the guide
   // speaks only about being cut off -- so it is set low enough to catch
   // near-total non-comprehension and not merely weak comprehension.
-  const FRUSTRATION_ACCURACY = 90
+  const FRUSTRATION_ACCURACY = G1_FRUSTRATION_ACCURACY
   const NON_COMPREHENSION_RATIO = 0.25
   const belowFrustration = accuracy != null && accuracy < FRUSTRATION_ACCURACY
   const nonComprehension = !compNotAdministered
@@ -749,6 +754,13 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   const isStudentDirty = useCallback((sid: string) => {
     return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
   }, [])
+
+  // The same question asked during render. `isStudentDirty` reads refs that are
+  // only synced in an effect, so it answers for the render before this one --
+  // fine for deciding what to save, wrong for a label that has to say "unsaved"
+  // the moment a score is entered.
+  const studentDirtyNow = (sid: string) =>
+    JSON.stringify(scores[sid] || {}) !== JSON.stringify(savedSnapshot[sid] || {})
 
   // Fields that belong to the current passage level and must be cleared on switch.
   // The teacher may re-test at another level if they misjudged; the previous
@@ -1252,6 +1264,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
               activeWave={1}
               onClearOral={clearOralData}
               onRestoreAttempt={restoreAttempt}
+              isStudentDirty={studentDirtyNow}
             />
           )}
           {activeTab === 'written' && (
@@ -2534,6 +2547,21 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
   // was actually finished must not claim someone is on a break.
   const canResume = !timing && !finished && elapsed > 0
 
+  // Which band the live accuracy falls in, and the reference row to show for
+  // each. Grade 1's guide authors no table of its own, so these are the
+  // thresholds every guide shares -- the same three rows grades 2-5 show above
+  // their passage.
+  const liveBand = accuracy >= G1_INDEPENDENT_ACCURACY ? 'independent'
+    : accuracy >= G1_FRUSTRATION_ACCURACY ? 'instructional'
+    : 'frustration'
+  const REF_BANDS = [
+    { key: 'independent', label: 'Independent', accuracy: `${G1_INDEPENDENT_ACCURACY}% or higher`, action: 'The passage is too easy. Try one level up.' },
+    { key: 'instructional', label: 'Instructional', accuracy: `${G1_FRUSTRATION_ACCURACY}-${G1_INDEPENDENT_ACCURACY - 1}%`, action: 'This is the placement level. Stop here.' },
+    { key: 'frustration', label: 'Frustration', accuracy: `below ${G1_FRUSTRATION_ACCURACY}%`, action: 'The passage is too hard. Try one level down.' },
+  ]
+  const LEVEL_ORDER: PassageLevel[] = ['A', 'B', 'C', 'D', 'E', 'F']
+  const prevLevel = LEVEL_ORDER[LEVEL_ORDER.indexOf(level as PassageLevel) - 1] ?? null
+
   const handleWordClick = (idx: number) => {
     if (lastWordIdx !== null && idx > lastWordIdx) return
     if (lastWordIdx === idx) { setLastWordIdx(null); return }
@@ -2610,6 +2638,49 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
               <button onClick={() => setShowPassage(false)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
             </div>
 
+            {/* Reading-level reference. Kept at the top of the modal so the
+                teacher can read the live accuracy against the bands without
+                closing the passage. Highlights the band the reading is
+                currently in once there is a timed reading to judge. */}
+            <div className="px-6 py-2 border-b border-border bg-surface-alt/40 shrink-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mr-0.5">Reading level</span>
+                {REF_BANDS.map(b => {
+                  const live = elapsed > 0 && b.key === liveBand
+                  return (
+                    <span key={b.key} title={b.action}
+                      className={`text-[9.5px] px-2 py-1 rounded-lg border transition-all ${
+                        live
+                          ? b.key === 'frustration' ? 'bg-red-100 border-red-300 text-red-800 font-bold'
+                          : b.key === 'instructional' ? 'bg-amber-100 border-amber-300 text-amber-800 font-bold'
+                          : 'bg-green-100 border-green-300 text-green-800 font-bold'
+                          : 'bg-surface border-border text-text-secondary'
+                      }`}>
+                      <span className="font-semibold">{b.label}</span> {b.accuracy}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Frustration flag. Held back until the reading is finished -- a
+                banner appearing mid-read, or during a break, would push the
+                whole word grid down under the teacher's finger. Advisory only:
+                the rule of thumb is to try one level down, but a tired or shy
+                student does not always need a re-read, so the call stays with
+                the teacher. */}
+            {finished && elapsed > 0 && liveBand === 'frustration' && (
+              <div className="px-6 py-2 bg-red-50 border-b border-red-200 text-[10px] text-red-800 shrink-0 flex items-start gap-2">
+                <Info size={12} className="mt-0.5 shrink-0" />
+                <span>
+                  <strong>{accuracy}% accuracy is Frustration level</strong> for this passage.
+                  {prevLevel
+                    ? <> You may want to stop here and try Level {prevLevel} instead &mdash; but that is your call, not a rule. A student who is nearly at {G1_FRUSTRATION_ACCURACY}%, tired, or just nervous does not always need a re-read.</>
+                    : <> This is the lowest passage, so there is nothing to move down to. Record it and move on.</>}
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center justify-between px-6 py-2.5 bg-navy-dark text-white shrink-0">
               <div className="flex items-center gap-3">
                 {!timing && !finished && (
@@ -2663,7 +2734,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                 <div className="text-center"><div className="text-[18px] font-bold">{errCount}</div><div className="text-white/60 text-[8px] uppercase">Errors</div></div>
                 <div className="text-center"><div className="text-[18px] font-bold">{scCount}</div><div className="text-white/60 text-[8px] uppercase">SC</div></div>
                 <div className="text-center"><div className="text-[18px] font-bold text-gold">{elapsed > 0 ? cwpm : '--'}</div><div className="text-white/60 text-[8px] uppercase">CWPM</div></div>
-                <div className="text-center"><div className={`text-[18px] font-bold ${accuracy >= 95 ? 'text-green-400' : accuracy >= 90 ? 'text-amber-400' : elapsed > 0 ? 'text-red-400' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '--'}</div><div className="text-white/60 text-[8px] uppercase">Acc</div></div>
+                <div className="text-center"><div className={`text-[18px] font-bold ${accuracy >= G1_INDEPENDENT_ACCURACY ? 'text-green-400' : accuracy >= G1_FRUSTRATION_ACCURACY ? 'text-amber-400' : elapsed > 0 ? 'text-red-400' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '--'}</div><div className="text-white/60 text-[8px] uppercase">Acc</div></div>
                 <div className="text-center"><div className="text-[18px] font-bold">{wRead}/{words.length}</div><div className="text-white/60 text-[8px] uppercase">Words</div></div>
               </div>
             </div>
@@ -2715,8 +2786,11 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                 className="w-full px-3 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white" />
               <div className="flex items-center justify-between">
                 <div className="text-[10px] text-text-tertiary">
-                  {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> | Accuracy: <strong className={accuracy >= 95 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}>{accuracy}%</strong> | </>}
+                  {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> | Accuracy: <strong className={accuracy >= G1_INDEPENDENT_ACCURACY ? 'text-green-600' : accuracy >= G1_FRUSTRATION_ACCURACY ? 'text-amber-600' : 'text-red-600'}>{accuracy}%</strong> | </>}
                   Errors: <strong className="text-red-600">{errCount}</strong> | SC: <strong className="text-amber-600">{scCount}</strong>
+                  {elapsed > 0 && liveBand === 'independent' && <span className="ml-2 text-green-600">(Independent)</span>}
+                  {elapsed > 0 && liveBand === 'instructional' && <span className="ml-2 text-amber-600">(Instructional)</span>}
+                  {elapsed > 0 && liveBand === 'frustration' && <span className="ml-2 text-red-600">(Frustration -- consider one level down)</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Stop the clock the moment the student finishes, without
@@ -2752,7 +2826,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
 // ORAL TEST ENTRY MAIN
 // ============================================================================
 
-function OralTestEntry({ content, students, scores, updateScore, onSave, saving, selectedIdx, onSelectIdx, activeWave, onClearOral, onRestoreAttempt }: {
+function OralTestEntry({ content, students, scores, updateScore, onSave, saving, selectedIdx, onSelectIdx, activeWave, onClearOral, onRestoreAttempt, isStudentDirty }: {
   content: G1Content
   students: Student[]
   scores: Record<string, G1Scores>
@@ -2764,6 +2838,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
   activeWave: 1 | 2
   onClearOral: (sid: string, name: string) => Promise<void>
   onRestoreAttempt: (sid: string, attemptIdx: number) => void
+  isStudentDirty: (sid: string) => boolean
 }) {
   const { confirmDialog } = useApp()
   const PASSAGE_CONFIGS = content.passageConfigs
@@ -3407,6 +3482,28 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
         {(sc.o_passage_level || sc.o_alpha_names != null) && (
           <StudentScorePreview scores={sc} student={student} content={content} />
         )}
+
+        {/* Save, again, at the bottom. The oral form runs well past one screen,
+            so by the time a session finishes the header button is scrolled out
+            of sight -- and that scroll back up is where saving gets forgotten. */}
+        <div className="mt-8 mb-2 pt-5 border-t border-border">
+          <button onClick={() => onSave([student.id])} disabled={saving}
+            className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl text-[16px] font-bold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 shadow-md transition-all">
+            {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {saving ? 'Saving...' : `Save ${student.english_name}`}
+          </button>
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <span className={`text-[11px] ${isStudentDirty(student.id) ? 'text-amber-600 font-semibold' : 'text-text-tertiary'}`}>
+              {isStudentDirty(student.id) ? 'Unsaved changes' : 'All changes saved'}
+            </span>
+            {selectedIdx < students.length - 1 && (
+              <button onClick={() => { onSave([student.id]); onSelectIdx(selectedIdx + 1) }} disabled={saving}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-navy hover:underline disabled:opacity-40">
+                Save and go to {students[selectedIdx + 1].english_name} <ChevronRight size={13} />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

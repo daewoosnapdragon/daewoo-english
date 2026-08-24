@@ -1445,7 +1445,9 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           <span className="font-semibold"> 35% Writing Rubric</span>, and
           <span className="font-semibold"> 10% Teacher Ratings</span> (anecdotal observations).
           All components use absolute scales so students from different classes can be fairly compared.
-          When a component is missing, its weight is redistributed proportionally among the available components.
+          When a component is missing, its weight is redistributed proportionally among the available components &mdash;
+          so a student with no Teacher Rating (a new teacher who has rated nobody, say) is ranked on the rest of their
+          evidence, and the missing rating neither helps nor hurts them.
         </p>
       </div>
       <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -1472,7 +1474,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
             ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Writing', 'MC', 'Comp', 'Anecdotal', 'Composite', 'Rank', 'Suggested'],
             displayed.map(r => [r.student.english_name, r.student.korean_name, r.student.english_class,
               r.passageLevel ?? '', r.rawCwpm != null ? Math.round(r.rawCwpm) : '', r.rawWriting ?? '', r.rawMc ?? '', r.rawComp ?? '',
-              (r.anecScore * 100).toFixed(0), (r.composite * 100).toFixed(0),
+              r.hasAnec ? (r.anecScore * 100).toFixed(0) : '', (r.composite * 100).toFixed(0),
               Math.round(r.percentile * 100), r.suggestedClass]))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
           <Download size={12} /> CSV
@@ -1534,7 +1536,10 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                     {row.adjMcScore != null && row.adjMcMax != null ? <span className="font-medium text-blue-700">{row.adjMcScore}<span className="text-blue-400">/{row.adjMcMax}</span></span> : '—'}
                   </td>
                 )}
-                <td className="px-2 py-2 text-center">{row.anecScore !== 0.5 ? (row.anecScore * 4).toFixed(1) : '—'}</td>
+                <td className="px-2 py-2 text-center"
+                  title={row.hasAnec ? undefined : 'Not rated. The 10% teacher weight is redistributed across this student\u2019s other components, so the missing rating neither helps nor hurts them.'}>
+                  {row.hasAnec ? (row.anecScore * 4).toFixed(1) : <span className="text-text-tertiary">{'\u2014'}</span>}
+                </td>
                 <td className="px-2 py-2 text-center font-bold text-navy" title={excludedQuestions.length > 0 ? `Composite adjusted: ${excludedQuestions.length} question${excludedQuestions.length !== 1 ? 's' : ''} excluded from MC scoring` : undefined}>{excludedQuestions.length > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-0.5 align-super" />}{(row.composite * 100).toFixed(0)}</td>
                 {hasBands && (
                   <td className="px-2 py-2 text-center">
@@ -2129,6 +2134,12 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   const writingRubricScore = writingRatio // already null if no data (raw / 20)
   // Grade average: still computed for display in hover card, but NOT included in composite
   const gv = grades.filter((g: any) => g.score != null && (g.semester_name?.toLowerCase().includes('fall') || g.semesters?.name?.toLowerCase().includes('fall') || g.semesters?.type?.startsWith('fall'))); const gradeScore = gv.length > 0 ? gv.reduce((sum: number, g: any) => sum + g.score, 0) / gv.length / 100 : null
+  // A student nobody rated carries no teacher signal at all -- its 10% is
+  // redistributed below rather than filled in with a middling guess. Some
+  // teachers are new and have rated no one; their students must not be pulled
+  // toward the middle for it. The 0.5 here is never blended into a composite,
+  // only a placeholder for the unrated case, so read `hasAnec` before showing
+  // it anywhere.
   const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
   const anecScore = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
   // Composite: 40% oral + 15% MC + 35% writing rubric + 10% teacher rating = 100%
@@ -2182,7 +2193,7 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
       }, bandScales)
     : null
 
-  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compUnmeasured, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags, band }
+  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, hasAnec, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compUnmeasured, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags, band }
 }
 
 function suggestClass(row: any, idx: number, total: number): EnglishClass {

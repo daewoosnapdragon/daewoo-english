@@ -1531,6 +1531,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
   }, [])
 
+  // The same question asked during render. `isStudentDirty` reads refs that are
+  // only synced in an effect, so it answers for the render before this one --
+  // fine for deciding what to save, wrong for a label that has to say "unsaved"
+  // the moment a score is entered.
+  const studentDirtyNow = (sid: string) =>
+    JSON.stringify(scores[sid] || {}) !== JSON.stringify(savedSnapshot[sid] || {})
+
   // Bumped on every write, so the refresh below can tell whether a save landed
   // while it was fetching.
   const saveSeqRef = useRef(0)
@@ -2430,6 +2437,29 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 )}
               </>
             )}
+
+            {/* Save, again, at the bottom. The oral form runs well past one
+                screen, so by the time a session finishes the header button is
+                scrolled out of sight -- and that scroll back up is where
+                saving gets forgotten. */}
+            <div className="mt-8 mb-2 pt-5 border-t border-border">
+              <button onClick={() => handleSave([student.id])} disabled={saving}
+                className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl text-[16px] font-bold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 shadow-md transition-all">
+                {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                {saving ? 'Saving...' : `Save ${student.english_name}`}
+              </button>
+              <div className="flex items-center justify-center gap-3 mt-2">
+                <span className={`text-[11px] ${studentDirtyNow(student.id) ? 'text-amber-600 font-semibold' : 'text-text-tertiary'}`}>
+                  {studentDirtyNow(student.id) ? 'Unsaved changes' : 'All changes saved'}
+                </span>
+                {selectedIdx < classStudents.length - 1 && (
+                  <button onClick={() => { handleSave([student.id]); setSelectedIdx(selectedIdx + 1) }} disabled={saving}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-navy hover:underline disabled:opacity-40">
+                    Save and go to {classStudents[selectedIdx + 1].english_name} <ChevronRight size={13} />
+                  </button>
+                )}
+              </div>
+            </div>
           </>
         )}
       </div>

@@ -55,6 +55,8 @@ interface ClassMetrics {
   cls: EnglishClass
   count: number
   oral: StatBlock; writing: StatBlock; mc: StatBlock; grades: StatBlock; anecdotal: StatBlock; composite: StatBlock
+  /** Composite with the teacher rating left out -- what the distributions plot. */
+  compositeTestOnly: StatBlock
   stayCount: number; moveUpCount: number; moveDownCount: number
   movements: { student: Student; from: EnglishClass; to: EnglishClass; composite: number }[]
 }
@@ -251,7 +253,7 @@ function StandardsMasteryCell({ met, total }: { met: number; total: number }) {
 function CompositeStripPlot({ data, classMetrics }: { data: { value: number; cls: EnglishClass; name: string }[]; classMetrics: ClassMetrics[] }) {
   if (data.length === 0) return null
 
-  const activeClasses = classMetrics.filter(cm => cm.count > 0 && cm.composite.hasData)
+  const activeClasses = classMetrics.filter(cm => cm.count > 0 && cm.compositeTestOnly.hasData)
   // Find actual data range — allow values > 100 if composites exceed benchmarks
   const allValues = data.map(d => d.value)
   const dataMin = Math.max(0, Math.floor(Math.min(...allValues) / 5) * 5 - 5)
@@ -278,9 +280,9 @@ function CompositeStripPlot({ data, classMetrics }: { data: { value: number; cls
       {/* Class rows */}
       {activeClasses.map(cm => {
         const classStudents = data.filter(d => d.cls === cm.cls)
-        const med = cm.composite.median
-        const q1Val = cm.composite.q1
-        const q3Val = cm.composite.q3
+        const med = cm.compositeTestOnly.median
+        const q1Val = cm.compositeTestOnly.q1
+        const q3Val = cm.compositeTestOnly.q3
 
         return (
           <div key={cm.cls} className="flex items-center mb-1">
@@ -466,7 +468,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
   const { classMetrics, allComposites } = useMemo(() => {
     const metrics: ClassMetrics[] = []
 
-    type RowData = { student: Student; oral: number | null; writing: number | null; mc: number | null; gradeAvg: number | null; anecAvg: number | null; composite: number; tested: boolean; suggestedClass: EnglishClass }
+    type RowData = { student: Student; oral: number | null; writing: number | null; mc: number | null; gradeAvg: number | null; anecAvg: number | null; composite: number; compositeNoAnec: number; tested: boolean; suggestedClass: EnglishClass }
     const allRows: RowData[] = []
 
     // Use Snapdragon benchmark as shared oral reference for cross-class comparability
@@ -504,19 +506,27 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       if (compRatio != null) oralRatios2.push(compRatio)
       const oralScoreCalc = oralRatios2.length > 0 ? oralRatios2.reduce((a, b) => a + b, 0) / oralRatios2.length : null
       const hasAnec2 = av.length > 0
-      const parts: { score: number; weight: number }[] = []
-      if (oralScoreCalc != null) parts.push({ score: oralScoreCalc, weight: 0.40 })
-      if (mcRatio != null) parts.push({ score: mcRatio, weight: 0.15 })
-      if (writingRatio != null) parts.push({ score: writingRatio, weight: 0.35 })
-      if (hasAnec2) parts.push({ score: anecScore, weight: 0.10 })
-      let composite: number
-      if (parts.length > 0) {
-        const totalWeight = parts.reduce((s, p) => s + p.weight, 0)
-        composite = parts.reduce((s, p) => s + p.score * (p.weight / totalWeight), 0)
-      } else {
-        const testRatios = [oralRatio, writingRatio, mcRatio, wrAcc].filter(v => v != null) as number[]
-        composite = testRatios.length > 0 ? testRatios.reduce((a, b) => a + b, 0) / testRatios.length : 0.5
+      const testParts: { score: number; weight: number }[] = []
+      if (oralScoreCalc != null) testParts.push({ score: oralScoreCalc, weight: 0.40 })
+      if (mcRatio != null) testParts.push({ score: mcRatio, weight: 0.15 })
+      if (writingRatio != null) testParts.push({ score: writingRatio, weight: 0.35 })
+      const parts = hasAnec2 ? [...testParts, { score: anecScore, weight: 0.10 }] : testParts
+      const blend = (ps: { score: number; weight: number }[]) => {
+        if (ps.length === 0) return null
+        const totalWeight = ps.reduce((s, p) => s + p.weight, 0)
+        return ps.reduce((s, p) => s + p.score * (p.weight / totalWeight), 0)
       }
+      const testRatios = [oralRatio, writingRatio, mcRatio, wrAcc].filter(v => v != null) as number[]
+      const ratioFallback = testRatios.length > 0 ? testRatios.reduce((a, b) => a + b, 0) / testRatios.length : 0.5
+      // Placement-shaped composite: the same 40/15/35/10 blend the Results tab
+      // ranks on, rescaled around whatever the student actually has.
+      const composite = blend(parts) ?? ratioFallback
+      // The distribution charts use this one instead. Teacher ratings are left
+      // out: a brand-new teacher has rated nobody, so including them would
+      // measure their class on a different mix of evidence than a class whose
+      // teacher rated everyone, and the spread would read as an ability
+      // difference that isn't there.
+      const compositeNoAnec = blend(testParts) ?? ratioFallback
 
       // Has this student actually been tested? An untested student has no
       // composite -- they fall back to the 0.5 default, which is data about
@@ -524,7 +534,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const tested = oral != null || writing != null || mcRaw != null
         || calc.comp_total != null || sc.passage_level != null || sc.o_passage_level != null
 
-      allRows.push({ student: s, oral, writing, mc: mcRaw, gradeAvg, anecAvg, composite, tested, suggestedClass: s.english_class as EnglishClass })
+      allRows.push({ student: s, oral, writing, mc: mcRaw, gradeAvg, anecAvg, composite, compositeNoAnec, tested, suggestedClass: s.english_class as EnglishClass })
     })
 
     // The projection is a forced even split: rank the tested students by
@@ -544,12 +554,12 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
     })
 
     // Save composites for histogram
-    const allComposites = allRows.map(r => ({ value: r.composite * 100, cls: r.student.english_class as EnglishClass, name: r.student.english_name || r.student.korean_name }))
+    const allComposites = allRows.map(r => ({ value: r.compositeNoAnec * 100, cls: r.student.english_class as EnglishClass, name: r.student.english_name || r.student.korean_name }))
 
     ENGLISH_CLASSES.forEach(cls => {
       const classRows = allRows.filter(r => r.student.english_class === cls)
       if (classRows.length === 0) {
-        metrics.push({ cls, count: 0, oral: computeStats([]), writing: computeStats([]), mc: computeStats([]), grades: computeStats([]), anecdotal: computeStats([]), composite: computeStats([]), stayCount: 0, moveUpCount: 0, moveDownCount: 0, movements: [] })
+        metrics.push({ cls, count: 0, oral: computeStats([]), writing: computeStats([]), mc: computeStats([]), grades: computeStats([]), anecdotal: computeStats([]), composite: computeStats([]), compositeTestOnly: computeStats([]), stayCount: 0, moveUpCount: 0, moveDownCount: 0, movements: [] })
         return
       }
 
@@ -559,6 +569,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       const gradeVals = classRows.map(r => r.gradeAvg).filter(v => v != null) as number[]
       const anecVals = classRows.map(r => r.anecAvg).filter(v => v != null) as number[]
       const compositeVals = classRows.map(r => r.composite * 100)
+      const compositeTestOnlyVals = classRows.map(r => r.compositeNoAnec * 100)
 
       const movements: ClassMetrics['movements'] = []
       let stay = 0, up = 0, down = 0
@@ -576,6 +587,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
         cls, count: classRows.length,
         oral: computeStats(oralVals), writing: computeStats(writingVals), mc: computeStats(mcVals),
         grades: computeStats(gradeVals), anecdotal: computeStats(anecVals), composite: computeStats(compositeVals),
+        compositeTestOnly: computeStats(compositeTestOnlyVals),
         stayCount: stay, moveUpCount: up, moveDownCount: down, movements,
       })
     })
@@ -1169,7 +1181,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       {activeSection === 'comprehension' && (
         <div className="space-y-8">
           <SectionCard icon={PieChart} title="Composite Score Distribution"
-            description="Each row is a class. Dots show individual student composite scores on a shared 0-100 scale. The shaded band is the Q1-Q3 range (middle 50%) and the vertical line is the median. Look for overlap between classes -- students in the overlap zone are borderline cases worth discussing. Wide spreads within a class suggest mixed ability levels.">
+            description="Each row is a class. Dots show individual student composite scores on a shared 0-100 scale, built from test evidence only -- oral, MC and writing. Teacher Ratings are deliberately left out here, so a class whose teacher has not rated anyone is not compared against classes on a different mix of evidence. The shaded band is the Q1-Q3 range (middle 50%) and the vertical line is the median. Look for overlap between classes -- students in the overlap zone are borderline cases worth discussing. Wide spreads within a class suggest mixed ability levels.">
             <CompositeStripPlot data={allComposites} classMetrics={classMetrics} />
           </SectionCard>
 
