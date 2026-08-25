@@ -2445,7 +2445,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       <div className="text-center">
                         <div className="text-[10px] text-text-tertiary uppercase">Comprehension</div>
                         <div className="text-[16px] font-bold text-navy" title={compNotAdministered ? 'Student was stopped during the passage; the questions were never asked.' : undefined}>
-                          {compNotAdministered ? <span className="text-text-tertiary text-[13px]">n/a</span> : `${compTotal} / 15`}
+                          {compNotAdministered ? <span className="text-text-tertiary text-[13px]">n/a</span> : `${compTotal} / ${config.compMax}`}
                         </div>
                       </div>
                     </div>

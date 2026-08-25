@@ -1844,6 +1844,10 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
             // actually scored against, so the bars stay comparable.
             const mcMax = getWrittenMcTotal(levelTest.grade,
               Math.max(0, ...compareStudents.map(sid => scores[sid]?.calculated_metrics?.written_mc_max ?? 0)) || null)
+            // Comprehension totals differ by grade (10 in Grades 3-5, 8 in Grade 2),
+            // so read the denominator the compared students were actually scored
+            // against rather than assuming one.
+            const compMax = Math.max(0, ...compareStudents.map(sid => scores[sid]?.calculated_metrics?.comp_max ?? 0)) || 10
             // Build normalized data per student
             const compStudents = compareStudents.map((sid, i) => {
               const s = students.find(st => st.id === sid)
@@ -1867,7 +1871,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
               { key: 'oral', label: 'Oral (CWPM)', max: maxOral * 1.2, getValue: (s: any) => s.rawCwpm, getClassAvg: (a: any) => a.oral },
               { key: 'writing', label: 'Writing (/20)', max: 20, getValue: (s: any) => s.rawWriting, getClassAvg: (a: any) => a.writing },
               { key: 'mc', label: `MC (/${mcMax})`, max: mcMax, getValue: (s: any) => s.rawMc, getClassAvg: (a: any) => a.mc },
-              { key: 'comp', label: 'Comp (/15)', max: 15, getValue: (s: any) => s.rawComp, getClassAvg: (a: any) => a.comp },
+              { key: 'comp', label: `Comp (/${compMax})`, max: compMax, getValue: (s: any) => s.rawComp, getClassAvg: (a: any) => a.comp },
               { key: 'anec', label: 'Teacher Rating (/4)', max: 4, getValue: (s: any) => s.anAvg, getClassAvg: () => null },
             ]
 
