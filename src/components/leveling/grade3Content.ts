@@ -222,7 +222,7 @@ const F26_COMP_QUESTIONS: Record<G3PassageLevel, G3CompQuestion[]> = {
     { q: 'What color is the rabbit?', dok: 'DOK 1', anchors: ['Wrong', 'Partial or wrong color', 'White'] },
     { q: 'What does the rabbit like to do?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("play")', 'Hop'] },
     { q: 'How do you know the child takes good care of the rabbit?', dok: 'DOK 2', anchors: ['Wrong', 'Vague ("she likes her")', 'References the text (feeds her carrots, gives her a cage, lets her out in the day, pets her)'] },
-    { q: 'Why does the child say the rabbit is her best friend?', dok: 'DOK 2', anchors: ['Wrong', 'Generic ("she\'s nice")', 'Connects to the text (she pets her, feeds her, the rabbit is happy with her)'] },
+    { q: 'Why do you think the child opens the cage in the day?', dok: 'DOK 2', anchors: ['Wrong', 'Vague ("because she wants to")', 'So the rabbit can get out and hop in the yard (connects the open cage to what the rabbit does next)'] },
     { q: 'What pet would you like to have? Why?', dok: 'Oral production', anchors: ['No response', 'Names a pet, no reason', 'Names a pet with a reason'] },
   ],
   B: [
@@ -252,7 +252,7 @@ const F26_COMP_QUESTIONS: Record<G3PassageLevel, G3CompQuestion[]> = {
   ],
   E: [
     { q: 'What can a mantis shrimp\'s claw do in a flash?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("hit something")', 'Snap shut — the crab-shell detail is a bonus, not required'] },
-    { q: 'What can some mantis shrimp break through with just one hit?', dok: 'DOK 1', anchors: ['Wrong', 'A crab shell — a real detail from the text, but not the one asked for', 'Aquarium glass'] },
+    { q: 'What can mantis shrimp see that humans cannot?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("more things," "in the dark")', 'Many more colors — including some people cannot even imagine'] },
     { q: 'What does a mantis shrimp do to escape from a predator?', dok: 'DOK 2', anchors: ['Wrong', 'Names one action only (darts into its burrow OR blocks the entrance)', 'Names both'] },
     { q: 'Why can a mantis shrimp stun its prey without touching it?', dok: 'DOK 2', anchors: ['Wrong', 'Vague, no reference to the text', 'Because its claw strikes so fast it creates a shockwave in the water'] },
     {
