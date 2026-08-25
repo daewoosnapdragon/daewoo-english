@@ -510,7 +510,13 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       if (oralScoreCalc != null) testParts.push({ score: oralScoreCalc, weight: 0.40 })
       if (mcRatio != null) testParts.push({ score: mcRatio, weight: 0.15 })
       if (writingRatio != null) testParts.push({ score: writingRatio, weight: 0.35 })
-      const parts = hasAnec2 ? [...testParts, { score: anecScore, weight: 0.10 }] : testParts
+      // Teacher Ratings are no longer a scored component anywhere -- the Results
+      // tab dropped them too, for the reason this file already applied to its
+      // distribution charts: three teachers are new and have rated nobody, so a
+      // weighted rating measured their students on a different mix of evidence.
+      // `composite` and `compositeNoAnec` are therefore the same blend now; the
+      // second name is kept so the test-only charts keep reading true.
+      const parts = testParts
       const blend = (ps: { score: number; weight: number }[]) => {
         if (ps.length === 0) return null
         const totalWeight = ps.reduce((s, p) => s + p.weight, 0)
@@ -518,7 +524,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       }
       const testRatios = [oralRatio, writingRatio, mcRatio, wrAcc].filter(v => v != null) as number[]
       const ratioFallback = testRatios.length > 0 ? testRatios.reduce((a, b) => a + b, 0) / testRatios.length : 0.5
-      // Placement-shaped composite: the same 40/15/35/10 blend the Results tab
+      // Placement-shaped composite: the same test-only blend the Results tab
       // ranks on, rescaled around whatever the student actually has.
       const composite = blend(parts) ?? ratioFallback
       // The distribution charts use this one instead. Teacher ratings are left

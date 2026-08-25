@@ -569,26 +569,25 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
 // Weights mirror the grades 2-5 Results tab. A part with no data drops out and
 // its weight is shared among the rest, so an oral-only student is ranked on
 // what they actually sat rather than being punished for the missing paper.
-const G1_PLACEMENT_WEIGHTS = { oral: 0.40, mc: 0.15, writing: 0.35, teacher: 0.10 }
+//
+// The teacher signal is not one of them. It used to carry 10%, which meant the
+// composite blended different evidence for different students: three teachers
+// are new this year and can rate nobody, so their students ranked on test
+// evidence alone against rated classmates. Ratings stay visible as notes for
+// the placement conversation; they are not a number in the ranking.
+const G1_PLACEMENT_WEIGHTS = { oral: 0.45, mc: 0.15, writing: 0.40 }
 
 const G1_PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
 
 function g1WeightedComposite(
-  metrics: { oralScore: number; writtenMC: number; writingBonus: number; teacherPct: number },
+  metrics: { oralScore: number; writtenMC: number; writingBonus: number },
   scores: G1Scores,
   content: G1Content,
-  anecdotal?: G1AnecdotalRating | null,
 ): number | null {
   const hasOral = scores.o_passage_level != null
   const hasWritten = (!!scores.written_answers && Object.keys(scores.written_answers).length > 0)
     || metrics.writtenMC > 0
   const hasWriting = scores.writing_bonus != null
-  const hasTeacher = content.teacherSignal === 'anecdotal_ratings'
-    ? anecdotalScore(anecdotal) != null
-    : content.teacherSignal === 'retention_rating'
-      ? scores.wave2_retention_rating != null
-      : !!(scores.wave2_class_impression || scores.wave1_class_impression || scores.teacher_impression != null)
-
   const parts: { score: number; weight: number }[] = []
   if (hasOral) parts.push({ score: metrics.oralScore / 100, weight: G1_PLACEMENT_WEIGHTS.oral })
   if (hasWritten && content.written.mcMax > 0) {
@@ -597,7 +596,6 @@ function g1WeightedComposite(
   if (hasWriting && content.extendedWriting.max > 0) {
     parts.push({ score: metrics.writingBonus / content.extendedWriting.max, weight: G1_PLACEMENT_WEIGHTS.writing })
   }
-  if (hasTeacher) parts.push({ score: metrics.teacherPct / 100, weight: G1_PLACEMENT_WEIGHTS.teacher })
 
   if (parts.length === 0) return null
   const totalWeight = parts.reduce((s, p) => s + p.weight, 0)
@@ -3651,7 +3649,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
         // the placement that actually decides.
         absoluteComposite: metrics.composite,
         absoluteClass: metrics.suggestedClass,
-        weighted: g1WeightedComposite(metrics, sc, content, anec),
+        weighted: g1WeightedComposite(metrics, sc, content),
       }
     }).filter(r => r.scores.o_passage_level || r.scores.w_letter_names != null || (r.scores.written_answers && Object.keys(r.scores.written_answers).length > 0))
 
@@ -3734,7 +3732,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
           ))}
         </div>
         <p className="text-[10px] text-text-tertiary mt-3 leading-relaxed">
-          Placement ranks students on the weighted composite (40% oral, 15% MC, 35% writing, 10% Teacher Ratings,
+          Placement ranks students on the weighted composite (45% oral, 15% MC, 40% writing,
           rescaled when a part is missing) and cuts the grade into six equal groups &mdash; the same rule grades 2&ndash;5 use.
           Because the groups are forced equal, some movement is guaranteed regardless of ability.
           The <strong>Band</strong> column is the absolute score from the passage the student sustained; it is reference
@@ -3759,7 +3757,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Comp</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Oral</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-bold"
-                title="Weighted composite: 40% oral + 15% MC + 35% writing + 10% teacher rating, rescaled when a part is missing. This is what placement ranks on.">Composite</th>
+                title="Weighted composite: 45% oral + 15% MC + 40% writing, rescaled when a part is missing. Teacher Ratings are notes only and are not in it. This is what placement ranks on.">Composite</th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold"
                 title="Absolute band from the passage the student sustained. Reference only -- it does not decide placement.">Band<br/><span className="normal-case">(ref)</span></th>
               <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Suggested</th>
