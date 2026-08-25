@@ -819,6 +819,12 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     saveSeqRef.current++
     setSaving(true)
     let errors = 0
+    // The local record as it stood when each student's payload was built. The
+    // snapshot advances to this, per student, rather than to the whole live
+    // roster: a save of one student must never mark another student's unsaved
+    // work as saved, and a click made during the save round-trip must stay
+    // dirty so the next pass writes it.
+    const written: Record<string, G1Scores> = {}
     try {
       for (const sid of studentIds) {
         const raw = scoresRef.current[sid] || {}
@@ -936,6 +942,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
           groups.push({ raw: writtenRaw, metrics: writtenMetrics, nested: G1_WRITTEN_NESTED })
         }
 
+        let studentOk = true
         for (const g of groups) {
           const { error } = await supabase.rpc('upsert_score_group', {
             p_level_test_id: levelTest.id,
@@ -951,11 +958,12 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
             p_composite_index: metrics.composite,
             p_composite_band: metrics.suggestedClass,
           })
-          if (error) { console.error('G1 save error:', error); errors++ }
+          if (error) { console.error('G1 save error:', error); errors++; studentOk = false }
         }
+        if (studentOk) written[sid] = JSON.parse(JSON.stringify(raw))
       }
+      if (Object.keys(written).length > 0) setSavedSnapshot(prev => ({ ...prev, ...written }))
       if (errors === 0) {
-        setSavedSnapshot(JSON.parse(JSON.stringify(scoresRef.current)))
         if (!silent) showToast(`Saved ${studentIds.length} student${studentIds.length > 1 ? 's' : ''}`)
       } else {
         showToast(`Saved with ${errors} error(s)`)
@@ -1014,17 +1022,24 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         const local: any = cur[sid] || {}
         const saved: any = snap[sid] || {}
         const merged: any = { ...local }
+        // The snapshot moves only for the keys actually taken from the server.
+        // Building it from `merged` instead swept the teacher's unsaved keys in
+        // with them, marking work as saved that had never been written -- the
+        // next auto-save skipped it and the next refresh replaced it with the
+        // server's value.
+        const mergedSnap: any = { ...saved }
         let touched = false
         for (const k of Object.keys(server)) {
           // Edited locally and not yet saved: leave it alone.
           if (JSON.stringify(local[k]) !== JSON.stringify(saved[k])) continue
           if (JSON.stringify(local[k]) === JSON.stringify(server[k])) continue
           merged[k] = server[k]
+          mergedSnap[k] = server[k]
           touched = true
         }
         if (touched) {
           nextScores[sid] = merged
-          nextSnap[sid] = JSON.parse(JSON.stringify(merged))
+          nextSnap[sid] = mergedSnap
           changed = true
         }
       })
