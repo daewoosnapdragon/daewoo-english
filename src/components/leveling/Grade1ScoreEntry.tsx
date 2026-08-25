@@ -177,6 +177,20 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   cwpm: number | null
   weightedCwpm: number | null
   accuracy: number | null
+  /**
+   * What the student actually read at levels A-C, where there is no timed
+   * reading: the holistic interview rating (A) or words read correctly off the
+   * list (B) / sentences (C), over the denominator this test version uses.
+   * Null at D-F, where CWPM is the measure. Returned so the results table can
+   * show these students their own evidence instead of an empty CWPM cell --
+   * and so the numbers it shows cannot drift from the ones scored here.
+   */
+  orfRaw: number | null
+  orfMax: number | null
+  /** Whether this passage level is timed (D-F) or a word list / interview (A-C). */
+  hasCwpm: boolean
+  /** Whether comprehension questions exist at this level at all. */
+  compAsked: boolean
   effectiveLevel: string
   compTotal: number | null
   compMax: number | null
@@ -233,6 +247,8 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   let cwpm: number | null = null
   let weightedCwpm: number | null = null
   let accuracy: number | null = null
+  let orfRaw: number | null = null
+  let orfMax: number | null = null
 
   if (passageLevel === 'A') {
     const aMax = content.levelA.max || 1
@@ -245,10 +261,15 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
       rawScore = aTotal > 0 ? aTotal : (scores.o_orf_raw ?? 0)
     }
     orfPct = (rawScore / aMax) * 100
+    orfRaw = rawScore; orfMax = aMax
   } else if (passageLevel === 'B') {
-    orfPct = ((scores.o_orf_raw ?? 0) / (content.levelB.max || 1)) * 100
+    orfMax = content.levelB.max || 1
+    orfRaw = scores.o_orf_raw ?? 0
+    orfPct = (orfRaw / orfMax) * 100
   } else if (passageLevel === 'C') {
-    orfPct = ((scores.o_orf_raw ?? 0) / (content.levelC.max || 1)) * 100
+    orfMax = content.levelC.max || 1
+    orfRaw = scores.o_orf_raw ?? 0
+    orfPct = (orfRaw / orfMax) * 100
   } else {
     // Levels D-F: Calculate CWPM
     const wordsRead = scores.o_orf_words_read ?? 0
@@ -555,6 +576,7 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   return {
     writtenPct, writtenMC, writingBonus, writingShort, oralScore, teacherPct, composite, wave,
     passageLevel, cwpm, weightedCwpm, accuracy, effectiveLevel,
+    orfRaw, orfMax, hasCwpm: config.hasCwpm, compAsked: config.compQuestions > 0,
     compTotal, compMax, compAnswered, compNotAdministered, standardsBaseline, suggestedClass,
   }
 }
@@ -3736,7 +3758,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
       // Untested rows sort to the bottom of every score-based order.
       case 'composite': res.sort((a, b) => Number(b.isTested) - Number(a.isTested) || (b.weighted ?? -1) - (a.weighted ?? -1)); break
       case 'percentile': res.sort((a, b) => (b.percentile ?? -1) - (a.percentile ?? -1)); break
-      case 'cwpm': res.sort((a, b) => ((b.weightedCwpm ?? b.cwpm) ?? -1) - ((a.weightedCwpm ?? a.cwpm) ?? -1)); break
+      case 'cwpm': res.sort((a, b) => Number(b.isTested) - Number(a.isTested) || b.oralScore - a.oralScore); break
       case 'comp': res.sort((a, b) => (b.compTotal ?? -1) - (a.compTotal ?? -1)); break
       case 'writing': res.sort((a, b) => (b.writingBonus ?? -1) - (a.writingBonus ?? -1)); break
       case 'mc': res.sort((a, b) => (b.writtenMC ?? -1) - (a.writtenMC ?? -1)); break
@@ -3779,13 +3801,15 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
       const rowsHTML = cs.map((r: any, i: number) => {
         const move = r.suggestedClass != null && r.suggestedClass !== r.student.english_class
         const oral = r.weightedCwpm ?? r.cwpm
+        const oralCell = oral != null ? String(Math.round(oral))
+          : r.orfMax != null && r.oralPassageLevel ? `${r.orfRaw ?? 0}/${r.orfMax}` : '—'
         return `<tr style="${move ? 'background:#fef3c7;' : ''}">
           <td style="padding:6px 10px;font-weight:600;color:#647FBC">${i + 1}</td>
           <td style="padding:6px 10px;font-weight:600">${r.student.english_name}<br><span style="color:#94a3b8;font-size:10px">${r.student.korean_name}</span></td>
-          <td style="padding:6px 10px;text-align:center">${oral != null ? Math.round(oral) : '—'}${r.oralPassageLevel ? ' (' + r.oralPassageLevel + ')' : ''}</td>
+          <td style="padding:6px 10px;text-align:center">${oralCell}${r.oralPassageLevel ? ' (' + r.oralPassageLevel + ')' : ''}</td>
           <td style="padding:6px 10px;text-align:center">${r.writingBonus > 0 ? r.writingBonus + '/' + G1_WRITING_MAX : '—'}</td>
           <td style="padding:6px 10px;text-align:center">${r.writtenMC > 0 ? r.writtenMC + '/' + G1_MC_MAX : '—'}</td>
-          <td style="padding:6px 10px;text-align:center">${r.compNotAdministered ? 'n/a' : r.compTotal != null ? r.compTotal + '/' + (r.compMax ?? '—') : '—'}</td>
+          <td style="padding:6px 10px;text-align:center">${r.compNotAdministered ? 'n/a' : r.compTotal != null ? r.compTotal + '/' + (r.compMax ?? '—') : !r.compAsked && r.oralPassageLevel ? 'not asked' : '—'}</td>
           <td style="padding:6px 10px;text-align:center;font-weight:700;color:${r.isTested ? '#647FBC' : '#94a3b8'}">${r.weighted != null ? Math.round(r.weighted * 100) : '—'}</td>
           <td style="padding:6px 10px;text-align:center">${r.percentile != null ? Math.round(r.percentile * 100) + '%' : '—'}</td>
           <td style="padding:6px 10px;text-align:center;font-weight:600;${r.suggestedClass == null ? 'color:#94a3b8;font-style:italic' : move ? 'color:#d97706' : ''}">${r.suggestedClass ?? 'not tested'}${move ? ' *' : ''}</td>
@@ -3830,7 +3854,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
           {PASSAGE_LEVELS.map(lv => <button key={lv} onClick={() => setFilterPassage(lv)} className={`px-2 py-1 rounded text-[10px] font-medium ${filterPassage === lv ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface'}`}>{lv}</button>)}
         </div>
         <select value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[11px] bg-surface">
-          <option value="composite">Sort: Composite</option><option value="percentile">Sort: Rank</option><option value="cwpm">Sort: Oral (CWPM)</option><option value="comp">Sort: Comprehension</option><option value="writing">Sort: Writing</option><option value="mc">Sort: MC</option><option value="suggested">Sort: Suggested Class</option><option value="name">Sort: Name</option>
+          <option value="composite">Sort: Composite</option><option value="percentile">Sort: Rank</option><option value="cwpm">Sort: Oral</option><option value="comp">Sort: Comprehension</option><option value="writing">Sort: Writing</option><option value="mc">Sort: MC</option><option value="suggested">Sort: Suggested Class</option><option value="name">Sort: Name</option>
         </select>
         <button onClick={() => setShowBorderline(!showBorderline)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showBorderline ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}>
           <AlertTriangle size={12} /> Borderline
@@ -3842,7 +3866,9 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
           exportToCSV('leveling-G1',
             ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Writing', 'MC', 'Comp', 'Anecdotal', 'Composite', 'Rank', 'Suggested'],
             displayed.map(r => [r.student.english_name, r.student.korean_name, r.student.english_class,
-              r.oralPassageLevel ?? '', (r.weightedCwpm ?? r.cwpm) != null ? Math.round((r.weightedCwpm ?? r.cwpm) as number) : '',
+              r.oralPassageLevel ?? '',
+              (r.weightedCwpm ?? r.cwpm) != null ? Math.round((r.weightedCwpm ?? r.cwpm) as number)
+                : r.orfMax != null && r.oralPassageLevel ? `${r.orfRaw ?? 0}/${r.orfMax}` : '',
               r.writingBonus > 0 ? r.writingBonus : '', r.writtenMC > 0 ? r.writtenMC : '', r.compTotal ?? '',
               r.hasAnec ? (r.anecScore * 100).toFixed(0) : '', r.weighted != null ? (r.weighted * 100).toFixed(0) : '',
               r.percentile != null ? Math.round(r.percentile * 100) : '', r.suggestedClass ?? 'not tested']))
@@ -3855,9 +3881,10 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
         </button>
         <button onClick={() => {
           exportToCSV(`leveling-backup-G1-${new Date().toISOString().slice(0, 10)}`,
-            ['Student ID', 'English Name', 'Korean Name', 'Class', 'Passage', 'CWPM', 'Adjusted CWPM', 'Accuracy', 'Comp', 'Written MC', 'Writing', 'Composite', 'Band'],
+            ['Student ID', 'English Name', 'Korean Name', 'Class', 'Passage', 'CWPM', 'Adjusted CWPM', 'Accuracy', 'Oral Raw', 'Oral Raw Max', 'Oral Score', 'Comp', 'Written MC', 'Writing', 'Composite', 'Band'],
             rows.map(r => [r.student.id, r.student.english_name, r.student.korean_name, r.student.english_class,
               r.oralPassageLevel ?? '', r.cwpm ?? '', r.weightedCwpm ?? '', r.accuracy ?? '',
+              r.orfRaw ?? '', r.orfMax ?? '', Math.round(r.oralScore),
               r.compNotAdministered ? 'not administered' : (r.compTotal ?? ''), r.writtenMC, r.writingBonus,
               r.weighted != null ? (r.weighted * 100).toFixed(0) : '', Math.round(r.absoluteComposite)]))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
@@ -3871,7 +3898,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
           <thead><tr className="bg-surface-alt">
             <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px]">Student</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Current</th>
-            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Adjusted for passage difficulty and NAEP. Not the stopwatch number.">Oral<br/><span className="normal-case">(adj)</span></th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Levels D-F: CWPM adjusted for passage difficulty and NAEP, not the stopwatch number. Levels A-C are untimed, so the cell shows what the student read instead — the interview rating (A) or words read correctly (B, C).">Oral<br/><span className="normal-case">(adj)</span></th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
@@ -3886,15 +3913,41 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
             const move = row.suggestedClass != null && row.suggestedClass !== row.student.english_class
             const flags = row.outlierFlags || []
             const oral = row.weightedCwpm ?? row.cwpm
+            // Levels A-C are an oral interview and two word lists -- untimed, so
+            // there is no CWPM and no comprehension. Showing an empty cell made
+            // those students look unscored when they had in fact been tested and
+            // ranked, so the column falls back to what they actually read.
+            const oralTitle = oral != null
+              ? (row.weightedCwpm != null && row.cwpm != null && row.weightedCwpm !== row.cwpm
+                  ? `Adjusted CWPM: ${row.cwpm} raw → ${row.weightedCwpm} on passage ${row.oralPassageLevel}.`
+                  : undefined)
+              : row.orfMax != null && row.oralPassageLevel
+                ? `Level ${row.oralPassageLevel} is untimed, so there is no CWPM. This is ${row.oralPassageLevel === 'A' ? 'the holistic interview rating' : 'words read correctly'} — ${row.orfRaw ?? 0} of ${row.orfMax} — which is what the composite scores.`
+                : undefined
             return (
               <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${move ? 'bg-amber-50/30' : ''} ${flags.length > 0 ? 'bg-red-50/20' : ''}`}>
                 <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span></td>
                 <td className="px-2 py-2 text-center"><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass) + '40', color: classToTextColor(row.student.english_class as EnglishClass) }}>{row.student.english_class}</span></td>
                 <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}
-                  title={oral == null ? undefined : row.weightedCwpm != null && row.cwpm != null && row.weightedCwpm !== row.cwpm ? `Adjusted CWPM: ${row.cwpm} raw → ${row.weightedCwpm} on passage ${row.oralPassageLevel}.` : undefined}>
-                  {oral != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(oral)}{row.oralPassageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.oralPassageLevel})</span>}</span> : '—'}
+                  title={oralTitle}>
+                  {oral != null
+                    ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(oral)}{row.oralPassageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.oralPassageLevel})</span>}</span>
+                    : row.orfMax != null && row.oralPassageLevel
+                      ? <span>{row.orfRaw ?? 0}<span className="text-text-tertiary/50">/{row.orfMax}</span><span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.oralPassageLevel})</span></span>
+                      : '—'}
                 </td>
-                <td className="px-2 py-2 text-center">{row.compNotAdministered ? <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold" title="Not administered — the student was stopped during the passage and never heard the questions.">comp n/a</span> : row.compTotal != null ? <span>{row.compTotal}<span className="text-text-tertiary/50">/{row.compMax ?? '?'}</span></span> : '—'}</td>
+                <td className="px-2 py-2 text-center">
+                  {row.compNotAdministered
+                    ? <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold" title="Not administered — the student was stopped during the passage and never heard the questions.">comp n/a</span>
+                    : row.compTotal != null
+                      ? <span>{row.compTotal}<span className="text-text-tertiary/50">/{row.compMax ?? '?'}</span></span>
+                      : !row.compAsked && row.oralPassageLevel
+                        // Not missing data: levels A-C have no comprehension
+                        // questions to ask. A bare dash read as "nobody scored
+                        // this yet" and sent teachers looking for a gap.
+                        ? <span className="text-text-tertiary/60 text-[9px] italic" title={`Level ${row.oralPassageLevel} has no comprehension questions — it is ${row.oralPassageLevel === 'A' ? 'an oral interview' : 'a word list'}, not a passage. Nothing is missing.`}>not asked</span>
+                        : '—'}
+                </td>
                 <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.writingBonus > 0 ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writingBonus}<span className="text-text-tertiary/50">/{G1_WRITING_MAX}</span></span> : '—'}</td>
                 <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.writtenMC > 0 ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writtenMC}<span className="text-text-tertiary/50">/{G1_MC_MAX}</span></span> : '—'}</td>
                 <td className="px-2 py-2 text-center"
@@ -3919,7 +3972,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test + 15% MC + 40% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. Oral is adjusted for passage difficulty and NAEP; the level in brackets is the passage it came from. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test + 15% MC + 40% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
     </div>
   )
 }
