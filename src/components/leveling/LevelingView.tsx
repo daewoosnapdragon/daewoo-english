@@ -1287,6 +1287,8 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           <td style="padding:6px 10px;text-align:center">${r.rawWriting ?? '—'}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawMc != null ? r.rawMc + '/' + GRADE_MC_TOTAL : '—'}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawComp != null ? r.rawComp + '/' + (r.compMax || 15) : '—'}</td>
+          ${hasPhonics ? `<td style="padding:6px 10px;text-align:center">${r.rawPhonics != null ? r.rawPhonics + '/' + r.phonicsMax : '—'}</td>` : ''}
+          ${hasSentences ? `<td style="padding:6px 10px;text-align:center">${r.rawSentence != null ? r.rawSentence + '/' + r.sentenceMax : '—'}</td>` : ''}
           <td style="padding:6px 10px;text-align:center;font-weight:700;color:${r.isTested ? '#647FBC' : '#94a3b8'}">${(r.composite * 100).toFixed(0)}</td>
           <td style="padding:6px 10px;text-align:center">${r.percentile != null ? Math.round(r.percentile * 100) + '%' : '—'}</td>
           <td style="padding:6px 10px;text-align:center;font-weight:600;${r.suggestedClass == null ? 'color:#94a3b8;font-style:italic' : move ? 'color:#d97706' : ''}">${r.suggestedClass ?? 'not tested'}${move ? ' *' : ''}</td>
@@ -1307,6 +1309,8 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Writing</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">MC</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Comp</th>
+            ${hasPhonics ? '<th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Phonics</th>' : ''}
+            ${hasSentences ? '<th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Sent</th>' : ''}
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:800">Composite</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Rank</th>
             <th style="padding:6px 10px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Suggested</th>
@@ -1408,6 +1412,9 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   // The band column only appears for a test that has an authored band, so
   // grades 3-5 and pre-Fall-2026 Grade 2 tests are untouched by it.
   const hasBands = useMemo(() => rows.some(r => r.band != null), [rows])
+  // Grade 2 only, and only once something has actually been scored.
+  const hasPhonics = useMemo(() => rows.some(r => r.rawPhonics != null), [rows])
+  const hasSentences = useMemo(() => rows.some(r => r.rawSentence != null), [rows])
 
   const displayed = useMemo(() => {
     let res = [...rows]
@@ -1454,9 +1461,10 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
         </button>
         <button onClick={() => {
           exportToCSV(`leveling-G${levelTest.grade}`,
-            ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Writing', 'MC', 'Comp', 'Anecdotal', 'Composite', 'Rank', 'Suggested'],
+            ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Comp', 'Phonics', 'Sentences', 'Writing', 'MC', 'Anecdotal', 'Composite', 'Rank', 'Suggested'],
             displayed.map(r => [r.student.english_name, r.student.korean_name, r.student.english_class,
-              r.oralPassageLevel ?? '', r.rawCwpm != null ? Math.round(r.rawCwpm) : '', r.rawWriting ?? '', r.rawMc ?? '', r.rawComp ?? '',
+              r.oralPassageLevel ?? '', r.rawCwpm != null ? Math.round(r.rawCwpm) : '', r.rawComp ?? '',
+              r.rawPhonics ?? '', r.rawSentence ?? '', r.rawWriting ?? '', r.rawMc ?? '',
               r.hasAnec ? (r.anecScore * 100).toFixed(0) : '', (r.composite * 100).toFixed(0),
               r.percentile != null ? Math.round(r.percentile * 100) : '', r.suggestedClass ?? 'not tested']))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
@@ -1493,6 +1501,8 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Current</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Best attempt across passages, adjusted for passage difficulty and NAEP. Not the stopwatch number -- hover a cell to see the raw CWPM it came from.">Oral<br/><span className="normal-case">(adj)</span></th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
+            {hasPhonics && <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Phonics grid from the oral test. Scored into the composite through the MC component, alongside sentence reading and the written multiple choice.">Phonics</th>}
+            {hasSentences && <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Sentence reading from the oral test. Scored into the composite through the MC component, alongside phonics and the written multiple choice.">Sent</th>}
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
             {excludedQuestions.length > 0 && <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#2563eb', backgroundColor: '#eff6ff' }}>Adj MC</th>}
@@ -1521,6 +1531,8 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                     : `Raw score. The composite weights it by passage difficulty like fluency${row.passageMultiplier ? ` \u2014 \u00d7 ${row.passageMultiplier.toFixed(2)} for passage ${row.passageLevel ?? '?'}, giving ${(row.compRatio ?? 0).toFixed(2)}` : ', but this record predates the multiplier so it counts unweighted'}.`}>
                   {row.compUnmeasured ? <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold" title="Not administered — the student was stopped during the passage and never heard the questions. Scored at the top of the Frustration band in the composite, not dropped, and left unweighted by passage difficulty.">comp n/a</span> : row.rawComp != null ? <span>{row.rawComp}<span className="text-text-tertiary/50">/{row.calc?.comp_max || 15}</span></span> : '—'}
                 </td>
+                {hasPhonics && <td className="px-2 py-2 text-center">{row.rawPhonics != null ? <span>{row.rawPhonics}<span className="text-text-tertiary/50">/{row.phonicsMax}</span></span> : '—'}</td>}
+                {hasSentences && <td className="px-2 py-2 text-center">{row.rawSentence != null ? <span>{row.rawSentence}<span className="text-text-tertiary/50">/{row.sentenceMax}</span></span> : '—'}</td>}
                 <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.rawWriting != null ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawWriting}<span className="text-text-tertiary/50">/20</span></span> : '—'}</td>
                 <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.rawMc != null ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawMc}<span className="text-text-tertiary/50">/{GRADE_MC_TOTAL}</span></span> : '—'}</td>
                 {excludedQuestions.length > 0 && (
@@ -1556,7 +1568,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test (60% fluency / 40% comprehension) + 15% MC + 40% writing rubric, capped at {COMPONENT_CAP.toFixed(1)}&times; benchmark. Teacher Ratings are not in it {'\u2014'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. Oral is the best attempt across passages, already adjusted for passage difficulty and NAEP; the level in brackets is the passage that attempt came from, and <span className="text-amber-600 font-semibold">*</span> marks an older record saved before weighting existed. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; it counts as the top of the Frustration band in the composite, not as a zero and not as missing. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. {hasBands && <>Band = absolute score from the passage the student sustained, reference only; it does not decide placement. </>} <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test (60% fluency / 40% comprehension) + 15% MC + 40% writing rubric, capped at {COMPONENT_CAP.toFixed(1)}&times; benchmark. Teacher Ratings are not in it {'\u2014'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. Oral is the best attempt across passages, already adjusted for passage difficulty and NAEP; the level in brackets is the passage that attempt came from, and <span className="text-amber-600 font-semibold">*</span> marks an older record saved before weighting existed. {(hasPhonics || hasSentences) && <>Phonics and sentence reading come off the oral test and are scored into the composite through the MC component, together with the written multiple choice. </>}<span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; it counts as the top of the Frustration band in the composite, not as a zero and not as missing. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. {hasBands && <>Band = absolute score from the passage the student sustained, reference only; it does not decide placement. </>} <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
     </div>
   )
 }
@@ -2255,7 +2267,12 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
       }, bandScales)
     : null
 
-  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, hasAnec, isTested, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compMax: calc.comp_max ?? null, compUnmeasured, passageLevel: calc.passage_level ?? null, oralPassageLevel, oralIsWeighted, unweightedCwpm, passageMultiplier: calc.passage_multiplier ?? null, hasGrades, outlierFlags, band }
+  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, hasAnec, isTested, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compMax: calc.comp_max ?? null, compUnmeasured,
+    // Grade 2's oral test also scores a phonics grid and a sentence-reading
+    // set. Both already fed the composite through mcScore; neither was on the
+    // table, so a teacher could not see the section they had just marked.
+    rawPhonics: calc.phonics_total ?? null, phonicsMax: calc.phonics_max ?? 25,
+    rawSentence: calc.sentence_total ?? null, sentenceMax: calc.sentence_max ?? 35, passageLevel: calc.passage_level ?? null, oralPassageLevel, oralIsWeighted, unweightedCwpm, passageMultiplier: calc.passage_multiplier ?? null, hasGrades, outlierFlags, band }
 }
 
 /**
