@@ -221,7 +221,7 @@ const F26_COMP_QUESTIONS: Record<G4PassageLevel, G4CompQuestion[]> = {
   ],
   E: [
     { q: 'What was Marcus\'s project for the Science Fair?', dok: 'DOK 1', anchors: ['wrong', 'vague ("a project")', 'a volcano that erupted with fizzy foam'] },
-    { q: 'What did Mr. Reyes say was outstanding about Marcus\'s project?', dok: 'DOK 1', anchors: ['wrong', 'vague ("everything")', 'the way he explained the chemical reaction'] },
+    { q: 'What did Mr. Reyes ask Marcus to hand him?', dok: 'DOK 1', anchors: ['wrong', 'vague ("supplies")', 'the poster board'] },
     { q: 'How did Marcus feel about his project before Mr. Reyes spoke to him?', dok: 'DOK 2', anchors: ['wrong', 'names a feeling with no reference to text', 'nervous/unsure, because he didn\'t think it was as good as other students\' (references text)'] },
     { q: 'How do you think Marcus feels after Mr. Reyes\'s compliment? Use evidence from the story.', dok: 'DOK 2', anchors: ['wrong / no response', 'names a feeling with no evidence', 'names a feeling with evidence (proud / happy / relieved — because Mr. Reyes said his hard work really shows and meant it sincerely)'] },
     { q: 'Have you ever worked hard on something you weren\'t sure was good? What happened?', dok: 'Oral production', anchors: ['no response', 'names something, no detail', 'names something with detail/explanation'] },

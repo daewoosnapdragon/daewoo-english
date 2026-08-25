@@ -222,12 +222,12 @@ const F26_COMP_QUESTIONS: Record<G3PassageLevel, G3CompQuestion[]> = {
     { q: 'What color is the rabbit?', dok: 'DOK 1', anchors: ['Wrong', 'Partial or wrong color', 'White'] },
     { q: 'What does the rabbit like to do?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("play")', 'Hop'] },
     { q: 'How do you know the child takes good care of the rabbit?', dok: 'DOK 2', anchors: ['Wrong', 'Vague ("she likes her")', 'References the text (feeds her carrots, gives her a cage, lets her out in the day, pets her)'] },
-    { q: 'Why does the child say the rabbit is her best friend?', dok: 'DOK 2', anchors: ['Wrong', 'Generic ("she\'s nice")', 'Connects to the text (she pets her, feeds her, the rabbit is happy with her)'] },
+    { q: 'Why do you think the child opens the cage in the day?', dok: 'DOK 2', anchors: ['Wrong', 'Vague ("because she wants to")', 'So the rabbit can get out and hop in the yard (connects the open cage to what the rabbit does next)'] },
     { q: 'What pet would you like to have? Why?', dok: 'Oral production', anchors: ['No response', 'Names a pet, no reason', 'Names a pet with a reason'] },
   ],
   B: [
-    { q: 'What do you need to sleep in when you go camping?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("something soft")', 'A sleeping bag'] },
-    { q: 'What do you build to make s\'mores?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("a fire")', 'A campfire'] },
+    { q: 'What two things do you need when you go camping?', dok: 'DOK 1', anchors: ['Wrong', 'Names one (a tent OR a sleeping bag)', 'Names both — a tent and a sleeping bag'] },
+    { q: 'What can you make if the fire starts?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("food," "something to eat")', 'S\'mores'] },
     { q: 'What happens if the tent is set up right?', dok: 'DOK 2', anchors: ['Wrong', 'Vague ("it\'s good")', 'It will not fall down (references the text)'] },
     { q: 'Why does the story say camping is fun?', dok: 'DOK 2', anchors: ['Wrong', 'Generic ("it\'s exciting")', 'Connects to the text (setting up a tent, building a campfire, making s\'mores)'] },
     { q: 'Have you ever been camping, or would you like to go? What would you want to do?', dok: 'Oral production', anchors: ['No response', 'Names an activity, no detail', 'Names an activity with detail'] },
@@ -242,7 +242,7 @@ const F26_COMP_QUESTIONS: Record<G3PassageLevel, G3CompQuestion[]> = {
   D: [
     { q: 'What is the deep ocean called, and why?', dok: 'DOK 1', anchors: ['Wrong', 'Names it OR gives the reason, not both', 'The Midnight Zone, because no sunlight reaches it'] },
     { q: 'Name one animal you might see in the deep ocean.', dok: 'DOK 1', anchors: ['Wrong', 'Names something not in the text', 'Fish with glowing lights OR a giant squid'] },
-    { q: 'What have people never fully explored?', dok: 'DOK 2', anchors: ['Wrong', 'Vague, no reference to the text', 'Many parts of the ocean floor'] },
+    { q: 'What do people think has never been explored?', dok: 'DOK 2', anchors: ['Wrong', 'Too broad ("the deep ocean")', 'Many parts of the ocean floor'] },
     {
       q: 'What makes the deep ocean hard to explore?', dok: 'DOK 2',
       anchors: ['Wrong', 'Names one reason only (depth OR darkness)', 'Names both — it is very deep (deeper than a mountain is tall) and dark, with no sunlight'],
@@ -251,8 +251,8 @@ const F26_COMP_QUESTIONS: Record<G3PassageLevel, G3CompQuestion[]> = {
     { q: 'Would you like to explore the deep ocean? Why or why not?', dok: 'Oral production', anchors: ['No response', 'Yes or no with no reason', 'Yes or no with a reason'] },
   ],
   E: [
-    { q: 'What can a mantis shrimp\'s claw do in a flash?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("hit something")', 'Snap shut, hard enough to crack open a crab shell'] },
-    { q: 'What can a mantis shrimp break with just one hit of its claw?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("something hard")', 'Aquarium glass'] },
+    { q: 'What can a mantis shrimp\'s claw do in a flash?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("hit something")', 'Snap shut — the crab-shell detail is a bonus, not required'] },
+    { q: 'What can mantis shrimp see that humans cannot?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("more things," "in the dark")', 'Many more colors — including some people cannot even imagine'] },
     { q: 'What does a mantis shrimp do to escape from a predator?', dok: 'DOK 2', anchors: ['Wrong', 'Names one action only (darts into its burrow OR blocks the entrance)', 'Names both'] },
     { q: 'Why can a mantis shrimp stun its prey without touching it?', dok: 'DOK 2', anchors: ['Wrong', 'Vague, no reference to the text', 'Because its claw strikes so fast it creates a shockwave in the water'] },
     {
@@ -263,7 +263,7 @@ const F26_COMP_QUESTIONS: Record<G3PassageLevel, G3CompQuestion[]> = {
   ],
   F: [
     { q: 'What is another name for a tardigrade?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("a bug")', 'A water bear'] },
-    { q: 'What does a tardigrade do when its home gets too dry, too cold, or too dangerous?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("it hides")', 'It curls into a tiny, dried-up ball and stops needing food'] },
+    { q: 'What does a tardigrade do when its home gets too dry, too cold, or too dangerous?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("it hides")', 'It curls into a tiny, dried-up ball — "stops needing food" is a bonus, not required'] },
     { q: 'Name two extreme conditions scientists have tested tardigrades in.', dok: 'DOK 2', anchors: ['Wrong', 'Names one condition', 'Names two (freezing, boiling, or outer space)'] },
     { q: 'Why are scientists interested in studying tardigrades?', dok: 'DOK 2', anchors: ['Wrong', 'Vague, no reference to the text', 'Its survival skills might help doctors and space explorers solve new problems'] },
     { q: 'If you could survive extreme conditions like a tardigrade, where would you want to go? Why?', dok: 'Oral production', anchors: ['No response', 'Names a place, no reason', 'Names a place with a reason'] },

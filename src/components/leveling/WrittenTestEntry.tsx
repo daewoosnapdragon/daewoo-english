@@ -2001,12 +2001,15 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
    * those in the snapshot -- a student who failed to save stays dirty and is
    * retried on the next pass rather than being silently dropped.
    */
-  const saveDirty = useCallback(async (): Promise<{ saved: string[]; errors: number }> => {
-    if (!config) return { saved: [], errors: 0 }
+  const saveDirty = useCallback(async (): Promise<{ written: Record<string, StudentScores>; errors: number }> => {
+    if (!config) return { written: {}, errors: 0 }
     saveSeqRef.current++
     const currentScores = scoresRef.current
     const snapshot = savedSnapshotRef.current
-    const saved: string[] = []
+    // The record each payload was built from, so the snapshot can advance to
+    // what was actually written rather than to whatever the screen holds once
+    // the round-trip finishes.
+    const written: Record<string, StudentScores> = {}
     let errors = 0
 
     for (const stu of students) {
@@ -2031,23 +2034,22 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         })
         if (error) { console.error('Save error:', error); ok = false; errors++ }
       }
-      if (ok) saved.push(stu.id)
+      if (ok) written[stu.id] = JSON.parse(JSON.stringify(sc))
     }
-    return { saved, errors }
+    return { written, errors }
   }, [config, students, levelTest.id, currentTeacher?.id])
 
   /**
-   * Advances the snapshot for the students that saved, taking their CURRENT
-   * local state rather than a snapshot captured before the await -- otherwise
-   * anything typed during the save reads as already-saved and is never written.
+   * Advances the snapshot for the students that saved, to the record that was
+   * actually written -- NOT to their current local state. This had it the wrong
+   * way round: taking the live state marks anything typed during the save
+   * round-trip as already-saved, so it is never written, and the next refresh
+   * replaces it with the server's value. Taking the payload leaves those keys
+   * dirty, and the next pass writes them.
    */
-  const markSaved = useCallback((ids: string[]) => {
-    if (ids.length === 0) return
-    setSavedSnapshot(prev => {
-      const next = { ...prev }
-      ids.forEach(id => { if (scoresRef.current[id]) next[id] = JSON.parse(JSON.stringify(scoresRef.current[id])) })
-      return next
-    })
+  const markSaved = useCallback((written: Record<string, StudentScores>) => {
+    if (Object.keys(written).length === 0) return
+    setSavedSnapshot(prev => ({ ...prev, ...written }))
   }, [])
 
   // Auto-save (silent unless something was written)
@@ -2055,8 +2057,9 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     if (!config || savingRef.current) return
     savingRef.current = true
     try {
-      const { saved, errors } = await saveDirty()
-      markSaved(saved)
+      const { written, errors } = await saveDirty()
+      markSaved(written)
+      const saved = Object.keys(written)
       if (saved.length > 0 && errors === 0) {
         showToast(`Auto-saved ${saved.length} student${saved.length === 1 ? '' : 's'}`)
       } else if (errors > 0) {
@@ -2124,9 +2127,15 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         const local = cur[sid] || { answers: {}, writing: {} }
         const sav = snap[sid]
         const merged: StudentScores = { ...local }
+        // The snapshot follows only the half taken from the server. Copying
+        // `merged` wholesale swept the OTHER half in with it, and that half may
+        // hold unsaved edits -- marking them saved, so the next auto-save
+        // skipped them and the next refresh overwrote them from the server.
+        const mergedSnap: StudentScores = { ...(sav || local) }
         let touched = false
         if (!mcDirty(local, sav) && JSON.stringify(local.answers) !== JSON.stringify(server.answers)) {
           merged.answers = server.answers
+          mergedSnap.answers = JSON.parse(JSON.stringify(server.answers))
           touched = true
         }
         if (!writingDirty(local, sav) && writingDirty(server, local)) {
@@ -2134,11 +2143,15 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           merged.checklist = server.checklist
           merged.checklistCapped = server.checklistCapped
           merged.shortWriting = server.shortWriting
+          mergedSnap.writing = JSON.parse(JSON.stringify(server.writing))
+          mergedSnap.checklist = JSON.parse(JSON.stringify(server.checklist ?? {}))
+          mergedSnap.checklistCapped = JSON.parse(JSON.stringify(server.checklistCapped ?? {}))
+          mergedSnap.shortWriting = server.shortWriting
           touched = true
         }
         if (touched) {
           nextScores[sid] = merged
-          nextSnap[sid] = JSON.parse(JSON.stringify(merged))
+          nextSnap[sid] = mergedSnap
           changed = true
         }
       })
@@ -2154,8 +2167,9 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     savingRef.current = true
     setSaving(true)
     try {
-      const { saved, errors } = await saveDirty()
-      markSaved(saved)
+      const { written, errors } = await saveDirty()
+      markSaved(written)
+      const saved = Object.keys(written)
       showToast(
         errors > 0 ? `Error: ${errors} change${errors === 1 ? '' : 's'} did not save`
           : saved.length === 0 ? 'No unsaved changes'

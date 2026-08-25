@@ -150,6 +150,25 @@ interface OralScores {
   [key: string]: number | string | boolean | null | undefined | Record<string, any> | any[]
 }
 
+/**
+ * Compare score records by content rather than by key order.
+ *
+ * Postgres hands JSONB back in its own key order, so a row read from the
+ * database never stringifies the same way as the object this screen sent, even
+ * when the two hold identical scores. Plain JSON.stringify therefore reads
+ * every refreshed row as "different" and every refresh as "something changed".
+ */
+function sameScores(a: unknown, b: unknown): boolean {
+  return stableStringify(a) === stableStringify(b)
+}
+
+function stableStringify(v: any): string {
+  if (v === null || v === undefined || typeof v !== 'object') return JSON.stringify(v) ?? 'null'
+  if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']'
+  const keys = Object.keys(v).filter(k => v[k] !== undefined).sort()
+  return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}'
+}
+
 // ============================================================================
 // NAEP SCALE
 // ============================================================================
@@ -1528,7 +1547,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   useEffect(() => { savedSnapshotRef.current = savedSnapshot }, [savedSnapshot])
 
   const isStudentDirty = useCallback((sid: string) => {
-    return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
+    return !sameScores(scoresRef.current[sid] || {}, savedSnapshotRef.current[sid] || {})
   }, [])
 
   // The same question asked during render. `isStudentDirty` reads refs that are
@@ -1551,6 +1570,15 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
    * which invites a second teacher to enter scores over the top. Re-reading
    * every fifteen seconds closes that: students with unsaved local edits are
    * left alone, everyone else picks up whatever is now on the row.
+   *
+   * The snapshot has to move student by student, alongside the scores. It once
+   * moved wholesale -- `setSavedSnapshot(next)`, where `next` carried the live
+   * local scores for every student the loop had skipped. One other teacher
+   * saving one other student was therefore enough to mark the student being
+   * tested right now as saved, while their answers were still only on this
+   * screen. The next auto-save skipped them, the next refresh no longer saw
+   * them as dirty, and their answers were replaced by the blank row on the
+   * server -- roughly fifteen seconds after being entered.
    */
   useEffect(() => {
     const timer = setInterval(async () => {
@@ -1561,20 +1589,26 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       if (error || !data || saveSeqRef.current !== seqBefore || savingRef.current) return
 
       const cur = scoresRef.current
-      const next = { ...cur }
+      const nextScores = { ...cur }
+      const nextSnap = { ...savedSnapshotRef.current }
       let changed = false
       data.forEach((row: any) => {
         const sid = row.student_id
+        // Unsaved local edits: leave both the scores AND the snapshot alone, so
+        // the student stays dirty and the next auto-save still writes them.
         if (isStudentDirty(sid)) return
         const oral: OralScores = {}
         for (const k of Object.keys(row.raw_scores || {})) {
           if (ORAL_RAW_KEYS.has(k)) (oral as any)[k] = row.raw_scores[k]
         }
-        if (JSON.stringify(oral) !== JSON.stringify(cur[sid] || {})) { next[sid] = oral; changed = true }
+        if (sameScores(oral, cur[sid] || {})) return
+        nextScores[sid] = oral
+        nextSnap[sid] = JSON.parse(JSON.stringify(oral))
+        changed = true
       })
       if (changed) {
-        setScores(next)
-        setSavedSnapshot(JSON.parse(JSON.stringify(next)))
+        setScores(nextScores)
+        setSavedSnapshot(nextSnap)
       }
     }, 15000)
     return () => clearInterval(timer)
@@ -1608,7 +1642,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         const attempts = Array.isArray(current.passages_attempted) ? [...current.passages_attempted] : []
         if (hasData) attempts.push(archive)
         const cleared: Record<string, any> = { ...current, passage_level: val, passages_attempted: attempts }
-        PASSAGE_FIELDS.forEach(f => { delete cleared[f] })
+        // Null, not `delete`. A save sends only these keys and the row-level
+        // merge trigger computes OLD || NEW, so a key that is simply absent is
+        // read as "not mentioned" and the previous passage's value stays on the
+        // row -- and comes back to this screen on the next refresh, attached to
+        // the new passage. Everything here treats null and absent alike.
+        PASSAGE_FIELDS.forEach(f => { cleared[f] = null })
         return { ...prev, [sid]: cleared }
       }
       return { ...prev, [sid]: { ...current, [key]: val } }
@@ -1624,8 +1663,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     const toSave = sids || classStudents.filter(s => isStudentDirty(s.id)).map(s => s.id)
     if (toSave.length === 0) { setSaving(false); savingRef.current = false; return }
     let errors = 0
+    // What actually reached the database, per student. The snapshot advances to
+    // this rather than to the live scores: a teacher who keeps marking during
+    // the save round-trip would otherwise have those clicks recorded as saved
+    // without ever being written, and wiped by the next refresh.
+    const written: Record<string, OralScores> = {}
     for (const sid of toSave) {
-      const raw = scores[sid] || {}
+      const raw = scoresRef.current[sid] || {}
       const versioned = g2Content?.standards ?? g3Content?.standards ?? g4Content?.standards ?? g5Content?.standards ?? null
       const standards = versioned
         ? calculateVersionedStandards(versioned, raw, config)
@@ -1716,12 +1760,16 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         previous_class: students.find(s => s.id === sid)?.english_class || null,
         entered_by: currentTeacher?.id || null,
       }, { onConflict: 'level_test_id,student_id' })
-      if (error) errors++
+      if (error) { console.error('Save error:', error); errors++ }
+      else written[sid] = JSON.parse(JSON.stringify(raw))
     }
     setSaving(false)
     savingRef.current = false
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved (${toSave.length} student${toSave.length === 1 ? '' : 's'})`)
-    if (errors === 0) setSavedSnapshot(JSON.parse(JSON.stringify(scoresRef.current)))
+    // Only the students this save actually wrote. It once advanced the snapshot
+    // for the whole roster, so a save of one class marked another class's
+    // unsaved work as saved -- and the refresh then erased it from the screen.
+    if (Object.keys(written).length > 0) setSavedSnapshot(prev => ({ ...prev, ...written }))
   }
 
   // Auto-save function for timer/unmount/visibility (silent, no toast for timer)
@@ -1732,7 +1780,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     const dirty = students.filter(s => {
       const cur = currentScores[s.id]
       if (!cur || Object.keys(cur).length === 0) return false
-      return JSON.stringify(cur) !== JSON.stringify(snapshot[s.id] || {})
+      return !sameScores(cur, snapshot[s.id] || {})
     })
     if (dirty.length === 0) return
     await handleSave(dirty.map(s => s.id))
@@ -1762,7 +1810,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       const cur = scoresRef.current; const snap = savedSnapshotRef.current
-      const dirty = students.some(s => JSON.stringify(cur[s.id] || {}) !== JSON.stringify(snap[s.id] || {}))
+      const dirty = students.some(s => !sameScores(cur[s.id] || {}, snap[s.id] || {}))
       if (dirty) { e.preventDefault(); e.returnValue = '' }
     }
     window.addEventListener('beforeunload', handler)
@@ -1789,9 +1837,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         attempts.splice(attemptIdx, 1)
       }
 
-      // Clear current passage fields, then apply restored data
+      // Clear current passage fields, then apply restored data. Nulled rather
+      // than deleted, for the same reason as the passage switch above.
       const updated: Record<string, any> = { ...current }
-      PASSAGE_FIELDS.forEach(f => { delete updated[f] })
+      PASSAGE_FIELDS.forEach(f => { updated[f] = null })
       updated.passage_level = restoredLevel
       updated.passages_attempted = attempts
       Object.entries(toRestore).forEach(([k, v]) => { updated[k] = v })

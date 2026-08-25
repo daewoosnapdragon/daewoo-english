@@ -308,7 +308,7 @@ const F26_COMP_QUESTIONS: Record<G2PassageLevel, G2CompQuestion[]> = {
     { q: 'What is your favorite toy? Why?', dok: 'Oral production', anchors: ['No response', 'Names a toy, no reason', 'Names a toy with a reason'] },
   ],
   B: [
-    { q: 'What two things does the child play on at the park?', dok: 'DOK 1', anchors: ['No response / wrong', 'Names one (slide OR swing)', 'Names both'] },
+    { q: 'What two things does the child play on at the park?', dok: 'DOK 1', anchors: ['No response / wrong', 'Names one (slide OR swing)', 'Names both — "the ladder" counts toward the slide'] },
     { q: 'What does the child see by the pond?', dok: 'DOK 1', anchors: ['No response / wrong', 'Vague ("an animal")', 'A duck'] },
     { q: 'How does the child feel when it\'s time to leave?', dok: 'DOK 2', anchors: ['No response / wrong', 'Names a feeling with no reference to the text', 'Connects to the text (sad / doesn\'t want to go, because "I do not want to leave")'] },
     { q: 'What is your favorite thing to do at a park? Why?', dok: 'Oral production', anchors: ['No response', 'Names a thing, no reason', 'Names a thing with a reason'] },
