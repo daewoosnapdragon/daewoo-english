@@ -222,7 +222,7 @@ const F26_COMP_QUESTIONS: Record<G3PassageLevel, G3CompQuestion[]> = {
     { q: 'What color is the rabbit?', dok: 'DOK 1', anchors: ['Wrong', 'Partial or wrong color', 'White'] },
     { q: 'What does the rabbit like to do?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("play")', 'Hop'] },
     { q: 'How do you know the child takes good care of the rabbit?', dok: 'DOK 2', anchors: ['Wrong', 'Vague ("she likes her")', 'References the text (feeds her carrots, gives her a cage, lets her out in the day, pets her)'] },
-    { q: 'Why does the child say the rabbit is her best friend?', dok: 'DOK 2', anchors: ['Wrong', 'Generic ("she\'s nice")', 'Connects to the text (she pets her, feeds her, the rabbit is happy with her)'] },
+    { q: 'Why do you think the child opens the cage in the day?', dok: 'DOK 2', anchors: ['Wrong', 'Vague ("because she wants to")', 'So the rabbit can get out and hop in the yard (connects the open cage to what the rabbit does next)'] },
     { q: 'What pet would you like to have? Why?', dok: 'Oral production', anchors: ['No response', 'Names a pet, no reason', 'Names a pet with a reason'] },
   ],
   B: [
