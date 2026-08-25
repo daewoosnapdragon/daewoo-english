@@ -5,7 +5,8 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X, RotateCcw, Check, Star, Ban } from 'lucide-react'
+import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X, RotateCcw, Check, Star, Ban, Printer, Download, Shield } from 'lucide-react'
+import { exportToCSV } from '@/lib/export'
 import {
   g1ContentForTest, g1VersionKeyForTest, getG1Content, g1WrittenScoredMax, g1WrittenTotalMax,
   G1_LEGACY_VERSION,
@@ -3614,395 +3615,311 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
 // RESULTS VIEW - All Students Summary + Placement
 // ============================================================================
 
+// ─── Grade 1 Results ─────────────────────────────────────────────────
+// Deliberately the same page as the grades 2-5 Results tab: same toolbar,
+// same column order, same badges, same footnote. Grade 1 used to render its
+// own shape here -- a numbered list with a distribution card, a Standards
+// column and a click-to-expand dossier -- and switching grades meant learning
+// a second table. The scoring underneath is still Grade 1's own (see
+// calculateG1Composite and g1WeightedComposite); only the presentation is
+// shared.
 function ResultsView({ students, scores, levelTest, anecdotals }: {
   students: Student[]
   scores: Record<string, G1Scores>
   levelTest: LevelTest
   /** Teacher Ratings, keyed by student id. Empty on tests that predate them. */
-  anecdotals?: Record<string, G1AnecdotalRating>
+  anecdotals?: Record<string, any>
 }) {
-  const [sortBy, setSortBy] = useState<'composite' | 'name' | 'suggested'>('composite')
-  const [expandedStudent, setExpandedStudent] = useState<string | null>(null)
+  const { showToast, currentTeacher } = useApp()
+  const [sortBy, setSortBy] = useState<string>('composite')
+  const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>('all')
+  const [filterPassage, setFilterPassage] = useState<string>('all')
+  const [showBorderline, setShowBorderline] = useState(false)
+  const [savingCheckpoint, setSavingCheckpoint] = useState(false)
   const content = g1ContentForTest(levelTest as any)
-  const GRADE_1_QUESTIONS = content.written.questions
-  const G1_QUESTION_SECTIONS = content.written.sectionKeys
-  const WRITTEN_SECTIONS = content.written.sections
-  const G1_WRITING_CATEGORIES = content.extendedWriting.categories
   const G1_WRITING_MAX = content.extendedWriting.max
   const G1_MC_MAX = content.written.mcMax
-  const writingInTotal = content.extendedWriting.scoring === 'in_total'
-  const writtenTotalMax = g1WrittenTotalMax(content)
-  const G1_SECTION_LABELS: Record<string, string> = {}
-  GRADE_1_QUESTIONS.forEach(q => { if (!G1_SECTION_LABELS[q.section]) G1_SECTION_LABELS[q.section] = q.domain })
+  // Grade 1 runs A-F where grades 2-5 run A-E, so the passage filter is read
+  // off the test's own content rather than hardcoded.
+  const PASSAGE_LEVELS = Object.keys(content.passageConfigs)
 
   const rows = useMemo(() => {
-    const tested = students.map(s => {
+    const computed = students.map(s => {
       const sc = scores[s.id] || {}
       const anec = anecdotals?.[s.id] ?? null
       const metrics = calculateG1Composite(sc, content, s.english_class as EnglishClass, anec)
+      const weighted = g1WeightedComposite(metrics, sc, content)
+      const av = anec
+        ? [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
+        : []
+      // calculateG1Composite falls back to 'A' when no passage was administered,
+      // which is right for its band maths but wrong to print: an untested
+      // student would read as "(A)" and be swept into the A passage filter.
+      // Grades 2-5 carry null there, so the label and the filter both skip them.
+      const oralPassageLevel = sc.o_passage_level ? metrics.passageLevel : null
       return {
         student: s,
         scores: sc,
-        anecdotal: anec,
+        anec,
         ...metrics,
+        oralPassageLevel,
         // The absolute band keeps its own names so it stays readable beside
         // the placement that actually decides.
         absoluteComposite: metrics.composite,
         absoluteClass: metrics.suggestedClass,
-        weighted: g1WeightedComposite(metrics, sc, content),
+        weighted,
+        // A student with no measured component has nothing to rank -- the same
+        // rule the grades 2-5 table applies. A teacher rating alone is a note.
+        isTested: weighted != null,
+        hasAnec: av.length > 0,
+        anecScore: av.length > 0 ? av.reduce((a, b) => a + b, 0) / (av.length * 4) : 0.5,
       }
-    }).filter(r => r.scores.o_passage_level || r.scores.w_letter_names != null || (r.scores.written_answers && Object.keys(r.scores.written_answers).length > 0))
+    })
+
+    // Outlier flags, computed per class off the students themselves exactly as
+    // the grades 2-5 table does: flag a zero, or a score under a tenth of the
+    // class median, and only once enough classmates have that component for the
+    // median to mean anything.
+    const medianOf = (arr: number[]) => {
+      if (arr.length === 0) return 0
+      const v = [...arr].sort((a, b) => a - b)
+      const mid = Math.floor(v.length / 2)
+      return v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2
+    }
+    const classStats: Record<string, any> = {}
+    ENGLISH_CLASSES.forEach(cls => {
+      const inClass = computed.filter(r => r.student.english_class === cls)
+      const orals = inClass.map(r => r.weightedCwpm ?? r.cwpm).filter(v => v != null) as number[]
+      const writings = inClass.map(r => r.writingBonus).filter(v => v > 0)
+      const mcs = inClass.map(r => r.writtenMC).filter(v => v > 0)
+      const reliable = (n: number) => n >= 3 && n >= inClass.length * 0.5
+      classStats[cls] = {
+        size: inClass.length,
+        oralMedian: medianOf(orals), oralReliable: reliable(orals.length),
+        writingMedian: medianOf(writings), writingReliable: reliable(writings.length),
+        mcMedian: medianOf(mcs), mcReliable: reliable(mcs.length),
+      }
+    })
+
+    const withFlags = computed.map(r => {
+      const st = classStats[r.student.english_class] || {}
+      const flags: string[] = []
+      const oral = r.weightedCwpm ?? r.cwpm
+      if (st.oralReliable && oral != null && (oral === 0 || (st.oralMedian > 0 && oral < st.oralMedian * 0.1))) flags.push('oral')
+      if (st.writingReliable && r.writingBonus != null && st.writingMedian > 0 && r.writingBonus < st.writingMedian * 0.1) flags.push('writing')
+      if (st.mcReliable && r.writtenMC != null && st.mcMedian > 0 && r.writtenMC < st.mcMedian * 0.1) flags.push('mc')
+      return { ...r, outlierFlags: flags }
+    })
 
     // Placement: rank the tested students by the weighted composite and cut
-    // into six equal groups. A student with nothing to weight keeps the
-    // absolute suggestion rather than being ranked on a fabricated number.
-    const rankable = tested.filter(r => r.weighted != null)
-    const ordered = [...rankable].sort((a, b) => (a.weighted as number) - (b.weighted as number))
-    const placement = new Map<string, EnglishClass>()
-    ordered.forEach((r, idx) => placement.set(r.student.id, g1ClassFromRank(idx, ordered.length)))
+    // into six equal groups. Untested students are kept out of the sorted array
+    // entirely so they do not consume rank positions.
+    const ranked = withFlags.filter(r => r.isTested).sort((a, b) => (a.weighted as number) - (b.weighted as number))
+    const rank = new Map<string, { percentile: number; suggestedClass: EnglishClass }>()
+    ranked.forEach((r, idx) => rank.set(r.student.id, {
+      percentile: ranked.length > 1 ? idx / (ranked.length - 1) : 0.5,
+      suggestedClass: g1ClassFromRank(idx, ranked.length),
+    }))
 
-    return tested.map(r => ({
-      ...r,
-      suggestedClass: placement.get(r.student.id) ?? r.absoluteClass,
-      percentile: r.weighted != null && ordered.length > 1
-        ? ordered.findIndex(o => o.student.id === r.student.id) / (ordered.length - 1)
-        : null,
-    })).sort((a, b) => {
-      if (sortBy === 'composite') return (b.weighted ?? -1) - (a.weighted ?? -1)
-      if (sortBy === 'name') return a.student.english_name.localeCompare(b.student.english_name)
-      if (sortBy === 'suggested') {
-        const ai = ENGLISH_CLASSES.indexOf(a.suggestedClass)
-        const bi = ENGLISH_CLASSES.indexOf(b.suggestedClass)
-        return ai !== bi ? ai - bi : (b.weighted ?? -1) - (a.weighted ?? -1)
-      }
-      return 0
+    return withFlags.map(r => {
+      const rk = rank.get(r.student.id)
+      return { ...r, percentile: rk ? rk.percentile : null, suggestedClass: rk ? rk.suggestedClass : null }
     })
-  }, [students, scores, sortBy, content, anecdotals])
+  }, [students, scores, content, anecdotals])
 
-  const classCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    ENGLISH_CLASSES.forEach(c => counts[c] = 0)
-    rows.forEach(r => counts[r.suggestedClass] = (counts[r.suggestedClass] || 0) + 1)
-    return counts
-  }, [rows])
+  const displayed = useMemo(() => {
+    let res = [...rows]
+    if (filterClass !== 'all') res = res.filter(r => r.student.english_class === filterClass)
+    if (filterPassage !== 'all') res = res.filter(r => r.oralPassageLevel === filterPassage)
+    if (showBorderline) res = res.filter(r => r.suggestedClass != null && r.suggestedClass !== r.student.english_class)
+    switch (sortBy) {
+      // Untested rows sort to the bottom of every score-based order.
+      case 'composite': res.sort((a, b) => Number(b.isTested) - Number(a.isTested) || (b.weighted ?? -1) - (a.weighted ?? -1)); break
+      case 'percentile': res.sort((a, b) => (b.percentile ?? -1) - (a.percentile ?? -1)); break
+      case 'cwpm': res.sort((a, b) => ((b.weightedCwpm ?? b.cwpm) ?? -1) - ((a.weightedCwpm ?? a.cwpm) ?? -1)); break
+      case 'comp': res.sort((a, b) => (b.compTotal ?? -1) - (a.compTotal ?? -1)); break
+      case 'writing': res.sort((a, b) => (b.writingBonus ?? -1) - (a.writingBonus ?? -1)); break
+      case 'mc': res.sort((a, b) => (b.writtenMC ?? -1) - (a.writtenMC ?? -1)); break
+      case 'suggested': { const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }; res.sort((a, b) => (a.suggestedClass ? classOrder[a.suggestedClass] || 99 : 99) - (b.suggestedClass ? classOrder[b.suggestedClass] || 99 : 99)); break }
+      case 'name': res.sort((a, b) => a.student.english_name.localeCompare(b.student.english_name)); break
+    }
+    return res
+  }, [rows, filterClass, filterPassage, sortBy, showBorderline])
 
-  if (rows.length === 0) {
-    return (
-      <div className="px-10 py-12 text-center">
-        <p className="text-text-tertiary">
-          {content.administration === 'single_sitting'
-            ? 'No scores entered yet. Enter the Oral test or the Written test first.'
-            : 'No scores entered yet. Complete the Oral test (Wave 1) or Written test (Wave 2) first.'}
-        </p>
-      </div>
-    )
+  const saveCheckpoint = async () => {
+    setSavingCheckpoint(true)
+    try {
+      const { data: allScores } = await supabase.from('level_test_scores')
+        .select('*').eq('level_test_id', levelTest.id)
+      const label = `Pre-meeting ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
+      await supabase.from('leveling_snapshots').insert({
+        level_test_id: levelTest.id,
+        snapshot_data: allScores || [],
+        created_by: currentTeacher?.id || null,
+        label,
+      })
+      showToast(`Checkpoint saved: ${label}`)
+    } catch (e: any) {
+      showToast(`Error saving checkpoint: ${e.message}`)
+    }
+    setSavingCheckpoint(false)
+  }
+
+  const handlePrintSummary = (allRows: any[]) => {
+    const pw = window.open('', '_blank'); if (!pw) return
+    const byClass: Record<string, any[]> = {}
+    ENGLISH_CLASSES.forEach(c => { byClass[c] = [] })
+    allRows.forEach(r => { if (byClass[r.student.english_class]) byClass[r.student.english_class].push(r) })
+    Object.values(byClass).forEach(arr => arr.sort((a, b) => Number(b.isTested) - Number(a.isTested) || (b.weighted ?? -1) - (a.weighted ?? -1)))
+
+    let pagesHTML = ''
+    ENGLISH_CLASSES.forEach(cls => {
+      const cs = byClass[cls]
+      if (cs.length === 0) return
+      const rowsHTML = cs.map((r: any, i: number) => {
+        const move = r.suggestedClass != null && r.suggestedClass !== r.student.english_class
+        const oral = r.weightedCwpm ?? r.cwpm
+        return `<tr style="${move ? 'background:#fef3c7;' : ''}">
+          <td style="padding:6px 10px;font-weight:600;color:#647FBC">${i + 1}</td>
+          <td style="padding:6px 10px;font-weight:600">${r.student.english_name}<br><span style="color:#94a3b8;font-size:10px">${r.student.korean_name}</span></td>
+          <td style="padding:6px 10px;text-align:center">${oral != null ? Math.round(oral) : '—'}${r.oralPassageLevel ? ' (' + r.oralPassageLevel + ')' : ''}</td>
+          <td style="padding:6px 10px;text-align:center">${r.writingBonus > 0 ? r.writingBonus + '/' + G1_WRITING_MAX : '—'}</td>
+          <td style="padding:6px 10px;text-align:center">${r.writtenMC > 0 ? r.writtenMC + '/' + G1_MC_MAX : '—'}</td>
+          <td style="padding:6px 10px;text-align:center">${r.compNotAdministered ? 'n/a' : r.compTotal != null ? r.compTotal + '/' + (r.compMax ?? '—') : '—'}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:700;color:${r.isTested ? '#647FBC' : '#94a3b8'}">${r.weighted != null ? Math.round(r.weighted * 100) : '—'}</td>
+          <td style="padding:6px 10px;text-align:center">${r.percentile != null ? Math.round(r.percentile * 100) + '%' : '—'}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:600;${r.suggestedClass == null ? 'color:#94a3b8;font-style:italic' : move ? 'color:#d97706' : ''}">${r.suggestedClass ?? 'not tested'}${move ? ' *' : ''}</td>
+          <td style="padding:6px 10px;text-align:center;font-size:10px;color:${r.anec?.teacher_recommends === 'move_up' ? '#16a34a' : r.anec?.teacher_recommends === 'move_down' ? '#dc2626' : '#6b7280'}">${r.anec?.teacher_recommends === 'keep' ? 'KEEP' : r.anec?.teacher_recommends === 'move_up' ? 'UP' : r.anec?.teacher_recommends === 'move_down' ? 'DOWN' : '—'}</td>
+        </tr>`
+      }).join('')
+
+      pagesHTML += `<div style="page-break-after:always;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 16px;background:#647FBC;border-radius:8px;color:white">
+          <div><span style="font-size:18px;font-weight:700">${cls}</span><span style="font-size:12px;margin-left:8px;opacity:0.7">${cs.length} students</span></div>
+          <div style="font-size:11px">Grade 1 Level Test Summary</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr style="background:#f1f5f9;text-align:left">
+            <th style="padding:6px 10px">#</th><th style="padding:6px 10px">Student</th>
+            <th style="padding:6px 10px;text-align:center">Oral</th><th style="padding:6px 10px;text-align:center">Writing</th>
+            <th style="padding:6px 10px;text-align:center">MC</th><th style="padding:6px 10px;text-align:center">Comp</th>
+            <th style="padding:6px 10px;text-align:center">Composite</th><th style="padding:6px 10px;text-align:center">Rank</th>
+            <th style="padding:6px 10px;text-align:center">Suggested</th><th style="padding:6px 10px;text-align:center">Rec.</th>
+          </tr></thead>
+          <tbody>${rowsHTML}</tbody>
+        </table>
+        <p style="font-size:9px;color:#94a3b8;margin-top:8px">* = suggested class differs from current. Composite = 45% oral + 15% MC + 40% writing; Teacher Ratings are notes only and are not in it. Printed ${new Date().toLocaleDateString()}</p>
+      </div>`
+    })
+
+    pw.document.write(`<html><head><title>Grade 1 Leveling Summary</title></head><body style="font-family:Inter,system-ui,sans-serif;padding:20px">${pagesHTML}</body></html>`)
+    pw.document.close()
+    pw.print()
   }
 
   return (
     <div className="px-10 py-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-display text-lg font-semibold text-navy">Results & Suggested Placement</h3>
-          <p className="text-[12px] text-text-secondary mt-1">
-            {rows.length} students scored.{' '}
-            {content.usesClassImpression
-              ? 'Wave 1 = 50% oral + 50% teacher impression. Wave 2 = 30% oral + 30% written + 40% teacher ratings.'
-              : `Students with oral data only are scored on the oral test alone until the written test is entered; complete records use 55% oral + 45% written, where the written score is all ${g1WrittenTotalMax(content)} points including writing.`}
-          </p>
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <div className="flex gap-1">
+          <button onClick={() => setFilterClass('all')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
+          {ENGLISH_CLASSES.map(cls => <button key={cls} onClick={() => setFilterClass(cls)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === cls ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`} style={filterClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>{cls}</button>)}
         </div>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
-          className="px-3 py-2 border border-border rounded-lg text-[12px] bg-surface">
-          <option value="composite">Sort by Composite (high to low)</option>
-          <option value="name">Sort by Name</option>
-          <option value="suggested">Sort by Suggested Class</option>
+        <div className="flex gap-1 border-l border-border pl-3">
+          <span className="text-[9px] uppercase tracking-wider text-text-tertiary self-center mr-1">Passage:</span>
+          <button onClick={() => setFilterPassage('all')} className={`px-2 py-1 rounded text-[10px] font-medium ${filterPassage === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
+          {PASSAGE_LEVELS.map(lv => <button key={lv} onClick={() => setFilterPassage(lv)} className={`px-2 py-1 rounded text-[10px] font-medium ${filterPassage === lv ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface'}`}>{lv}</button>)}
+        </div>
+        <select value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[11px] bg-surface">
+          <option value="composite">Sort: Composite</option><option value="percentile">Sort: Rank</option><option value="cwpm">Sort: Oral (CWPM)</option><option value="comp">Sort: Comprehension</option><option value="writing">Sort: Writing</option><option value="mc">Sort: MC</option><option value="suggested">Sort: Suggested Class</option><option value="name">Sort: Name</option>
         </select>
+        <button onClick={() => setShowBorderline(!showBorderline)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium ${showBorderline ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}>
+          <AlertTriangle size={12} /> Borderline
+        </button>
+        <button onClick={() => handlePrintSummary(rows)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+          <Printer size={12} /> Print Summary
+        </button>
+        <button onClick={() => {
+          exportToCSV('leveling-G1',
+            ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Writing', 'MC', 'Comp', 'Anecdotal', 'Composite', 'Rank', 'Suggested'],
+            displayed.map(r => [r.student.english_name, r.student.korean_name, r.student.english_class,
+              r.oralPassageLevel ?? '', (r.weightedCwpm ?? r.cwpm) != null ? Math.round((r.weightedCwpm ?? r.cwpm) as number) : '',
+              r.writingBonus > 0 ? r.writingBonus : '', r.writtenMC > 0 ? r.writtenMC : '', r.compTotal ?? '',
+              r.hasAnec ? (r.anecScore * 100).toFixed(0) : '', r.weighted != null ? (r.weighted * 100).toFixed(0) : '',
+              r.percentile != null ? Math.round(r.percentile * 100) : '', r.suggestedClass ?? 'not tested']))
+        }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+          <Download size={12} /> CSV
+        </button>
+        <button onClick={saveCheckpoint} disabled={savingCheckpoint}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 disabled:opacity-50">
+          {savingCheckpoint ? <Loader2 size={12} className="animate-spin" /> : <Shield size={12} />} Save Checkpoint
+        </button>
+        <button onClick={() => {
+          exportToCSV(`leveling-backup-G1-${new Date().toISOString().slice(0, 10)}`,
+            ['Student ID', 'English Name', 'Korean Name', 'Class', 'Passage', 'CWPM', 'Adjusted CWPM', 'Accuracy', 'Comp', 'Written MC', 'Writing', 'Composite', 'Band'],
+            rows.map(r => [r.student.id, r.student.english_name, r.student.korean_name, r.student.english_class,
+              r.oralPassageLevel ?? '', r.cwpm ?? '', r.weightedCwpm ?? '', r.accuracy ?? '',
+              r.compNotAdministered ? 'not administered' : (r.compTotal ?? ''), r.writtenMC, r.writingBonus,
+              r.weighted != null ? (r.weighted * 100).toFixed(0) : '', Math.round(r.absoluteComposite)]))
+        }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
+          <Download size={12} /> Full Backup
+        </button>
+        <span className="text-[11px] text-text-tertiary ml-auto">{displayed.length} students</span>
       </div>
 
-      <div className="bg-surface border border-border rounded-xl p-4 mb-4">
-        <p className="text-[11px] font-semibold text-text-secondary mb-2 uppercase tracking-wider">Suggested Class Distribution</p>
-        <div className="flex gap-2">
-          {ENGLISH_CLASSES.map(cls => (
-            <div key={cls} className="flex-1 text-center">
-              <div className="text-[18px] font-bold" style={{ color: classToColor(cls) }}>{classCounts[cls]}</div>
-              <div className="text-[10px] font-medium px-2 py-0.5 rounded-full inline-block"
-                style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>
-                {cls}
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="text-[10px] text-text-tertiary mt-3 leading-relaxed">
-          Placement ranks students on the weighted composite (45% oral, 15% MC, 40% writing,
-          rescaled when a part is missing) and cuts the grade into six equal groups &mdash; the same rule grades 2&ndash;5 use.
-          Because the groups are forced equal, some movement is guaranteed regardless of ability.
-          The <strong>Band</strong> column is the absolute score from the passage the student sustained; it is reference
-          only, and where it disagrees with the placement the row says so.
-        </p>
-      </div>
-
-      <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
-        <table className="w-full text-[12px]">
-          <thead>
-            <tr className="bg-surface-alt">
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">#</th>
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Student</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Passage</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">MC<br/>/{G1_MC_MAX}</th>
-              {content.shortWriting && <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Short<br/>/{content.shortWriting.max}</th>}
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-600 font-semibold">
-                {writingInTotal ? 'Writing' : 'Wr Bonus'}<br/>/{G1_WRITING_MAX}
-              </th>
-              {writingInTotal && <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-semibold">Written<br/>/{writtenTotalMax}</th>}
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">CWPM</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Comp</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Oral</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-navy font-bold"
-                title="Weighted composite: 45% oral + 15% MC + 40% writing, rescaled when a part is missing. Teacher Ratings are notes only and are not in it. This is what placement ranks on.">Composite</th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold"
-                title="Absolute band from the passage the student sustained. Reference only -- it does not decide placement.">Band<br/><span className="normal-case">(ref)</span></th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Suggested</th>
-              {content.usesClassImpression && <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-amber-700 font-semibold">Impression</th>}
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold"
-                title="Average of the four Teacher Ratings dimensions, on the 1-4 scale every grade uses.">
-                {content.teacherSignal === 'anecdotal_ratings' ? 'Teacher' : 'Retention'}
-              </th>
-              <th className="text-center px-3 py-3 text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Standards</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, idx) => {
-              const mcScore = row.writtenMC
-              const wrBonus = row.writingBonus
-              const metCount = row.standardsBaseline.filter(s => s.met).length
-              const expanded = expandedStudent === row.student.id
-
-              return (<>
-                <tr key={row.student.id}
-                  onClick={() => setExpandedStudent(expanded ? null : row.student.id)}
-                  className={`border-t border-border cursor-pointer transition-colors ${idx % 2 === 0 ? '' : 'bg-surface-alt/30'} hover:bg-blue-50/50`}>
-                  <td className="px-4 py-2.5 text-text-tertiary">{idx + 1}</td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-                        style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass), color: classToTextColor(row.student.english_class as EnglishClass) }}>
-                        {row.student.english_class.slice(0, 3)}
-                      </span>
-                      <span className="font-medium text-navy">{row.student.english_name}</span>
-                      <span className="text-text-tertiary">{row.student.korean_name}</span>
-                    </div>
-                  </td>
-                  <td className="text-center px-3 py-2.5">
-                    <span className="font-bold text-navy">{row.passageLevel}</span>
-                  </td>
-                  <td className="text-center px-3 py-2.5">{mcScore}</td>
-                  {content.shortWriting && <td className="text-center px-3 py-2.5">{row.writingShort ?? '--'}</td>}
-                  <td className="text-center px-3 py-2.5">{wrBonus > 0 ? wrBonus : '--'}</td>
-                  {writingInTotal && (
-                    <td className="text-center px-3 py-2.5 font-semibold text-navy">
-                      {mcScore + (row.writingShort ?? 0) + wrBonus}
-                    </td>
-                  )}
-                  <td className="text-center px-3 py-2.5">{row.cwpm ?? '--'}</td>
-                  <td className="text-center px-3 py-2.5">
-                    {row.compNotAdministered
-                      ? <span className="text-text-tertiary italic text-[10px]" title="Not administered — student was stopped during the passage.">n/a</span>
-                      : row.compTotal != null ? `${row.compTotal}/${row.compMax}` : '--'}
-                  </td>
-                  <td className="text-center px-3 py-2.5">{Math.round(row.oralScore)}</td>
-                  <td className="text-center px-3 py-2.5">
-                    {row.weighted != null ? (
-                      <span className={`text-[13px] font-bold ${
-                        row.weighted >= 0.70 ? 'text-green-600' : row.weighted >= 0.40 ? 'text-amber-600' : 'text-red-600'
-                      }`}>{Math.round(row.weighted * 100)}</span>
-                    ) : <span className="text-text-tertiary text-[10px]">--</span>}
-                  </td>
-                  {/* Absolute band, kept beside the placement as the reference
-                      for why a student reads where they do. */}
-                  <td className="text-center px-3 py-2.5">
-                    <span className="text-[10px] text-text-tertiary">{Math.round(row.absoluteComposite)}</span>
-                    <span className="block text-[9px] text-text-tertiary opacity-70">{row.absoluteClass}</span>
-                  </td>
-                  <td className="text-center px-3 py-2.5">
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: classToColor(row.suggestedClass), color: classToTextColor(row.suggestedClass) }}>
-                      {row.suggestedClass}
-                    </span>
-                    {row.suggestedClass !== row.absoluteClass && (
-                      <span className="block text-[8px] text-amber-600 mt-0.5" title="The rank-based placement and the absolute band disagree for this student.">differs from band</span>
-                    )}
-                  </td>
-                  {content.usesClassImpression && (
-                  <td className="text-center px-3 py-2.5">
-                    {(row.scores.wave2_class_impression || row.scores.wave1_class_impression) ? (
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${row.scores.wave2_class_impression ? 'border-2 border-navy' : 'border-2 border-amber-300 opacity-60'}`}
-                        style={{ backgroundColor: classToColor((row.scores.wave2_class_impression || row.scores.wave1_class_impression) as EnglishClass), color: classToTextColor((row.scores.wave2_class_impression || row.scores.wave1_class_impression) as EnglishClass) }}>
-                        {row.scores.wave2_class_impression || row.scores.wave1_class_impression}
-                        {!row.scores.wave2_class_impression && <span className="text-[8px] ml-0.5">(W1)</span>}
-                      </span>
-                    ) : <span className="text-text-tertiary text-[10px]">--</span>}
-                  </td>
-                  )}
-                  <td className="text-center px-3 py-2.5">
-                    {content.teacherSignal === 'anecdotal_ratings' ? (() => {
-                      const a = row.anecdotal
-                      const vals = a ? [a.receptive_language, a.productive_language, a.engagement_pace, a.placement_recommendation].filter(v => v != null) as number[] : []
-                      if (vals.length === 0) return <span className="text-text-tertiary text-[10px]">--</span>
-                      const avg = vals.reduce((x, y) => x + y, 0) / vals.length
-                      return (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          avg >= 3.5 ? 'bg-green-100 text-green-700' :
-                          avg >= 2.5 ? 'bg-blue-100 text-blue-700' :
-                          avg >= 1.5 ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-red-700'
-                        }`} title={`${vals.length} of 4 dimensions rated`}>
-                          {avg.toFixed(1)}
-                        </span>
-                      )
-                    })() : row.scores.wave2_retention_rating ? (
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        row.scores.wave2_retention_rating === 'strong' ? 'bg-green-100 text-green-700' :
-                        row.scores.wave2_retention_rating === 'weak' ? 'bg-red-100 text-red-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {row.scores.wave2_retention_rating}
-                      </span>
-                    ) : <span className="text-text-tertiary text-[10px]">--</span>}
-                  </td>
-                  <td className="text-center px-3 py-2.5 relative group">
-                    <span className={`text-[11px] font-medium cursor-help ${metCount >= 8 ? 'text-green-600' : metCount >= 5 ? 'text-amber-600' : 'text-red-600'}`}>
-                      {metCount}/{row.standardsBaseline.length}
-                    </span>
-                    <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-white border border-border rounded-xl shadow-xl p-3 z-50 text-left">
-                      <p className="text-[10px] font-bold text-navy mb-1.5">Standards Baseline</p>
-                      <div className="space-y-1 max-h-40 overflow-y-auto">
-                        {row.standardsBaseline.map((std: any) => (
-                          <div key={std.code} className="flex items-center gap-1.5 text-[9px]">
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${std.met ? 'bg-green-500' : 'bg-red-400'}`} />
-                            <span className={`font-semibold ${std.met ? 'text-green-700' : 'text-red-600'}`}>{std.code}</span>
-                            <span className="text-text-tertiary">{std.score}/{std.threshold}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-                {expanded && (
-                  <tr>
-                    <td colSpan={13} className="px-4 py-4 bg-blue-50/50 border-t border-blue-200">
-                      <div className="max-w-5xl">
-                        <div className="flex items-center gap-2 mb-3">
-                          <h4 className="text-[13px] font-bold text-navy">Leveling Dossier: {row.student.english_name}</h4>
-                          <span className="text-[10px] text-text-tertiary">{row.student.korean_name}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
-                            style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass), color: classToTextColor(row.student.english_class as EnglishClass) }}>
-                            Current: {row.student.english_class}
-                          </span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold ml-1"
-                            style={{ backgroundColor: classToColor(row.suggestedClass), color: classToTextColor(row.suggestedClass) }}>
-                            Suggested: {row.suggestedClass}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-4 gap-4">
-                          <div className="bg-white rounded-lg border border-border p-3">
-                            <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Written MC ({mcScore}/{G1_MC_MAX})</p>
-                            {row.scores.written_answers && Object.keys(row.scores.written_answers).length > 0 ? (
-                              <>
-                                {G1_QUESTION_SECTIONS.map(sec => {
-                                  const qs = GRADE_1_QUESTIONS.filter(q => q.section === sec)
-                                  const correct = qs.reduce((sum, q) => sum + (row.scores.written_answers![q.qNum] === q.correct ? 1 : 0), 0)
-                                  const pct = qs.length > 0 ? (correct / qs.length) * 100 : 0
-                                  return (
-                                    <div key={sec} className="flex items-center justify-between text-[10px] py-0.5">
-                                      <span className="text-text-secondary">{G1_SECTION_LABELS[sec]}</span>
-                                      <span className={`font-bold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-500'}`}>{correct}/{qs.length}</span>
-                                    </div>
-                                  )
-                                })}
-                              </>
-                            ) : (
-                              <>
-                                {WRITTEN_SECTIONS.filter(s => s.key !== 'w_writing').map(sec => {
-                                  const val = (row.scores as any)[sec.key] ?? 0
-                                  const pct = sec.max > 0 ? (val / sec.max) * 100 : 0
-                                  return (
-                                    <div key={sec.key} className="flex items-center justify-between text-[10px] py-0.5">
-                                      <span className="text-text-secondary">{sec.label}</span>
-                                      <span className={`font-bold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-500'}`}>{val}/{sec.max}</span>
-                                    </div>
-                                  )
-                                })}
-                              </>
-                            )}
-                          </div>
-                          <div className="bg-white rounded-lg border border-border p-3">
-                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1"><Star size={10} /> {writingInTotal ? 'Extended Writing' : 'Writing Bonus'} ({wrBonus}/{G1_WRITING_MAX})</p>
-                            {row.scores.written_rubric && Object.keys(row.scores.written_rubric).length > 0 ? (
-                              G1_WRITING_CATEGORIES.map(cat => {
-                                const val = row.scores.written_rubric![cat.key] ?? 0
-                                return (
-                                  <div key={cat.key} className="flex items-center justify-between text-[10px] py-0.5">
-                                    <span className="text-text-secondary">{cat.label}</span>
-                                    <span className={`font-bold ${val >= 4 ? 'text-green-600' : val >= 2 ? 'text-amber-600' : val > 0 ? 'text-red-500' : 'text-text-tertiary'}`}>{val}/{cat.max}</span>
-                                  </div>
-                                )
-                              })
-                            ) : (
-                              <div className="text-[10px] text-text-tertiary">No writing rubric data</div>
-                            )}
-                          </div>
-                          <div className="bg-white rounded-lg border border-border p-3">
-                            <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Oral / Reading</p>
-                            <div className="space-y-1 text-[10px]">
-                              <div className="flex justify-between"><span className="text-text-secondary">Passage Level</span><span className="font-bold text-navy">{row.passageLevel}</span></div>
-                              <div className="flex justify-between"><span className="text-text-secondary">CWPM</span><span className="font-bold">{row.cwpm ?? '--'}</span></div>
-                              <div className="flex justify-between"><span className="text-text-secondary">Comprehension</span><span className={row.compNotAdministered ? 'text-text-tertiary italic' : 'font-bold'}>{row.compNotAdministered ? 'not administered' : row.compTotal != null ? `${row.compTotal}/${row.compMax}` : '--'}</span></div>
-                              <div className="flex justify-between"><span className="text-text-secondary">Oral Score</span><span className="font-bold">{Math.round(row.oralScore)}</span></div>
-                              <div className="flex justify-between border-t border-border pt-1 mt-1"><span className="text-text-secondary font-semibold">Composite</span><span className={`font-extrabold text-[12px] ${row.composite >= 70 ? 'text-green-600' : row.composite >= 40 ? 'text-amber-600' : 'text-red-600'}`}>{Math.round(row.composite)}</span></div>
-                            </div>
-                          </div>
-                          <div className="bg-white rounded-lg border border-border p-3">
-                            <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2">Standards ({metCount}/{row.standardsBaseline.length} met)</p>
-                            <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                              {row.standardsBaseline.map((std: any) => (
-                                <div key={std.code} className="flex items-center gap-1.5 text-[9px]">
-                                  <span className={`text-[10px] ${std.met ? 'text-green-600' : 'text-red-500'}`}>{std.met ? 'Met' : 'X'}</span>
-                                  <span className="font-semibold text-navy">{std.code}</span>
-                                  <span className="text-text-tertiary ml-auto">{std.score}/{std.threshold}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </>)
-            })}
-          </tbody>
+      <div className="bg-surface border border-border rounded-xl overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead><tr className="bg-surface-alt">
+            <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px]">Student</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Current</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Adjusted for passage difficulty and NAEP. Not the stopwatch number.">Oral<br/><span className="normal-case">(adj)</span></th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Teacher</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Composite</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Absolute band from the passage the student sustained. Reference only -- placement ranks on the composite.">Band<br/><span className="normal-case">(ref)</span></th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Rank</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Suggested</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Rec.</th>
+          </tr></thead>
+          <tbody>{displayed.map(row => {
+            const move = row.suggestedClass != null && row.suggestedClass !== row.student.english_class
+            const flags = row.outlierFlags || []
+            const oral = row.weightedCwpm ?? row.cwpm
+            return (
+              <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${move ? 'bg-amber-50/30' : ''} ${flags.length > 0 ? 'bg-red-50/20' : ''}`}>
+                <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span></td>
+                <td className="px-2 py-2 text-center"><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass) + '40', color: classToTextColor(row.student.english_class as EnglishClass) }}>{row.student.english_class}</span></td>
+                <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}
+                  title={oral == null ? undefined : row.weightedCwpm != null && row.cwpm != null && row.weightedCwpm !== row.cwpm ? `Adjusted CWPM: ${row.cwpm} raw → ${row.weightedCwpm} on passage ${row.oralPassageLevel}.` : undefined}>
+                  {oral != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(oral)}{row.oralPassageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.oralPassageLevel})</span>}</span> : '—'}
+                </td>
+                <td className="px-2 py-2 text-center">{row.compNotAdministered ? <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold" title="Not administered — the student was stopped during the passage and never heard the questions.">comp n/a</span> : row.compTotal != null ? <span>{row.compTotal}<span className="text-text-tertiary/50">/{row.compMax ?? '?'}</span></span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.writingBonus > 0 ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writingBonus}<span className="text-text-tertiary/50">/{G1_WRITING_MAX}</span></span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.writtenMC > 0 ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writtenMC}<span className="text-text-tertiary/50">/{G1_MC_MAX}</span></span> : '—'}</td>
+                <td className="px-2 py-2 text-center"
+                  title="Teacher Rating, averaged out of 4. Reference for the placement conversation only — it is not part of the composite, so a student nobody has rated is neither helped nor hurt by that.">
+                  {row.hasAnec ? <span className="text-text-secondary">{(row.anecScore * 4).toFixed(1)}</span> : <span className="text-text-tertiary">{'—'}</span>}
+                </td>
+                <td className={`px-2 py-2 text-center font-bold ${row.isTested ? 'text-navy' : 'text-text-tertiary font-normal italic'}`}
+                  title={!row.isTested ? 'No test evidence yet — this student has not sat any section, so there is nothing to compute.' : undefined}>
+                  {row.weighted != null ? Math.round(row.weighted * 100) : '—'}
+                </td>
+                <td className="px-2 py-2 text-center">
+                  <span className="font-medium text-text-secondary">{Math.round(row.absoluteComposite)}</span>
+                  <span className="block text-[9px] text-text-tertiary">{row.absoluteClass}</span>
+                </td>
+                <td className="px-2 py-2 text-center">{row.percentile != null ? `${(row.percentile * 100).toFixed(0)}%` : <span className="text-text-tertiary">&mdash;</span>}</td>
+                <td className="px-2 py-2 text-center">
+                  {row.suggestedClass == null
+                    ? <span className="inline-block px-1.5 py-0.5 rounded bg-surface-alt text-text-tertiary border border-border text-[9px] font-semibold" title="Not tested yet. This student has no oral, MC or writing score, so there is nothing to rank them on.">not tested</span>
+                    : <><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${move ? 'ring-2 ring-amber-400' : ''}`} style={{ backgroundColor: classToColor(row.suggestedClass) + '40', color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span>{row.suggestedClass !== row.absoluteClass && <span className="block text-[8px] text-amber-600 mt-0.5" title="The rank-based placement and the absolute band disagree for this student.">differs from band</span>}</>}
+                </td>
+                <td className="px-2 py-2 text-center">{row.anec?.teacher_recommends ? <span className={`text-[9px] font-bold ${row.anec.teacher_recommends === 'keep' ? 'text-blue-600' : row.anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{row.anec.teacher_recommends === 'keep' ? 'Keep' : row.anec.teacher_recommends === 'move_up' ? 'Up' : 'Down'}</span> : '—'}</td>
+              </tr>)})}</tbody>
         </table>
       </div>
-
-      <div className="mt-6 bg-surface border border-border rounded-xl p-5">
-        <h4 className="text-[12px] font-semibold text-navy mb-3">Placement Band Descriptions</h4>
-        <div className="grid grid-cols-3 gap-3">
-          {([
-            ['Lily', 'Pre-reader / minimal English. Passage A. Building letter recognition.'],
-            ['Camellia', 'Emerging letter knowledge, some sight words. Passage A-B.'],
-            ['Daisy', 'Solid letter knowledge, beginning reader. Passage B-C.'],
-            ['Sunflower', 'Reading simple connected text. Passage C-D.'],
-            ['Marigold', 'Reading with developing fluency. Passage D-E. CWPM 15-35.'],
-            ['Snapdragon', 'Fluent reader, strong comprehension. Passage E-F. CWPM 30+.'],
-          ] as [EnglishClass, string][]).map(([cls, desc]) => (
-            <div key={cls} className="flex items-start gap-2 text-[11px]">
-              <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0 mt-0.5"
-                style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>
-                {cls}
-              </span>
-              <span className="text-text-secondary">{desc}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test + 15% MC + 40% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. Oral is adjusted for passage difficulty and NAEP; the level in brackets is the passage it came from. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
     </div>
   )
 }
