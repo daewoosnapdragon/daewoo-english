@@ -355,9 +355,45 @@ export function compIsCountable(calc: {
 // grade's content does not carry its own `frustrationCompMax`.
 export const COMP_FRUSTRATION_RATIO = 0.4
 
+// ─── One ceiling for every composite component ───────────────────────
+// Fluency used to be the only ratio allowed above 1.0: its cap was 1.2 while
+// writing (/20), MC (/total) and the teacher rating all topped out at 1.0.
+// That asymmetry is what let a student measured on the oral test alone finish
+// above a fully measured classmate — with the other components missing, their
+// composite WAS the one ratio that had headroom, so it could land above 100
+// while a complete record was pulled back toward 1.0.
+//
+// The shared ceiling is not 1.0. The benchmark these ratios divide by is
+// Snapdragon's end-of-year CWPM target, which a good number of readers clear;
+// flattening everyone above it to 1.0 would erase exactly the differences a
+// placement test exists to find — two students who read the same passage at
+// 158 and 193 would score identically. 1.2 keeps that spread while making the
+// ceiling the same for every component.
+export const COMPONENT_CAP = 1.2
+
+/** Clamp a component ratio to the shared ceiling. Null passes through. */
+export function capComponent(ratio: number | null | undefined): number | null {
+  if (ratio == null) return null
+  return Math.min(ratio, COMPONENT_CAP)
+}
+
 /**
  * The comprehension ratio to feed the composite, or null when comprehension
  * carries nothing at all.
+ *
+ * Weighted by passage difficulty, the same way fluency is. The passage
+ * multiplier used to be applied to CWPM alone, which made 10/10 on the easy
+ * passage and 10/10 on the hard one the identical number — so a student who
+ * answered nine questions about a much harder text scored BELOW one who
+ * answered ten about an easier one. Answering nearly everything about a
+ * harder passage is the stronger performance, and the composite now says so.
+ *
+ * The multiplier read here is `passage_multiplier`, which the oral screen
+ * stores next to `passage_level` — the passage the questions were actually
+ * asked about. That is deliberately not `best_passage_level`: fluency takes
+ * the best attempt across passages, but comprehension belongs to the passage
+ * it was administered on. Records saved before the field existed weight at
+ * 1.0, keeping their old scores rather than being restated after the fact.
  *
  * "Not administered" is NOT missing data. The teacher stops the passage and
  * skips the questions precisely BECAUSE the student was struggling, so the
@@ -366,6 +402,13 @@ export const COMP_FRUSTRATION_RATIO = 0.4
  * classmate who sat the questions and scored badly. It is scored instead at
  * the top of the Frustration band: low, but not the zero of a student who
  * genuinely answered nothing right.
+ *
+ * That floor is left UNWEIGHTED on purpose. It is a statement about the
+ * student — "this reader was in frustration territory" — not about the text,
+ * and multiplying it by the difficulty of a passage they demonstrably could
+ * not sustain would let a failed hard passage outscore an honest middling
+ * result on an easier one. The Band column already reads a passage that was
+ * attempted but not sustained at its effective level.
  *
  * Flagged on the placement table either way, so a student who was stopped for
  * a reason other than ability can be caught by eye.
@@ -376,9 +419,14 @@ export function compRatioForComposite(calc: {
   comp_answered?: number | null
   comp_not_administered?: boolean | null
   comp_frustration_max?: number | null
+  passage_multiplier?: number | null
 } | null | undefined): number | null {
   if (!calc) return null
-  if (compIsCountable(calc)) return calc.comp_total! / (calc.comp_max || 15)
+  if (compIsCountable(calc)) {
+    const ratio = calc.comp_total! / (calc.comp_max || 15)
+    const mult = calc.passage_multiplier != null && calc.passage_multiplier > 0 ? calc.passage_multiplier : 1
+    return capComponent(ratio * mult)
+  }
   if (calc.comp_not_administered) {
     const max = calc.comp_max || 15
     return calc.comp_frustration_max != null

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
-import { classToColor, classToTextColor, domainLabel, compRatioForComposite } from '@/lib/utils'
+import { classToColor, classToTextColor, domainLabel, compRatioForComposite, capComponent, COMPONENT_CAP } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
@@ -1272,24 +1272,24 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
     ENGLISH_CLASSES.forEach(c => { byClass[c] = [] })
     allRows.forEach(r => { if (byClass[r.student.english_class]) byClass[r.student.english_class].push(r) })
     // Sort each class by composite desc
-    Object.values(byClass).forEach(arr => arr.sort((a, b) => b.composite - a.composite))
+    Object.values(byClass).forEach(arr => arr.sort((a, b) => Number(b.isTested) - Number(a.isTested) || b.composite - a.composite))
 
     let pagesHTML = ''
     ENGLISH_CLASSES.forEach(cls => {
       const students = byClass[cls]
       if (students.length === 0) return
       let rowsHTML = students.map((r: any, i: number) => {
-        const move = r.suggestedClass !== r.student.english_class
+        const move = r.suggestedClass != null && r.suggestedClass !== r.student.english_class
         return `<tr style="${move ? 'background:#fef3c7;' : ''}">
           <td style="padding:6px 10px;font-weight:600;color:#647FBC">${i + 1}</td>
           <td style="padding:6px 10px;font-weight:600">${r.student.english_name}<br><span style="color:#94a3b8;font-size:10px">${r.student.korean_name}</span></td>
-          <td style="padding:6px 10px;text-align:center">${r.rawCwpm != null ? Math.round(r.rawCwpm) : '—'}${r.passageLevel ? ' (' + r.passageLevel + ')' : ''}</td>
+          <td style="padding:6px 10px;text-align:center">${r.rawCwpm != null ? Math.round(r.rawCwpm) : '—'}${r.oralPassageLevel ? ' (' + r.oralPassageLevel + ')' : ''}${r.rawCwpm != null && !r.oralIsWeighted ? ' *' : ''}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawWriting ?? '—'}</td>
           <td style="padding:6px 10px;text-align:center">${r.rawMc != null ? r.rawMc + '/' + GRADE_MC_TOTAL : '—'}</td>
-          <td style="padding:6px 10px;text-align:center">${r.rawComp != null ? r.rawComp + '/15' : '—'}</td>
-          <td style="padding:6px 10px;text-align:center;font-weight:700;color:#647FBC">${(r.composite * 100).toFixed(0)}</td>
-          <td style="padding:6px 10px;text-align:center">${Math.round(r.percentile * 100)}%</td>
-          <td style="padding:6px 10px;text-align:center;font-weight:600;${move ? 'color:#d97706' : ''}">${r.suggestedClass}${move ? ' *' : ''}</td>
+          <td style="padding:6px 10px;text-align:center">${r.rawComp != null ? r.rawComp + '/' + (r.compMax || 15) : '—'}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:700;color:${r.isTested ? '#647FBC' : '#94a3b8'}">${(r.composite * 100).toFixed(0)}</td>
+          <td style="padding:6px 10px;text-align:center">${r.percentile != null ? Math.round(r.percentile * 100) + '%' : '—'}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:600;${r.suggestedClass == null ? 'color:#94a3b8;font-style:italic' : move ? 'color:#d97706' : ''}">${r.suggestedClass ?? 'not tested'}${move ? ' *' : ''}</td>
           <td style="padding:6px 10px;text-align:center;font-size:10px;color:${r.anec?.teacher_recommends === 'move_up' ? '#16a34a' : r.anec?.teacher_recommends === 'move_down' ? '#dc2626' : '#6b7280'}">${r.anec?.teacher_recommends === 'keep' ? 'KEEP' : r.anec?.teacher_recommends === 'move_up' ? 'UP' : r.anec?.teacher_recommends === 'move_down' ? 'DOWN' : '—'}</td>
         </tr>`
       }).join('')
@@ -1385,11 +1385,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
 
   const rows = useMemo(() => {
     const r = students.map(s => computeRow(s, scores, anecdotals, enhancedBenchmarks, semGrades, levelTest.grade, excludedQuestions, versionKeyForTest(levelTest)))
-    const sorted = [...r].sort((a, b) => a.composite - b.composite)
-    return sorted.map((row, idx) => ({
-      ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
-      suggestedClass: suggestClass(row, idx, sorted.length),
-    }))
+    return rankRows(r)
   }, [students, scores, anecdotals, enhancedBenchmarks, semGrades, excludedQuestions])
 
   // Class averages for hover card comparison bars
@@ -1416,16 +1412,18 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   const displayed = useMemo(() => {
     let res = [...rows]
     if (filterClass !== 'all') res = res.filter(r => r.student.english_class === filterClass)
-    if (filterPassage !== 'all') res = res.filter(r => r.passageLevel === filterPassage)
-    if (showBorderline) res = res.filter(r => r.suggestedClass !== r.student.english_class)
+    if (filterPassage !== 'all') res = res.filter(r => (r.oralPassageLevel ?? r.passageLevel) === filterPassage)
+    if (showBorderline) res = res.filter(r => r.suggestedClass != null && r.suggestedClass !== r.student.english_class)
     switch (sortBy) {
-      case 'composite': res.sort((a, b) => b.composite - a.composite); break
-      case 'percentile': res.sort((a, b) => b.percentile - a.percentile); break
+      // Untested rows sort to the bottom of every score-based order -- they
+      // have no rank, and their composite is a teacher rating, not a result.
+      case 'composite': res.sort((a, b) => Number(b.isTested) - Number(a.isTested) || b.composite - a.composite); break
+      case 'percentile': res.sort((a, b) => (b.percentile ?? -1) - (a.percentile ?? -1)); break
       case 'cwpm': res.sort((a, b) => (b.rawCwpm ?? -1) - (a.rawCwpm ?? -1)); break
       case 'comp': res.sort((a, b) => (b.rawComp ?? -1) - (a.rawComp ?? -1)); break
       case 'writing': res.sort((a, b) => (b.rawWriting ?? -1) - (a.rawWriting ?? -1)); break
       case 'mc': res.sort((a, b) => (b.rawMc ?? -1) - (a.rawMc ?? -1)); break
-      case 'suggested': { const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }; res.sort((a, b) => (classOrder[a.suggestedClass] || 99) - (classOrder[b.suggestedClass] || 99)); break }
+      case 'suggested': { const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }; res.sort((a, b) => (a.suggestedClass ? classOrder[a.suggestedClass] || 99 : 99) - (b.suggestedClass ? classOrder[b.suggestedClass] || 99 : 99)); break }
       case 'name': res.sort((a, b) => a.student.english_name.localeCompare(b.student.english_name)); break
     }
     return res
@@ -1440,14 +1438,25 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
         <p className="text-[12px] font-semibold text-blue-800 mb-1">How Composite Scores Work</p>
         <p className="text-[11px] text-blue-700">
           The composite score combines four data points to create a single number for ranking students across the grade:
-          <span className="font-semibold"> 40% Oral Test</span> (CWPM, word reading, comprehension -- scored against the grade-wide Snapdragon benchmark for cross-class comparability),
+          <span className="font-semibold"> 40% Oral Test</span> (60% fluency, 40% comprehension, plus word reading where it was administered &mdash; scored against the grade-wide Snapdragon benchmark for cross-class comparability),
           <span className="font-semibold"> 15% Written MC</span> (multiple choice{Number(levelTest.grade) === 2 ? ', phonics, sentences' : ''}),
           <span className="font-semibold"> 35% Writing Rubric</span>, and
           <span className="font-semibold"> 10% Teacher Ratings</span> (anecdotal observations).
-          All components use absolute scales so students from different classes can be fairly compared.
-          When a component is missing, its weight is redistributed proportionally among the available components &mdash;
-          so a student with no Teacher Rating (a new teacher who has rated nobody, say) is ranked on the rest of their
-          evidence, and the missing rating neither helps nor hurts them.
+          All components use absolute scales so students from different classes can be fairly compared, and every one of
+          them shares the same {COMPONENT_CAP.toFixed(1)}&times; ceiling &mdash; reading well past the benchmark still shows,
+          but no single component has more headroom than the others.
+          <span className="block mt-1.5">
+            <span className="font-semibold">Passage difficulty applies to comprehension as well as fluency.</span> Both are
+            multiplied by the level of the passage the student read, so 9/10 on a hard passage outranks 10/10 on an easy one
+            rather than falling below it.
+          </span>
+          <span className="block mt-1.5">
+            When a component is missing, its weight is redistributed proportionally among the available components &mdash;
+            so a student with no Teacher Rating (a new teacher who has rated nobody, say) is ranked on the rest of their
+            evidence, and the missing rating neither helps nor hurts them. A student with <span className="font-semibold">only</span> a
+            Teacher Rating is a different case: they have not sat the test, so they are left out of the ranking entirely and
+            shown as <span className="italic">not tested</span> rather than ranked on an opinion.
+          </span>
         </p>
       </div>
       <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -1473,9 +1482,9 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           exportToCSV(`leveling-G${levelTest.grade}`,
             ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Writing', 'MC', 'Comp', 'Anecdotal', 'Composite', 'Rank', 'Suggested'],
             displayed.map(r => [r.student.english_name, r.student.korean_name, r.student.english_class,
-              r.passageLevel ?? '', r.rawCwpm != null ? Math.round(r.rawCwpm) : '', r.rawWriting ?? '', r.rawMc ?? '', r.rawComp ?? '',
+              r.oralPassageLevel ?? '', r.rawCwpm != null ? Math.round(r.rawCwpm) : '', r.rawWriting ?? '', r.rawMc ?? '', r.rawComp ?? '',
               r.hasAnec ? (r.anecScore * 100).toFixed(0) : '', (r.composite * 100).toFixed(0),
-              Math.round(r.percentile * 100), r.suggestedClass]))
+              r.percentile != null ? Math.round(r.percentile * 100) : '', r.suggestedClass ?? 'not tested']))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
           <Download size={12} /> CSV
         </button>
@@ -1508,7 +1517,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           <thead><tr className="bg-surface-alt">
             <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px]">Student</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Current</th>
-            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Oral</th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Best attempt across passages, adjusted for passage difficulty and NAEP. Not the stopwatch number -- hover a cell to see the raw CWPM it came from.">Oral<br/><span className="normal-case">(adj)</span></th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
@@ -1521,14 +1530,23 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Rec.</th>
           </tr></thead>
           <tbody>{displayed.map(row => {
-            const move = row.suggestedClass !== row.student.english_class
+            const move = row.suggestedClass != null && row.suggestedClass !== row.student.english_class
             const flags = row.outlierFlags || []
             return (
               <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${move ? 'bg-amber-50/30' : ''} ${flags.length > 0 ? 'bg-red-50/20' : ''}`}>
                 <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" title={`Outlier: ${flags.join(', ')}`} />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span></td>
                 <td className="px-2 py-2 text-center"><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass) + '40', color: classToTextColor(row.student.english_class as EnglishClass) }}>{row.student.english_class}</span></td>
-                <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}>{row.rawCwpm != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(row.rawCwpm)}{row.passageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.passageLevel})</span>}</span> : '—'}</td>
-                <td className="px-2 py-2 text-center">{row.compUnmeasured ? <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold" title="Not administered — the student was stopped during the passage and never heard the questions. Scored at the top of the Frustration band in the composite, not dropped.">comp n/a</span> : row.rawComp != null ? <span>{row.rawComp}<span className="text-text-tertiary/50">/{row.calc?.comp_max || 15}</span></span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}
+                  title={row.rawCwpm == null ? undefined : row.oralIsWeighted
+                    ? `Adjusted CWPM: ${row.unweightedCwpm != null ? `${Math.round(row.unweightedCwpm)} raw` : 'raw'}${row.passageMultiplier ? ` \u00d7 ${row.passageMultiplier.toFixed(2)} passage` : ''} (and NAEP) \u2192 ${Math.round(row.rawCwpm)}. Level ${row.oralPassageLevel ?? '?'} is the passage this best attempt came from${row.oralPassageLevel && row.passageLevel && row.oralPassageLevel !== row.passageLevel ? `; the student finished on ${row.passageLevel}` : ''}.`
+                    : `Unadjusted CWPM \u2014 this record predates passage weighting, so no difficulty multiplier has been applied.`}>
+                  {row.rawCwpm != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(row.rawCwpm)}{row.oralPassageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.oralPassageLevel})</span>}{!row.oralIsWeighted && <span className="text-amber-600 text-[9px] ml-0.5" title="Unadjusted">*</span>}</span> : '—'}
+                </td>
+                <td className="px-2 py-2 text-center"
+                  title={row.compUnmeasured || row.rawComp == null ? undefined
+                    : `Raw score. The composite weights it by passage difficulty like fluency${row.passageMultiplier ? ` \u2014 \u00d7 ${row.passageMultiplier.toFixed(2)} for passage ${row.passageLevel ?? '?'}, giving ${(row.compRatio ?? 0).toFixed(2)}` : ', but this record predates the multiplier so it counts unweighted'}.`}>
+                  {row.compUnmeasured ? <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold" title="Not administered — the student was stopped during the passage and never heard the questions. Scored at the top of the Frustration band in the composite, not dropped, and left unweighted by passage difficulty.">comp n/a</span> : row.rawComp != null ? <span>{row.rawComp}<span className="text-text-tertiary/50">/{row.calc?.comp_max || 15}</span></span> : '—'}
+                </td>
                 <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.rawWriting != null ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawWriting}<span className="text-text-tertiary/50">/20</span></span> : '—'}</td>
                 <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.rawMc != null ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.rawMc}<span className="text-text-tertiary/50">/{GRADE_MC_TOTAL}</span></span> : '—'}</td>
                 {excludedQuestions.length > 0 && (
@@ -1540,7 +1558,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                   title={row.hasAnec ? undefined : 'Not rated. The 10% teacher weight is redistributed across this student\u2019s other components, so the missing rating neither helps nor hurts them.'}>
                   {row.hasAnec ? (row.anecScore * 4).toFixed(1) : <span className="text-text-tertiary">{'\u2014'}</span>}
                 </td>
-                <td className="px-2 py-2 text-center font-bold text-navy" title={excludedQuestions.length > 0 ? `Composite adjusted: ${excludedQuestions.length} question${excludedQuestions.length !== 1 ? 's' : ''} excluded from MC scoring` : undefined}>{excludedQuestions.length > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-0.5 align-super" />}{(row.composite * 100).toFixed(0)}</td>
+                <td className={`px-2 py-2 text-center font-bold ${row.isTested ? 'text-navy' : 'text-text-tertiary font-normal italic'}`} title={!row.isTested ? 'Teacher rating only \u2014 this student has not sat the test, so this number is not a test result and is not ranked.' : excludedQuestions.length > 0 ? `Composite adjusted: ${excludedQuestions.length} question${excludedQuestions.length !== 1 ? 's' : ''} excluded from MC scoring` : undefined}>{row.isTested && excludedQuestions.length > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-0.5 align-super" />}{(row.composite * 100).toFixed(0)}</td>
                 {hasBands && (
                   <td className="px-2 py-2 text-center">
                     {row.band ? (
@@ -1554,13 +1572,17 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                     ) : <span className="text-text-tertiary">&mdash;</span>}
                   </td>
                 )}
-                <td className="px-2 py-2 text-center">{(row.percentile * 100).toFixed(0)}%</td>
-                <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${move ? 'ring-2 ring-amber-400' : ''}`} style={{ backgroundColor: classToColor(row.suggestedClass) + '40', color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span>{row.band && row.band.suggestedClass !== row.suggestedClass && <span className="block text-[8px] text-amber-600 mt-0.5" title="The rank-based placement and the absolute band disagree for this student.">differs from band</span>}</td>
+                <td className="px-2 py-2 text-center">{row.percentile != null ? `${(row.percentile * 100).toFixed(0)}%` : <span className="text-text-tertiary">&mdash;</span>}</td>
+                <td className="px-2 py-2 text-center">
+                  {row.suggestedClass == null
+                    ? <span className="inline-block px-1.5 py-0.5 rounded bg-surface-alt text-text-tertiary border border-border text-[9px] font-semibold" title="Not tested yet. A teacher rating on its own is not enough to rank a student against classmates who have sat the test, so this student is left out of the ranking entirely rather than placed on an opinion.">not tested</span>
+                    : <><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${move ? 'ring-2 ring-amber-400' : ''}`} style={{ backgroundColor: classToColor(row.suggestedClass) + '40', color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span>{row.band && row.band.suggestedClass !== row.suggestedClass && <span className="block text-[8px] text-amber-600 mt-0.5" title="The rank-based placement and the absolute band disagree for this student.">differs from band</span>}</>}
+                </td>
                 <td className="px-2 py-2 text-center">{row.anec?.teacher_recommends ? <span className={`text-[9px] font-bold ${row.anec.teacher_recommends === 'keep' ? 'text-blue-600' : row.anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{row.anec.teacher_recommends === 'keep' ? 'Keep' : row.anec.teacher_recommends === 'move_up' ? 'Up' : 'Down'}</span> : '—'}</td>
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = 40% oral test + 15% MC + 35% writing rubric + 10% teacher rating. Rank = position within the grade (higher = stronger). <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; it counts as the top of the Frustration band in the composite, not as a zero and not as missing. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. {hasBands && <>Band = absolute score from the passage the student sustained, reference only; it does not decide placement. </>} <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 40% oral test (60% fluency / 40% comprehension) + 15% MC + 35% writing rubric + 10% teacher rating; every component capped at {COMPONENT_CAP.toFixed(1)}&times; benchmark. Rank = position within the grade (higher = stronger), among tested students only {'\u2014'} a student with nothing but a teacher rating shows as <span className="italic">not tested</span> and takes no rank slot. Oral is the best attempt across passages, already adjusted for passage difficulty and NAEP; the level in brackets is the passage that attempt came from, and <span className="text-amber-600 font-semibold">*</span> marks an older record saved before weighting existed. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; it counts as the top of the Frustration band in the composite, not as a zero and not as missing. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. {hasBands && <>Band = absolute score from the passage the student sustained, reference only; it does not decide placement. </>} <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
     </div>
   )
 }
@@ -1684,11 +1706,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
     if (students.length === 0) return []
     const enhBench: Record<string, any> = { ...benchmarks }
     const r = students.map(s => computeRow(s, scores, anecdotals, enhBench, semGrades, levelTest.grade, meetingExcludedQ, versionKeyForTest(levelTest)))
-    const sorted = [...r].sort((a, b) => a.composite - b.composite)
-    return sorted.map((row, idx) => ({
-      ...row, percentile: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
-      suggestedClass: suggestClass(row, idx, sorted.length),
-    }))
+    return rankRows(r)
   }, [students, scores, anecdotals, benchmarks, semGrades, meetingExcludedQ])
 
   // Class averages for hover card comparison bars
@@ -1831,6 +1849,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
               const s = students.find(st => st.id === sid)
               const sc = scores[sid]; const cl = sc?.calculated_metrics || {}; const an = anecdotals[sid]; const sg = semGrades[sid] || []
               const rawCwpm = cl.best_weighted_cwpm ?? cl.weighted_cwpm ?? cl.cwpm ?? sc?.raw_scores?.passage_cwpm ?? sc?.raw_scores?.orf_cwpm ?? null
+              // Label the adjusted number with the attempt it actually came from
+              const cwpmIsWeighted = cl.best_weighted_cwpm != null || cl.weighted_cwpm != null
               const rawWriting = sc?.raw_scores?.writing ?? null
               const rawMc = sc?.raw_scores?.written_mc ?? null
               const rawComp = cl.comp_total ?? null
@@ -1838,7 +1858,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
               const anVals = an ? [an.receptive_language, an.productive_language, an.engagement_pace, an.placement_recommendation].filter((v: any) => v != null) as number[] : []
               const anAvg = anVals.length > 0 ? anVals.reduce((a: number, b: number) => a + b, 0) / anVals.length : null
               const row = rows.find(r => r.student.id === sid)
-              return { sid, student: s, color: COLORS[i % COLORS.length], rawCwpm, rawWriting, rawMc, rawComp, gradeAvg, anAvg, an, passageLevel: cl.passage_level, composite: row?.composite, percentile: row?.percentile, suggestedClass: row?.suggestedClass }
+              return { sid, student: s, color: COLORS[i % COLORS.length], rawCwpm, rawWriting, rawMc, rawComp, gradeAvg, anAvg, an, passageLevel: (cwpmIsWeighted ? cl.best_passage_level : null) ?? cl.passage_level, composite: row?.composite, percentile: row?.percentile, suggestedClass: row?.suggestedClass }
             })
             // Find max oral value for scaling
             const maxOral = Math.max(...compStudents.map(s => s.rawCwpm ?? 0), ...(Object.values(hoverClassAverages).map(a => a.oral ?? 0)), 1)
@@ -1986,7 +2006,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                       <div className="flex-1 min-w-0">{(() => {
                         const row = rows.find(r => r.student.id === student.id)
                         return <LevelingHoverCard studentId={student.id} studentName={student.english_name} koreanName={student.korean_name} className={student.english_class} grade={student.grade}
-                          levelTestData={row ? { rawCwpm: row.rawCwpm, rawWriting: row.rawWriting, rawMc: row.rawMc, rawComp: row.rawComp, passageLevel: row.passageLevel, composite: row.composite, percentile: row.percentile ?? null, suggestedClass: row.suggestedClass ?? null, classAverages: hoverClassAverages, mcTotal: GRADE_MC_TOTAL } : undefined}
+                          levelTestData={row ? { rawCwpm: row.rawCwpm, rawWriting: row.rawWriting, rawMc: row.rawMc, rawComp: row.rawComp, passageLevel: row.oralPassageLevel ?? row.passageLevel, composite: row.composite, percentile: row.percentile ?? null, suggestedClass: row.suggestedClass ?? null, classAverages: hoverClassAverages, mcTotal: GRADE_MC_TOTAL } : undefined}
                           trigger={<p className="text-[10px] font-semibold text-navy truncate cursor-pointer hover:underline">{student.english_name}</p>}
                         />
                       })()}<p className="text-[8px] text-text-tertiary truncate">{student.korean_name}</p></div>
@@ -2064,6 +2084,46 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   )
 }
 
+// ─── Inside the oral score ───────────────────────────────────────────
+// The oral score used to be a plain mean of whatever oral ratios existed,
+// which had two problems. Comprehension -- a five-question, ten-point
+// instrument -- carried exactly as much of the oral score as fluency did; and
+// because the mean ran over "whatever is present", a student who also sat the
+// word-reading list silently had comprehension drop from half the oral score
+// to a third, while a classmate who skipped that list kept it at half. Two
+// students were being ranked on differently mixed numbers.
+//
+// These are relative weights, renormalized over the components a student
+// actually has. With no word-reading list -- the usual case above Grade 2 --
+// fluency and comprehension land on exactly 60/40.
+const ORAL_WEIGHTS = { fluency: 0.60, comprehension: 0.40, wordReading: 0.15 }
+
+// ─── The composite itself ────────────────────────────────────────────
+const COMPOSITE_WEIGHTS = { oral: 0.40, mc: 0.15, writing: 0.35, anecdotal: 0.10 }
+
+/** Weighted mean over the parts that exist, renormalized to their own total. */
+function weightedMean(parts: { score: number | null; weight: number }[]): number | null {
+  const present = parts.filter(p => p.score != null) as { score: number; weight: number }[]
+  if (present.length === 0) return null
+  const total = present.reduce((sum, p) => sum + p.weight, 0)
+  if (total <= 0) return present.reduce((sum, p) => sum + p.score, 0) / present.length
+  return present.reduce((sum, p) => sum + p.score * (p.weight / total), 0)
+}
+
+/**
+ * Has this student sat any part of the test?
+ *
+ * A teacher rating is an opinion, not a measurement. Ranking a student who has
+ * only been rated against classmates who have actually read puts a single 4/4
+ * opinion at the top of the grade -- which is where every untested student sat
+ * before this, all tied at a composite of 100 and then split across different
+ * suggested classes purely by the order they happened to fall in the array.
+ * Rank, percentile and suggested class need at least one measured component.
+ */
+function isTestedRow(row: { oralScoreRaw: number | null; mcScoreRaw: number | null; writingRubricRaw: number | null }): boolean {
+  return row.oralScoreRaw != null || row.mcScoreRaw != null || row.writingRubricRaw != null
+}
+
 function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, grade: number | string, excludedQuestions?: number[], versionKey?: string) {
   const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
   const gradeMcTotal = getWrittenMcTotal(grade, calc.written_mc_max)
@@ -2073,14 +2133,27 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   // Using per-class benchmarks was causing lower-class students who slightly exceed their
   // easy benchmark to outscore higher-class students who are objectively much stronger.
   const rawCwpmValue = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+  // The Oral column shows this number, so it has to say what the number IS.
+  // The first two links of that chain are already multiplied by passage
+  // difficulty and NAEP; the rest are unadjusted CWPM off older records. The
+  // column used to print either one under a bare "(C)" label, so an adjusted
+  // 158 read as though the student had been clocked at 158 words a minute.
+  const oralIsWeighted = calc.best_weighted_cwpm != null || calc.weighted_cwpm != null
+  const unweightedCwpm = calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+  // And the level shown has to be the level the number came FROM. Fluency
+  // takes the best attempt across passages, which is often not the passage the
+  // student finished on -- labelling a best-of-E score with the current "(A)"
+  // is how a row ends up looking impossible.
+  const oralPassageLevel = (oralIsWeighted ? calc.best_passage_level : null) ?? calc.passage_level ?? null
   // Use the highest class benchmark (Snapdragon) as the shared reference for the grade
   const snapBench = benchmarks['Snapdragon'] || {}
   const sharedCwpmEnd = snapBench.cwpm_end > 0 ? snapBench.cwpm_end : (bench.cwpm_end > 0 ? bench.cwpm_end : 0)
-  // Cap at 1.2 — exceeding the benchmark is great, but uncapped ratios distort composite
-  const cwpmRatio = rawCwpmValue != null && sharedCwpmEnd > 0 ? Math.min(rawCwpmValue / sharedCwpmEnd, 1.2) : null
+  // Capped at the ceiling every component shares -- see COMPONENT_CAP. Exceeding
+  // the benchmark is real and should show, but uncapped ratios distort the composite.
+  const cwpmRatio = rawCwpmValue != null && sharedCwpmEnd > 0 ? capComponent(rawCwpmValue / sharedCwpmEnd) : null
   // Written test: ALL students take the SAME test, so use raw % of max possible (not class benchmarks)
   // This ensures cross-class comparability — a 20/40 MC is 50% regardless of which class the student is in
-  const writingRatio = sc.writing != null ? sc.writing / 20 : null
+  const writingRatio = sc.writing != null ? capComponent(sc.writing / 20) : null
 
   // ── Adjusted MC: recalculate excluding bad questions ──
   const excluded = excludedQuestions && excludedQuestions.length > 0 ? new Set(excludedQuestions) : null
@@ -2101,15 +2174,15 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
       })
       adjMcScore = adjCorrect
       adjMcMax = adjMax
-      mcPct = adjMax > 0 ? adjCorrect / adjMax : null
+      mcPct = adjMax > 0 ? capComponent(adjCorrect / adjMax) : null
     } else {
-      mcPct = sc.written_mc != null ? sc.written_mc / gradeMcTotal : null
+      mcPct = sc.written_mc != null ? capComponent(sc.written_mc / gradeMcTotal) : null
     }
   } else {
-    mcPct = sc.written_mc != null ? sc.written_mc / gradeMcTotal : null
+    mcPct = sc.written_mc != null ? capComponent(sc.written_mc / gradeMcTotal) : null
   }
 
-  const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? sc.word_reading_correct / sc.word_reading_attempted : null
+  const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? capComponent(sc.word_reading_correct / sc.word_reading_attempted) : null
   // Comprehension: comp_total / comp_max. A scored 0 counts. "Not scored yet"
   // carries nothing. "Not administered" is scored at the top of the Frustration
   // band rather than dropped -- see compRatioForComposite.
@@ -2121,13 +2194,18 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   // version may move again -- so read the max off the score where the oral
   // screen recorded it, and only fall back to the legacy totals for records
   // saved before it did.
-  const phonicsRatio = studentGrade === 2 && calc.phonics_total != null && calc.phonics_total > 0 ? calc.phonics_total / (calc.phonics_max || 25) : null
-  const sentRatio = studentGrade === 2 && calc.sentence_total != null && calc.sentence_total > 0 ? calc.sentence_total / (calc.sentence_max || 35) : null
+  const phonicsRatio = studentGrade === 2 && calc.phonics_total != null && calc.phonics_total > 0 ? capComponent(calc.phonics_total / (calc.phonics_max || 25)) : null
+  const sentRatio = studentGrade === 2 && calc.sentence_total != null && calc.sentence_total > 0 ? capComponent(calc.sentence_total / (calc.sentence_max || 35)) : null
   const testRatios = [cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, phonicsRatio, sentRatio].filter(v => v != null) as number[]
   const testScore = testRatios.length > 0 ? testRatios.reduce((a, b) => a + b, 0) / testRatios.length : 0.5
-  // Separate oral and written test scores for composite weighting
-  const oralRatios = [cwpmRatio, wrAcc, compRatio].filter(v => v != null) as number[]
-  const oralScore = oralRatios.length > 0 ? oralRatios.reduce((a, b) => a + b, 0) / oralRatios.length : null
+  // Oral: fluency and comprehension on explicit weights rather than a plain
+  // mean, so the mix does not shift with which sections a student happened to
+  // sit -- see ORAL_WEIGHTS.
+  const oralScore = weightedMean([
+    { score: cwpmRatio, weight: ORAL_WEIGHTS.fluency },
+    { score: compRatio, weight: ORAL_WEIGHTS.comprehension },
+    { score: wrAcc, weight: ORAL_WEIGHTS.wordReading },
+  ])
   // Written test split into MC and writing rubric for independent weighting
   const mcRatios = [mcPct, phonicsRatio, sentRatio].filter(v => v != null) as number[]
   const mcScore = mcRatios.length > 0 ? mcRatios.reduce((a, b) => a + b, 0) / mcRatios.length : null
@@ -2144,24 +2222,18 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   const anecScore = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
   // Composite: 40% oral + 15% MC + 35% writing rubric + 10% teacher rating = 100%
   // When components are missing, redistribute proportionally among available components
-  const hasOral = oralScore != null
-  const hasMc = mcScore != null
-  const hasWritingRubric = writingRubricScore != null
   const hasAnec = av.length > 0
   const hasGrades = gradeScore != null
   const gScore = gradeScore ?? 0.5
-  let composite: number
-  const parts: { score: number; weight: number }[] = []
-  if (hasOral) parts.push({ score: oralScore, weight: 0.40 })
-  if (hasMc) parts.push({ score: mcScore, weight: 0.15 })
-  if (hasWritingRubric) parts.push({ score: writingRubricScore, weight: 0.35 })
-  if (hasAnec) parts.push({ score: anecScore, weight: 0.10 })
-  if (parts.length > 0) {
-    const totalWeight = parts.reduce((s, p) => s + p.weight, 0)
-    composite = parts.reduce((s, p) => s + p.score * (p.weight / totalWeight), 0)
-  } else {
-    composite = 0.5
-  }
+  // Whether the student has sat any part of the test. A teacher rating on its
+  // own does not make them rankable -- see isTestedRow.
+  const isTested = isTestedRow({ oralScoreRaw: oralScore, mcScoreRaw: mcScore, writingRubricRaw: writingRubricScore })
+  const composite = weightedMean([
+    { score: oralScore, weight: COMPOSITE_WEIGHTS.oral },
+    { score: mcScore, weight: COMPOSITE_WEIGHTS.mc },
+    { score: writingRubricScore, weight: COMPOSITE_WEIGHTS.writing },
+    { score: hasAnec ? anecScore : null, weight: COMPOSITE_WEIGHTS.anecdotal },
+  ]) ?? 0.5
   // Outlier flags: score is 0 or below 10% of class auto-median
   // Only flag when enough classmates have data for that component (>=3 or >=50% of class) to make the median meaningful
   const outlierFlags: string[] = []
@@ -2193,7 +2265,33 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
       }, bandScales)
     : null
 
-  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, hasAnec, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compUnmeasured, passageLevel: calc.passage_level ?? null, hasGrades, outlierFlags, band }
+  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, hasAnec, isTested, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compMax: calc.comp_max ?? null, compUnmeasured, passageLevel: calc.passage_level ?? null, oralPassageLevel, oralIsWeighted, unweightedCwpm, passageMultiplier: calc.passage_multiplier ?? null, hasGrades, outlierFlags, band }
+}
+
+/**
+ * Attach rank, percentile and a suggested class -- to the students who have
+ * actually been tested.
+ *
+ * Untested students are not merely skipped; they are kept out of the sorted
+ * array entirely, so they do not consume rank positions and shift everyone
+ * else's percentile. They come back with nulls, and the table shows them as
+ * "not tested" rather than inventing a placement for them.
+ */
+function rankRows<T extends { student: Student; composite: number; isTested: boolean }>(r: T[]) {
+  const ranked = r.filter(row => row.isTested).sort((a, b) => a.composite - b.composite)
+  const byStudent = new Map<string, { percentile: number; suggestedClass: EnglishClass }>()
+  ranked.forEach((row, idx) => {
+    byStudent.set(row.student.id, {
+      percentile: ranked.length > 1 ? idx / (ranked.length - 1) : 0.5,
+      suggestedClass: suggestClass(row, idx, ranked.length),
+    })
+  })
+  return [...r]
+    .sort((a, b) => a.composite - b.composite)
+    .map(row => {
+      const rank = byStudent.get(row.student.id)
+      return { ...row, percentile: rank ? rank.percentile : null, suggestedClass: rank ? rank.suggestedClass : null }
+    })
 }
 
 function suggestClass(row: any, idx: number, total: number): EnglishClass {
@@ -2208,6 +2306,7 @@ function suggestClass(row: any, idx: number, total: number): EnglishClass {
 function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, w: { oral: number; mc: number; writing: number; anecdotal: number }, grade: number | string): Record<string, EnglishClass> {
   const result: Record<string, EnglishClass> = {}
   const metrics: Record<string, number> = {}
+  const tested: Record<string, boolean> = {}
   // Use Snapdragon benchmark as shared oral reference for cross-class comparability
   const snapBench = benchmarks['Snapdragon'] || {}
   students.forEach(s => {
@@ -2216,38 +2315,39 @@ function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: 
     const gradeMcTotal = getWrittenMcTotal(grade, calc.written_mc_max)
     const rawCwpmValue = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
     const sharedCwpmEnd = snapBench.cwpm_end > 0 ? snapBench.cwpm_end : (bench.cwpm_end > 0 ? bench.cwpm_end : 0)
-    // Oral components
-    const oralRatios: number[] = []
-    if (rawCwpmValue != null && sharedCwpmEnd > 0) oralRatios.push(Math.min(rawCwpmValue / sharedCwpmEnd, 1.2))
-    if (sc.word_reading_correct != null && sc.word_reading_attempted > 0) oralRatios.push(sc.word_reading_correct / sc.word_reading_attempted)
-    const compAuto = compRatioForComposite(calc)
-    if (compAuto != null) oralRatios.push(compAuto)
-    const oralScore = oralRatios.length > 0 ? oralRatios.reduce((a, b) => a + b, 0) / oralRatios.length : null
+    // Oral components -- same explicit weights and shared ceiling as the
+    // placement table, so the board and the table cannot drift apart.
+    const oralScore = weightedMean([
+      { score: rawCwpmValue != null && sharedCwpmEnd > 0 ? capComponent(rawCwpmValue / sharedCwpmEnd) : null, weight: ORAL_WEIGHTS.fluency },
+      { score: compRatioForComposite(calc), weight: ORAL_WEIGHTS.comprehension },
+      { score: sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? capComponent(sc.word_reading_correct / sc.word_reading_attempted) : null, weight: ORAL_WEIGHTS.wordReading },
+    ])
     // Written test split: MC and writing rubric scored separately
     const mcRatios: number[] = []
-    if (sc.written_mc != null) mcRatios.push(sc.written_mc / gradeMcTotal)
-    const sg = Number(s.grade); if (sg === 2 && calc.phonics_total != null && calc.phonics_total > 0) mcRatios.push(calc.phonics_total / (calc.phonics_max || 25)); if (sg === 2 && calc.sentence_total != null && calc.sentence_total > 0) mcRatios.push(calc.sentence_total / (calc.sentence_max || 35))
+    if (sc.written_mc != null) mcRatios.push(capComponent(sc.written_mc / gradeMcTotal)!)
+    const sg = Number(s.grade); if (sg === 2 && calc.phonics_total != null && calc.phonics_total > 0) mcRatios.push(capComponent(calc.phonics_total / (calc.phonics_max || 25))!); if (sg === 2 && calc.sentence_total != null && calc.sentence_total > 0) mcRatios.push(capComponent(calc.sentence_total / (calc.sentence_max || 35))!)
     const mcScoreVal = mcRatios.length > 0 ? mcRatios.reduce((a, b) => a + b, 0) / mcRatios.length : null
-    const writingRubricVal = sc.writing != null ? sc.writing / 20 : null
+    const writingRubricVal = sc.writing != null ? capComponent(sc.writing / 20) : null
     // Teacher rating
     const av = [anec.receptive_language, anec.productive_language, anec.engagement_pace, anec.placement_recommendation].filter((v: any) => v != null) as number[]
     const as2 = av.length > 0 ? av.reduce((a: number, b: number) => a + b, 0) / (av.length * 4) : 0.5
     const hasAnec = av.length > 0
     // Composite: 40% oral + 15% MC + 35% writing rubric + 10% teacher rating
     // Redistribute proportionally when components are missing
-    const parts: { score: number; weight: number }[] = []
-    if (oralScore != null) parts.push({ score: oralScore, weight: w.oral })
-    if (mcScoreVal != null) parts.push({ score: mcScoreVal, weight: w.mc })
-    if (writingRubricVal != null) parts.push({ score: writingRubricVal, weight: w.writing })
-    if (hasAnec) parts.push({ score: as2, weight: w.anecdotal })
-    if (parts.length > 0) {
-      const totalWeight = parts.reduce((s, p) => s + p.weight, 0)
-      metrics[s.id] = parts.reduce((s, p) => s + p.score * (p.weight / totalWeight), 0)
-    } else {
-      metrics[s.id] = 0.5
-    }
+    metrics[s.id] = weightedMean([
+      { score: oralScore, weight: w.oral },
+      { score: mcScoreVal, weight: w.mc },
+      { score: writingRubricVal, weight: w.writing },
+      { score: hasAnec ? as2 : null, weight: w.anecdotal },
+    ]) ?? 0.5
+    tested[s.id] = isTestedRow({ oralScoreRaw: oralScore, mcScoreRaw: mcScoreVal, writingRubricRaw: writingRubricVal })
   })
-  const sorted = students.map(s => ({ id: s.id, m: metrics[s.id] || 0 })).sort((a, b) => a.m - b.m)
+  // Only tested students are ranked into the sextiles. An untested student
+  // keeps the class they are already in, so the board suggests no move for
+  // them rather than sorting them on a teacher rating alone -- and so they do
+  // not push a tested classmate across a class boundary by taking up a slot.
+  const sorted = students.filter(s => tested[s.id]).map(s => ({ id: s.id, m: metrics[s.id] || 0 })).sort((a, b) => a.m - b.m)
+  students.forEach(s => { if (!tested[s.id]) result[s.id] = s.english_class as EnglishClass })
   const PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
   sorted.forEach((item, idx) => {
     const s = students.find(st => st.id === item.id)!; const sc = scores[s.id]?.raw_scores || {}
