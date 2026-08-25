@@ -252,7 +252,7 @@ const F26_COMP_QUESTIONS: Record<G3PassageLevel, G3CompQuestion[]> = {
   ],
   E: [
     { q: 'What can a mantis shrimp\'s claw do in a flash?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("hit something")', 'Snap shut — the crab-shell detail is a bonus, not required'] },
-    { q: 'What can some mantis shrimp break through with just one hit?', dok: 'DOK 1', anchors: ['Wrong', 'A crab shell — a real detail from the text, but not the one asked for', 'Aquarium glass'] },
+    { q: 'What can mantis shrimp see that humans cannot?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("more things," "in the dark")', 'Many more colors — including some people cannot even imagine'] },
     { q: 'What does a mantis shrimp do to escape from a predator?', dok: 'DOK 2', anchors: ['Wrong', 'Names one action only (darts into its burrow OR blocks the entrance)', 'Names both'] },
     { q: 'Why can a mantis shrimp stun its prey without touching it?', dok: 'DOK 2', anchors: ['Wrong', 'Vague, no reference to the text', 'Because its claw strikes so fast it creates a shockwave in the water'] },
     {
