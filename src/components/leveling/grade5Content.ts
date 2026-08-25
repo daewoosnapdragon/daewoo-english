@@ -195,8 +195,8 @@ const F26_PASSAGES: Record<G5PassageLevel, G5Passage> = {
 
 const F26_COMP_QUESTIONS: Record<G5PassageLevel, G5CompQuestion[]> = {
   A: [
-    { q: 'Why did Ben feel nervous?', dok: 'DOK 1', anchors: ['wrong', 'vague ("he was scared")', 'it was his first day and he did not know where to sit'] },
-    { q: 'What did Amy do to help Ben?', dok: 'DOK 1', anchors: ['wrong', 'vague ("she helped him")', 'she waved and invited him to sit at her table'] },
+    { q: 'Why did Ben feel nervous?', dok: 'DOK 1', anchors: ['wrong', 'vague ("he was scared")', 'he did not know where to sit — accept "the tables were full" or "it was his first day"'] },
+    { q: 'What did Amy do to help Ben?', dok: 'DOK 1', anchors: ['wrong', 'vague ("she helped him")', 'she invited him to sit at her table — "she waved at him" also counts'] },
     { q: 'What did Amy say about her own first day?', dok: 'DOK 2', anchors: ['wrong', 'vague ("it was hard")', 'it was scary too, but she said he would like it there'] },
     { q: 'How do you think Ben felt at the end of the story? Why?', dok: 'DOK 2', anchors: ['wrong', 'names a feeling with no reference to text', 'names a feeling with a reason (happy — he had someone to sit with)'] },
     { q: 'Have you ever been new somewhere? What happened?', dok: 'Oral production', anchors: ['no response', 'names a situation, no detail', 'names a situation with detail'] },
