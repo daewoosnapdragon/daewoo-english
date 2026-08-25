@@ -227,7 +227,7 @@ const F26_COMP_QUESTIONS: Record<G3PassageLevel, G3CompQuestion[]> = {
   ],
   B: [
     { q: 'What do you need to sleep in when you go camping?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("something soft")', 'A sleeping bag'] },
-    { q: 'What do you build to make s\'mores?', dok: 'DOK 1', anchors: ['Wrong', 'Vague ("a fire")', 'A campfire'] },
+    { q: 'What do you need to build to make s\'mores?', dok: 'DOK 1', anchors: ['Wrong', 'Names the materials only ("sticks and logs")', 'A campfire -- accept "a fire," which is the word the passage itself uses'] },
     { q: 'What happens if the tent is set up right?', dok: 'DOK 2', anchors: ['Wrong', 'Vague ("it\'s good")', 'It will not fall down (references the text)'] },
     { q: 'Why does the story say camping is fun?', dok: 'DOK 2', anchors: ['Wrong', 'Generic ("it\'s exciting")', 'Connects to the text (setting up a tent, building a campfire, making s\'mores)'] },
     { q: 'Have you ever been camping, or would you like to go? What would you want to do?', dok: 'Oral production', anchors: ['No response', 'Names an activity, no detail', 'Names an activity with detail'] },
