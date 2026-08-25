@@ -598,12 +598,17 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
 // are new this year and can rate nobody, so their students ranked on test
 // evidence alone against rated classmates. Ratings stay visible as notes for
 // the placement conversation; they are not a number in the ranking.
-const G1_PLACEMENT_WEIGHTS = { oral: 0.45, mc: 0.15, writing: 0.40 }
+//
+// Short writing joins them. Grade 1's paper has a short constructed-response
+// item that teachers score and that reached the absolute Band -- through
+// writtenPct -- but never the placement composite. Grades 3 and 5 had the same
+// gap on their own papers. Matches GRADE_COMPOSITE_WEIGHTS in LevelingView.
+const G1_PLACEMENT_WEIGHTS = { oral: 0.45, mc: 0.25, shortWriting: 0.05, writing: 0.25 }
 
 const G1_PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
 
 function g1WeightedComposite(
-  metrics: { oralScore: number; writtenMC: number; writingBonus: number },
+  metrics: { oralScore: number; writtenMC: number; writingBonus: number; writingShort: number | null },
   scores: G1Scores,
   content: G1Content,
 ): number | null {
@@ -618,6 +623,9 @@ function g1WeightedComposite(
   }
   if (hasWriting && content.extendedWriting.max > 0) {
     parts.push({ score: metrics.writingBonus / content.extendedWriting.max, weight: G1_PLACEMENT_WEIGHTS.writing })
+  }
+  if (metrics.writingShort != null && (content.shortWriting?.max ?? 0) > 0) {
+    parts.push({ score: metrics.writingShort / (content.shortWriting!.max as number), weight: G1_PLACEMENT_WEIGHTS.shortWriting })
   }
 
   if (parts.length === 0) return null
@@ -3664,6 +3672,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
   // Grade 1 runs A-F where grades 2-5 run A-E, so the passage filter is read
   // off the test's own content rather than hardcoded.
   const PASSAGE_LEVELS = Object.keys(content.passageConfigs)
+  const hasShortWriting = (content.shortWriting?.max ?? 0) > 0
 
   const rows = useMemo(() => {
     const computed = students.map(s => {
@@ -3832,7 +3841,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
           </tr></thead>
           <tbody>${rowsHTML}</tbody>
         </table>
-        <p style="font-size:9px;color:#94a3b8;margin-top:8px">* = suggested class differs from current. Composite = 45% oral + 15% MC + 40% writing; Teacher Ratings are notes only and are not in it. Printed ${new Date().toLocaleDateString()}</p>
+        <p style="font-size:9px;color:#94a3b8;margin-top:8px">* = suggested class differs from current. Composite = 45% oral + 25% MC + 5% short writing + 25% writing; Teacher Ratings are notes only and are not in it. Printed ${new Date().toLocaleDateString()}</p>
       </div>`
     })
 
@@ -3864,12 +3873,12 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
         </button>
         <button onClick={() => {
           exportToCSV('leveling-G1',
-            ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Writing', 'MC', 'Comp', 'Anecdotal', 'Composite', 'Rank', 'Suggested'],
+            ['Student', 'Korean Name', 'Current Class', 'Passage', 'Oral (adj)', 'Comp', 'Short Writing', 'Writing', 'MC', 'Anecdotal', 'Composite', 'Rank', 'Suggested'],
             displayed.map(r => [r.student.english_name, r.student.korean_name, r.student.english_class,
               r.oralPassageLevel ?? '',
               (r.weightedCwpm ?? r.cwpm) != null ? Math.round((r.weightedCwpm ?? r.cwpm) as number)
                 : r.orfMax != null && r.oralPassageLevel ? `${r.orfRaw ?? 0}/${r.orfMax}` : '',
-              r.writingBonus > 0 ? r.writingBonus : '', r.writtenMC > 0 ? r.writtenMC : '', r.compTotal ?? '',
+              r.compTotal ?? '', r.writingShort ?? '', r.writingBonus > 0 ? r.writingBonus : '', r.writtenMC > 0 ? r.writtenMC : '',
               r.hasAnec ? (r.anecScore * 100).toFixed(0) : '', r.weighted != null ? (r.weighted * 100).toFixed(0) : '',
               r.percentile != null ? Math.round(r.percentile * 100) : '', r.suggestedClass ?? 'not tested']))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
@@ -3900,6 +3909,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Current</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Levels D-F: CWPM adjusted for passage difficulty and NAEP, not the stopwatch number. Levels A-C are untimed, so the cell shows what the student read instead — the interview rating (A) or words read correctly (B, C).">Oral<br/><span className="normal-case">(adj)</span></th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
+            {hasShortWriting && <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="The short constructed-response item on the written paper, scored on its own checklist. It carries its own small share of the composite.">Short<br/><span className="normal-case">Wr</span></th>}
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Teacher</th>
@@ -3948,6 +3958,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
                         ? <span className="text-text-tertiary/60 text-[9px] italic" title={`Level ${row.oralPassageLevel} has no comprehension questions — it is ${row.oralPassageLevel === 'A' ? 'an oral interview' : 'a word list'}, not a passage. Nothing is missing.`}>not asked</span>
                         : '—'}
                 </td>
+                {hasShortWriting && <td className="px-2 py-2 text-center">{row.writingShort != null ? <span>{row.writingShort}<span className="text-text-tertiary/50">/{content.shortWriting!.max}</span></span> : '—'}</td>}
                 <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.writingBonus > 0 ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writingBonus}<span className="text-text-tertiary/50">/{G1_WRITING_MAX}</span></span> : '—'}</td>
                 <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.writtenMC > 0 ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writtenMC}<span className="text-text-tertiary/50">/{G1_MC_MAX}</span></span> : '—'}</td>
                 <td className="px-2 py-2 text-center"
@@ -3972,7 +3983,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test + 15% MC + 40% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test + 25% MC + 5% short writing + 25% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
     </div>
   )
 }

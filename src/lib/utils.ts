@@ -497,3 +497,35 @@ export function levelTestToReadingRecord(
     level_test_id: score.level_test_id,
   }
 }
+
+export type CompositeTerm = 'oral' | 'decoding' | 'mc' | 'shortWriting' | 'writing'
+export type CompositeWeights = Partial<Record<CompositeTerm, number>>
+
+const GRADE_COMPOSITE_WEIGHTS: Record<number, CompositeWeights> = {
+  // Phonics and sentence reading get their own term rather than sitting inside
+  // MC, so their weight is a number someone chose instead of an emergent 5%.
+  2: { oral: 0.35, decoding: 0.20, mc: 0.15, writing: 0.30 },
+  3: { oral: 0.45, mc: 0.25, shortWriting: 0.05, writing: 0.25 },
+  // Grade 4's paper has no short-response item. Its 5 points are not reassigned
+  // -- the composite renormalizes over the terms a student has, landing Grade 4
+  // near 47/26/26, which is the same mechanism that handles a missing section.
+  4: { oral: 0.45, mc: 0.25, writing: 0.25 },
+  5: { oral: 0.45, mc: 0.25, shortWriting: 0.05, writing: 0.25 },
+}
+const DEFAULT_COMPOSITE_WEIGHTS: CompositeWeights = { oral: 0.45, mc: 0.25, shortWriting: 0.05, writing: 0.25 }
+
+export function compositeWeightsFor(grade: number | string): CompositeWeights {
+  return GRADE_COMPOSITE_WEIGHTS[Number(grade)] ?? DEFAULT_COMPOSITE_WEIGHTS
+}
+
+/** Human labels for the weight editor, in the order they are shown. */
+export const COMPOSITE_TERM_LABELS: [CompositeTerm, string][] = [
+  ['oral', 'Oral Test'], ['decoding', 'Phonics + Sentences'], ['mc', 'MC'],
+  ['shortWriting', 'Short Writing'], ['writing', 'Writing'],
+]
+
+// Within the decoding term. Equal, deliberately: the sentence set carries more
+// raw points than the phonics grid, but point counts are an artifact of how the
+// tasks were built, not a statement that one measures more decoding than the
+// other. Change these rather than the point totals if that judgement changes.
+export const DECODING_WEIGHTS = { phonics: 0.50, sentences: 0.50 }

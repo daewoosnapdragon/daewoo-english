@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
-import { classToColor, classToTextColor, compIsCountable } from '@/lib/utils'
+import { classToColor, classToTextColor, compIsCountable, compositeWeightsFor } from '@/lib/utils'
 import { Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, BarChart3, ArrowRight, BookOpen, FileText, Target, PieChart, Layers, RotateCcw } from 'lucide-react'
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -506,10 +506,17 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
       if (compRatio != null) oralRatios2.push(compRatio)
       const oralScoreCalc = oralRatios2.length > 0 ? oralRatios2.reduce((a, b) => a + b, 0) / oralRatios2.length : null
       const hasAnec2 = av.length > 0
+      // Weights are per grade now -- see GRADE_COMPOSITE_WEIGHTS in LevelingView,
+      // which this reads rather than restating, so the charts and the Results
+      // tab cannot drift apart. This file has no decoding or short-writing term
+      // of its own; those sections renormalize out here, which is fine for a
+      // distribution chart but is why the exact number can sit a little away
+      // from the Results composite for Grade 2.
+      const cw = compositeWeightsFor(levelTest.grade)
       const testParts: { score: number; weight: number }[] = []
-      if (oralScoreCalc != null) testParts.push({ score: oralScoreCalc, weight: 0.40 })
-      if (mcRatio != null) testParts.push({ score: mcRatio, weight: 0.15 })
-      if (writingRatio != null) testParts.push({ score: writingRatio, weight: 0.35 })
+      if (oralScoreCalc != null && (cw.oral ?? 0) > 0) testParts.push({ score: oralScoreCalc, weight: cw.oral as number })
+      if (mcRatio != null && (cw.mc ?? 0) > 0) testParts.push({ score: mcRatio, weight: cw.mc as number })
+      if (writingRatio != null && (cw.writing ?? 0) > 0) testParts.push({ score: writingRatio, weight: cw.writing as number })
       // Teacher Ratings are no longer a scored component anywhere -- the Results
       // tab dropped them too, for the reason this file already applied to its
       // distribution charts: three teachers are new and have rated nobody, so a
