@@ -6,10 +6,49 @@ import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { Loader2, Search, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react'
 import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4, bandScalesFromG5 } from './grade2Band'
-import { getG2Content, g2VersionKeyForTest } from './grade2Content'
-import { getG3Content, g3VersionKeyForTest } from './grade3Content'
-import { getG4Content, g4VersionKeyForTest } from './grade4Content'
-import { getG5Content, g5VersionKeyForTest } from './grade5Content'
+import { getG2Content, g2VersionKeyForTest, g2StandardDescriptions } from './grade2Content'
+import { getG3Content, g3VersionKeyForTest, g3StandardDescriptions } from './grade3Content'
+import { getG4Content, g4VersionKeyForTest, g4StandardDescriptions } from './grade4Content'
+import { getG5Content, g5VersionKeyForTest, g5StandardDescriptions } from './grade5Content'
+
+// Every CCSS code any grade tests, with the guide's own wording. Built once:
+// a persisted score carries the code and the met/total and nothing else, and
+// "RI.5.1" on its own tells a teacher nothing about what was asked.
+const STANDARD_TEXT: Record<string, string> = {
+  ...g2StandardDescriptions(), ...g3StandardDescriptions(),
+  ...g4StandardDescriptions(), ...g5StandardDescriptions(),
+}
+
+/** The wording for an anchor: take the highest grade's phrasing of it. */
+function anchorText(codes: string[]): string | null {
+  const withText = codes.filter(c => STANDARD_TEXT[c])
+  if (withText.length === 0) return null
+  const best = withText.sort((a, b) => (standardGrade(b) ?? 0) - (standardGrade(a) ?? 0))[0]
+  return STANDARD_TEXT[best]
+}
+
+// The writing rubric is scored by category, not by question, so it never
+// reaches written_standards_mastery -- that is built from the multiple choice
+// alone. Categories are stable enough across grades to track: content,
+// language_grammar and mechanics run the whole Grade 2-5 span. Maxima are not
+// stable (Grade 2 scores each out of 5, grades 3-5 out of 4), so these are
+// shown as a proportion with the denominator alongside.
+const WRITING_CATEGORY_LABELS: Record<string, string> = {
+  story_structure: 'Story Structure', content: 'Content and Detail',
+  language_grammar: 'Language and Grammar', mechanics: 'Mechanics',
+  word_choice: 'Word Choice and Voice', vocabulary: 'Vocabulary and Word Choice',
+  completeness: 'Completeness',
+}
+const WRITING_CATEGORY_ORDER = ['story_structure', 'completeness', 'content', 'vocabulary', 'word_choice', 'language_grammar', 'mechanics']
+
+function writingCategoriesFor(test: LevelTest) {
+  const g = Number(test.grade)
+  const key = versionKeyFor(test)
+  if (!key) return null
+  const c = g === 2 ? getG2Content(key) : g === 3 ? getG3Content(key)
+    : g === 4 ? getG4Content(key) : g === 5 ? getG5Content(key) : null
+  return (c as any)?.writing?.categories ?? null
+}
 
 // ─── CCSS anchors ────────────────────────────────────────────────────
 // A standard code is STRAND.GRADE.NUMBER[letter] -- RI.3.1, L.2.4a, RF.K.3a.
@@ -106,7 +145,11 @@ function bandFor(test: LevelTest, calc: any) {
 interface Sitting {
   test: LevelTest
   calc: any
+  raw: any
   placement: EnglishClass | null
+  autoPlacement: EnglishClass | null
+  overridden: boolean
+  anec: any
   band: ReturnType<typeof bandFor>
 }
 
@@ -151,24 +194,35 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
     setError(null)
     ;(async () => {
       try {
-        // raw_scores is deliberately not selected. It carries per-word running
-        // records and every written answer, which is the bulk of the row and
-        // none of it is read here.
-        const [{ data: scores, error: scErr }, { data: places, error: plErr }] = await Promise.all([
-          supabase.from('level_test_scores').select('level_test_id, calculated_metrics').eq('student_id', selected),
-          supabase.from('level_test_placements').select('level_test_id, final_placement').eq('student_id', selected),
+        // raw_scores comes back after all: the writing rubric is scored by
+        // category into written_rubric, and the teacher's oral notes live here
+        // too. It is a heavy column, but this is one student across a handful
+        // of sittings -- the load problem was pulling every student in the
+        // school, not the width of four rows.
+        const [{ data: scores, error: scErr }, { data: places, error: plErr }, { data: anecs }] = await Promise.all([
+          supabase.from('level_test_scores').select('level_test_id, calculated_metrics, raw_scores').eq('student_id', selected),
+          supabase.from('level_test_placements').select('level_test_id, final_placement, auto_placement, is_overridden').eq('student_id', selected),
+          supabase.from('teacher_anecdotal_ratings').select('*').eq('student_id', selected),
         ])
         if (!alive) return
         if (scErr || plErr) { setError(scErr?.message || plErr?.message || null); setSittings([]); return }
-        const placeBy: Record<string, EnglishClass> = {}
-        places?.forEach((p: any) => { placeBy[p.level_test_id] = p.final_placement })
+        const placeBy: Record<string, any> = {}
+        places?.forEach((p: any) => { placeBy[p.level_test_id] = p })
+        const anecBy: Record<string, any> = {}
+        anecs?.forEach((a: any) => { anecBy[a.level_test_id] = a })
         const rows = (scores || []).map((sc: any) => {
           const test = tests.find(t => t.id === sc.level_test_id)
           if (!test) return null
           const calc = sc.calculated_metrics || {}
           let band = null
           try { band = bandFor(test, calc) } catch { band = null }
-          return { test, calc, placement: placeBy[test.id] ?? null, band }
+          const pl = placeBy[test.id]
+          return {
+            test, calc, raw: sc.raw_scores || {}, band, anec: anecBy[test.id] ?? null,
+            placement: pl?.final_placement ?? null,
+            autoPlacement: pl?.auto_placement ?? null,
+            overridden: !!pl?.is_overridden,
+          }
         }).filter(Boolean) as Sitting[]
         rows.sort((a, b) => testOrder(a.test).localeCompare(testOrder(b.test)))
         setSittings(rows)
@@ -217,7 +271,10 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
       })
     })
     return Object.entries(byAnchor)
-      .map(([anchor, v]) => ({ anchor, ...v, span: Object.keys(v.perTest).length }))
+      .map(([anchor, v]) => {
+        const codes = Array.from(new Set(Object.values(v.perTest).flat().map(h => h.code)))
+        return { anchor, ...v, codes, text: anchorText(codes), span: Object.keys(v.perTest).length }
+      })
       .sort((a, b) => b.span - a.span || a.anchor.localeCompare(b.anchor))
   }, [sittings])
 
@@ -235,6 +292,27 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
       .map(([code, v]: [string, any]) => ({ code, met: v?.met || 0, total: v?.total || 0, g: standardGrade(code) }))
       .filter(r => r.total > 0 && r.met < r.total && r.g != null && (r.g as number) < testGrade)
       .sort((a, b) => (a.g as number) - (b.g as number) || a.code.localeCompare(b.code))
+  }, [sittings])
+
+  // ── Writing, by rubric category ──
+  // written_standards_mastery is built from the multiple choice only, so the
+  // writing rubric never appeared anywhere in a student's record despite being
+  // 25-30% of their composite. The categories themselves are stable enough to
+  // track: content, language_grammar and mechanics run the full Grade 2-5 span.
+  const writingRows = useMemo(() => {
+    const byCat: Record<string, Record<string, { score: number; max: number; standard?: string }>> = {}
+    sittings.forEach(s => {
+      const cats = writingCategoriesFor(s.test)
+      const scored = s.raw?.written_rubric || {}
+      if (!cats) return
+      cats.forEach((cat: any) => {
+        const v = scored[cat.key]
+        if (v == null) return
+        if (!byCat[cat.key]) byCat[cat.key] = {}
+        byCat[cat.key][s.test.id] = { score: v, max: cat.max, standard: cat.standard }
+      })
+    })
+    return WRITING_CATEGORY_ORDER.filter(k => byCat[k]).map(k => ({ key: k, perTest: byCat[k] }))
   }, [sittings])
 
   const domainRows = useMemo(() => {
@@ -424,13 +502,81 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {unfinished.map(u => (
-                  <span key={u.code} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-amber-200 text-[10px]">
-                    <span className="font-bold text-amber-900">{u.code}</span>
-                    <span className="text-text-tertiary">{u.met}/{u.total}</span>
-                    <span className="text-amber-700">{STRAND_LABELS[u.code.split('.')[0]] || ''}</span>
+                  <span key={u.code} className="inline-flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-white border border-amber-200 text-[10px] max-w-[320px]">
+                    <span className="font-bold text-amber-900 whitespace-nowrap">{u.code}</span>
+                    <span className="text-text-tertiary whitespace-nowrap">{u.met}/{u.total}</span>
+                    <span className="text-amber-800 leading-snug">{STANDARD_TEXT[u.code] || STRAND_LABELS[u.code.split('.')[0]] || ''}</span>
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ── Teacher observations over time ── */}
+          {sittings.some(s => s.anec || s.raw?.notes) && (
+            <div className="bg-surface border border-border rounded-xl overflow-x-auto">
+              <p className="text-[12px] font-semibold text-navy px-3 pt-3">What teachers saw</p>
+              <p className="text-[10px] text-text-tertiary px-3 pb-2">
+                Ratings are notes, not scores &mdash; they are deliberately outside the composite, since a teacher new this year has rated nobody.
+                Across sittings they are the one record of how a student is changing that no test question captures.
+              </p>
+              <table className="w-full text-[11px]">
+                <thead><tr className="bg-surface-alt">
+                  <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
+                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
+                </tr></thead>
+                <tbody>
+                  {([['receptive_language', 'Receptive language'], ['productive_language', 'Productive language'], ['engagement_pace', 'Engagement and pace']] as const).map(([k, label], ri) => (
+                    <tr key={k} className={`border-t border-border ${ri % 2 ? 'bg-surface-alt/30' : ''}`}>
+                      <td className="px-3 py-2 text-text-secondary font-medium">{label}</td>
+                      {sittings.map((s, i) => {
+                        const v = s.anec?.[k]
+                        return (
+                          <td key={s.test.id} className="px-3 py-2 text-center">
+                            {v != null ? <>{v}<span className="text-text-tertiary/60">/4</span>
+                              {i > 0 && sittings[i - 1].anec?.[k] != null && <span className="ml-1">{delta(v, sittings[i - 1].anec[k])}</span>}</>
+                              : <span className="text-text-tertiary">—</span>}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                  <tr className="border-t border-border">
+                    <td className="px-3 py-2 text-text-secondary font-medium">Teacher recommended</td>
+                    {sittings.map(s => (
+                      <td key={s.test.id} className="px-3 py-2 text-center">
+                        {s.anec?.teacher_recommends
+                          ? <span className={`text-[10px] font-bold ${s.anec.teacher_recommends === 'keep' ? 'text-blue-600' : s.anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>
+                              {s.anec.teacher_recommends === 'keep' ? 'Keep' : s.anec.teacher_recommends === 'move_up' ? 'Move up' : 'Move down'}</span>
+                          : <span className="text-text-tertiary">—</span>}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-t border-border bg-surface-alt/30">
+                    <td className="px-3 py-2 text-text-secondary font-medium">Placement</td>
+                    {sittings.map(s => (
+                      <td key={s.test.id} className="px-3 py-2 text-center">
+                        {s.placement
+                          ? <><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(s.placement) + '40', color: classToTextColor(s.placement) }}>{s.placement}</span>
+                            {s.overridden && s.autoPlacement && s.autoPlacement !== s.placement &&
+                              <span className="block text-[8px] text-amber-600 mt-0.5" title={`The test suggested ${s.autoPlacement}; a teacher moved them.`}>overridden from {s.autoPlacement}</span>}</>
+                          : <span className="text-text-tertiary">—</span>}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+              {sittings.some(s => s.raw?.notes || s.anec?.notes) && (
+                <div className="border-t border-border px-3 py-2.5 space-y-2">
+                  {sittings.filter(s => s.raw?.notes || s.anec?.notes).map(s => (
+                    <div key={s.test.id}>
+                      <p className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold">{s.test.academic_year} {s.test.semester}</p>
+                      {s.raw?.notes && <p className="text-[11px] text-text-secondary leading-snug">&ldquo;{s.raw.notes}&rdquo; <span className="text-text-tertiary text-[9px]">&mdash; oral test</span></p>}
+                      {s.anec?.notes && <p className="text-[11px] text-text-secondary leading-snug">&ldquo;{s.anec.notes}&rdquo; <span className="text-text-tertiary text-[9px]">&mdash; teacher rating</span></p>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -450,9 +596,10 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                 </tr></thead>
                 <tbody>{standardsRows.map(r => (
                   <tr key={r.anchor} className="border-t border-border">
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 align-top">
                       <span className="font-bold text-navy">{r.anchor.replace('.', '·')}</span>
                       <span className="block text-[9px] text-text-tertiary">{STRAND_LABELS[r.strand] || r.strand}</span>
+                      {r.text && <span className="block text-[10px] text-text-secondary mt-0.5 leading-snug max-w-[300px]">{r.text}</span>}
                     </td>
                     {sittings.map(s => {
                       const hits = r.perTest[s.test.id]
@@ -465,12 +612,77 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                             title={total < 3 ? `Only ${total} question${total === 1 ? '' : 's'} behind this — too few to read as a trend.` : undefined}>
                             {met}/{total}
                           </span>
-                          <span className="block text-[8px] text-text-tertiary mt-0.5">{hits.map(h => h.code).join(', ')}</span>
+                          <span className="block text-[8px] text-text-tertiary mt-0.5"
+                            title={hits.map(h => STANDARD_TEXT[h.code] ? `${h.code} \u2014 ${STANDARD_TEXT[h.code]}` : h.code).join('\n')}>
+                            {hits.map(h => h.code).join(', ')}
+                          </span>
                         </td>
                       )
                     })}
                   </tr>
                 ))}</tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ── Writing ── */}
+          {(writingRows.length > 0 || sittings.some(s => s.calc.writing_total != null || s.calc.short_writing_total != null)) && (
+            <div className="bg-surface border border-border rounded-xl overflow-x-auto">
+              <p className="text-[12px] font-semibold text-navy px-3 pt-3">Writing</p>
+              <p className="text-[10px] text-text-tertiary px-3 pb-2">
+                Scored by rubric rather than by question, so none of this reaches the standards grid above &mdash; that is built from the multiple choice alone.
+                Maxima differ by grade (Grade 2 marks each category out of 5, grades 3&ndash;5 out of 4), so the score is shown over its own denominator.
+              </p>
+              <table className="w-full text-[11px]">
+                <thead><tr className="bg-surface-alt">
+                  <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">Category</th>
+                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
+                </tr></thead>
+                <tbody>
+                  {writingRows.map(r => (
+                    <tr key={r.key} className="border-t border-border">
+                      <td className="px-3 py-2 align-top">
+                        <span className="font-medium text-navy">{WRITING_CATEGORY_LABELS[r.key] || r.key}</span>
+                        {(() => {
+                          const std = Object.values(r.perTest).map(v => v.standard).find(Boolean)
+                          return std ? <span className="block text-[9px] text-text-tertiary">{std}{STANDARD_TEXT[std] ? ` \u2014 ${STANDARD_TEXT[std]}` : ''}</span> : null
+                        })()}
+                      </td>
+                      {sittings.map(s => {
+                        const v = r.perTest[s.test.id]
+                        if (!v) return <td key={s.test.id} className="px-3 py-2 text-center text-text-tertiary">—</td>
+                        return (
+                          <td key={s.test.id} className="px-3 py-2 text-center">
+                            <span className={`inline-block px-2 py-0.5 rounded border text-[10px] font-semibold ${tone(v.score, Math.max(v.max, 3))}`}>{v.score}<span className="opacity-60">/{v.max}</span></span>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                  <tr className="border-t border-border bg-surface-alt/40">
+                    <td className="px-3 py-2 font-semibold text-navy">Extended writing total</td>
+                    {sittings.map((s, i) => (
+                      <td key={s.test.id} className="px-3 py-2 text-center font-semibold">
+                        {s.calc.writing_total != null
+                          ? <>{s.calc.writing_total}<span className="text-text-tertiary/60">/{s.calc.writing_max ?? 20}</span>
+                            {i > 0 && <span className="ml-1">{delta(s.calc.writing_total, sittings[i - 1].calc.writing_total ?? null)}</span>}</>
+                          : <span className="text-text-tertiary font-normal">—</span>}
+                      </td>
+                    ))}
+                  </tr>
+                  {sittings.some(s => s.calc.short_writing_total != null) && (
+                    <tr className="border-t border-border">
+                      <td className="px-3 py-2 text-text-secondary font-medium">Short written response</td>
+                      {sittings.map(s => (
+                        <td key={s.test.id} className="px-3 py-2 text-center">
+                          {s.calc.short_writing_total != null
+                            ? <>{s.calc.short_writing_total}<span className="text-text-tertiary/60">/{s.calc.short_writing_max ?? '?'}</span></>
+                            : <span className="text-text-tertiary">—</span>}
+                        </td>
+                      ))}
+                    </tr>
+                  )}
+                </tbody>
               </table>
             </div>
           )}

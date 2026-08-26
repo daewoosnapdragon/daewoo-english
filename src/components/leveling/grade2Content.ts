@@ -640,3 +640,19 @@ export function g2OralScoredMax(content: G2Content): number {
 export function g2WrittenTotalMax(content: G2Content): number {
   return content.written.mcMax + content.writing.max
 }
+
+/**
+ * Every CCSS code this grade tests, mapped to the guide's own wording.
+ *
+ * Walks all authored versions, so a history view can name a standard from a
+ * test written years ago. Scores persist only the code and the met/total, and
+ * a bare "RI.2.1" tells a teacher nothing about what was actually asked.
+ */
+export function g2StandardDescriptions(): Record<string, string> {
+  const out: Record<string, string> = {}
+  Object.values(G2_VERSIONS).forEach(c => {
+    c.written.questions.forEach(q => { if (q.standard && q.standardDesc) out[q.standard] = q.standardDesc })
+    c.writing.categories.forEach(cat => { if (cat.standard && cat.standardDesc) out[cat.standard] = cat.standardDesc })
+  })
+  return out
+}
