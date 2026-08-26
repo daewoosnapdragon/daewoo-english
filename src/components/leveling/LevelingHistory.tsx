@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Student, EnglishClass, LevelTest } from '@/types'
+import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { Loader2, Search, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react'
 import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4, bandScalesFromG5 } from './grade2Band'
@@ -68,14 +68,27 @@ function versionKeyFor(test: LevelTest): string {
   return ''
 }
 
+/**
+ * Null rather than throwing for anything this build cannot resolve.
+ *
+ * getG*Content returns null for a version key it does not know -- a test from
+ * an academic year whose content was never authored, say -- and the
+ * bandScalesFrom* helpers dereference their argument immediately. Passing the
+ * null straight through threw inside the load, which left the spinner up
+ * forever for any student whose history touched such a test. A band we cannot
+ * compute is missing data, not a broken page.
+ */
 function bandFor(test: LevelTest, calc: any) {
   const g = Number(test.grade)
   const key = versionKeyFor(test)
   if (!key) return null
-  const scales = g === 2 ? bandScalesFromG2(getG2Content(key))
-    : g === 3 ? bandScalesFromG3(getG3Content(key))
-    : g === 4 ? bandScalesFromG4(getG4Content(key))
-    : g === 5 ? bandScalesFromG5(getG5Content(key)) : null
+  const content = g === 2 ? getG2Content(key) : g === 3 ? getG3Content(key)
+    : g === 4 ? getG4Content(key) : g === 5 ? getG5Content(key) : null
+  if (!content) return null
+  const scales = g === 2 ? bandScalesFromG2(content as any)
+    : g === 3 ? bandScalesFromG3(content as any)
+    : g === 4 ? bandScalesFromG4(content as any)
+    : g === 5 ? bandScalesFromG5(content as any) : null
   if (!scales) return null
   return calculateG2Band({
     passageLevel: calc.passage_level ?? null,
@@ -93,7 +106,6 @@ function bandFor(test: LevelTest, calc: any) {
 interface Sitting {
   test: LevelTest
   calc: any
-  raw: any
   placement: EnglishClass | null
   band: ReturnType<typeof bandFor>
 }
@@ -106,49 +118,90 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
   const [sittings, setSittings] = useState<Sitting[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingStudent, setLoadingStudent] = useState(false)
+  const [filterClass, setFilterClass] = useState<EnglishClass | 'all'>('all')
+  const [error, setError] = useState<string | null>(null)
 
+  // Only this grade's students. The tab used to pull every active student in
+  // the school and select('*') on top, which is most of the load time for a
+  // list nobody wants -- a Grade 5 leveling meeting has no use for Grade 2 names.
+  // Level tests stay unfiltered: a Grade 5 student's history lives in the
+  // Grade 4 and Grade 3 tests they sat in earlier years.
   useEffect(() => {
-    (async () => {
-      const [{ data: studs }, { data: lts }] = await Promise.all([
-        supabase.from('students').select('*').eq('is_active', true).order('english_name'),
-        supabase.from('level_tests').select('*'),
+    let alive = true
+    ;(async () => {
+      const [{ data: studs, error: sErr }, { data: lts, error: tErr }] = await Promise.all([
+        supabase.from('students')
+          .select('id, english_name, korean_name, english_class, grade')
+          .eq('is_active', true).eq('grade', Number(levelTest.grade)).order('english_name'),
+        supabase.from('level_tests').select('id, name, grade, academic_year, semester'),
       ])
-      setStudents(studs || [])
-      setTests((lts || []).sort((a: any, b: any) => testOrder(a).localeCompare(testOrder(b))))
+      if (!alive) return
+      setError(sErr?.message || tErr?.message || null)
+      setStudents((studs || []) as any)
+      setTests(((lts || []) as any).sort((a: any, b: any) => testOrder(a).localeCompare(testOrder(b))))
       setLoading(false)
     })()
-  }, [])
+    return () => { alive = false }
+  }, [levelTest.grade])
 
   useEffect(() => {
-    if (!selected) { setSittings([]); return }
-    setLoadingStudent(true);
-    (async () => {
-      const [{ data: scores }, { data: places }] = await Promise.all([
-        supabase.from('level_test_scores').select('*').eq('student_id', selected),
-        supabase.from('level_test_placements').select('*').eq('student_id', selected),
-      ])
-      const placeBy: Record<string, EnglishClass> = {}
-      places?.forEach((p: any) => { placeBy[p.level_test_id] = p.final_placement })
-      const rows: Sitting[] = (scores || []).map((sc: any) => {
-        const test = tests.find(t => t.id === sc.level_test_id)
-        if (!test) return null
-        const calc = sc.calculated_metrics || {}
-        return { test, calc, raw: sc.raw_scores || {}, placement: placeBy[test.id] ?? null, band: bandFor(test, calc) }
-      }).filter(Boolean) as Sitting[]
-      rows.sort((a, b) => testOrder(a.test).localeCompare(testOrder(b.test)))
-      setSittings(rows)
-      setLoadingStudent(false)
+    if (!selected || tests.length === 0) { setSittings([]); return }
+    let alive = true
+    setLoadingStudent(true)
+    setError(null)
+    ;(async () => {
+      try {
+        // raw_scores is deliberately not selected. It carries per-word running
+        // records and every written answer, which is the bulk of the row and
+        // none of it is read here.
+        const [{ data: scores, error: scErr }, { data: places, error: plErr }] = await Promise.all([
+          supabase.from('level_test_scores').select('level_test_id, calculated_metrics').eq('student_id', selected),
+          supabase.from('level_test_placements').select('level_test_id, final_placement').eq('student_id', selected),
+        ])
+        if (!alive) return
+        if (scErr || plErr) { setError(scErr?.message || plErr?.message || null); setSittings([]); return }
+        const placeBy: Record<string, EnglishClass> = {}
+        places?.forEach((p: any) => { placeBy[p.level_test_id] = p.final_placement })
+        const rows = (scores || []).map((sc: any) => {
+          const test = tests.find(t => t.id === sc.level_test_id)
+          if (!test) return null
+          const calc = sc.calculated_metrics || {}
+          let band = null
+          try { band = bandFor(test, calc) } catch { band = null }
+          return { test, calc, placement: placeBy[test.id] ?? null, band }
+        }).filter(Boolean) as Sitting[]
+        rows.sort((a, b) => testOrder(a.test).localeCompare(testOrder(b.test)))
+        setSittings(rows)
+      } catch (e: any) {
+        if (alive) { setError(e?.message || 'Could not load this student\u2019s history.'); setSittings([]) }
+      } finally {
+        // Always clears. A throw in here used to leave the spinner up forever,
+        // which read as "this student never loads" rather than as an error.
+        if (alive) setLoadingStudent(false)
+      }
     })()
+    return () => { alive = false }
   }, [selected, tests])
 
   const student = students.find(s => s.id === selected) || null
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return students.slice(0, 40)
-    return students.filter(s =>
-      (s.english_name || '').toLowerCase().includes(q) || (s.korean_name || '').includes(query.trim())
-    ).slice(0, 40)
-  }, [students, query])
+    return students.filter(s => {
+      if (filterClass !== 'all' && s.english_class !== filterClass) return false
+      if (!q) return true
+      // Korean names are matched untrimmed-of-case because they have none, and
+      // the class name is searchable too so "marigold" finds a whole class.
+      return (s.english_name || '').toLowerCase().includes(q)
+        || (s.korean_name || '').includes(query.trim())
+        || (s.english_class || '').toLowerCase().includes(q)
+    })
+  }, [students, query, filterClass])
+
+  const classCounts = useMemo(() => {
+    const c: Record<string, number> = {}
+    students.forEach(s => { c[s.english_class] = (c[s.english_class] || 0) + 1 })
+    return c
+  }, [students])
 
   // ── Standards, by anchor, one column per sitting ──
   const standardsRows = useMemo(() => {
@@ -220,24 +273,57 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
 
   return (
     <div className="px-10 py-6">
-      {/* Student picker */}
-      <div className="flex items-center gap-3 mb-5 flex-wrap">
-        <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
-          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Find a student..."
-            className="pl-8 pr-3 py-2 border border-border rounded-lg text-[12px] bg-surface w-64" />
+      {/* ── Student picker: this grade only, filter by class, search by name ── */}
+      <div className="mb-5">
+        <div className="flex items-center gap-3 mb-3 flex-wrap">
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search name or class..."
+              className="pl-8 pr-3 py-2 border border-border rounded-lg text-[12px] bg-surface w-56" />
+          </div>
+          <div className="flex gap-1 flex-wrap">
+            <button onClick={() => setFilterClass('all')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
+            {ENGLISH_CLASSES.filter(c => (classCounts[c] || 0) > 0).map(cls => (
+              <button key={cls} onClick={() => setFilterClass(cls)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${filterClass === cls ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`}
+                style={filterClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>
+                {cls} <span className="opacity-60">{classCounts[cls]}</span>
+              </button>
+            ))}
+          </div>
+          <span className="text-[11px] text-text-tertiary ml-auto">Grade {levelTest.grade} &middot; {matches.length} of {students.length}</span>
         </div>
-        <select value={selected || ''} onChange={e => setSelected(e.target.value || null)}
-          className="px-3 py-2 border border-border rounded-lg text-[12px] bg-surface min-w-[220px]">
-          <option value="">Select a student</option>
-          {matches.map(s => <option key={s.id} value={s.id}>{s.english_name} {s.korean_name} — G{s.grade} {s.english_class}</option>)}
-        </select>
-        {student && <span className="text-[11px] text-text-tertiary">{sittings.length} level test{sittings.length === 1 ? '' : 's'} on record</span>}
+        <div className="flex gap-1.5 flex-wrap max-h-[132px] overflow-y-auto p-1 bg-surface-alt/40 rounded-lg border border-border">
+          {matches.length === 0 && <span className="text-[11px] text-text-tertiary px-2 py-1">No students match.</span>}
+          {matches.map(s => (
+            <button key={s.id} onClick={() => setSelected(s.id)}
+              className={`px-2.5 py-1.5 rounded-lg text-[11px] border transition-colors ${selected === s.id ? 'bg-navy text-white border-navy' : 'bg-surface border-border hover:bg-surface-alt'}`}>
+              <span className="font-medium">{s.english_name}</span>
+              <span className={`ml-1 ${selected === s.id ? 'opacity-70' : 'text-text-tertiary'}`}>{s.korean_name}</span>
+              <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full align-middle" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) }} />
+            </button>
+          ))}
+        </div>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-[11px] text-red-700">
+          Could not load history: {error}
+        </div>
+      )}
+
+      {student && (
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-[15px] font-semibold text-navy">{student.english_name}</span>
+          <span className="text-[12px] text-text-tertiary">{student.korean_name}</span>
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(student.english_class as EnglishClass) + '40', color: classToTextColor(student.english_class as EnglishClass) }}>{student.english_class}</span>
+          <span className="text-[11px] text-text-tertiary">{sittings.length} level test{sittings.length === 1 ? '' : 's'} on record</span>
+        </div>
+      )}
 
       {!selected && (
         <div className="text-center py-16 text-text-tertiary text-[13px]">
-          Pick a student to see every level test they have sat, side by side.
+          Pick a Grade {levelTest.grade} student to see every level test they have sat, side by side {'\u2014'} including the ones from earlier years, in lower grades.
         </div>
       )}
 
