@@ -17,7 +17,7 @@ import { getG2Content, g2VersionKeyForTest } from '@/components/leveling/grade2C
 import { getG3Content, g3VersionKeyForTest } from '@/components/leveling/grade3Content'
 import { getG4Content, g4VersionKeyForTest } from '@/components/leveling/grade4Content'
 import { getG5Content, g5VersionKeyForTest } from '@/components/leveling/grade5Content'
-import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4, bandScalesFromG5 } from '@/components/leveling/grade2Band'
+import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4, bandScalesFromG5, type LevelCwpmNorm } from '@/components/leveling/grade2Band'
 import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
@@ -1390,10 +1390,14 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
     return eb
   }, [students, scores, benchmarks])
 
+  // Median raw CWPM among the students who sustained each passage level -- the
+  // yardstick the band uses to position rate. See LevelCwpmNorm.
+  const levelCwpmNorms = useMemo(() => buildLevelCwpmNorms(students, scores), [students, scores])
+
   const rows = useMemo(() => {
-    const r = students.map(s => computeRow(s, scores, anecdotals, enhancedBenchmarks, semGrades, levelTest.grade, excludedQuestions, versionKeyForTest(levelTest)))
+    const r = students.map(s => computeRow(s, scores, anecdotals, enhancedBenchmarks, semGrades, levelTest.grade, excludedQuestions, versionKeyForTest(levelTest), undefined, levelCwpmNorms))
     return rankRows(r)
-  }, [students, scores, anecdotals, enhancedBenchmarks, semGrades, excludedQuestions])
+  }, [students, scores, anecdotals, enhancedBenchmarks, semGrades, excludedQuestions, levelCwpmNorms])
 
   // Class averages for hover card comparison bars
   const hoverClassAverages = useMemo(() => {
@@ -1514,7 +1518,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
           <thead><tr className="bg-surface-alt">
             <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px]">Student</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Current</th>
-            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Best attempt across passages, adjusted for passage difficulty and NAEP. Not the stopwatch number -- hover a cell to see the raw CWPM it came from.">Oral<br/><span className="normal-case">(adj)</span></th>
+            <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Words correct per minute, as clocked, on the passage in brackets. Passage difficulty is not baked into this number -- it is carried by the Band, which is what placement ranks on.">CWPM</th>
             <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
             {hasPhonics && <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Phonics grid from the oral test. Together with sentence reading it forms the decoding term of the composite, weighted in its own right rather than averaged into the written multiple choice.">Phonics</th>}
             {hasSentences && <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold" title="Sentence reading from the oral test. Together with phonics it forms the decoding term of the composite, weighted in its own right rather than averaged into the written multiple choice.">Sent</th>}
@@ -1538,14 +1542,13 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                 <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" title={`Outlier: ${flags.join(', ')}`} />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span></td>
                 <td className="px-2 py-2 text-center"><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass) + '40', color: classToTextColor(row.student.english_class as EnglishClass) }}>{row.student.english_class}</span></td>
                 <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}
-                  title={row.rawCwpm == null ? undefined : row.oralIsWeighted
-                    ? `Adjusted CWPM: ${row.unweightedCwpm != null ? `${Math.round(row.unweightedCwpm)} raw` : 'raw'}${row.passageMultiplier ? ` \u00d7 ${row.passageMultiplier.toFixed(2)} passage` : ''} (and NAEP) \u2192 ${Math.round(row.rawCwpm)}. Level ${row.oralPassageLevel ?? '?'} is the passage this best attempt came from${row.oralPassageLevel && row.passageLevel && row.oralPassageLevel !== row.passageLevel ? `; the student finished on ${row.passageLevel}` : ''}.`
-                    : `Unadjusted CWPM \u2014 this record predates passage weighting, so no difficulty multiplier has been applied.`}>
-                  {row.rawCwpm != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(row.rawCwpm)}{row.oralPassageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.oralPassageLevel})</span>}{!row.oralIsWeighted && <span className="text-amber-600 text-[9px] ml-0.5" title="Unadjusted">*</span>}</span> : '—'}
+                  title={row.rawCwpm == null ? undefined
+                    : `${Math.round(row.rawCwpm)} words correct per minute on passage ${row.oralPassageLevel ?? '?'}${row.accuracyPct != null ? `, ${row.accuracyPct}% accuracy` : ''}${row.naep ? `, NAEP ${row.naep}/4` : ''}. This is the stopwatch figure \u2014 passage difficulty is carried by the Band, not by this number.${row.otherAttempts > 0 ? ` ${row.otherAttempts} earlier passage attempt${row.otherAttempts === 1 ? '' : 's'} on record.` : ''}`}>
+                  {row.rawCwpm != null ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(row.rawCwpm)}{row.oralPassageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.oralPassageLevel})</span>}</span> : '—'}
                 </td>
                 <td className="px-2 py-2 text-center"
                   title={row.compUnmeasured || row.rawComp == null ? undefined
-                    : `Raw score. The composite weights it by passage difficulty like fluency${row.passageMultiplier ? ` \u2014 \u00d7 ${row.passageMultiplier.toFixed(2)} for passage ${row.passageLevel ?? '?'}, giving ${(row.compRatio ?? 0).toFixed(2)}` : ', but this record predates the multiplier so it counts unweighted'}.`}>
+                    : 'Comprehension positions the student inside their band and carries the most weight there \u2014 the guides say that when accuracy and comprehension disagree, comprehension decides. It is not weighted by passage difficulty: the band floor already carries that.'}>
                   {row.compUnmeasured ? <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold" title="Not administered — the student was stopped during the passage and never heard the questions. Scored at the top of the Frustration band in the composite, not dropped, and left unweighted by passage difficulty.">comp n/a</span> : row.rawComp != null ? <span>{row.rawComp}<span className="text-text-tertiary/50">/{row.calc?.comp_max || 15}</span></span> : '—'}
                 </td>
                 {hasPhonics && <td className="px-2 py-2 text-center">{row.rawPhonics != null ? <span>{row.rawPhonics}<span className="text-text-tertiary/50">/{row.phonicsMax}</span></span> : '—'}</td>}
@@ -1587,7 +1590,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = {weightSummary} &mdash; oral is 60% fluency / 40% comprehension, and every component is capped at {COMPONENT_CAP.toFixed(1)}&times; benchmark. Weights are set per grade, because each grade's paper is a different shape. Teacher Ratings are not in it {'\u2014'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. Oral is the best attempt across passages, already adjusted for passage difficulty and NAEP; the level in brackets is the passage that attempt came from, and <span className="text-amber-600 font-semibold">*</span> marks an older record saved before weighting existed. {(hasPhonics || hasSentences) && <>Phonics and sentence reading come off the oral test and together form the decoding term. </>}{hasSyllables && <>Syllable counting is reference only {'\u2014'} it moves the Band, not the composite. </>}<span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; it counts as the top of the Frustration band in the composite, not as a zero and not as missing. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. {hasBands && <>Band = absolute score from the passage the student sustained, reference only; it does not decide placement. </>} <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = {weightSummary} &mdash; weights are set per grade, because each grade's paper is a different shape. The oral term is the <strong>Band</strong>: the passage a student sustained sets the floor they start from, so a harder passage almost always outranks an easier one, and comprehension, accuracy, NAEP and reading rate only position them inside that level. Teacher Ratings are not in it {'\u2014'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. CWPM is shown as clocked, on the passage in brackets {'\u2014'} passage difficulty is carried by the Band, not baked into the rate. {(hasPhonics || hasSentences) && <>Phonics and sentence reading come off the oral test and together form the decoding term. </>}{hasSyllables && <>Syllable counting is reference only {'\u2014'} it moves the Band, not the composite. </>}<span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; the passage counts as not sustained, which drops the student to the level below rather than scoring them a zero. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
     </div>
   )
 }
@@ -1692,7 +1695,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
       if (studs) {
         const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').in('student_id', studs.map((s: any) => s.id))
         const sgm: Record<string, any[]> = {}; sg?.forEach((g: any) => { const gWithName = { ...g, semester_name: g.semesters?.name || '', score: g.final_grade ?? g.calculated_grade ?? null }; if (!sgm[g.student_id]) sgm[g.student_id] = []; sgm[g.student_id].push(gWithName) }); setSemGrades(sgm)
-        const auto = calcAuto(studs, sm, am, bm, sgm, compositeWeightsFor(levelTest.grade), levelTest.grade)
+        const auto = calcAuto(studs, sm, am, bm, sgm, compositeWeightsFor(levelTest.grade), levelTest.grade, versionKeyForTest(levelTest))
         setAutoPlacements(auto)
         const pm: Record<string, EnglishClass> = {}
         // Always start with current class as fallback for ALL students
@@ -1710,7 +1713,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
     Object.fromEntries(Object.entries(w).map(([k, v]) => [k, v / 100])) as CompositeWeights
 
   const recompute = () => {
-    const auto = calcAuto(students, scores, anecdotals, benchmarks, semGrades, weightsAsFractions(weights), levelTest.grade)
+    const auto = calcAuto(students, scores, anecdotals, benchmarks, semGrades, weightsAsFractions(weights), levelTest.grade, versionKeyForTest(levelTest))
     setAutoPlacements(auto); showToast('Auto-placements recalculated (drag students to apply)')
   }
 
@@ -1720,7 +1723,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   const rows = useMemo(() => {
     if (students.length === 0) return []
     const enhBench: Record<string, any> = { ...benchmarks }
-    const r = students.map(s => computeRow(s, scores, anecdotals, enhBench, semGrades, levelTest.grade, meetingExcludedQ, versionKeyForTest(levelTest)))
+    const norms = buildLevelCwpmNorms(students, scores)
+    const r = students.map(s => computeRow(s, scores, anecdotals, enhBench, semGrades, levelTest.grade, meetingExcludedQ, versionKeyForTest(levelTest), undefined, norms))
     return rankRows(r)
   }, [students, scores, anecdotals, benchmarks, semGrades, meetingExcludedQ])
 
@@ -2191,7 +2195,35 @@ function compositeFrom(
     .map(k => ({ score: terms[k] ?? null, weight: weights[k] as number })))
 }
 
-function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, grade: number | string, excludedQuestions?: number[], versionKey?: string, customWeights?: CompositeWeights) {
+/**
+ * Median raw CWPM per passage level, over the students who actually sustained
+ * that level. Reliability uses the same gate as the outlier flags: at least
+ * three readers at the level, and at least half of those who attempted it, so a
+ * median is never built from one or two children.
+ */
+export function buildLevelCwpmNorms(students: Student[], scores: Record<string, any>): Record<string, LevelCwpmNorm> {
+  const byLevel: Record<string, number[]> = {}
+  students.forEach(s => {
+    const calc = scores[s.id]?.calculated_metrics || {}
+    const lv = calc.passage_level
+    const raw = calc.cwpm
+    if (!lv || raw == null || raw <= 0) return
+    if (!byLevel[lv]) byLevel[lv] = []
+    byLevel[lv].push(raw)
+  })
+  const out: Record<string, LevelCwpmNorm> = {}
+  Object.entries(byLevel).forEach(([lv, vals]) => {
+    const v = [...vals].sort((a, b) => a - b)
+    const mid = Math.floor(v.length / 2)
+    out[lv] = {
+      medianCwpm: v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2,
+      reliable: v.length >= 3,
+    }
+  })
+  return out
+}
+
+function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, grade: number | string, excludedQuestions?: number[], versionKey?: string, customWeights?: CompositeWeights, levelCwpmNorms?: Record<string, LevelCwpmNorm>) {
   const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
   const gradeMcTotal = getWrittenMcTotal(grade, calc.written_mc_max)
   // CWPM: prefer best_weighted_cwpm (highest across all passage attempts), then weighted_cwpm, then raw
@@ -2199,19 +2231,19 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   // compared on the same absolute scale — just like writing (/20) and MC (/total).
   // Using per-class benchmarks was causing lower-class students who slightly exceed their
   // easy benchmark to outscore higher-class students who are objectively much stronger.
-  const rawCwpmValue = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
-  // The Oral column shows this number, so it has to say what the number IS.
-  // The first two links of that chain are already multiplied by passage
-  // difficulty and NAEP; the rest are unadjusted CWPM off older records. The
-  // column used to print either one under a bare "(C)" label, so an adjusted
-  // 158 read as though the student had been clocked at 158 words a minute.
-  const oralIsWeighted = calc.best_weighted_cwpm != null || calc.weighted_cwpm != null
-  const unweightedCwpm = calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
-  // And the level shown has to be the level the number came FROM. Fluency
-  // takes the best attempt across passages, which is often not the passage the
-  // student finished on -- labelling a best-of-E score with the current "(A)"
-  // is how a row ends up looking impossible.
-  const oralPassageLevel = (oralIsWeighted ? calc.best_passage_level : null) ?? calc.passage_level ?? null
+  // ── What the table shows is the stopwatch number ──
+  // The column used to show best_weighted_cwpm: raw rate multiplied by passage
+  // difficulty AND by the NAEP rating, so a child clocked at 180 on level E
+  // with NAEP 4 printed as 297. That is not a reading rate, and it sat under a
+  // heading that read like one. Difficulty now enters the score once, at the
+  // band floor, so the display no longer has any reason to carry it.
+  const rawCwpmValue = calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+  const adjustedCwpm = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? null
+  // The passage the rate was actually clocked on, which is also the passage the
+  // band scores. best_passage_level belongs to the old best-attempt logic and
+  // could disagree with both.
+  const oralPassageLevel = calc.passage_level ?? null
+  const otherAttempts = Array.isArray(sc.passages_attempted) ? sc.passages_attempted.length : 0
   // Use the highest class benchmark (Snapdragon) as the shared reference for the grade
   const snapBench = benchmarks['Snapdragon'] || {}
   const sharedCwpmEnd = snapBench.cwpm_end > 0 ? snapBench.cwpm_end : (bench.cwpm_end > 0 ? bench.cwpm_end : 0)
@@ -2265,14 +2297,12 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   const sentRatio = studentGrade === 2 && calc.sentence_total != null && calc.sentence_total > 0 ? capComponent(calc.sentence_total / (calc.sentence_max || 35)) : null
   const testRatios = [cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, phonicsRatio, sentRatio].filter(v => v != null) as number[]
   const testScore = testRatios.length > 0 ? testRatios.reduce((a, b) => a + b, 0) / testRatios.length : 0.5
-  // Oral: fluency and comprehension on explicit weights rather than a plain
-  // mean, so the mix does not shift with which sections a student happened to
-  // sit -- see ORAL_WEIGHTS.
-  const oralScore = weightedMean([
-    { score: cwpmRatio, weight: ORAL_WEIGHTS.fluency },
-    { score: compRatio, weight: ORAL_WEIGHTS.comprehension },
-    { score: wrAcc, weight: ORAL_WEIGHTS.wordReading },
-  ])
+  // Oral term = the band, 0-100 rescaled to 0-1. Set below, once the band has
+  // been computed. Ratios of rate and comprehension no longer feed the
+  // composite at all: they were being passage-weighted a second time on top of
+  // a benchmark that was not, which pushed nearly every competent reader past
+  // the old 1.2 ceiling and left the whole top of the grade tied there.
+  let oralScore: number | null = null
   // Decoding: Grade 2's phonics grid and sentence set. These used to be averaged
   // into the MC term, which had two effects nobody chose -- each was worth 5% of
   // the composite, and a student who missed one section silently reweighted the
@@ -2304,25 +2334,9 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   const hasAnec = av.length > 0
   const hasGrades = gradeScore != null
   const gScore = gradeScore ?? 0.5
-  const termScores = {
-    oral: oralScore, decoding: decodingScore, mc: mcScore,
-    shortWriting: shortWritingScore, writing: writingRubricScore,
-  }
-  // Whether the student has sat any part of the test. A teacher rating on its
-  // own does not make them rankable -- see isTestedRow.
-  const isTested = isTestedRow(termScores)
-  const composite = compositeFrom(termScores, customWeights ?? compositeWeightsFor(grade)) ?? 0.5
-  // Outlier flags: score is 0 or below 10% of class auto-median
-  // Only flag when enough classmates have data for that component (>=3 or >=50% of class) to make the median meaningful
-  const outlierFlags: string[] = []
-  const oralReliable = bench._auto_oral_count >= 3 && bench._auto_oral_count >= (bench._class_size || 1) * 0.5
-  const writingReliable = bench._auto_writing_count >= 3 && bench._auto_writing_count >= (bench._class_size || 1) * 0.5
-  const mcReliable = bench._auto_mc_count >= 3 && bench._auto_mc_count >= (bench._class_size || 1) * 0.5
-  if (oralReliable && rawCwpmValue != null && (rawCwpmValue === 0 || (bench._auto_oral_median > 0 && rawCwpmValue < bench._auto_oral_median * 0.1))) outlierFlags.push('oral')
-  if (writingReliable && sc.writing != null && (sc.writing === 0 || (bench._auto_writing_median > 0 && sc.writing < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
-  if (mcReliable && sc.written_mc != null && (sc.written_mc === 0 || (bench._auto_mc_median > 0 && sc.written_mc < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
-  // Absolute band -- reference only, alongside the rank-based placement. Null
-  // for grades without an authored band and for students with no passage.
+  // The band: floor and ceiling from the passage sustained, position inside it
+  // from the passage-relative measures. Null for a student with no passage,
+  // who therefore has no oral evidence to be scored on.
   const g2 = studentGrade === 2 && versionKey ? getG2Content(versionKey) : null
   const g3 = studentGrade === 3 && versionKey ? getG3Content(versionKey) : null
   const g4 = studentGrade === 4 && versionKey ? getG4Content(versionKey) : null
@@ -2340,8 +2354,34 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
         compTotal: calc.comp_total ?? null,
         compNotAdministered: calc.comp_not_administered ?? null,
         accuracyPct: calc.accuracy_pct ?? null,
-      }, bandScales)
+        naep: calc.naep ?? sc.naep ?? null,
+        cwpm: rawCwpmValue,
+      }, bandScales, levelCwpmNorms?.[calc.passage_level as string])
     : null
+
+  // The band IS the oral score. Its floor is the passage the student sustained,
+  // so passage difficulty settles the ordering before anything else does, and
+  // the measures inside it only position a student within that level. This is
+  // the model Grade 1 has always used; grades 2-5 now share it.
+  oralScore = band ? band.composite / 100 : null
+
+  const termScores = {
+    oral: oralScore, decoding: decodingScore, mc: mcScore,
+    shortWriting: shortWritingScore, writing: writingRubricScore,
+  }
+  // Whether the student has sat any part of the test. A teacher rating on its
+  // own does not make them rankable -- see isTestedRow.
+  const isTested = isTestedRow(termScores)
+  const composite = compositeFrom(termScores, customWeights ?? compositeWeightsFor(grade)) ?? 0.5
+  // Outlier flags: score is 0 or below 10% of class auto-median
+  // Only flag when enough classmates have data for that component (>=3 or >=50% of class) to make the median meaningful
+  const outlierFlags: string[] = []
+  const oralReliable = bench._auto_oral_count >= 3 && bench._auto_oral_count >= (bench._class_size || 1) * 0.5
+  const writingReliable = bench._auto_writing_count >= 3 && bench._auto_writing_count >= (bench._class_size || 1) * 0.5
+  const mcReliable = bench._auto_mc_count >= 3 && bench._auto_mc_count >= (bench._class_size || 1) * 0.5
+  if (oralReliable && rawCwpmValue != null && (rawCwpmValue === 0 || (bench._auto_oral_median > 0 && rawCwpmValue < bench._auto_oral_median * 0.1))) outlierFlags.push('oral')
+  if (writingReliable && sc.writing != null && (sc.writing === 0 || (bench._auto_writing_median > 0 && sc.writing < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
+  if (mcReliable && sc.written_mc != null && (sc.written_mc === 0 || (bench._auto_mc_median > 0 && sc.written_mc < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
 
   return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, hasAnec, isTested, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compMax: calc.comp_max ?? null, compUnmeasured,
     // Grade 2's oral test also scores a phonics grid and a sentence-reading
@@ -2354,7 +2394,7 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
     // is null on a test without the section, which is what gates the column.
     rawSyllable: calc.syllable_total ?? null, syllableMax: calc.syllable_max ?? null,
     rawShortWriting: calc.short_writing_total ?? null, shortWritingMax: calc.short_writing_max ?? null,
-    decodingScore, shortWritingScore, passageLevel: calc.passage_level ?? null, oralPassageLevel, oralIsWeighted, unweightedCwpm, passageMultiplier: calc.passage_multiplier ?? null, hasGrades, outlierFlags, band }
+    decodingScore, shortWritingScore, passageLevel: calc.passage_level ?? null, oralPassageLevel, adjustedCwpm, otherAttempts, accuracyPct: calc.accuracy_pct ?? null, naep: calc.naep ?? sc.naep ?? null, hasGrades, outlierFlags, band }
 }
 
 /**
@@ -2392,54 +2432,31 @@ function suggestClass(row: any, idx: number, total: number): EnglishClass {
   return PLACEMENT_CLASSES[bi]
 }
 
-function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, w: CompositeWeights, grade: number | string): Record<string, EnglishClass> {
+/**
+ * Auto placement for the drag board.
+ *
+ * Delegates to computeRow rather than restating the scoring. It used to carry
+ * its own copy of every term, which meant each change to the composite had to
+ * be made twice and the board could silently disagree with the Results table.
+ */
+function calcAuto(students: Student[], scores: Record<string, any>, anecdotals: Record<string, any>, benchmarks: Record<string, any>, semGrades: Record<string, any[]>, w: CompositeWeights, grade: number | string, versionKey?: string): Record<string, EnglishClass> {
   const result: Record<string, EnglishClass> = {}
-  const metrics: Record<string, number> = {}
-  const tested: Record<string, boolean> = {}
-  // Use Snapdragon benchmark as shared oral reference for cross-class comparability
-  const snapBench = benchmarks['Snapdragon'] || {}
-  students.forEach(s => {
-    const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}; const bench = benchmarks[s.english_class] || {}; const anec = anecdotals[s.id] || {}; const grades = semGrades[s.id] || []
-    // Grade 1's MC total varies by test version, so read it off the score.
-    const gradeMcTotal = getWrittenMcTotal(grade, calc.written_mc_max)
-    const rawCwpmValue = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
-    const sharedCwpmEnd = snapBench.cwpm_end > 0 ? snapBench.cwpm_end : (bench.cwpm_end > 0 ? bench.cwpm_end : 0)
-    // Oral components -- same explicit weights and shared ceiling as the
-    // placement table, so the board and the table cannot drift apart.
-    const oralScore = weightedMean([
-      { score: rawCwpmValue != null && sharedCwpmEnd > 0 ? capComponent(rawCwpmValue / sharedCwpmEnd) : null, weight: ORAL_WEIGHTS.fluency },
-      { score: compRatioForComposite(calc), weight: ORAL_WEIGHTS.comprehension },
-      { score: sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? capComponent(sc.word_reading_correct / sc.word_reading_attempted) : null, weight: ORAL_WEIGHTS.wordReading },
-    ])
-    // Same terms as the placement table -- see computeRow and GRADE_COMPOSITE_WEIGHTS.
-    const sg = Number(s.grade)
-    const decodingVal = weightedMean([
-      { score: sg === 2 && calc.phonics_total != null && calc.phonics_total > 0 ? capComponent(calc.phonics_total / (calc.phonics_max || 25)) : null, weight: DECODING_WEIGHTS.phonics },
-      { score: sg === 2 && calc.sentence_total != null && calc.sentence_total > 0 ? capComponent(calc.sentence_total / (calc.sentence_max || 35)) : null, weight: DECODING_WEIGHTS.sentences },
-    ])
-    const mcScoreVal = sc.written_mc != null ? capComponent(sc.written_mc / gradeMcTotal) : null
-    const shortWritingVal = calc.short_writing_total != null && calc.short_writing_max > 0
-      ? capComponent(calc.short_writing_total / calc.short_writing_max) : null
-    const writingRubricVal = sc.writing != null ? capComponent(sc.writing / 20) : null
-    // Redistributed proportionally when a section is missing. Teacher Ratings
-    // are not in it -- see GRADE_COMPOSITE_WEIGHTS.
-    const termScores = { oral: oralScore, decoding: decodingVal, mc: mcScoreVal, shortWriting: shortWritingVal, writing: writingRubricVal }
-    metrics[s.id] = compositeFrom(termScores, w) ?? 0.5
-    tested[s.id] = isTestedRow(termScores)
-  })
+  const norms = buildLevelCwpmNorms(students, scores)
+  const rows = students.map(s => computeRow(s, scores, anecdotals, benchmarks, semGrades, grade, undefined, versionKey, w, norms))
+
   // Only tested students are ranked into the sextiles. An untested student
   // keeps the class they are already in, so the board suggests no move for
-  // them rather than sorting them on a teacher rating alone -- and so they do
-  // not push a tested classmate across a class boundary by taking up a slot.
-  const sorted = students.filter(s => tested[s.id]).map(s => ({ id: s.id, m: metrics[s.id] || 0 })).sort((a, b) => a.m - b.m)
-  students.forEach(s => { if (!tested[s.id]) result[s.id] = s.english_class as EnglishClass })
+  // them rather than sorting them on no evidence -- and so they do not push a
+  // tested classmate across a class boundary by taking up a slot.
+  rows.forEach(r => { if (!r.isTested) result[r.student.id] = r.student.english_class as EnglishClass })
+  const sorted = rows.filter(r => r.isTested).sort((a, b) => a.composite - b.composite)
   const PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
-  sorted.forEach((item, idx) => {
-    const s = students.find(st => st.id === item.id)!; const sc = scores[s.id]?.raw_scores || {}
-    if (sc.word_reading_correct != null && sc.word_reading_correct < 4) { result[item.id] = 'Lily'; return }
-    if (sc.word_reading_correct != null && sc.word_reading_attempted > 0 && sc.word_reading_correct / sc.word_reading_attempted < 0.1) { result[item.id] = 'Lily'; return }
+  sorted.forEach((r, idx) => {
+    const sc = r.score || {}
+    if (sc.word_reading_correct != null && sc.word_reading_correct < 4) { result[r.student.id] = 'Lily'; return }
+    if (sc.word_reading_correct != null && sc.word_reading_attempted > 0 && sc.word_reading_correct / sc.word_reading_attempted < 0.1) { result[r.student.id] = 'Lily'; return }
     const p = sorted.length > 1 ? idx / (sorted.length - 1) : 0.5
-    result[item.id] = PLACEMENT_CLASSES[Math.min(Math.floor(p / (1 / PLACEMENT_CLASSES.length)), PLACEMENT_CLASSES.length - 1)]
+    result[r.student.id] = PLACEMENT_CLASSES[Math.min(Math.floor(p / (1 / PLACEMENT_CLASSES.length)), PLACEMENT_CLASSES.length - 1)]
   })
   return result
 }

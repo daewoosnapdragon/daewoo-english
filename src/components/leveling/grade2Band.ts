@@ -162,6 +162,53 @@ export interface G2BandInput {
   compNotAdministered?: boolean | null
   /** Percentage, e.g. 94.5. */
   accuracyPct?: number | null
+  /** The guide's own fluency rating, 1-4. */
+  naep?: number | null
+  /** RAW words correct per minute. Never the passage-weighted figure -- see below. */
+  cwpm?: number | null
+}
+
+/**
+ * Where a raw CWPM sits among the students who sustained the SAME passage.
+ *
+ * Rate is the one oral measure that is not passage-relative: 90 wpm on level B
+ * and 90 on level E are not the same achievement. Every other input here is
+ * scale-free by construction, so rate needs a level-specific yardstick before
+ * it can be compared -- and the teacher guides give none. None of them mention
+ * reading rate at all; every grade's Independent / Instructional / Frustration
+ * table is defined on accuracy and comprehension only.
+ *
+ * So the yardstick is the cohort at that level. `reliable` carries the same
+ * sample-size gate the outlier flags use: below it the term is dropped and the
+ * remaining inputs renormalize, rather than positioning a student against a
+ * median built from two classmates.
+ */
+export interface LevelCwpmNorm {
+  medianCwpm: number | null
+  reliable: boolean
+}
+
+/**
+ * How a student is positioned INSIDE their band.
+ *
+ * The band floor already carries passage difficulty -- that is the whole point
+ * of it -- so nothing here may be passage-weighted a second time. Every input
+ * is a measure where "good" means the same thing on level B as on level E:
+ * comprehension out of its max, accuracy as a percentage, NAEP on its 1-4
+ * scale, and rate against the cohort at that same level.
+ *
+ * Weights are relative and renormalize over whatever a student actually has,
+ * so a grade with no phonics or sentence sections lands on comprehension 45,
+ * accuracy 20, NAEP 20, rate 15 without needing its own table.
+ *
+ * Comprehension leads because the guides say so outright: "when accuracy and
+ * comprehension disagree, comprehension decides." Rate trails because the
+ * guides exclude it from placement entirely -- it is here to separate two
+ * readers who are otherwise tied, not to place either of them.
+ */
+const WITHIN_BAND_WEIGHTS = {
+  low:  { phonics: 0.35, syllables: 0.15, sentences: 0.30, comp: 0.20, accuracy: 0.10, naep: 0.10, cwpm: 0.05 },
+  high: { phonics: 0.20, syllables: 0.10, sentences: 0.25, comp: 0.45, accuracy: 0.20, naep: 0.20, cwpm: 0.15 },
 }
 
 export interface G2BandResult {
@@ -181,7 +228,7 @@ export interface G2BandResult {
  * band, and inventing one from the components alone would rank a student on
  * the easy half of the test.
  */
-export function calculateG2Band(input: G2BandInput, scales: BandScales): G2BandResult | null {
+export function calculateG2Band(input: G2BandInput, scales: BandScales, cwpmNorm?: LevelCwpmNorm): G2BandResult | null {
   const attempted = LEVEL_ORDER.find(l => l === input.passageLevel)
   if (!attempted) return null
 
@@ -218,17 +265,39 @@ export function calculateG2Band(input: G2BandInput, scales: BandScales): G2BandR
   // has much comprehension to measure. Comprehension carries the weight higher
   // up, where decoding is no longer the constraint.
   const isLow = effectiveLevel === 'A' || effectiveLevel === 'B'
+  const w = isLow ? WITHIN_BAND_WEIGHTS.low : WITHIN_BAND_WEIGHTS.high
   const parts: { value: number; weight: number }[] = []
   const push = (raw: number | null | undefined, max: number, weight: number) => {
     if (raw == null || max <= 0) return
     parts.push({ value: Math.max(0, Math.min(1, raw / max)), weight })
   }
 
-  push(input.phonicsTotal, scales.phonicsMax, isLow ? 0.35 : 0.20)
-  push(input.syllableTotal, scales.syllableMax, isLow ? 0.15 : 0.10)
-  push(input.sentenceTotal, scales.sentenceMax, isLow ? 0.30 : 0.25)
+  push(input.phonicsTotal, scales.phonicsMax, w.phonics)
+  push(input.syllableTotal, scales.syllableMax, w.syllables)
+  push(input.sentenceTotal, scales.sentenceMax, w.sentences)
   if (!input.compNotAdministered) {
-    push(input.compTotal, scales.compMax, isLow ? 0.20 : 0.45)
+    push(input.compTotal, scales.compMax, w.comp)
+  }
+
+  // Accuracy, rescaled across the band the guides actually care about. A raw
+  // percentage would waste most of its range: nobody places on a passage they
+  // read at 40%, so 0-90% is all one thing ("not sustained", already handled by
+  // the downgrade above) and the real signal is 90 -> 97, frustration to
+  // independent. Rescaling makes that seven-point stretch the whole 0-1 range.
+  if (input.accuracyPct != null) {
+    const span = INDEPENDENT_ACCURACY - FRUSTRATION_ACCURACY
+    parts.push({ value: Math.max(0, Math.min(1, (input.accuracyPct - FRUSTRATION_ACCURACY) / span)), weight: w.accuracy })
+  }
+  // NAEP 1-4 -> 0-1. The guides ask for a rating on every student who reads,
+  // including one who is cut off, so coverage is close to complete.
+  if (input.naep != null && input.naep > 0) {
+    parts.push({ value: Math.max(0, Math.min(1, (input.naep - 1) / 3)), weight: w.naep })
+  }
+  // Rate, against the cohort at this level -- see LevelCwpmNorm. Median maps to
+  // the middle of the range and twice the median to the top, so this separates
+  // tied readers without ever letting rate override the passage they sustained.
+  if (input.cwpm != null && input.cwpm > 0 && cwpmNorm?.reliable && (cwpmNorm.medianCwpm ?? 0) > 0) {
+    parts.push({ value: Math.max(0, Math.min(1, 0.5 * (input.cwpm / (cwpmNorm.medianCwpm as number)))), weight: w.cwpm })
   }
 
   const withinBand = parts.length > 0

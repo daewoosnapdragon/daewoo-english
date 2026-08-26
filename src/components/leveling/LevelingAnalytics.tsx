@@ -35,7 +35,10 @@ function q3(arr: number[]): number {
 }
 
 const PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
-const PASSAGE_LEVELS = ['A', 'B', 'C', 'D', 'E'] as const
+// Grades 1-3 run A-F. This list used to stop at E, so F readers were counted
+// into each class total but never drawn -- the bars silently failed to add up
+// and a class of strong readers looked like it had missing data.
+const PASSAGE_LEVELS = ['A', 'B', 'C', 'D', 'E', 'F'] as const
 
 // Grade 1 uses a different oral assessment (alphabet, phoneme, ORF raw) that produces
 // an oral_score (0-100) instead of CWPM. This helper resolves the best oral value

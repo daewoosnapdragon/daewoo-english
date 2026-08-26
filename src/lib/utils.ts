@@ -363,13 +363,14 @@ export const COMP_FRUSTRATION_RATIO = 0.4
 // composite WAS the one ratio that had headroom, so it could land above 100
 // while a complete record was pulled back toward 1.0.
 //
-// The shared ceiling is not 1.0. The benchmark these ratios divide by is
-// Snapdragon's end-of-year CWPM target, which a good number of readers clear;
-// flattening everyone above it to 1.0 would erase exactly the differences a
-// placement test exists to find — two students who read the same passage at
-// 158 and 193 would score identically. 1.2 keeps that spread while making the
-// ceiling the same for every component.
-export const COMPONENT_CAP = 1.2
+// The ceiling is 1.0 again, and now it never binds. It was 1.2 while the oral
+// term was a rate divided by a grade-wide benchmark: that ratio ran well past
+// 1.0 for most competent readers, so a ceiling of 1.0 would have flattened the
+// whole top of the grade. The oral term is now the band, which is bounded 0-100
+// by construction, and every other term is a score over its own max. Nothing
+// can exceed 1.0 on its own, so this is a guard rather than a scoring decision
+// — and composites read as a percentage again instead of clustering at 120.
+export const COMPONENT_CAP = 1.0
 
 /** Clamp a component ratio to the shared ceiling. Null passes through. */
 export function capComponent(ratio: number | null | undefined): number | null {
@@ -381,19 +382,16 @@ export function capComponent(ratio: number | null | undefined): number | null {
  * The comprehension ratio to feed the composite, or null when comprehension
  * carries nothing at all.
  *
- * Weighted by passage difficulty, the same way fluency is. The passage
- * multiplier used to be applied to CWPM alone, which made 10/10 on the easy
- * passage and 10/10 on the hard one the identical number — so a student who
- * answered nine questions about a much harder text scored BELOW one who
- * answered ten about an easier one. Answering nearly everything about a
- * harder passage is the stronger performance, and the composite now says so.
+ * NOT weighted by passage difficulty. It was for a while, to fix a real
+ * problem — 10/10 on the easy passage and 10/10 on the hard one scored the
+ * same, so answering nine questions about a much harder text ranked BELOW ten
+ * about an easier one. The band fixes that properly: difficulty now sets the
+ * floor a student starts from, and weighting comprehension too would count the
+ * same passage twice, which is how a whole cohort ended up tied at the ceiling.
  *
- * The multiplier read here is `passage_multiplier`, which the oral screen
- * stores next to `passage_level` — the passage the questions were actually
- * asked about. That is deliberately not `best_passage_level`: fluency takes
- * the best attempt across passages, but comprehension belongs to the passage
- * it was administered on. Records saved before the field existed weight at
- * 1.0, keeping their old scores rather than being restated after the fact.
+ * Comprehension's real job is inside the band, where it carries the most weight
+ * of any positioning input, per the guides: when accuracy and comprehension
+ * disagree, comprehension decides.
  *
  * "Not administered" is NOT missing data. The teacher stops the passage and
  * skips the questions precisely BECAUSE the student was struggling, so the
@@ -422,11 +420,7 @@ export function compRatioForComposite(calc: {
   passage_multiplier?: number | null
 } | null | undefined): number | null {
   if (!calc) return null
-  if (compIsCountable(calc)) {
-    const ratio = calc.comp_total! / (calc.comp_max || 15)
-    const mult = calc.passage_multiplier != null && calc.passage_multiplier > 0 ? calc.passage_multiplier : 1
-    return capComponent(ratio * mult)
-  }
+  if (compIsCountable(calc)) return capComponent(calc.comp_total! / (calc.comp_max || 15))
   if (calc.comp_not_administered) {
     const max = calc.comp_max || 15
     return calc.comp_frustration_max != null
