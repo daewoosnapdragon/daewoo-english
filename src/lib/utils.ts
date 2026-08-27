@@ -372,6 +372,17 @@ export const COMP_FRUSTRATION_RATIO = 0.4
 // — and composites read as a percentage again instead of clustering at 120.
 export const COMPONENT_CAP = 1.0
 
+// ─── When a reading rate cannot be real ──────────────────────────────
+// Fluent adult oral reading runs about 150-200 words a minute, and the top
+// class's end-of-year target is around 150. A child reading aloud past this is
+// almost never a fast reader; it is a stopwatch started late, so the words read
+// cover the whole passage while the clock covers part of it. Worth flagging by
+// eye rather than silently ranking, because the rate feeds the band.
+export const IMPLAUSIBLE_CWPM = 250
+
+/** Seconds below which a full-passage read is more likely a mis-started timer. */
+export const IMPLAUSIBLE_READ_SECONDS = 15
+
 /** Clamp a component ratio to the shared ceiling. Null passes through. */
 export function capComponent(ratio: number | null | undefined): number | null {
   if (ratio == null) return null

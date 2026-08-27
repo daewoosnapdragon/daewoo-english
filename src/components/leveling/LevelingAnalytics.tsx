@@ -40,12 +40,25 @@ const PLACEMENT_CLASSES: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflow
 // and a class of strong readers looked like it had missing data.
 const PASSAGE_LEVELS = ['A', 'B', 'C', 'D', 'E', 'F'] as const
 
+// F had no entry, so its segment and its legend swatch rendered undefined --
+// a grey the eye reads as "no data" on the one level that means the opposite.
+// Purple because it has to be told apart from E's blue at a glance, and every
+// warm colour is already spoken for lower down the scale. Defined once: the
+// bar and the legend each carried their own copy and only one grew an F.
+const PASSAGE_COLORS: Record<string, string> = {
+  A: '#EF4444', B: '#F97316', C: '#EAB308', D: '#22C55E', E: '#3B82F6', F: '#A855F7',
+}
+
 // Grade 1 uses a different oral assessment (alphabet, phoneme, ORF raw) that produces
 // an oral_score (0-100) instead of CWPM. This helper resolves the best oral value
-// for any grade, using weighted CWPM for grades 2-5 and oral_score for grade 1.
+// for any grade, using raw CWPM for grades 2-5 and oral_score for grade 1.
+//
+// RAW, not best_weighted_cwpm. That chain multiplies the clocked rate by passage
+// difficulty and again by the NAEP rating -- up to 1.65x on Grade 5 level E --
+// so a child clocked at 236 plotted at 390 on an axis labelled "reading speed
+// (CWPM)". Difficulty belongs to the band now, and these charts are about rate.
 function getOralValue(calc: any, sc: any): number | null {
-  // Prefer best_weighted_cwpm chain (grades 2-5 passage reading)
-  const cwpmVal = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+  const cwpmVal = calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
   if (cwpmVal != null && cwpmVal > 0) return cwpmVal
   // Grade 1 fallback: oral_score is a 0-100 normalized composite
   if (calc.oral_score != null && calc.oral_score > 0) return calc.oral_score
@@ -191,7 +204,7 @@ function SectionCard({ icon: Icon, title, description, children }: { icon: any; 
 // ── NEW: Passage Distribution Bar ──────────────────────────────
 function PassageDistributionBar({ cls, counts, total }: { cls: EnglishClass; counts: Record<string, number>; total: number }) {
   if (total === 0) return null
-  const colors: Record<string, string> = { A: '#EF4444', B: '#F97316', C: '#EAB308', D: '#22C55E', E: '#3B82F6' }
+  const colors = PASSAGE_COLORS
 
   return (
     <div className="flex items-center gap-2 mb-2">
@@ -754,7 +767,10 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
     const data: { studentId: string; cwpm: number; comp: number; compMax: number; cls: EnglishClass; name: string }[] = []
     students.forEach(s => {
       const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}
-      const cwpm = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+      // Raw rate. The scatter's whole point is separating a fast word-caller
+      // from a slow reader who understands, and neither is legible once the
+      // axis carries passage weighting as well.
+      const cwpm = calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
       const comp = calc.comp_total
       const compMax = calc.comp_max || 15
       // Students with no countable comprehension have no point to plot -- omit
@@ -1148,7 +1164,7 @@ function LevelingAnalytics({ levelTest }: { levelTest: LevelTest }) {
                 })}
                 <div className="flex items-center gap-3 mt-4 text-[10px] text-text-secondary">
                   {PASSAGE_LEVELS.map(level => {
-                    const colors: Record<string, string> = { A: '#EF4444', B: '#F97316', C: '#EAB308', D: '#22C55E', E: '#3B82F6' }
+                    const colors = PASSAGE_COLORS
                     return (
                       <span key={level} className="flex items-center gap-1">
                         <span className="w-3 h-3 rounded" style={{ backgroundColor: colors[level] }} />
