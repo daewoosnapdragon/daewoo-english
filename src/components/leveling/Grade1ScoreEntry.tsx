@@ -1994,33 +1994,40 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
 
                   return (
                     <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                      <div className="flex items-center gap-3 px-3 py-2">
-                        <div className="w-44">
-                          <div className="text-[12px] font-medium">{cat.label}</div>
-                          <div className="text-[9px] text-text-tertiary">{cat.standard} -- {cat.standardDesc}</div>
+                      <div className="flex items-start gap-3 px-3 py-2.5">
+                        <div className="w-44 shrink-0 pt-1">
+                          <div className="text-[12.5px] font-semibold">{cat.label}</div>
+                          <div className="text-[9.5px] text-text-tertiary leading-snug">{cat.standard} &middot; {cat.standardDesc}</div>
                         </div>
-                        <div className="flex gap-1">
-                          {Array.from({ length: cat.max + 1 }, (_, i) => (
-                            <button key={i} onClick={() => updateWrittenRubric(student.id, cat.key, i)}
-                              title={descriptors?.[i] || ''}
-                              className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'}`}>
-                              {i}
-                            </button>
-                          ))}
-                        </div>
-                        <span className="text-[12px] font-bold text-navy ml-2">{val}/{cat.max}</span>
-                      </div>
-                      {showRubricGuide && descriptors && (
-                        <div className="px-3 pb-2">
-                          <div className="bg-surface-alt/60 rounded-lg px-3 py-2 grid gap-1" style={{ gridTemplateColumns: `repeat(${cat.max + 1}, 1fr)` }}>
+                        {/* The descriptor is the button -- see the same change on
+                            the grades 2-5 paper. Nothing to open, nothing to
+                            cross-reference against a number. */}
+                        {descriptors ? (
+                          <div className="flex-1 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cat.max + 1}, minmax(0, 1fr))` }}>
+                            {Array.from({ length: cat.max + 1 }, (_, i) => {
+                              const on = val === i
+                              return (
+                                <button key={i} onClick={() => updateWrittenRubric(student.id, cat.key, i)}
+                                  aria-pressed={on}
+                                  className={`text-left rounded-lg px-2.5 py-2 border-2 transition-all text-[10.5px] leading-snug min-h-[74px] ${
+                                    on ? 'bg-navy text-white border-navy shadow-sm'
+                                       : 'bg-white border-gray-200 text-text-secondary hover:border-navy/45 hover:bg-surface-alt/50'
+                                  }`}>
+                                  {descriptors[i] || '—'}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <div className="flex gap-1">
                             {Array.from({ length: cat.max + 1 }, (_, i) => (
-                              <div key={i} className={`text-[8px] leading-tight px-1 py-1 rounded ${val === i ? 'bg-navy/10 font-semibold text-navy' : 'text-text-tertiary'}`}>
-                                <span className="font-bold text-[9px]">{i}:</span> {descriptors[i] || '—'}
-                              </div>
+                              <button key={i} onClick={() => updateWrittenRubric(student.id, cat.key, i)}
+                                className={`w-9 h-9 rounded-lg text-[12px] font-bold border-2 transition-all ${val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'}`}>{i}</button>
                             ))}
                           </div>
-                        </div>
-                      )}
+                        )}
+                        <span className="text-[13px] font-bold text-navy ml-1 shrink-0 w-10 text-right tabular-nums">{val}/{cat.max}</span>
+                      </div>
                     </div>
                   )
                 })}
