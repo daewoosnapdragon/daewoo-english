@@ -68,9 +68,11 @@ interface Paper {
   phonicsRows: number
   phonicsRowMax: number
   sentenceCount: number
+  /** Points per sentence. Grade 2 scores its five sentences out of 36 between them. */
+  sentenceItemMax: number
 }
 
-const EMPTY_PAPER: Paper = { questions: [], writingCats: [], compByLevel: {}, compScoreMax: 2, phonicsRows: 0, phonicsRowMax: 0, sentenceCount: 0 }
+const EMPTY_PAPER: Paper = { questions: [], writingCats: [], compByLevel: {}, compScoreMax: 2, phonicsRows: 0, phonicsRowMax: 0, sentenceCount: 0, sentenceItemMax: 1 }
 
 async function loadPaper(test: LevelTest): Promise<Paper> {
   const g = Number(test.grade)
@@ -102,6 +104,7 @@ async function loadPaper(test: LevelTest): Promise<Paper> {
       phonicsRows: oral.phonics?.rows?.length ?? 0,
       phonicsRowMax: oral.phonics?.rows?.length ? Math.round((oral.phonics.max ?? 0) / oral.phonics.rows.length) : 0,
       sentenceCount: oral.sentences?.items?.length ?? 0,
+      sentenceItemMax: oral.sentences?.items?.length ? (oral.sentences.max ?? 0) / oral.sentences.items.length : 1,
     }
   } catch { return EMPTY_PAPER }
 }
@@ -363,64 +366,6 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
         )}
       </div>
 
-      {/* ── Where the cut lines fall ── */}
-      {/* The matrix counts moves; it cannot show WHY one is a move. This can:
-          the six bands behind the dots are the score ranges each class occupies,
-          so a student's distance from the nearest line is how marginal their
-          placement is -- which is the thing a meeting actually argues about. */}
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <p className="text-[12px] font-semibold text-navy">How close each student is to a cut line</p>
-        <p className="text-[10px] text-text-tertiary mb-3">
-          The bands are the score range for each class. A dot sitting near a line could go either way; a dot in the middle of a band is settled.
-        </p>
-        <div className="flex mb-1 ml-20 mr-8">
-          {PLACED_ENGLISH_CLASSES.map((c, i) => {
-            const from = i === 0 ? 0 : CLASS_CUTS[i - 1]
-            const to = i === CLASS_CUTS.length ? 100 : CLASS_CUTS[i]
-            return (
-              <div key={c} className="text-center overflow-hidden" style={{ width: `${to - from}%` }}>
-                <span className="text-[9px] font-semibold whitespace-nowrap" style={{ color: classToTextColor(c) }}>{c}</span>
-              </div>
-            )
-          })}
-        </div>
-        <div className="space-y-1.5">
-          {classes.map(c => {
-            const inClass = tested.filter(r => r.student.english_class === c)
-            if (inClass.length === 0) return null
-            return (
-              <div key={c} className="flex items-center gap-2">
-                <span className="w-20 text-[10px] font-semibold text-right shrink-0" style={{ color: classToTextColor(c) }}>{c}</span>
-                <div className="flex-1 relative h-7 rounded overflow-hidden border border-border">
-                  {PLACED_ENGLISH_CLASSES.map((band, i) => {
-                    const from = i === 0 ? 0 : CLASS_CUTS[i - 1]
-                    const to = i === CLASS_CUTS.length ? 100 : CLASS_CUTS[i]
-                    return <div key={band} className="absolute top-0 h-full" style={{ left: `${from}%`, width: `${to - from}%`, backgroundColor: classToColor(band) + '1f' }} />
-                  })}
-                  {CLASS_CUTS.map(x => <div key={x} className="absolute top-0 h-full w-px bg-border" style={{ left: `${x}%` }} />)}
-                  {inClass.map(r => {
-                    const x = r.composite * 100
-                    const sug = r.suggested as EnglishClass
-                    const moving = sug !== c
-                    const marginal = Math.min(...CLASS_CUTS.map(cut => Math.abs(x - cut))) < 4
-                    return (
-                      <div key={r.student.id}
-                        title={`${r.student.english_name} — composite ${Math.round(x)} → ${sug}${marginal ? ' (close to a line)' : ''}`}
-                        className={`absolute w-3 h-3 rounded-full -translate-x-1/2 ${moving ? 'ring-2 ring-navy' : 'border border-white/70'}`}
-                        style={{ left: `${Math.min(99, Math.max(1, x))}%`, top: '50%', marginTop: -6, backgroundColor: classToColor(sug), zIndex: moving ? 2 : 1 }} />
-                    )
-                  })}
-                </div>
-                <span className="w-7 text-[10px] text-text-tertiary shrink-0">{inClass.length}</span>
-              </div>
-            )
-          })}
-        </div>
-        <p className="text-[10px] text-text-tertiary mt-2">
-          Dot colour is the class the test puts them in. A <span className="inline-block w-2.5 h-2.5 rounded-full ring-2 ring-navy align-middle bg-surface-alt" /> ringed dot is one whose row and colour disagree &mdash; a move.
-        </p>
-      </div>
-
       {/* ── Oral against written ── */}
       {/* The one comparison nothing else in the app makes. A strong decoder who
           does not comprehend and a nervous reader who is fine on paper both
@@ -496,7 +441,9 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
 function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Paper }) {
   const [openQ, setOpenQ] = useState<number | null>(null)
   const [openCat, setOpenCat] = useState<string | null>(null)
-  const classes = ENGLISH_CLASSES.filter(c => rows.some(r => r.student.english_class === c))
+  // Unplaced is a holding pen for transfer students, not a class, so it gets no
+  // column. Their answers still count toward each question's overall figure.
+  const classes = PLACED_ENGLISH_CLASSES.filter(c => rows.some(r => r.student.english_class === c))
 
   const items = useMemo(() => paper.questions.map((q: any) => {
     const picks: Record<string, number> = {}
@@ -587,7 +534,7 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
         const v = r.raw?.[`sent_${i}`]
         if (v == null) continue
         const cell = (sentences[cls] ||= { got: 0, max: 0 })
-        cell.got += v; cell.max += 1
+        cell.got += v; cell.max += paper.sentenceItemMax
       }
       if (r.calc?.naep) (naep[cls] ||= []).push(r.calc.naep)
     })
@@ -949,7 +896,7 @@ const add = (t: Record<string, Tally>, k: string, got: number, max: number) => {
 function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Paper }) {
   const [raw, setRaw] = useState(false)
   const [openWriting, setOpenWriting] = useState(true)
-  const classes = ENGLISH_CLASSES.filter(c => rows.some(r => r.student.english_class === c))
+  const classes = PLACED_ENGLISH_CLASSES.filter(c => rows.some(r => r.student.english_class === c))
 
   const { byClass, writingCats } = useMemo(() => {
     const byClass: Record<string, Record<string, Tally>> = {}
@@ -967,7 +914,7 @@ function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Pa
 
       for (let i = 1; i <= 5; i++) {
         if (rw?.[`phonics_row${i}`] != null) add(t, 'decode', rw[`phonics_row${i}`], paper.phonicsRowMax || 5)
-        if (rw?.[`sent_${i}`] != null) add(t, 'decode', rw[`sent_${i}`], 1)
+        if (rw?.[`sent_${i}`] != null) add(t, 'decode', rw[`sent_${i}`], paper.sentenceItemMax)
       }
       if (calc?.comp_total != null && calc?.comp_max > 0 && !calc.comp_not_administered) add(t, 'heard', calc.comp_total, calc.comp_max)
 
