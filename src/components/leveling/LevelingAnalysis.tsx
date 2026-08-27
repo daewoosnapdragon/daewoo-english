@@ -59,20 +59,51 @@ interface Row {
   /** The class they were placed in at the most recent earlier test, if any. */
   lastYear: EnglishClass | null
 }
-interface Paper { questions: any[]; writingCats: any[] }
+interface Paper {
+  questions: any[]
+  writingCats: any[]
+  /** Comprehension questions per passage level, so a comp score can be given its DOK. */
+  compByLevel: Record<string, { q: string; dok: string }[]>
+  compScoreMax: number
+  phonicsRows: number
+  phonicsRowMax: number
+  sentenceCount: number
+}
+
+const EMPTY_PAPER: Paper = { questions: [], writingCats: [], compByLevel: {}, compScoreMax: 2, phonicsRows: 0, phonicsRowMax: 0, sentenceCount: 0 }
 
 async function loadPaper(test: LevelTest): Promise<Paper> {
   const g = Number(test.grade)
   try {
     if (g === 1) {
       const c = (await import('./grade1Content')).g1ContentForTest(test as any)
-      return c ? { questions: c.written.questions, writingCats: c.extendedWriting.categories as any[] } : { questions: [], writingCats: [] }
+      if (!c) return EMPTY_PAPER
+      return {
+        ...EMPTY_PAPER,
+        questions: c.written.questions,
+        writingCats: c.extendedWriting.categories as any[],
+        compByLevel: (c.compQuestions || {}) as any,
+        compScoreMax: 2,
+      }
     }
     const mod = g === 2 ? await import('./grade2Content') : g === 3 ? await import('./grade3Content')
       : g === 4 ? await import('./grade4Content') : g === 5 ? await import('./grade5Content') : null
     const c = mod ? (mod as any)[`g${g}ContentForTest`](test as any) : null
-    return c ? { questions: c.written.questions ?? [], writingCats: c.writing?.categories ?? [] } : { questions: [], writingCats: [] }
-  } catch { return { questions: [], writingCats: [] } }
+    if (!c) return EMPTY_PAPER
+    // Grade 2 nests its reading under oral.reading; grades 3-5 sit it directly
+    // on oral, and only Grade 2 has phonics and sentence sections at all.
+    const oral = c.oral ?? {}
+    const reading = oral.reading ?? oral
+    return {
+      questions: c.written?.questions ?? [],
+      writingCats: c.writing?.categories ?? [],
+      compByLevel: (reading.compQuestions ?? {}) as any,
+      compScoreMax: g === 2 ? 2 : 2,
+      phonicsRows: oral.phonics?.rows?.length ?? 0,
+      phonicsRowMax: oral.phonics?.rows?.length ? Math.round((oral.phonics.max ?? 0) / oral.phonics.rows.length) : 0,
+      sentenceCount: oral.sentences?.items?.length ?? 0,
+    }
+  } catch { return EMPTY_PAPER }
 }
 
 export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest[] }) {
@@ -88,7 +119,7 @@ export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest
 
   const [view, setView] = useState<'placement' | 'questions'>('placement')
   const [rows, setRows] = useState<Row[] | null>(null)
-  const [paper, setPaper] = useState<Paper>({ questions: [], writingCats: [] })
+  const [paper, setPaper] = useState<Paper>(EMPTY_PAPER)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -390,6 +421,14 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
         </p>
       </div>
 
+      {/* ── Oral against written ── */}
+      {/* The one comparison nothing else in the app makes. A strong decoder who
+          does not comprehend and a nervous reader who is fine on paper both
+          read as "middling" everywhere else; here they sit in opposite corners.
+          It also explains WHY a student landed where the matrix put them, which
+          is what gets argued about in the room. */}
+      <OralVsWritten rows={tested} />
+
       {/* ── The list that gets read out ── */}
       <div className="bg-surface border border-border rounded-xl overflow-x-auto">
         <div className="px-4 pt-3.5 pb-2 flex items-center gap-2 flex-wrap">
@@ -515,17 +554,105 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
     return acc
   }
 
+  // ── The oral half ──
+  // Comprehension is grouped by DOK rather than by question number: the
+  // questions differ per passage level, so "Q3" is five different questions
+  // across a grade and would leave four students in every cell. DOK is the
+  // grouping the oral test's own standards table already uses.
+  const oral = useMemo(() => {
+    const dok: Record<string, Record<string, { got: number; max: number }>> = {}
+    const phonics: Record<string, { got: number; max: number }> = {}
+    const sentences: Record<string, { got: number; max: number }> = {}
+    const naep: Record<string, number[]> = {}
+    rows.forEach(r => {
+      const cls = r.student.english_class
+      const lvl = r.calc?.passage_level
+      const qs = lvl ? paper.compByLevel[lvl] : null
+      if (qs && !r.calc?.comp_not_administered) {
+        qs.forEach((q, i) => {
+          const v = r.raw?.[`comp_${i + 1}`]
+          if (v == null) return
+          const key = (q.dok || '—').replace('DOK ', 'DOK ')
+          const cell = ((dok[key] ||= {})[cls] ||= { got: 0, max: 0 })
+          cell.got += v; cell.max += paper.compScoreMax
+        })
+      }
+      for (let i = 1; i <= paper.phonicsRows; i++) {
+        const v = r.raw?.[`phonics_row${i}`]
+        if (v == null) continue
+        const cell = (phonics[cls] ||= { got: 0, max: 0 })
+        cell.got += v; cell.max += paper.phonicsRowMax
+      }
+      for (let i = 1; i <= paper.sentenceCount; i++) {
+        const v = r.raw?.[`sent_${i}`]
+        if (v == null) continue
+        const cell = (sentences[cls] ||= { got: 0, max: 0 })
+        cell.got += v; cell.max += 1
+      }
+      if (r.calc?.naep) (naep[cls] ||= []).push(r.calc.naep)
+    })
+    return { dok, phonics, sentences, naep }
+  }, [rows, paper])
+
+  const hasOral = Object.keys(oral.dok).length > 0 || Object.keys(oral.phonics).length > 0 || Object.keys(oral.naep).length > 0
   const anyAnswers = items.some(i => i.answered > 0)
-  if (!anyAnswers && writing.length === 0) {
-    return <p className="text-[13px] text-text-tertiary py-10 text-center">No written paper marked yet for Grade {test.grade}.</p>
+  if (!anyAnswers && writing.length === 0 && !hasOral) {
+    return <p className="text-[13px] text-text-tertiary py-10 text-center">Nothing marked yet for Grade {test.grade}.</p>
   }
 
   return (
     <div className="space-y-4">
+      {hasOral && (
+        <div className="bg-surface border border-border rounded-xl overflow-x-auto">
+          <div className="px-4 pt-3.5 pb-2">
+            <p className="text-[12px] font-semibold text-navy">Oral test</p>
+            <p className="text-[10px] text-text-tertiary">
+              Comprehension by depth of knowledge, since the questions differ per passage &mdash; DOK 1 is retrieval, DOK 2 asks the student to do something with what they found.
+            </p>
+          </div>
+          <table className="w-full text-[11px]">
+            <thead><tr className="bg-surface-alt">
+              <th className="text-left px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">&nbsp;</th>
+              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[9px] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+            </tr></thead>
+            <tbody>
+              {Object.keys(oral.dok).sort().map(k => (
+                <tr key={k} className="border-t border-border">
+                  <td className="px-3 py-2 font-medium text-navy">Comprehension &middot; {k}</td>
+                  {classes.map(c => <Cell key={c} v={oral.dok[k][c] ? { hit: oral.dok[k][c].got, n: oral.dok[k][c].max } : null} />)}
+                </tr>
+              ))}
+              {Object.keys(oral.phonics).length > 0 && (
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2 font-medium text-navy">Phonics grid</td>
+                  {classes.map(c => <Cell key={c} v={oral.phonics[c] ? { hit: oral.phonics[c].got, n: oral.phonics[c].max } : null} />)}
+                </tr>
+              )}
+              {Object.keys(oral.sentences).length > 0 && (
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2 font-medium text-navy">Sentence reading</td>
+                  {classes.map(c => <Cell key={c} v={oral.sentences[c] ? { hit: oral.sentences[c].got, n: oral.sentences[c].max } : null} />)}
+                </tr>
+              )}
+              {Object.keys(oral.naep).length > 0 && (
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2 font-medium text-navy">Expression <span className="text-[9px] text-text-tertiary font-normal">NAEP, out of 4</span></td>
+                  {classes.map(c => {
+                    const v = oral.naep[c]
+                    if (!v?.length) return <td key={c} className="px-2 py-2 text-center text-text-tertiary">—</td>
+                    const avg = v.reduce((a, b) => a + b, 0) / v.length
+                    return <Cell key={c} v={{ hit: avg, n: 4 }} sub={`${v.length}`} />
+                  })}
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
       {anyAnswers && (
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <div className="px-4 pt-3.5 pb-3">
-            <p className="text-[12px] font-semibold text-navy">Every question</p>
+            <p className="text-[12px] font-semibold text-navy">Written test &middot; every question</p>
             <p className="text-[10px] text-text-tertiary">One bar per question, in paper order. Taller is better. Click a bar to open it.</p>
           </div>
           <div className="px-4 pb-2 flex items-end gap-[3px] h-24">
@@ -688,6 +815,91 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
             style={{ backgroundColor: col }}>{c} {Math.round(p * 100)}%</span>
         })}
       </div>
+    </div>
+  )
+}
+
+/** The whole written paper as a percentage: multiple choice, short response and rubric. */
+function writtenPct(calc: any): number | null {
+  if (!calc) return null
+  const parts: [number, number][] = []
+  if (calc.written_mc_total != null && calc.written_mc_max > 0) parts.push([calc.written_mc_total, calc.written_mc_max])
+  if (calc.short_writing_total != null && calc.short_writing_max > 0) parts.push([calc.short_writing_total, calc.short_writing_max])
+  if (calc.writing_total != null && calc.writing_max > 0) parts.push([calc.writing_total, calc.writing_max])
+  if (parts.length === 0) return null
+  const got = parts.reduce((s, p) => s + p[0], 0)
+  const max = parts.reduce((s, p) => s + p[1], 0)
+  return max > 0 ? (got / max) * 100 : null
+}
+
+function OralVsWritten({ rows }: { rows: Row[] }) {
+  const pts = rows.map(r => ({ r, x: r.band?.composite ?? null, y: writtenPct(r.calc) }))
+    .filter(p => p.x != null && p.y != null) as { r: Row; x: number; y: number }[]
+
+  if (pts.length === 0) {
+    return (
+      <div className="bg-surface border border-border rounded-xl p-4">
+        <p className="text-[12px] font-semibold text-navy">Oral against written</p>
+        <p className="text-[10px] text-text-tertiary">Fills in once the written papers are marked.</p>
+      </div>
+    )
+  }
+  // Far from the diagonal is the point of the chart.
+  const gap = (p: { x: number; y: number }) => p.y - p.x
+  const readsBetter = [...pts].filter(p => gap(p) < -18).sort((a, b) => gap(a) - gap(b))
+  const testsBetter = [...pts].filter(p => gap(p) > 18).sort((a, b) => gap(b) - gap(a))
+
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4">
+      <p className="text-[12px] font-semibold text-navy">Oral against written</p>
+      <p className="text-[10px] text-text-tertiary mb-3">
+        Reading aloud across, the written paper up. On the line means the two agree; the distance off it is the disagreement.
+      </p>
+      <div className="flex gap-4 flex-wrap">
+        <svg viewBox="0 0 220 200" className="w-[300px] h-[270px] shrink-0">
+          <rect x="30" y="10" width="180" height="170" fill="#F8FAFC" stroke="#E2E8F0" />
+          {[0, 25, 50, 75, 100].map(g => (
+            <g key={g}>
+              <line x1={30 + g * 1.8} x2={30 + g * 1.8} y1="10" y2="180" stroke="#E2E8F0" strokeWidth="0.5" />
+              <line x1="30" x2="210" y1={180 - g * 1.7} y2={180 - g * 1.7} stroke="#E2E8F0" strokeWidth="0.5" />
+            </g>
+          ))}
+          <line x1="30" y1="180" x2="210" y2="10" stroke="#94A3B8" strokeWidth="0.8" strokeDasharray="3 3" />
+          {pts.map(p => (
+            <circle key={p.r.student.id} cx={30 + p.x * 1.8} cy={180 - p.y * 1.7} r="3.2"
+              fill={classToColor(p.r.student.english_class as EnglishClass)} stroke="#fff" strokeWidth="0.8">
+              <title>{`${p.r.student.english_name} — oral ${Math.round(p.x)}, written ${Math.round(p.y)}%`}</title>
+            </circle>
+          ))}
+          <text x="120" y="196" fontSize="7" fill="#94A3B8" textAnchor="middle">oral (Band)</text>
+          <text x="10" y="95" fontSize="7" fill="#94A3B8" textAnchor="middle" transform="rotate(-90 10 95)">written paper %</text>
+          <text x="205" y="22" fontSize="6.5" fill="#94A3B8" textAnchor="end">tests better than reads</text>
+          <text x="36" y="176" fontSize="6.5" fill="#94A3B8">reads better than tests</text>
+        </svg>
+        <div className="flex-1 min-w-[220px] space-y-3">
+          <Corner title="Reads better than they test" tone="amber" people={readsBetter}
+            note="Handles the passage aloud but loses it on paper. Worth checking whether the paper, not the reading, is the obstacle." />
+          <Corner title="Tests better than they read" tone="blue" people={testsBetter}
+            note="Scores on paper without sustaining the passage aloud. Decoding or fluency is the gap, not understanding." />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Corner({ title, note, people, tone }: { title: string; note: string; tone: 'amber' | 'blue'; people: { r: Row; x: number; y: number }[] }) {
+  return (
+    <div className={`rounded-lg border p-2.5 ${tone === 'amber' ? 'bg-amber-50/60 border-amber-200' : 'bg-blue-50/60 border-blue-200'}`}>
+      <p className="text-[11px] font-semibold text-navy">{title} <span className="text-text-tertiary font-normal">{people.length}</span></p>
+      <p className="text-[9px] text-text-tertiary leading-snug mb-1.5">{note}</p>
+      {people.length === 0
+        ? <p className="text-[10px] text-text-tertiary italic">Nobody.</p>
+        : <div className="flex flex-wrap gap-1">
+            {people.slice(0, 12).map(p => (
+              <span key={p.r.student.id} className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border"
+                title={`oral ${Math.round(p.x)} · written ${Math.round(p.y)}%`}>{p.r.student.english_name}</span>
+            ))}
+          </div>}
     </div>
   )
 }
