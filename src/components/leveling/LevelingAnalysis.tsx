@@ -366,7 +366,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
         )}
       </div>
 
-      {/* ── Oral against written ── */}
+      {/* ── Reading aloud against the written paper ── */}
       {/* The one comparison nothing else in the app makes. A strong decoder who
           does not comprehend and a nervous reader who is fine on paper both
           read as "middling" everywhere else; here they sit in opposite corners.
@@ -780,55 +780,87 @@ function writtenPct(calc: any): number | null {
 }
 
 function OralVsWritten({ rows }: { rows: Row[] }) {
+  const [hover, setHover] = useState<{ r: Row; x: number; y: number } | null>(null)
   const pts = rows.map(r => ({ r, x: r.band?.composite ?? null, y: writtenPct(r.calc) }))
     .filter(p => p.x != null && p.y != null) as { r: Row; x: number; y: number }[]
 
   if (pts.length === 0) {
     return (
       <div className="bg-surface border border-border rounded-xl p-4">
-        <p className="text-[12px] font-semibold text-navy">Oral against written</p>
+        <p className="text-[12px] font-semibold text-navy">Reading aloud against the written paper</p>
         <p className="text-[10px] text-text-tertiary">Fills in once the written papers are marked.</p>
       </div>
     )
   }
-  // Far from the diagonal is the point of the chart.
+
+  // Above the diagonal is a higher written score than oral; below it, the
+  // reverse. The labels sit in the corners those describe -- top LEFT is a low
+  // oral score with a high written one, which is the paper-stronger case.
   const gap = (p: { x: number; y: number }) => p.y - p.x
-  const readsBetter = [...pts].filter(p => gap(p) < -18).sort((a, b) => gap(a) - gap(b))
-  const testsBetter = [...pts].filter(p => gap(p) > 18).sort((a, b) => gap(b) - gap(a))
+  const paperStronger = [...pts].filter(p => gap(p) > 18).sort((a, b) => gap(b) - gap(a))
+  const readingStronger = [...pts].filter(p => gap(p) < -18).sort((a, b) => gap(a) - gap(b))
+
+  const W = 820, H = 470, L = 54, R = 24, T = 26, B = 46
+  const px = (v: number) => L + (v / 100) * (W - L - R)
+  const py = (v: number) => H - B - (v / 100) * (H - T - B)
 
   return (
     <div className="bg-surface border border-border rounded-xl p-4">
-      <p className="text-[12px] font-semibold text-navy">Oral against written</p>
-      <p className="text-[10px] text-text-tertiary mb-3">
-        Reading aloud across, the written paper up. On the line means the two agree; the distance off it is the disagreement.
+      <p className="text-[12px] font-semibold text-navy">Reading aloud against the written paper</p>
+      <p className="text-[11px] text-text-secondary mb-1 max-w-[70ch]">
+        Every dot is one student. How well they read aloud runs left to right; how they did on the written paper runs bottom to top.
       </p>
-      <div className="flex gap-4 flex-wrap">
-        <svg viewBox="0 0 220 200" className="w-[300px] h-[270px] shrink-0">
-          <rect x="30" y="10" width="180" height="170" fill="#F8FAFC" stroke="#E2E8F0" />
+      <p className="text-[11px] text-text-secondary mb-3 max-w-[70ch]">
+        A student on the dotted line did about as well on both. The further a dot sits from that line, the more the two tests disagree about them &mdash; and those are the students worth a second look.
+      </p>
+
+      <div className="relative w-full" style={{ maxWidth: 820 }}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 'auto' }} onMouseLeave={() => setHover(null)}>
+          <rect x={L} y={T} width={W - L - R} height={H - T - B} fill="var(--surface-alt, #F8FAFC)" stroke="#E2E8F0" />
+          {/* The two halves, named where they actually are */}
+          <polygon points={`${L},${T} ${px(100)},${T} ${L},${py(0)}`} fill="#3B82F6" opacity="0.045" />
+          <polygon points={`${px(100)},${T} ${px(100)},${py(0)} ${L},${py(0)}`} fill="#F59E0B" opacity="0.05" />
           {[0, 25, 50, 75, 100].map(g => (
             <g key={g}>
-              <line x1={30 + g * 1.8} x2={30 + g * 1.8} y1="10" y2="180" stroke="#E2E8F0" strokeWidth="0.5" />
-              <line x1="30" x2="210" y1={180 - g * 1.7} y2={180 - g * 1.7} stroke="#E2E8F0" strokeWidth="0.5" />
+              <line x1={px(g)} x2={px(g)} y1={T} y2={py(0)} stroke="#E2E8F0" strokeWidth="1" />
+              <line x1={L} x2={px(100)} y1={py(g)} y2={py(g)} stroke="#E2E8F0" strokeWidth="1" />
+              <text x={px(g)} y={py(0) + 16} fontSize="10" fill="#94A3B8" textAnchor="middle">{g}</text>
+              <text x={L - 8} y={py(g) + 3.5} fontSize="10" fill="#94A3B8" textAnchor="end">{g}</text>
             </g>
           ))}
-          <line x1="30" y1="180" x2="210" y2="10" stroke="#94A3B8" strokeWidth="0.8" strokeDasharray="3 3" />
-          {pts.map(p => (
-            <circle key={p.r.student.id} cx={30 + p.x * 1.8} cy={180 - p.y * 1.7} r="3.2"
-              fill={classToColor(p.r.student.english_class as EnglishClass)} stroke="#fff" strokeWidth="0.8">
-              <title>{`${p.r.student.english_name} — oral ${Math.round(p.x)}, written ${Math.round(p.y)}%`}</title>
-            </circle>
-          ))}
-          <text x="120" y="196" fontSize="7" fill="#94A3B8" textAnchor="middle">oral (Band)</text>
-          <text x="10" y="95" fontSize="7" fill="#94A3B8" textAnchor="middle" transform="rotate(-90 10 95)">written paper %</text>
-          <text x="205" y="22" fontSize="6.5" fill="#94A3B8" textAnchor="end">tests better than reads</text>
-          <text x="36" y="176" fontSize="6.5" fill="#94A3B8">reads better than tests</text>
+          <line x1={L} y1={py(0)} x2={px(100)} y2={py(100)} stroke="#94A3B8" strokeWidth="1.2" strokeDasharray="5 4" />
+          <text x={L + 12} y={T + 18} fontSize="11" fill="#3B82F6" opacity="0.85">Stronger on paper</text>
+          <text x={px(100) - 12} y={py(0) - 12} fontSize="11" fill="#B45309" opacity="0.9" textAnchor="end">Stronger reading aloud</text>
+
+          {pts.map(p => {
+            const on = hover?.r.student.id === p.r.student.id
+            return (
+              <circle key={p.r.student.id} cx={px(p.x)} cy={py(p.y)} r={on ? 8 : 6}
+                fill={classToColor(p.r.student.english_class as EnglishClass)}
+                stroke={on ? '#0F172A' : '#fff'} strokeWidth={on ? 2 : 1.4}
+                style={{ cursor: 'pointer', transition: 'r .1s' }}
+                onMouseEnter={() => setHover({ r: p.r, x: p.x, y: p.y })} />
+            )
+          })}
+          <text x={(L + px(100)) / 2} y={H - 8} fontSize="11" fill="#64748B" textAnchor="middle">how well they read aloud &rarr;</text>
+          <text x={16} y={(T + py(0)) / 2} fontSize="11" fill="#64748B" textAnchor="middle" transform={`rotate(-90 16 ${(T + py(0)) / 2})`}>written paper score &rarr;</text>
         </svg>
-        <div className="flex-1 min-w-[220px] space-y-3">
-          <Corner title="Reads better than they test" tone="amber" people={readsBetter}
-            note="Handles the passage aloud but loses it on paper. Worth checking whether the paper, not the reading, is the obstacle." />
-          <Corner title="Tests better than they read" tone="blue" people={testsBetter}
-            note="Scores on paper without sustaining the passage aloud. Decoding or fluency is the gap, not understanding." />
-        </div>
+
+        {hover && (
+          <div className="absolute pointer-events-none bg-navy text-white rounded-lg px-2.5 py-1.5 shadow-lg text-[11px] whitespace-nowrap z-10"
+            style={{ left: `${(px(hover.x) / W) * 100}%`, top: `${(py(hover.y) / H) * 100}%`, transform: 'translate(-50%, -140%)' }}>
+            <span className="font-semibold">{hover.r.student.english_name}</span>
+            <span className="opacity-70 ml-1.5">{hover.r.student.english_class}</span>
+            <span className="block opacity-90">read aloud {Math.round(hover.x)} &middot; paper {Math.round(hover.y)}%</span>
+          </div>
+        )}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-3 mt-4">
+        <Corner title="Stronger reading aloud than on paper" tone="amber" people={readingStronger}
+          note="They handled the passage out loud, but the written paper did not show it. Worth checking whether reading the questions, or writing the answers, is what got in the way." />
+        <Corner title="Stronger on paper than reading aloud" tone="blue" people={paperStronger}
+          note="They scored on the paper without holding the passage aloud. The gap is in decoding or fluency rather than in understanding." />
       </div>
     </div>
   )
@@ -836,15 +868,15 @@ function OralVsWritten({ rows }: { rows: Row[] }) {
 
 function Corner({ title, note, people, tone }: { title: string; note: string; tone: 'amber' | 'blue'; people: { r: Row; x: number; y: number }[] }) {
   return (
-    <div className={`rounded-lg border p-2.5 ${tone === 'amber' ? 'bg-amber-50/60 border-amber-200' : 'bg-blue-50/60 border-blue-200'}`}>
-      <p className="text-[11px] font-semibold text-navy">{title} <span className="text-text-tertiary font-normal">{people.length}</span></p>
-      <p className="text-[9px] text-text-tertiary leading-snug mb-1.5">{note}</p>
+    <div className={`rounded-lg border p-3 ${tone === 'amber' ? 'bg-amber-50/60 border-amber-200' : 'bg-blue-50/60 border-blue-200'}`}>
+      <p className="text-[11.5px] font-semibold text-navy">{title} <span className="text-text-tertiary font-normal">{people.length}</span></p>
+      <p className="text-[10px] text-text-tertiary leading-snug mb-2">{note}</p>
       {people.length === 0
-        ? <p className="text-[10px] text-text-tertiary italic">Nobody.</p>
+        ? <p className="text-[10px] text-text-tertiary italic">Nobody on this test.</p>
         : <div className="flex flex-wrap gap-1">
-            {people.slice(0, 12).map(p => (
+            {people.map(p => (
               <span key={p.r.student.id} className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border"
-                title={`oral ${Math.round(p.x)} · written ${Math.round(p.y)}%`}>{p.r.student.english_name}</span>
+                title={`read aloud ${Math.round(p.x)} · paper ${Math.round(p.y)}%`}>{p.r.student.english_name}</span>
             ))}
           </div>}
     </div>
