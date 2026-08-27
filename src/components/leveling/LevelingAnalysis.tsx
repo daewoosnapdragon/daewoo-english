@@ -319,7 +319,11 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
             ))}
           </tr></thead>
           <tbody>{listed.map(r => {
-            const sug = r.band!.suggestedClass as EnglishClass
+            // r.band is null for a student with written scores but no oral
+            // passage on record, and for one whose oral session was marked
+            // complete with nothing read. They are still ranked, so the
+            // suggestion comes off the composite, never off the band.
+            const sug = r.suggested as EnglishClass
             const diff = sug !== r.student.english_class
             return (
               <tr key={r.student.id} className={`border-t border-border ${diff ? 'bg-amber-50/30' : ''}`}>
