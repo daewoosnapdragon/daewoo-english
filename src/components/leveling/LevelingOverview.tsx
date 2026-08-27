@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
+import { Student, EnglishClass, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor, IMPLAUSIBLE_CWPM } from '@/lib/utils'
 import { Loader2, AlertTriangle, Users, Layers, ListChecks, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { bandFromCalc, bandRangeFor, BAND_LEVEL_ORDER } from './grade2Band'
@@ -214,7 +214,11 @@ function Classes({ tests, rowsForTest }: { tests: LevelTest[]; rowsForTest: (t: 
   if (!test) return null
   const rows = rowsForTest(test).filter(r => r.band != null)
 
-  const byClass = ENGLISH_CLASSES.map(cls => {
+  // Unplaced is not a level. It is where a transfer student waits until they
+  // have been tested, so it has no class above or below it and nothing on the
+  // ladder should treat it as a rung. It gets its own panel instead, answering
+  // the only question it exists to hold: where does this child go.
+  const summarise = (cls: EnglishClass) => {
     const inClass = rows.filter(r => r.student.english_class === cls)
     const bands = inClass.map(r => r.band!.composite).sort((a, b) => a - b)
     const median = bands.length ? (bands.length % 2 ? bands[(bands.length - 1) / 2] : (bands[bands.length / 2 - 1] + bands[bands.length / 2]) / 2) : null
@@ -222,19 +226,45 @@ function Classes({ tests, rowsForTest }: { tests: LevelTest[]; rowsForTest: (t: 
     inClass.forEach(r => { const l = r.band!.effectiveLevel; passages[l] = (passages[l] || 0) + 1 })
     const modalPassage = Object.entries(passages).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
     return { cls, rows: inClass, bands, median, passages, modalPassage }
-  }).filter(c => c.rows.length > 0)
+  }
+  const byClass = PLACED_ENGLISH_CLASSES.map(summarise).filter(c => c.rows.length > 0)
+  const unplaced = rows.filter(r => !PLACED_ENGLISH_CLASSES.includes(r.student.english_class as EnglishClass))
 
-  // ── Class overlap ──
-  // How many students sit inside the band range of the class ABOVE them. Not a
-  // judgement that they are misplaced -- it is the shortlist a leveling meeting
-  // exists to work through, and it is otherwise spread across two tables.
-  const overlaps = byClass.map((c, i) => {
-    const above = byClass[i + 1]
-    if (!above || above.median == null || c.median == null) return { cls: c.cls, n: 0, above: null as EnglishClass | null, names: [] as string[] }
-    const cut = (c.median + above.median) / 2
-    const over = c.rows.filter(r => r.band!.composite > cut)
-    return { cls: c.cls, n: over.length, above: above.cls, names: over.map(r => r.student.english_name) }
-  }).filter(o => o.n > 0)
+  // ── Class overlap, both directions ──
+  // Students sitting nearer the class above them, and nearer the class below.
+  // Neither is a verdict: it is the shortlist a leveling meeting exists to work
+  // through, and it was previously spread across two tables. The cut is the
+  // midpoint between the two class medians, so it moves with the cohort rather
+  // than sitting on a number somebody picked.
+  const drift = byClass.flatMap((c, i) => {
+    const out: { cls: EnglishClass; dir: 'up' | 'down'; other: EnglishClass; names: string[] }[] = []
+    if (c.median == null) return out
+    const above = byClass[i + 1], below = byClass[i - 1]
+    // Only meaningful while the ladder is actually in order. Where a class
+    // outranks the one above it the midpoint falls on the wrong side of the
+    // median and the list fills with most of the room, which says nothing about
+    // those children. The inversion itself is the finding, and is reported
+    // separately.
+    if (above?.median != null && above.median > c.median) {
+      const cut = (c.median + above.median) / 2
+      const names = c.rows.filter(r => r.band!.composite > cut).map(r => r.student.english_name)
+      if (names.length) out.push({ cls: c.cls, dir: 'up', other: above.cls, names })
+    }
+    if (below?.median != null && below.median < c.median) {
+      const cut = (c.median + below.median) / 2
+      const names = c.rows.filter(r => r.band!.composite < cut).map(r => r.student.english_name)
+      if (names.length) out.push({ cls: c.cls, dir: 'down', other: below.cls, names })
+    }
+    return out
+  })
+  const above = drift.filter(d => d.dir === 'up')
+  const below = drift.filter(d => d.dir === 'down')
+
+  // Adjacent classes whose medians run the wrong way round. Rarer and more
+  // serious than any individual drifting: it means two rooms are not in the
+  // order their names claim.
+  const inversions = byClass.slice(0, -1).map((c, i) => ({ lower: c, upper: byClass[i + 1] }))
+    .filter(p => p.lower.median != null && p.upper.median != null && p.upper.median < p.lower.median)
 
   const maxBand = 100
   return (
@@ -285,7 +315,7 @@ function Classes({ tests, rowsForTest }: { tests: LevelTest[]; rowsForTest: (t: 
       <div className="bg-surface border border-border rounded-xl p-4">
         <p className="text-[12px] font-semibold text-navy">Same passage, different class</p>
         <p className="text-[10px] text-text-tertiary mb-3">
-          Which passage each class typically sustained. Two classes on the same passage are reading the same text, whatever their names say &mdash;
+          Which passage each class typically sustained, across the six placed classes. Two of them on the same passage are reading the same text, whatever their names say &mdash;
           that is the concrete version of &ldquo;these rooms are not actually different levels&rdquo;.
         </p>
         <div className="space-y-1.5">
@@ -325,23 +355,73 @@ function Classes({ tests, rowsForTest }: { tests: LevelTest[]; rowsForTest: (t: 
         })()}
       </div>
 
-      {/* ── Overlap shortlist ── */}
-      {overlaps.length > 0 && (
-        <div className="bg-surface border border-border rounded-xl p-4">
-          <p className="text-[12px] font-semibold text-navy">Sitting above their class</p>
-          <p className="text-[10px] text-text-tertiary mb-3">
-            Students whose Band is closer to the class above than to their own. Not a verdict &mdash; it is the shortlist the meeting exists to work through.
+      {inversions.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <p className="text-[12px] font-semibold text-amber-800 flex items-center gap-1.5 mb-1">
+            <AlertTriangle size={13} /> Two classes are the wrong way round
           </p>
-          {overlaps.map(o => (
-            <div key={o.cls} className="flex items-start gap-2 mb-2">
-              <span className="text-[10px] font-semibold w-20 text-right shrink-0 pt-0.5" style={{ color: classToTextColor(o.cls) }}>{o.cls}</span>
-              <span className="text-[11px] text-text-secondary">
-                <strong className="text-navy">{o.n}</strong> closer to {o.above}: <span className="text-text-tertiary">{o.names.join(', ')}</span>
-              </span>
-            </div>
+          {inversions.map(p => (
+            <p key={p.lower.cls} className="text-[11px] text-amber-800">
+              <strong>{p.upper.cls}</strong> has a lower median Band ({Math.round(p.upper.median as number)}) than <strong>{p.lower.cls}</strong> ({Math.round(p.lower.median as number)}),
+              though it is meant to be the stronger class. Individual drift between these two is not listed below, because with the ladder inverted it would name most of both rooms.
+            </p>
           ))}
         </div>
       )}
+
+      {/* ── Drift shortlists, both directions ── */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <DriftPanel title="Sitting above their class" tone="up" rows={above}
+          blurb="Band closer to the class above than to their own. Not a verdict &mdash; the shortlist the meeting works through." />
+        <DriftPanel title="Sitting below their class" tone="down" rows={below}
+          blurb="Band closer to the class below. Read these against the Coverage flags first: a rate that was never real, or a passage stopped early, lands a student here without meaning anything." />
+      </div>
+
+      {/* ── Unplaced ── */}
+      {unplaced.length > 0 && (
+        <div className="bg-surface border border-border rounded-xl p-4">
+          <p className="text-[12px] font-semibold text-navy">Waiting to be placed</p>
+          <p className="text-[10px] text-text-tertiary mb-3">
+            Transfer students held outside the ladder until they have been tested. Unplaced is not a level, so it is left out of the class comparisons above &mdash;
+            but the Band answers the question it exists to hold.
+          </p>
+          <div className="space-y-1">
+            {unplaced.sort((a, b) => b.band!.composite - a.band!.composite).map(r => (
+              <div key={r.student.id} className="flex items-center gap-2 text-[11px]">
+                <span className="w-40 truncate text-navy font-medium shrink-0">{r.student.english_name}</span>
+                <span className="text-text-tertiary shrink-0">Band {Math.round(r.band!.composite)}</span>
+                <span className="text-text-tertiary shrink-0">passage {r.band!.effectiveLevel}</span>
+                <ArrowRight size={11} className="text-text-tertiary shrink-0" />
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0"
+                  style={{ backgroundColor: classToColor(r.band!.suggestedClass as EnglishClass) + '40', color: classToTextColor(r.band!.suggestedClass as EnglishClass) }}>
+                  {r.band!.suggestedClass}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DriftPanel({ title, blurb, rows, tone }: { title: string; blurb: string; tone: 'up' | 'down'; rows: { cls: EnglishClass; other: EnglishClass; names: string[] }[] }) {
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4">
+      <p className="text-[12px] font-semibold text-navy flex items-center gap-1.5">
+        {tone === 'up' ? <TrendingUp size={13} className="text-green-600" /> : <TrendingDown size={13} className="text-amber-600" />}{title}
+      </p>
+      <p className="text-[10px] text-text-tertiary mb-3">{blurb}</p>
+      {rows.length === 0
+        ? <p className="text-[11px] text-text-tertiary italic">Nobody, on this test.</p>
+        : rows.map(o => (
+          <div key={`${o.cls}-${o.other}`} className="flex items-start gap-2 mb-2">
+            <span className="text-[10px] font-semibold w-20 text-right shrink-0 pt-0.5" style={{ color: classToTextColor(o.cls) }}>{o.cls}</span>
+            <span className="text-[11px] text-text-secondary">
+              <strong className="text-navy">{o.names.length}</strong> closer to {o.other}: <span className="text-text-tertiary">{o.names.join(', ')}</span>
+            </span>
+          </div>
+        ))}
     </div>
   )
 }
