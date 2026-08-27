@@ -1438,17 +1438,22 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                       is what they were doing anyway with the guide open beside
                       them. The score still shows on the right. */}
                   {descriptors ? (
-                    <div className="flex-1 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cat.max + 1}, minmax(0, 1fr))` }}>
+                    <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${cat.max + 1}, minmax(0, 1fr))` }}>
                       {Array.from({ length: cat.max + 1 }, (_, i) => {
                         const on = val === i
                         return (
                           <button key={i} onClick={() => setWritingScore(cat.key, i)}
                             aria-pressed={on}
-                            className={`text-left rounded-lg px-2.5 py-2 border-2 transition-all text-[10.5px] leading-snug min-h-[74px] ${
-                              on ? 'bg-navy text-white border-navy shadow-sm'
-                                 : 'bg-white border-gray-200 text-text-secondary hover:border-navy/45 hover:bg-surface-alt/50'
+                            className={`group relative text-left rounded-xl px-3 py-2.5 border transition-all text-[11px] leading-[1.45] min-h-[92px] ${
+                              on ? 'bg-navy/[0.07] border-navy text-navy shadow-[inset_0_0_0_1px_var(--navy,#4E63A0)] font-medium'
+                                 : 'bg-white border-border text-text-secondary hover:border-navy/40 hover:bg-navy/[0.02]'
                             }`}>
-                            {descriptors[i] || '—'}
+                            {on && (
+                              <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-navy flex items-center justify-center">
+                                <Check size={10} className="text-white" strokeWidth={3} />
+                              </span>
+                            )}
+                            <span className={on ? 'pr-4 block' : 'block'}>{descriptors[i] || '\u2014'}</span>
                           </button>
                         )
                       })}

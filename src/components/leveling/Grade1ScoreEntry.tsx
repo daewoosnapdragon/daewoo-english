@@ -2003,21 +2003,26 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                             the grades 2-5 paper. Nothing to open, nothing to
                             cross-reference against a number. */}
                         {descriptors ? (
-                          <div className="flex-1 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cat.max + 1}, minmax(0, 1fr))` }}>
-                            {Array.from({ length: cat.max + 1 }, (_, i) => {
-                              const on = val === i
-                              return (
-                                <button key={i} onClick={() => updateWrittenRubric(student.id, cat.key, i)}
-                                  aria-pressed={on}
-                                  className={`text-left rounded-lg px-2.5 py-2 border-2 transition-all text-[10.5px] leading-snug min-h-[74px] ${
-                                    on ? 'bg-navy text-white border-navy shadow-sm'
-                                       : 'bg-white border-gray-200 text-text-secondary hover:border-navy/45 hover:bg-surface-alt/50'
-                                  }`}>
-                                  {descriptors[i] || '—'}
-                                </button>
-                              )
-                            })}
-                          </div>
+                        <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${cat.max + 1}, minmax(0, 1fr))` }}>
+                          {Array.from({ length: cat.max + 1 }, (_, i) => {
+                            const on = val === i
+                            return (
+                              <button key={i} onClick={() => updateWrittenRubric(student.id, cat.key, i)}
+                                aria-pressed={on}
+                                className={`group relative text-left rounded-xl px-3 py-2.5 border transition-all text-[11px] leading-[1.45] min-h-[92px] ${
+                                  on ? 'bg-navy/[0.07] border-navy text-navy shadow-[inset_0_0_0_1px_var(--navy,#4E63A0)] font-medium'
+                                     : 'bg-white border-border text-text-secondary hover:border-navy/40 hover:bg-navy/[0.02]'
+                                }`}>
+                                {on && (
+                                  <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-navy flex items-center justify-center">
+                                    <Check size={10} className="text-white" strokeWidth={3} />
+                                  </span>
+                                )}
+                                <span className={on ? 'pr-4 block' : 'block'}>{descriptors[i] || '\u2014'}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
                         ) : (
                           <div className="flex gap-1">
                             {Array.from({ length: cat.max + 1 }, (_, i) => (
@@ -2042,92 +2047,6 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                   </ul>
                 </details>
               )}
-            </div>
-
-            {/* Teacher judgment. The stored keys are still named for the
-                original two-wave test; only the labels change per version. */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[13px] font-semibold text-navy">
-                  {content.usesClassImpression
-                    ? (content.administration === 'single_sitting' ? 'Teacher Impression' : 'Wave 2 Teacher Impression')
-                    : 'Performance in Current Class'}
-                </h4>
-                {content.teacherSignal === 'retention_rating' && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-navy/10 text-navy font-semibold">
-                    Counts toward the composite
-                  </span>
-                )}
-              </div>
-              <div className="border border-border rounded-lg overflow-hidden">
-                {/* Class impression */}
-                {content.usesClassImpression && (
-                <div className="px-4 py-3 bg-white">
-                  <p className="text-[11px] text-text-secondary mb-2">
-                    After seeing oral + written data, which class do you think this student belongs in?
-                  </p>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {ENGLISH_CLASSES.map(cls => (
-                      <button key={cls} onClick={() => updateScore(student.id, 'wave2_class_impression', sc.wave2_class_impression === cls ? null : cls)}
-                        className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                          sc.wave2_class_impression === cls
-                            ? 'text-white ring-2 ring-offset-1'
-                            : 'border border-border hover:opacity-80'
-                        }`}
-                        style={sc.wave2_class_impression === cls
-                          ? { backgroundColor: classToTextColor(cls), ringColor: classToTextColor(cls) }
-                          : { backgroundColor: classToColor(cls), color: classToTextColor(cls) }
-                        }>
-                        {cls}
-                      </button>
-                    ))}
-                    <button onClick={() => updateScore(student.id, 'wave2_class_impression', sc.wave2_class_impression === 'Unsure' ? null : 'Unsure')}
-                      className={`px-4 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                        sc.wave2_class_impression === 'Unsure'
-                          ? 'bg-gray-600 text-white ring-2 ring-gray-400 ring-offset-1'
-                          : 'bg-gray-100 text-text-secondary border border-border hover:bg-gray-200'
-                      }`}>
-                      Unsure
-                    </button>
-                  </div>
-                </div>
-                )}
-                {/* From Fall 2026 the teacher signal is the four-dimension
-                    Teacher Ratings every other grade uses, entered on their own
-                    phase. Nothing to fill in here. */}
-                {content.teacherSignal === 'anecdotal_ratings' && (
-                  <div className="px-4 py-3 bg-blue-50/40">
-                    <p className="text-[11px] text-text-secondary">
-                      Teacher judgment for this student is recorded on the{' '}
-                      <strong className="text-navy">Teacher Ratings</strong> phase, the same as every other grade.
-                      It feeds the composite from there.
-                    </p>
-                  </div>
-                )}
-                {content.teacherSignal === 'retention_rating' && (
-                <div className={`px-4 py-3 bg-gray-50/50 ${content.usesClassImpression ? 'border-t border-border' : ''}`}>
-                  <p className="text-[11px] text-text-secondary mb-2">
-                    Within their current class ({student.english_class}), how is this student performing?
-                  </p>
-                  <div className="flex gap-2">
-                    {([
-                      { value: 'weak', label: 'Weak', desc: 'Struggling, may need extra support', color: 'bg-red-100 text-red-700 border-red-300', active: 'bg-red-500 text-white ring-2 ring-red-400' },
-                      { value: 'core', label: 'Core', desc: 'Right where they should be', color: 'bg-gray-100 text-gray-700 border-gray-300', active: 'bg-gray-600 text-white ring-2 ring-gray-400' },
-                      { value: 'strong', label: 'Strong', desc: 'Excelling, could move up', color: 'bg-green-100 text-green-700 border-green-300', active: 'bg-green-500 text-white ring-2 ring-green-400' },
-                    ] as const).map(opt => (
-                      <button key={opt.value}
-                        onClick={() => updateScore(student.id, 'wave2_retention_rating', sc.wave2_retention_rating === opt.value ? null : opt.value)}
-                        className={`flex-1 px-3 py-2 rounded-lg text-[11px] font-medium transition-all border ${
-                          sc.wave2_retention_rating === opt.value ? opt.active + ' ring-offset-1' : opt.color
-                        }`}>
-                        <div className="font-bold">{opt.label}</div>
-                        <div className="text-[9px] opacity-80 mt-0.5">{opt.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                )}
-              </div>
             </div>
           </div>
         )}

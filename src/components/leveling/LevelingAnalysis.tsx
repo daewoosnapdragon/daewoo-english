@@ -79,11 +79,12 @@ interface Paper {
   phonicsRows: number
   phonicsRowMax: number
   sentenceCount: number
-  /** Points per sentence. Grade 2 scores its five sentences out of 36 between them. */
-  sentenceItemMax: number
+  /** Words in each sentence. They differ -- 7, 6, 6, 8, 9 -- so an average
+      would put fractions in the denominator and decimals under every cell. */
+  sentenceMaxes: number[]
 }
 
-const EMPTY_PAPER: Paper = { questions: [], writingCats: [], compByLevel: {}, compScoreMax: 2, phonicsRows: 0, phonicsRowMax: 0, sentenceCount: 0, sentenceItemMax: 1 }
+const EMPTY_PAPER: Paper = { questions: [], writingCats: [], compByLevel: {}, compScoreMax: 2, phonicsRows: 0, phonicsRowMax: 0, sentenceCount: 0, sentenceMaxes: [] }
 
 async function loadPaper(test: LevelTest): Promise<Paper> {
   const g = Number(test.grade)
@@ -115,7 +116,7 @@ async function loadPaper(test: LevelTest): Promise<Paper> {
       phonicsRows: oral.phonics?.rows?.length ?? 0,
       phonicsRowMax: oral.phonics?.rows?.length ? Math.round((oral.phonics.max ?? 0) / oral.phonics.rows.length) : 0,
       sentenceCount: oral.sentences?.items?.length ?? 0,
-      sentenceItemMax: oral.sentences?.items?.length ? (oral.sentences.max ?? 0) / oral.sentences.items.length : 1,
+      sentenceMaxes: (oral.sentences?.items ?? []).map((it: any) => it.max ?? 1),
     }
   } catch { return EMPTY_PAPER }
 }
@@ -601,7 +602,7 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
         const v = r.raw?.[`sent_${i}`]
         if (v == null) continue
         const cell = (sentences[cls] ||= { got: 0, max: 0 })
-        cell.got += v; cell.max += paper.sentenceItemMax
+        cell.got += v; cell.max += paper.sentenceMaxes[i - 1] ?? 1
       }
       if (r.calc?.naep) (naep[cls] ||= []).push(r.calc.naep)
     })
@@ -621,7 +622,8 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
           <div className="px-4 pt-3.5 pb-2">
             <p className="text-[12px] font-semibold text-navy">Oral test</p>
             <p className="text-[10px] text-text-tertiary">
-              Comprehension by depth of knowledge, since the questions differ per passage &mdash; DOK 1 is retrieval, DOK 2 asks the student to do something with what they found.
+              Every figure is the whole class added together: points earned out of points available to them. Sentence reading is words read correctly out of words put in front of them.
+              Comprehension is grouped by depth of knowledge, since the questions differ per passage &mdash; DOK 1 is retrieval, DOK 2 asks the student to do something with what they found.
             </p>
           </div>
           <table className="w-full text-[11px]">
@@ -755,7 +757,7 @@ function Cell({ v, sub, small }: { v: { hit: number; n: number } | null; sub?: s
     <td className="px-2 py-1.5 text-center">
       <span className={`inline-block px-2 py-0.5 rounded border font-semibold ${small ? 'text-[9px]' : 'text-[10px]'} ${tone}`}
         title={`${v.hit} of ${v.n}`}>{pct}%</span>
-      <span className="block text-[8px] text-text-tertiary mt-0.5">{sub || `${v.n}`}</span>
+      <span className="block text-[8px] text-text-tertiary mt-0.5">{sub || `${Math.round(v.hit)}/${Math.round(v.n)}`}</span>
     </td>
   )
 }
@@ -1013,7 +1015,7 @@ function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Pa
 
       for (let i = 1; i <= 5; i++) {
         if (rw?.[`phonics_row${i}`] != null) add(t, 'decode', rw[`phonics_row${i}`], paper.phonicsRowMax || 5)
-        if (rw?.[`sent_${i}`] != null) add(t, 'decode', rw[`sent_${i}`], paper.sentenceItemMax)
+        if (rw?.[`sent_${i}`] != null) add(t, 'decode', rw[`sent_${i}`], paper.sentenceMaxes[i - 1] ?? 1)
       }
       if (calc?.comp_total != null && calc?.comp_max > 0 && !calc.comp_not_administered) add(t, 'heard', calc.comp_total, calc.comp_max)
 
@@ -1306,6 +1308,9 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
 // says which test it came from rather than the two being silently averaged.
 function StandardsByClass({ rows, classes }: { rows: Row[]; classes: EnglishClass[] }) {
   const [open, setOpen] = useState(false)
+  const [sort, setSort] = useState<'weak' | 'strong' | 'code'>('weak')
+  /** When set, weakest/strongest is judged on that class rather than the grade. */
+  const [lens, setLens] = useState<EnglishClass | 'grade'>('grade')
   const data = useMemo(() => {
     const acc: Record<string, { src: 'written' | 'oral'; desc?: string; byCls: Record<string, { got: number; max: number }> }> = {}
     rows.forEach(r => {
@@ -1325,30 +1330,63 @@ function StandardsByClass({ rows, classes }: { rows: Row[]; classes: EnglishClas
         c.max += 1
       })
     })
-    return Object.entries(acc)
-      .map(([code, v]) => {
-        const all = Object.values(v.byCls).reduce((a, b) => ({ got: a.got + b.got, max: a.max + b.max }), { got: 0, max: 0 })
-        return { code, ...v, overall: all.max > 0 ? all.got / all.max : null }
-      })
-      .sort((a, b) => (a.overall ?? 2) - (b.overall ?? 2))
+    return Object.entries(acc).map(([code, v]) => {
+      const all = Object.values(v.byCls).reduce((a, b) => ({ got: a.got + b.got, max: a.max + b.max }), { got: 0, max: 0 })
+      return { code, ...v, overall: all.max > 0 ? all.got / all.max : null }
+    })
   }, [rows])
 
+  const ordered = useMemo(() => {
+    // The lens decides whose figure the ordering is judged on: the grade as a
+    // whole, or one class. Weakest-in-Marigold is a different list from
+    // weakest-in-the-grade, and it is the one their teacher wants.
+    const score = (st: typeof data[number]) => {
+      if (lens === 'grade') return st.overall
+      const c = st.byCls[lens]
+      return c && c.max > 0 ? c.got / c.max : null
+    }
+    const withScore = data.filter(st => sort === 'code' || score(st) != null)
+    if (sort === 'code') return [...withScore].sort((a, b) => a.code.localeCompare(b.code))
+    return [...withScore].sort((a, b) => sort === 'weak'
+      ? (score(a) as number) - (score(b) as number)
+      : (score(b) as number) - (score(a) as number))
+  }, [data, sort, lens])
+
   if (data.length === 0) return null
-  const shown = open ? data : data.slice(0, 8)
+  const shown = open ? ordered : ordered.slice(0, 8)
 
   return (
     <div className="bg-surface border border-border rounded-xl overflow-x-auto">
       <div className="px-4 pt-3.5 pb-2">
-        <p className="text-[12px] font-semibold text-navy">Standards, by class</p>
-        <p className="text-[10px] text-text-tertiary">
-          Weakest first, across the grade. Written standards are scored out of the points behind them; oral ones out of the students who met them.
-        </p>
+        <div className="flex items-start gap-3 flex-wrap">
+          <div>
+            <p className="text-[12px] font-semibold text-navy">Standards, by class</p>
+            <p className="text-[10px] text-text-tertiary">
+              Written standards are scored out of the points behind them; oral ones out of the students who met them.
+            </p>
+          </div>
+          <div className="ml-auto flex items-center gap-1.5 flex-wrap">
+            <select value={lens} onChange={e => setLens(e.target.value as any)}
+              className="px-2 py-1 border border-border rounded-lg text-[10px] bg-surface">
+              <option value="grade">Across the grade</option>
+              {classes.map(c => <option key={c} value={c}>In {c}</option>)}
+            </select>
+            {([['weak', 'Weakest first'], ['strong', 'Strongest first'], ['code', 'By code']] as const).map(([k, label]) => (
+              <button key={k} onClick={() => setSort(k)}
+                className={`text-[10px] px-2 py-1 rounded-lg ${sort === k ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <table className="w-full text-[11px]">
         <thead><tr className="bg-surface-alt">
           <th className="text-left px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[150px]">Standard</th>
-          {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[9px] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
-          <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px]">Grade</th>
+          {classes.map(c => (
+            <th key={c} className={`text-center px-2 py-2 text-[9px] uppercase tracking-wider font-semibold min-w-[70px] ${lens === c ? 'bg-navy/10' : ''}`} style={{ color: classToTextColor(c) }}>{c}</th>
+          ))}
+          <th className={`text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px] ${lens === 'grade' ? 'bg-navy/10' : ''}`}>Grade</th>
         </tr></thead>
         <tbody>{shown.map(st => (
           <tr key={st.code} className="border-t border-border">
@@ -1363,9 +1401,9 @@ function StandardsByClass({ rows, classes }: { rows: Row[]; classes: EnglishClas
           </tr>
         ))}</tbody>
       </table>
-      {data.length > 8 && (
+      {ordered.length > 8 && (
         <button onClick={() => setOpen(!open)} className="text-[10px] text-navy hover:underline px-4 py-2.5">
-          {open ? 'Show the weakest eight' : `Show all ${data.length} standards`}
+          {open ? 'Show the first eight' : `Show all ${ordered.length} standards`}
         </button>
       )}
     </div>
