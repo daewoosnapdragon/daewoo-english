@@ -37,6 +37,29 @@ export const SUBJECT_OPTIONS = [
   'Project', 'Review', 'Test',
 ]
 
+// A teacher can also write in a subject the list doesn't cover. Write-ins are
+// remembered in this browser so they come back as chips next time, and any
+// label found in a saved plan is folded into the same list -- so a subject a
+// colleague wrote in shows up here too once their month is opened.
+const CUSTOM_SUBJECTS_KEY = 'daewoo_lesson_custom_subjects'
+
+function readCustomSubjects(): string[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CUSTOM_SUBJECTS_KEY) || '[]')
+    return Array.isArray(parsed) ? parsed.filter((s: any) => typeof s === 'string' && s.trim()) : []
+  } catch { return [] }
+}
+
+/**
+ * The spelling already in use for this subject, matched case-insensitively, so
+ * "into reading" typed by hand doesn't become a second chip beside the real one.
+ */
+function canonicalSubject(label: string, custom: string[]): string {
+  const t = label.trim()
+  return [...SUBJECT_OPTIONS, ...custom].find(s => s.toLowerCase() === t.toLowerCase()) || t
+}
+
 
 export default function LessonPlanView() {
   return (
@@ -80,6 +103,29 @@ function ParentCalendarView() {
   // Which week's editor is open, and which row's subject picker within it.
   const [openWeek, setOpenWeek] = useState<number | null>(null)
   const [openPicker, setOpenPicker] = useState<string | null>(null)
+  // Write-in subjects, and the text being typed into the open picker's box.
+  const [customSubjects, setCustomSubjects] = useState<string[]>(readCustomSubjects)
+  const [customDraft, setCustomDraft] = useState('')
+  useEffect(() => {
+    try { localStorage.setItem(CUSTOM_SUBJECTS_KEY, JSON.stringify(customSubjects)) } catch { /* private mode */ }
+  }, [customSubjects])
+
+  /** Adds labels to the write-in list, ignoring blanks and ones already offered. */
+  const rememberSubjects = useCallback((labels: string[]) => {
+    setCustomSubjects(prev => {
+      const known = new Set([...SUBJECT_OPTIONS, ...prev].map(s => s.toLowerCase()))
+      const added: string[] = []
+      labels.forEach(raw => {
+        const label = (raw || '').trim()
+        if (!label || known.has(label.toLowerCase())) return
+        known.add(label.toLowerCase())
+        added.push(label)
+      })
+      return added.length ? [...prev, ...added] : prev
+    })
+  }, [])
+  const forgetSubject = (label: string) =>
+    setCustomSubjects(prev => prev.filter(s => s !== label))
 
   // Autosave bookkeeping (see flushDirty below).
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null)
@@ -214,6 +260,8 @@ function ParentCalendarView() {
     }
     setCalEvents(ce)
     setDayData(dd)
+    // Fold write-ins already saved in this month back into the chip list.
+    rememberSubjects(Object.values(dd).flatMap(d => d.subjects.map(s => s.label)))
     // Remember which days already have a stored row, so clearing one still
     // saves while a never-saved template-only day stays out of the database.
     persistedDates.current = new Set(Object.keys(dd))
@@ -246,7 +294,7 @@ function ParentCalendarView() {
     })
     setWeeklyHomework(hw)
     setLoading(false)
-  }, [year, month, selectedClass, selectedGrade])
+  }, [year, month, selectedClass, selectedGrade, rememberSubjects])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -269,6 +317,16 @@ function ParentCalendarView() {
       return { ...prev, [date]: d }
     })
   }
+  /** Applies whatever is typed in the picker's write-in box to this row. */
+  const applyCustomSubject = (date: string, idx: number) => {
+    const label = canonicalSubject(customDraft, customSubjects)
+    if (!label) return
+    rememberSubjects([label])
+    updateSubjectLabel(date, idx, label)
+    setCustomDraft('')
+    setOpenPicker(null)
+  }
+
   const addSubjectRow = (date: string) => {
     markDirty(date)
     setDayData(prev => {
@@ -718,7 +776,7 @@ function ParentCalendarView() {
                                 <div key={si}>
                                   <div className="flex items-center gap-2">
                                     <button
-                                      onClick={() => setOpenPicker(openPicker === pickerKey ? null : pickerKey)}
+                                      onClick={() => { setCustomDraft(''); setOpenPicker(openPicker === pickerKey ? null : pickerKey) }}
                                       className={`shrink-0 text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors ${
                                         sub.label
                                           ? 'bg-accent-light text-navy border border-accent-light hover:border-navy'
@@ -754,6 +812,40 @@ function ParentCalendarView() {
                                                 : 'bg-surface text-text-secondary border-border hover:border-navy hover:text-navy'
                                             }`}>{s}</button>
                                         ))}
+                                        {/* Write-ins sit alongside the standard chips, each with an x to
+                                            drop it from the list once it is no longer being taught. */}
+                                        {customSubjects.map(s => (
+                                          <span key={s}
+                                            className={`inline-flex items-center rounded-full border transition-colors ${
+                                              sub.label === s
+                                                ? 'bg-navy text-white border-navy'
+                                                : 'bg-surface text-text-secondary border-border hover:border-navy'
+                                            }`}>
+                                            <button
+                                              onClick={() => { updateSubjectLabel(day.date, si, s); setOpenPicker(null) }}
+                                              className="text-[12px] font-semibold pl-3 pr-1 py-1.5 rounded-l-full">{s}</button>
+                                            <button onClick={() => forgetSubject(s)}
+                                              title={`Remove "${s}" from the subject list`}
+                                              className="pl-0.5 pr-2.5 py-1.5 rounded-r-full opacity-50 hover:opacity-100"><X size={11} /></button>
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-border/60">
+                                        <input
+                                          value={customDraft}
+                                          onChange={e => setCustomDraft(e.target.value)}
+                                          onKeyDown={e => {
+                                            if (e.key === 'Enter') { e.preventDefault(); applyCustomSubject(day.date, si) }
+                                            if (e.key === 'Escape') { setCustomDraft(''); setOpenPicker(null) }
+                                          }}
+                                          placeholder="Or write your own subject…"
+                                          className="flex-1 min-w-0 text-[12px] bg-transparent border-b border-border/60 outline-none focus:border-navy py-1 placeholder:text-text-tertiary/40"
+                                        />
+                                        <button onClick={() => applyCustomSubject(day.date, si)}
+                                          disabled={!customDraft.trim()}
+                                          className="shrink-0 text-[12px] font-semibold px-3 py-1.5 rounded-full border border-border text-text-secondary transition-colors enabled:hover:border-navy enabled:hover:text-navy disabled:opacity-40 disabled:cursor-not-allowed">
+                                          Add
+                                        </button>
                                       </div>
                                     </div>
                                   )}
