@@ -24,6 +24,7 @@ import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
 import LevelingAnalytics from '@/components/leveling/LevelingAnalytics'
 import LevelingHistory from '@/components/leveling/LevelingHistory'
+import LevelingOverview from '@/components/leveling/LevelingOverview'
 import StudentLevelingCard, { PrintDossier } from '@/components/leveling/StudentLevelingCard'
 
 type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'analytics' | 'history' | 'meeting'
@@ -283,6 +284,19 @@ function LevelingView() {
               </div>
             )
           })}</div>
+        )}
+
+        {/* ── Across every grade and class, before picking a test ── */}
+        {levelTests.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-border">
+            <h3 className="font-display text-[17px] font-semibold text-navy mb-1">Across the school</h3>
+            <p className="text-[11px] text-text-tertiary mb-4">
+              Coverage, class against class, question by question, and what changed since last year. Class comparisons inside one grade are like for like &mdash;
+              the same paper and the same passages. Across grades, only counts and rates compare: a Grade 2 Band and a Grade 5 Band both mean
+              &ldquo;near the top of what my grade was asked&rdquo;, which is not the same reading level.
+            </p>
+            <LevelingOverview levelTests={levelTests} />
+          </div>
         )}
 
         {/* Emergency Leveling - Grade 1 Only */}

@@ -20,10 +20,10 @@
 // reading age.
 // ============================================================================
 
-import { G2Content, G2PassageLevel } from './grade2Content'
-import { G3Content } from './grade3Content'
-import { G4Content } from './grade4Content'
-import { G5Content } from './grade5Content'
+import { G2Content, G2PassageLevel, getG2Content, g2VersionKeyForTest } from './grade2Content'
+import { G3Content, getG3Content, g3VersionKeyForTest } from './grade3Content'
+import { G4Content, getG4Content, g4VersionKeyForTest } from './grade4Content'
+import { G5Content, getG5Content, g5VersionKeyForTest } from './grade5Content'
 
 /**
  * The band only needs the component maxes, not a whole test definition, so both
@@ -330,3 +330,67 @@ export function g2ClassFromBand(composite: number): EnglishClassName {
   if (composite < 80) return 'Marigold'
   return 'Snapdragon'
 }
+
+// ─── Resolving a band straight from a stored score ───────────────────
+// Three screens now need "what band was this, on that test" -- the results
+// table, the per-student history and the overview. Each had started to grow its
+// own copy of the content lookup, and each copy is a place to forget that
+// getG*Content returns null for a version key it does not know.
+
+/** The version key a test's content is authored under, or '' for Grade 1. */
+export function bandVersionKeyForTest(test: { grade?: number | string; academic_year?: string | null; semester?: string | null }): string {
+  const g = Number((test as any).grade)
+  if (g === 2) return g2VersionKeyForTest(test as any)
+  if (g === 3) return g3VersionKeyForTest(test as any)
+  if (g === 4) return g4VersionKeyForTest(test as any)
+  if (g === 5) return g5VersionKeyForTest(test as any)
+  return ''
+}
+
+/**
+ * The band for a stored `calculated_metrics`, or null when it cannot be had --
+ * no passage on record, a grade without an authored band, or a version key this
+ * build does not recognise. Never throws: a band we cannot compute is missing
+ * data, not a broken page.
+ */
+export function bandFromCalc(
+  test: { grade?: number | string; academic_year?: string | null; semester?: string | null },
+  calc: any,
+  cwpmNorm?: LevelCwpmNorm,
+): G2BandResult | null {
+  try {
+    const g = Number((test as any).grade)
+    const key = bandVersionKeyForTest(test)
+    if (!key) return null
+    const content = g === 2 ? getG2Content(key) : g === 3 ? getG3Content(key)
+      : g === 4 ? getG4Content(key) : g === 5 ? getG5Content(key) : null
+    if (!content) return null
+    const scales = g === 2 ? bandScalesFromG2(content as G2Content)
+      : g === 3 ? bandScalesFromG3(content as G3Content)
+      : g === 4 ? bandScalesFromG4(content as G4Content)
+      : g === 5 ? bandScalesFromG5(content as G5Content) : null
+    if (!scales) return null
+    return calculateG2Band({
+      passageLevel: calc?.passage_level ?? null,
+      phonicsTotal: calc?.phonics_total ?? null,
+      syllableTotal: calc?.syllable_total ?? null,
+      sentenceTotal: calc?.sentence_total ?? null,
+      compTotal: calc?.comp_total ?? null,
+      compNotAdministered: calc?.comp_not_administered ?? null,
+      accuracyPct: calc?.accuracy_pct ?? null,
+      naep: calc?.naep ?? null,
+      cwpm: calc?.cwpm ?? null,
+    }, scales, cwpmNorm)
+  } catch {
+    return null
+  }
+}
+
+/** The band's floor and ceiling for a level, for reading class overlap. */
+export function bandRangeFor(level: string): { floor: number; ceiling: number } | null {
+  const b = LEVEL_BANDS[level as G2PassageLevel]
+  return b ? { floor: b.floor, ceiling: b.ceiling } : null
+}
+
+/** Every class the band scale can suggest, weakest first. */
+export { LEVEL_ORDER as BAND_LEVEL_ORDER }

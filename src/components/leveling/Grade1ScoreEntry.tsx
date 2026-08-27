@@ -967,6 +967,8 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
           oral_score: metrics.oralScore,
           teacher_pct: metrics.teacherPct,
           passage_level: metrics.passageLevel,
+          // Mirrored from raw -- see the note on OralTestEntry25's copy.
+          oral_complete: !!finalRaw.o_test_complete,
           cwpm: metrics.cwpm,
           weighted_cwpm: metrics.weightedCwpm,
           accuracy_pct: metrics.accuracy,

@@ -1505,7 +1505,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
 
   /** The metrics side of ORAL_RAW_KEYS — what Clear removes. */
   const ORAL_CALC_KEYS = [
-    'passage_level', 'passage_multiplier', 'cwpm', 'weighted_cwpm',
+    'passage_level', 'passage_multiplier', 'cwpm', 'weighted_cwpm', 'oral_complete',
     'best_weighted_cwpm', 'best_passage_level', 'naep', 'naep_multiplier',
     'accuracy_pct', 'comp_total', 'comp_max', 'comp_answered',
     'comp_not_administered', 'comp_frustration_max',
@@ -1732,6 +1732,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         calculated_metrics: {
           passage_level: raw.passage_level || null,
           passage_multiplier: passageMult,
+          // Mirrored from raw so a roster-wide coverage view can read who has
+          // been dealt with without pulling raw_scores, which carries the
+          // per-word running record for every student on it.
+          oral_complete: !!raw.oral_complete,
           cwpm: calcCwpm,
           weighted_cwpm: wCwpm,
           best_weighted_cwpm: bestWeightedCwpm,
