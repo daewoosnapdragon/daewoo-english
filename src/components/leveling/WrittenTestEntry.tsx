@@ -1065,6 +1065,10 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
   clearStudent: () => void; studentHasData: boolean; selectedIdx: number; setSelectedIdx: (i: number) => void; totalStudents: number
 }) {
   const [focusedQ, setFocusedQ] = useState<number | null>(null)
+  /** Which writing category the number keys act on. Marking a script means four
+      judgements in a row, and aiming at four rows of cards for each one is the
+      slow part once there are eighty scripts. */
+  const [focusedCat, setFocusedCat] = useState<string | null>(null)
   const [showRubricGuide, setShowRubricGuide] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const allQNums = useMemo(() => config.questions.map(q => q.qNum), [config])
@@ -1100,12 +1104,37 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         if (allQNums.includes(qNum)) { e.preventDefault(); setFocusedQ(qNum) }
         return
       }
+      // 0-9 set the focused writing category, Tab moves to the next one. The
+      // numbers are gone from the screen but they are still the fastest way in
+      // for anyone who thinks in them.
+      if (focusedCat != null && key >= '0' && key <= '9' && !e.shiftKey) {
+        const cat = config.writingCategories.find(c => c.key === focusedCat)
+        const n = parseInt(key)
+        if (cat && !cat.checklist && n <= cat.max) {
+          e.preventDefault()
+          setWritingScore(cat.key, n)
+          const cats = config.writingCategories.filter(c => !c.checklist)
+          const i = cats.findIndex(c => c.key === cat.key)
+          if (i < cats.length - 1) setTimeout(() => setFocusedCat(cats[i + 1].key), 100)
+          return
+        }
+      }
+      if (key === 'tab' && focusedCat != null) {
+        const cats = config.writingCategories.filter(c => !c.checklist)
+        const i = cats.findIndex(c => c.key === focusedCat)
+        if (i >= 0) {
+          e.preventDefault()
+          const next = e.shiftKey ? i - 1 : i + 1
+          if (next >= 0 && next < cats.length) setFocusedCat(cats[next].key)
+        }
+        return
+      }
       // Escape to unfocus
-      if (key === 'escape') { setFocusedQ(null); return }
+      if (key === 'escape') { setFocusedQ(null); setFocusedCat(null); return }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [student, focusedQ, sc.answers, allQNums, setAnswer])
+  }, [student, focusedQ, focusedCat, sc.answers, allQNums, setAnswer, config.writingCategories, setWritingScore])
 
   // Scroll focused question into view
   useEffect(() => {
@@ -1158,6 +1187,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         <span>Click a row to focus, then press <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">A</kbd> <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">B</kbd> <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">C</kbd> <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">D</kbd> to answer</span>
         <span><kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">↑↓</kbd> to navigate</span>
         <span><kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">Esc</kbd> to unfocus</span>
+        <span className="border-l border-border pl-3">Writing: click a row, then <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">0</kbd>&ndash;<kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">5</kbd> to score, <kbd className="px-1 py-0.5 bg-white rounded border border-border font-mono text-[9px]">Tab</kbd> for the next</span>
       </div>
 
       {/* MC Bubble Sheet */}
@@ -1396,10 +1426,11 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             }
 
             return (
-              <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+              <div key={cat.key} onClick={() => setFocusedCat(cat.key)}
+                className={`transition-colors ${focusedCat === cat.key ? 'bg-navy/[0.06] ring-1 ring-inset ring-navy/25' : ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                 <div className="flex items-start gap-3 px-3 py-2.5">
                   <div className="w-40 shrink-0 pt-1">
-                    <div className="text-[12.5px] font-semibold">{cat.label}</div>
+                    <div className="text-[12.5px] font-semibold">{cat.label}{focusedCat === cat.key && <span className="text-[9px] font-normal text-navy/60 ml-1.5">0&ndash;{cat.max}</span>}</div>
                     <div className="text-[9.5px] text-text-tertiary leading-snug">{cat.standard} &middot; {cat.standardDesc}</div>
                   </div>
                   {/* No number row. The descriptor IS the button: a marker

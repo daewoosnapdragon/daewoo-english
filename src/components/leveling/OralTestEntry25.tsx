@@ -1672,6 +1672,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     // without ever being written, and wiped by the next refresh.
     const written: Record<string, OralScores> = {}
     for (const sid of toSave) {
+      // scoresRef, not the render closure. A save triggered in the same tick as
+      // the edit that prompted it -- Mark test complete does exactly that --
+      // would write the state from BEFORE the edit.
       const raw = scoresRef.current[sid] || {}
       const versioned = g2Content?.standards ?? g3Content?.standards ?? g4Content?.standards ?? g5Content?.standards ?? null
       const standards = versioned
