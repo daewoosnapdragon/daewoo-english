@@ -4028,5 +4028,5 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
 // ============================================================================
 
 export default Grade1ScoreEntry
-export { calculateG1Composite, suggestG1Class, ResultsView as G1ResultsView, NAEP_MULTIPLIERS }
+export { calculateG1Composite, suggestG1Class, ResultsView as G1ResultsView, NAEP_MULTIPLIERS, g1WeightedComposite, g1ClassFromRank }
 export type { G1Scores, PassageLevel }

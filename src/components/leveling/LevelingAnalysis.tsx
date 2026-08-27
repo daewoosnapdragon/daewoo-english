@@ -7,6 +7,13 @@ import { classToColor, classToTextColor } from '@/lib/utils'
 import { Loader2, ChevronDown } from 'lucide-react'
 import { bandFromCalc, g2ClassFromBand } from './grade2Band'
 import { computeRow, rankRows, buildLevelCwpmNorms, versionKeyForTest } from './placement'
+import { calculateG1Composite, g1WeightedComposite, g1ClassFromRank } from './Grade1ScoreEntry'
+import { g1ContentForTest } from './grade1Content'
+
+/** 0 = red, 100 = violet. Used for the per-class tags on a question. */
+function rainbow(pct: number): string {
+  return `hsl(${Math.round(Math.max(0, Math.min(1, pct)) * 280)}, 72%, 45%)`
+}
 
 const PASSAGE_COLORS: Record<string, string> = {
   A: '#EF4444', B: '#F97316', C: '#EAB308', D: '#22C55E', E: '#3B82F6', F: '#A855F7',
@@ -114,6 +121,36 @@ export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest
         // does this child go" differently from the screen that saves it.
         const scoreMap: Record<string, any> = {}
         sc?.forEach((r: any) => { scoreMap[r.student_id] = { raw_scores: r.raw_scores, calculated_metrics: r.calculated_metrics } })
+
+        // Grade 1 keeps its own scoring end to end -- its raw keys are prefixed
+        // o_ and w_, its written score is a rubric rather than an MC total, and
+        // its composite is g1WeightedComposite. computeRow reads none of those,
+        // so pointing it at Grade 1 returned a grade of untested students.
+        if (Number(test.grade) === 1) {
+          const content = g1ContentForTest(test as any)
+          const scored = (studs || []).map((s: any) => {
+            const raw = scoreMap[s.id]?.raw_scores || {}
+            if (!content) return { student: s, raw, weighted: null as number | null, metrics: null as any }
+            const metrics = calculateG1Composite(raw, content, s.english_class, null)
+            return { student: s, raw, weighted: g1WeightedComposite(metrics, raw, content), metrics }
+          })
+          const ranked = scored.filter(r => r.weighted != null).sort((a, b) => (a.weighted as number) - (b.weighted as number))
+          const suggestion: Record<string, EnglishClass> = {}
+          ranked.forEach((r, i) => { suggestion[r.student.id] = g1ClassFromRank(i, ranked.length) })
+          setRows(scored.map(r => ({
+            student: r.student,
+            calc: scoreMap[r.student.id]?.calculated_metrics || null,
+            raw: r.raw,
+            band: bandOf(test, scoreMap[r.student.id]?.calculated_metrics),
+            composite: r.weighted ?? 0,
+            isTested: r.weighted != null,
+            suggested: suggestion[r.student.id] ?? null,
+            lastYear: priorBy[r.student.id] ?? null,
+          })))
+          setPaper(await loadPaper(test))
+          return
+        }
+
         const norms = buildLevelCwpmNorms(studs as any, scoreMap)
         const computed = rankRows((studs || []).map((s: any) =>
           computeRow(s, scoreMap, {}, {}, {}, test.grade, undefined, versionKeyForTest(test), undefined, norms)))
@@ -257,31 +294,72 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
             )
           })}</tbody>
         </table>
+        {/* The names belong where the click happened. They used to appear in a
+            table far below, which meant scrolling away from the number you were
+            asking about. */}
+        {cell && (
+          <div className="border-t border-border px-4 py-3 bg-surface-alt/40">
+            <p className="text-[11px] font-semibold text-navy mb-1.5">
+              {cell.from} <span className="text-text-tertiary">&rarr;</span> {cell.to}
+              <span className="text-text-tertiary font-normal ml-1.5">{matrix[cell.from]?.[cell.to]?.length ?? 0}</span>
+              <button onClick={() => setCell(null)} className="text-[10px] text-text-tertiary hover:text-navy font-normal ml-2">clear</button>
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {(matrix[cell.from]?.[cell.to] ?? []).sort((a, b) => b.composite - a.composite).map(r => (
+                <span key={r.student.id} className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-surface border border-border text-[11px]">
+                  <span className="font-medium text-navy">{r.student.english_name}</span>
+                  <span className="text-text-tertiary text-[10px]">{Math.round(r.composite * 100)}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── The grade in one picture ── */}
+      {/* ── Where the cut lines fall ── */}
+      {/* The matrix counts moves; it cannot show WHY one is a move. This can:
+          the six bands behind the dots are the score ranges each class occupies,
+          so a student's distance from the nearest line is how marginal their
+          placement is -- which is the thing a meeting actually argues about. */}
       <div className="bg-surface border border-border rounded-xl p-4">
-        <p className="text-[12px] font-semibold text-navy">Every student, by composite</p>
+        <p className="text-[12px] font-semibold text-navy">How close each student is to a cut line</p>
         <p className="text-[10px] text-text-tertiary mb-3">
-          A row per class they are in now. A dot&rsquo;s colour is the class the test puts them in, so a dot that does not match its row is a move.
+          The bands are the score range for each class. A dot sitting near a line could go either way; a dot in the middle of a band is settled.
         </p>
-        <div className="space-y-2">
+        <div className="flex mb-1 ml-20 mr-8">
+          {PLACED_ENGLISH_CLASSES.map((c, i) => {
+            const from = i === 0 ? 0 : CLASS_CUTS[i - 1]
+            const to = i === CLASS_CUTS.length ? 100 : CLASS_CUTS[i]
+            return (
+              <div key={c} className="text-center overflow-hidden" style={{ width: `${to - from}%` }}>
+                <span className="text-[9px] font-semibold whitespace-nowrap" style={{ color: classToTextColor(c) }}>{c}</span>
+              </div>
+            )
+          })}
+        </div>
+        <div className="space-y-1.5">
           {classes.map(c => {
             const inClass = tested.filter(r => r.student.english_class === c)
             if (inClass.length === 0) return null
             return (
               <div key={c} className="flex items-center gap-2">
                 <span className="w-20 text-[10px] font-semibold text-right shrink-0" style={{ color: classToTextColor(c) }}>{c}</span>
-                <div className="flex-1 relative h-8 bg-surface-alt/50 rounded border border-border">
-                  {CLASS_CUTS.map(x => <div key={x} className="absolute top-0 h-full border-l border-border" style={{ left: `${x}%` }} />)}
+                <div className="flex-1 relative h-7 rounded overflow-hidden border border-border">
+                  {PLACED_ENGLISH_CLASSES.map((band, i) => {
+                    const from = i === 0 ? 0 : CLASS_CUTS[i - 1]
+                    const to = i === CLASS_CUTS.length ? 100 : CLASS_CUTS[i]
+                    return <div key={band} className="absolute top-0 h-full" style={{ left: `${from}%`, width: `${to - from}%`, backgroundColor: classToColor(band) + '1f' }} />
+                  })}
+                  {CLASS_CUTS.map(x => <div key={x} className="absolute top-0 h-full w-px bg-border" style={{ left: `${x}%` }} />)}
                   {inClass.map(r => {
+                    const x = r.composite * 100
                     const sug = r.suggested as EnglishClass
                     const moving = sug !== c
-                    const x = r.composite * 100
+                    const marginal = Math.min(...CLASS_CUTS.map(cut => Math.abs(x - cut))) < 4
                     return (
                       <div key={r.student.id}
-                        title={`${r.student.english_name} — composite ${Math.round(x)}${r.band ? `, passage ${r.band.effectiveLevel}` : ''} → ${sug}`}
-                        className={`absolute w-3 h-3 rounded-full -translate-x-1/2 ${moving ? 'ring-2 ring-white' : 'border border-white/60'}`}
+                        title={`${r.student.english_name} — composite ${Math.round(x)} → ${sug}${marginal ? ' (close to a line)' : ''}`}
+                        className={`absolute w-3 h-3 rounded-full -translate-x-1/2 ${moving ? 'ring-2 ring-navy' : 'border border-white/70'}`}
                         style={{ left: `${Math.min(99, Math.max(1, x))}%`, top: '50%', marginTop: -6, backgroundColor: classToColor(sug), zIndex: moving ? 2 : 1 }} />
                     )
                   })}
@@ -291,12 +369,9 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
             )
           })}
         </div>
-        <div className="flex items-center gap-3 mt-3 flex-wrap text-[10px] text-text-secondary">
-          <span className="text-text-tertiary">Dot colour = suggested class:</span>
-          {PLACED_ENGLISH_CLASSES.map(c => (
-            <span key={c} className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: classToColor(c) }} />{c}</span>
-          ))}
-        </div>
+        <p className="text-[10px] text-text-tertiary mt-2">
+          Dot colour is the class the test puts them in. A <span className="inline-block w-2.5 h-2.5 rounded-full ring-2 ring-navy align-middle bg-surface-alt" /> ringed dot is one whose row and colour disagree &mdash; a move.
+        </p>
       </div>
 
       {/* ── The list that gets read out ── */}
@@ -393,13 +468,18 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
       const c = (byClass[r.student.english_class] ||= { sum: 0, n: 0 })
       c.sum += v; c.n++
     })
+    // written_checklist stores category key -> the array of box keys that were
+    // ticked, not a map of booleans. Indexing it by box key returned undefined
+    // for everyone, so these percentages never appeared at all. A student counts
+    // once their category was scored: an unticked box is a nil, but only if
+    // somebody actually marked the script.
     const criteria = (cat.checklist || []).map((item: any) => {
       const byCls: Record<string, { hit: number; n: number }> = {}
       rows.forEach(r => {
-        const v = r.raw?.written_checklist?.[cat.key]?.[item.key]
-        if (v == null) return
+        if (r.raw?.written_rubric?.[cat.key] == null) return
+        const ticked: string[] = r.raw?.written_checklist?.[cat.key] || []
         const c = (byCls[r.student.english_class] ||= { hit: 0, n: 0 })
-        if (v) c.hit++
+        if (ticked.includes(item.key)) c.hit++
         c.n++
       })
       return { item, byCls }
@@ -511,16 +591,14 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
 function Cell({ v, sub, small }: { v: { hit: number; n: number } | null; sub?: string; small?: boolean }) {
   if (!v || v.n === 0) return <td className="px-2 py-2 text-center text-text-tertiary">—</td>
   const pct = Math.round((v.hit / v.n) * 100)
-  const thin = v.n < 4
-  const tone = thin ? 'bg-surface-alt text-text-tertiary border-border'
-    : pct >= 75 ? 'bg-green-50 text-green-700 border-green-200'
+  const tone = pct >= 75 ? 'bg-green-50 text-green-700 border-green-200'
     : pct >= 45 ? 'bg-amber-50 text-amber-700 border-amber-200'
     : 'bg-red-50 text-red-700 border-red-200'
   return (
     <td className="px-2 py-1.5 text-center">
       <span className={`inline-block px-2 py-0.5 rounded border font-semibold ${small ? 'text-[9px]' : 'text-[10px]'} ${tone}`}
-        title={thin ? `Only ${v.n} behind this.` : undefined}>{pct}%</span>
-      {sub && <span className="block text-[8px] text-text-tertiary mt-0.5">{sub}</span>}
+        title={`${v.hit} of ${v.n}`}>{pct}%</span>
+      <span className="block text-[8px] text-text-tertiary mt-0.5">{sub || `${v.n}`}</span>
     </td>
   )
 }
@@ -585,9 +663,13 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
         {classes.map(c => {
           const v = it.byClass[c]
           if (!v || v.n === 0) return null
-          const p = Math.round((v.correct / v.n) * 100)
+          const p = v.correct / v.n
+          // Red through the spectrum to violet, so a row of tags reads as a
+          // gradient and the weak class is the one that looks wrong.
+          const col = rainbow(p)
           return <span key={c} title={`${v.correct} of ${v.n}`}
-            className={`text-[9px] px-1.5 py-0.5 rounded border ${v.n >= 3 && p < 50 ? 'bg-red-50 text-red-700 border-red-200 font-semibold' : 'bg-surface-alt text-text-tertiary border-border'}`}>{c} {p}%</span>
+            className="text-[9px] px-1.5 py-0.5 rounded font-semibold text-white"
+            style={{ backgroundColor: col }}>{c} {Math.round(p * 100)}%</span>
         })}
       </div>
     </div>
