@@ -1568,7 +1568,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                   title="Teacher Rating, averaged out of 4. Reference for the placement conversation only \u2014 it is not part of the composite, so a student nobody has rated is neither helped nor hurt by that.">
                   {row.hasAnec ? <span className="text-text-secondary">{(row.anecScore * 4).toFixed(1)}</span> : <span className="text-text-tertiary">{'\u2014'}</span>}
                 </td>
-                <td className={`px-2 py-2 text-center font-bold ${row.isTested ? 'text-navy' : 'text-text-tertiary font-normal italic'}`} title={!row.isTested ? 'No test evidence yet \u2014 this student has not sat any section, so there is nothing to compute.' : excludedQuestions.length > 0 ? `Composite adjusted: ${excludedQuestions.length} question${excludedQuestions.length !== 1 ? 's' : ''} excluded from MC scoring` : undefined}>{row.isTested && excludedQuestions.length > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-0.5 align-super" />}{row.isTested ? (row.composite * 100).toFixed(0) : '\u2014'}</td>
+                <td className={`px-2 py-2 text-center font-bold ${row.isTested ? 'text-navy' : 'text-text-tertiary font-normal italic'}`} title={!row.isTested ? 'No test evidence yet \u2014 this student has not sat any section, so there is nothing to compute.' : row.attemptedNothing ? 'The oral session was marked complete and no passage was read. Scored 0: an attempt that produced nothing is the lowest evidence there is, not missing evidence.' : excludedQuestions.length > 0 ? `Composite adjusted: ${excludedQuestions.length} question${excludedQuestions.length !== 1 ? 's' : ''} excluded from MC scoring` : undefined}>{row.isTested && excludedQuestions.length > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-0.5 align-super" />}{row.isTested ? (row.composite * 100).toFixed(0) : '\u2014'}</td>
                 {hasBands && (
                   <td className="px-2 py-2 text-center">
                     {row.band ? (
@@ -1594,7 +1594,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = {weightSummary} &mdash; weights are set per grade, because each grade's paper is a different shape. The oral term is the <strong>Band</strong>: the passage a student sustained sets the floor they start from, so a harder passage almost always outranks an easier one, and comprehension, accuracy, NAEP and reading rate only position them inside that level. Teacher Ratings are not in it {'\u2014'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot, and one whose oral session was marked complete but produced nothing scoreable shows as <span className="italic">no score</span> {'\u2014'} tested, but to be placed by hand. CWPM is shown as clocked, on the passage in brackets {'\u2014'} passage difficulty is carried by the Band, not baked into the rate. {(hasPhonics || hasSentences) && <>Phonics and sentence reading come off the oral test and together form the decoding term. </>}{hasSyllables && <>Syllable counting is reference only {'\u2014'} it moves the Band, not the composite. </>}<span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; the passage counts as not sustained, which drops the student to the level below rather than scoring them a zero. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = {weightSummary} &mdash; weights are set per grade, because each grade's paper is a different shape. The oral term is the <strong>Band</strong>: the passage a student sustained sets the floor they start from, so a harder passage almost always outranks an easier one, and comprehension, accuracy, NAEP and reading rate only position them inside that level. Teacher Ratings are not in it {'\u2014'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. A student whose oral session was marked complete without a passage being read is scored 0 and ranked at the bottom {'\u2014'} an attempt that produced nothing is the lowest evidence there is, not missing evidence {'\u2014'} and their row reads <span className="italic">attempted none</span>. CWPM is shown as clocked, on the passage in brackets {'\u2014'} passage difficulty is carried by the Band, not baked into the rate. {(hasPhonics || hasSentences) && <>Phonics and sentence reading come off the oral test and together form the decoding term. </>}{hasSyllables && <>Syllable counting is reference only {'\u2014'} it moves the Band, not the composite. </>}<span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; the passage counts as not sustained, which drops the student to the level below rather than scoring them a zero. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
     </div>
   )
 }
@@ -2242,6 +2242,8 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   // heading that read like one. Difficulty now enters the score once, at the
   // band floor, so the display no longer has any reason to carry it.
   const rawCwpmValue = calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
+  // The teacher declared the oral session over, whatever it produced.
+  const oralComplete = !!(sc.oral_complete || sc.o_test_complete)
   const adjustedCwpm = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? null
   // The passage the rate was actually clocked on, which is also the passage the
   // band scores. best_passage_level belongs to the old best-attempt logic and
@@ -2367,7 +2369,12 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
   // so passage difficulty settles the ordering before anything else does, and
   // the measures inside it only position a student within that level. This is
   // the model Grade 1 has always used; grades 2-5 now share it.
-  oralScore = band ? band.composite / 100 : null
+  // A session marked complete with no passage on record is not missing data.
+  // The student sat down, was given a passage and could not read it -- an
+  // attempt that scored nothing is evidence, and the lowest evidence there is.
+  // Scored 0 rather than dropped, so they rank at the bottom of the grade and
+  // receive a placement instead of falling out of the ranking altogether.
+  oralScore = band ? band.composite / 100 : (oralComplete ? 0 : null)
 
   const termScores = {
     oral: oralScore, decoding: decodingScore, mc: mcScore,
@@ -2401,7 +2408,11 @@ function computeRow(s: Student, scores: Record<string, any>, anecdotals: Record<
     // The teacher declared the oral session over. A student can be complete and
     // still have nothing to score -- that is the whole reason the flag exists --
     // so it is kept apart from isTested rather than folded into it.
-    oralComplete: !!(sc.oral_complete || sc.o_test_complete),
+    oralComplete,
+    // Complete, but nothing was read: the 0 above is the whole of their oral
+    // evidence. Worth marking on the table so it does not read as a low score
+    // among comparable low scores.
+    attemptedNothing: oralComplete && band == null,
     decodingScore, shortWritingScore, passageLevel: calc.passage_level ?? null, oralPassageLevel, adjustedCwpm, otherAttempts, accuracyPct: calc.accuracy_pct ?? null, naep: calc.naep ?? sc.naep ?? null, hasGrades, outlierFlags, band }
 }
 

@@ -620,11 +620,17 @@ function g1WeightedComposite(
   content: G1Content,
 ): number | null {
   const hasOral = scores.o_passage_level != null
+  // A session the teacher marked complete with no passage on record is not
+  // missing data: the student sat down, was given something to read and could
+  // not read it. Scored 0 rather than dropped, so they rank at the bottom of
+  // the grade and receive a placement instead of falling out of the ranking.
+  const attemptedNothing = !hasOral && !!scores.o_test_complete
   const hasWritten = (!!scores.written_answers && Object.keys(scores.written_answers).length > 0)
     || metrics.writtenMC > 0
   const hasWriting = scores.writing_bonus != null
   const parts: { score: number; weight: number }[] = []
   if (hasOral) parts.push({ score: metrics.oralScore / 100, weight: G1_PLACEMENT_WEIGHTS.oral })
+  else if (attemptedNothing) parts.push({ score: 0, weight: G1_PLACEMENT_WEIGHTS.oral })
   if (hasWritten && content.written.mcMax > 0) {
     parts.push({ score: metrics.writtenMC / content.written.mcMax, weight: G1_PLACEMENT_WEIGHTS.mc })
   }
@@ -3728,6 +3734,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
         // A student with no measured component has nothing to rank -- the same
         // rule the grades 2-5 table applies. A teacher rating alone is a note.
         isTested: weighted != null,
+        attemptedNothing: sc.o_passage_level == null && !!sc.o_test_complete,
         hasAnec: av.length > 0,
         anecScore: av.length > 0 ? av.reduce((a, b) => a + b, 0) / (av.length * 4) : 0.5,
       }
@@ -4003,7 +4010,8 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
                 <td className="px-2 py-2 text-center">
                   {row.suggestedClass == null
                     ? <span className="inline-block px-1.5 py-0.5 rounded bg-surface-alt text-text-tertiary border border-border text-[9px] font-semibold" title="Not tested yet. This student has no oral, MC or writing score, so there is nothing to rank them on.">not tested</span>
-                    : <><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${move ? 'ring-2 ring-amber-400' : ''}`} style={{ backgroundColor: classToColor(row.suggestedClass) + '40', color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span>{row.suggestedClass !== row.absoluteClass && <span className="block text-[8px] text-amber-600 mt-0.5" title="The rank-based placement and the absolute band disagree for this student.">differs from band</span>}</>}
+                    : <><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${move ? 'ring-2 ring-amber-400' : ''}`} style={{ backgroundColor: classToColor(row.suggestedClass) + '40', color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span>
+                      {row.attemptedNothing && <span className="block text-[8px] text-amber-600 mt-0.5" title="The oral session was marked complete and no passage was read. Scored 0 and ranked at the bottom of the grade.">attempted none</span>}</>}
                 </td>
                 <td className="px-2 py-2 text-center">{row.anec?.teacher_recommends ? <span className={`text-[9px] font-bold ${row.anec.teacher_recommends === 'keep' ? 'text-blue-600' : row.anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{row.anec.teacher_recommends === 'keep' ? 'Keep' : row.anec.teacher_recommends === 'move_up' ? 'Up' : 'Down'}</span> : '—'}</td>
               </tr>)})}</tbody>
