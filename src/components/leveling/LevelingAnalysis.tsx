@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, LevelTest } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
+import { classToColor, classToTextColor, IMPLAUSIBLE_CWPM } from '@/lib/utils'
 import { Loader2, ChevronDown } from 'lucide-react'
 import { bandFromCalc, g2ClassFromBand, BAND_LEVEL_ORDER } from './grade2Band'
 import { computeRow, rankRows, buildLevelCwpmNorms, versionKeyForTest } from './placement'
@@ -1203,15 +1203,22 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
   }).filter(p => p.x != null && p.x > 0 && p.y != null)
 
   if (pts.length === 0) return null
-  const maxX = Math.max(120, ...pts.map(p => p.x)) * 1.08
+  // A rate above the plausible ceiling is a mis-started stopwatch, not a fast
+  // reader, and one of them stretches the axis far enough to squash the real
+  // cohort into a corner. The axis is set by the believable readings; the rest
+  // are pinned at the edge, ringed, and named underneath. Excluding them
+  // silently would be worse -- they need fixing, not hiding.
+  const believable = pts.filter(p => p.x <= IMPLAUSIBLE_CWPM)
+  const suspect = pts.filter(p => p.x > IMPLAUSIBLE_CWPM)
+  const maxX = Math.max(120, ...believable.map(p => p.x)) * 1.08
 
   const W = 820, H = 430, L = 54, R = 24, T = 26, B = 46
   const px = (v: number) => L + (v / maxX) * (W - L - R)
   const py = (v: number) => H - B - (v / 100) * (H - T - B)
   const midX = maxX / 2
 
-  const wordCalling = pts.filter(p => p.x >= midX && p.y < 60).sort((a, b) => a.y - b.y)
-  const slowButGets = pts.filter(p => p.x < midX && p.y >= 75).sort((a, b) => a.x - b.x)
+  const wordCalling = believable.filter(p => p.x >= midX && p.y < 60).sort((a, b) => a.y - b.y)
+  const slowButGets = believable.filter(p => p.x < midX && p.y >= 75).sort((a, b) => a.x - b.x)
 
   return (
     <div className="bg-surface border border-border rounded-xl p-4">
@@ -1242,7 +1249,7 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
           ))}
           <text x={px(maxX) - 10} y={py(0) - 10} fontSize="11" fill="#B91C1C" opacity="0.85" textAnchor="end">Fast, not following it</text>
           <text x={L + 10} y={T + 16} fontSize="11" fill="#2563EB" opacity="0.8">Slow, understood it</text>
-          {pts.map(p => {
+          {believable.map(p => {
             const on = hover?.r.student.id === p.r.student.id
             return (
               <circle key={p.r.student.id} cx={px(p.x)} cy={py(p.y)} r={on ? 8 : 6}
@@ -1251,6 +1258,14 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
                 style={{ cursor: 'pointer' }} onMouseEnter={() => setHover({ r: p.r, x: p.x, y: p.y })} />
             )
           })}
+          {suspect.map(p => (
+            <circle key={p.r.student.id} cx={px(maxX) - 7} cy={py(p.y)} r="7"
+              fill={classToColor(p.r.student.english_class as EnglishClass)}
+              stroke="#DC2626" strokeWidth="2.5" strokeDasharray="3 2"
+              style={{ cursor: 'pointer' }} onMouseEnter={() => setHover({ r: p.r, x: p.x, y: p.y })}>
+              <title>{`${p.r.student.english_name}: ${Math.round(p.x)} wpm — off the scale`}</title>
+            </circle>
+          ))}
           <text x={(L + px(maxX)) / 2} y={H - 8} fontSize="11" fill="#64748B" textAnchor="middle">words a minute &rarr;</text>
           <text x={16} y={(T + py(0)) / 2} fontSize="11" fill="#64748B" textAnchor="middle" transform={`rotate(-90 16 ${(T + py(0)) / 2})`}>understood &rarr;</text>
         </svg>
@@ -1263,6 +1278,15 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
           </div>
         )}
       </div>
+
+      {suspect.length > 0 && (
+        <p className="text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-3">
+          <strong>{suspect.map(p => `${p.r.student.english_name} (${Math.round(p.x)} wpm)`).join(', ')}</strong>{' '}
+          {suspect.length === 1 ? 'is' : 'are'} shown pinned at the right edge, because {suspect.length === 1 ? 'that rate is' : 'those rates are'} faster
+          than fluent adult reading aloud and cannot be real. Almost always a stopwatch started partway through the read, so the whole passage counts
+          against part of the time. Worth re-checking the recorded seconds against the words read, since the rate feeds the Band.
+        </p>
+      )}
 
       <div className="grid md:grid-cols-2 gap-3 mt-4">
         <Corner title="Reading fast without following it" tone="amber" people={wordCalling}
