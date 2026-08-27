@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { Loader2, ChevronDown } from 'lucide-react'
-import { bandFromCalc, g2ClassFromBand, BAND_LEVEL_ORDER } from './grade2Band'
+import { bandFromCalc, g2ClassFromBand } from './grade2Band'
+import { computeRow, rankRows, buildLevelCwpmNorms, versionKeyForTest } from './placement'
 
 const PASSAGE_COLORS: Record<string, string> = {
   A: '#EF4444', B: '#F97316', C: '#EAB308', D: '#22C55E', E: '#3B82F6', F: '#A855F7',
@@ -41,6 +42,11 @@ interface Row {
   calc: any
   raw: any
   band: ReturnType<typeof bandOf>
+  /** 0-1. What placement actually ranks on. */
+  composite: number
+  isTested: boolean
+  /** The class the composite puts them in -- the same value the Results tab shows. */
+  suggested: EnglishClass | null
   /** The class they were placed in at the most recent earlier test, if any. */
   lastYear: EnglishClass | null
 }
@@ -103,13 +109,24 @@ export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest
           const cur = priorBy[p.student_id]
           if (!cur) priorBy[p.student_id] = p.final_placement
         })
-        const byStudent: Record<string, any> = {}
-        sc?.forEach((r: any) => { byStudent[r.student_id] = r })
-        setRows((studs || []).map((s: any) => {
-          const rec = byStudent[s.id]
-          const calc = rec?.calculated_metrics || null
-          return { student: s, calc, raw: rec?.raw_scores || null, band: bandOf(test, calc), lastYear: priorBy[s.id] ?? null }
-        }))
+        // The composite and the suggested class come from the same functions the
+        // Results tab and the drag board use, so this page cannot answer "where
+        // does this child go" differently from the screen that saves it.
+        const scoreMap: Record<string, any> = {}
+        sc?.forEach((r: any) => { scoreMap[r.student_id] = { raw_scores: r.raw_scores, calculated_metrics: r.calculated_metrics } })
+        const norms = buildLevelCwpmNorms(studs as any, scoreMap)
+        const computed = rankRows((studs || []).map((s: any) =>
+          computeRow(s, scoreMap, {}, {}, {}, test.grade, undefined, versionKeyForTest(test), undefined, norms)))
+        setRows(computed.map((r: any) => ({
+          student: r.student,
+          calc: scoreMap[r.student.id]?.calculated_metrics || null,
+          raw: scoreMap[r.student.id]?.raw_scores || null,
+          band: r.band,
+          composite: r.composite,
+          isTested: r.isTested,
+          suggested: r.suggestedClass as EnglishClass | null,
+          lastYear: priorBy[r.student.id] ?? null,
+        })))
         setPaper(await loadPaper(test))
       } finally { if (alive) setLoading(false) }
     })()
@@ -159,7 +176,9 @@ export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest
 // movement there is and between which classes, the picture shows who, and the
 // table is what gets read out.
 function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
-  const tested = rows.filter(r => r.band != null)
+  // Ranked students, i.e. those with test evidence. The suggestion is the one
+  // that gets saved, so this table and the Results tab cannot disagree.
+  const tested = rows.filter(r => r.suggested != null)
   const [cell, setCell] = useState<{ from: EnglishClass; to: EnglishClass } | null>(null)
   const [onlyMoves, setOnlyMoves] = useState(false)
 
@@ -173,7 +192,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
     const m: Record<string, Record<string, Row[]>> = {}
     tested.forEach(r => {
       const from = r.student.english_class as EnglishClass
-      const to = r.band!.suggestedClass as EnglishClass
+      const to = r.suggested as EnglishClass
       ;((m[from] ||= {})[to] ||= []).push(r)
     })
     return m
@@ -181,12 +200,12 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
 
   const listed = useMemo(() => {
     let out = cell ? (matrix[cell.from]?.[cell.to] ?? []) : tested
-    if (!cell && onlyMoves) out = out.filter(r => r.band!.suggestedClass !== r.student.english_class)
-    return [...out].sort((a, b) => b.band!.composite - a.band!.composite)
+    if (!cell && onlyMoves) out = out.filter(r => r.suggested !== r.student.english_class)
+    return [...out].sort((a, b) => b.composite - a.composite)
   }, [tested, matrix, cell, onlyMoves])
 
   if (tested.length === 0) {
-    return <p className="text-[13px] text-text-tertiary py-10 text-center">No oral scores recorded for Grade {test.grade} yet.</p>
+    return <p className="text-[13px] text-text-tertiary py-10 text-center">No scores recorded for Grade {test.grade} yet.</p>
   }
 
   return (
@@ -198,7 +217,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
       {/* ── Movement matrix ── */}
       <div className="bg-surface border border-border rounded-xl overflow-x-auto">
         <div className="px-4 pt-3.5 pb-2">
-          <p className="text-[12px] font-semibold text-navy">Where they are, and where the Band puts them</p>
+          <p className="text-[12px] font-semibold text-navy">Where they are, and where the test puts them</p>
           <p className="text-[10px] text-text-tertiary">Down the diagonal is staying. Click any number for the names.</p>
         </div>
         <table className="text-[11px] w-full">
@@ -242,9 +261,9 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
 
       {/* ── The grade in one picture ── */}
       <div className="bg-surface border border-border rounded-xl p-4">
-        <p className="text-[12px] font-semibold text-navy">Every student, by Band</p>
+        <p className="text-[12px] font-semibold text-navy">Every student, by composite</p>
         <p className="text-[10px] text-text-tertiary mb-3">
-          A row per class they are in now. A dot&rsquo;s colour is the class its Band points at, so a dot that does not match its row is a move.
+          A row per class they are in now. A dot&rsquo;s colour is the class the test puts them in, so a dot that does not match its row is a move.
         </p>
         <div className="space-y-2">
           {classes.map(c => {
@@ -256,13 +275,14 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
                 <div className="flex-1 relative h-8 bg-surface-alt/50 rounded border border-border">
                   {CLASS_CUTS.map(x => <div key={x} className="absolute top-0 h-full border-l border-border" style={{ left: `${x}%` }} />)}
                   {inClass.map(r => {
-                    const sug = r.band!.suggestedClass as EnglishClass
+                    const sug = r.suggested as EnglishClass
                     const moving = sug !== c
+                    const x = r.composite * 100
                     return (
                       <div key={r.student.id}
-                        title={`${r.student.english_name} — Band ${Math.round(r.band!.composite)}, passage ${r.band!.effectiveLevel} → ${sug}`}
+                        title={`${r.student.english_name} — composite ${Math.round(x)}${r.band ? `, passage ${r.band.effectiveLevel}` : ''} → ${sug}`}
                         className={`absolute w-3 h-3 rounded-full -translate-x-1/2 ${moving ? 'ring-2 ring-white' : 'border border-white/60'}`}
-                        style={{ left: `${Math.min(99, Math.max(1, r.band!.composite))}%`, top: '50%', marginTop: -6, backgroundColor: classToColor(sug), zIndex: moving ? 2 : 1 }} />
+                        style={{ left: `${Math.min(99, Math.max(1, x))}%`, top: '50%', marginTop: -6, backgroundColor: classToColor(sug), zIndex: moving ? 2 : 1 }} />
                     )
                   })}
                 </div>
@@ -289,12 +309,12 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
           {cell
             ? <button onClick={() => setCell(null)} className="text-[10px] text-navy hover:underline ml-auto">Show all</button>
             : <button onClick={() => setOnlyMoves(!onlyMoves)} className={`text-[10px] ml-auto px-2 py-1 rounded-lg ${onlyMoves ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
-                Only where the Band differs
+                Only where it differs
               </button>}
         </div>
         <table className="w-full text-[11px]">
           <thead><tr className="bg-surface-alt">
-            {['Student', 'In', 'Band', 'Passage', 'Band suggests', 'Last placed'].map((h, i) => (
+            {['Student', 'In', 'Composite', 'Band', 'Passage', 'Test suggests', 'Last placed'].map((h, i) => (
               <th key={h} className={`px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold ${i === 0 ? 'text-left' : 'text-center'}`}>{h}</th>
             ))}
           </tr></thead>
@@ -310,13 +330,16 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
                 <td className="px-3 py-2 text-center">
                   <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(r.student.english_class as EnglishClass) + '40', color: classToTextColor(r.student.english_class as EnglishClass) }}>{r.student.english_class}</span>
                 </td>
-                <td className="px-3 py-2 text-center font-semibold text-navy">{Math.round(r.band!.composite)}</td>
+                <td className="px-3 py-2 text-center font-semibold text-navy">{Math.round(r.composite * 100)}</td>
+                <td className="px-3 py-2 text-center text-text-secondary">{r.band ? Math.round(r.band.composite) : '—'}</td>
                 <td className="px-3 py-2 text-center">
-                  <span className="inline-flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: PASSAGE_COLORS[r.band!.effectiveLevel] }} />
-                    {r.band!.effectiveLevel}
-                    {r.band!.downgraded && <span className="text-[8px] text-amber-600" title={`Tried ${r.band!.attemptedLevel}, did not sustain it`}>&darr;</span>}
-                  </span>
+                  {r.band ? (
+                    <span className="inline-flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: PASSAGE_COLORS[r.band.effectiveLevel] }} />
+                      {r.band.effectiveLevel}
+                      {r.band.downgraded && <span className="text-[8px] text-amber-600" title={`Tried ${r.band.attemptedLevel}, did not sustain it`}>&darr;</span>}
+                    </span>
+                  ) : <span className="text-text-tertiary">—</span>}
                 </td>
                 <td className="px-3 py-2 text-center">
                   <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(sug) + '40', color: classToTextColor(sug) }}>{sug}</span>
