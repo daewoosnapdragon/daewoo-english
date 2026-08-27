@@ -376,6 +376,10 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
     // is null on a test without the section, which is what gates the column.
     rawSyllable: calc.syllable_total ?? null, syllableMax: calc.syllable_max ?? null,
     rawShortWriting: calc.short_writing_total ?? null, shortWritingMax: calc.short_writing_max ?? null,
+    // Read, not assumed. Every grade's rubric is out of 20 today, but a
+    // hardcoded denominator is how a column ends up lying about a paper that
+    // changed underneath it.
+    writingMax: calc.writing_max ?? 20,
     // The teacher declared the oral session over. A student can be complete and
     // still have nothing to score -- that is the whole reason the flag exists --
     // so it is kept apart from isTested rather than folded into it.
