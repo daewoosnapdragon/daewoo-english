@@ -117,7 +117,7 @@ export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest
   const test = tests.find(t => t.id === testId) || tests[0] || null
   useEffect(() => { if (tests.length && !tests.some(t => t.id === testId)) setTestId(tests[0].id) }, [tests, testId])
 
-  const [view, setView] = useState<'placement' | 'questions'>('placement')
+  const [view, setView] = useState<'placement' | 'questions' | 'skills'>('placement')
   const [rows, setRows] = useState<Row[] | null>(null)
   const [paper, setPaper] = useState<Paper>(EMPTY_PAPER)
   const [loading, setLoading] = useState(true)
@@ -217,7 +217,7 @@ export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest
           ))}
         </div>
         <div className="flex gap-1 border-l border-border pl-2 ml-1">
-          {(['placement', 'questions'] as const).map(v => (
+          {(['placement', 'questions', 'skills'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
               className={`px-3 py-1.5 rounded-lg text-[11px] font-medium capitalize ${view === v ? 'bg-navy/10 text-navy' : 'text-text-secondary hover:bg-surface-alt'}`}>
               {v}
@@ -233,9 +233,9 @@ export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest
 
       {loading || rows == null
         ? <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
-        : view === 'placement'
-          ? <Placement test={test} rows={rows} />
-          : <Questions test={test} rows={rows} paper={paper} />}
+        : view === 'placement' ? <Placement test={test} rows={rows} />
+          : view === 'questions' ? <Questions test={test} rows={rows} paper={paper} />
+          : <Skills test={test} rows={rows} paper={paper} />}
     </div>
   )
 }
@@ -901,5 +901,239 @@ function Corner({ title, note, people, tone }: { title: string; note: string; to
             ))}
           </div>}
     </div>
+  )
+}
+
+// ─── Skills ──────────────────────────────────────────────────────────
+// Every part of the programme in one place, drawn from both tests. The two
+// tests use different vocabularies -- the oral file says Comprehension and
+// Fluency, the written file says Reading Info and Language/Grammar -- so the
+// mapping happens here rather than either of them being renamed, which would
+// re-point historical scores.
+//
+// Cells are distance from THIS grade's median, never a raw percentage side by
+// side. 70% on an eleven-item grammar section and 70% on a hand-scored writing
+// rubric are not the same achievement, and putting them on one scale invites a
+// comparison the instruments cannot support. Deviations are comparable because
+// each is measured against its own instrument's own cohort.
+
+/** Written domain labels drifted as the tests were authored; folded on read. */
+const SKILL_FOR_DOMAIN: Record<string, string> = {
+  'Reading Info': 'read', 'Reading Lit': 'read', 'Reading Comprehension': 'read',
+  'Listening': 'listen', 'Listening Comprehension': 'listen',
+  'Vocabulary': 'vocab',
+  'Language': 'grammar', 'Language/Grammar': 'grammar',
+  'Language/Mechanics': 'mechanics',
+  'Phonics': 'decode',
+}
+
+interface SkillDef { key: string; name: string; src: string; pair?: 'open' | 'close' }
+const SKILL_DEFS: SkillDef[] = [
+  { key: 'oral', name: 'Oral reading', src: 'oral · accuracy and expression' },
+  { key: 'decode', name: 'Decoding', src: 'oral · phonics and sentences' },
+  { key: 'heard', name: 'Comprehension heard', src: 'oral · questions on the passage', pair: 'open' },
+  { key: 'read', name: 'Comprehension read', src: 'written · reading section', pair: 'close' },
+  { key: 'listen', name: 'Listening', src: 'written · listening section' },
+  { key: 'vocab', name: 'Vocabulary', src: 'written · vocabulary items' },
+  { key: 'grammar', name: 'Grammar', src: 'written · language items' },
+  { key: 'mechanics', name: 'Mechanics', src: 'written · punctuation and capitals' },
+]
+
+type Tally = { got: number; max: number }
+/** A skill's percentage per class, and the grade's median across those classes. */
+type SkillLine = { pcts: Record<string, number>; med: number } | null
+const add = (t: Record<string, Tally>, k: string, got: number, max: number) => {
+  const c = (t[k] ||= { got: 0, max: 0 }); c.got += got; c.max += max
+}
+
+function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Paper }) {
+  const [raw, setRaw] = useState(false)
+  const [openWriting, setOpenWriting] = useState(true)
+  const classes = ENGLISH_CLASSES.filter(c => rows.some(r => r.student.english_class === c))
+
+  const { byClass, writingCats } = useMemo(() => {
+    const byClass: Record<string, Record<string, Tally>> = {}
+    const catKeys = paper.writingCats.map((c: any) => c.key)
+    rows.forEach(r => {
+      const cls = r.student.english_class
+      const t = (byClass[cls] ||= {})
+      const calc = r.calc, rw = r.raw
+
+      // Fluency, as the band reads it: accuracy across the 90-97 stretch the
+      // guides care about, and NAEP on its 1-4 scale. Not rate -- rate is not
+      // comparable between passages, which is the whole reason the band exists.
+      if (calc?.accuracy_pct != null) add(t, 'oral', Math.max(0, Math.min(7, calc.accuracy_pct - 90)), 7)
+      if (calc?.naep) add(t, 'oral', Math.max(0, calc.naep - 1), 3)
+
+      for (let i = 1; i <= 5; i++) {
+        if (rw?.[`phonics_row${i}`] != null) add(t, 'decode', rw[`phonics_row${i}`], paper.phonicsRowMax || 5)
+        if (rw?.[`sent_${i}`] != null) add(t, 'decode', rw[`sent_${i}`], 1)
+      }
+      if (calc?.comp_total != null && calc?.comp_max > 0 && !calc.comp_not_administered) add(t, 'heard', calc.comp_total, calc.comp_max)
+
+      const dom = calc?.written_domain_scores || {}
+      Object.entries(dom).forEach(([d, v]: [string, any]) => {
+        const k = SKILL_FOR_DOMAIN[d]
+        if (k && v?.total > 0) add(t, k, v.correct || 0, v.total)
+      })
+
+      paper.writingCats.forEach((cat: any) => {
+        const v = rw?.written_rubric?.[cat.key]
+        if (v == null || !cat.max) return
+        add(t, 'writing', v, cat.max)
+        add(t, `w:${cat.key}`, v, cat.max)
+      })
+    })
+    return { byClass, writingCats: paper.writingCats.filter((c: any) => catKeys.includes(c.key)) }
+  }, [rows, paper])
+
+  /** Percentage per class, and the grade's median across the classes that have it. */
+  const line = (key: string): SkillLine => {
+    const pcts: Record<string, number> = {}
+    classes.forEach(c => {
+      const t = byClass[c]?.[key]
+      if (t && t.max > 0) pcts[c] = (t.got / t.max) * 100
+    })
+    const vals = Object.values(pcts).sort((a, b) => a - b)
+    if (vals.length === 0) return null
+    const m = vals.length >> 1
+    const med = vals.length % 2 ? vals[m] : (vals[m - 1] + vals[m]) / 2
+    return { pcts, med }
+  }
+
+  const rowsOut: { def: SkillDef; line: SkillLine }[] = SKILL_DEFS
+    .map(def => ({ def, line: line(def.key) }))
+  const writingLine = line('writing')
+  const anything = rowsOut.some(r => r.line) || writingLine
+  if (!anything) return <p className="text-[13px] text-text-tertiary py-10 text-center">Nothing marked yet for Grade {test.grade}.</p>
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-surface border border-border rounded-xl p-4 overflow-x-auto">
+        <div className="flex items-start gap-3 mb-3">
+          <div>
+            <p className="text-[12px] font-semibold text-navy">Skills, against the grade median</p>
+            <p className="text-[10px] text-text-tertiary">
+              Blue above the grade, red below. Not raw percentages side by side &mdash; an eleven-item grammar section and a hand-scored writing rubric do not share a scale.
+            </p>
+          </div>
+          <button onClick={() => setRaw(!raw)}
+            className={`ml-auto shrink-0 text-[10px] px-2.5 py-1 rounded-lg ${raw ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+            {raw ? 'Showing scores' : 'Show scores'}
+          </button>
+        </div>
+        <table className="w-full text-[11px]">
+          <thead><tr>
+            <th className="text-left px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
+            {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[9px] uppercase tracking-wider font-semibold min-w-[74px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+            <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px]">Grade</th>
+          </tr></thead>
+          <tbody>
+            {rowsOut.map(({ def, line: l }) => (
+              <SkillRow key={def.key} name={def.name} src={def.src} pair={def.pair} l={l} classes={classes} raw={raw} />
+            ))}
+            {writingLine && (
+              <>
+                <SkillRow name="Writing" src="written · rubric, all categories" l={writingLine} classes={classes} raw={raw}
+                  onToggle={() => setOpenWriting(!openWriting)} open={openWriting} strong />
+                {openWriting && writingCats.map((cat: any) => (
+                  <SkillRow key={cat.key} name={cat.label} src={cat.standard ? `${cat.standard} · out of ${cat.max}` : `out of ${cat.max}`}
+                    l={line(`w:${cat.key}`)} classes={classes} raw={raw} indent />
+                ))}
+              </>
+            )}
+          </tbody>
+        </table>
+        <p className="text-[10px] text-text-tertiary mt-3">
+          <span className="inline-block w-2 h-2 rounded-sm bg-navy/40 align-middle mr-1" />
+          The two comprehension rows are joined on purpose. A class level on what it hears and below on what it reads has a reading problem, not a comprehension one &mdash; merging them would hide it.
+          &mdash; is a skill this grade&rsquo;s test does not measure, never a zero.
+        </p>
+      </div>
+
+      {/* ── One card per class ── */}
+      <div>
+        <p className="text-[12px] font-semibold text-navy mb-1">What each class needs</p>
+        <p className="text-[10px] text-text-tertiary mb-3">Strongest first, against the grade. One card per room, for the teacher who has it on Monday.</p>
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
+          {classes.map(c => {
+            const items = [...SKILL_DEFS.map(d => ({ name: d.name, key: d.key })), { name: 'Writing', key: 'writing' }]
+              .map(({ name, key }) => {
+                const l = line(key)
+                if (!l || l.pcts[c] == null) return null
+                return { name, d: l.pcts[c] - l.med }
+              }).filter(Boolean) as { name: string; d: number }[]
+            if (items.length === 0) return null
+            items.sort((a, b) => b.d - a.d)
+            return (
+              <div key={c} className="bg-surface border border-border rounded-xl p-3.5">
+                <p className="text-[13px] font-semibold" style={{ color: classToTextColor(c) }}>{c}</p>
+                <p className="text-[9px] text-text-tertiary mb-2.5">strongest first, against the grade</p>
+                {items.map(it => {
+                  const w = Math.min(50, (Math.abs(it.d) / 22) * 50)
+                  return (
+                    <div key={it.name} className="flex items-center gap-2 mb-1">
+                      <span className="w-[92px] shrink-0 text-[10.5px] text-text-secondary truncate">{it.name}</span>
+                      <span className="flex-1 h-1.5 rounded-full bg-surface-alt relative overflow-hidden">
+                        <span className="absolute top-0 bottom-0 rounded-full"
+                          style={{ left: `${it.d >= 0 ? 50 : 50 - w}%`, width: `${w}%`, backgroundColor: devColor(it.d) }} />
+                      </span>
+                      <span className="w-7 shrink-0 text-right text-[9.5px] text-text-tertiary tabular-nums">{it.d > 0 ? '+' : ''}{it.d.toFixed(0)}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Red below the grade, blue above, fading to nothing at the median. */
+function devColor(d: number): string {
+  const a = Math.min(1, Math.abs(d) / 15) * 0.8
+  return d < 0 ? `rgba(200, 74, 62, ${a})` : `rgba(47, 112, 156, ${a})`
+}
+
+function SkillRow({ name, src, l, classes, raw, pair, indent, strong, onToggle, open }: {
+  name: string; src: string; l: SkillLine; classes: EnglishClass[]; raw: boolean
+  pair?: 'open' | 'close'; indent?: boolean; strong?: boolean; onToggle?: () => void; open?: boolean
+}) {
+  return (
+    <tr className={`border-t border-border ${indent ? 'bg-surface-alt/25' : ''}`}>
+      <td className={`px-3 py-2 ${indent ? 'pl-8' : ''} ${pair ? 'border-l-2 border-navy/40' : ''}`}>
+        {onToggle ? (
+          <button onClick={onToggle} className="flex items-center gap-1.5 text-left">
+            <ChevronDown size={11} className={`text-text-tertiary transition-transform ${open ? 'rotate-180' : ''}`} />
+            <span>
+              <span className={`${strong ? 'font-semibold' : 'font-medium'} text-navy`}>{name}</span>
+              <span className="block text-[9px] text-text-tertiary">{src}</span>
+            </span>
+          </button>
+        ) : (
+          <>
+            <span className={`${indent ? 'text-[10.5px] text-text-secondary' : 'font-medium text-navy'}`}>{name}</span>
+            <span className="block text-[9px] text-text-tertiary">{src}</span>
+          </>
+        )}
+      </td>
+      {classes.map(c => {
+        const pct = l?.pcts[c]
+        if (l == null || pct == null) return <td key={c} className="px-2 py-2 text-center text-text-tertiary" title="Not measured by this grade's test">—</td>
+        const d = pct - l.med
+        return (
+          <td key={c} className="px-1.5 py-1.5 text-center">
+            <span className="block rounded py-1.5 text-[11px] font-semibold tabular-nums"
+              style={{ backgroundColor: devColor(d) }}
+              title={`${c} · ${name}: ${Math.round(pct)}% (grade median ${Math.round(l.med)}%)`}>
+              {raw ? `${Math.round(pct)}%` : `${d > 0 ? '+' : ''}${d.toFixed(0)}`}
+            </span>
+          </td>
+        )
+      })}
+      <td className="px-2 py-2 text-center text-[10.5px] text-text-tertiary tabular-nums">{l ? `${Math.round(l.med)}%` : '—'}</td>
+    </tr>
   )
 }
