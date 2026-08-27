@@ -20,6 +20,8 @@ const PASSAGE_COLORS: Record<string, string> = {
 }
 /** Where g2ClassFromBand cuts. Drawn on the picture so the colours explain themselves. */
 const CLASS_CUTS = [20, 35, 50, 65, 80]
+/** Maximum class size. Shown, never enforced -- placement is a teacher's call. */
+const CLASS_CAP = 15
 const testOrder = (t: LevelTest) => `${t.academic_year}-${t.semester === 'fall' ? '0' : '1'}`
 
 /**
@@ -264,12 +266,11 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
               {PLACED_ENGLISH_CLASSES.map(c => (
                 <th key={c} className="px-2 py-2 text-center text-[9px] uppercase tracking-wider font-semibold min-w-[64px]" style={{ color: classToTextColor(c) }}>{c}</th>
               ))}
-              <th className="px-3 py-2 text-center text-[9px] uppercase tracking-wider text-text-tertiary font-semibold">Total</th>
             </tr>
           </thead>
           <tbody>{classes.map(from => {
-            const total = PLACED_ENGLISH_CLASSES.reduce((s, to) => s + (matrix[from]?.[to]?.length ?? 0), 0)
-            if (total === 0) return null
+            const inRow = PLACED_ENGLISH_CLASSES.reduce((s, to) => s + (matrix[from]?.[to]?.length ?? 0), 0)
+            if (inRow === 0) return null
             return (
               <tr key={from} className="border-t border-border">
                 <td className="px-3 py-2 font-semibold whitespace-nowrap" style={{ color: classToTextColor(from as EnglishClass) }}>{from}</td>
@@ -289,10 +290,25 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
                     </td>
                   )
                 })}
-                <td className="px-3 py-2 text-center text-text-tertiary">{total}</td>
               </tr>
             )
           })}</tbody>
+          <tfoot>
+            <tr className="border-t-2 border-border bg-surface-alt/50">
+              <td className="px-3 py-2 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold">Would be</td>
+              {PLACED_ENGLISH_CLASSES.map(to => {
+                const n = classes.reduce((sum, from) => sum + (matrix[from]?.[to]?.length ?? 0), 0)
+                const over = n > CLASS_CAP
+                return (
+                  <td key={to} className="px-2 py-2 text-center">
+                    <span className={`font-bold ${over ? 'text-red-600' : 'text-navy'}`}
+                      title={over ? `${n} is over the cap of ${CLASS_CAP}` : undefined}>{n || '·'}</span>
+                    {over && <span className="block text-[8px] text-red-600">over {CLASS_CAP}</span>}
+                  </td>
+                )
+              })}
+            </tr>
+          </tfoot>
         </table>
         {/* The names belong where the click happened. They used to appear in a
             table far below, which meant scrolling away from the number you were
@@ -302,7 +318,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
             <p className="text-[11px] font-semibold text-navy mb-1.5">
               {cell.from} <span className="text-text-tertiary">&rarr;</span> {cell.to}
               <span className="text-text-tertiary font-normal ml-1.5">{matrix[cell.from]?.[cell.to]?.length ?? 0}</span>
-              <button onClick={() => setCell(null)} className="text-[10px] text-text-tertiary hover:text-navy font-normal ml-2">clear</button>
+
             </p>
             <div className="flex flex-wrap gap-1.5">
               {(matrix[cell.from]?.[cell.to] ?? []).sort((a, b) => b.composite - a.composite).map(r => (
