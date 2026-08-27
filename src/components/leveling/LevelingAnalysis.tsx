@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { Loader2, ChevronDown } from 'lucide-react'
-import { bandFromCalc, g2ClassFromBand } from './grade2Band'
+import { bandFromCalc, g2ClassFromBand, BAND_LEVEL_ORDER } from './grade2Band'
 import { computeRow, rankRows, buildLevelCwpmNorms, versionKeyForTest } from './placement'
 import { calculateG1Composite, g1WeightedComposite, g1ClassFromRank } from './Grade1ScoreEntry'
 import { g1ContentForTest } from './grade1Content'
@@ -22,6 +22,17 @@ const PASSAGE_COLORS: Record<string, string> = {
 const CLASS_CUTS = [20, 35, 50, 65, 80]
 /** Maximum class size. Shown, never enforced -- placement is a teacher's call. */
 const CLASS_CAP = 15
+/** Q1 and Q3 of a set, for the middle-half band on the class picture. */
+function quartiles(vals: number[]): { q1: number; q3: number } | null {
+  if (vals.length < 4) return null
+  const v = [...vals].sort((a, b) => a - b)
+  const at = (p: number) => {
+    const i = (v.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i)
+    return lo === hi ? v[lo] : v[lo] + (v[hi] - v[lo]) * (i - lo)
+  }
+  return { q1: at(0.25), q3: at(0.75) }
+}
+
 const testOrder = (t: LevelTest) => `${t.academic_year}-${t.semester === 'fall' ? '0' : '1'}`
 
 /**
@@ -365,6 +376,62 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
           </div>
         )}
       </div>
+
+      {/* ── Each class: how wide it is, and what it read ── */}
+      <div className="bg-surface border border-border rounded-xl p-4">
+        <p className="text-[12px] font-semibold text-navy">Each class</p>
+        <p className="text-[10px] text-text-tertiary mb-3">
+          Left: the range of ability in the room. The bar is the middle half of the class and the line is the middle student.
+          Right: which passage they sustained &mdash; two classes on the same passage are reading the same text, whatever the rooms are called.
+        </p>
+        <div className="flex text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">
+          <span className="w-20 shrink-0" />
+          <span className="flex-[3]">Range of ability</span>
+          <span className="w-14 shrink-0" />
+          <span className="flex-[2]">Passage sustained</span>
+          <span className="w-8 shrink-0" />
+        </div>
+        {classes.map(c => {
+          const inClass = tested.filter(r => r.student.english_class === c)
+          if (inClass.length === 0) return null
+          const vals = inClass.map(r => r.composite * 100).sort((a, b) => a - b)
+          const q = quartiles(vals)
+          const mid = vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2
+          const passages: Record<string, number> = {}
+          inClass.forEach(r => { if (r.band) passages[r.band.effectiveLevel] = (passages[r.band.effectiveLevel] || 0) + 1 })
+          const withBand = Object.values(passages).reduce((a, b) => a + b, 0)
+          return (
+            <div key={c} className="flex items-center gap-0 mb-2">
+              <span className="w-20 shrink-0 text-[10px] font-semibold text-right pr-2" style={{ color: classToTextColor(c) }}>{c}</span>
+              <div className="flex-[3] relative h-6">
+                <div className="absolute top-1/2 left-0 right-0 h-px bg-border" />
+                <div className="absolute top-1/2 h-px" style={{ left: `${vals[0]}%`, width: `${vals[vals.length - 1] - vals[0]}%`, backgroundColor: classToColor(c) }} />
+                {q && <div className="absolute top-1 bottom-1 rounded-sm" title={`Middle half: ${Math.round(q.q1)} to ${Math.round(q.q3)}`}
+                  style={{ left: `${q.q1}%`, width: `${Math.max(0.8, q.q3 - q.q1)}%`, backgroundColor: classToColor(c) + '66', border: `1px solid ${classToColor(c)}` }} />}
+                <div className="absolute top-0.5 bottom-0.5 w-[2px]" title={`Middle student: ${Math.round(mid)}`} style={{ left: `${mid}%`, backgroundColor: classToTextColor(c) }} />
+              </div>
+              <span className="w-14 shrink-0 text-center text-[9.5px] text-text-tertiary tabular-nums"
+                title="How wide the middle half of this class is. Bigger means a wider range of ability in one room.">
+                {q ? `spread ${Math.round(q.q3 - q.q1)}` : ''}
+              </span>
+              <div className="flex-[2] h-4 flex rounded-full overflow-hidden bg-surface-alt">
+                {BAND_LEVEL_ORDER.map(l => {
+                  const n = passages[l] || 0
+                  if (!n) return null
+                  return <div key={l} title={`Passage ${l}: ${n}`} className="h-full flex items-center justify-center"
+                    style={{ width: `${(n / withBand) * 100}%`, backgroundColor: PASSAGE_COLORS[l] }}>
+                    {(n / withBand) > 0.16 && <span className="text-[8px] font-bold text-white">{l}</span>}
+                  </div>
+                })}
+              </div>
+              <span className="w-8 shrink-0 text-right text-[10px] text-text-tertiary">{inClass.length}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── Speed against understanding ── */}
+      <FluencyVsComprehension rows={tested} />
 
       {/* ── Reading aloud against the written paper ── */}
       {/* The one comparison nothing else in the app makes. A strong decoder who
@@ -1030,6 +1097,9 @@ function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Pa
         </p>
       </div>
 
+      {/* ── Standards, by class ── */}
+      <StandardsByClass rows={rows} classes={classes} />
+
       {/* ── One card per class ── */}
       <div>
         <p className="text-[12px] font-semibold text-navy mb-1">What each class needs</p>
@@ -1114,5 +1184,166 @@ function SkillRow({ name, src, l, classes, raw, pair, indent, strong, onToggle, 
       })}
       <td className="px-2 py-2 text-center text-[10.5px] text-text-tertiary tabular-nums">{l ? `${Math.round(l.med)}%` : '—'}</td>
     </tr>
+  )
+}
+
+// ─── Speed against understanding ─────────────────────────────────────
+// Not the same question as reading aloud against the written paper. This one
+// asks whether the words and the meaning arrive together: a child who reads
+// quickly and follows none of it is word-calling, and reads as fine on any
+// single fluency number. The guides say the same thing in their own words --
+// when accuracy and comprehension disagree, comprehension decides.
+function FluencyVsComprehension({ rows }: { rows: Row[] }) {
+  const [hover, setHover] = useState<{ r: Row; x: number; y: number } | null>(null)
+  const pts = rows.map(r => {
+    const cwpm = r.calc?.cwpm
+    const comp = r.calc?.comp_total != null && r.calc?.comp_max > 0 && !r.calc?.comp_not_administered
+      ? (r.calc.comp_total / r.calc.comp_max) * 100 : null
+    return { r, x: cwpm as number, y: comp as number }
+  }).filter(p => p.x != null && p.x > 0 && p.y != null)
+
+  if (pts.length === 0) return null
+  const maxX = Math.max(120, ...pts.map(p => p.x)) * 1.08
+
+  const W = 820, H = 430, L = 54, R = 24, T = 26, B = 46
+  const px = (v: number) => L + (v / maxX) * (W - L - R)
+  const py = (v: number) => H - B - (v / 100) * (H - T - B)
+  const midX = maxX / 2
+
+  const wordCalling = pts.filter(p => p.x >= midX && p.y < 60).sort((a, b) => a.y - b.y)
+  const slowButGets = pts.filter(p => p.x < midX && p.y >= 75).sort((a, b) => a.x - b.x)
+
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4">
+      <p className="text-[12px] font-semibold text-navy">Speed against understanding</p>
+      <p className="text-[11px] text-text-secondary mb-1 max-w-[70ch]">
+        Every dot is one student. How fast they read runs left to right; how much of the passage they understood runs bottom to top.
+      </p>
+      <p className="text-[11px] text-text-secondary mb-3 max-w-[70ch]">
+        The two corners that matter are the bottom right &mdash; reading quickly and following none of it &mdash; and the top left, where a slow reader understood everything they got through.
+      </p>
+
+      <div className="relative w-full mx-auto" style={{ maxWidth: 820 }}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" onMouseLeave={() => setHover(null)}>
+          <rect x={L} y={T} width={W - L - R} height={H - T - B} fill="var(--surface-alt, #F8FAFC)" stroke="#E2E8F0" />
+          <rect x={px(midX)} y={py(60)} width={px(maxX) - px(midX)} height={py(0) - py(60)} fill="#EF4444" opacity="0.05" />
+          <rect x={L} y={T} width={px(midX) - L} height={py(75) - T} fill="#3B82F6" opacity="0.04" />
+          {[0, 25, 50, 75, 100].map(g => (
+            <g key={g}>
+              <line x1={L} x2={px(maxX)} y1={py(g)} y2={py(g)} stroke="#E2E8F0" />
+              <text x={L - 8} y={py(g) + 3.5} fontSize="10" fill="#94A3B8" textAnchor="end">{g}%</text>
+            </g>
+          ))}
+          {[0, 50, 100, 150, 200].filter(v => v <= maxX).map(v => (
+            <g key={v}>
+              <line x1={px(v)} x2={px(v)} y1={T} y2={py(0)} stroke="#E2E8F0" />
+              <text x={px(v)} y={py(0) + 16} fontSize="10" fill="#94A3B8" textAnchor="middle">{v}</text>
+            </g>
+          ))}
+          <text x={px(maxX) - 10} y={py(0) - 10} fontSize="11" fill="#B91C1C" opacity="0.85" textAnchor="end">Fast, not following it</text>
+          <text x={L + 10} y={T + 16} fontSize="11" fill="#2563EB" opacity="0.8">Slow, understood it</text>
+          {pts.map(p => {
+            const on = hover?.r.student.id === p.r.student.id
+            return (
+              <circle key={p.r.student.id} cx={px(p.x)} cy={py(p.y)} r={on ? 8 : 6}
+                fill={classToColor(p.r.student.english_class as EnglishClass)}
+                stroke={on ? '#0F172A' : '#fff'} strokeWidth={on ? 2 : 1.4}
+                style={{ cursor: 'pointer' }} onMouseEnter={() => setHover({ r: p.r, x: p.x, y: p.y })} />
+            )
+          })}
+          <text x={(L + px(maxX)) / 2} y={H - 8} fontSize="11" fill="#64748B" textAnchor="middle">words a minute &rarr;</text>
+          <text x={16} y={(T + py(0)) / 2} fontSize="11" fill="#64748B" textAnchor="middle" transform={`rotate(-90 16 ${(T + py(0)) / 2})`}>understood &rarr;</text>
+        </svg>
+        {hover && (
+          <div className="absolute pointer-events-none bg-navy text-white rounded-lg px-2.5 py-1.5 shadow-lg text-[11px] whitespace-nowrap z-10"
+            style={{ left: `${(px(hover.x) / W) * 100}%`, top: `${(py(hover.y) / H) * 100}%`, transform: 'translate(-50%, -140%)' }}>
+            <span className="font-semibold">{hover.r.student.english_name}</span>
+            <span className="opacity-70 ml-1.5">{hover.r.student.english_class}</span>
+            <span className="block opacity-90">{Math.round(hover.x)} wpm &middot; understood {Math.round(hover.y)}%</span>
+          </div>
+        )}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-3 mt-4">
+        <Corner title="Reading fast without following it" tone="amber" people={wordCalling}
+          note="The words are coming out but the meaning is not going in. Slowing down and talking about the passage will do more than more reading practice." />
+        <Corner title="Slow, but understood what they read" tone="blue" people={slowButGets}
+          note="Comprehension is not the problem. These students need mileage and confidence rather than comprehension support." />
+      </div>
+    </div>
+  )
+}
+
+// ─── Standards, by class ─────────────────────────────────────────────
+// The CCSS view the History tab gives per student, given per class. Written
+// standards are already tallied into written_standards_mastery as DOK-weighted
+// points; the oral test records a met/not-met per code in standards_baseline.
+// Both are proportions achieved, but they are not the same unit, so each row
+// says which test it came from rather than the two being silently averaged.
+function StandardsByClass({ rows, classes }: { rows: Row[]; classes: EnglishClass[] }) {
+  const [open, setOpen] = useState(false)
+  const data = useMemo(() => {
+    const acc: Record<string, { src: 'written' | 'oral'; desc?: string; byCls: Record<string, { got: number; max: number }> }> = {}
+    rows.forEach(r => {
+      const cls = r.student.english_class
+      Object.entries(r.calc?.written_standards_mastery || {}).forEach(([code, v]: [string, any]) => {
+        if (!v || !(v.total > 0)) return
+        const e = (acc[code] ||= { src: 'written', byCls: {} })
+        const c = (e.byCls[cls] ||= { got: 0, max: 0 })
+        c.got += v.met || 0; c.max += v.total
+      })
+      const base = r.calc?.standards_baseline
+      if (Array.isArray(base)) base.forEach((b: any) => {
+        if (!b?.code) return
+        const e = (acc[b.code] ||= { src: 'oral', byCls: {} })
+        const c = (e.byCls[cls] ||= { got: 0, max: 0 })
+        if (b.met) c.got += 1
+        c.max += 1
+      })
+    })
+    return Object.entries(acc)
+      .map(([code, v]) => {
+        const all = Object.values(v.byCls).reduce((a, b) => ({ got: a.got + b.got, max: a.max + b.max }), { got: 0, max: 0 })
+        return { code, ...v, overall: all.max > 0 ? all.got / all.max : null }
+      })
+      .sort((a, b) => (a.overall ?? 2) - (b.overall ?? 2))
+  }, [rows])
+
+  if (data.length === 0) return null
+  const shown = open ? data : data.slice(0, 8)
+
+  return (
+    <div className="bg-surface border border-border rounded-xl overflow-x-auto">
+      <div className="px-4 pt-3.5 pb-2">
+        <p className="text-[12px] font-semibold text-navy">Standards, by class</p>
+        <p className="text-[10px] text-text-tertiary">
+          Weakest first, across the grade. Written standards are scored out of the points behind them; oral ones out of the students who met them.
+        </p>
+      </div>
+      <table className="w-full text-[11px]">
+        <thead><tr className="bg-surface-alt">
+          <th className="text-left px-3 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[150px]">Standard</th>
+          {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[9px] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+          <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px]">Grade</th>
+        </tr></thead>
+        <tbody>{shown.map(st => (
+          <tr key={st.code} className="border-t border-border">
+            <td className="px-3 py-2">
+              <span className="font-medium text-navy">{st.code}</span>
+              <span className="block text-[9px] text-text-tertiary">{st.src === 'oral' ? 'oral test' : 'written paper'}</span>
+            </td>
+            {classes.map(c => <Cell key={c} v={st.byCls[c] ? { hit: st.byCls[c].got, n: st.byCls[c].max } : null} />)}
+            <td className="px-2 py-2 text-center text-[10.5px] text-text-tertiary tabular-nums">
+              {st.overall != null ? `${Math.round(st.overall * 100)}%` : '—'}
+            </td>
+          </tr>
+        ))}</tbody>
+      </table>
+      {data.length > 8 && (
+        <button onClick={() => setOpen(!open)} className="text-[10px] text-navy hover:underline px-4 py-2.5">
+          {open ? 'Show the weakest eight' : `Show all ${data.length} standards`}
+        </button>
+      )}
+    </div>
   )
 }

@@ -22,7 +22,6 @@ import { exportToCSV } from '@/lib/export'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
-import LevelingAnalytics from '@/components/leveling/LevelingAnalytics'
 import LevelingHistory from '@/components/leveling/LevelingHistory'
 import LevelingAnalysis from '@/components/leveling/LevelingAnalysis'
 import {
@@ -31,7 +30,7 @@ import {
 } from '@/components/leveling/placement'
 import StudentLevelingCard, { PrintDossier } from '@/components/leveling/StudentLevelingCard'
 
-type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'analytics' | 'history' | 'meeting'
+type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'history' | 'meeting'
 
 
 
@@ -243,15 +242,15 @@ function LevelingView() {
         {(String(selectedTest.grade) === '1'
           // Grade 1 enters both tests on one phase, but rates teachers on the
           // same Teacher Ratings phase as every other grade.
-          ? (['scores', 'anecdotal', 'results', 'analytics', 'history', 'meeting'] as Phase[])
-          : (['scores', 'written_test', 'anecdotal', 'results', 'analytics', 'history', 'meeting'] as Phase[])
+          ? (['scores', 'anecdotal', 'results', 'history', 'meeting'] as Phase[])
+          : (['scores', 'written_test', 'anecdotal', 'results', 'history', 'meeting'] as Phase[])
         ).map(p => (
           <button key={p} onClick={() => setPhase(p)} className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${phase === p ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface'}`}>
             {p === 'scores'
               // Grade 1 has no separate Written Test phase -- both tests are
               // entered as tabs inside this one, so "Oral Test" undersells it.
               ? (String(selectedTest.grade) === '1' ? 'Tests' : 'Oral Test')
-              : p === 'written_test' ? 'Written Test' : p === 'anecdotal' ? 'Teacher Ratings' : p === 'results' ? 'Results' : p === 'analytics' ? 'Analytics' : p === 'history' ? 'History' : 'Leveling Meeting'}
+              : p === 'written_test' ? 'Written Test' : p === 'anecdotal' ? 'Teacher Ratings' : p === 'results' ? 'Results' : p === 'history' ? 'History' : 'Leveling Meeting'}
           </button>
         ))}
         <span className={`ml-auto text-[10px] font-bold px-2 py-1 rounded-full ${selectedTest.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{selectedTest.status.toUpperCase()}</span>
@@ -262,7 +261,6 @@ function LevelingView() {
       {phase === 'written_test' && <WrittenTestPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isLeadTeacher} />}
       {phase === 'anecdotal' && <AnecdotalPhase levelTest={selectedTest} teacherClass={teacherClass} isAdmin={isLeadTeacher} />}
       {phase === 'results' && <ResultsPhase levelTest={selectedTest} />}
-      {phase === 'analytics' && <LevelingAnalytics levelTest={selectedTest} />}
       {phase === 'history' && <LevelingHistory levelTest={selectedTest} />}
       <div style={{ display: phase === 'meeting' ? 'block' : 'none' }}>
         <MeetingPhase levelTest={selectedTest} onFinalize={() => {
