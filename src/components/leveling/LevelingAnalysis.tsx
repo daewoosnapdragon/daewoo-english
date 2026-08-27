@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, Fragment, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor, IMPLAUSIBLE_CWPM } from '@/lib/utils'
-import { Loader2, AlertTriangle, ArrowRight, TrendingUp, TrendingDown, Minus, Printer } from 'lucide-react'
+import { Loader2, AlertTriangle, ArrowRight, TrendingUp, TrendingDown, Minus, ChevronDown } from 'lucide-react'
 import { bandFromCalc, g2ClassFromBand, BAND_LEVEL_ORDER } from './grade2Band'
 
 const PASSAGE_COLORS: Record<string, string> = {
@@ -36,7 +36,30 @@ function bandOf(test: LevelTest, calc: any) {
 }
 
 interface Sit { student: Student; calc: any; raw: any; band: ReturnType<typeof bandOf> }
-interface Finding { grade: number; rank: number; n: number; kind: string; body: ReactNode }
+/**
+ * Findings are grouped by what you DO about them, not by how big they are.
+ * A rank tells nobody anything; these three buckets have different audiences
+ * and different timing, and the first has to be cleared before the other two
+ * are worth trusting.
+ */
+type Bucket = 'check' | 'decide' | 'teach'
+interface Finding {
+  grade: number
+  bucket: Bucket
+  n: number
+  kind: string
+  /** The number that carries the finding, shown large. */
+  headline: string
+  body: ReactNode
+  /** A bar or pair of dots, so the size lands before the words do. */
+  visual?: ReactNode
+}
+
+const BUCKETS: { key: Bucket; title: string; sub: string }[] = [
+  { key: 'check', title: 'Check the data', sub: 'Before the rest is worth trusting' },
+  { key: 'decide', title: 'Decide at the meeting', sub: 'Placements and class structure' },
+  { key: 'teach', title: 'Teach next term', sub: 'What the papers showed' },
+]
 interface GradeContent { questions: any[]; writingCats: any[]; shortMax: number | null }
 
 /** The authored paper for a test: questions, writing rubric, short response. */
@@ -57,7 +80,7 @@ async function loadContent(test: LevelTest): Promise<GradeContent> {
   } catch { return empty }
 }
 
-export default function LevelingOverview({ levelTests }: { levelTests: LevelTest[] }) {
+export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest[] }) {
   const [students, setStudents] = useState<Student[]>([])
   const [calcs, setCalcs] = useState<Record<string, Record<string, any>>>({})
   const [raws, setRaws] = useState<Record<string, Record<string, any>>>({})
@@ -150,13 +173,13 @@ export default function LevelingOverview({ levelTests }: { levelTests: LevelTest
   }), [tests, students, calcs, raws])
 
   const findings = useMemo(
-    () => buildFindings(perGrade, content, raws).sort((a, b) => b.rank - a.rank || b.n - a.n),
+    () => buildFindings(perGrade, content, raws).sort((a, b) => b.n - a.n),
     [perGrade, content, raws])
+
+  const sel = perGrade.find(g => g.test.id === selected) || null
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
   if (tests.length === 0) return <p className="text-text-tertiary text-[13px] py-8 text-center">No level tests in {year || 'this year'}.</p>
-
-  const sel = perGrade.find(g => g.test.id === selected) || null
 
   return (
     <div className="space-y-5">
@@ -170,10 +193,9 @@ export default function LevelingOverview({ levelTests }: { levelTests: LevelTest
         </div>
       )}
 
+      <HowToRead />
       <SchoolStrip grades={perGrade} findings={findings} selected={selected} onSelect={g => { setSelected(g); setFilterClass('all') }} />
-      <Findings findings={findings} loading={answersLoading} onGrade={g => {
-        const t = tests.find(x => Number(x.grade) === g); if (t) { setSelected(t.id); setFilterClass('all') }
-      }} />
+      <Findings findings={findings} loading={answersLoading} grade={sel ? Number(sel.test.grade) : null} />
 
       {sel && (
         <GradeDetail
@@ -191,6 +213,20 @@ export default function LevelingOverview({ levelTests }: { levelTests: LevelTest
   )
 }
 
+function HowToRead() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="bg-surface border border-border rounded-xl">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-2 px-4 py-2.5 text-left">
+        <span className="text-[12px] font-semibold text-navy">How to read this page</span>
+        <span className="text-[10px] text-text-tertiary">what a Band is, and what compares across grades</span>
+        <ChevronDown size={14} className={`ml-auto text-text-tertiary transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="px-4 pb-4 border-t border-border pt-3"><BandLadder /></div>}
+    </div>
+  )
+}
+
 // ─── School strip ────────────────────────────────────────────────────
 // Every grade at once, carrying only what compares honestly between them:
 // counts, a proportion, and a rate. Band and composite are deliberately absent
@@ -204,9 +240,7 @@ function SchoolStrip({ grades, findings, selected, onSelect }: {
     <div className="bg-surface border border-border rounded-xl overflow-hidden">
       <div className="px-4 pt-3 pb-2">
         <p className="text-[12px] font-semibold text-navy">Every grade</p>
-        <p className="text-[10px] text-text-tertiary">
-          Only measures that mean the same thing in each grade. Band is not among them, so it is not here &mdash; open a grade to see it against its own classes.
-        </p>
+        <p className="text-[10px] text-text-tertiary">Only measures that mean the same thing in every grade.</p>
       </div>
       <table className="w-full text-[11px]">
         <thead><tr className="bg-surface-alt">
@@ -216,7 +250,7 @@ function SchoolStrip({ grades, findings, selected, onSelect }: {
         </tr></thead>
         <tbody>{grades.map(g => {
           const f = findings.filter(x => x.grade === Number(g.test.grade))
-          const urgent = f.filter(x => x.rank >= 80).length
+          const urgent = f.filter(x => x.bucket === 'check').length
           const on = selected === g.test.id
           return (
             <tr key={g.test.id} onClick={() => onSelect(g.test.id)}
@@ -277,8 +311,10 @@ function buildFindings(perGrade: any[], content: Record<string, GradeContent>, r
     ladder.slice(0, -1).forEach((c, i) => {
       const up = ladder[i + 1]
       if (c.median != null && up.median != null && up.median < c.median) {
-        out.push({ grade, rank: 95, n: c.rows.length + up.rows.length, kind: 'inversion',
-          body: <><strong>{up.cls}</strong> is reading below <strong>{c.cls}</strong> (median Band {Math.round(up.median)} against {Math.round(c.median)}), though it is meant to be the stronger class.</> })
+        out.push({ grade, bucket: 'decide', n: c.rows.length + up.rows.length, kind: 'inversion',
+          headline: `${up.cls} < ${c.cls}`,
+          body: <><strong>{up.cls}</strong> is reading below <strong>{c.cls}</strong>, though it is the stronger class.</>,
+          visual: <TwoDots a={{ v: c.median!, cls: c.cls }} b={{ v: up.median!, cls: up.cls }} /> })
       }
     })
 
@@ -287,28 +323,35 @@ function buildFindings(perGrade: any[], content: Record<string, GradeContent>, r
     const byModal: Record<string, EnglishClass[]> = {}
     ladder.forEach(c => { if (c.modal) (byModal[c.modal] ||= []).push(c.cls) })
     Object.entries(byModal).filter(([, cs]) => cs.length > 1).forEach(([lvl, cs]) => {
-      out.push({ grade, rank: 75, n: ladder.filter(c => cs.includes(c.cls)).reduce((s, c) => s + c.rows.length, 0), kind: 'same-passage',
-        body: <><strong>{cs.join(' and ')}</strong> both sit mostly on passage <strong>{lvl}</strong> &mdash; on the oral evidence they are the same reading level.</> })
+      out.push({ grade, bucket: 'decide', n: ladder.filter(c => cs.includes(c.cls)).reduce((s, c) => s + c.rows.length, 0), kind: 'same-passage',
+        headline: `Passage ${lvl}`,
+        body: <><strong>{cs.join(' and ')}</strong> both sit mostly here &mdash; on the oral evidence, the same reading level.</>,
+        visual: <ClassChips classes={cs} /> })
     })
 
     // A rate faster than fluent adult reading aloud is a stopwatch started
     // late, and it feeds the Band, so it should be caught before placement.
     const fast = g.rows.filter((r: Sit) => r.calc?.cwpm != null && r.calc.cwpm > IMPLAUSIBLE_CWPM)
-    if (fast.length) out.push({ grade, rank: 90, n: fast.length, kind: 'rate',
-      body: <><strong>{fast.length}</strong> reading {fast.length === 1 ? 'rate is' : 'rates are'} too fast to be real (over {IMPLAUSIBLE_CWPM} wpm) &mdash; {fast.map((r: Sit) => r.student.english_name).join(', ')}. Almost always a stopwatch started late, and the rate feeds the Band.</> })
+    if (fast.length) out.push({ grade, bucket: 'check', n: fast.length, kind: 'rate',
+      headline: String(fast.length),
+      body: <>{fast.length === 1 ? 'reading rate' : 'reading rates'} over {IMPLAUSIBLE_CWPM} wpm &mdash; {fast.map((r: Sit) => r.student.english_name).join(', ')}. Almost always a stopwatch started late, and the rate feeds the Band.</> })
 
     // Drift, counted rather than named -- the names are a scroll away.
     ladder.forEach((c, i) => {
       const up = ladder[i + 1], down = ladder[i - 1]
       if (c.median != null && up?.median != null && up.median > c.median) {
         const n = c.rows.filter((r: Sit) => r.band!.composite > (c.median! + up.median!) / 2).length
-        if (n >= 3) out.push({ grade, rank: 55, n, kind: 'drift-up',
-          body: <><strong>{n}</strong> of <strong>{c.cls}</strong> sit closer to {up.cls} than to their own class.</> })
+        if (n >= 3) out.push({ grade, bucket: 'decide', n, kind: 'drift-up',
+          headline: String(n),
+          body: <>of <strong>{c.cls}</strong> sit closer to {up.cls}.</>,
+          visual: <Dots n={n} total={c.rows.length} cls={c.cls} /> })
       }
       if (c.median != null && down?.median != null && down.median < c.median) {
         const n = c.rows.filter((r: Sit) => r.band!.composite < (c.median! + down.median!) / 2).length
-        if (n >= 3) out.push({ grade, rank: 55, n, kind: 'drift-down',
-          body: <><strong>{n}</strong> of <strong>{c.cls}</strong> sit closer to {down.cls} than to their own class.</> })
+        if (n >= 3) out.push({ grade, bucket: 'decide', n, kind: 'drift-down',
+          headline: String(n),
+          body: <>of <strong>{c.cls}</strong> sit closer to {down.cls}.</>,
+          visual: <Dots n={n} total={c.rows.length} cls={c.cls} /> })
       }
     })
 
@@ -330,11 +373,15 @@ function buildFindings(perGrade: any[], content: Record<string, GradeContent>, r
       if (answered < 8) return
       const topWrong = Object.entries(picks).filter(([k]) => k !== q.correct).sort((a, b) => b[1] - a[1])[0]
       if (topWrong && topWrong[1] > (picks[q.correct] || 0)) {
-        out.push({ grade, rank: 92, n: answered, kind: 'key-beaten',
-          body: <><strong>Q{q.qNum}</strong>: more of the grade chose <strong>{topWrong[0]})</strong> than the key ({topWrong[1]} against {picks[q.correct] || 0} of {answered}). Check the question and its key before counting it.</> })
+        out.push({ grade, bucket: 'check', n: answered, kind: 'key-beaten',
+          headline: `Q${q.qNum}`,
+          body: <>More chose <strong>{topWrong[0]})</strong> than the key. Check the question and its key before counting it.</>,
+          visual: <PickBar picks={picks} correct={q.correct} total={answered} /> })
       } else if (correct / answered < 0.3) {
-        out.push({ grade, rank: 70, n: answered, kind: 'hard-item',
-          body: <><strong>Q{q.qNum}</strong> was missed by {Math.round((1 - correct / answered) * 100)}% of the grade{q.standard ? <> ({q.standard})</> : null}. {topWrong ? <>Most picked {topWrong[0]}).</> : null}</> })
+        out.push({ grade, bucket: 'teach', n: answered, kind: 'hard-item',
+          headline: `Q${q.qNum}`,
+          body: <>Missed by {Math.round((1 - correct / answered) * 100)}% of the grade{q.standard ? <> &middot; {q.standard}</> : null}. {topWrong ? <>Most picked {topWrong[0]}).</> : null}</>,
+          visual: <PickBar picks={picks} correct={q.correct} total={answered} /> })
       }
     })
 
@@ -347,8 +394,10 @@ function buildFindings(perGrade: any[], content: Record<string, GradeContent>, r
         const vals = inClass.map(r => raw[r.student.id]?.written_rubric?.[cat.key]).filter(v => v != null) as number[]
         if (vals.length < 4 || !cat.max) return
         const pct = vals.reduce((a, b) => a + b, 0) / (vals.length * cat.max)
-        if (pct < 0.45) out.push({ grade, rank: 65, n: vals.length, kind: 'writing',
-          body: <><strong>{cls}</strong> averaged {Math.round(pct * 100)}% on <strong>{cat.label}</strong> in the writing ({vals.length} scripts){cat.standard ? <> &mdash; {cat.standard}</> : null}.</> })
+        if (pct < 0.45) out.push({ grade, bucket: 'teach', n: vals.length, kind: 'writing',
+          headline: `${Math.round(pct * 100)}%`,
+          body: <><strong>{cls}</strong> on <strong>{cat.label}</strong> in the writing, across {vals.length} scripts.</>,
+          visual: <Meter pct={pct} /> })
       })
     })
 
@@ -361,46 +410,129 @@ function buildFindings(perGrade: any[], content: Record<string, GradeContent>, r
         if (marked.length < 6) return
         const hit = marked.filter(Boolean).length
         const pct = hit / marked.length
-        if (pct < 0.4) out.push({ grade, rank: 68, n: marked.length, kind: 'checklist',
-          body: <><strong>{Math.round((1 - pct) * 100)}%</strong> of the grade missed <strong>{item.label}</strong> in the writing &mdash; {item.desc}</> })
+        if (pct < 0.4) out.push({ grade, bucket: 'teach', n: marked.length, kind: 'checklist',
+          headline: `${Math.round((1 - pct) * 100)}%`,
+          body: <>of the grade missed <strong>{item.label}</strong> &mdash; {item.desc}</>,
+          visual: <Meter pct={pct} /> })
       })
     })
   })
   return out
 }
 
-function Findings({ findings, loading, onGrade }: { findings: Finding[]; loading: boolean; onGrade: (g: number) => void }) {
-  const [all, setAll] = useState(false)
-  const shown = all ? findings : findings.slice(0, 8)
+// Micro-visuals. A finding should show its size before it states it: the number
+// is the headline, the picture is the evidence, and the sentence is a caption.
+function Meter({ pct }: { pct: number }) {
   return (
-    <div className="bg-surface border border-border rounded-xl p-4">
-      <div className="flex items-baseline gap-2 mb-1">
-        <p className="text-[12px] font-semibold text-navy">What stands out</p>
-        {loading && <span className="text-[10px] text-text-tertiary inline-flex items-center gap-1"><Loader2 size={9} className="animate-spin" /> reading the papers</span>}
-        <button onClick={() => window.print()} className="ml-auto inline-flex items-center gap-1 text-[10px] text-text-tertiary hover:text-navy">
-          <Printer size={11} /> Print
-        </button>
-      </div>
-      <p className="text-[10px] text-text-tertiary mb-3">
-        Ranked by how much evidence sits behind each, so a finding resting on three students sorts under one resting on sixty.
-        Every line is checkable in the panels below &mdash; click one to open its grade.
+    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden shrink-0">
+      <div className="h-full rounded-full" style={{ width: `${Math.max(3, pct * 100)}%`, backgroundColor: pct < 0.4 ? '#EF4444' : pct < 0.7 ? '#F59E0B' : '#22C55E' }} />
+    </div>
+  )
+}
+function Dots({ n, total, cls }: { n: number; total: number; cls: EnglishClass }) {
+  return (
+    <div className="flex gap-0.5 items-center shrink-0 w-16 flex-wrap">
+      {Array.from({ length: Math.min(total, 12) }, (_, i) => (
+        <span key={i} className="w-1.5 h-1.5 rounded-full"
+          style={{ backgroundColor: i < n ? classToColor(cls) : '#E2E8F0' }} />
+      ))}
+    </div>
+  )
+}
+function TwoDots({ a, b }: { a: { v: number; cls: EnglishClass }; b: { v: number; cls: EnglishClass } }) {
+  return (
+    <div className="relative w-16 h-4 shrink-0">
+      <div className="absolute top-1/2 left-0 right-0 h-px bg-border" />
+      {[a, b].map((d, i) => (
+        <span key={i} className="absolute w-2.5 h-2.5 rounded-full -translate-x-1/2 -translate-y-1/2 border border-white"
+          style={{ left: `${Math.min(96, Math.max(4, d.v))}%`, top: '50%', backgroundColor: classToColor(d.cls) }} />
+      ))}
+    </div>
+  )
+}
+function ClassChips({ classes }: { classes: EnglishClass[] }) {
+  return (
+    <div className="flex gap-0.5 shrink-0 w-16">
+      {classes.map(c => <span key={c} className="w-3 h-3 rounded" style={{ backgroundColor: classToColor(c) }} title={c} />)}
+    </div>
+  )
+}
+function PickBar({ picks, correct, total }: { picks: Record<string, number>; correct: string; total: number }) {
+  const letters = ['a', 'b', 'c', 'd']
+  return (
+    <div className="flex w-16 h-3 rounded overflow-hidden bg-gray-200 shrink-0">
+      {letters.map(L => {
+        const n = picks[L] || 0
+        if (!n) return null
+        return <div key={L} title={`${L}) ${n}`} style={{ width: `${(n / total) * 100}%`, backgroundColor: L === correct ? '#22C55E' : '#F59E0B' }} />
+      })}
+    </div>
+  )
+}
+
+function Findings({ findings, loading, grade }: { findings: Finding[]; loading: boolean; grade: number | null }) {
+  const mine = grade == null ? findings : findings.filter(f => f.grade === grade)
+  return (
+    <div className="grid md:grid-cols-3 gap-3">
+      {BUCKETS.map(b => {
+        const list = mine.filter(f => f.bucket === b.key)
+        return (
+          <div key={b.key} className="bg-surface border border-border rounded-xl p-3.5">
+            <div className="flex items-baseline gap-2 mb-2.5">
+              <span className="text-[12px] font-semibold text-navy">{b.title}</span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${list.length === 0 ? 'bg-surface-alt text-text-tertiary' : b.key === 'check' ? 'bg-red-100 text-red-700' : b.key === 'decide' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-700'}`}>{list.length}</span>
+              <span className="text-[9px] text-text-tertiary ml-auto">{b.sub}</span>
+            </div>
+            {loading && list.length === 0 && <span className="text-[10px] text-text-tertiary inline-flex items-center gap-1"><Loader2 size={9} className="animate-spin" /> reading the papers</span>}
+            {!loading && list.length === 0 && <p className="text-[11px] text-text-tertiary italic">Nothing here.</p>}
+            <div className="space-y-2">
+              {list.map((f, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="text-[13px] font-bold text-navy shrink-0 w-12 text-right leading-tight">{f.headline}</span>
+                  {f.visual ?? <span className="w-16 shrink-0" />}
+                  <span className="text-[10px] text-text-secondary leading-snug min-w-0">{f.body}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── What a Band is ──────────────────────────────────────────────────
+// The definition is a diagram, not a sentence: the passage a student sustains
+// sets the floor they start from, and everything else only moves them within
+// that step. Drawn once, it doubles as the colour key for every strip below.
+function BandLadder() {
+  const bands: [string, number, number][] = [
+    ['A', 0, 24], ['B', 17, 41], ['C', 33, 58], ['D', 50, 75], ['E', 67, 92], ['F', 84, 100],
+  ]
+  return (
+    <div>
+      <p className="text-[11px] text-text-secondary mb-2">
+        A <strong>Band</strong> is one number, 0&ndash;100, for how a student read aloud. The passage they sustained sets the floor they start from &mdash;
+        so a harder passage almost always outranks an easier one &mdash; and comprehension, accuracy, expression and rate only move them within that step.
+        The steps overlap, so reading an easier passage exceptionally well can still carry a student past someone who barely held the next one up.
       </p>
-      {findings.length === 0 && !loading && <p className="text-[11px] text-text-tertiary italic">Nothing stands out on this year&rsquo;s tests.</p>}
-      <div className="space-y-1.5">
-        {shown.map((f, i) => (
-          <button key={i} onClick={() => onGrade(f.grade)}
-            className="w-full text-left flex items-start gap-2.5 px-2.5 py-2 rounded-lg hover:bg-surface-alt transition-colors">
-            <span className={`shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full ${f.rank >= 88 ? 'bg-red-500' : f.rank >= 65 ? 'bg-amber-500' : 'bg-text-tertiary/40'}`} />
-            <span className="text-[9px] font-bold text-text-tertiary shrink-0 mt-0.5 w-9">G{f.grade}</span>
-            <span className="text-[11px] text-text-secondary leading-snug">{f.body}</span>
-          </button>
+      <div className="space-y-1">
+        {bands.map(([l, floor, ceil]) => (
+          <div key={l} className="flex items-center gap-2">
+            <span className="w-4 text-[10px] font-bold text-text-secondary shrink-0">{l}</span>
+            <div className="flex-1 relative h-4 bg-surface-alt rounded">
+              <div className="absolute h-full rounded flex items-center justify-center"
+                style={{ left: `${floor}%`, width: `${ceil - floor}%`, backgroundColor: PASSAGE_COLORS[l] }}>
+                <span className="text-[8px] font-bold text-white">{floor}&ndash;{ceil}</span>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
-      {findings.length > 8 && (
-        <button onClick={() => setAll(!all)} className="text-[10px] text-navy hover:underline mt-2">
-          {all ? 'Show fewer' : `Show all ${findings.length}`}
-        </button>
-      )}
+      <p className="text-[10px] text-text-tertiary mt-2">
+        Passage letters mean different things in different grades &mdash; Grade 2&rsquo;s E is a short article, Grade 5&rsquo;s is an argument &mdash;
+        so a Band compares students inside one grade, never across two.
+      </p>
     </div>
   )
 }
@@ -478,10 +610,7 @@ function Classes({ test, tested, filterClass }: { test: LevelTest; tested: Sit[]
     <div className="space-y-4">
       <div className="bg-surface border border-border rounded-xl p-4">
         <p className="text-[12px] font-semibold text-navy">Where each class actually sits</p>
-        <p className="text-[10px] text-text-tertiary mb-4">
-          One dot per student, placed by Band &mdash; the passage they sustained sets the floor, so a dot further right read a harder text.
-          The line is the class median. Look for classes whose dots overlap, and for a class that is really two clusters rather than one.
-        </p>
+        <p className="text-[10px] text-text-tertiary mb-3">One dot per student, by Band. The line is the class median.</p>
         {ladder.map(c => {
           const dim = filterClass !== 'all' && filterClass !== c.cls
           return (
@@ -512,9 +641,7 @@ function Classes({ test, tested, filterClass }: { test: LevelTest; tested: Sit[]
 
       <div className="bg-surface border border-border rounded-xl p-4">
         <p className="text-[12px] font-semibold text-navy">Same passage, different class</p>
-        <p className="text-[10px] text-text-tertiary mb-3">
-          Which passage each class typically sustained, across the six placed classes. Two of them on the same passage are reading the same text, whatever their names say.
-        </p>
+        <p className="text-[10px] text-text-tertiary mb-3">Which passage each class sustained.</p>
         {ladder.map(c => (
           <div key={c.cls} className="flex items-center gap-2 mb-1.5">
             <span className="w-20 text-[10px] font-semibold text-right shrink-0" style={{ color: classToTextColor(c.cls) }}>{c.cls}</span>
@@ -535,17 +662,15 @@ function Classes({ test, tested, filterClass }: { test: LevelTest; tested: Sit[]
 
       <div className="grid md:grid-cols-2 gap-4">
         <DriftPanel title="Sitting above their class" tone="up" rows={drift.filter(d => d.dir === 'up')}
-          blurb="Band closer to the class above than to their own. Not a verdict — the shortlist the meeting works through." />
+          blurb="Closer to the class above than to their own." />
         <DriftPanel title="Sitting below their class" tone="down" rows={drift.filter(d => d.dir === 'down')}
-          blurb="Band closer to the class below. Check these against the reading-rate findings first: a rate that was never real, or a passage stopped early, lands a student here without meaning anything." />
+          blurb="Closer to the class below. Check the reading-rate findings first." />
       </div>
 
       {unplaced.length > 0 && (
         <div className="bg-surface border border-border rounded-xl p-4">
           <p className="text-[12px] font-semibold text-navy">Waiting to be placed</p>
-          <p className="text-[10px] text-text-tertiary mb-3">
-            Transfer students held outside the ladder until they have been tested, so they are left out of the comparisons above. The Band answers the question the holding pen exists to hold.
-          </p>
+          <p className="text-[10px] text-text-tertiary mb-3">Transfer students, held outside the ladder until tested.</p>
           <div className="space-y-1">
             {[...unplaced].sort((a, b) => b.band!.composite - a.band!.composite).map(r => (
               <div key={r.student.id} className="flex items-center gap-2 text-[11px]">
@@ -597,7 +722,7 @@ function DriftPanel({ title, blurb, rows, tone }: { title: string; blurb: string
 function Questions({ test, rows, allRows, content, loading, filterClass }: {
   test: LevelTest; rows: Sit[]; allRows: Sit[]; content?: GradeContent; loading: boolean; filterClass: EnglishClass | 'all'
 }) {
-  const [sortBy, setSortBy] = useState<'qNum' | 'hardest'>('qNum')
+  const [openQ, setOpenQ] = useState<number | null>(null)
   const classes = ENGLISH_CLASSES.filter(c => allRows.some(r => r.student.english_class === c))
 
   const items = useMemo(() => (content?.questions || []).map((q: any) => {
@@ -614,10 +739,9 @@ function Questions({ test, rows, allRows, content, loading, filterClass }: {
       if (chosen === q.correct) correct++
     })
     const topWrong = Object.entries(picks).filter(([k]) => k !== q.correct).sort((a, b) => b[1] - a[1])[0] || null
-    return { q, picks, answered, correct, byClass, topWrong, pct: answered ? correct / answered : null }
+    const keyBeaten = !!(topWrong && topWrong[1] > (picks[q.correct] || 0) && answered >= 8)
+    return { q, picks, answered, correct, byClass, topWrong, keyBeaten, pct: answered ? correct / answered : null }
   }), [content, allRows, filterClass])
-
-  const ordered = useMemo(() => sortBy === 'hardest' ? [...items].sort((a, b) => (a.pct ?? 2) - (b.pct ?? 2)) : items, [items, sortBy])
 
   const rollup = (key: 'domain' | 'dok') => {
     const acc: Record<string, Record<string, { n: number; correct: number }>> = {}
@@ -673,10 +797,7 @@ function Questions({ test, rows, allRows, content, loading, filterClass }: {
         <div className="bg-surface border border-border rounded-xl overflow-x-auto">
           <div className="p-4 pb-2">
             <p className="text-[12px] font-semibold text-navy">Writing</p>
-            <p className="text-[10px] text-text-tertiary">
-              Scored by rubric, so none of this reaches the standards grid. Maxima differ by grade, so each cell is a share of its own category&rsquo;s total.
-              Where a category is a checklist, the criteria beneath it name the exact move that was missed.
-            </p>
+            <p className="text-[10px] text-text-tertiary">Each cell is a share of that category&rsquo;s own total. Criteria beneath a category name the exact move that was missed.</p>
           </div>
           <table className="w-full text-[11px]">
             <thead><tr className="bg-surface-alt">
@@ -713,25 +834,44 @@ function Questions({ test, rows, allRows, content, loading, filterClass }: {
       {anyAnswers && (
         <>
           <Rollup title="By domain" acc={rollup('domain')} classes={classes}
-            blurb="Every question grouped by what it asks for. The view to trust when a single question has three students behind it." />
+            blurb="Every question grouped by what it asks for." />
           <Rollup title="By depth of knowledge" acc={rollup('dok')} classes={classes} prefix="DOK "
-            blurb="DOK 1 is retrieval; DOK 2 asks the student to do something with what they found. Strong on 1 and weak on 2 means they can locate but not infer, which is a different lesson from not understanding the passage." />
+            blurb="DOK 1 is retrieval; DOK 2 asks the student to do something with what they found. Strong on 1 and weak on 2 means they can locate but not infer." />
 
           <div className="bg-surface border border-border rounded-xl overflow-hidden">
-            <div className="p-4 pb-2 flex items-start gap-3">
-              <div className="min-w-0">
-                <p className="text-[12px] font-semibold text-navy">Question by question{filterClass !== 'all' ? ` — ${filterClass}` : ''}</p>
-                <p className="text-[10px] text-text-tertiary">
-                  The bar is what {filterClass === 'all' ? 'the grade' : filterClass} chose. Key in green, most-chosen wrong answer in amber, and where the paper says what choosing it means, it says so underneath.
-                </p>
-              </div>
-              <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
-                className="px-2.5 py-1 border border-border rounded-lg text-[10px] bg-surface ml-auto shrink-0">
-                <option value="qNum">Paper order</option>
-                <option value="hardest">Hardest first</option>
-              </select>
+            <div className="p-4 pb-3">
+              <p className="text-[12px] font-semibold text-navy">Every question{filterClass !== 'all' ? ` — ${filterClass}` : ''}</p>
+              <p className="text-[10px] text-text-tertiary">One bar per question, in paper order. Taller and greener is better. Click a bar to open it.</p>
             </div>
-            <div className="divide-y divide-border">{ordered.map(it => <Item key={it.q.qNum} it={it} classes={classes} />)}</div>
+            {/* The strip replaces a scroll of thirty cards. You can see which
+                four questions were hard without reading anything, and only the
+                ones worth opening get opened. */}
+            <div className="px-4 pb-3 flex items-end gap-[3px] h-24">
+              {items.map(it => {
+                const pct = it.pct ?? 0
+                const on = openQ === it.q.qNum
+                const dead = it.answered === 0
+                return (
+                  <button key={it.q.qNum} onClick={() => setOpenQ(on ? null : it.q.qNum)}
+                    title={`Q${it.q.qNum} — ${it.answered ? Math.round(pct * 100) + '%' : 'not marked'}`}
+                    className={`flex-1 min-w-[6px] rounded-t transition-all relative group ${on ? 'ring-2 ring-navy' : ''}`}
+                    style={{
+                      height: `${dead ? 4 : Math.max(8, pct * 100)}%`,
+                      backgroundColor: dead ? '#E2E8F0' : pct >= 0.75 ? '#22C55E' : pct >= 0.45 ? '#F59E0B' : '#EF4444',
+                    }}>
+                    {it.keyBeaten && <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-red-600"><AlertTriangle size={9} /></span>}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="px-4 pb-3 flex items-center gap-3 text-[9px] text-text-tertiary">
+              <span>Q1</span><span className="flex-1 border-b border-border" /><span>Q{items[items.length - 1]?.q.qNum}</span>
+              <span className="ml-2 inline-flex items-center gap-1"><AlertTriangle size={9} className="text-red-600" /> a wrong answer beat the key</span>
+            </div>
+            {openQ != null && (() => {
+              const it = items.find(x => x.q.qNum === openQ)
+              return it ? <div className="border-t border-border"><Item it={it} classes={classes} /></div> : null
+            })()}
           </div>
         </>
       )}
@@ -786,7 +926,7 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
   const letters = ['a', 'b', 'c', 'd'].slice(0, (q.choices || []).length)
   const thin = it.answered < 5
   const pct = it.pct != null ? Math.round(it.pct * 100) : null
-  const keyBeaten = it.topWrong && it.topWrong[1] > (it.picks[q.correct] || 0) && it.answered >= 8
+  const keyBeaten = it.keyBeaten
   return (
     <div className={`p-4 ${keyBeaten ? 'bg-red-50/40' : ''}`}>
       <div className="flex items-baseline gap-2 mb-1.5 flex-wrap">
@@ -880,32 +1020,56 @@ function Cohorts({ test, rows, allTests, students }: { test: LevelTest; rows: Si
   return (
     <div className="bg-surface border border-border rounded-xl p-4">
       <p className="text-[12px] font-semibold text-navy">The same children, a year on</p>
-      <p className="text-[10px] text-text-tertiary mb-3">
-        {data.length} of these students sat an earlier test. Band says how far up their OWN grade&rsquo;s ladder a child reached, and the ladder gets harder each year &mdash;
-        so holding position is real progress, not standing still.
-      </p>
+      <p className="text-[10px] text-text-tertiary mb-3">{data.length} of these students sat an earlier test. The ladder gets harder each year, so holding position is progress.</p>
       <div className="flex gap-2 flex-wrap mb-3">
         <Stat n={up} label="moved up their ladder" tone="green" />
         <Stat n={flat} label="held position" tone="grey" />
         <Stat n={down} label="fell back" tone="red" />
       </div>
-      <div className="space-y-1 max-h-[300px] overflow-y-auto">
-        {[...data].sort((a, b) => (a.now - a.before) - (b.now - b.before)).map(d => {
-          const delta = Math.round(d.now - d.before)
+      {/* A slope chart rather than a list of names and arrows: the shape of a
+          year group's progress reads in one glance, and a line crossing
+          downward is visible without being counted. */}
+      <svg viewBox="0 0 300 150" className="w-full h-44" preserveAspectRatio="none">
+        {[0, 25, 50, 75, 100].map(g => (
+          <line key={g} x1="40" x2="260" y1={140 - g * 1.3} y2={140 - g * 1.3} stroke="#E2E8F0" strokeWidth="0.5" />
+        ))}
+        {data.map(d => {
+          const up = d.now > d.before + 3, down = d.now < d.before - 3
           return (
-            <div key={d.student.id} className="flex items-center gap-2 text-[11px]">
-              <span className="w-40 truncate text-navy font-medium shrink-0">{d.student.english_name}</span>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style={{ backgroundColor: classToColor(d.student.english_class as EnglishClass) + '40', color: classToTextColor(d.student.english_class as EnglishClass) }}>{d.student.english_class}</span>
-              <span className="text-text-tertiary shrink-0">{Math.round(d.before)}</span>
-              <ArrowRight size={11} className="text-text-tertiary shrink-0" />
-              <span className="text-navy font-semibold shrink-0">{Math.round(d.now)}</span>
-              <span className={`text-[10px] font-semibold shrink-0 ${delta > 3 ? 'text-green-600' : delta < -3 ? 'text-red-600' : 'text-text-tertiary'}`}>
-                {delta > 3 ? <TrendingUp size={10} className="inline" /> : delta < -3 ? <TrendingDown size={10} className="inline" /> : <Minus size={10} className="inline" />} {delta > 0 ? `+${delta}` : delta}
-              </span>
-            </div>
+            <g key={d.student.id}>
+              <line x1="40" x2="260" y1={140 - d.before * 1.3} y2={140 - d.now * 1.3}
+                stroke={up ? '#22C55E' : down ? '#EF4444' : '#CBD5E1'} strokeWidth="1.2" opacity="0.75">
+                <title>{`${d.student.english_name}: ${Math.round(d.before)} → ${Math.round(d.now)}`}</title>
+              </line>
+              <circle cx="40" cy={140 - d.before * 1.3} r="2" fill="#94A3B8" />
+              <circle cx="260" cy={140 - d.now * 1.3} r="2.4" fill={up ? '#22C55E' : down ? '#EF4444' : '#94A3B8'} />
+            </g>
           )
         })}
-      </div>
+        <text x="40" y="149" fontSize="7" fill="#94A3B8" textAnchor="middle">last test</text>
+        <text x="260" y="149" fontSize="7" fill="#94A3B8" textAnchor="middle">this test</text>
+        {[0, 50, 100].map(g => <text key={g} x="34" y={143 - g * 1.3} fontSize="7" fill="#94A3B8" textAnchor="end">{g}</text>)}
+      </svg>
+      <details className="mt-2">
+        <summary className="text-[10px] text-text-tertiary cursor-pointer hover:text-navy">Student by student</summary>
+        <div className="space-y-1 max-h-[240px] overflow-y-auto mt-2">
+          {[...data].sort((a, b) => (a.now - a.before) - (b.now - b.before)).map(d => {
+            const delta = Math.round(d.now - d.before)
+            return (
+              <div key={d.student.id} className="flex items-center gap-2 text-[11px]">
+                <span className="w-40 truncate text-navy font-medium shrink-0">{d.student.english_name}</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style={{ backgroundColor: classToColor(d.student.english_class as EnglishClass) + '40', color: classToTextColor(d.student.english_class as EnglishClass) }}>{d.student.english_class}</span>
+                <span className="text-text-tertiary shrink-0">{Math.round(d.before)}</span>
+                <ArrowRight size={11} className="text-text-tertiary shrink-0" />
+                <span className="text-navy font-semibold shrink-0">{Math.round(d.now)}</span>
+                <span className={`text-[10px] font-semibold shrink-0 ${delta > 3 ? 'text-green-600' : delta < -3 ? 'text-red-600' : 'text-text-tertiary'}`}>
+                  {delta > 3 ? <TrendingUp size={10} className="inline" /> : delta < -3 ? <TrendingDown size={10} className="inline" /> : <Minus size={10} className="inline" />} {delta > 0 ? `+${delta}` : delta}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </details>
     </div>
   )
 }

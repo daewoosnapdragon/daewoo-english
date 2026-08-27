@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel, compRatioForComposite, capComponent, COMPONENT_CAP,
   compositeWeightsFor, COMPOSITE_TERM_LABELS, DECODING_WEIGHTS, IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, type CompositeTerm, type CompositeWeights } from '@/lib/utils'
-import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
+import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2, BarChart3 } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
@@ -24,7 +24,7 @@ import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
 import LevelingAnalytics from '@/components/leveling/LevelingAnalytics'
 import LevelingHistory from '@/components/leveling/LevelingHistory'
-import LevelingOverview from '@/components/leveling/LevelingOverview'
+import LevelingAnalysis from '@/components/leveling/LevelingAnalysis'
 import StudentLevelingCard, { PrintDossier } from '@/components/leveling/StudentLevelingCard'
 
 type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'analytics' | 'history' | 'meeting'
@@ -159,6 +159,13 @@ function LevelingView() {
   const [loading, setLoading] = useState(true)
   const [phase, setPhase] = useState<Phase>('setup')
   const [showArchived, setShowArchived] = useState(false)
+  const [showAnalysis, setShowAnalysis] = useState(false)
+  /** Named for the most recent year on record, since the page spans its grades. */
+  const analysisLabel = useMemo(() => {
+    const t = [...levelTests].sort((a, b) => `${b.academic_year}${b.semester}`.localeCompare(`${a.academic_year}${a.semester}`))[0]
+    if (!t) return null
+    return `${t.semester === 'spring' ? 'Spring' : 'Fall'} ${t.academic_year} Level Test`
+  }, [levelTests])
 
   const archivedCount = levelTests.filter(t => (t as any).is_archived).length
   const visibleTests = showArchived ? levelTests : levelTests.filter(t => !(t as any).is_archived)
@@ -229,6 +236,23 @@ function LevelingView() {
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
 
+  // Its own page rather than a section under the test list. Everything on it is
+  // cross-grade, so it belongs neither to a single test nor at the bottom of a
+  // list of them.
+  if (showAnalysis) return (
+    <div className="animate-fade-in">
+      <div className="px-10 pt-8 pb-6 bg-surface border-b border-border">
+        <button onClick={() => setShowAnalysis(false)} className="text-[12px] text-text-tertiary hover:text-navy mb-2 inline-flex items-center gap-1">
+          <ChevronLeft size={14} /> All tests
+        </button>
+        <h2 className="font-display text-[26px] font-semibold tracking-tight text-navy">Level Test Analysis</h2>
+      </div>
+      <div className="px-10 py-6">
+        <LevelingAnalysis levelTests={levelTests} />
+      </div>
+    </div>
+  )
+
   if (!selectedTest) return (
     <div className="animate-fade-in">
       <div className="px-10 pt-8 pb-6 bg-surface border-b border-border">
@@ -249,6 +273,17 @@ function LevelingView() {
             {isLeadTeacher && <CreateTestBtn onCreate={handleCreateTest} />}
           </div>
         </div>
+        {analysisLabel && (
+          <button onClick={() => setShowAnalysis(true)}
+            className="w-full flex items-center justify-between gap-3 mb-5 px-4 py-3.5 rounded-xl bg-navy text-white hover:bg-navy/90 transition-colors text-left">
+            <span>
+              <span className="block text-[14px] font-semibold">{analysisLabel} Analysis</span>
+              <span className="block text-[11px] opacity-70">Every grade and class, question by question</span>
+            </span>
+            <BarChart3 size={18} className="opacity-80 shrink-0" />
+          </button>
+        )}
+
         {visibleTests.length === 0 ? (
           <p className="text-text-tertiary text-sm py-8 text-center">
             {levelTests.length === 0 ? 'No level tests created yet.' : 'All tests are archived. Use the Archived button to show them.'}
@@ -284,19 +319,6 @@ function LevelingView() {
               </div>
             )
           })}</div>
-        )}
-
-        {/* ── Across every grade and class, before picking a test ── */}
-        {levelTests.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-border">
-            <h3 className="font-display text-[17px] font-semibold text-navy mb-1">Across the school</h3>
-            <p className="text-[11px] text-text-tertiary mb-4">
-              Coverage, class against class, question by question, and what changed since last year. Class comparisons inside one grade are like for like &mdash;
-              the same paper and the same passages. Across grades, only counts and rates compare: a Grade 2 Band and a Grade 5 Band both mean
-              &ldquo;near the top of what my grade was asked&rdquo;, which is not the same reading level.
-            </p>
-            <LevelingOverview levelTests={levelTests} />
-          </div>
         )}
 
         {/* Emergency Leveling - Grade 1 Only */}
