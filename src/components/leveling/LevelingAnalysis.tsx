@@ -814,7 +814,7 @@ function OralVsWritten({ rows }: { rows: Row[] }) {
         A student on the dotted line did about as well on both. The further a dot sits from that line, the more the two tests disagree about them &mdash; and those are the students worth a second look.
       </p>
 
-      <div className="relative w-full" style={{ maxWidth: 820 }}>
+      <div className="relative w-full mx-auto" style={{ maxWidth: 820 }}>
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 'auto' }} onMouseLeave={() => setHover(null)}>
           <rect x={L} y={T} width={W - L - R} height={H - T - B} fill="var(--surface-alt, #F8FAFC)" stroke="#E2E8F0" />
           {/* The two halves, named where they actually are */}
