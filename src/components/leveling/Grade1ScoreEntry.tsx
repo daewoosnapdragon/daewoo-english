@@ -93,6 +93,13 @@ interface G1Scores {
    * from the composite and rendered as "not administered" rather than a zero.
    */
   o_comp_not_administered?: boolean | null
+  /**
+   * The teacher declaring the oral session over, whatever it produced. Data
+   * presence alone used to be the completion test, which excluded exactly the
+   * students it matters most to track: a child who could not attempt a passage
+   * leaves no trace and stayed on the roster as still to do.
+   */
+  o_test_complete?: boolean | null
   o_open_response?: number | null
   // Level A per-question scores
   o_a_q1?: number | null
@@ -1216,7 +1223,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       const s = students.filter(st => st.english_class === cls)
       const done = s.filter(st => {
         const sc = scores[st.id] || {}
-        return sc.o_passage_level != null
+        return sc.o_test_complete || sc.o_passage_level != null
       })
       counts[cls] = { total: s.length, done: done.length }
     })
@@ -2922,9 +2929,10 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
     updateScore(sid, 'o_comp_not_administered', true)
   }
 
+  /** Dealt with: either something was recorded, or the teacher declared it done. */
   const studentHasOralData = (sid: string) => {
     const s = scores[sid] || {}
-    return !!(s.o_passage_level || s.o_alpha_names != null)
+    return !!(s.o_test_complete || s.o_passage_level || s.o_alpha_names != null)
   }
 
   const getClassImpression = (sid: string): string | null => {
@@ -3531,6 +3539,24 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
             so by the time a session finishes the header button is scrolled out
             of sight -- and that scroll back up is where saving gets forgotten. */}
         <div className="mt-8 mb-2 pt-5 border-t border-border">
+          {/* Marks the session finished even when it produced nothing to score.
+              Saves immediately: a teacher who presses this is done with the
+              child in front of them and is about to call the next. */}
+          <button
+            onClick={() => { updateScore(student.id, 'o_test_complete', !sc.o_test_complete); setTimeout(() => onSave([student.id]), 0) }}
+            disabled={saving}
+            className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-[14px] font-bold mb-3 border-2 transition-all disabled:opacity-50 ${
+              sc.o_test_complete
+                ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                : 'bg-surface text-navy border-navy/25 hover:border-navy/50 hover:bg-surface-alt'}`}>
+            {sc.o_test_complete ? <CheckCircle2 size={17} /> : <Circle size={17} />}
+            {sc.o_test_complete ? 'Test complete' : 'Mark test complete'}
+          </button>
+          {!sc.o_test_complete && sc.o_passage_level == null && (
+            <p className="text-[10px] text-text-tertiary text-center mb-3 -mt-1">
+              Use this for a student who sat the test but could not attempt anything &mdash; it records that the session happened.
+            </p>
+          )}
           <button onClick={() => onSave([student.id])} disabled={saving}
             className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl text-[16px] font-bold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 shadow-md transition-all">
             {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}

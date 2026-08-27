@@ -1497,6 +1497,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     'syllable_1','syllable_2','syllable_3','syllable_4','syllable_5',
     'sent_1','sent_2','sent_3','sent_4','sent_5',
     'passage_level','orf_cwpm','orf_accuracy','passages_attempted',
+    // Deliberately NOT in PASSAGE_FIELDS: switching passages must not un-finish
+    // a session the teacher has already declared over.
+    'oral_complete',
     ...PASSAGE_FIELDS,
   ])
 
@@ -1624,7 +1627,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     const counts: Record<string, { total: number; done: number }> = {}
     ENGLISH_CLASSES.forEach(cls => {
       const s = students.filter(s => s.english_class === cls)
-      counts[cls] = { total: s.length, done: s.filter(st => { const sc = scores[st.id]; return sc && (sc.passage_level || sc.orf_cwpm != null) }).length }
+      counts[cls] = { total: s.length, done: s.filter(st => { const sc = scores[st.id]; return sc && (sc.oral_complete || sc.passage_level || sc.orf_cwpm != null) }).length }
     })
     return counts
   }, [students, scores])
@@ -1877,9 +1880,19 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const compQuestions = passageLevel ? config.comprehension[passageLevel as PassageLevel] : []
   const hasNaep = passageLevel ? config.naepLevels.includes(passageLevel as PassageLevel) : false
 
+  /**
+   * Has this student been dealt with?
+   *
+   * Data presence alone was the test, which quietly excluded the students it
+   * matters most to get right: a child who could not attempt a passage, answer
+   * a question or read a phonics row leaves no trace, so the roster showed
+   * them as still to do however many times a teacher sat with them. Marking
+   * the session complete is an explicit statement that the testing happened,
+   * whatever it produced.
+   */
   const studentHasData = (sid: string) => {
     const s = scores[sid] || {}
-    return !!(s.passage_level || s.orf_cwpm != null || s.phonics_row1 != null)
+    return !!(s.oral_complete || s.passage_level || s.orf_cwpm != null || s.phonics_row1 != null)
   }
 
   // Calculate derived values
@@ -2492,6 +2505,24 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 scrolled out of sight -- and that scroll back up is where
                 saving gets forgotten. */}
             <div className="mt-8 mb-2 pt-5 border-t border-border">
+              {/* Marks the session finished even when it produced nothing to
+                  score. Saves immediately: a teacher who presses this is done
+                  with the child in front of them and is about to call the next. */}
+              <button
+                onClick={() => { updateScore(student.id, 'oral_complete', !sc.oral_complete); setTimeout(() => handleSave([student.id]), 0) }}
+                disabled={saving}
+                className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-[14px] font-bold mb-3 border-2 transition-all disabled:opacity-50 ${
+                  sc.oral_complete
+                    ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                    : 'bg-surface text-navy border-navy/25 hover:border-navy/50 hover:bg-surface-alt'}`}>
+                {sc.oral_complete ? <CheckCircle2 size={17} /> : <Circle size={17} />}
+                {sc.oral_complete ? 'Test complete' : 'Mark test complete'}
+              </button>
+              {!sc.oral_complete && !studentHasData(student.id) && (
+                <p className="text-[10px] text-text-tertiary text-center mb-3 -mt-1">
+                  Use this for a student who sat the test but could not attempt anything &mdash; it records that the session happened.
+                </p>
+              )}
               <button onClick={() => handleSave([student.id])} disabled={saving}
                 className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl text-[16px] font-bold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 shadow-md transition-all">
                 {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
