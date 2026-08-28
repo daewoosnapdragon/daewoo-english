@@ -43,6 +43,14 @@ export interface G4QuestionDef {
   text: string
   choices: string[]
   correct: string
+  /**
+   * Further letters that also score the point, where the printed paper has
+   * more than one defensible answer. `correct` stays the guide's key, so the
+   * item analysis still names it; these are marked accepted beside it.
+   */
+  acceptable?: string[]
+  /** Every answered letter scores. For an item where the paper is at fault. */
+  acceptAny?: boolean
   standard: string
   standardDesc: string
   domain: string
@@ -283,7 +291,7 @@ const F26_QUESTIONS: G4QuestionDef[] = [
   { qNum: 18, section: 'language', sectionLabel: 'Language Standards', text: 'We visited _____ last summer.', choices: ['New York City', 'new york City', 'new york city', 'New york city'], correct: 'a', standard: 'L.4.2a', standardDesc: 'Use correct capitalization', domain: 'Language/Mechanics', dok: 1, note: 'Capitalization of proper nouns.' },
   { qNum: 19, section: 'language', sectionLabel: 'Language Standards', text: 'Which sentence uses commas correctly?', choices: ['I wanted to go but I was tired.', 'I wanted to go, but I was tired.', 'I wanted to go but, I was tired.', 'I wanted, to go but I was tired.'], correct: 'b', standard: 'L.4.2c', standardDesc: 'Use a comma before a coordinating conjunction in a compound sentence', domain: 'Language/Mechanics', dok: 2, note: 'Comma before a coordinating conjunction in a compound sentence.' },
   // Items 20-27 — Verb tense and agreement.
-  { qNum: 20, section: 'verb_tense', sectionLabel: 'Language: verb tense and agreement', text: 'The boy _____ to school every day.', choices: ['walk', 'walked', 'walks', 'walking'], correct: 'c', standard: 'L.4.1b', standardDesc: 'Form and use verb tenses', domain: 'Language/Grammar', dok: 1, note: 'Subject-verb agreement, third person singular, habitual present (every day).' },
+  { qNum: 20, section: 'verb_tense', sectionLabel: 'Language: verb tense and agreement', text: 'The boy _____ to school every day.', choices: ['walk', 'walked', 'walks', 'walking'], correct: 'c', acceptable: ['b'], standard: 'L.4.1b', standardDesc: 'Form and use verb tenses', domain: 'Language/Grammar', dok: 1, note: 'Keyed to c -- third person singular agreement in the habitual present, which is what the item sets out to test. b is accepted too from August 2026: "The boy walked to school every day" is a habitual past and is ordinary correct English, since nothing in the stem fixes the sentence in the present. a and d remain wrong -- the bare plural form does not agree with the singular subject, and the bare participle has no auxiliary.' },
   { qNum: 21, section: 'verb_tense', sectionLabel: 'Language: verb tense and agreement', text: 'My friends _____ soccer after school.', choices: ['plays', 'played', 'playing', 'play'], correct: 'd', standard: 'L.4.1b', standardDesc: 'Form and use verb tenses', domain: 'Language/Grammar', dok: 1, note: 'Agreement with a plural subject (my friends).' },
   { qNum: 22, section: 'verb_tense', sectionLabel: 'Language: verb tense and agreement', text: 'Either the cat or the dogs _____ outside right now.', choices: ['is', 'are', 'am', 'be'], correct: 'b', standard: 'L.4.1b', standardDesc: 'Form and use verb tenses', domain: 'Language/Grammar', dok: 2, note: 'Either/or agreement — the verb agrees with the nearer subject (the dogs). The hardest item in the section.' },
   { qNum: 23, section: 'verb_tense', sectionLabel: 'Language: verb tense and agreement', text: 'Right now, she _____ her homework.', choices: ['is doing', 'do', 'does', 'did'], correct: 'a', standard: 'L.4.1b', standardDesc: 'Form and use the progressive verb tenses', domain: 'Language/Grammar', dok: 1, note: 'Present progressive, cued by right now.' },
@@ -477,6 +485,7 @@ const FALL_2026_CONTENT: G4Content = {
     'Item 36 Content and Detail: the guide scores this as a four-feature checklist with a length gate (under five sentences caps it at 2). The student copy scores it as a sentence-count ladder (1-4 sentences = 1, 10+ = 4). The guide is used here.',
     'Passage D (Coral Reefs): rewritten from the guide\'s version into plainer wording for Grade 4 — the reef types are now described rather than named (fringing/barrier/atoll), and the closing line drops "ecosystem." Word count is 191 as printed here, not the guide\'s 193. Score the running record against this text, not the guide\'s.',
     'All 35 multiple-choice keys agree between the guide\'s per-item tables, the guide\'s consolidated key, and the printed student copy. No answer-key conflicts on this paper.',
+    'Item 20 accepts b or c. c (walks) is the guide\'s key and the agreement the item is testing; b (walked) is accepted as well, because "The boy walked to school every day" is a habitual past and nothing in the stem rules it out. Read the item\'s analysis as a weaker signal on L.4.1b than it looks, and add a present-tense marker to the stem before the next sitting.',
   ],
 }
 
