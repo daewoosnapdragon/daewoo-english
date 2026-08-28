@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel, compRatioForComposite, capComponent, COMPONENT_CAP,
-  compositeWeightsFor, COMPOSITE_TERM_LABELS, DECODING_WEIGHTS, IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, type CompositeTerm, type CompositeWeights } from '@/lib/utils'
+  compositeWeightsFor, COMPOSITE_TERM_LABELS, DECODING_WEIGHTS, IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, writingTotalFrom, type CompositeTerm, type CompositeWeights } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2, BarChart3 } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
@@ -1305,7 +1305,10 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
       const writings: number[] = []; const mcs: number[] = []; const orals: number[] = []
       classStudents.forEach(s => {
         const sc = scores[s.id]?.raw_scores || {}; const calc = scores[s.id]?.calculated_metrics || {}
-        if (sc.writing != null) writings.push(sc.writing)
+        // Only rubrics somebody has marked. A phantom 0 from an unopened
+        // rubric used to drag the class median it is then compared against.
+        const w = writingTotalFrom(sc, calc)
+        if (w != null) writings.push(w)
         if (sc.written_mc != null) mcs.push(sc.written_mc)
         const oral = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
         if (oral != null) orals.push(oral)
@@ -1380,16 +1383,23 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
     if (filterClass !== 'all') res = res.filter(r => r.student.english_class === filterClass)
     if (filterPassage !== 'all') res = res.filter(r => (r.oralPassageLevel ?? r.passageLevel) === filterPassage)
     if (showBorderline) res = res.filter(r => r.suggestedClass != null && r.suggestedClass !== r.student.english_class)
+    // A student who has not sat every section sorts below one who has, in every
+    // score-based order. Their composite is renormalized over the sections they
+    // DID sit, so a strong oral result with no written paper produced a high
+    // number and landed at the top of the grade -- above classmates who sat
+    // everything. It is not a better result; it is less of one.
+    const completeness = (r: typeof res[number]) =>
+      Number(r.isTested) * 10 - (r.missingSections?.length ?? 0)
     switch (sortBy) {
       // Untested rows sort to the bottom of every score-based order -- they
       // have no rank, and their composite is a teacher rating, not a result.
-      case 'composite': res.sort((a, b) => Number(b.isTested) - Number(a.isTested) || b.composite - a.composite); break
-      case 'percentile': res.sort((a, b) => (b.percentile ?? -1) - (a.percentile ?? -1)); break
+      case 'composite': res.sort((a, b) => completeness(b) - completeness(a) || b.composite - a.composite); break
+      case 'percentile': res.sort((a, b) => completeness(b) - completeness(a) || (b.percentile ?? -1) - (a.percentile ?? -1)); break
       case 'cwpm': res.sort((a, b) => (b.rawCwpm ?? -1) - (a.rawCwpm ?? -1)); break
       case 'comp': res.sort((a, b) => (b.rawComp ?? -1) - (a.rawComp ?? -1)); break
       case 'writing': res.sort((a, b) => (b.rawWriting ?? -1) - (a.rawWriting ?? -1)); break
       case 'mc': res.sort((a, b) => (b.rawMc ?? -1) - (a.rawMc ?? -1)); break
-      case 'suggested': { const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }; res.sort((a, b) => (a.suggestedClass ? classOrder[a.suggestedClass] || 99 : 99) - (b.suggestedClass ? classOrder[b.suggestedClass] || 99 : 99)); break }
+      case 'suggested': { const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }; res.sort((a, b) => completeness(b) - completeness(a) || (a.suggestedClass ? classOrder[a.suggestedClass] || 99 : 99) - (b.suggestedClass ? classOrder[b.suggestedClass] || 99 : 99)); break }
       case 'name': res.sort((a, b) => a.student.english_name.localeCompare(b.student.english_name)); break
     }
     return res
@@ -1479,7 +1489,17 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
             const flags = row.outlierFlags || []
             return (
               <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${move ? 'bg-amber-50/30' : ''} ${flags.length > 0 ? 'bg-red-50/20' : ''}`}>
-                <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" title={`Outlier: ${flags.join(', ')}`} />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span></td>
+                <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" title={`Outlier: ${flags.join(', ')}`} />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span>
+                  {/* Sat some of the test but not all of it. The composite is
+                      renormalized over what they did sit, so it is not
+                      comparable with a complete record and says so. */}
+                  {row.isTested && (row.missingSections?.length ?? 0) > 0 && (
+                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-semibold align-middle"
+                      title={`Has not sat the ${row.missingSections.join(' or ')} test. The composite is worked out from the sections they did sit, so it is not comparable with a complete record -- these students are sorted to the bottom until the missing half is entered.`}>
+                      no {row.missingSections.join(' / ')}
+                    </span>
+                  )}
+                </td>
                 <td className="px-2 py-2 text-center"><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass) + '40', color: classToTextColor(row.student.english_class as EnglishClass) }}>{row.student.english_class}</span></td>
                 <td className={`px-2 py-2 text-center ${flags.includes('oral') || flags.includes('rate') ? 'bg-red-50' : ''}`}
                   title={flags.includes('rate')
@@ -1534,7 +1554,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = {weightSummary} &mdash; weights are set per grade, because each grade's paper is a different shape. The oral term is the <strong>Band</strong>: the passage a student sustained sets the floor they start from, so a harder passage almost always outranks an easier one, and comprehension, accuracy, NAEP and reading rate only position them inside that level. Teacher Ratings are not in it {'\u2014'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. A student whose oral session was marked complete without a passage being read is scored 0 and ranked at the bottom {'\u2014'} an attempt that produced nothing is the lowest evidence there is, not missing evidence {'\u2014'} and their row reads <span className="italic">attempted none</span>. CWPM is shown as clocked, on the passage in brackets {'\u2014'} passage difficulty is carried by the Band, not baked into the rate. {(hasPhonics || hasSentences) && <>Phonics and sentence reading come off the oral test and together form the decoding term. </>}{hasSyllables && <>Syllable counting is reference only {'\u2014'} it moves the Band, not the composite. </>}<span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; the passage counts as not sustained, which drops the student to the level below rather than scoring them a zero. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier: a score under 10% of the class median, or a reading rate too fast to be real (over {IMPLAUSIBLE_CWPM} wpm, or a full passage clocked in under {IMPLAUSIBLE_READ_SECONDS} seconds) {'\u2014'} usually a stopwatch started late.{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = {weightSummary} &mdash; weights are set per grade, because each grade's paper is a different shape. The oral term is the <strong>Band</strong>: the passage a student sustained sets the floor they start from, so a harder passage almost always outranks an easier one, and comprehension, accuracy, NAEP and reading rate only position them inside that level. Teacher Ratings are not in it {'\u2014'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. A student who has sat one half of the test and not the other is tagged <span className="inline-block px-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">no written</span> or <span className="inline-block px-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">no oral</span> and sorts below every complete record {'\u2014'} their composite is worked out from the sections they did sit, so a strong oral result with no written paper is not the high placement it looks like. A student whose oral session was marked complete without a passage being read is scored 0 and ranked at the bottom {'\u2014'} an attempt that produced nothing is the lowest evidence there is, not missing evidence {'\u2014'} and their row reads <span className="italic">attempted none</span>. CWPM is shown as clocked, on the passage in brackets {'\u2014'} passage difficulty is carried by the Band, not baked into the rate. {(hasPhonics || hasSentences) && <>Phonics and sentence reading come off the oral test and together form the decoding term. </>}{hasSyllables && <>Syllable counting is reference only {'\u2014'} it moves the Band, not the composite. </>}<span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered; the passage counts as not sustained, which drops the student to the level below rather than scoring them a zero. Check these students by eye before placing {'\u2014'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier: a score under 10% of the class median, or a reading rate too fast to be real (over {IMPLAUSIBLE_CWPM} wpm, or a full passage clocked in under {IMPLAUSIBLE_READ_SECONDS} seconds) {'\u2014'} usually a stopwatch started late.{excludedQuestions.length > 0 && <span className="text-blue-600"> <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 align-super" /> = composite uses adjusted MC ({excludedQuestions.length} question{excludedQuestions.length !== 1 ? 's' : ''} excluded).</span>}</p>
     </div>
   )
 }
@@ -1626,7 +1646,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
         ENGLISH_CLASSES.forEach(cls => {
           const cs = studs.filter((s: any) => s.english_class === cls)
           const writings: number[] = []; const mcs: number[] = []; const orals: number[] = []
-          cs.forEach((s: any) => { const sc = sm[s.id]?.raw_scores || {}; const calc = sm[s.id]?.calculated_metrics || {}; if (sc.writing != null) writings.push(sc.writing); if (sc.written_mc != null) mcs.push(sc.written_mc); const oral = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null; if (oral != null) orals.push(oral) })
+          cs.forEach((s: any) => { const sc = sm[s.id]?.raw_scores || {}; const calc = sm[s.id]?.calculated_metrics || {}; const w = writingTotalFrom(sc, calc); if (w != null) writings.push(w); if (sc.written_mc != null) mcs.push(sc.written_mc); const oral = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null; if (oral != null) orals.push(oral) })
           const manual = bm[cls] || {}
           bm[cls] = { ...manual, writing_end: manual.writing_end > 0 ? manual.writing_end : (writings.length > 0 ? med(writings) : 0), mc_end: manual.mc_end > 0 ? manual.mc_end : (mcs.length > 0 ? med(mcs) : 0), cwpm_end: manual.cwpm_end > 0 ? manual.cwpm_end : (orals.length > 0 ? med(orals) : 0) }
         })
@@ -1824,7 +1844,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
               const rawCwpm = cl.best_weighted_cwpm ?? cl.weighted_cwpm ?? cl.cwpm ?? sc?.raw_scores?.passage_cwpm ?? sc?.raw_scores?.orf_cwpm ?? null
               // Label the adjusted number with the attempt it actually came from
               const cwpmIsWeighted = cl.best_weighted_cwpm != null || cl.weighted_cwpm != null
-              const rawWriting = sc?.raw_scores?.writing ?? null
+              const rawWriting = writingTotalFrom(sc?.raw_scores, cl)
               const rawMc = sc?.raw_scores?.written_mc ?? null
               const rawComp = cl.comp_total ?? null
               const gradeAvg = sg.length > 0 ? sg.reduce((sum: number, g: any) => sum + (g.score || 0), 0) / sg.length : null
@@ -1989,7 +2009,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                         {anec?.is_watchlist && <Star size={9} className="text-amber-500 fill-amber-500" />}{isOvr && <AlertTriangle size={9} className="text-amber-500" />}
                       </div>
                     </div>
-                    {score?.raw_scores && <div className="flex gap-1 mt-1 text-[8px] text-text-tertiary">{(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm) != null && <span>O:{Math.round(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm)}{score.calculated_metrics?.best_passage_level ? `(${score.calculated_metrics.best_passage_level})` : score.calculated_metrics?.passage_level ? `(${score.calculated_metrics.passage_level})` : ''}</span>}{score.calculated_metrics?.comp_not_administered ? <span title="Comprehension not administered">C:n/a</span> : score.calculated_metrics?.comp_total != null && <span>C:{score.calculated_metrics.comp_total}</span>}{score.raw_scores.writing != null && <span>W:{score.raw_scores.writing}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
+                    {score?.raw_scores && <div className="flex gap-1 mt-1 text-[8px] text-text-tertiary">{(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm) != null && <span>O:{Math.round(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm)}{score.calculated_metrics?.best_passage_level ? `(${score.calculated_metrics.best_passage_level})` : score.calculated_metrics?.passage_level ? `(${score.calculated_metrics.passage_level})` : ''}</span>}{score.calculated_metrics?.comp_not_administered ? <span title="Comprehension not administered">C:n/a</span> : score.calculated_metrics?.comp_total != null && <span>C:{score.calculated_metrics.comp_total}</span>}{writingTotalFrom(score.raw_scores, score.calculated_metrics) != null && <span>W:{writingTotalFrom(score.raw_scores, score.calculated_metrics)}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
                     {anec && <div className="flex gap-0.5 mt-1">{DIMS.map(d => { const v = anec[d.key]; const c = !v ? '#e5e7eb' : v <= 1 ? '#ef4444' : v === 2 ? '#f59e0b' : v === 3 ? '#3b82f6' : '#22c55e'; return <div key={d.key} className="w-3 h-3 rounded-sm flex items-center justify-center" style={{ backgroundColor: c, color: v ? '#fff' : '#d1d5db', fontSize: '7px', fontWeight: 700 }}>{v || '—'}</div> })}</div>}
                     {anec?.teacher_recommends && <p className={`text-[7px] font-bold mt-0.5 ${anec.teacher_recommends === 'keep' ? 'text-blue-600' : anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{anec.teacher_recommends === 'keep' ? 'KEEP' : anec.teacher_recommends === 'move_up' ? 'UP' : 'DOWN'}</p>}
                     {expandedCard === student.id && (

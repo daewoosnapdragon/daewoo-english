@@ -39,6 +39,14 @@ export interface G5QuestionDef {
   text: string
   choices: string[]
   correct: string
+  /**
+   * Further letters that also score the point, where the printed paper has
+   * more than one defensible answer. `correct` stays the guide's key so the
+   * item analysis still names it; these are marked accepted beside it.
+   */
+  acceptable?: string[]
+  /** Every answered letter scores. For an item where the paper is at fault. */
+  acceptAny?: boolean
   standard: string
   standardDesc: string
   domain: string
@@ -286,7 +294,7 @@ const F26_QUESTIONS: G5QuestionDef[] = [
   { qNum: 15, section: 'language', sectionLabel: 'Language Standards', text: 'The puppies _____ chasing each other around the yard.', choices: ['is', 'was', 'were', 'am'], correct: 'c', standard: 'L.4.1f', standardDesc: 'Ensure subject-verb agreement', domain: 'Language/Grammar', dok: 1, note: 'Agreement with a plural subject. The only plural form offered.' },
   { qNum: 16, section: 'language', sectionLabel: 'Language Standards', text: 'Neither the coach nor the players _____ happy with the loss.', choices: ['was', 'were', 'is', 'am'], correct: 'b', standard: 'L.4.1f', standardDesc: 'Ensure subject-verb agreement', domain: 'Language/Grammar', dok: 2, note: 'Neither/nor agreement — the verb agrees with the nearer subject (the players), so a plural form is required. were is the only one offered.' },
   { qNum: 17, section: 'language', sectionLabel: 'Language Standards', text: 'By the time the bus left, Mia _____ already found her seat.', choices: ['has', 'have', 'having', 'had'], correct: 'd', standard: 'L.5.1c', standardDesc: 'Use verb tense to convey various times, sequences, states and conditions', domain: 'Language/Grammar', dok: 2, note: 'Past perfect, cued by by the time the bus left.' },
-  { qNum: 18, section: 'language', sectionLabel: 'Language Standards', text: 'By next month, I _____ ten books.', choices: ['will have read', 'have read', 'will read', 'reading'], correct: 'a', standard: 'L.5.1c', standardDesc: 'Use verb tense to convey various times, sequences, states and conditions', domain: 'Language/Grammar', dok: 2, note: 'Future perfect, cued by by next month.' },
+  { qNum: 18, section: 'language', sectionLabel: 'Language Standards', text: 'By next month, I _____ ten books.', choices: ['will have read', 'have read', 'will read', 'reading'], correct: 'a', acceptable: ['c'], standard: 'L.5.1c', standardDesc: 'Use verb tense to convey various times, sequences, states and conditions', domain: 'Language/Grammar', dok: 2, note: 'Future perfect, cued by by next month, and that is the tense the item is testing. But "By next month, I will read ten books" is ordinary correct English, so c is accepted too from August 2026. b and d remain wrong -- the present perfect contradicts the time phrase and the bare participle has no auxiliary.' },
   { qNum: 19, section: 'language', sectionLabel: 'Language Standards', text: 'He _____ his bike to school every morning.', choices: ['ride', 'riding', 'rides', 'rode'], correct: 'c', standard: 'L.4.1f', standardDesc: 'Ensure subject-verb agreement', domain: 'Language/Grammar', dok: 1, note: 'Habitual present, third person singular.' },
   { qNum: 20, section: 'language', sectionLabel: 'Language Standards', text: 'Right now, the chef _____ dinner for the guests.', choices: ['prepares', 'is preparing', 'prepared', 'prepare'], correct: 'b', standard: 'L.5.1b', standardDesc: 'Form and use the perfect and progressive verb tenses', domain: 'Language/Grammar', dok: 1, note: 'Present progressive, cued by right now.' },
   { qNum: 21, section: 'language', sectionLabel: 'Language Standards', text: 'Which sentence has a verb tense error?', choices: ['She cooked dinner, and then she cleans the kitchen.', 'She cooked dinner, and then she cleaned the kitchen.', 'She cooks dinner, and then she cleans the kitchen.', 'She will cook dinner, and then she will clean the kitchen.'], correct: 'a', standard: 'L.5.1d', standardDesc: 'Recognize and correct inappropriate shifts in verb tense', domain: 'Language/Grammar', dok: 2, note: 'Inappropriate shift in tense. b, c and d are each internally consistent.' },
@@ -490,6 +498,7 @@ const FALL_2026_CONTENT: G5Content = {
     'Item 25 Content and Detail: the guide scores a four-feature checklist with a two-tier length gate (under 12 sentences cannot reach 4; under 8 caps at 2). The student copy scores a sentence-count ladder. The guide is used here.',
     'The student copy\'s prompt tells the student to "use the brainstorm below to plan your writing before you start", while the guide\'s administration script says the space is optional. Wording only — the guide is clear the planning is never scored either way.',
     'All 23 multiple-choice keys agree between the guide\'s per-item tables, the guide\'s consolidated key, and the printed student copy. No answer-key conflicts on this paper.',
+    'Item 18 accepts a or c. a (will have read) is the future perfect the item sets out to test and stays the key; c (will read) is ordinary correct English for "By next month, I ___ ten books" and is accepted as well. The item no longer separates students who know the future perfect from students who do not -- read its item analysis as vocabulary of tense rather than as mastery of L.5.1c, and rewrite the stem before the next sitting.',
     'Passage D: the guide\'s table says 204 words. Counting the two em-dashed pairs ("kids\u2014and", "parents\u2014disagree") as two words each gives 203, which is what the running record now shows. Recorded as 203.',
     'The guide\'s answer-distribution footnote says a x5, b x7, c x6, d x5. The actual distribution of the 23 keys is a x5, b x7, c x7, d x4. Cosmetic — it does not affect any score.',
   ],

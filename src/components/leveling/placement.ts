@@ -12,7 +12,8 @@
 import { Student, EnglishClass } from '@/types'
 import {
   compRatioForComposite, capComponent, compositeWeightsFor, DECODING_WEIGHTS,
-  IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, type CompositeTerm, type CompositeWeights,
+  IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, isCorrectAnswer, writingTotalFrom,
+  type CompositeTerm, type CompositeWeights,
 } from '@/lib/utils'
 import {
   calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4, bandScalesFromG5,
@@ -53,14 +54,14 @@ export function versionKeyForTest(test: { academic_year?: string | null; semeste
   return g2VersionKeyForTest(test as any)
 }
 
-export function getGradeConfigForComposite(grade: number, versionKey?: string): { questions: { qNum: number; correct: string; dok: number }[]; dokWeighted: boolean } | null {
+export function getGradeConfigForComposite(grade: number, versionKey?: string): { questions: { qNum: number; correct: string; acceptable?: string[]; acceptAny?: boolean; dok: number }[]; dokWeighted: boolean } | null {
   // Grade 2 from Fall 2026 on is authored in grade2Content.ts and scores flat
   // (one point per item), so the key and the weighting both come from there.
   if (grade === 2 && versionKey) {
     const g2 = getG2Content(versionKey)
     if (g2) {
       return {
-        questions: g2.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, dok: q.dok ?? 1 })),
+        questions: g2.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, acceptable: (q as any).acceptable, acceptAny: (q as any).acceptAny, dok: q.dok ?? 1 })),
         dokWeighted: false,
       }
     }
@@ -77,7 +78,7 @@ export function getGradeConfigForComposite(grade: number, versionKey?: string): 
     const g3 = getG3Content(versionKey)
     if (g3) {
       return {
-        questions: g3.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, dok: q.dok ?? 1 })),
+        questions: g3.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, acceptable: (q as any).acceptable, acceptAny: (q as any).acceptAny, dok: q.dok ?? 1 })),
         dokWeighted: false,
       }
     }
@@ -93,7 +94,7 @@ export function getGradeConfigForComposite(grade: number, versionKey?: string): 
     const g4 = getG4Content(versionKey)
     if (g4) {
       return {
-        questions: g4.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, dok: q.dok ?? 1 })),
+        questions: g4.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, acceptable: (q as any).acceptable, acceptAny: (q as any).acceptAny, dok: q.dok ?? 1 })),
         dokWeighted: false,
       }
     }
@@ -110,7 +111,7 @@ export function getGradeConfigForComposite(grade: number, versionKey?: string): 
     const g5 = getG5Content(versionKey)
     if (g5) {
       return {
-        questions: g5.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, dok: q.dok ?? 1 })),
+        questions: g5.written.questions.map(q => ({ qNum: q.qNum, correct: q.correct, acceptable: (q as any).acceptable, acceptAny: (q as any).acceptAny, dok: q.dok ?? 1 })),
         dokWeighted: false,
       }
     }
@@ -223,34 +224,65 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
   const cwpmRatio = rawCwpmValue != null && sharedCwpmEnd > 0 ? capComponent(rawCwpmValue / sharedCwpmEnd) : null
   // Written test: ALL students take the SAME test, so use raw % of max possible (not class benchmarks)
   // This ensures cross-class comparability — a 20/40 MC is 50% regardless of which class the student is in
-  const writingRatio = sc.writing != null ? capComponent(sc.writing / 20) : null
+  //
+  // Read through writingTotalFrom, not straight off `sc.writing`. The writing
+  // half of the entry screen used to persist a 0 for anyone whose rubric had
+  // not been opened -- so a student whose script had simply not been read yet
+  // carried 0/20 into this composite. The rubric object is what says whether
+  // anyone marked it, and it distinguishes an unmarked script from a blank one
+  // marked 0, on rows already saved as well as new ones.
+  const writingRaw = writingTotalFrom(sc, calc)
+  const writingRatio = writingRaw != null ? capComponent(writingRaw / 20) : null
 
-  // ── Adjusted MC: recalculate excluding bad questions ──
+  // ── Multiple choice, scored against the CURRENT key ──
+  // Recomputed from the per-question answers wherever they are on the record,
+  // not read off the stored `written_mc`. An answer key is corrected after the
+  // papers are sat -- an item where two choices turn out to be defensible, or
+  // where the printed question rules nothing out -- and the stored total was
+  // frozen at whatever the key said on the day it was marked. Recomputing here
+  // means a correction reaches every student who has already been entered,
+  // without anybody re-keying eighty scripts.
+  //
+  // The same pass produces the adjusted total, where questions have been
+  // excluded from scoring: same walk, one extra filter.
   const excluded = excludedQuestions && excludedQuestions.length > 0 ? new Set(excludedQuestions) : null
   let mcPct: number | null = null
   let adjMcScore: number | null = null
   let adjMcMax: number | null = null
-  if (excluded && sc.written_answers && typeof sc.written_answers === 'object') {
-    // Recalculate from per-question answers
-    const gradeConfig = getGradeConfigForComposite(Number(grade), versionKey)
-    if (gradeConfig) {
-      let adjCorrect = 0
-      let adjMax = 0
-      gradeConfig.questions.forEach((q: any) => {
-        if (excluded.has(q.qNum)) return
-        const w = gradeConfig.dokWeighted && q.dok >= 2 ? 2 : 1
-        adjMax += w
-        if (sc.written_answers[q.qNum] === q.correct) adjCorrect += w
-      })
+  // At least one item answered. An empty answers object is a row somebody
+  // opened and did not mark, and scoring it 0/29 would be exactly the mistake
+  // the writing rubric used to make.
+  const answers = sc.written_answers && typeof sc.written_answers === 'object'
+    && Object.values(sc.written_answers).some(v => !!v) ? sc.written_answers : null
+  const gradeConfig = answers ? getGradeConfigForComposite(Number(grade), versionKey) : null
+  let rekeyedMc: number | null = null
+  if (answers && gradeConfig) {
+    let correct = 0
+    let adjCorrect = 0
+    let adjMax = 0
+    gradeConfig.questions.forEach((q: any) => {
+      const w = gradeConfig.dokWeighted && q.dok >= 2 ? 2 : 1
+      const ok = isCorrectAnswer(q, answers[q.qNum])
+      if (ok) correct += w
+      if (excluded?.has(q.qNum)) return
+      adjMax += w
+      if (ok) adjCorrect += w
+    })
+    rekeyedMc = correct
+    if (excluded) {
       adjMcScore = adjCorrect
       adjMcMax = adjMax
       mcPct = adjMax > 0 ? capComponent(adjCorrect / adjMax) : null
     } else {
-      mcPct = sc.written_mc != null ? capComponent(sc.written_mc / gradeMcTotal) : null
+      mcPct = gradeMcTotal > 0 ? capComponent(correct / gradeMcTotal) : null
     }
   } else {
+    // No per-question answers on the record -- an old section-subtotal row.
+    // The stored total is all there is.
     mcPct = sc.written_mc != null ? capComponent(sc.written_mc / gradeMcTotal) : null
   }
+  /** What the MC is worth under today's key. Falls back to the stored total. */
+  const mcRaw = rekeyedMc ?? sc.written_mc ?? null
 
   const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? capComponent(sc.word_reading_correct / sc.word_reading_attempted) : null
   // Comprehension: comp_total / comp_max. A scored 0 counts. "Not scored yet"
@@ -345,6 +377,22 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
     oral: oralScore, decoding: decodingScore, mc: mcScore,
     shortWriting: shortWritingScore, writing: writingRubricScore,
   }
+  // ── Which sittings this student actually sat ──
+  // The composite renormalizes over whatever a student has, which is right for
+  // ranking within a section but wrong for reading the table: a child who sat
+  // the oral test and never sat the written one was scored on the oral alone
+  // and could out-rank a classmate who sat everything. The results table sorts
+  // on this so an incomplete record falls to the bottom, where it reads as
+  // unfinished rather than as a placement.
+  //
+  // Sittings, not composite terms: the oral test and the written paper are two
+  // events on two days. Which half of the written paper has been MARKED is
+  // marking progress, not a fact about the student, and does not belong here.
+  const satOral = oralScore != null
+  const satWritten = mcScore != null || shortWritingScore != null || writingRubricScore != null
+  const missingSections: ('oral' | 'written')[] = []
+  if (!satOral) missingSections.push('oral')
+  if (!satWritten) missingSections.push('written')
   // Whether the student has sat any part of the test. A teacher rating on its
   // own does not make them rankable -- see isTestedRow.
   const isTested = isTestedRow(termScores)
@@ -362,10 +410,10 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
   // feeds the band, so it should be checked before it decides a placement.
   const readSeconds = sc.orf_time_seconds ?? null
   if (rawCwpmValue != null && (rawCwpmValue > IMPLAUSIBLE_CWPM || (readSeconds != null && readSeconds > 0 && readSeconds < IMPLAUSIBLE_READ_SECONDS && (sc.orf_words_read ?? 0) > 40))) outlierFlags.push('rate')
-  if (writingReliable && sc.writing != null && (sc.writing === 0 || (bench._auto_writing_median > 0 && sc.writing < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
-  if (mcReliable && sc.written_mc != null && (sc.written_mc === 0 || (bench._auto_mc_median > 0 && sc.written_mc < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
+  if (writingReliable && writingRaw != null && (writingRaw === 0 || (bench._auto_writing_median > 0 && writingRaw < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
+  if (mcReliable && mcRaw != null && (mcRaw === 0 || (bench._auto_mc_median > 0 && mcRaw < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
 
-  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, hasAnec, isTested, composite, rawCwpm: rawCwpmValue, rawWriting: sc.writing ?? null, rawMc: sc.written_mc ?? null, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compMax: calc.comp_max ?? null, compUnmeasured,
+  return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, hasAnec, isTested, composite, rawCwpm: rawCwpmValue, rawWriting: writingRaw, rawMc: mcRaw, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compMax: calc.comp_max ?? null, compUnmeasured,
     // Grade 2's oral test also scores a phonics grid and a sentence-reading
     // set. Both already fed the composite through mcScore; neither was on the
     // table, so a teacher could not see the section they had just marked.
@@ -388,6 +436,8 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
     // evidence. Worth marking on the table so it does not read as a low score
     // among comparable low scores.
     attemptedNothing: oralComplete && band == null,
+    // Sittings still outstanding. Empty for a student who sat everything.
+    missingSections, isComplete: missingSections.length === 0,
     decodingScore, shortWritingScore, passageLevel: calc.passage_level ?? null, oralPassageLevel, adjustedCwpm, otherAttempts, accuracyPct: calc.accuracy_pct ?? null, naep: calc.naep ?? sc.naep ?? null, hasGrades, outlierFlags, band }
 }
 

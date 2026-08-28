@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
+import { classToColor, classToTextColor, writingTotalFrom } from '@/lib/utils'
 import { Loader2, Search, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react'
 import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4, bandScalesFromG5 } from './grade2Band'
 import { getG2Content, g2VersionKeyForTest, g2StandardDescriptions } from './grade2Content'
@@ -626,7 +626,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
           )}
 
           {/* ── Writing ── */}
-          {(writingRows.length > 0 || sittings.some(s => s.calc.writing_total != null || s.calc.short_writing_total != null)) && (
+          {(writingRows.length > 0 || sittings.some(s => writingTotalFrom(s.raw, s.calc) != null || s.calc.short_writing_total != null)) && (
             <div className="bg-surface border border-border rounded-xl overflow-x-auto">
               <p className="text-[12px] font-semibold text-navy px-3 pt-3">Writing</p>
               <p className="text-[10px] text-text-tertiary px-3 pb-2">
@@ -661,14 +661,20 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                   ))}
                   <tr className="border-t border-border bg-surface-alt/40">
                     <td className="px-3 py-2 font-semibold text-navy">Extended writing total</td>
-                    {sittings.map((s, i) => (
-                      <td key={s.test.id} className="px-3 py-2 text-center font-semibold">
-                        {s.calc.writing_total != null
-                          ? <>{s.calc.writing_total}<span className="text-text-tertiary/60">/{s.calc.writing_max ?? 20}</span>
-                            {i > 0 && <span className="ml-1">{delta(s.calc.writing_total, sittings[i - 1].calc.writing_total ?? null)}</span>}</>
-                          : <span className="text-text-tertiary font-normal">—</span>}
-                      </td>
-                    ))}
+                    {/* An unmarked rubric reads as a dash, not as 0/20 -- see
+                        writingTotalFrom. */}
+                    {sittings.map((s, i) => {
+                      const total = writingTotalFrom(s.raw, s.calc)
+                      const prev = i > 0 ? writingTotalFrom(sittings[i - 1].raw, sittings[i - 1].calc) : null
+                      return (
+                        <td key={s.test.id} className="px-3 py-2 text-center font-semibold">
+                          {total != null
+                            ? <>{total}<span className="text-text-tertiary/60">/{s.calc.writing_max ?? 20}</span>
+                              {i > 0 && <span className="ml-1">{delta(total, prev)}</span>}</>
+                            : <span className="text-text-tertiary font-normal">—</span>}
+                        </td>
+                      )
+                    })}
                   </tr>
                   {sittings.some(s => s.calc.short_writing_total != null) && (
                     <tr className="border-t border-border">

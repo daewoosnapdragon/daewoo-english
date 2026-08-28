@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, LevelTest } from '@/types'
-import { classToColor, classToTextColor, IMPLAUSIBLE_CWPM } from '@/lib/utils'
+import { classToColor, classToTextColor, IMPLAUSIBLE_CWPM, isCorrectAnswer, acceptedLetters, hasMultipleKeys, writingTotalFrom } from '@/lib/utils'
 import { Loader2, ChevronDown } from 'lucide-react'
 import { bandFromCalc, g2ClassFromBand, BAND_LEVEL_ORDER } from './grade2Band'
 import { computeRow, rankRows, buildLevelCwpmNorms, versionKeyForTest } from './placement'
@@ -521,12 +521,12 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
       const chosen = r.raw?.written_answers?.[q.qNum]
       if (!chosen) return
       answered++; picks[chosen] = (picks[chosen] || 0) + 1
-      const ok = chosen === q.correct
+      const ok = isCorrectAnswer(q, chosen)
       if (ok) correct++
       const b = (byClass[r.student.english_class] ||= { n: 0, correct: 0 })
       b.n++; if (ok) b.correct++
     })
-    const topWrong = Object.entries(picks).filter(([k]) => k !== q.correct).sort((a, b) => b[1] - a[1])[0] || null
+    const topWrong = Object.entries(picks).filter(([k]) => !isCorrectAnswer(q, k)).sort((a, b) => b[1] - a[1])[0] || null
     return { q, picks, answered, correct, byClass, topWrong, pct: answered ? correct / answered : null }
   }), [paper, rows])
 
@@ -795,6 +795,14 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
       <div className="flex items-baseline gap-2 mb-1.5 flex-wrap">
         <span className="text-[11px] font-bold text-navy">Q{q.qNum}</span>
         <span className="text-[10px] text-text-tertiary">{it.correct}/{it.answered}</span>
+        {hasMultipleKeys(q) && (
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold"
+            title={q.acceptAny
+              ? 'Every answer is accepted on this item -- the printed question rules nothing out, so its percentage measures nothing. Do not read it as a class strength.'
+              : 'More than one answer is accepted on this item, so it no longer separates students the way the standard implies.'}>
+            {q.acceptAny ? 'any answer accepted' : `accepts ${acceptedLetters(q, letters).map(l => l.toUpperCase()).join(' or ')}`}
+          </span>
+        )}
         {q.standard && <span className="text-[9px] text-text-tertiary">{q.standard}</span>}
         {q.dok != null && <span className="text-[9px] text-text-tertiary">DOK {q.dok}</span>}
       </div>
@@ -803,7 +811,7 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
         {letters.map((L, i) => {
           const n = it.picks[L] || 0
           const share = it.answered ? (n / it.answered) * 100 : 0
-          const isKey = L === q.correct
+          const isKey = isCorrectAnswer(q, L)
           const isTopWrong = it.topWrong && it.topWrong[0] === L
           return (
             <div key={L} className="flex items-center gap-2">
@@ -835,13 +843,22 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
   )
 }
 
-/** The whole written paper as a percentage: multiple choice, short response and rubric. */
-function writtenPct(calc: any): number | null {
+/**
+ * The whole written paper as a percentage: multiple choice, short response and
+ * rubric.
+ *
+ * The rubric goes in only when it has actually been marked. An unmarked rubric
+ * used to persist as 0, which both dropped the percentage and enlarged the
+ * denominator -- so a student whose writing had not been read yet plotted as a
+ * paper-weak reader on the scatter below.
+ */
+function writtenPct(raw: any, calc: any): number | null {
   if (!calc) return null
   const parts: [number, number][] = []
   if (calc.written_mc_total != null && calc.written_mc_max > 0) parts.push([calc.written_mc_total, calc.written_mc_max])
   if (calc.short_writing_total != null && calc.short_writing_max > 0) parts.push([calc.short_writing_total, calc.short_writing_max])
-  if (calc.writing_total != null && calc.writing_max > 0) parts.push([calc.writing_total, calc.writing_max])
+  const writing = writingTotalFrom(raw, calc)
+  if (writing != null && calc.writing_max > 0) parts.push([writing, calc.writing_max])
   if (parts.length === 0) return null
   const got = parts.reduce((s, p) => s + p[0], 0)
   const max = parts.reduce((s, p) => s + p[1], 0)
@@ -850,7 +867,7 @@ function writtenPct(calc: any): number | null {
 
 function OralVsWritten({ rows }: { rows: Row[] }) {
   const [hover, setHover] = useState<{ r: Row; x: number; y: number } | null>(null)
-  const pts = rows.map(r => ({ r, x: r.band?.composite ?? null, y: writtenPct(r.calc) }))
+  const pts = rows.map(r => ({ r, x: r.band?.composite ?? null, y: writtenPct(r.raw, r.calc) }))
     .filter(p => p.x != null && p.y != null) as { r: Row; x: number; y: number }[]
 
   if (pts.length === 0) {

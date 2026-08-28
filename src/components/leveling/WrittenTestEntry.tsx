@@ -2,7 +2,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
-import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye, AlertTriangle } from 'lucide-react'
+import { isCorrectAnswer, acceptedLetters, hasMultipleKeys } from '@/lib/utils'
 import { getG2Content, G2Content } from './grade2Content'
 import { getG3Content, G3Content } from './grade3Content'
 import { getG4Content, G4Content } from './grade4Content'
@@ -28,10 +29,20 @@ interface QuestionDef {
    */
   choices?: string[]
   correct: string        // 'a' | 'b' | 'c' | 'd'
+  /**
+   * Further letters that also score, where the printed paper has more than one
+   * defensible answer. `correct` stays the guide's key, so the item analysis
+   * still names it and the accepted alternatives are shown beside it.
+   */
+  acceptable?: string[]
+  /** Every answered letter scores. For an item where the paper is at fault. */
+  acceptAny?: boolean
   standard: string       // e.g. 'RI.2.2'
   standardDesc: string   // Brief description
   dok: number
   domain: string         // 'Listening Comprehension' | 'Reading Comprehension' | 'Language/Grammar' | etc
+  /** Why each wrong answer is tempting, and what an accepted alternative means. */
+  note?: string
 }
 
 interface WritingCategory {
@@ -92,6 +103,10 @@ interface GradeConfig {
     notes: string[]
     /** Grade 3's form: finish each starter, plus a sentence point. */
     starters?: string[]
+    /** The starters as printed, where the student copy differs from the guide. */
+    printedStarters?: string[]
+    /** A known fault in the printed paper, shown to the marker in full. */
+    paperError?: string
     contentMax?: number
     contentRule?: string
     sentencePointRule?: string
@@ -170,7 +185,7 @@ function writingDirty(cur: StudentScores | undefined, saved: StudentScores | und
 }
 
 function buildMcGroup(sc: StudentScores, config: GradeConfig): ScoreGroup {
-  const mcTotal = config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
+  const mcTotal = config.questions.reduce((sum, q) => sum + (isCorrectAnswer(q, sc.answers[q.qNum]) ? qWeight(config, q) : 0), 0)
   const domainScores: Record<string, { correct: number; total: number }> = {}
   const standardsMastery: Record<string, { met: number; total: number }> = {}
   config.questions.forEach(q => {
@@ -178,10 +193,10 @@ function buildMcGroup(sc: StudentScores, config: GradeConfig): ScoreGroup {
     const w = qWeight(config, q)
     if (!domainScores[q.domain]) domainScores[q.domain] = { correct: 0, total: 0 }
     domainScores[q.domain].total += w
-    if (sc.answers[q.qNum] === q.correct) domainScores[q.domain].correct += w
+    if (isCorrectAnswer(q, sc.answers[q.qNum])) domainScores[q.domain].correct += w
     if (!standardsMastery[q.standard]) standardsMastery[q.standard] = { met: 0, total: 0 }
     standardsMastery[q.standard].total += w
-    if (sc.answers[q.qNum] === q.correct) standardsMastery[q.standard].met += w
+    if (isCorrectAnswer(q, sc.answers[q.qNum])) standardsMastery[q.standard].met += w
   })
   return {
     raw: { written_answers: sc.answers, written_mc: mcTotal },
@@ -219,14 +234,37 @@ function hydrateWritten(raw: any, config: GradeConfig): StudentScores | null {
   }
 }
 
+/**
+ * The extended-writing total, or null when the rubric has not been marked.
+ *
+ * Not `sum(x || 0)`. The two halves of this paper are entered by different
+ * people on different days, and the multiple choice is always finished first --
+ * so summing an empty rubric wrote a hard 0/20 for every student whose writing
+ * simply had not been read yet. That 0 went into the composite, the results
+ * table, the class averages and the analysis, and it is indistinguishable from
+ * a child who wrote nothing.
+ *
+ * A category is "marked" when it has a value, including 0. So a genuinely blank
+ * response scored 0 across the categories still totals 0 and still counts --
+ * what no longer counts is a rubric nobody has opened.
+ */
+function writingTotalOf(sc: StudentScores, config: GradeConfig): number | null {
+  const marked = config.writingCategories.filter(cat => sc.writing?.[cat.key] != null)
+  if (marked.length === 0) return null
+  return marked.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
+}
+
 function buildWritingGroup(sc: StudentScores, config: GradeConfig): ScoreGroup {
-  const wTotal = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
+  const wTotal = writingTotalOf(sc, config)
   return {
     raw: {
       written_rubric: sc.writing,
       written_checklist: sc.checklist || {},
       written_checklist_capped: sc.checklistCapped || {},
       written_short_writing: sc.shortWriting ?? null,
+      // Explicitly null, not omitted: the merge treats a key that is not
+      // mentioned as "leave what is there", so a phantom 0 written by an
+      // earlier save has to be overwritten rather than skipped.
       writing: wTotal,
     },
     metrics: {
@@ -485,10 +523,13 @@ function gradeConfigFromG2(content: G2Content): GradeConfig {
       text: q.text,
       choices: q.choices,
       correct: q.correct,
+      acceptable: (q as any).acceptable,
+      acceptAny: (q as any).acceptAny,
       standard: q.standard,
       standardDesc: q.standardDesc,
       dok: q.dok ?? 1,
       domain: q.domain,
+      note: (q as any).note,
     })),
     writingCategories: content.writing.categories.map(c => ({
       key: c.key,
@@ -528,10 +569,13 @@ function gradeConfigFromG3(content: G3Content): GradeConfig {
       text: q.text,
       choices: q.choices,
       correct: q.correct,
+      acceptable: (q as any).acceptable,
+      acceptAny: (q as any).acceptAny,
       standard: q.standard,
       standardDesc: q.standardDesc,
       dok: q.dok ?? 1,
       domain: q.domain,
+      note: (q as any).note,
     })),
     writingCategories: content.writing.categories.map(c => ({
       key: c.key,
@@ -554,11 +598,16 @@ function gradeConfigFromG3(content: G3Content): GradeConfig {
       item: content.shortWriting.item,
       prompt: content.shortWriting.prompt,
       starters: content.shortWriting.starters,
+      printedStarters: content.shortWriting.printedStarters,
+      paperError: content.shortWriting.paperError,
       max: content.shortWriting.max,
       contentMax: content.shortWriting.contentMax,
       contentRule: content.shortWriting.contentRule,
       sentencePointRule: content.shortWriting.sentencePointRule,
       sayBeforeStarting: content.shortWriting.sayBeforeStarting,
+      checklist: content.shortWriting.checklist,
+      scoringNote: content.shortWriting.scoringNote,
+      workedExamples: content.shortWriting.workedExamples,
       notes: content.shortWriting.notes,
     },
   }
@@ -577,10 +626,13 @@ function gradeConfigFromG4(content: G4Content): GradeConfig {
       text: q.text,
       choices: q.choices,
       correct: q.correct,
+      acceptable: (q as any).acceptable,
+      acceptAny: (q as any).acceptAny,
       standard: q.standard,
       standardDesc: q.standardDesc,
       dok: q.dok ?? 1,
       domain: q.domain,
+      note: (q as any).note,
     })),
     writingCategories: content.writing.categories.map(c => ({
       key: c.key,
@@ -616,10 +668,13 @@ function gradeConfigFromG5(content: G5Content): GradeConfig {
       text: q.text,
       choices: q.choices,
       correct: q.correct,
+      acceptable: (q as any).acceptable,
+      acceptAny: (q as any).acceptAny,
       standard: q.standard,
       standardDesc: q.standardDesc,
       dok: q.dok ?? 1,
       domain: q.domain,
+      note: (q as any).note,
     })),
     writingCategories: content.writing.categories.map(c => ({
       key: c.key,
@@ -693,7 +748,7 @@ function classToColor(cls: string) {
 function computeAnalytics(allScores: Record<string, StudentScores>, config: GradeConfig) {
   const studentIds = Object.keys(allScores).filter(id => {
     const s = allScores[id]
-    return Object.keys(s.answers).length > 0 || Object.values(s.writing).some((v: any) => v > 0)
+    return Object.keys(s.answers).length > 0 || Object.keys(s.writing || {}).length > 0
   })
   if (studentIds.length === 0) return null
 
@@ -707,7 +762,7 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
     config.questions.forEach(q => {
       if (ans[q.qNum]) {
         itemDifficulty[q.qNum].total++
-        if (ans[q.qNum] === q.correct) itemDifficulty[q.qNum].correct++
+        if (isCorrectAnswer(q, ans[q.qNum])) itemDifficulty[q.qNum].correct++
         itemDifficulty[q.qNum].distractors[ans[q.qNum]]++
       }
     })
@@ -722,7 +777,7 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
         const w = qWeight(config, q)
         if (!domains[q.domain]) domains[q.domain] = { correct: 0, total: 0 }
         domains[q.domain].total += w
-        if (ans[q.qNum] === q.correct) domains[q.domain].correct += w
+        if (isCorrectAnswer(q, ans[q.qNum])) domains[q.domain].correct += w
       }
     })
   })
@@ -737,7 +792,7 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
         const w = qWeight(config, q)
         if (!studentStandards[sid][q.standard]) studentStandards[sid][q.standard] = { met: 0, total: 0 }
         studentStandards[sid][q.standard].total += w
-        if (ans[q.qNum] === q.correct) studentStandards[sid][q.standard].met += w
+        if (isCorrectAnswer(q, ans[q.qNum])) studentStandards[sid][q.standard].met += w
       }
     })
   })
@@ -748,7 +803,7 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
   const totalScores: Record<string, number> = {}
   studentIds.forEach(sid => {
     const ans = allScores[sid].answers
-    totalScores[sid] = config.questions.reduce((sum, q) => sum + (ans[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
+    totalScores[sid] = config.questions.reduce((sum, q) => sum + (isCorrectAnswer(q, ans[q.qNum]) ? qWeight(config, q) : 0), 0)
   })
   const allTotals = studentIds.map(sid => totalScores[sid])
   const meanTotal = allTotals.length > 0 ? allTotals.reduce((a, b) => a + b, 0) / allTotals.length : 0
@@ -771,7 +826,7 @@ function computeAnalytics(allScores: Record<string, StudentScores>, config: Grad
     studentIds.forEach(sid => {
       const ans = allScores[sid].answers
       if (!ans[q.qNum]) return
-      if (ans[q.qNum] === q.correct) correctTotals.push(totalScores[sid])
+      if (isCorrectAnswer(q, ans[q.qNum])) correctTotals.push(totalScores[sid])
       else wrongTotals.push(totalScores[sid])
     })
     const m1 = correctTotals.length > 0 ? correctTotals.reduce((a, b) => a + b, 0) / correctTotals.length : 0
@@ -1055,13 +1110,17 @@ function StandardBadge({ code, description }: { code: string; description: strin
   )
 }
 
-function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, setAnswer, setWritingScore, toggleChecklistBox, toggleChecklistCap, toggleShortChecklistBox, setShortWriting, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
+function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, writingMarkedCount, setAnswer, setWritingScore, toggleChecklistBox, toggleChecklistCap, toggleShortChecklistBox, setShortWriting, markShortBlank, clearShortWriting, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
   student: any; config: GradeConfig; sc: StudentScores; sections: Record<string, QuestionDef[]>; sectionKeys: string[]
-  mcCorrect: number; writingTotal: number; setAnswer: (q: number, l: string) => void; setWritingScore: (k: string, v: number) => void
+  /** Null while the rubric is untouched -- see writingTotalOf. */
+  mcCorrect: number; writingTotal: number | null; writingMarkedCount: number
+  setAnswer: (q: number, l: string) => void; setWritingScore: (k: string, v: number) => void
   toggleChecklistBox: (catKey: string, boxKey: string) => void
   toggleChecklistCap: (catKey: string, tierKey: string) => void
   toggleShortChecklistBox: (boxKey: string) => void
   setShortWriting: (v: number | null) => void
+  markShortBlank: () => void
+  clearShortWriting: () => void
   clearStudent: () => void; studentHasData: boolean; selectedIdx: number; setSelectedIdx: (i: number) => void; totalStudents: number
 }) {
   const [focusedQ, setFocusedQ] = useState<number | null>(null)
@@ -1143,6 +1202,19 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
     el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [focusedQ])
 
+  /** Everything about this paper a marker would otherwise get wrong by hand. */
+  const corrections = useMemo(() => {
+    const out: string[] = []
+    config.questions.forEach(q => {
+      if (q.acceptAny) out.push(`Item ${q.qNum}: every answer is accepted. The printed question rules no choice out, so nobody loses a mark on it.`)
+      else if (q.acceptable?.length) {
+        out.push(`Item ${q.qNum}: ${acceptedLetters(q, q.choices ? q.choices.map((_, i) => String.fromCharCode(97 + i)) : ['a', 'b', 'c', 'd']).map(l => l.toUpperCase()).join(' or ')} both score. ${q.correct.toUpperCase()} is the guide's key; the other is accepted on the paper as sat.`)
+      }
+    })
+    if (config.shortWriting?.paperError) out.push(`Item ${config.shortWriting.item}: ${config.shortWriting.paperError}`)
+    return out
+  }, [config])
+
   if (!student) return <div className="p-12 text-center text-text-tertiary">Select a student from the sidebar</div>
 
   return (
@@ -1164,8 +1236,12 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             <div className="text-[10px] text-text-tertiary">MC ({Math.round(mcCorrect / config.totalMC * 100)}%)</div>
           </div>
           <div className="text-right mr-4">
-            <div className="text-[20px] font-bold text-navy">{writingTotal}<span className="text-[14px] text-text-tertiary">/{config.writingMax}</span></div>
-            <div className="text-[10px] text-text-tertiary">Writing</div>
+            {writingTotal == null
+              ? <div className="text-[20px] font-bold text-text-tertiary">&mdash;<span className="text-[14px] text-text-tertiary">/{config.writingMax}</span></div>
+              : <div className="text-[20px] font-bold text-navy">{writingTotal}<span className="text-[14px] text-text-tertiary">/{config.writingMax}</span></div>}
+            <div className="text-[10px] text-text-tertiary" title={writingTotal == null ? 'The writing rubric has not been marked. It counts as no score at all -- not as a zero -- so nothing about this student\'s placement is decided by writing until somebody reads the script.' : undefined}>
+              {writingTotal == null ? 'Writing -- not graded' : 'Writing'}
+            </div>
           </div>
           {studentHasData && (
             <button onClick={clearStudent} className="text-[11px] text-red-500 hover:text-red-700 border border-red-200 px-2 py-1 rounded flex items-center gap-1">
@@ -1181,6 +1257,22 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         </div>
       </div>
 
+      {/* ── Corrections to this paper ──────────────────────────────────
+          Items whose key changed after the papers were sat, and faults in the
+          printing. A marker who does not know these exist will mark a correct
+          answer wrong and never find out. Stated once at the top, and again
+          on the item itself. */}
+      {corrections.length > 0 && (
+        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+          <p className="text-[10px] font-semibold text-amber-900 flex items-center gap-1.5 mb-1">
+            <AlertTriangle size={12} /> Corrections to this paper &mdash; already applied to the marking
+          </p>
+          <ul className="space-y-0.5 pl-4 list-disc">
+            {corrections.map((c, i) => <li key={i} className="text-[10px] text-amber-800 leading-snug">{c}</li>)}
+          </ul>
+        </div>
+      )}
+
       {/* Keyboard hint */}
       <div className="mb-3 flex items-center gap-3 text-[10px] text-text-tertiary bg-surface-alt/60 rounded-lg px-3 py-1.5">
         <span className="font-semibold">Keyboard:</span>
@@ -1194,7 +1286,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
       {sectionKeys.map(sKey => {
         const qs = sections[sKey]
         const sectionLabel = qs[0].sectionLabel
-        const sCorrect = qs.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
+        const sCorrect = qs.reduce((sum, q) => sum + (isCorrectAnswer(q, sc.answers[q.qNum]) ? qWeight(config, q) : 0), 0)
         const sMax = qs.reduce((sum, q) => sum + qWeight(config, q), 0)
         return (
           <div key={sKey} className="mb-5">
@@ -1205,7 +1297,15 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             <div className="border border-border rounded-lg">
               {qs.map((q, qi) => {
                 const chosen = sc.answers[q.qNum]
-                const isCorrect = chosen === q.correct
+                const isCorrect = isCorrectAnswer(q, chosen)
+                const letters = q.choices ? q.choices.map((_, i) => String.fromCharCode(97 + i)) : ['a', 'b', 'c', 'd']
+                // Every letter that scores. On most items that is the key
+                // alone; on the handful where the printed paper has more than
+                // one defensible answer it is the key plus what was accepted
+                // with it, and the marker sees all of them green rather than
+                // being told the child was wrong.
+                const accepted = acceptedLetters(q, letters)
+                const multiKey = hasMultipleKeys(q)
                 const isFocused = focusedQ === q.qNum
                 return (
                   <div key={q.qNum} id={`q-row-${q.qNum}`}
@@ -1214,13 +1314,13 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                     <div className="flex items-center gap-3">
                       <span className={`w-5 text-[11px] text-right font-mono ${q.dok >= 2 && config.dokWeighted ? 'text-amber-600 font-bold' : isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
                       <div className="flex gap-1">
-                        {(q.choices ? q.choices.map((_, i) => String.fromCharCode(97 + i)) : ['a', 'b', 'c', 'd']).map(letter => {
+                        {letters.map(letter => {
                           const isChosen = chosen === letter
-                          const isCorrectAnswer = q.correct === letter
+                          const scores = accepted.includes(letter)
                           let bg = 'bg-white border-gray-200 hover:border-navy/40'
                           if (isChosen && isCorrect) bg = 'bg-green-500 border-green-500 text-white'
                           else if (isChosen && !isCorrect) bg = 'bg-red-400 border-red-400 text-white'
-                          else if (chosen && isCorrectAnswer) bg = 'bg-green-100 border-green-300 text-green-700'
+                          else if (chosen && scores) bg = 'bg-green-100 border-green-300 text-green-700'
                           return (
                             <button key={letter} onClick={(e) => { e.stopPropagation(); setAnswer(q.qNum, isChosen ? '' : letter); setFocusedQ(q.qNum) }}
                               className={`w-7 h-7 rounded-full text-[11px] font-bold border-2 transition-all ${bg}`}>
@@ -1230,6 +1330,14 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                         })}
                       </div>
                       <span className="flex-1 text-[10px] text-text-tertiary truncate">{q.text}</span>
+                      {multiKey && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold shrink-0"
+                          title={q.acceptAny
+                            ? 'Every answer is accepted on this item -- the printed question does not rule any choice out. Nobody loses a mark here.'
+                            : `More than one answer is accepted on this item: ${accepted.map(l => l.toUpperCase()).join(' or ')}.`}>
+                          {q.acceptAny ? 'any answer' : accepted.map(l => l.toUpperCase()).join('/')}
+                        </span>
+                      )}
                       <StandardBadge code={q.standard} description={q.standardDesc} />
                       {chosen && (isCorrect
                         ? <Check size={12} className="text-green-500" />
@@ -1245,11 +1353,12 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                         {q.choices.map((choice, i) => {
                           const letter = String.fromCharCode(97 + i)
                           return (
-                            <p key={letter} className={`text-[10px] ${q.correct === letter ? 'text-green-700 font-semibold' : 'text-text-tertiary'}`}>
+                            <p key={letter} className={`text-[10px] ${accepted.includes(letter) ? 'text-green-700 font-semibold' : 'text-text-tertiary'}`}>
                               {letter}. {choice}
                             </p>
                           )
                         })}
+                        {multiKey && q.note && <p className="text-[10px] text-amber-700 pt-1 leading-snug">{q.note}</p>}
                       </div>
                     )}
                   </div>
@@ -1260,52 +1369,103 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         )
       })}
 
-      {/* Short writing item, where the paper has one (Grade 3 item 25). */}
-      {config.shortWriting && (
+      {/* Short writing item, where the paper has one (Grade 3 item 25,
+          Grade 5 item 13). */}
+      {config.shortWriting && (() => {
+        const short = config.shortWriting
+        const ticked = sc.checklist?.['__short'] ?? null
+        // A total entered before this item had a rubric: a number on the
+        // record with no boxes behind it. It is a real mark made by a real
+        // teacher from the same rules, so it stands as it is -- nobody is made
+        // to re-enter eighty scripts to satisfy a new control. Ticking a box
+        // is what replaces it, and only if they want to.
+        const legacyDirect = short.checklist != null && ticked == null && sc.shortWriting != null
+        return (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-[13px] font-semibold text-navy">
-              Item {config.shortWriting.item} &mdash; short writing
-            </h4>
+            <div className="flex items-center gap-2">
+              <h4 className="text-[13px] font-semibold text-navy">
+                Item {short.item} &mdash; short writing
+              </h4>
+              {/* The same toggle the writing rubric has. The guide for this
+                  item was only reachable from a button further down the page,
+                  which is not where anybody marking item 25 is looking. */}
+              <button onClick={() => setShowRubricGuide(!showRubricGuide)}
+                className={`text-[10px] px-2 py-0.5 rounded-full transition-all flex items-center gap-1 ${showRubricGuide ? 'bg-navy text-white' : 'bg-surface-alt text-text-tertiary hover:bg-border'}`}>
+                <Eye size={10} /> {showRubricGuide ? 'Hide Guide' : 'Show Guide'}
+              </button>
+            </div>
             <span className="text-[11px] text-text-tertiary">
-              {sc.shortWriting ?? '—'}/{config.shortWriting.max}
+              {sc.shortWriting ?? '\u2014'}/{short.max}
             </span>
           </div>
           <div className="border border-border rounded-lg px-3 py-3">
-            <p className="text-[11px] text-text-primary mb-1">{config.shortWriting.prompt}</p>
-            {config.shortWriting.starters && (
-              <p className="text-[10px] text-text-tertiary mb-2">
-                Starters: {config.shortWriting.starters.map(st => `"${st}"`).join('  ')}
+            <p className="text-[11px] text-text-primary mb-1">{short.prompt}</p>
+            {short.starters && (
+              <p className="text-[10px] text-text-tertiary mb-1.5">
+                Starters: {(short.printedStarters ?? short.starters).map(st => `"${st}"`).join('  ')}
               </p>
             )}
-            {/* Grade 5 scores this item as a checklist of elements rather than
-                a single 0..max judgment, so it gets tickboxes like the
-                writing rubric's Content category. */}
-            {config.shortWriting.checklist ? (
-              <div className="space-y-1 mb-2">
-                {config.shortWriting.checklist.map(box => {
-                  const on = (sc.checklist?.['__short'] || []).includes(box.key)
-                  return (
-                    <button key={box.key} onClick={() => toggleShortChecklistBox(box.key)}
-                      className={`w-full flex items-start gap-2 text-left rounded-lg px-2.5 py-1.5 border transition-all ${
-                        on ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:border-navy/40'
-                      }`}>
-                      <span className={`w-4 h-4 mt-0.5 rounded border-2 shrink-0 flex items-center justify-center ${
-                        on ? 'bg-green-500 border-green-500' : 'border-gray-300'
-                      }`}>
-                        {on && <Check size={11} className="text-white" />}
-                      </span>
-                      <span>
-                        <span className="text-[11px] font-semibold text-text-primary">{box.label}</span>
-                        <span className="block text-[9px] text-text-tertiary leading-snug">{box.desc}</span>
-                      </span>
-                    </button>
-                  )
-                })}
+            {/* A known fault in the printed paper, stated in full where the
+                marking happens. Buried in a collapsed notes panel it was found
+                by whoever went looking, which is not the same as everyone. */}
+            {short.paperError && (
+              <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2">
+                <AlertTriangle size={13} className="text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-amber-800 leading-snug"><span className="font-semibold">Error on the printed paper. </span>{short.paperError}</p>
               </div>
+            )}
+            {legacyDirect && (
+              <div className="mb-2 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-2">
+                <p className="text-[10px] text-blue-900 leading-snug">
+                  <span className="font-semibold">Scored {sc.shortWriting}/{short.max} before this rubric existed.</span>{' '}
+                  That mark stands and nothing needs re-entering. Tick a box below only if you want to re-score this student &mdash; the boxes then replace the {sc.shortWriting}.
+                </p>
+              </div>
+            )}
+            {/* Scored as a checklist of elements rather than a single 0..max
+                judgment, so two markers reading the same page reach the same
+                number. Grade 3's item 25 and Grade 5's item 13 both. */}
+            {short.checklist ? (
+              <>
+                <div className={`space-y-1 mb-2 ${legacyDirect ? 'opacity-60' : ''}`}>
+                  {short.checklist.map(box => {
+                    const on = (ticked || []).includes(box.key)
+                    return (
+                      <button key={box.key} onClick={() => toggleShortChecklistBox(box.key)}
+                        className={`w-full flex items-start gap-2 text-left rounded-lg px-2.5 py-1.5 border transition-all ${
+                          on ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:border-navy/40'
+                        }`}>
+                        <span className={`w-4 h-4 mt-0.5 rounded border-2 shrink-0 flex items-center justify-center ${
+                          on ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                        }`}>
+                          {on && <Check size={11} className="text-white" />}
+                        </span>
+                        <span>
+                          <span className="text-[11px] font-semibold text-text-primary">{box.label}</span>
+                          <span className="block text-[9px] text-text-tertiary leading-snug">{box.desc}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+                {/* A blank script is scored, not unscored. Without this the
+                    only way to record a 0 was to tick a box and untick it. */}
+                {sc.shortWriting == null ? (
+                  <button onClick={markShortBlank}
+                    className="mb-2 text-[10px] px-2 py-1 rounded-lg border border-border text-text-secondary hover:border-navy/40">
+                    Nothing written &mdash; score 0
+                  </button>
+                ) : (
+                  <button onClick={clearShortWriting}
+                    className="mb-2 text-[10px] px-2 py-1 rounded-lg border border-border text-text-tertiary hover:border-navy/40">
+                    Clear &mdash; not marked yet
+                  </button>
+                )}
+              </>
             ) : (
               <div className="flex gap-1 mb-2">
-                {Array.from({ length: config.shortWriting.max + 1 }, (_, i) => (
+                {Array.from({ length: short.max + 1 }, (_, i) => (
                   <button key={i} onClick={() => setShortWriting(sc.shortWriting === i ? null : i)}
                     className={`w-8 h-8 rounded text-[12px] font-bold border-2 transition-all ${
                       sc.shortWriting === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'
@@ -1317,31 +1477,32 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             )}
             {showRubricGuide && (
               <div className="bg-surface-alt/60 rounded-lg px-3 py-2 space-y-1">
-                {config.shortWriting.contentRule && (
-                  <p className="text-[10px] text-text-secondary"><span className="font-semibold">0&ndash;{config.shortWriting.contentMax} content.</span> {config.shortWriting.contentRule}</p>
+                {short.contentRule && (
+                  <p className="text-[10px] text-text-secondary"><span className="font-semibold">0&ndash;{short.contentMax} content.</span> {short.contentRule}</p>
                 )}
-                {config.shortWriting.sentencePointRule && (
-                  <p className="text-[10px] text-text-secondary"><span className="font-semibold">+1 sentence writing.</span> {config.shortWriting.sentencePointRule}</p>
+                {short.sentencePointRule && (
+                  <p className="text-[10px] text-text-secondary"><span className="font-semibold">+1 sentence writing.</span> {short.sentencePointRule}</p>
                 )}
-                {config.shortWriting.scoringNote && (
-                  <p className="text-[10px] text-text-secondary">{config.shortWriting.scoringNote}</p>
+                {short.scoringNote && (
+                  <p className="text-[10px] text-text-secondary">{short.scoringNote}</p>
                 )}
                 <ul className="text-[10px] text-text-tertiary list-disc pl-4 pt-1 space-y-0.5">
-                  {config.shortWriting.notes.map((n, i) => <li key={i}>{n}</li>)}
+                  {short.notes.map((n, i) => <li key={i}>{n}</li>)}
                 </ul>
-                {config.shortWriting.workedExamples && (
+                {short.workedExamples && (
                   <ul className="text-[10px] text-text-tertiary pl-4 pt-1 space-y-0.5 list-disc">
-                    {config.shortWriting.workedExamples.map((n, i) => <li key={i}>{n}</li>)}
+                    {short.workedExamples.map((n, i) => <li key={i}>{n}</li>)}
                   </ul>
                 )}
-                {config.shortWriting.sayBeforeStarting && (
-                  <p className="text-[10px] text-amber-700 pt-1">Say before students begin: &ldquo;{config.shortWriting.sayBeforeStarting}&rdquo;</p>
+                {short.sayBeforeStarting && (
+                  <p className="text-[10px] text-amber-700 pt-1">Say before students begin: &ldquo;{short.sayBeforeStarting}&rdquo;</p>
                 )}
               </div>
             )}
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* Writing Rubric */}
       <div className="mb-6">
@@ -1359,11 +1520,24 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
               <Eye size={10} /> {showRubricGuide ? 'Hide Guide' : 'Show Guide'}
             </button>
           </div>
-          <span className="text-[11px] text-text-tertiary">{writingTotal}/{config.writingMax}</span>
+          <span className="text-[11px] text-text-tertiary">
+            {writingTotal == null
+              ? <span className="px-1.5 py-0.5 rounded bg-surface-alt border border-border text-[9px] font-semibold uppercase tracking-wider">Not graded</span>
+              : <>{writingTotal}/{config.writingMax}{writingMarkedCount < config.writingCategories.length &&
+                  <span className="ml-1.5 text-amber-700" title="Not every category has been scored yet. The total counts what is marked so far.">{writingMarkedCount}/{config.writingCategories.length} categories</span>}</>}
+          </span>
         </div>
+        {writingTotal == null && (
+          <p className="text-[10px] text-text-tertiary mb-2 leading-snug">
+            Nothing marked yet, and that is not a zero &mdash; this student carries <strong>no</strong> writing score into the composite or the results table until a category is scored. A blank or off-task script should be marked 0 in each category, which is a different thing and does count.
+          </p>
+        )}
         <div className="border border-border rounded-lg overflow-hidden">
           {config.writingCategories.map((cat, ci) => {
-            const val = sc.writing[cat.key] || 0
+            // Null, not 0. `|| 0` lit up the 0 descriptor on every unmarked
+            // category, so a rubric nobody had opened looked like a rubric
+            // somebody had marked all-zero.
+            const val = sc.writing?.[cat.key] ?? null
             const descriptors = getRubricDescriptors(cat.key, config)
 
             // A checklist category is scored by ticking independent features,
@@ -1399,7 +1573,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                         )
                       })}
                     </div>
-                    <span className="text-[12px] font-bold text-navy ml-2 shrink-0">{val}/{cat.max}</span>
+                    <span className={`text-[12px] font-bold ml-2 shrink-0 ${val == null ? 'text-text-tertiary' : 'text-navy'}`}>{val ?? '\u2014'}/{cat.max}</span>
                   </div>
                   {cat.checklistCap && (
                     <div className="px-3 pb-2 pl-[172px] space-y-1">
@@ -1468,7 +1642,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                       ))}
                     </div>
                   )}
-                  <span className="text-[13px] font-bold text-navy ml-1 shrink-0 w-10 text-right tabular-nums">{val}/{cat.max}</span>
+                  <span className={`text-[13px] font-bold ml-1 shrink-0 w-10 text-right tabular-nums ${val == null ? 'text-text-tertiary' : 'text-navy'}`}>{val ?? '\u2014'}/{cat.max}</span>
                 </div>
               </div>
             )
@@ -1626,13 +1800,23 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
                   <span className="text-center">{isExcluded && <X size={10} className="inline text-red-400" />}</span>
                 )}
                 <span className={`font-mono ${isExcluded ? 'line-through' : ''}`}>{q.qNum}</span>
-                <span className={`text-left truncate ${isExcluded ? 'line-through' : ''}`}>{q.text}</span>
+                <span className={`text-left truncate ${isExcluded ? 'line-through' : ''}`}>
+                  {hasMultipleKeys(q) && (
+                    <span className="inline-block mr-1 px-1 rounded bg-amber-100 text-amber-700 text-[8px] font-bold align-middle"
+                      title={q.acceptAny
+                        ? 'Every answer is accepted on this item, so its percentage measures nothing. Do not read it as a class strength.'
+                        : `More than one answer is accepted: ${acceptedLetters(q, ['a', 'b', 'c', 'd']).map(l => l.toUpperCase()).join(' or ')}.`}>
+                      {q.acceptAny ? 'ANY' : 'MULTI'}
+                    </span>
+                  )}
+                  {q.text}
+                </span>
                 <StandardBadge code={q.standard} description={q.standardDesc} />
                 <span className="text-text-tertiary truncate">{q.domain.replace('Comprehension', 'Comp.').replace('Language/', '')}</span>
                 {['a', 'b', 'c', 'd'].map(letter => {
                   const count = item.distractors[letter] || 0
                   const letterPct = item.total > 0 ? Math.round((count / item.total) * 100) : 0
-                  const isCorrect = q.correct === letter
+                  const isCorrect = isCorrectAnswer(q, letter)
                   return (
                     <span key={letter} className={`text-center font-mono ${isCorrect ? 'font-bold text-green-700' : count > 0 ? 'text-red-400' : 'text-gray-300'}`}>
                       {letterPct > 0 ? `${letterPct}%` : '-'}
@@ -1656,7 +1840,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
                   <div className="grid grid-cols-2 gap-x-8 gap-y-1">
                     <div><span className="text-text-tertiary">Standard:</span> <span className="font-medium">{q.standard} -- {q.standardDesc}</span></div>
                     <div><span className="text-text-tertiary">DOK Level:</span> <span className="font-medium">{q.dok} ({qWeight(config, q)}pt)</span></div>
-                    <div><span className="text-text-tertiary">Correct Answer:</span> <span className="font-bold text-green-700">{q.correct.toUpperCase()}</span></div>
+                    <div><span className="text-text-tertiary">{hasMultipleKeys(q) ? 'Accepted answers:' : 'Correct Answer:'}</span> <span className="font-bold text-green-700">{q.acceptAny ? 'any answer' : acceptedLetters(q, ['a', 'b', 'c', 'd']).map(l => l.toUpperCase()).join(' or ')}</span></div>
                     <div><span className="text-text-tertiary">Students answered:</span> <span className="font-medium">{item.total}</span></div>
                     {disc && <div><span className="text-text-tertiary">Discrimination (r_pb):</span> <span className={`font-bold ${disc.rpb < 0 ? 'text-red-600' : disc.rpb > 0.2 ? 'text-green-600' : 'text-amber-600'}`}>{disc.rpb.toFixed(3)}</span></div>}
                     <div><span className="text-text-tertiary">Status:</span> <span className="font-medium">{isExcluded ? 'EXCLUDED from MC scoring' : 'Included'}</span></div>
@@ -1664,7 +1848,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
                   <div className="mt-2 flex gap-4">
                     {['a', 'b', 'c', 'd'].map(letter => {
                       const count = item.distractors[letter] || 0
-                      const isCorrect = q.correct === letter
+                      const isCorrect = isCorrectAnswer(q, letter)
                       return (
                         <div key={letter} className="flex items-center gap-1">
                           <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${isCorrect ? 'bg-green-500 text-white' : count > 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400'}`}>
@@ -1702,7 +1886,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
             const isExcluded = excludedSet.has(q.qNum)
             // Find the most-chosen wrong answer
             const wrongDistractors = Object.entries(item.distractors)
-              .filter(([l]) => l !== q.correct)
+              .filter(([l]) => !isCorrectAnswer(q, l))
               .sort((a, b) => b[1] - a[1])
             const topWrong = wrongDistractors[0]
             return (
@@ -1733,18 +1917,21 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
           {config.writingCategories.map(cat => <span key={cat.key} className="text-center">{cat.label.split(' ')[0]}</span>)}
           <span className="text-center">Total</span>
         </div>
+        {/* Only students whose rubric has actually been marked. A script
+            nobody has read is not a row of zeros. */}
         {students.filter(s => {
           const sc = scores[s.id]
-          return sc && Object.values(sc.writing).some(v => v > 0)
+          return sc && writingTotalOf(sc, config) != null
         }).map(s => {
           const sc = scores[s.id]
-          const total = config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
+          const total = writingTotalOf(sc, config)
           return (
             <div key={s.id} className="grid grid-cols-[1fr_repeat(6,60px)] px-3 py-1.5 text-[11px] border-b border-border/50">
               <span className="font-medium truncate">{s.english_name || s.korean_name}</span>
-              {config.writingCategories.map(cat => (
-                <span key={cat.key} className="text-center font-mono">{sc.writing[cat.key] || 0}/{cat.max}</span>
-              ))}
+              {config.writingCategories.map(cat => {
+                const v = sc.writing?.[cat.key] ?? null
+                return <span key={cat.key} className={`text-center font-mono ${v == null ? 'text-text-tertiary' : ''}`}>{v ?? '\u2014'}/{cat.max}</span>
+              })}
               <span className="text-center font-bold text-navy">{total}/{config.writingMax}</span>
             </div>
           )
@@ -1779,6 +1966,12 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
   const [view, setView] = useState<'entry' | 'analytics'>('entry')
   const [toast, setToast] = useState('')
   const [excludedQuestions, setExcludedQuestions] = useState<number[]>([])
+  /**
+   * Students whose stored MC totals predate a correction to the answer key.
+   * Their multiple-choice group is written on the next save even though the
+   * teacher has not touched it -- see the load effect.
+   */
+  const rekeyRef = useRef<Set<string>>(new Set())
 
   // Can toggle exclusions: Snapdragon teacher or admin only
   const canToggleExclude = isAdmin || teacherClass === 'Snapdragon'
@@ -1800,13 +1993,29 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       // Hydrate existing written test data
       const map: Record<string, StudentScores> = {}
       studs.forEach(s => { map[s.id] = { answers: {}, writing: {} } })
+      // Students whose stored multiple-choice total disagrees with what the
+      // current answer key produces from their own answers. That happens when
+      // a key is corrected after the papers were marked -- an item where two
+      // choices turn out to be defensible, or where the printed question rules
+      // nothing out. Their answers are right; the totals, domain scores and
+      // standards mastery stored beside them are stale. Flagged here and
+      // written back by the next save, so nobody re-keys a script by hand.
+      const rekey = new Set<string>()
       ;(scoreRes.data || []).forEach((row: any) => {
         const h = hydrateWritten(row.raw_scores, config)
-        if (h) map[row.student_id] = h
+        if (!h) return
+        map[row.student_id] = h
+        if (Object.keys(h.answers).length === 0) return
+        const fresh = buildMcGroup(h, config).raw.written_mc
+        if (row.raw_scores?.written_mc !== fresh) rekey.add(row.student_id)
       })
+      rekeyRef.current = rekey
       setScores(map)
       setSavedSnapshot(JSON.parse(JSON.stringify(map)))
       setLoading(false)
+      if (rekey.size > 0) {
+        showToast(`${rekey.size} student${rekey.size === 1 ? '' : 's'} re-scored against the corrected answer key`)
+      }
     }
     load()
   }, [levelTest.id, grade])
@@ -1948,6 +2157,42 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     }))
   }, [student])
 
+  /**
+   * Score the short item 0 with nothing ticked -- a blank or off-task script.
+   *
+   * The empty `__short` array is what separates it from a total typed in before
+   * the item had a rubric: an absent key means "this was marked some other
+   * way", an empty array means "this was marked, and it earned nothing".
+   */
+  const markShortBlank = useCallback(() => {
+    if (!student) return
+    setScores(prev => {
+      const cur = prev[student.id] || { answers: {}, writing: {} }
+      return {
+        ...prev,
+        [student.id]: { ...cur, checklist: { ...(cur.checklist || {}), __short: [] }, shortWriting: 0 },
+      }
+    })
+  }, [student])
+
+  /**
+   * Back to not marked at all -- the boxes go with the score.
+   *
+   * Emptied, not deleted. `written_checklist` merges key by key on the way to
+   * the database, so a key removed locally is read as "not mentioned" and the
+   * old value comes straight back on the next refresh.
+   */
+  const clearShortWriting = useCallback(() => {
+    if (!student) return
+    setScores(prev => {
+      const cur = prev[student.id] || { answers: {}, writing: {} }
+      return {
+        ...prev,
+        [student.id]: { ...cur, checklist: { ...(cur.checklist || {}), __short: [] }, shortWriting: null },
+      }
+    })
+  }, [student])
+
   const setWritingScore = useCallback((key: string, val: number) => {
     if (!student) return
     setScores(prev => ({
@@ -1981,19 +2226,27 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
   // Count weighted score for current student (DOK1=1pt, DOK2+=2pt)
   const mcCorrect = useMemo(() => {
     if (!config) return 0
-    return config.questions.reduce((sum, q) => sum + (sc.answers[q.qNum] === q.correct ? qWeight(config, q) : 0), 0)
+    return config.questions.reduce((sum, q) => sum + (isCorrectAnswer(q, sc.answers[q.qNum]) ? qWeight(config, q) : 0), 0)
   }, [sc, config])
 
+  // Null until at least one category is marked, so the header reads "not
+  // graded" rather than a 0 that looks like a judgement.
   const writingTotal = useMemo(() => {
+    if (!config) return null
+    return writingTotalOf(sc, config)
+  }, [sc, config])
+  const writingMarkedCount = useMemo(() => {
     if (!config) return 0
-    return config.writingCategories.reduce((sum, cat) => sum + (sc.writing[cat.key] || 0), 0)
+    return config.writingCategories.filter(cat => sc.writing?.[cat.key] != null).length
   }, [sc, config])
 
   // Student has data?
   const studentHasData = (sid: string) => {
     const s = scores[sid]
     if (!s) return false
-    return Object.keys(s.answers).length > 0 || Object.values(s.writing).some((v: any) => v > 0)
+    // Keys, not positive values: a blank paper marked 0 across the rubric has
+    // been marked, and used to read as untouched.
+    return Object.keys(s.answers).length > 0 || Object.keys(s.writing || {}).length > 0 || s.shortWriting != null
   }
 
   // Track which students have unsaved changes (changed since last save/load)
@@ -2054,7 +2307,8 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       if (!sc) continue
       const sav = snapshot[stu.id]
       const groups: ScoreGroup[] = []
-      if (mcDirty(sc, sav) && Object.keys(sc.answers).length > 0) groups.push(buildMcGroup(sc, config))
+      const needsRekey = rekeyRef.current.has(stu.id)
+      if ((mcDirty(sc, sav) || needsRekey) && Object.keys(sc.answers).length > 0) groups.push(buildMcGroup(sc, config))
       if (writingDirty(sc, sav)) groups.push(buildWritingGroup(sc, config))
       if (groups.length === 0) continue
 
@@ -2071,7 +2325,10 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         })
         if (error) { console.error('Save error:', error); ok = false; errors++ }
       }
-      if (ok) written[stu.id] = JSON.parse(JSON.stringify(sc))
+      if (ok) {
+        written[stu.id] = JSON.parse(JSON.stringify(sc))
+        rekeyRef.current.delete(stu.id)
+      }
     }
     return { written, errors }
   }, [config, students, levelTest.id, currentTeacher?.id])
@@ -2310,12 +2567,15 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
             sectionKeys={sectionKeys}
             mcCorrect={mcCorrect}
             writingTotal={writingTotal}
+            writingMarkedCount={writingMarkedCount}
             setAnswer={setAnswer}
             setWritingScore={setWritingScore}
             toggleChecklistBox={toggleChecklistBox}
             toggleChecklistCap={toggleChecklistCap}
             toggleShortChecklistBox={toggleShortChecklistBox}
             setShortWriting={setShortWriting}
+            markShortBlank={markShortBlank}
+            clearShortWriting={clearShortWriting}
             clearStudent={clearStudent}
             studentHasData={student ? studentHasData(student.id) : false}
             selectedIdx={selectedIdx}

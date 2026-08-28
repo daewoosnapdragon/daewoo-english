@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { Student, EnglishClass, ENGLISH_CLASSES } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
+import { classToColor, classToTextColor, writingTotalFrom } from '@/lib/utils'
 import { CheckCircle2, Circle, AlertTriangle, Star } from 'lucide-react'
 import { getG1Content, G1_LEGACY_VERSION } from './grade1Content'
 
@@ -333,7 +333,8 @@ export default function StudentLevelingCard({
             <>
               <div className="text-[8px] font-bold text-gold uppercase tracking-widest mb-2">Written Test</div>
               <div className="space-y-0.5 mb-3">
-                {raw.writing != null && <ScoreLine label="Writing Rubric" value={raw.writing} max={20} />}
+                {/* Only when the rubric has actually been marked -- see writingTotalFrom. */}
+                {writingTotalFrom(raw, calc) != null && <ScoreLine label="Writing Rubric" value={writingTotalFrom(raw, calc)!} max={20} />}
                 {raw.written_mc != null && <ScoreLine label="Multiple Choice" value={raw.written_mc} max={numGrade === 2 ? 30 : numGrade === 3 ? 35 : numGrade === 4 ? 40 : 45} />}
               </div>
             </>

@@ -8,7 +8,7 @@ import { classToColor, classToTextColor } from '@/lib/utils'
 import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X, RotateCcw, Check, Star, Ban, Printer, Download, Shield } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import {
-  g1ContentForTest, g1VersionKeyForTest, getG1Content, g1WrittenScoredMax, g1WrittenTotalMax,
+  g1ContentForTest, g1VersionKeyForTest, getG1Content, g1WrittenTotalMax,
   G1_LEGACY_VERSION,
 } from './grade1Content'
 import type { G1Content, G1QuestionDef, G1WritingCategory, PassageLevel } from './grade1Content'
@@ -221,10 +221,19 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
     // Per-question format
     writtenMC = content.written.questions.reduce((sum, q) =>
       sum + (scores.written_answers![q.qNum] === q.correct ? 1 : 0), 0)
-    writingShort = content.shortWriting ? (scores.writing_short ?? 0) : null
+    // Null, not 0. The multiple choice is always entered before anybody has
+    // read the writing, and defaulting these to 0 charged a student for work
+    // nobody had marked yet -- the percentage below fell AND its denominator
+    // stayed at the whole paper.
+    writingShort = content.shortWriting ? (scores.writing_short ?? null) : null
     writingBonus = scores.writing_bonus ?? 0
-    const scoredMax = g1WrittenScoredMax(content)
-    const scored = writtenMC + (writingShort ?? 0) + (writingInTotal ? writingBonus : 0)
+    // The paper as far as it has been marked. An unmarked section leaves both
+    // sides of the fraction, so the percentage answers "how did they do on what
+    // has been read" rather than "how did they do if the unread half is zero".
+    let scoredMax = content.written.mcMax
+    let scored = writtenMC
+    if (writingShort != null) { scored += writingShort; scoredMax += content.shortWriting?.max ?? 0 }
+    if (writingInTotal && scores.writing_bonus != null) { scored += writingBonus; scoredMax += content.extendedWriting.max }
     writtenPct = scoredMax > 0 ? (scored / scoredMax) * 100 : 0
   } else {
     // Old section-subtotal format (backward compat)
@@ -3662,6 +3671,14 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
         // A student with no measured component has nothing to rank -- the same
         // rule the grades 2-5 table applies. A teacher rating alone is a note.
         isTested: weighted != null,
+        // Which of the two sittings are still outstanding. The composite
+        // renormalizes over what a student HAS sat, so an oral result with no
+        // written paper produced a number that read like a strong placement
+        // and sorted to the top of the grade. Same rule as grades 2-5.
+        missingSections: [
+          ...(sc.o_passage_level != null || sc.o_test_complete ? [] : ['oral']),
+          ...((sc.written_answers && Object.keys(sc.written_answers).length > 0) || sc.written_mc != null || sc.writing_short != null || sc.writing_bonus != null ? [] : ['written']),
+        ] as ('oral' | 'written')[],
         attemptedNothing: sc.o_passage_level == null && !!sc.o_test_complete,
         hasAnec: av.length > 0,
         anecScore: av.length > 0 ? av.reduce((a, b) => a + b, 0) / (av.length * 4) : 0.5,
@@ -3724,15 +3741,19 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
     if (filterClass !== 'all') res = res.filter(r => r.student.english_class === filterClass)
     if (filterPassage !== 'all') res = res.filter(r => r.oralPassageLevel === filterPassage)
     if (showBorderline) res = res.filter(r => r.suggestedClass != null && r.suggestedClass !== r.student.english_class)
+    // Sat one half of the test and not the other: below every complete record,
+    // in every score-based order.
+    const completeness = (r: typeof res[number]) =>
+      Number(r.isTested) * 10 - (r.missingSections?.length ?? 0)
     switch (sortBy) {
       // Untested rows sort to the bottom of every score-based order.
-      case 'composite': res.sort((a, b) => Number(b.isTested) - Number(a.isTested) || (b.weighted ?? -1) - (a.weighted ?? -1)); break
-      case 'percentile': res.sort((a, b) => (b.percentile ?? -1) - (a.percentile ?? -1)); break
+      case 'composite': res.sort((a, b) => completeness(b) - completeness(a) || (b.weighted ?? -1) - (a.weighted ?? -1)); break
+      case 'percentile': res.sort((a, b) => completeness(b) - completeness(a) || (b.percentile ?? -1) - (a.percentile ?? -1)); break
       case 'cwpm': res.sort((a, b) => Number(b.isTested) - Number(a.isTested) || b.oralScore - a.oralScore); break
       case 'comp': res.sort((a, b) => (b.compTotal ?? -1) - (a.compTotal ?? -1)); break
       case 'writing': res.sort((a, b) => (b.writingBonus ?? -1) - (a.writingBonus ?? -1)); break
       case 'mc': res.sort((a, b) => (b.writtenMC ?? -1) - (a.writtenMC ?? -1)); break
-      case 'suggested': { const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }; res.sort((a, b) => (a.suggestedClass ? classOrder[a.suggestedClass] || 99 : 99) - (b.suggestedClass ? classOrder[b.suggestedClass] || 99 : 99)); break }
+      case 'suggested': { const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }; res.sort((a, b) => completeness(b) - completeness(a) || (a.suggestedClass ? classOrder[a.suggestedClass] || 99 : 99) - (b.suggestedClass ? classOrder[b.suggestedClass] || 99 : 99)); break }
       case 'name': res.sort((a, b) => a.student.english_name.localeCompare(b.student.english_name)); break
     }
     return res

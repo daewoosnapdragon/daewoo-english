@@ -534,3 +534,96 @@ export const COMPOSITE_TERM_LABELS: [CompositeTerm, string][] = [
 // tasks were built, not a statement that one measures more decoding than the
 // other. Change these rather than the point totals if that judgement changes.
 export const DECODING_WEIGHTS = { phonics: 0.50, sentences: 0.50 }
+
+// ─── Answer keys that accept more than one letter ────────────────────
+// A printed paper is not always keyed to exactly one choice. Two kinds of item
+// turn up every year, and both used to be scored as though the guide's single
+// key were the only defensible answer:
+//
+//   • two choices are genuinely correct — Grade 5's "By next month, I ___ ten
+//     books" takes the future perfect the item is testing, but "will read" is
+//     not wrong English;
+//   • every choice is defensible — Grade 3's "My grandmother always talks
+//     about her ___" works with childhood, bicycle, shoes or lunch, so the item
+//     measures nothing and marking three quarters of the grade wrong on it is
+//     an error in the paper, not in the students.
+//
+// Both are recorded on the item, next to the key, rather than fixed by hand in
+// each of the six places that compare an answer. `correct` stays the guide's
+// key: the item analysis still shows it as THE answer, and the accepted
+// alternatives are marked green beside it.
+export interface KeyedItem {
+  correct: string
+  /** Extra letters that also score the point. */
+  acceptable?: string[]
+  /** Any answered letter scores. For an item where the paper is at fault. */
+  acceptAny?: boolean
+}
+
+/** Whether a chosen letter earns the point. An unanswered item never does. */
+export function isCorrectAnswer(q: KeyedItem, chosen: string | null | undefined): boolean {
+  if (!chosen) return false
+  if (q.acceptAny) return true
+  if (chosen === q.correct) return true
+  return Array.isArray(q.acceptable) && q.acceptable.includes(chosen)
+}
+
+/**
+ * Every letter that scores, for display. `acceptAny` returns the letters the
+ * caller offers, since "all of them" has to be drawn as all of them.
+ */
+export function acceptedLetters(q: KeyedItem, letters: string[]): string[] {
+  if (q.acceptAny) return [...letters]
+  return letters.filter(L => L === q.correct || q.acceptable?.includes(L))
+}
+
+/** True when the item's key is anything other than one letter. */
+export function hasMultipleKeys(q: KeyedItem): boolean {
+  return !!q.acceptAny || (Array.isArray(q.acceptable) && q.acceptable.length > 0)
+}
+
+// ─── Writing: not marked yet is not a zero ───────────────────────────
+// The written paper is entered by two teachers, and the multiple choice is
+// always finished days before the extended writing is read. The writing half's
+// save wrote `writing: 0` for anyone whose rubric was untouched -- so a student
+// whose paper simply had not been read yet carried a 0/20 into the composite,
+// the results table and every class average. It is not a low score; there is no
+// score.
+//
+// `written_rubric` is the discriminator, and it works on rows already saved:
+// the writing group writes it on every save, so an EMPTY object beside a
+// `writing` of 0 is exactly the signature of "the rubric was never opened",
+// while a genuinely blank paper marked 0 across the categories has all five
+// keys present. Rows old enough to predate per-category storage keep the old
+// behavior of trusting the stored total.
+export function writingWasMarked(raw: any): boolean {
+  const rubric = raw?.written_rubric
+  if (rubric && typeof rubric === 'object') return Object.keys(rubric).length > 0
+  return raw?.writing != null
+}
+
+/**
+ * The extended-writing total, or null when the rubric has not been marked.
+ *
+ * Summed from the rubric rather than read off the stored scalar, wherever the
+ * rubric is on the record. The two can disagree, because they merge on
+ * different rules: `written_rubric` is merged category by category, so two
+ * people marking the same student both keep their work, while `writing` is a
+ * scalar and is simply replaced by whoever saved last. A teacher who enters
+ * only the short response saves the writing group too, and their save carries
+ * a `writing` computed from an empty local rubric. The categories are the
+ * record; the scalar is a cache of them.
+ */
+export function writingTotalFrom(raw: any, calc?: any): number | null {
+  const rubric = raw?.written_rubric
+  if (rubric && typeof rubric === 'object') {
+    const keys = Object.keys(rubric)
+    // Present and empty: the rubric was saved alongside something else and
+    // never opened. Not a zero.
+    if (keys.length === 0) return null
+    return keys.reduce((sum, k) => sum + (typeof rubric[k] === 'number' ? rubric[k] : 0), 0)
+  }
+  // No per-category rubric on the record at all -- old enough to predate it,
+  // so the stored total is all there is and is trusted as it stands.
+  return raw?.writing ?? calc?.writing_total ?? null
+}

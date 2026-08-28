@@ -60,6 +60,18 @@ export interface G3QuestionDef {
   choices: string[]
   /** Positional: 'a' = choices[0], 'b' = choices[1], ... */
   correct: string
+  /**
+   * Further letters that also score the point, where the printed paper has
+   * more than one defensible answer. `correct` stays the guide's key so the
+   * item analysis still names it; these are marked accepted beside it.
+   */
+  acceptable?: string[]
+  /**
+   * Every answered letter scores. Reserved for an item where the fault is in
+   * the paper -- no choice can be ruled out -- so marking most of the grade
+   * wrong on it would be scoring the item's flaw, not the students.
+   */
+  acceptAny?: boolean
   standard: string
   standardDesc: string
   domain: string
@@ -159,13 +171,31 @@ export interface G3Content {
   shortWriting: {
     item: number
     prompt: string
+    /** The four parts of the day the rubric expects, as the guide states them. */
     starters: string[]
+    /**
+     * The starters as they are actually printed on the student copy, where
+     * they differ. The papers were sat as printed, so this -- not the guide's
+     * intended set -- is what a marker is looking at.
+     */
+    printedStarters?: string[]
+    /** Named on screen wherever the item is scored, not buried in the notes. */
+    paperError?: string
     max: number
     /** Read aloud before students begin. */
     sayBeforeStarting: string
     contentMax: number
     contentRule: string
     sentencePointRule: string
+    /**
+     * One box per point, so the item is marked the way every other rubric on
+     * the paper is marked. Item 25 used to be a row of numbers 0-5 with the
+     * rules in a collapsed panel, which is not a rubric -- it is a total, and
+     * two markers reading the same page reached it differently.
+     */
+    checklist: { key: string; label: string; desc: string }[]
+    scoringNote: string
+    workedExamples: string[]
     notes: string[]
   }
   writing: {
@@ -326,7 +356,14 @@ const F26_QUESTIONS: G3QuestionDef[] = [
   // description of printed item 14. The item actually printed at 9 is a
   // vocabulary-in-context item, and its answer is 'b' either way, so the key is
   // unaffected. See `documentNotes`.
-  { qNum: 9, section: 'language', sectionLabel: 'Language Standards', text: 'My grandmother always talks about her _____.', choices: ['bicycle', 'childhood', 'shoes', 'lunch'], correct: 'b', standard: 'L.3.4', standardDesc: 'Determine the meaning of words and phrases in context', domain: 'Vocabulary', dok: 2, note: 'Vocabulary in context, where the clue is grandmother always talks about. The other three are concrete nouns that fit the sentence grammatically but not its meaning.' },
+  //
+  // Scored as accept-any from August 2026. The stem gives no clue that rules
+  // any choice out: a grandmother can perfectly well always talk about her
+  // bicycle, her shoes or her lunch, and childhood is the intended answer only
+  // because it is the abstract one. The item measures nothing, so it is not
+  // allowed to cost anybody a mark. It still appears in the item analysis,
+  // where an accept-any item reads as 100% and is worth retiring.
+  { qNum: 9, section: 'language', sectionLabel: 'Language Standards', text: 'My grandmother always talks about her _____.', choices: ['bicycle', 'childhood', 'shoes', 'lunch'], correct: 'b', acceptAny: true, standard: 'L.3.4', standardDesc: 'Determine the meaning of words and phrases in context', domain: 'Vocabulary', dok: 2, note: 'Intended as vocabulary in context, with grandmother always talks about as the clue for childhood. It does not work: nothing in the stem rules out the bicycle, the shoes or the lunch, and each is a perfectly ordinary thing for a grandmother to talk about. Every answer is accepted. Read this item as unscored rather than as a class that found it easy.' },
   { qNum: 10, section: 'language', sectionLabel: 'Language Standards', text: 'Yesterday, she _____ the ball to her friend.', choices: ['threw', 'throw', 'throwed', 'throwing'], correct: 'a', standard: 'L.3.1d', standardDesc: 'Form and use regular and irregular verbs', domain: 'Language/Grammar', dok: 1, note: 'Irregular past tense, signalled by Yesterday. c is the regularised form and the most informative wrong answer: the tense is right and only the irregular is missing.' },
   { qNum: 11, section: 'language', sectionLabel: 'Language Standards', text: 'Tomorrow, we _____ to the museum.', choices: ['go', 'went', 'going', 'will go'], correct: 'd', standard: 'L.1.1e', standardDesc: 'Use verbs to convey a sense of past, present and future', domain: 'Language/Grammar', dok: 1, note: 'Future tense, signalled by Tomorrow. b is past, which is what a student picks when they read the verb before the time word.' },
   { qNum: 12, section: 'language', sectionLabel: 'Language Standards', text: 'The two dogs _____ barking at the mailman.', choices: ['is', 'was', 'are', 'am'], correct: 'c', standard: 'L.3.1f', standardDesc: 'Ensure subject-verb agreement', domain: 'Language/Grammar', dok: 1, note: 'Subject-verb agreement with a plural subject. b agrees with the nearest noun rather than with the subject, which is the error the sentence is built to catch.' },
@@ -342,7 +379,7 @@ const F26_QUESTIONS: G3QuestionDef[] = [
   { qNum: 18, section: 'language', sectionLabel: 'Language Standards', text: 'Anna left her backpack on the bus. That is _____ backpack.', choices: ['the girl\'s', 'the girls', 'the girls\'', 'the girls\'s'], correct: 'a', standard: 'L.2.2c', standardDesc: 'Use an apostrophe to form possessives', domain: 'Language/Mechanics', dok: 1, note: 'Singular possessive. Anna is one girl, so b, c and d are all plural or plural-possessive and catch a student adding the apostrophe by pattern rather than by number.' },
   { qNum: 19, section: 'language', sectionLabel: 'Language Standards', text: 'Which word is correct?', choices: ['runing', 'running', 'runeing', 'runnning'], correct: 'b', standard: 'L.3.2e', standardDesc: 'Use conventional spelling for adding suffixes', domain: 'Language/Mechanics', dok: 1, note: 'Doubling before -ing. a fails to double and d doubles twice, the two directions of the same uncertainty.' },
   // Items 20-24 — Reading: "My Busy Day". Item 25 is the short writing task.
-  { qNum: 20, section: 'reading_busyday', sectionLabel: 'Reading: My Busy Day', text: 'What is this story mostly about?', choices: ['A child\'s favorite foods', 'A child\'s busy day', 'A child\'s pajamas', 'A child\'s homework'], correct: 'b', standard: 'RI.3.2', standardDesc: 'Determine the main idea of a text', domain: 'Reading Comprehension', dok: 2, note: 'Main idea. a, c and d are each one detail from a single part of the day; only b covers the four parts the passage is built around.' },
+  { qNum: 20, section: 'reading_busyday', sectionLabel: 'Reading: My Busy Day', text: 'What is this story mostly about?', choices: ['A child\'s favorite foods', 'A child\'s busy day', 'A child\'s pajamas', 'A child\'s homework'], correct: 'b', acceptable: ['c'], standard: 'RI.3.2', standardDesc: 'Determine the main idea of a text', domain: 'Reading Comprehension', dok: 2, note: 'Main idea, keyed to b -- only the busy day covers the four parts the passage is built around. c is accepted as well from August 2026, on the paper as sat. a and d remain wrong: each names a detail from one part of the day only.' },
   { qNum: 21, section: 'reading_busyday', sectionLabel: 'Reading: My Busy Day', text: 'What does the child do in the morning?', choices: ['Eats dinner and does homework', 'Reads a book in bed', 'Eats breakfast and gets dressed for school', 'Plays outside at recess'], correct: 'c', standard: 'RI.3.1', standardDesc: 'Ask and answer questions, referring explicitly to the text', domain: 'Reading Comprehension', dok: 1, note: 'Key detail tied to a time word. a is the evening, b is night and d is the afternoon, so the wrong answer names which part of the day was read instead.' },
   { qNum: 22, section: 'reading_busyday', sectionLabel: 'Reading: My Busy Day', text: 'Put these events in order: (1) The child does homework. (2) The child eats breakfast. (3) The child plays at recess.', choices: ['2, 3, 1', '1, 2, 3', '3, 1, 2', '2, 1, 3'], correct: 'a', standard: 'RI.3.3', standardDesc: 'Describe a sequence of events using language of time and order', domain: 'Reading Comprehension', dok: 2, note: 'Sequence across the whole passage. b is the order the events are listed in the question rather than in the passage, which is the commonest error here.' },
   { qNum: 23, section: 'reading_busyday', sectionLabel: 'Reading: My Busy Day', text: 'What does the family do in the evening?', choices: ['Get dressed for school', 'Eat dinner together', 'Play outside', 'Read before bed'], correct: 'b', standard: 'RI.3.1', standardDesc: 'Ask and answer questions, referring explicitly to the text', domain: 'Reading Comprehension', dok: 1, note: 'Key detail tied to a time word. d happens at night, in the very next sentence, so it catches a student reading the right area of the passage but the wrong time word.' },
@@ -491,16 +528,54 @@ const FALL_2026_CONTENT: G3Content = {
     item: 25,
     prompt: 'What is your daily schedule?',
     starters: ['In the morning,', 'In the afternoon,', 'In the evening,', 'At night,'],
+    printedStarters: ['In the morning,', 'In the afternoon,', 'In the afternoon,', 'At night,'],
+    paperError: 'The student copy prints "In the afternoon," TWICE and never prints "In the evening,". The papers were sat that way. Score the third starter on any reasonable answer -- a second afternoon activity, an evening activity, or anything plausible for later in the day -- and never withhold the point because the two afternoons repeat. That is the paper\'s mistake, not the child\'s.',
     max: 5,
     sayBeforeStarting: 'For number 25, finish all four sentences about your own day. Write a whole sentence after each starter. Start with a big letter and end with a period.',
     contentMax: 4,
     contentRule: 'One point for each starter that is completed with a real activity in English, where the activity plausibly matches its time of day. Four starters, so four points.',
     sentencePointRule: 'One further point if the completed responses are written as full sentences, each with a capital letter and end punctuation. All-or-nothing: award it only if every completed response is a full punctuated sentence.',
+    checklist: [
+      {
+        key: 'morning',
+        label: '1. "In the morning," completed',
+        desc: 'A real morning activity, written in English. Eating, washing, dressing, going to school, waking up. "I eat rice" is worth exactly as much as "I eat breakfast."',
+      },
+      {
+        key: 'afternoon_1',
+        label: '2. "In the afternoon," completed',
+        desc: 'A real activity that fits the afternoon -- school, academy, lunch, playing, homework, going home.',
+      },
+      {
+        key: 'afternoon_2',
+        label: '3. Third starter completed (printed "In the afternoon," again)',
+        desc: 'The paper prints the afternoon twice and never prints the evening. Accept ANY reasonable answer here: a second afternoon activity, an evening activity, dinner, family time -- anything plausible for later in the day. Do not withhold the point because it repeats the line above, and do not expect the word evening.',
+      },
+      {
+        key: 'night',
+        label: '4. "At night," completed',
+        desc: 'A real night activity -- sleeping, brushing teeth, reading, watching television, going to bed.',
+      },
+      {
+        key: 'sentences',
+        label: '+1 Written as full sentences',
+        desc: 'All-or-nothing, and judged only on the starters the student did complete. Every one of them is a full sentence with a capital letter and end punctuation. A single missing period or capital across the item costs this point; spelling never does.',
+      },
+    ],
+    scoringNote: 'One point per completed starter, plus one for writing them as full punctuated sentences. Four starters and the sentence point make 5. Tick a box only when you can point to the words on the page that earn it.',
+    workedExamples: [
+      '5/5: "In the morning, I eat breakfast. In the afternoon, I go to academy. In the afternoon, I eat dinner with my family. At night, I read a book." -- four activities, every one a punctuated sentence. The third line answering for the evening is exactly right; the paper asked the wrong question.',
+      '4/5: the same four answers with no capitals and no periods. Content is complete, the sentence point is not earned.',
+      '3/5: "In the morning, I eat breakfast. In the afternoon, I play. In the afternoon, ___. At night, I sleep." -- three starters completed as sentences, one left blank. Blank costs its own point only.',
+      '2/5: "in the morning i sleep / in the afternoon i go to school / in the afternoon i play soccer / at night i go to school" -- the two afternoons are fine and earn their points. Sleeping is not a morning activity and school cannot happen at night, so those two are lost. No sentence point either: nothing on the page is capitalized or punctuated.',
+      '0/5: blank, written in Korean, or the four starters copied out with nothing added.',
+    ],
     notes: [
-      'Spelling is not scored. Any real activity counts — "In the morning, I eat rice" is as good as "I eat breakfast."',
+      'Spelling is not scored. Any real activity counts -- "In the morning, I eat rice" is as good as "I eat breakfast."',
       'A starter left blank, copied with nothing added, or answered in Korean earns no point.',
-      'A starter filled with an activity that cannot happen at that time ("At night, I go to school") does not earn its point, but does not affect the other three.',
-      'A fully blank item scores 0.',
+      'A starter filled with an activity that cannot happen at that time ("At night, I go to school") does not earn its point, but does not affect the other three. The third starter is the exception: the paper is wrong there, so almost anything reasonable earns it.',
+      'A fully blank item scores 0. Tick nothing and leave the score at 0 -- that is a marked zero, not an unmarked item.',
+      'Totals entered before this rubric existed are kept exactly as they were. Nothing needs re-entering; tick the boxes only if you want to re-score a student.',
     ],
   },
   writing: {
@@ -531,7 +606,9 @@ const FALL_2026_CONTENT: G3Content = {
   documentNotes: [
     'Item 14: the teacher\'s guide keys this as "coordinating conjunction — d — but". Choice d on the printed page is "so", and the printed stem ("We stayed inside _____ it was raining") takes a subordinating conjunction. Keyed here to b (because), matching the paper the students actually sit.',
     'Item 9: the guide labels this "subordinating conjunction — because", which describes printed item 14. The item printed at 9 is vocabulary in context, and its answer is b either way, so the key is unaffected.',
-    'Item 25: the printed student copy shows "In the afternoon," twice and omits "In the evening,". The rubric expects four distinct parts of the day. The student copy needs correcting before the test is administered.',
+    'Item 25: the printed student copy shows "In the afternoon," twice and omits "In the evening,". The papers were sat that way, so the third starter is scored on any reasonable answer -- a second afternoon activity, an evening activity, or anything plausible for later in the day. The student copy still needs correcting before the test is next administered.',
+    'Item 9 is scored accept-any. The stem ("My grandmother always talks about her ___") rules nothing out: bicycle, shoes and lunch are all things a grandmother can talk about, and childhood is the key only because it is the abstract choice. The item measures nothing, so it costs nobody a mark. It reads as 100% in the item analysis and should be replaced.',
+    'Item 20 accepts b or c. b (a child\'s busy day) is the guide\'s key and the only choice covering all four parts of the passage; c is accepted as well, on the paper as sat. a and d are still wrong.',
     'Item 31: the guide scores Content and Detail as a four-element checklist; the rubric page reprinted on the student copy shows a sentence-count ladder instead. The guide is the scoring document and is used here — it also states outright that the 8-sentence target is not a scoring rule.',
     'Passage D: the guide\'s word-count table says 112 words. The passage as printed in both documents is 111. Recorded as 111.',
     'The guide\'s cover promises a corrections section "at the back" listing required student-copy edits. No such section is present in the twelve-page file supplied.',
