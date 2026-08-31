@@ -13,6 +13,7 @@ import { Student, EnglishClass } from '@/types'
 import {
   compRatioForComposite, capComponent, compositeWeightsFor, DECODING_WEIGHTS,
   IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, isCorrectAnswer, writingTotalFrom,
+  writtenCompleteFrom,
   type CompositeTerm, type CompositeWeights,
 } from '@/lib/utils'
 import {
@@ -210,6 +211,13 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
   const rawCwpmValue = calc.cwpm ?? sc.passage_cwpm ?? sc.orf_cwpm ?? null
   // The teacher declared the oral session over, whatever it produced.
   const oralComplete = !!(sc.oral_complete || sc.o_test_complete)
+  // The teacher declared the written paper marked, whatever it produced. Its
+  // effect is worked in below, section by section: every written section that
+  // holds nothing scores 0 from here on instead of carrying no score at all.
+  const writtenComplete = writtenCompleteFrom(sc, calc)
+  // The grade's weight table, needed before the composite is built so the
+  // short-response term is only forced to 0 on papers that actually have one.
+  const weights = customWeights ?? compositeWeightsFor(grade)
   const adjustedCwpm = calc.best_weighted_cwpm ?? calc.weighted_cwpm ?? null
   // The passage the rate was actually clocked on, which is also the passage the
   // band scores. best_passage_level belongs to the old best-attempt logic and
@@ -231,7 +239,13 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
   // carried 0/20 into this composite. The rubric object is what says whether
   // anyone marked it, and it distinguishes an unmarked script from a blank one
   // marked 0, on rows already saved as well as new ones.
-  const writingRaw = writingTotalFrom(sc, calc)
+  //
+  // `writingEntered` is what a marker actually put on the record; `writingRaw`
+  // adds the 0 that "test graded" implies. They are kept apart so the outlier
+  // flags below never flag a section the flag zeroed -- nobody mis-keyed it,
+  // the student simply left it blank.
+  const writingEntered = writingTotalFrom(sc, calc)
+  const writingRaw = writingEntered ?? (writtenComplete ? 0 : null)
   const writingRatio = writingRaw != null ? capComponent(writingRaw / 20) : null
 
   // ── Multiple choice, scored against the CURRENT key ──
@@ -281,8 +295,13 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
     // The stored total is all there is.
     mcPct = sc.written_mc != null ? capComponent(sc.written_mc / gradeMcTotal) : null
   }
+  // Nothing on the answer sheet, and the paper is marked: the student sat the
+  // multiple choice and got none of it, which is a score of zero and not a
+  // blank where a score should be.
+  if (mcPct == null && writtenComplete) mcPct = 0
   /** What the MC is worth under today's key. Falls back to the stored total. */
-  const mcRaw = rekeyedMc ?? sc.written_mc ?? null
+  const mcEntered = rekeyedMc ?? sc.written_mc ?? null
+  const mcRaw = mcEntered ?? (writtenComplete ? 0 : null)
 
   const wrAcc = sc.word_reading_correct != null && sc.word_reading_attempted > 0 ? capComponent(sc.word_reading_correct / sc.word_reading_attempted) : null
   // Comprehension: comp_total / comp_max. A scored 0 counts. "Not scored yet"
@@ -318,8 +337,13 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
   const mcScore = mcPct
   // The short constructed response on the Grade 3 and 5 papers. Teachers have
   // always scored it; until now nothing read it.
+  // Zeroed on a graded paper only where the paper HAS a short response --
+  // Grade 4's does not, and inventing a 0 for a section that was never printed
+  // would make an untaken item look like a failed one.
+  const gradeHasShortWriting = (weights.shortWriting ?? 0) > 0
   const shortWritingScore = calc.short_writing_total != null && calc.short_writing_max > 0
     ? capComponent(calc.short_writing_total / calc.short_writing_max)
+    : writtenComplete && gradeHasShortWriting ? 0
     : null
   const writingRubricScore = writingRatio // already null if no data (raw / 20)
   // Grade average: still computed for display in hover card, but NOT included in composite
@@ -396,7 +420,7 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
   // Whether the student has sat any part of the test. A teacher rating on its
   // own does not make them rankable -- see isTestedRow.
   const isTested = isTestedRow(termScores)
-  const composite = compositeFrom(termScores, customWeights ?? compositeWeightsFor(grade)) ?? 0.5
+  const composite = compositeFrom(termScores, weights) ?? 0.5
   // Outlier flags: score is 0 or below 10% of class auto-median
   // Only flag when enough classmates have data for that component (>=3 or >=50% of class) to make the median meaningful
   const outlierFlags: string[] = []
@@ -410,8 +434,8 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
   // feeds the band, so it should be checked before it decides a placement.
   const readSeconds = sc.orf_time_seconds ?? null
   if (rawCwpmValue != null && (rawCwpmValue > IMPLAUSIBLE_CWPM || (readSeconds != null && readSeconds > 0 && readSeconds < IMPLAUSIBLE_READ_SECONDS && (sc.orf_words_read ?? 0) > 40))) outlierFlags.push('rate')
-  if (writingReliable && writingRaw != null && (writingRaw === 0 || (bench._auto_writing_median > 0 && writingRaw < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
-  if (mcReliable && mcRaw != null && (mcRaw === 0 || (bench._auto_mc_median > 0 && mcRaw < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
+  if (writingReliable && writingEntered != null && (writingEntered === 0 || (bench._auto_writing_median > 0 && writingEntered < bench._auto_writing_median * 0.1))) outlierFlags.push('writing')
+  if (mcReliable && mcEntered != null && (mcEntered === 0 || (bench._auto_mc_median > 0 && mcEntered < bench._auto_mc_median * 0.1))) outlierFlags.push('mc')
 
   return { student: s, score: sc, calc, bench, anec, grades, cwpmRatio, writingRatio, mcPct, wrAcc, compRatio, testScore, oralScore: oralScore ?? 0.5, mcScore: mcScore ?? 0.5, writingRubricScore: writingRubricScore ?? 0.5, gradeScore: gScore, anecScore, hasAnec, isTested, composite, rawCwpm: rawCwpmValue, rawWriting: writingRaw, rawMc: mcRaw, adjMcScore, adjMcMax, rawComp: calc.comp_total ?? null, compMax: calc.comp_max ?? null, compUnmeasured,
     // Grade 2's oral test also scores a phonics grid and a sentence-reading
@@ -436,6 +460,15 @@ export function computeRow(s: Student, scores: Record<string, any>, anecdotals: 
     // evidence. Worth marking on the table so it does not read as a low score
     // among comparable low scores.
     attemptedNothing: oralComplete && band == null,
+    // The teacher declared the paper marked. Its empty sections are scored 0
+    // above rather than left out, which is what puts a student who wrote
+    // nothing back into the ranking instead of leaving them "not tested".
+    writtenComplete,
+    // Marked, and every section of it empty. Same distinction the oral half
+    // draws: a paper that produced nothing is the lowest evidence there is,
+    // not missing evidence, and it should not read as a low score among
+    // comparable low scores.
+    writtenAttemptedNothing: writtenComplete && mcEntered == null && writingEntered == null && calc.short_writing_total == null,
     // Sittings still outstanding. Empty for a student who sat everything.
     missingSections, isComplete: missingSections.length === 0,
     decodingScore, shortWritingScore, passageLevel: calc.passage_level ?? null, oralPassageLevel, adjustedCwpm, otherAttempts, accuracyPct: calc.accuracy_pct ?? null, naep: calc.naep ?? sc.naep ?? null, hasGrades, outlierFlags, band }

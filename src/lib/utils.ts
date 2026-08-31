@@ -627,3 +627,23 @@ export function writingTotalFrom(raw: any, calc?: any): number | null {
   // so the stored total is all there is and is trusted as it stands.
   return raw?.writing ?? calc?.writing_total ?? null
 }
+
+// ─── "The written paper is graded" ───────────────────────────────────
+// The mirror of `oral_complete`. A teacher who has finished marking a paper
+// presses one button, and from that moment every section of it counts --
+// including the sections that hold nothing.
+//
+// This is the difference between "nobody has read this script yet" and "this
+// script was read and it earned nothing". Until the flag is set the two look
+// identical on the record, and the scoring rightly refuses to guess: an
+// unmarked rubric carries no score at all, so a student whose writing has not
+// been read is not charged a zero for it. That protection is also what hid a
+// real result -- a child who wrote nothing, or wrote in Korean, or left the
+// multiple choice blank, has a paper with nothing to enter, so their row never
+// gained a written score and the results table read them as untested.
+//
+// Setting this says: the marking is done. Whatever is still empty is empty
+// because the student left it empty, and it scores 0.
+export function writtenCompleteFrom(raw: any, calc?: any): boolean {
+  return !!(raw?.written_complete ?? raw?.w_test_complete ?? calc?.written_complete)
+}
