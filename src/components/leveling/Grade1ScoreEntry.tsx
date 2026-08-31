@@ -55,6 +55,36 @@ function isG1OralKey(k: string): boolean {
     || k === 'wave1_class_impression' || k === 'teacher_notes'
 }
 
+/**
+ * Did this student sit any part of the oral test?
+ *
+ * Not "was a passage administered". Grade 1's oral session opens with letter
+ * names, letter sounds, sight words and the phoneme probes, and a child who
+ * works through those and cannot go on to a passage HAS been assessed orally:
+ * calculateG1Composite scores them at band A and positions them inside it on
+ * exactly that evidence. Reading a passage as the only proof of a sitting made
+ * the letters count for nothing the moment the teacher pressed "Mark test
+ * complete" -- the student was scored 0 for an oral test they had sat and
+ * partly passed, and their row read `attempted none`, which is the opposite of
+ * what happened.
+ *
+ * A passage-less record with nothing else on it is still an attempt that
+ * produced nothing, and still scores 0 once the session is declared over.
+ */
+function g1HasOralEvidence(scores: G1Scores | null | undefined): boolean {
+  if (!scores) return false
+  return Object.entries(scores).some(([k, v]) => {
+    if (!k.startsWith('o_') || v == null) return false
+    // Derived on every save, so it lands as 0 on records that never sat the
+    // oral test at all. Only a scored one is evidence.
+    if (k === 'o_phoneme') return (v as number) > 0
+    // Neither of these says anything was read: the first declares the session
+    // over, the second declares questions unasked.
+    if (k === 'o_test_complete' || k === 'o_comp_not_administered') return false
+    return true
+  })
+}
+
 /** Written keys holding an object that two markers may fill in between them. */
 const G1_WRITTEN_NESTED = ['written_answers', 'written_rubric']
 
@@ -515,7 +545,10 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   // blank script is a written result of 0, not an absent one.
   const hasWrittenData = (!!scores.written_answers && Object.keys(scores.written_answers).length > 0)
     || writtenMC > 0 || writtenPct > 0 || !!scores.written_complete
-  const hasOralData = scores.o_passage_level != null
+  // The letter and phoneme sections are an oral sitting in their own right --
+  // see g1HasOralEvidence. Without this a student who did them and no passage
+  // was scored as though the oral test had never happened, and capped at 35.
+  const hasOralData = g1HasOralEvidence(scores)
 
   let composite: number
   let wave: 1 | 2
@@ -609,6 +642,12 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
     writtenPct, writtenMC, writingBonus, writingShort, oralScore, teacherPct, composite, wave,
     passageLevel, cwpm, weightedCwpm, accuracy, effectiveLevel,
     orfRaw, orfMax, hasCwpm: config.hasCwpm, compAsked: config.compQuestions > 0,
+    // What the student read off the alphabet page. The results table shows it
+    // for a student who sat the letters and never reached a passage, whose
+    // oral column would otherwise be an em dash indistinguishable from having
+    // sat nothing.
+    alphaRaw, alphaMax: content.alphabet.total,
+    hasOral: hasOralData,
     compTotal, compMax, compAnswered, compNotAdministered, standardsBaseline, suggestedClass,
   }
 }
@@ -644,8 +683,10 @@ function g1WeightedComposite(
   scores: G1Scores,
   content: G1Content,
 ): number | null {
-  const hasOral = scores.o_passage_level != null
-  // A session the teacher marked complete with no passage on record is not
+  // Any oral evidence, not just a passage -- see g1HasOralEvidence. A student
+  // who sat the letters and could go no further is scored on the letters.
+  const hasOral = g1HasOralEvidence(scores)
+  // A session the teacher marked complete with NOTHING on record is not
   // missing data: the student sat down, was given something to read and could
   // not read it. Scored 0 rather than dropped, so they rank at the bottom of
   // the grade and receive a placement instead of falling out of the ranking.
@@ -1313,7 +1354,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         || sc.writing_short != null
         || (sc.written_rubric && Object.keys(sc.written_rubric).length > 0)
         || (sc.written_answers && Object.keys(sc.written_answers).length > 0)) writtenDone++
-      if (sc.o_passage_level) oralDone++
+      if (g1HasOralEvidence(sc) || sc.o_test_complete) oralDone++
     })
     return { writtenDone, oralDone, total: classStudents.length }
   }, [classStudents, scores])
@@ -1324,7 +1365,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       const s = students.filter(st => st.english_class === cls)
       const done = s.filter(st => {
         const sc = scores[st.id] || {}
-        return sc.o_test_complete || sc.o_passage_level != null
+        return sc.o_test_complete || g1HasOralEvidence(sc)
       })
       counts[cls] = { total: s.length, done: done.length }
     })
@@ -3023,7 +3064,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
   /** Dealt with: either something was recorded, or the teacher declared it done. */
   const studentHasOralData = (sid: string) => {
     const s = scores[sid] || {}
-    return !!(s.o_test_complete || s.o_passage_level || s.o_alpha_names != null)
+    return !!s.o_test_complete || g1HasOralEvidence(s)
   }
 
   const getClassImpression = (sid: string): string | null => {
@@ -3824,10 +3865,10 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
         // written paper produced a number that read like a strong placement
         // and sorted to the top of the grade. Same rule as grades 2-5.
         missingSections: [
-          ...(sc.o_passage_level != null || sc.o_test_complete ? [] : ['oral']),
+          ...(g1HasOralEvidence(sc) || sc.o_test_complete ? [] : ['oral']),
           ...((sc.written_answers && Object.keys(sc.written_answers).length > 0) || sc.written_mc != null || sc.writing_short != null || sc.writing_bonus != null || sc.written_complete ? [] : ['written']),
         ] as ('oral' | 'written')[],
-        attemptedNothing: sc.o_passage_level == null && !!sc.o_test_complete,
+        attemptedNothing: !g1HasOralEvidence(sc) && !!sc.o_test_complete,
         // The paper was marked and held nothing. Same distinction the oral
         // half draws: scored 0 because it produced nothing, not skipped.
         writtenComplete: !!sc.written_complete,
@@ -4069,7 +4110,9 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
                   : undefined)
               : row.orfMax != null && row.oralPassageLevel
                 ? `Level ${row.oralPassageLevel} is untimed, so there is no CWPM. This is ${row.oralPassageLevel === 'A' ? 'the holistic interview rating' : 'words read correctly'} — ${row.orfRaw ?? 0} of ${row.orfMax} — which is what the composite scores.`
-                : undefined
+                : row.hasOral
+                  ? `No passage was administered, so this is the alphabet page — ${row.alphaRaw ?? 0} of ${row.alphaMax} letter names, sounds and sight words. The student sat the oral test and is scored on what they read, at the bottom band.`
+                  : undefined
             // Marked, not merely non-zero -- see the columns below.
             const writingMarked = row.scores?.writing_bonus != null || !!row.writtenComplete
             const mcMarked = (!!row.scores?.written_answers && Object.keys(row.scores.written_answers).length > 0)
@@ -4102,7 +4145,13 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
                     ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(oral)}{row.oralPassageLevel && <span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.oralPassageLevel})</span>}</span>
                     : row.orfMax != null && row.oralPassageLevel
                       ? <span>{row.orfRaw ?? 0}<span className="text-text-tertiary/50">/{row.orfMax}</span><span className="text-text-tertiary/50 text-[9px] ml-0.5">({row.oralPassageLevel})</span></span>
-                      : '—'}
+                      : row.hasOral
+                        // Sat the oral test, never reached a passage. An em
+                        // dash here read as "no oral test", which is what sent
+                        // teachers back to press "Mark test complete" again on
+                        // a student who had already been assessed.
+                        ? <span>{row.alphaRaw ?? 0}<span className="text-text-tertiary/50">/{row.alphaMax}</span><span className="text-text-tertiary/50 text-[9px] ml-0.5">(letters)</span></span>
+                        : '—'}
                 </td>
                 <td className="px-2 py-2 text-center">
                   {row.compNotAdministered
@@ -4148,7 +4197,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test + 25% MC + 5% short writing + 25% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. An unmarked section carries no score at all, so nobody is charged a zero for work nobody has read {'\u2014'} until the marker presses <span className="italic">Mark test graded</span> on the written entry screen, after which every section still empty scores 0. That is what puts a student who wrote nothing on the writing passage back into the ranking instead of leaving them out of it; a paper marked with nothing at all on it is tagged <span className="inline-block px-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">written blank</span>. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test + 25% MC + 5% short writing + 25% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. An unmarked section carries no score at all, so nobody is charged a zero for work nobody has read {'\u2014'} until the marker presses <span className="italic">Mark test graded</span> on the written entry screen, after which every section still empty scores 0. That is what puts a student who wrote nothing on the writing passage back into the ranking instead of leaving them out of it; a paper marked with nothing at all on it is tagged <span className="inline-block px-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">written blank</span>. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. A student who sat the letter and phoneme sections and never reached a passage has still sat the oral test: their column reads <span className="italic">(letters)</span>, and they are scored on that evidence at the bottom band rather than counted as having no oral result. <span className="italic">attempted none</span> is kept for a session marked complete with nothing on it at all. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
     </div>
   )
 }
