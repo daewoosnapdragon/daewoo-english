@@ -811,8 +811,13 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
           scoreMap[row.student_id] = row.raw_scores || {}
         })
       }
+      const snapshot = JSON.parse(JSON.stringify(scoreMap))
+      // The refs, not just the state: `saveScores` reads the refs, and a save
+      // can be fired before the effect that syncs them has run.
+      scoresRef.current = scoreMap
+      savedSnapshotRef.current = snapshot
       setScores(scoreMap)
-      setSavedSnapshot(JSON.parse(JSON.stringify(scoreMap)))
+      setSavedSnapshot(snapshot)
       setLoading(false)
     })()
   }, [levelTest.id, levelTest.grade])
@@ -826,6 +831,37 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   const savedSnapshotRef = useRef(savedSnapshot)
   useEffect(() => { scoresRef.current = scores }, [scores])
   useEffect(() => { savedSnapshotRef.current = savedSnapshot }, [savedSnapshot])
+
+  /**
+   * Every edit to the score map goes through here, and it moves the ref in the
+   * same tick as the state.
+   *
+   * `scoresRef` was synced from state in an effect alone, and a save fired
+   * from a click reads that ref a tick later -- "Mark test complete" does
+   * exactly that, and so does every other save-on-press button. Whichever of
+   * the effect and the timeout happened to run first decided what reached the
+   * database: when the effect lost, the save wrote the record from BEFORE the
+   * click, and the student's oral session stayed unfinished on the results
+   * table however many times the teacher pressed the button. Moving the ref
+   * here takes the ordering out of it. (WrittenTestEntry's toggleComplete
+   * already did this for itself, for the same reason.)
+   *
+   * The updater is handed the ref rather than React's `prev` so that two edits
+   * in one tick still compose -- the ref is the authoritative copy from here
+   * on, and the effect above is only a backstop.
+   */
+  const applyScores = useCallback((fn: (prev: Record<string, G1Scores>) => Record<string, G1Scores>) => {
+    const next = fn(scoresRef.current)
+    scoresRef.current = next
+    setScores(next)
+  }, [])
+
+  /** The same, for the saved-state snapshot that dirty detection reads. */
+  const applySnapshot = useCallback((fn: (prev: Record<string, G1Scores>) => Record<string, G1Scores>) => {
+    const next = fn(savedSnapshotRef.current)
+    savedSnapshotRef.current = next
+    setSavedSnapshot(next)
+  }, [])
 
   const isStudentDirty = useCallback((sid: string) => {
     return JSON.stringify(scoresRef.current[sid] || {}) !== JSON.stringify(savedSnapshotRef.current[sid] || {})
@@ -849,7 +885,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   ]
 
   const updateScore = useCallback((studentId: string, key: string, value: number | string | boolean | null | Record<string, unknown>) => {
-    setScores(prev => {
+    applyScores(prev => {
       const current = prev[studentId] || {}
       // If changing passage level, archive current passage data and clear fields
       if (key === 'o_passage_level' && current.o_passage_level && value !== current.o_passage_level) {
@@ -864,10 +900,10 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       }
       return { ...prev, [studentId]: { ...current, [key]: value } }
     })
-  }, [])
+  }, [applyScores])
 
   const updateWrittenAnswer = useCallback((studentId: string, qNum: number, choice: string) => {
-    setScores(prev => {
+    applyScores(prev => {
       const current = prev[studentId] || {}
       const answers = { ...(current.written_answers || {}), [qNum]: choice }
       // If toggling same answer off, delete it
@@ -876,20 +912,20 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       }
       return { ...prev, [studentId]: { ...current, written_answers: answers } }
     })
-  }, [])
+  }, [applyScores])
 
   const updateWrittenRubric = useCallback((studentId: string, category: string, score: number) => {
-    setScores(prev => {
+    applyScores(prev => {
       const current = prev[studentId] || {}
       const rubric = { ...(current.written_rubric || {}), [category]: score }
       return { ...prev, [studentId]: { ...current, written_rubric: rubric } }
     })
-  }, [])
+  }, [applyScores])
 
   // Checklist categories score by count of checked boxes, not by a ladder row.
   // The boxes are independent: checking a later one does not imply the earlier.
   const toggleWrittenChecklist = useCallback((studentId: string, category: string, boxKey: string) => {
-    setScores(prev => {
+    applyScores(prev => {
       const current = prev[studentId] || {}
       const all = { ...(current.written_checklist || {}) }
       const checked = new Set(all[category] || [])
@@ -899,10 +935,26 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       const rubric = { ...(current.written_rubric || {}), [category]: checked.size }
       return { ...prev, [studentId]: { ...current, written_checklist: all, written_rubric: rubric } }
     })
+  }, [applyScores])
+
+  /**
+   * Save work runs one unit at a time, and nothing is ever dropped.
+   *
+   * A save asked for while another was in flight used to return immediately
+   * and silently. The press that asked for it was usually the one that
+   * mattered -- "Mark test complete", "Mark test graded", the per-student Save
+   * -- so whatever it carried waited on the thirty-second autosave, and went
+   * with the screen if the teacher moved on to the results before that came
+   * round. Queueing costs a round-trip; dropping cost a teacher's work.
+   */
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve())
+  const enqueueSave = useCallback((task: () => Promise<void>) => {
+    const run = saveChainRef.current.then(task, task)
+    saveChainRef.current = run.catch(() => {})
+    return run
   }, [])
 
-  const saveScores = useCallback(async (studentIds: string[], silent = false) => {
-    if (savingRef.current) return
+  const runSave = useCallback(async (studentIds: string[], silent = false) => {
     savingRef.current = true
     saveSeqRef.current++
     setSaving(true)
@@ -1054,7 +1106,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         }
         if (studentOk) written[sid] = JSON.parse(JSON.stringify(raw))
       }
-      if (Object.keys(written).length > 0) setSavedSnapshot(prev => ({ ...prev, ...written }))
+      if (Object.keys(written).length > 0) applySnapshot(prev => ({ ...prev, ...written }))
       if (errors === 0) {
         if (!silent) showToast(`Saved ${studentIds.length} student${studentIds.length > 1 ? 's' : ''}`)
       } else {
@@ -1065,10 +1117,15 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     }
     setSaving(false)
     savingRef.current = false
-  }, [levelTest.id, currentTeacher?.id, students, showToast])
+  }, [levelTest.id, currentTeacher?.id, students, showToast, applySnapshot])
 
-  const autoSave = useCallback(async () => {
-    if (savingRef.current) return
+  const saveScores = useCallback((studentIds: string[], silent = false) =>
+    enqueueSave(() => runSave(studentIds, silent)), [enqueueSave, runSave])
+
+  // Which students are dirty is worked out inside the queued task, not before
+  // it: an autosave that waits behind another save must write what is unsaved
+  // when its turn comes, not what was unsaved when the timer fired.
+  const autoSave = useCallback(() => enqueueSave(async () => {
     const current = scoresRef.current
     const snapshot = savedSnapshotRef.current
     const dirty = students.filter(s => {
@@ -1077,9 +1134,9 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       return JSON.stringify(cur) !== JSON.stringify(snapshot[s.id] || {})
     })
     if (dirty.length === 0) return
-    await saveScores(dirty.map(s => s.id), true)
+    await runSave(dirty.map(s => s.id), true)
     showToast(`Auto-saved ${dirty.length} student${dirty.length === 1 ? '' : 's'}`)
-  }, [students, saveScores, showToast])
+  }), [enqueueSave, runSave, students, showToast])
 
   const autoSaveRef = useRef<(() => Promise<void>) | null>(null)
   useEffect(() => { autoSaveRef.current = autoSave }, [autoSave])
@@ -1136,7 +1193,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
         }
       })
 
-      if (changed) { setScores(nextScores); setSavedSnapshot(nextSnap) }
+      if (changed) { applyScores(() => nextScores); applySnapshot(() => nextSnap) }
     }, 15000)
     return () => clearInterval(timer)
   }, [levelTest.id])
@@ -1177,7 +1234,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     // student whose scores have been wiped.
     const isOralKey = isG1OralKey
     // Clear local state: keep only non-oral keys
-    setScores(prev => {
+    applyScores(prev => {
       const current = prev[sid] || {}
       const kept: Record<string, any> = {}
       Object.entries(current).forEach(([k, v]) => {
@@ -1185,7 +1242,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       })
       return { ...prev, [sid]: kept as G1Scores }
     })
-    setSavedSnapshot(prev => {
+    applySnapshot(prev => {
       const current = prev[sid] || {}
       const kept: Record<string, any> = {}
       Object.entries(current).forEach(([k, v]) => {
@@ -1211,11 +1268,11 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     if (error) { console.error('Clear oral DB error:', error); showToast('Error clearing scores'); return }
     saveSeqRef.current++
     showToast(`Cleared all oral scores for ${name}`)
-  }, [levelTest.id, currentTeacher?.id, showToast])
+  }, [levelTest.id, currentTeacher?.id, showToast, applyScores, applySnapshot])
 
   // Restore a previous passage attempt (swap it with current)
   const restoreAttempt = useCallback((sid: string, attemptIdx: number) => {
-    setScores(prev => {
+    applyScores(prev => {
       const current = { ...(prev[sid] || {}) }
       const attempts = Array.isArray((current as any).passages_attempted) ? [...(current as any).passages_attempted] : []
       if (attemptIdx < 0 || attemptIdx >= attempts.length) return prev
@@ -1244,7 +1301,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
 
       return { ...prev, [sid]: updated as G1Scores }
     })
-  }, [])
+  }, [applyScores])
 
   const completionStats = useMemo(() => {
     let writtenDone = 0, oralDone = 0
