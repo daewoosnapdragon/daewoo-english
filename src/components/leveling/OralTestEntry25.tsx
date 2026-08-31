@@ -1536,8 +1536,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         map[s.student_id] = oral
       })
       if (studs) studs.forEach(s => { if (!map[s.id]) map[s.id] = {} })
+      const snapshot = JSON.parse(JSON.stringify(map))
+      // The refs, not just the state: the save path reads the refs, and a save
+      // can be fired before the effect that syncs them has run.
+      scoresRef.current = map
+      savedSnapshotRef.current = snapshot
       setScores(map)
-      setSavedSnapshot(JSON.parse(JSON.stringify(map)))
+      setSavedSnapshot(snapshot)
       setLoading(false)
     })()
   }, [levelTest.id, levelTest.grade])
@@ -1548,6 +1553,35 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   const savedSnapshotRef = useRef(savedSnapshot)
   useEffect(() => { scoresRef.current = scores }, [scores])
   useEffect(() => { savedSnapshotRef.current = savedSnapshot }, [savedSnapshot])
+
+  /**
+   * Every edit to the score map goes through here, and it moves the ref in the
+   * same tick as the state.
+   *
+   * `scoresRef` was synced from state in an effect alone, and a save fired
+   * from a click reads that ref a tick later -- "Mark test complete" does
+   * exactly that. Whichever of the effect and the timeout happened to run
+   * first decided what reached the database: when the effect lost, the save
+   * wrote the record from BEFORE the click, so the session stayed unfinished
+   * on the results table however many times the teacher pressed the button.
+   * Moving the ref here takes the ordering out of it.
+   *
+   * The updater is handed the ref rather than React's `prev` so that two edits
+   * in one tick still compose -- the ref is the authoritative copy from here
+   * on, and the effect above is only a backstop.
+   */
+  const applyScores = useCallback((fn: (prev: Record<string, OralScores>) => Record<string, OralScores>) => {
+    const next = fn(scoresRef.current)
+    scoresRef.current = next
+    setScores(next)
+  }, [])
+
+  /** The same, for the saved-state snapshot that dirty detection reads. */
+  const applySnapshot = useCallback((fn: (prev: Record<string, OralScores>) => Record<string, OralScores>) => {
+    const next = fn(savedSnapshotRef.current)
+    savedSnapshotRef.current = next
+    setSavedSnapshot(next)
+  }, [])
 
   const isStudentDirty = useCallback((sid: string) => {
     return !sameScores(scoresRef.current[sid] || {}, savedSnapshotRef.current[sid] || {})
@@ -1610,12 +1644,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         changed = true
       })
       if (changed) {
-        setScores(nextScores)
-        setSavedSnapshot(nextSnap)
+        applyScores(() => nextScores)
+        applySnapshot(() => nextSnap)
       }
     }, 15000)
     return () => clearInterval(timer)
-  }, [levelTest.id, isStudentDirty])
+  }, [levelTest.id, isStudentDirty, applyScores, applySnapshot])
 
   // Auto-save: saves dirty students via existing handleSave, then updates snapshot
   const autoSaveRef = useRef<(() => Promise<void>) | null>(null)
@@ -1634,7 +1668,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
 
   // Fields that belong to the current passage and should be cleared on passage switch
   const updateScore = useCallback((sid: string, key: string, val: number | string | boolean | null | Record<string, unknown>) => {
-    setScores(prev => {
+    applyScores(prev => {
       const current = prev[sid] || {}
       // If changing passage_level, archive current passage data and clear fields
       if (key === 'passage_level' && current.passage_level && val !== current.passage_level) {
@@ -1655,10 +1689,26 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       }
       return { ...prev, [sid]: { ...current, [key]: val } }
     })
+  }, [applyScores])
+
+  /**
+   * Save work runs one unit at a time, and nothing is ever dropped.
+   *
+   * A save asked for while another was in flight used to return immediately
+   * and silently. The press that asked for it was usually the one that
+   * mattered -- "Mark test complete", the per-student Save, Prev/Next -- so
+   * whatever it carried waited on the thirty-second autosave, and went with
+   * the screen if the teacher moved on before that came round. Queueing costs
+   * a round-trip; dropping cost a teacher's work.
+   */
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve())
+  const enqueueSave = useCallback((task: () => Promise<void>) => {
+    const run = saveChainRef.current.then(task, task)
+    saveChainRef.current = run.catch(() => {})
+    return run
   }, [])
 
-  const handleSave = async (sids?: string[]) => {
-    if (savingRef.current) return
+  const runSave = async (sids?: string[]) => {
     savingRef.current = true
     saveSeqRef.current++
     setSaving(true)
@@ -1779,12 +1829,28 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     // Only the students this save actually wrote. It once advanced the snapshot
     // for the whole roster, so a save of one class marked another class's
     // unsaved work as saved -- and the refresh then erased it from the screen.
-    if (Object.keys(written).length > 0) setSavedSnapshot(prev => ({ ...prev, ...written }))
+    if (Object.keys(written).length > 0) applySnapshot(prev => ({ ...prev, ...written }))
   }
 
-  // Auto-save function for timer/unmount/visibility (silent, no toast for timer)
-  const autoSave = useCallback(async (silent = true) => {
-    if (savingRef.current) return // prevent overlapping saves
+  /**
+   * A save that throws -- the network dropping mid-round-trip is the usual way
+   * -- must still hand the lock back, or the screen stays "Saving..." with
+   * every button disabled and no way out but a reload.
+   */
+  const guardedSave = (sids?: string[]) => runSave(sids).catch((err: any) => {
+    console.error('Save error:', err)
+    savingRef.current = false
+    setSaving(false)
+    showToast(`Error saving: ${err?.message ?? 'try Save again'}`)
+  })
+
+  const handleSave = (sids?: string[]) => enqueueSave(() => guardedSave(sids))
+
+  // Auto-save function for timer/unmount/visibility.
+  // Which students are dirty is worked out inside the queued task, not before
+  // it: an autosave that waits behind another save must write what is unsaved
+  // when its turn comes, not what was unsaved when the timer fired.
+  const autoSave = useCallback(() => enqueueSave(async () => {
     const currentScores = scoresRef.current
     const snapshot = savedSnapshotRef.current
     const dirty = students.filter(s => {
@@ -1793,8 +1859,8 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       return !sameScores(cur, snapshot[s.id] || {})
     })
     if (dirty.length === 0) return
-    await handleSave(dirty.map(s => s.id))
-  }, [students, handleSave])
+    await guardedSave(dirty.map(s => s.id))
+  }), [enqueueSave, students])
 
   useEffect(() => { autoSaveRef.current = autoSave }, [autoSave])
 
@@ -1829,7 +1895,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
 
   // Restore a previous passage attempt (swap it with current)
   const restoreAttempt = useCallback((sid: string, attemptIdx: number) => {
-    setScores(prev => {
+    applyScores(prev => {
       const current = { ...(prev[sid] || {}) }
       const attempts = Array.isArray(current.passages_attempted) ? [...current.passages_attempted] : []
       if (attemptIdx < 0 || attemptIdx >= attempts.length) return prev
@@ -1857,7 +1923,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
 
       return { ...prev, [sid]: updated }
     })
-  }, [])
+  }, [applyScores])
 
   // Clear oral data — drops the oral keys server-side, in one transaction, so
   // a teacher marking the written paper at the same moment never sees the row
@@ -1871,8 +1937,8 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
       p_calc_keys: ORAL_CALC_KEYS,
     })
     if (error) { console.error('Clear DB error:', error); showToast('Error clearing scores'); return }
-    setScores(prev => ({ ...prev, [sid]: {} }))
-    setSavedSnapshot(prev => ({ ...prev, [sid]: {} }))
+    applyScores(prev => ({ ...prev, [sid]: {} }))
+    applySnapshot(prev => ({ ...prev, [sid]: {} }))
     saveSeqRef.current++
     showToast(`Cleared oral scores for ${name}`)
   }
