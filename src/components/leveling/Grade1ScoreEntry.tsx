@@ -134,6 +134,20 @@ interface G1Scores {
   /** Checklist categories: category key -> checked box keys. */
   written_checklist?: Record<string, string[]>
   written_mc?: number                        // total MC correct
+  /**
+   * The teacher has finished marking the written paper.
+   *
+   * The mirror of `o_test_complete`, and it exists for the same reason. The
+   * scoring is careful never to read an unmarked section as a zero, because
+   * the multiple choice is entered long before anyone reads the writing. The
+   * cost is that a paper with nothing on it -- a blank writing passage, an
+   * answer sheet left empty -- is indistinguishable from a paper nobody has
+   * marked, so the student never gains a written score and the results table
+   * calls them untested.
+   *
+   * Set this and every written section still empty counts as 0.
+   */
+  written_complete?: boolean | null
   writing_bonus?: number                     // extended writing rubric total (0-20)
   /** Short constructed-response item (Fall 2026 onward), 0-3. */
   writing_short?: number | null
@@ -497,8 +511,10 @@ function calculateG1Composite(scores: G1Scores, content: G1Content, currentClass
   // Presence of answers, not their value: a student who got everything wrong
   // has still sat the written test, and scoring them as "oral only" would hide
   // that. Matters more now that writing counts, since a blank paper is 0 too.
+  // A paper the teacher has declared marked counts too, whatever it holds. A
+  // blank script is a written result of 0, not an absent one.
   const hasWrittenData = (!!scores.written_answers && Object.keys(scores.written_answers).length > 0)
-    || writtenMC > 0 || writtenPct > 0
+    || writtenMC > 0 || writtenPct > 0 || !!scores.written_complete
   const hasOralData = scores.o_passage_level != null
 
   let composite: number
@@ -634,9 +650,18 @@ function g1WeightedComposite(
   // not read it. Scored 0 rather than dropped, so they rank at the bottom of
   // the grade and receive a placement instead of falling out of the ranking.
   const attemptedNothing = !hasOral && !!scores.o_test_complete
+  // The written equivalent of that flag. A paper the teacher has declared
+  // marked scores every section, including the sections holding nothing: a
+  // child who wrote 0 on the writing passage, or left the answer sheet empty,
+  // has been assessed on it and belongs in the ranking. Without this their row
+  // carried no written evidence at all and read as untested.
+  const writtenComplete = !!scores.written_complete
   const hasWritten = (!!scores.written_answers && Object.keys(scores.written_answers).length > 0)
-    || metrics.writtenMC > 0
-  const hasWriting = scores.writing_bonus != null
+    || metrics.writtenMC > 0 || writtenComplete
+  const hasWriting = scores.writing_bonus != null || writtenComplete
+  // Null stays null on a paper with no short item at all -- forcing a 0 there
+  // would score a section the students were never given.
+  const shortScore = metrics.writingShort ?? (writtenComplete ? 0 : null)
   const parts: { score: number; weight: number }[] = []
   if (hasOral) parts.push({ score: metrics.oralScore / 100, weight: G1_PLACEMENT_WEIGHTS.oral })
   else if (attemptedNothing) parts.push({ score: 0, weight: G1_PLACEMENT_WEIGHTS.oral })
@@ -646,8 +671,8 @@ function g1WeightedComposite(
   if (hasWriting && content.extendedWriting.max > 0) {
     parts.push({ score: metrics.writingBonus / content.extendedWriting.max, weight: G1_PLACEMENT_WEIGHTS.writing })
   }
-  if (metrics.writingShort != null && (content.shortWriting?.max ?? 0) > 0) {
-    parts.push({ score: metrics.writingShort / (content.shortWriting!.max as number), weight: G1_PLACEMENT_WEIGHTS.shortWriting })
+  if (shortScore != null && (content.shortWriting?.max ?? 0) > 0) {
+    parts.push({ score: shortScore / (content.shortWriting!.max as number), weight: G1_PLACEMENT_WEIGHTS.shortWriting })
   }
 
   if (parts.length === 0) return null
@@ -995,6 +1020,8 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
           written_mc_max: content.written.mcMax,
           writing_bonus: metrics.writingBonus,
           writing_short: metrics.writingShort,
+          // Mirrored from raw, exactly as oral_complete is on the oral side.
+          written_complete: !!finalRaw.written_complete,
         }
 
         const groups: { raw: any; metrics: any; nested: string[] }[] = []
@@ -1631,7 +1658,31 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
   const mcCorrect = useMemo(() => GRADE_1_QUESTIONS.reduce((sum, q) => sum + (answers[q.qNum] === q.correct ? 1 : 0), 0), [answers, GRADE_1_QUESTIONS])
   const writingTotal = useMemo(() => G1_WRITING_CATEGORIES.reduce((sum, cat) => sum + (rubric[cat.key] || 0), 0), [rubric, G1_WRITING_CATEGORIES])
   const shortScore = sc.writing_short ?? null
-  const studentHasData = Object.keys(answers).length > 0 || Object.keys(rubric).length > 0 || shortScore != null
+  const writtenComplete = !!sc.written_complete
+  const studentHasData = Object.keys(answers).length > 0 || Object.keys(rubric).length > 0 || shortScore != null || writtenComplete
+  /**
+   * Which parts of this paper carry no mark at all -- named, so the teacher
+   * pressing "Mark test graded" can see exactly what they are about to score 0.
+   */
+  const blankSections = useMemo(() => {
+    const out: string[] = []
+    if (Object.keys(answers).length === 0) out.push('multiple choice')
+    if (shortWriting && shortScore == null) out.push('short writing')
+    if (Object.keys(rubric).length === 0) out.push('writing')
+    return out
+  }, [answers, rubric, shortScore, shortWriting])
+
+  /**
+   * Declare the paper marked, or take the declaration back. Saves straight
+   * away: a teacher who presses this has finished with the script in their
+   * hand, and leaving it to the autosave means the results they check next
+   * still show the student as untested.
+   */
+  const toggleComplete = () => {
+    if (!student) return
+    updateScore(student.id, 'written_complete', !writtenComplete)
+    setTimeout(() => { onSave([student.id]) }, 0)
+  }
 
   const sections = useMemo(() => {
     const groups: Record<string, G1QuestionDef[]> = {}
@@ -1691,6 +1742,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
     updateScore(student.id, 'writing_bonus', null as any)
     updateScore(student.id, 'writing', null as any)
     updateScore(student.id, 'writing_short', null)
+    updateScore(student.id, 'written_complete', false)
     content.written.sectionKeys.forEach(k => updateScore(student.id, `w_${k}`, null as any))
     updateScore(student.id, 'w_word_picture', null as any)
     updateScore(student.id, 'w_passage_comp', null as any)
@@ -1737,7 +1789,9 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) }} />
                 <span className="flex-1 truncate">{s.english_name || s.korean_name}</span>
                 {hasData && <span className="text-[9px] text-text-tertiary">{answered}/{G1_MC_MAX}</span>}
-                {dirty ? <span className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" title="Unsaved changes" /> : hasData && <CheckCircle2 size={10} className="text-green-500 flex-shrink-0" />}
+                {dirty ? <span className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" title="Unsaved changes" />
+                  : scores[s.id]?.written_complete ? <CheckCircle2 size={11} className="text-green-600 flex-shrink-0" aria-label="Test graded" />
+                  : hasData && <CheckCircle2 size={10} className="text-green-500 flex-shrink-0" />}
               </div>
             )
           })}
@@ -2055,6 +2109,43 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                     ))}
                   </ul>
                 </details>
+              )}
+            </div>
+
+            {/* ── The paper is marked ────────────────────────────────────
+                A blank writing passage and an unread writing passage look the
+                same on the record, and the scoring rightly refuses to guess --
+                which is why a child who wrote nothing never gained a written
+                score and dropped out of the results as untested. This is the
+                teacher settling it: whatever is still blank when this is
+                pressed is blank because the student left it blank, and it
+                scores 0. */}
+            <div className="mt-8 mb-2 pt-5 border-t border-border">
+              {blankSections.length > 0 && !writtenComplete && (
+                <p className="text-[11px] text-text-tertiary mb-2 leading-snug">
+                  Not marked yet: <span className="font-semibold text-text-secondary">{blankSections.join(', ')}</span>.
+                  {' '}Nothing here counts against {student.english_name || student.korean_name} until somebody marks it &mdash;
+                  which also means a paper they left blank does not count at all. Press the button below once you have
+                  finished with this script and the blank sections score 0.
+                </p>
+              )}
+              <button
+                onClick={toggleComplete}
+                disabled={saving}
+                title={writtenComplete
+                  ? 'This paper is marked. Any section left blank counts as 0 and the student is ranked on it. Press again to take that back.'
+                  : 'Records that this paper has been marked. Any section still blank counts as 0 from then on, so a student who wrote nothing is scored rather than left out of the results as untested.'}
+                className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-[14px] font-bold border-2 transition-all disabled:opacity-50 ${
+                  writtenComplete
+                    ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                    : 'bg-surface text-navy border-navy/25 hover:border-navy/50 hover:bg-surface-alt'}`}>
+                {writtenComplete ? <CheckCircle2 size={17} /> : <Circle size={17} />}
+                {writtenComplete ? 'Test graded' : 'Mark test graded'}
+              </button>
+              {writtenComplete && blankSections.length > 0 && (
+                <p className="text-[10px] text-green-700 text-center mt-2">
+                  Marked. {blankSections.join(', ')} {blankSections.length === 1 ? 'counts' : 'count'} as 0.
+                </p>
               )}
             </div>
           </div>
@@ -3677,9 +3768,15 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
         // and sorted to the top of the grade. Same rule as grades 2-5.
         missingSections: [
           ...(sc.o_passage_level != null || sc.o_test_complete ? [] : ['oral']),
-          ...((sc.written_answers && Object.keys(sc.written_answers).length > 0) || sc.written_mc != null || sc.writing_short != null || sc.writing_bonus != null ? [] : ['written']),
+          ...((sc.written_answers && Object.keys(sc.written_answers).length > 0) || sc.written_mc != null || sc.writing_short != null || sc.writing_bonus != null || sc.written_complete ? [] : ['written']),
         ] as ('oral' | 'written')[],
         attemptedNothing: sc.o_passage_level == null && !!sc.o_test_complete,
+        // The paper was marked and held nothing. Same distinction the oral
+        // half draws: scored 0 because it produced nothing, not skipped.
+        writtenComplete: !!sc.written_complete,
+        writtenAttemptedNothing: !!sc.written_complete
+          && !(sc.written_answers && Object.keys(sc.written_answers).length > 0)
+          && sc.writing_bonus == null && sc.writing_short == null,
         hasAnec: av.length > 0,
         anecScore: av.length > 0 ? av.reduce((a, b) => a + b, 0) / (av.length * 4) : 0.5,
       }
@@ -3916,9 +4013,31 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               : row.orfMax != null && row.oralPassageLevel
                 ? `Level ${row.oralPassageLevel} is untimed, so there is no CWPM. This is ${row.oralPassageLevel === 'A' ? 'the holistic interview rating' : 'words read correctly'} — ${row.orfRaw ?? 0} of ${row.orfMax} — which is what the composite scores.`
                 : undefined
+            // Marked, not merely non-zero -- see the columns below.
+            const writingMarked = row.scores?.writing_bonus != null || !!row.writtenComplete
+            const mcMarked = (!!row.scores?.written_answers && Object.keys(row.scores.written_answers).length > 0)
+              || row.scores?.written_mc != null || !!row.writtenComplete
             return (
               <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${move ? 'bg-amber-50/30' : ''} ${flags.length > 0 ? 'bg-red-50/20' : ''}`}>
-                <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span></td>
+                <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[10px]">{row.student.korean_name}</span>
+                  {/* Sat some of the test but not all of it. The composite is
+                      renormalized over what they did sit, so it is not
+                      comparable with a complete record and says so. */}
+                  {row.isTested && (row.missingSections?.length ?? 0) > 0 && (
+                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-semibold align-middle"
+                      title={`Has not sat the ${row.missingSections.join(' or ')} test. The composite is worked out from the sections they did sit, so it is not comparable with a complete record.`}>
+                      no {row.missingSections.join(' / ')}
+                    </span>
+                  )}
+                  {/* Marked, and there was nothing on it. Scored 0 across the
+                      written sections rather than left out. */}
+                  {row.writtenAttemptedNothing && (
+                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-semibold align-middle"
+                      title="The written paper was marked and every section of it was blank -- nothing on the answer sheet, nothing written. Scored 0 rather than dropped: a paper that produced nothing is the lowest evidence there is, not missing evidence.">
+                      written blank
+                    </span>
+                  )}
+                </td>
                 <td className="px-2 py-2 text-center"><span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: classToColor(row.student.english_class as EnglishClass) + '40', color: classToTextColor(row.student.english_class as EnglishClass) }}>{row.student.english_class}</span></td>
                 <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}
                   title={oralTitle}>
@@ -3940,9 +4059,15 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
                         ? <span className="text-text-tertiary/60 text-[9px] italic" title={`Level ${row.oralPassageLevel} has no comprehension questions — it is ${row.oralPassageLevel === 'A' ? 'an oral interview' : 'a word list'}, not a passage. Nothing is missing.`}>not asked</span>
                         : '—'}
                 </td>
-                {hasShortWriting && <td className="px-2 py-2 text-center">{row.writingShort != null ? <span>{row.writingShort}<span className="text-text-tertiary/50">/{content.shortWriting!.max}</span></span> : '—'}</td>}
-                <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{row.writingBonus > 0 ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writingBonus}<span className="text-text-tertiary/50">/{G1_WRITING_MAX}</span></span> : '—'}</td>
-                <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{row.writtenMC > 0 ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writtenMC}<span className="text-text-tertiary/50">/{G1_MC_MAX}</span></span> : '—'}</td>
+                {hasShortWriting && <td className="px-2 py-2 text-center">{row.writingShort != null || row.writtenComplete ? <span>{row.writingShort ?? 0}<span className="text-text-tertiary/50">/{content.shortWriting!.max}</span></span> : '—'}</td>}
+                {/* `> 0` used to gate both of these, so a script the teacher had
+                    read and scored 0 printed as an em dash -- identical to a
+                    script nobody had opened. What decides it is whether the
+                    section was MARKED, which is the rubric having categories,
+                    an answer sheet having answers, or the paper having been
+                    declared graded. */}
+                <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{writingMarked ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writingBonus}<span className="text-text-tertiary/50">/{G1_WRITING_MAX}</span></span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{mcMarked ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writtenMC}<span className="text-text-tertiary/50">/{G1_MC_MAX}</span></span> : '—'}</td>
                 <td className="px-2 py-2 text-center"
                   title="Teacher Rating, averaged out of 4. Reference for the placement conversation only — it is not part of the composite, so a student nobody has rated is neither helped nor hurt by that.">
                   {row.hasAnec ? <span className="text-text-secondary">{(row.anecScore * 4).toFixed(1)}</span> : <span className="text-text-tertiary">{'—'}</span>}
@@ -3966,7 +4091,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test + 25% MC + 5% short writing + 25% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
+      <p className="text-[10px] text-text-tertiary mt-3">Composite = 45% oral test + 25% MC + 5% short writing + 25% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. An unmarked section carries no score at all, so nobody is charged a zero for work nobody has read {'\u2014'} until the marker presses <span className="italic">Mark test graded</span> on the written entry screen, after which every section still empty scores 0. That is what puts a student who wrote nothing on the writing passage back into the ranking instead of leaving them out of it; a paper marked with nothing at all on it is tagged <span className="inline-block px-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">written blank</span>. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
     </div>
   )
 }

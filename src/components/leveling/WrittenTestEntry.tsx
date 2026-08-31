@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
-import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye, AlertTriangle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye, AlertTriangle, CheckCircle2, Circle } from 'lucide-react'
 import { isCorrectAnswer, acceptedLetters, hasMultipleKeys } from '@/lib/utils'
 import { getG2Content, G2Content } from './grade2Content'
 import { getG3Content, G3Content } from './grade3Content'
@@ -162,12 +162,12 @@ type ScoreGroup = { raw: Record<string, any>; metrics: Record<string, any>; nest
 /** Every key this screen owns — the exact set that Clear removes. */
 const WRITTEN_RAW_KEYS = [
   'written_answers', 'written_rubric', 'written_checklist', 'written_checklist_capped',
-  'written_short_writing', 'written_mc', 'writing',
+  'written_short_writing', 'written_mc', 'writing', 'written_complete',
 ]
 const WRITTEN_CALC_KEYS = [
   'written_mc_total', 'written_mc_max', 'written_mc_pct',
   'writing_total', 'writing_max', 'short_writing_total', 'short_writing_max',
-  'written_domain_scores', 'written_standards_mastery',
+  'written_domain_scores', 'written_standards_mastery', 'written_complete',
 ]
 
 const MC_NESTED = ['written_answers']
@@ -182,6 +182,26 @@ function writingDirty(cur: StudentScores | undefined, saved: StudentScores | und
     w: v?.writing || {}, c: v?.checklist || {}, cc: v?.checklistCapped || {}, sw: v?.shortWriting ?? null,
   })
   return shape(cur) !== shape(saved)
+}
+function completeDirty(cur: StudentScores | undefined, saved: StudentScores | undefined): boolean {
+  return !!cur?.complete !== !!saved?.complete
+}
+
+/**
+ * "This paper is marked" -- and nothing else.
+ *
+ * Its own group, on purpose. The flag is a statement about the whole paper,
+ * but the two halves are marked by two people, and folding it into either half
+ * would mean the teacher who presses the button also writes their snapshot of
+ * the other teacher's work back over it. On its own it merges into whatever
+ * else is on the row and touches nothing.
+ */
+function buildCompleteGroup(sc: StudentScores): ScoreGroup {
+  return {
+    raw: { written_complete: !!sc.complete },
+    metrics: { written_complete: !!sc.complete },
+    nested: [],
+  }
 }
 
 function buildMcGroup(sc: StudentScores, config: GradeConfig): ScoreGroup {
@@ -223,7 +243,7 @@ function buildMcGroup(sc: StudentScores, config: GradeConfig): ScoreGroup {
 function hydrateWritten(raw: any, config: GradeConfig): StudentScores | null {
   if (!raw) return null
   const hasAny = ['written_answers', 'written_rubric', 'written_checklist', 'written_checklist_capped', 'written_short_writing']
-    .some(k => raw[k] != null)
+    .some(k => raw[k] != null) || !!raw.written_complete
   if (!hasAny) return null
   return {
     answers: raw.written_answers || {},
@@ -231,6 +251,7 @@ function hydrateWritten(raw: any, config: GradeConfig): StudentScores | null {
     checklist: raw.written_checklist || {},
     checklistCapped: migrateCapped(raw.written_checklist_capped, config),
     shortWriting: raw.written_short_writing ?? null,
+    complete: !!raw.written_complete,
   }
 }
 
@@ -299,6 +320,20 @@ interface StudentScores {
    * grades and versions.
    */
   shortWriting?: number | null
+  /**
+   * The teacher has finished marking this paper.
+   *
+   * Everything above distinguishes "not marked yet" from "marked 0", and has
+   * to: the multiple choice is entered days before anyone reads the writing,
+   * so an unopened rubric must not be scored as a zero. The cost is that a
+   * paper with genuinely nothing on it -- a blank script, an answer sheet left
+   * empty, a child who wrote in Korean -- looks exactly like a paper nobody has
+   * got to, and the results table drops the student as untested.
+   *
+   * This is the teacher saying which one it is. Once set, every section still
+   * empty counts as 0 and the student is ranked on it.
+   */
+  complete?: boolean
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1110,7 +1145,7 @@ function StandardBadge({ code, description }: { code: string; description: strin
   )
 }
 
-function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, writingMarkedCount, setAnswer, setWritingScore, toggleChecklistBox, toggleChecklistCap, toggleShortChecklistBox, setShortWriting, markShortBlank, clearShortWriting, clearStudent, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
+function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writingTotal, writingMarkedCount, setAnswer, setWritingScore, toggleChecklistBox, toggleChecklistCap, toggleShortChecklistBox, setShortWriting, markShortBlank, clearShortWriting, clearStudent, complete, toggleComplete, saving, studentHasData, selectedIdx, setSelectedIdx, totalStudents }: {
   student: any; config: GradeConfig; sc: StudentScores; sections: Record<string, QuestionDef[]>; sectionKeys: string[]
   /** Null while the rubric is untouched -- see writingTotalOf. */
   mcCorrect: number; writingTotal: number | null; writingMarkedCount: number
@@ -1121,7 +1156,12 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
   setShortWriting: (v: number | null) => void
   markShortBlank: () => void
   clearShortWriting: () => void
-  clearStudent: () => void; studentHasData: boolean; selectedIdx: number; setSelectedIdx: (i: number) => void; totalStudents: number
+  clearStudent: () => void
+  /** Whether the teacher has declared this paper marked -- see StudentScores.complete. */
+  complete: boolean
+  toggleComplete: () => void
+  saving: boolean
+  studentHasData: boolean; selectedIdx: number; setSelectedIdx: (i: number) => void; totalStudents: number
 }) {
   const [focusedQ, setFocusedQ] = useState<number | null>(null)
   /** Which writing category the number keys act on. Marking a script means four
@@ -1215,6 +1255,18 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
     return out
   }, [config])
 
+  /**
+   * Which parts of this paper carry no mark at all -- named, so the teacher
+   * pressing "Mark test graded" can see exactly what they are about to score 0.
+   */
+  const blankSections = useMemo(() => {
+    const out: string[] = []
+    if (!Object.values(sc.answers || {}).some(v => !!v)) out.push('multiple choice')
+    if (config.shortWriting && sc.shortWriting == null) out.push('short writing')
+    if (writingTotal == null) out.push('writing')
+    return out
+  }, [sc.answers, sc.shortWriting, writingTotal, config.shortWriting])
+
   if (!student) return <div className="p-12 text-center text-text-tertiary">Select a student from the sidebar</div>
 
   return (
@@ -1239,8 +1291,11 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             {writingTotal == null
               ? <div className="text-[20px] font-bold text-text-tertiary">&mdash;<span className="text-[14px] text-text-tertiary">/{config.writingMax}</span></div>
               : <div className="text-[20px] font-bold text-navy">{writingTotal}<span className="text-[14px] text-text-tertiary">/{config.writingMax}</span></div>}
-            <div className="text-[10px] text-text-tertiary" title={writingTotal == null ? 'The writing rubric has not been marked. It counts as no score at all -- not as a zero -- so nothing about this student\'s placement is decided by writing until somebody reads the script.' : undefined}>
-              {writingTotal == null ? 'Writing -- not graded' : 'Writing'}
+            <div className={`text-[10px] ${writingTotal == null && complete ? 'text-green-700' : 'text-text-tertiary'}`}
+              title={writingTotal != null ? undefined
+                : complete ? 'The paper is marked and the rubric is empty, so writing scores 0. That is a judgement about the script, not a gap in the record.'
+                : 'The writing rubric has not been marked. It counts as no score at all -- not as a zero -- so nothing about this student\'s placement is decided by writing until somebody reads the script.'}>
+              {writingTotal != null ? 'Writing' : complete ? 'Writing -- blank, scores 0' : 'Writing -- not graded'}
             </div>
           </div>
           {studentHasData && (
@@ -1685,6 +1740,46 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
           </div>
         </details>
       )}
+
+      {/* ── The paper is marked ──────────────────────────────────────────
+          Everything above is careful to tell "not marked yet" apart from
+          "marked 0", because the two halves of this paper are marked days
+          apart and an unopened rubric must never be scored as a zero. The
+          price of that care is that a paper with nothing on it reads exactly
+          like a paper nobody has reached, and the student drops out of the
+          results as untested.
+
+          This is where the teacher settles it. Whatever is still blank when
+          this is pressed is blank because the student left it blank, and it
+          scores 0 from here on. */}
+      <div className="mt-8 mb-2 pt-5 border-t border-border">
+        {blankSections.length > 0 && !complete && (
+          <p className="text-[11px] text-text-tertiary mb-2 leading-snug">
+            Not marked yet: <span className="font-semibold text-text-secondary">{blankSections.join(', ')}</span>.
+            {' '}Nothing here counts against {student.english_name || student.korean_name} until somebody marks it &mdash;
+            which also means a paper they left blank does not count at all. Press the button below once you have
+            finished with this script and the blank sections score 0.
+          </p>
+        )}
+        <button
+          onClick={toggleComplete}
+          disabled={saving}
+          title={complete
+            ? 'This paper is marked. Any section left blank counts as 0 and the student is ranked on it. Press again to take that back.'
+            : 'Records that this paper has been marked. Any section still blank counts as 0 from then on, so a student who wrote nothing is scored rather than left out of the results as untested.'}
+          className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-[14px] font-bold border-2 transition-all disabled:opacity-50 ${
+            complete
+              ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+              : 'bg-surface text-navy border-navy/25 hover:border-navy/50 hover:bg-surface-alt'}`}>
+          {complete ? <CheckCircle2 size={17} /> : <Circle size={17} />}
+          {complete ? 'Test graded' : 'Mark test graded'}
+        </button>
+        {complete && blankSections.length > 0 && (
+          <p className="text-[10px] text-green-700 text-center mt-2">
+            Marked. {blankSections.join(', ')} {blankSections.length === 1 ? 'counts' : 'count'} as 0.
+          </p>
+        )}
+      </div>
     </div>
   )
 }
@@ -2246,7 +2341,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
     if (!s) return false
     // Keys, not positive values: a blank paper marked 0 across the rubric has
     // been marked, and used to read as untouched.
-    return Object.keys(s.answers).length > 0 || Object.keys(s.writing || {}).length > 0 || s.shortWriting != null
+    return Object.keys(s.answers).length > 0 || Object.keys(s.writing || {}).length > 0 || s.shortWriting != null || !!s.complete
   }
 
   // Track which students have unsaved changes (changed since last save/load)
@@ -2310,6 +2405,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       const needsRekey = rekeyRef.current.has(stu.id)
       if ((mcDirty(sc, sav) || needsRekey) && Object.keys(sc.answers).length > 0) groups.push(buildMcGroup(sc, config))
       if (writingDirty(sc, sav)) groups.push(buildWritingGroup(sc, config))
+      if (completeDirty(sc, sav)) groups.push(buildCompleteGroup(sc))
       if (groups.length === 0) continue
 
       let ok = true
@@ -2413,7 +2509,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       // leave the cleared scores sitting on this screen.
       const byStudent = new Map<string, any>()
       data.forEach((row: any) => byStudent.set(row.student_id, row.raw_scores))
-      const EMPTY: StudentScores = { answers: {}, writing: {}, checklist: {}, checklistCapped: {}, shortWriting: null }
+      const EMPTY: StudentScores = { answers: {}, writing: {}, checklist: {}, checklistCapped: {}, shortWriting: null, complete: false }
 
       students.forEach(stu => {
         const server = hydrateWritten(byStudent.get(stu.id), config) || EMPTY
@@ -2441,6 +2537,14 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           mergedSnap.checklist = JSON.parse(JSON.stringify(server.checklist ?? {}))
           mergedSnap.checklistCapped = JSON.parse(JSON.stringify(server.checklistCapped ?? {}))
           mergedSnap.shortWriting = server.shortWriting
+          touched = true
+        }
+        // The other teacher may be the one who finished the paper. Same rule as
+        // the two halves: taken from the server unless this screen is holding
+        // an unsaved change to it.
+        if (!completeDirty(local, sav) && !!local.complete !== !!server.complete) {
+          merged.complete = !!server.complete
+          mergedSnap.complete = !!server.complete
           touched = true
         }
         if (touched) {
@@ -2473,6 +2577,27 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       setSaving(false)
       savingRef.current = false
     }
+  }
+
+  /**
+   * Declare the paper marked, or take the declaration back.
+   *
+   * Saves straight away, like the oral screen's equivalent. A teacher who
+   * presses this has finished with the script in their hand and is reaching
+   * for the next one; leaving it to the thirty-second autosave means the
+   * results table they check afterwards still shows the student as untested.
+   */
+  const toggleComplete = () => {
+    if (!student) return
+    const cur = scoresRef.current[student.id] || { answers: {}, writing: {} }
+    const next: StudentScores = { ...cur, complete: !cur.complete }
+    // The ref is normally synced from state in an effect, and the save below
+    // reads the ref. Set it here too so the write cannot go out carrying the
+    // value from before the click, whichever order the effect and the timeout
+    // happen to run in.
+    scoresRef.current = { ...scoresRef.current, [student.id]: next }
+    setScores(prev => ({ ...prev, [student.id]: next }))
+    setTimeout(() => { handleSave() }, 0)
   }
 
   // Analytics
@@ -2531,6 +2656,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           {classStudents.map((s, idx) => {
             const hasData = studentHasData(s.id)
             const sAnswered = Object.keys(scores[s.id]?.answers || {}).length
+            const sComplete = !!scores[s.id]?.complete
             return (
               <button key={s.id} onClick={() => setSelectedIdx(idx)}
                 className={`w-full text-left px-3 py-2 border-b border-border/50 flex items-center gap-2 transition-colors ${idx === selectedIdx ? 'bg-blue-50' : 'hover:bg-surface-alt'}`}>
@@ -2539,7 +2665,9 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
                   <div className="text-[12px] font-medium truncate">{s.english_name || s.korean_name}</div>
                   {hasData && <div className="text-[9px] text-text-tertiary">{sAnswered}/{config.questionCount} MC</div>}
                 </div>
-                {hasData && <Check size={12} className="text-green-500 flex-shrink-0" />}
+                {sComplete
+                  ? <CheckCircle2 size={12} className="text-green-600 flex-shrink-0" aria-label="Test graded" />
+                  : hasData && <Check size={12} className="text-green-500 flex-shrink-0" />}
               </button>
             )
           })}
@@ -2577,6 +2705,9 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
             markShortBlank={markShortBlank}
             clearShortWriting={clearShortWriting}
             clearStudent={clearStudent}
+            complete={!!sc.complete}
+            toggleComplete={toggleComplete}
+            saving={saving}
             studentHasData={student ? studentHasData(student.id) : false}
             selectedIdx={selectedIdx}
             setSelectedIdx={setSelectedIdx}
