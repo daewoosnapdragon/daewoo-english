@@ -766,10 +766,14 @@ export function versionKeyForTest(test: { academic_year?: string | null; semeste
   return TEST_VERSIONS[key] ? key : LEGACY_VERSION
 }
 
-function getGradeConfig(grade: number, versionKey: string = LEGACY_VERSION): GradeConfig | null {
+export function getGradeConfig(grade: number, versionKey: string = LEGACY_VERSION): GradeConfig | null {
   const version = TEST_VERSIONS[versionKey] || TEST_VERSIONS[LEGACY_VERSION]
   return version[grade] || TEST_VERSIONS[LEGACY_VERSION][grade] || null
 }
+
+export type { GradeConfig, QuestionDef, WritingCategory }
+/** DOK 1 = 1 point, DOK 2+ = 2 points, on the versions that weight at all. */
+export function questionWeight(config: GradeConfig, q: QuestionDef): number { return qWeight(config, q) }
 
 // ═══════════════════════════════════════════════════════════════════════
 // HELPERS

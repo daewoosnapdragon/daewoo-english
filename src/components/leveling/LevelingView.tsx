@@ -5,13 +5,13 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel, compRatioForComposite, capComponent, COMPONENT_CAP,
-  compositeWeightsFor, COMPOSITE_TERM_LABELS, DECODING_WEIGHTS, IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, writingTotalFrom, type CompositeTerm, type CompositeWeights } from '@/lib/utils'
+  compositeWeightsFor, COMPOSITE_TERM_LABELS, DECODING_WEIGHTS, IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, writingTotalFrom, isCorrectAnswer, type CompositeTerm, type CompositeWeights } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2, BarChart3 } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
 import OralTestGrades2to5 from '@/components/leveling/OralTestEntry25'
-import WrittenTestEntry from '@/components/leveling/WrittenTestEntry'
+import WrittenTestEntry, { getGradeConfig, questionWeight } from '@/components/leveling/WrittenTestEntry'
 import { WIDA_LEVELS } from '@/lib/wida'
 import { getG2Content, g2VersionKeyForTest } from '@/components/leveling/grade2Content'
 import { getG3Content, g3VersionKeyForTest } from '@/components/leveling/grade3Content'
@@ -1184,7 +1184,105 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   const [showBorderline, setShowBorderline] = useState(false)
   const [excludedQuestions, setExcludedQuestions] = useState<number[]>([])
   const [savingCheckpoint, setSavingCheckpoint] = useState(false)
+  const [exportingDiag, setExportingDiag] = useState(false)
   const { currentTeacher, showToast } = useApp()
+
+  /**
+   * Item-level export, for asking the paper questions the results table cannot.
+   *
+   * The results CSV stops at section totals, so "Daisy is weak at reading" is
+   * as specific as it can get. Everything needed to say WHICH question and
+   * WHICH wrong answer is already stored per student -- `written_answers` holds
+   * the letter actually chosen -- and until now nothing read it back out.
+   *
+   * Long format, one row per student per scored element, because the paper is
+   * not rectangular: grades have different question counts, different writing
+   * categories, and only some have a short response. A wide sheet would need a
+   * different column set per grade and would grow a new column every time a
+   * test is re-authored.
+   *
+   * Deliberately exports `rows`, not `displayed`: this is an analysis file, and
+   * a filter left on the screen must not silently produce a partial one.
+   */
+  const exportDiagnostics = async () => {
+    setExportingDiag(true)
+    try {
+      const g = Number(levelTest.grade)
+      // Grade 1 is authored in its own module and never had a GradeConfig.
+      const paper = g === 1
+        ? await (async () => {
+            const c = (await import('@/components/leveling/grade1Content')).g1ContentForTest(levelTest as any)
+            if (!c) return null
+            return {
+              items: (c.written.questions || []).map((q: any) => ({ ...q, dok: null })),
+              cats: c.extendedWriting?.categories ?? [],
+              shortMax: c.shortWriting?.max ?? null,
+              weightOf: () => 1,
+            }
+          })()
+        : (() => {
+            const cfg = getGradeConfig(g, versionKeyForTest(levelTest as any))
+            if (!cfg) return null
+            return {
+              items: cfg.questions,
+              cats: cfg.writingCategories,
+              shortMax: cfg.shortWriting?.max ?? null,
+              weightOf: (q: any) => questionWeight(cfg, q),
+            }
+          })()
+
+      if (!paper) { showToast('No test content is registered for this grade, so there is nothing to export.'); return }
+
+      const out: (string | number)[][] = []
+      rows.forEach(r => {
+        const raw = r.score || {}
+        const answers = raw.written_answers || {}
+        const rubric = raw.written_rubric || {}
+        // A student with no written paper at all contributes nothing -- rows of
+        // blanks would read as wrong answers in every tally downstream.
+        const sat = Object.keys(answers).length > 0 || Object.keys(rubric).length > 0
+          || raw.written_short_writing != null
+        if (!sat) return
+        const who = [r.student.english_name, r.student.korean_name || '', r.student.english_class || '',
+          r.suggestedClass ?? '']
+
+        paper.items.forEach((q: any) => {
+          const chosen = answers[q.qNum] ?? ''
+          const ok = isCorrectAnswer(q, chosen)
+          const w = paper.weightOf(q)
+          out.push([...who, 'mc', q.qNum, q.sectionLabel || q.section || '',
+            q.standard || '', q.domain || '', q.dok ?? '',
+            chosen, q.acceptAny ? 'any' : q.correct, chosen === '' ? '' : (ok ? 1 : 0),
+            chosen === '' ? '' : (ok ? w : 0), w])
+        })
+
+        paper.cats.forEach((cat: any) => {
+          const v = rubric[cat.key]
+          if (v == null) return
+          out.push([...who, 'writing_category', cat.key, cat.label || '',
+            cat.standard || '', 'Writing', '', '', '', '', v, cat.max])
+        })
+
+        if (paper.shortMax != null && raw.written_short_writing != null) {
+          out.push([...who, 'short_writing', 'short_writing', 'Short writing',
+            '', 'Writing', '', '', '', '', raw.written_short_writing, paper.shortMax])
+        }
+      })
+
+      if (out.length === 0) { showToast('No written papers have been marked for this grade yet.'); return }
+
+      exportToCSV(`leveling-diagnostics-G${g}`,
+        ['Student', 'Korean Name', 'Current Class', 'Suggested', 'Element', 'Ref', 'Section',
+         'Standard', 'Domain', 'DOK', 'Response', 'Correct', 'Is Correct', 'Points', 'Max'],
+        out)
+      const students = new Set(out.map(o => o[0])).size
+      showToast(`Exported ${out.length} rows across ${students} students.`)
+    } catch (e: any) {
+      showToast(`Diagnostics export failed: ${e?.message || e}`)
+    } finally {
+      setExportingDiag(false)
+    }
+  }
 
   // Save a named checkpoint of all current scores
   const saveCheckpoint = async () => {
@@ -1438,6 +1536,11 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
               r.percentile != null ? Math.round(r.percentile * 100) : '', r.suggestedClass ?? 'not tested']))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
           <Download size={12} /> CSV
+        </button>
+        <button onClick={exportDiagnostics} disabled={exportingDiag}
+          title="One row per student per scored element: every multiple-choice response with the letter actually chosen, every writing-rubric category, and the short response. Always the whole grade, never just the rows on screen."
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 disabled:opacity-50">
+          {exportingDiag ? <Loader2 size={12} className="animate-spin" /> : <BarChart3 size={12} />} Diagnostics CSV
         </button>
         <button onClick={saveCheckpoint} disabled={savingCheckpoint}
           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 disabled:opacity-50">
