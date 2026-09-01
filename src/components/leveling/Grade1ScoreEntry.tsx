@@ -7,6 +7,7 @@ import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { Save, Loader2, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Circle, BookOpen, Mic, PenTool, Eye, FileText, Users, BarChart3, Info, X, RotateCcw, Check, Star, Ban, Printer, Download, Shield } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
+import { buildDiagnosticsRows, DIAGNOSTICS_HEADERS } from '@/components/leveling/diagnosticsExport'
 import {
   g1ContentForTest, g1VersionKeyForTest, getG1Content, g1WrittenTotalMax,
   G1_LEGACY_VERSION,
@@ -4060,6 +4061,41 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               r.percentile != null ? Math.round(r.percentile * 100) : '', r.suggestedClass ?? 'not tested']))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
           <Download size={12} /> CSV
+        </button>
+        {/* Item-level export. Grade 1 renders its own results screen, so the
+            button on the grades 2-5 table never reaches here -- both call the
+            same builder so the five files land in one comparable shape. */}
+        <button onClick={() => {
+          const out = buildDiagnosticsRows(
+            {
+              // Grade 1's items are not depth-of-knowledge weighted; every one
+              // is worth a point, which is what `dok: null` and a flat weight say.
+              items: (content.written.questions || []).map(q => ({ ...q, dok: null })),
+              cats: content.extendedWriting?.categories ?? [],
+              shortMax: content.shortWriting?.max ?? null,
+              weightOf: () => 1,
+            },
+            rows.map(r => {
+              const sc = scores[r.student.id] || {}
+              return {
+                name: r.student.english_name,
+                korean: r.student.korean_name || '',
+                currentClass: r.student.english_class || '',
+                suggested: r.suggestedClass ?? '',
+                answers: sc.written_answers || {},
+                rubric: sc.written_rubric || {},
+                // Grade 1 writes `writing_short`, mirrored to `w_short_writing`
+                // at save. Read both so a record saved either way still exports.
+                shortWriting: sc.writing_short ?? sc.w_short_writing ?? null,
+              }
+            }))
+          if (out.length === 0) { showToast('No written papers have been marked for Grade 1 yet.'); return }
+          exportToCSV('leveling-diagnostics-G1', DIAGNOSTICS_HEADERS, out)
+          showToast(`Exported ${out.length} rows across ${new Set(out.map(o => o[0])).size} students.`)
+        }}
+          title="One row per student per scored element: every multiple-choice response with the letter actually chosen, every writing-rubric category, and the short response. Always the whole grade, never just the rows on screen."
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100">
+          <BarChart3 size={12} /> Diagnostics CSV
         </button>
         <button onClick={saveCheckpoint} disabled={savingCheckpoint}
           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 disabled:opacity-50">

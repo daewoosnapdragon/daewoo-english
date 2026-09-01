@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel, compRatioForComposite, capComponent, COMPONENT_CAP,
-  compositeWeightsFor, COMPOSITE_TERM_LABELS, DECODING_WEIGHTS, IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, writingTotalFrom, isCorrectAnswer, type CompositeTerm, type CompositeWeights } from '@/lib/utils'
+  compositeWeightsFor, COMPOSITE_TERM_LABELS, DECODING_WEIGHTS, IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, writingTotalFrom, type CompositeTerm, type CompositeWeights } from '@/lib/utils'
 import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2, BarChart3 } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
@@ -19,6 +19,7 @@ import { getG4Content, g4VersionKeyForTest } from '@/components/leveling/grade4C
 import { getG5Content, g5VersionKeyForTest } from '@/components/leveling/grade5Content'
 import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4, bandScalesFromG5, type LevelCwpmNorm } from '@/components/leveling/grade2Band'
 import { exportToCSV } from '@/lib/export'
+import { buildDiagnosticsRows, DIAGNOSTICS_HEADERS } from '@/components/leveling/diagnosticsExport'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 
@@ -1208,73 +1209,32 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
     setExportingDiag(true)
     try {
       const g = Number(levelTest.grade)
-      // Grade 1 is authored in its own module and never had a GradeConfig.
-      const paper = g === 1
-        ? await (async () => {
-            const c = (await import('@/components/leveling/grade1Content')).g1ContentForTest(levelTest as any)
-            if (!c) return null
-            return {
-              items: (c.written.questions || []).map((q: any) => ({ ...q, dok: null })),
-              cats: c.extendedWriting?.categories ?? [],
-              shortMax: c.shortWriting?.max ?? null,
-              weightOf: () => 1,
-            }
-          })()
-        : (() => {
-            const cfg = getGradeConfig(g, versionKeyForTest(levelTest as any))
-            if (!cfg) return null
-            return {
-              items: cfg.questions,
-              cats: cfg.writingCategories,
-              shortMax: cfg.shortWriting?.max ?? null,
-              weightOf: (q: any) => questionWeight(cfg, q),
-            }
-          })()
+      const cfg = getGradeConfig(g, versionKeyForTest(levelTest as any))
+      if (!cfg) { showToast('No test content is registered for this grade, so there is nothing to export.'); return }
 
-      if (!paper) { showToast('No test content is registered for this grade, so there is nothing to export.'); return }
-
-      const out: (string | number)[][] = []
-      rows.forEach(r => {
-        const raw = r.score || {}
-        const answers = raw.written_answers || {}
-        const rubric = raw.written_rubric || {}
-        // A student with no written paper at all contributes nothing -- rows of
-        // blanks would read as wrong answers in every tally downstream.
-        const sat = Object.keys(answers).length > 0 || Object.keys(rubric).length > 0
-          || raw.written_short_writing != null
-        if (!sat) return
-        const who = [r.student.english_name, r.student.korean_name || '', r.student.english_class || '',
-          r.suggestedClass ?? '']
-
-        paper.items.forEach((q: any) => {
-          const chosen = answers[q.qNum] ?? ''
-          const ok = isCorrectAnswer(q, chosen)
-          const w = paper.weightOf(q)
-          out.push([...who, 'mc', q.qNum, q.sectionLabel || q.section || '',
-            q.standard || '', q.domain || '', q.dok ?? '',
-            chosen, q.acceptAny ? 'any' : q.correct, chosen === '' ? '' : (ok ? 1 : 0),
-            chosen === '' ? '' : (ok ? w : 0), w])
-        })
-
-        paper.cats.forEach((cat: any) => {
-          const v = rubric[cat.key]
-          if (v == null) return
-          out.push([...who, 'writing_category', cat.key, cat.label || '',
-            cat.standard || '', 'Writing', '', '', '', '', v, cat.max])
-        })
-
-        if (paper.shortMax != null && raw.written_short_writing != null) {
-          out.push([...who, 'short_writing', 'short_writing', 'Short writing',
-            '', 'Writing', '', '', '', '', raw.written_short_writing, paper.shortMax])
-        }
-      })
+      const out = buildDiagnosticsRows(
+        {
+          items: cfg.questions,
+          cats: cfg.writingCategories,
+          shortMax: cfg.shortWriting?.max ?? null,
+          weightOf: q => questionWeight(cfg, q as any),
+        },
+        rows.map(r => {
+          const raw = r.score || {}
+          return {
+            name: r.student.english_name,
+            korean: r.student.korean_name || '',
+            currentClass: r.student.english_class || '',
+            suggested: r.suggestedClass ?? '',
+            answers: raw.written_answers || {},
+            rubric: raw.written_rubric || {},
+            shortWriting: raw.written_short_writing ?? null,
+          }
+        }))
 
       if (out.length === 0) { showToast('No written papers have been marked for this grade yet.'); return }
 
-      exportToCSV(`leveling-diagnostics-G${g}`,
-        ['Student', 'Korean Name', 'Current Class', 'Suggested', 'Element', 'Ref', 'Section',
-         'Standard', 'Domain', 'DOK', 'Response', 'Correct', 'Is Correct', 'Points', 'Max'],
-        out)
+      exportToCSV(`leveling-diagnostics-G${g}`, DIAGNOSTICS_HEADERS, out)
       const students = new Set(out.map(o => o[0])).size
       showToast(`Exported ${out.length} rows across ${students} students.`)
     } catch (e: any) {
