@@ -939,7 +939,8 @@ function SharedCalendar() {
   const renderMonth = (gy: number, gm: number) => {
     const first = new Date(gy, gm, 1).getDay()
     const days = new Date(gy, gm + 1, 0).getDate()
-    const cols = { gridTemplateColumns: '0.55fr repeat(5, 1fr) 0.55fr' }
+    // minmax(0, …) so a long title can never widen its column; weekends get a bit over half a weekday.
+    const cols = { gridTemplateColumns: 'minmax(0,0.6fr) repeat(5, minmax(0,1fr)) minmax(0,0.6fr)' }
     return (
       <div>
         <div className="font-display text-[17px] text-ink mb-2">{months[gm]} <span className="text-ink-3">{gy}</span></div>
@@ -947,7 +948,7 @@ function SharedCalendar() {
           {dayN.map(d => <div key={d} className="text-[10px] uppercase tracking-wider text-ink-3 font-semibold py-1 px-1.5">{d}</div>)}
         </div>
         <div className="grid gap-px bg-border border border-border" style={cols}>
-          {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} className="bg-paper-2 min-h-[104px]" />)}
+          {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} className="bg-paper-2/40 min-h-[104px]" />)}
           {Array.from({ length: days }).map((_, i) => {
             const d = i + 1
             const dateStr = fmt(new Date(gy, gm, d))
@@ -960,8 +961,8 @@ function SharedCalendar() {
             const shown = evts.slice(0, 3)
             return (
               <div key={d} onClick={() => setSelDay(dateStr)}
-                style={fillType ? { backgroundColor: `${fillType.color}14` } : undefined}
-                className={`min-h-[104px] p-1.5 cursor-pointer transition-colors hover:bg-paper-2 ${isWeekend ? 'bg-paper-2' : 'bg-surface'} ${isSelected ? 'ring-2 ring-accent ring-inset' : ''}`}>
+                style={fillType ? { backgroundColor: `${fillType.color}0d` } : undefined}
+                className={`min-h-[104px] min-w-0 overflow-hidden p-1.5 cursor-pointer transition-colors hover:bg-paper-2/60 ${isWeekend ? 'bg-paper-2/40' : 'bg-surface'} ${isSelected ? 'ring-2 ring-accent ring-inset' : ''}`}>
                 <div className={`text-[11.5px] font-semibold mb-1 w-5 h-5 flex items-center justify-center rounded-full tabular-nums ${isToday ? 'bg-accent text-white' : isWeekend ? 'text-ink-3' : 'text-ink-2'}`}>{d}</div>
                 <div className="space-y-[3px]">
                   {shown.map(ev => {
@@ -969,15 +970,15 @@ function SharedCalendar() {
                     const color = typeInfo?.color || '#857D6E'
                     if (typeInfo?.fills) {
                       return (
-                        <div key={ev.id} title={ev.title} className="text-[10.5px] leading-tight px-1 py-[1px] rounded-sm font-semibold text-white truncate" style={{ backgroundColor: color }}>
+                        <div key={ev.id} title={ev.title} className="text-[10.5px] leading-tight -mx-1.5 px-1.5 py-[2px] font-semibold text-white truncate" style={{ backgroundColor: color }}>
                           {ev.title}
                         </div>
                       )
                     }
                     return (
-                      <div key={ev.id} title={ev.title} className="flex items-baseline gap-1 text-[10.5px] leading-tight text-ink truncate">
-                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 relative top-[-1px]" style={{ backgroundColor: color }} />
-                        <span className="truncate">{ev.title}</span>
+                      <div key={ev.id} title={ev.title} className="flex items-start gap-1 text-[10.5px] leading-[1.25] text-ink min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[3px]" style={{ backgroundColor: color }} />
+                        <span className="line-clamp-2 break-words">{ev.title}</span>
                       </div>
                     )
                   })}
@@ -986,7 +987,7 @@ function SharedCalendar() {
               </div>
             )
           })}
-          {Array.from({ length: (7 - (first + days) % 7) % 7 }).map((_, i) => <div key={`t${i}`} className="bg-paper-2 min-h-[104px]" />)}
+          {Array.from({ length: (7 - (first + days) % 7) % 7 }).map((_, i) => <div key={`t${i}`} className="bg-paper-2/40 min-h-[104px]" />)}
         </div>
       </div>
     )
