@@ -255,8 +255,11 @@ function ParentCalendarView() {
         const tg = ev.target_grades as number[] | null
         const gradeMatch = !tg || tg.length === 0 || tg.includes(selectedGrade)
         if (!gradeMatch) return
-        // Days off and field trips take the day; exams tint it and stay editable.
-        const blockKind: 'off' | 'exam' | null = (ev.type === 'day_off' || ev.type === 'field_trip') ? 'off' : (ev.type === 'midterm' || ev.type === 'testing') ? 'exam' : null
+        // Days off and field trips take the day whatever the calendar box says:
+        // there is no class. A midterm or testing day only tints (and names
+        // itself) when it is marked for the parent calendar, so a teacher
+        // deadline like "midterm grades due" stays off the printed plan.
+        const blockKind: 'off' | 'exam' | null = (ev.type === 'day_off' || ev.type === 'field_trip') ? 'off' : ((ev.type === 'midterm' || ev.type === 'testing') && ev.show_on_parent_calendar) ? 'exam' : null
         if (!ev.show_on_parent_calendar && !blockKind) return
         // A multi-day event belongs on every day it covers, not just its first,
         // clipped to the month being shown.
