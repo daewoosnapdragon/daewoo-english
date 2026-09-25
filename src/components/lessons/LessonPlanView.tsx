@@ -1,5 +1,7 @@
 'use client'
 
+import { useScheduleRules, WEEKDAY_LABELS } from '@/lib/scheduleRules'
+
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -72,6 +74,7 @@ export default function LessonPlanView() {
 function ParentCalendarView() {
   const { currentTeacher, showToast, language } = useApp()
   const lang = language
+  const { isNoClassDay } = useScheduleRules()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Snapdragon'
   const teacherClass = currentTeacher?.english_class as EnglishClass
 
@@ -401,7 +404,7 @@ function ParentCalendarView() {
     for (let offset = 0; offset <= 4; offset++) {
       const src = source[offset]
       if (!src || isDayEmpty(src)) continue
-      if (offset === 0 && selectedGrade === 5) continue // no Grade 5 on Mondays
+      if (isNoClassDay(selectedGrade, offset + 1)) continue // no class for this grade that weekday
       const target = shiftDate(weekMonday, offset)
       if (!validDates.has(target)) continue
       const existing = dayData[target]
@@ -531,12 +534,12 @@ function ParentCalendarView() {
         if (!day) { daysHTML += '<td class="day empty"></td>'; return }
         const data = dayData[day.date] || emptyDay()
         const evts = calEvents[day.date] || []
-        const noG5 = di === 0 && selectedGrade === 5
+        const noG5 = isNoClassDay(selectedGrade, di + 1)
         const blocked = blockedDays[day.date]
 
         let inner = ''
         if (noG5) {
-          inner = '<div class="no-class">No Grade 5</div>'
+          inner = `<div class="no-class">No Grade ${selectedGrade}</div>`
         } else if (blocked?.kind === 'off') {
           inner = `<div class="no-class">${blocked.title}</div>`
         } else {
@@ -726,7 +729,7 @@ function ParentCalendarView() {
                   const data = dayData[day.date] || emptyDay()
                   const evts = calEvents[day.date] || []
                   const isToday = day.date === todayStr
-                  const noG5 = di === 0 && selectedGrade === 5
+                  const noG5 = isNoClassDay(selectedGrade, di + 1)
                   const blocked = blockedDays[day.date]
                   const isOff = blocked?.kind === 'off'
                   const hasFill = data.subjects.some(s => s.content.trim()) || data.objective
@@ -755,7 +758,7 @@ function ParentCalendarView() {
                       </div>
 
                       {noG5 ? (
-                        <div className="text-[11px] text-text-secondary italic text-center mt-6">No G5 Mondays</div>
+                        <div className="text-[11px] text-text-secondary italic text-center mt-6">{lang === 'ko' ? `${selectedGrade}학년 ${WEEKDAY_LABELS[di + 1]} 수업 없음` : `No Grade ${selectedGrade} on ${WEEKDAY_LABELS[di + 1]}s`}</div>
                       ) : (
                         <>
                           {blocked?.kind === 'exam' && <div className="text-[10px] font-bold uppercase tracking-wider text-warn mb-1.5">{blocked.title}</div>}
@@ -788,7 +791,7 @@ function ParentCalendarView() {
                   <div className="border-b border-border bg-surface-alt/50 px-5 py-4 animate-fade-in">
                     {fw.map((day, di) => {
                       if (!day) return null
-                      if (di === 0 && selectedGrade === 5) return null // no Grade 5 Mondays
+                      if (isNoClassDay(selectedGrade, di + 1)) return null // no class for this grade that weekday
                       const off = blockedDays[day.date]?.kind === 'off' ? blockedDays[day.date] : null
                       if (off) return (
                         <div key={day.date} className="grid grid-cols-[64px_1fr] gap-3 items-center py-2.5 border-b border-border/40 last:border-b-0">

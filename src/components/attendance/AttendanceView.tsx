@@ -1,5 +1,7 @@
 'use client'
 
+import { useScheduleRules } from '@/lib/scheduleRules'
+
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useAvailableClasses } from '@/hooks/useData'
@@ -45,6 +47,7 @@ async function fetchAllAttendance(
 export default function AttendanceView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
+  const { isNoClassDay: ruleNoClass } = useScheduleRules()
   const [selectedDate, setSelectedDate] = useState(getKSTDateString())
   const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(
@@ -213,8 +216,7 @@ export default function AttendanceView() {
   const isNonClassDay = (dateStr: string, grade: Grade) => {
     const dow = new Date(dateStr + 'T12:00:00').getDay()
     if (dow === 0 || dow === 6) return true // weekend
-    if (dow === 1 && grade === 5) return true // Grade 5 no Monday
-    return false
+    return ruleNoClass(grade, dow) // e.g. no Grade 5 on Mondays, set in Settings
   }
   const prevDay = () => guardUnsaved(() => {
     const d = new Date(selectedDate)

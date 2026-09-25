@@ -1,5 +1,7 @@
 'use client'
 
+import { useScheduleRules, saveScheduleRules, WEEKDAY_LABELS } from '@/lib/scheduleRules'
+
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -25,6 +27,7 @@ export default function SettingsView() {
       <div className="px-10 py-8 max-w-4xl">
         <TeacherSection />
         <SemesterSection />
+        <ScheduleRulesSection />
         <ProgramBenchmarksSection />
         <AssessmentWeightsSection />
         {isAdmin && <ClassManagementSection />}
@@ -1125,6 +1128,56 @@ function SchoolInfoSection() {
           {language === 'ko' ? '저장' : 'Save Changes'}
         </button>
       </div>
+    </div>
+  )
+}
+
+// ─── Schedule rules: which grades have no class on which weekday ────
+function ScheduleRulesSection() {
+  const { language, showToast, currentTeacher } = useApp()
+  const canEdit = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher || currentTeacher?.english_class === 'Snapdragon'
+  const { rules, setRules, loading } = useScheduleRules()
+  const [saving, setSaving] = useState(false)
+  const [dirty, setDirty] = useState(false)
+  const on = (g: number, w: number) => rules.noClass.some(r => r.grade === g && r.weekday === w)
+  const toggle = (g: number, w: number) => {
+    if (!canEdit) return
+    setRules({ noClass: on(g, w) ? rules.noClass.filter(r => !(r.grade === g && r.weekday === w)) : [...rules.noClass, { grade: g, weekday: w }] })
+    setDirty(true)
+  }
+  const save = async () => {
+    setSaving(true)
+    const err = await saveScheduleRules(rules)
+    setSaving(false)
+    if (err) showToast(`Error: ${err}`); else { showToast(language === 'ko' ? '시간표 규칙 저장됨' : 'Schedule rules saved'); setDirty(false) }
+  }
+  return (
+    <div className="mb-8">
+      <div className="flex items-baseline justify-between border-b border-rule-2 pb-2 mb-3">
+        <div>
+          <h3 className="font-display text-[22px] leading-none text-ink">{language === 'ko' ? '수업 없는 요일' : 'Days with no class'}</h3>
+          <p className="text-[12.5px] text-ink-3 mt-1">{language === 'ko' ? '체크된 요일은 수업 계획에서 회색으로 표시되고 출석에서 건너뜁니다.' : 'A checked day is greyed in the lesson planner and skipped in attendance for that grade.'}</p>
+        </div>
+        {dirty && <button onClick={save} disabled={saving} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-60">{language === 'ko' ? '저장' : 'Save'}</button>}
+      </div>
+      {loading ? null : (
+        <table className="text-[13px] tabular-nums">
+          <thead><tr><th className="text-left pr-4 py-1 eyebrow font-semibold">{language === 'ko' ? '학년' : 'Grade'}</th>{[1, 2, 3, 4, 5].map(w => <th key={w} className="px-3 py-1 eyebrow font-semibold">{WEEKDAY_LABELS[w]}</th>)}</tr></thead>
+          <tbody className="divide-y divide-rule">
+            {[1, 2, 3, 4, 5].map(g => (
+              <tr key={g}><td className="pr-4 py-1.5 text-ink font-medium">{g}</td>
+                {[1, 2, 3, 4, 5].map(w => (
+                  <td key={w} className="px-3 py-1.5 text-center">
+                    <button onClick={() => toggle(g, w)} disabled={!canEdit} title={on(g, w) ? (language === 'ko' ? '수업 없음' : 'No class') : (language === 'ko' ? '수업 있음' : 'Class as usual')}
+                      className={`w-8 h-7 rounded border text-[11px] font-bold ${on(g, w) ? 'bg-ink text-paper border-ink' : 'bg-surface border-rule-2 text-ink-3 hover:border-ink-3'} disabled:cursor-default`}>{on(g, w) ? '—' : ''}</button>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {!canEdit && <p className="text-[11.5px] text-ink-3 mt-2">{language === 'ko' ? '관리자 또는 스냅드래곤 교사만 변경할 수 있습니다.' : 'Admin or the Snapdragon teacher can change these.'}</p>}
     </div>
   )
 }
