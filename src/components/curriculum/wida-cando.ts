@@ -355,3 +355,40 @@ export function suggestLevel(domain: WIDADomainKey, band: WidaBand, ticked: Set<
 }
 
 export function widaLevelName(level: number): string { return WIDA_LEVELS.find(l => l.level === level)?.name || String(level) }
+
+// ─── Scaffolds suggested by level and domain ──────────────────────
+// Short, assignable in one tap. Level 6 needs none.
+export const SCAFFOLD_SUGGESTIONS: Record<WIDADomainKey, Record<Level, string[]>> = {
+  listening: {
+    1: ['Show directions with gestures and a model', 'Pair with a bilingual buddy', 'Picture cards for key words', 'Repeat and slow down for this student'],
+    2: ['One direction at a time', 'Check understanding with a yes/no question', 'Pre-teach 5 key words with pictures', 'Extra wait time'],
+    3: ['Two-step directions, then check', 'Sit near the teacher for read-alouds', 'Visual agenda for the lesson', 'Restate the main point at the end'],
+    4: ['Note-taking frame for explanations', 'Partner check after instructions', 'Signal new vocabulary before use'],
+    5: ['Ask this student to restate for the class', 'Introduce idioms as they come up'],
+    6: [],
+  },
+  speaking: {
+    1: ['Accept gestures, pointing and Korean', 'Sentence frame: "I want ___"', 'Choral repetition of key phrases', 'Total physical response activities'],
+    2: ['Sentence starters on the desk', 'Word bank for the task', 'Answer with a partner first, then the class', 'Ask either/or questions'],
+    3: ['Think-pair-share before speaking to the class', 'Sentence frames for opinions: "I think ___ because ___"', 'Model the full sentence back', 'Accept errors that do not block meaning'],
+    4: ['Give a presenting role with notes', 'Discussion sentence starters: "I agree with ___ because"', 'Push for a second reason'],
+    5: ['Peer tutoring role', 'Ask to explain to a classmate', 'Formal vs informal register practice'],
+    6: [],
+  },
+  reading: {
+    1: ['Picture books with labels', 'Letter-sound cards daily', 'Bilingual word wall', 'Read to the student one to one'],
+    2: ['Decodable readers at CVC level', 'Sight word ring', 'Pictures beside every text', 'Echo reading'],
+    3: ['Pre-teach 3 to 5 words before reading', 'Partner reading', 'Highlight who / what / where in the text', 'Graphic organizer for retelling'],
+    4: ['Vocabulary notebook for academic words', 'Text features walk before reading', 'Question stems for why and how'],
+    5: ['Compare-two-texts tasks', 'Mentor texts for analysis', 'Independent reading log with choice'],
+    6: [],
+  },
+  writing: {
+    1: ['Trace and copy', 'Label pictures with a word bank', 'Accept drawings as writing', 'Name and date model'],
+    2: ['Sentence frames: "I like ___. It is ___."', 'Word bank with pictures', 'Copy a pattern, change one word', 'Best-guess spelling accepted'],
+    3: ['Graphic organizer before writing', 'Editing checklist: capital, period, spaces', 'Sentence starters for each part', 'Model paragraph to follow'],
+    4: ['Transition word list on the desk', 'Peer editing with a checklist', 'Mentor text for the genre'],
+    5: ['Academic word list for the unit', 'Revision conference on ideas, not errors', 'Choice of genre and audience'],
+    6: [],
+  },
+}

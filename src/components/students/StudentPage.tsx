@@ -10,9 +10,10 @@ import { ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, type Student, type English
 import { getKSTDateString, percentToLetter } from '@/lib/utils'
 import WIDABadge from '@/components/shared/WIDABadge'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
+import WidaSupport from './WidaSupport'
 import {
   AboutTab, AcademicHistoryTab, ReadingTabInModal, AttendanceTabInModal, StandardsMasteryTab,
-  ScaffoldsTab, StudentGroupsTab, GoalsTab, WIDAPerformanceInsight, ClassTransferHistory, buildStudentPDFHtml, TEACHER_MAP,
+  StudentGroupsTab, GoalsTab, WIDAPerformanceInsight, ClassTransferHistory, buildStudentPDFHtml, TEACHER_MAP,
 } from './StudentsView'
 import { ArrowLeft, Loader2, Pencil, Printer, Trash2 } from 'lucide-react'
 import { LineChart, Bars, Sparkline } from '@/components/charts'
@@ -249,10 +250,10 @@ export default function StudentPage({ studentId }: { studentId: string }) {
           <Section id="leveltests" title={lang === 'ko' ? '레벨 테스트' : 'Level tests'}>
             <LevelTestHistory studentId={student.id} lang={lang} />
           </Section>
-          <Section id="support" title={lang === 'ko' ? '지원' : 'Support'} meta={lang === 'ko' ? 'WIDA · 스캐폴드 · 목표 · 그룹' : 'WIDA · scaffolds · goals · groups'}>
+          <Section id="support" title={lang === 'ko' ? '지원' : 'Support'} meta={lang === 'ko' ? 'WIDA 수준 · 스캐폴드 · 목표 · 그룹' : 'WIDA levels · scaffolds · goals · groups'}>
             <div className="space-y-8">
+              <WidaSupport studentId={student.id} grade={student.grade} />
               <WIDAPerformanceInsight studentId={student.id} lang={lang} />
-              <div><h3 className="eyebrow mb-2">{lang === 'ko' ? '스캐폴드' : 'Scaffolds'}</h3><ScaffoldsTab studentId={student.id} /></div>
               <div><h3 className="eyebrow mb-2">{lang === 'ko' ? '목표' : 'Goals'}</h3><GoalsTab studentId={student.id} studentName={student.english_name} /></div>
               <div><h3 className="eyebrow mb-2">{lang === 'ko' ? '그룹' : 'Groups'}</h3><StudentGroupsTab studentId={student.id} studentName={student.english_name} /></div>
             </div>
