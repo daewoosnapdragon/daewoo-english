@@ -2198,12 +2198,3 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
     </div>
   )
 }
-
-
-// ─── #36 Rubric Builder and Library ───────────────────────────────────
-
-// ─── Rubric Scoring Modal (Bulk) ──────────────────────────────────
-// Full-class rubric scoring: student sidebar + rubric grid + auto-fill scores
-
-
-// ─── Rubric Picker ──────────────────────────────────────────────────
