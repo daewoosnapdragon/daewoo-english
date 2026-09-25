@@ -141,7 +141,7 @@ export default function NoticeBoard() {
           const author = authorOf(n)
           const initial = (author?.name || '?').charAt(0)
           return (
-            <div key={n.id} className={`grid grid-cols-[34px_1fr_auto] gap-3 items-center px-6 py-2 border-b border-rule text-[13.5px] ${n.style === 'urgent' ? 'bg-accent-soft shadow-[inset_4px_0_0_rgb(var(--accent))]' : ''}`}>
+            <div key={n.id} className={`grid grid-cols-[34px_1fr_auto] gap-3 items-center px-6 py-2 border-b border-rule text-[13.5px] ${n.style === 'urgent' ? 'bg-bad-soft shadow-[inset_4px_0_0_rgb(var(--bad))]' : ''}`}>
               <span className={`w-6 h-6 rounded-full text-white text-[11px] font-bold flex items-center justify-center ${CLASS_BG[author?.english_class || ''] || 'bg-ink'}`}>{initial}</span>
               <span className="text-ink min-w-0 whitespace-pre-wrap break-words">{n.body}</span>
               <span className="flex items-center gap-3 text-[11.5px] text-ink-3 whitespace-nowrap">
