@@ -10,7 +10,7 @@ import { getDisplayName } from '@/lib/utils'
 import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell } from 'lucide-react'
 
 // ─── Masthead ────────────────────────────────────────────────────────
-// Brand on its own line, links centred beneath it, a thin context bar under
+// Brand on its own line, links centered beneath it, a thin context bar under
 // that. Replaces the sidebar so every screen gets the full width.
 
 const CLASS_DOT: Record<string, string> = {
@@ -28,7 +28,7 @@ interface Signals { attendanceIncomplete: boolean; flagged: number; reminder: bo
 
 /**
  * The two things the nav has to know: is today's attendance done, and (admin)
- * how many behaviour logs are flagged. Re-checked on every route change and
+ * how many behavior logs are flagged. Re-checked on every route change and
  * once a minute, so the 3:30 reminder appears without a reload.
  */
 function useNavSignals(pathname: string | null): Signals {
@@ -206,8 +206,8 @@ export default function Masthead() {
 
   const label = (id: string) => language === 'ko' ? ((t.nav as any)[id] || id) : (EN_LABELS[id] || id)
   const dateStr = now
-    ? now.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
-      + ' · ' + now.toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-GB', { hour: 'numeric', minute: '2-digit' }) + ' KST'
+    ? now.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })
+      + ' · ' + now.toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-US', { hour: 'numeric', minute: '2-digit' }) + ' KST'
     : ''
 
   const links = (h: string) => NAV_ORDER.map(id => {
@@ -264,7 +264,7 @@ export default function Masthead() {
           </Link>
           <div className="justify-self-end flex items-center gap-2"><UserMenu />{toggle}</div>
         </div>
-        {/* Row 2: links, centred */}
+        {/* Row 2: links, centered */}
         <nav className="flex justify-center border-t border-rule overflow-x-auto" aria-label="Main">{links('h-10')}</nav>
       </div>
       {/* Row 3: context */}

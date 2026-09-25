@@ -11,7 +11,7 @@ import { Plus, X, ChevronLeft, ChevronRight, Trash2, Pencil, PanelLeftClose, Use
 import WeeklySchedule from './WeeklySchedule'
 
 // ─── Event types ─────────────────────────────────────────────────
-// Nine stored types, five colours: fewer hues means each one is recognisable
+// Nine stored types, five colors: fewer hues means each one is recognizable
 // at a glance. Days off and exams also fill their day (`fills`).
 const EVENT_TYPES = [
   { value: 'day_off', label: 'Day Off', color: 'var(--ev-good)', fills: true },
@@ -183,13 +183,13 @@ export default function DashboardView() {
   const kst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
   const hour = kst.getHours()
   const greeting = lang === 'ko' ? '안녕하세요' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-  const dayStr = kst.toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const dayStr = kst.toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   const unmarked = shared.students.length - shared.todayAttendanceIds.size
   const ungradedStudents = queue.reduce((n, q) => n + q.ungraded.length, 0)
   const sem = shared.activeSemester
   const daysUntil = (d?: string | null) => d ? Math.ceil((new Date(d).getTime() - new Date(getKSTDateString()).getTime()) / 86400000) : null
-  const fmtShort = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-GB', { day: 'numeric', month: 'short' })
+  const fmtShort = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { day: 'numeric', month: 'short' })
   const midtermDays = daysUntil(sem?.midterm_cutoff_date)
   const gradesDue: string | null = sem?.report_card_cutoff_date || sem?.grades_due_date || null
   const gradesDays = daysUntil(gradesDue)
@@ -218,8 +218,8 @@ export default function DashboardView() {
           <Stat href="/attendance" label={lang === 'ko' ? '오늘 출석' : 'Attendance today'} value={unmarked > 0 ? String(unmarked) : '✓'} sub={unmarked > 0 ? (lang === 'ko' ? '명 미체크' : 'students unmarked') : (lang === 'ko' ? '모두 완료' : 'all marked')} alert={unmarked > 0} />
           <Stat href="#grading" label={lang === 'ko' ? '미채점' : 'Ungraded'} value={String(queue.length)} sub={queue.length ? `${lang === 'ko' ? '평가' : 'assessments'} · ${ungradedStudents} ${lang === 'ko' ? '명' : 'students'}` : (lang === 'ko' ? '없음' : 'nothing waiting')} alert={queue.length > 0} />
           <Stat label={lang === 'ko' ? '중간고사 마감' : 'Midterm cutoff'} value={midtermDays != null && midtermDays >= 0 ? String(midtermDays) : '—'} sub={midtermDays != null && midtermDays >= 0 ? `${lang === 'ko' ? '일 남음' : 'days'} · ${fmtShort(sem.midterm_cutoff_date)}` : (lang === 'ko' ? '설정 없음' : 'not set')} alert={midtermDays != null && midtermDays >= 0 && midtermDays <= 3} />
-          <Stat label={lang === 'ko' ? '성적 마감' : 'Grades due'} value={gradesDue ? fmtShort(gradesDue) : '—'} sub={gradesDays != null && gradesDays >= 0 ? `${gradesDays} ${lang === 'ko' ? '일 남음' : 'days'}` : (lang === 'ko' ? '설정 없음' : 'not set')} alert={gradesDays != null && gradesDays >= 0 && gradesDays <= 5} />
-          <Stat label={lang === 'ko' ? '오늘 행동 기록' : 'Behaviour logs today'} value={String(shared.todayBehaviorCount)} sub={shared.todayEvents.length ? `${shared.todayEvents.length} ${lang === 'ko' ? '개 일정' : 'events today'}` : ''} />
+          <Stat label={lang === 'ko' ? '성적표 성적 마감' : 'Report card grades due'} value={gradesDue ? fmtShort(gradesDue) : '—'} sub={gradesDays != null && gradesDays >= 0 ? `${gradesDays} ${lang === 'ko' ? '일 남음' : 'days'}` : (lang === 'ko' ? '설정 없음' : 'not set')} alert={gradesDays != null && gradesDays >= 0 && gradesDays <= 5} />
+          <Stat label={lang === 'ko' ? '오늘 행동 기록' : 'Behavior logs today'} value={String(shared.todayBehaviorCount)} sub={shared.todayEvents.length ? `${shared.todayEvents.length} ${lang === 'ko' ? '개 일정' : 'events today'}` : ''} />
         </div>
       )}
 
@@ -289,7 +289,7 @@ function GradingQueue({ queue, loading, onMark }: { queue: QueueItem[]; loading:
             <div className="flex items-baseline justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[14px] font-semibold text-ink truncate">{item.name}</p>
-                <p className="text-[11.5px] text-ink-3">{domainLabel(item.domain)} · /{item.max_score}{item.date ? ` · ${new Date(item.date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''} · {item.english_class} G{item.grade}</p>
+                <p className="text-[11.5px] text-ink-3">{domainLabel(item.domain)} · /{item.max_score}{item.date ? ` · ${new Date(item.date + 'T12:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}` : ''} · {item.english_class} G{item.grade}</p>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <span className="text-[12px] text-ink-2 tabular-nums">{item.done} / {item.total}</span>
@@ -376,14 +376,14 @@ function NeedsAttention({ shared }: { shared: SharedDashboardData }) {
         }
       }
     }
-    // Behaviour spike: 3+ logs this week and at least double the week before
+    // Behavior spike: 3+ logs this week and at least double the week before
     const sevenAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
     const fourteenAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0]
     const recent: Record<string, number> = {}, prior: Record<string, number> = {}
     shared.behaviorLogs28d.forEach(b => { if (b.date >= sevenAgo) recent[b.student_id] = (recent[b.student_id] || 0) + 1; else if (b.date >= fourteenAgo) prior[b.student_id] = (prior[b.student_id] || 0) + 1 })
     for (const [sid, n] of Object.entries(recent)) {
       const s = byId(sid)
-      if (s && n >= 3 && n >= (prior[sid] || 0) * 2) push('behaviour', s, `${n} ${lang === 'ko' ? '건의 행동 기록 (7일)' : 'behaviour logs in 7 days'} (${lang === 'ko' ? '이전' : 'was'} ${prior[sid] || 0})`, `/students/${sid}`)
+      if (s && n >= 3 && n >= (prior[sid] || 0) * 2) push('behavior', s, `${n} ${lang === 'ko' ? '건의 행동 기록 (7일)' : 'behavior logs in 7 days'} (${lang === 'ko' ? '이전' : 'was'} ${prior[sid] || 0})`, `/students/${sid}`)
     }
     // Absences: 2+ in the last 3 days, or 2+ in the last week
     const threeAgo = new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0]
@@ -410,7 +410,7 @@ function NeedsAttention({ shared }: { shared: SharedDashboardData }) {
   const live = concerns.filter(c => !dismissed.has(c.key))
   const away = concerns.filter(c => dismissed.has(c.key))
   const shown = showAll ? live : live.slice(0, 6)
-  const kindLabel: Record<string, string> = { grade: lang === 'ko' ? '성적' : 'Grades', behaviour: lang === 'ko' ? '행동' : 'Behaviour', attendance: lang === 'ko' ? '출석' : 'Attend.', reading: lang === 'ko' ? '읽기' : 'Reading', 'reading-up': lang === 'ko' ? '읽기 ↑' : 'Reading ↑' }
+  const kindLabel: Record<string, string> = { grade: lang === 'ko' ? '성적' : 'Grades', behaviour: lang === 'ko' ? '행동' : 'Behavior', attendance: lang === 'ko' ? '출석' : 'Attend.', reading: lang === 'ko' ? '읽기' : 'Reading', 'reading-up': lang === 'ko' ? '읽기 ↑' : 'Reading ↑' }
   const kindTone: Record<string, string> = { grade: 'text-bad', behaviour: 'text-warn', attendance: 'text-warn', reading: 'text-bad', 'reading-up': 'text-good' }
 
   return (
@@ -517,8 +517,8 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
             const t = typeOf(ev.type)
             if (t.fills || isMulti(ev)) {
               // One continuous bar across the days it covers; the title sits on the
-              // first day and again at the start of each new week.
-              const showTitle = dateStr === ev.date || dow === 0
+              // first day, on the 1st when it began last month, and again each Monday.
+              const showTitle = dateStr === ev.date || d === 1 || dow === 1
               return (
                 <div key={ev.id} title={ev.title} className="text-[10.5px] leading-tight -mx-1.5 px-1.5 py-[2px] font-semibold text-white truncate min-h-[16px]" style={{ backgroundColor: t.color }}>
                   {showTitle ? ev.title : ' '}
@@ -545,7 +545,7 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
   const agenda = events
     .filter(e => (e.end_date || e.date) >= today && e.date <= agendaEnd)
     .sort((a, b) => a.date.localeCompare(b.date))
-  const agendaDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-GB', { day: 'numeric', month: 'short' })
+  const agendaDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { day: 'numeric', month: 'short' })
 
   return (
     <section>
@@ -625,7 +625,7 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
           <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-rule">
               <h4 className="font-display text-[20px] text-ink leading-none">
-                {new Date(selDay + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                {new Date(selDay + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
               </h4>
               <div className="flex items-center gap-2">
                 <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-rule-2 text-[12px] font-medium text-ink hover:border-ink-3"><Plus size={11} /> {lang === 'ko' ? '추가' : 'Add'}</button>
