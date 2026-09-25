@@ -479,269 +479,151 @@ export default function AttendanceView() {
     printWin.print()
   }
 
+  const CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy', Sunflower: 'bg-level-sunflower', Marigold: 'bg-level-marigold', Snapdragon: 'bg-level-snapdragon' }
+  const chip = (on: boolean) => `inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[12px] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+  const seg = (on: boolean, tone: string) => `w-9 h-8 text-[12px] font-bold border-l first:border-l-0 border-rule-2 ${on ? tone : 'text-ink-3 hover:bg-paper-2'}`
+  const dateHeading = new Date(selectedDate + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  const weekdayName = new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' })
+  const marked = Object.keys(records).length
+
   return (
-    <div className="animate-fade-in">
-      <div className="px-10 pt-8 pb-5 bg-surface border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display text-[26px] font-semibold tracking-tight text-navy">{t.nav.attendance}</h2>
-            <p className="text-text-secondary text-sm mt-1">{selectedClass} · Grade {selectedGrade} · {students.length} students</p>
-          </div>
-          <button onClick={handleSave} disabled={saving || !hasChanges}
-            className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-[14px] font-bold transition-all ${
-              hasChanges ? 'bg-gold text-navy-dark hover:bg-gold-light shadow-md shadow-gold/20' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}>
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-            {lang === 'ko' ? '출석 저장' : 'Save Attendance'}
-          </button>
+    <div className="px-8 py-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-end justify-between gap-6 flex-wrap mb-5">
+        <div>
+          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`} · {students.length} {lang === 'ko' ? '명' : 'students'}</p>
+          <h1 className="font-display text-[34px] leading-none text-ink">{t.nav.attendance}</h1>
+        </div>
+        <div className="flex items-center gap-2">
           <div className="relative" ref={printDropdownRef}>
-            <div className="flex">
-              <button onClick={() => handlePrintAttendance()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[13px] font-medium border border-border border-r-0 hover:bg-surface-alt">
-                <Printer size={14} /> {lang === 'ko' ? '월별 출력' : 'Print Monthly'}
-              </button>
-              <button onClick={() => setShowPrintOptions(v => !v)} aria-label="Choose weeks to print"
-                className="px-2 py-2 rounded-r-lg border border-border hover:bg-surface-alt">
-                <ChevronDown size={14} />
-              </button>
+            <div className="inline-flex border border-rule-2 rounded overflow-hidden">
+              <button onClick={() => handlePrintAttendance()} className="inline-flex items-center gap-1.5 h-9 px-3.5 text-[13px] font-medium text-ink hover:bg-paper-2"><Printer size={14} /> {lang === 'ko' ? '월별 출력' : 'Print month'}</button>
+              <button onClick={() => setShowPrintOptions(v => !v)} aria-label="Choose weeks to print" className="h-9 px-2 border-l border-rule-2 text-ink-2 hover:bg-paper-2"><ChevronDown size={14} /></button>
             </div>
             {showPrintOptions && (
-              <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-50 p-3 min-w-[260px]">
-                <p className="text-[11px] font-semibold text-navy mb-2">
-                  {lang === 'ko' ? '주별로 인쇄' : 'Print Selected Weeks'}
-                </p>
+              <div className="absolute right-0 top-full mt-1 bg-surface border border-rule-2 rounded shadow-lg z-50 p-3 min-w-[280px]">
+                <p className="eyebrow mb-2">{lang === 'ko' ? '주별로 인쇄' : 'Print selected weeks'}</p>
                 <div className="flex items-center justify-between mb-2">
-                  <button onClick={() => stepPrintMonth(-1)}
-                    className="p-1 rounded hover:bg-surface-alt" aria-label="Previous month">
-                    <ChevronLeft size={14} />
-                  </button>
-                  <span className="text-[11px] font-medium text-text-primary">{navMonthLabel}</span>
-                  <button onClick={() => stepPrintMonth(1)}
-                    className="p-1 rounded hover:bg-surface-alt" aria-label="Next month">
-                    <ChevronRight size={14} />
-                  </button>
+                  <button onClick={() => stepPrintMonth(-1)} className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center" aria-label="Previous month"><ChevronLeft size={14} /></button>
+                  <span className="text-[12.5px] font-medium text-ink">{navMonthLabel}</span>
+                  <button onClick={() => stepPrintMonth(1)} className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center" aria-label="Next month"><ChevronRight size={14} /></button>
                 </div>
-                <div className="space-y-1 mb-3 max-h-56 overflow-y-auto">
-                  {monthWeeks.length === 0 ? (
-                    <p className="text-[11px] text-text-tertiary px-1.5 py-2">{lang === 'ko' ? '이 달에는 수업일이 없습니다' : 'No class days this month'}</p>
-                  ) : (
-                    monthWeeks.map((w, i) => (
-                      <label key={w.mondayKey} className="flex items-center gap-2 text-[11px] text-text-primary cursor-pointer hover:bg-surface-alt rounded px-1.5 py-1">
-                        <input type="checkbox" checked={printWeeks.has(w.mondayKey)}
-                          onChange={() => setPrintWeeks(prev => { const n = new Set(prev); n.has(w.mondayKey) ? n.delete(w.mondayKey) : n.add(w.mondayKey); return n })}
-                          className="rounded border-border text-navy" />
-                        Week {i + 1}: {w.label}
+                <div className="space-y-0.5 mb-3 max-h-56 overflow-y-auto">
+                  {monthWeeks.length === 0 ? <p className="text-[12px] text-ink-3 px-1.5 py-2">{lang === 'ko' ? '이 달에는 수업일이 없습니다' : 'No class days this month'}</p>
+                    : monthWeeks.map((w, i) => (
+                      <label key={w.mondayKey} className="flex items-center gap-2 text-[12.5px] text-ink cursor-pointer hover:bg-paper-2 rounded px-1.5 py-1">
+                        <input type="checkbox" checked={printWeeks.has(w.mondayKey)} onChange={() => setPrintWeeks(prev => { const n = new Set(prev); n.has(w.mondayKey) ? n.delete(w.mondayKey) : n.add(w.mondayKey); return n })} />
+                        {lang === 'ko' ? `${i + 1}주차` : `Week ${i + 1}`}: {w.label}
                       </label>
-                    ))
-                  )}
+                    ))}
                 </div>
-                {printWeeks.size > 0 && (
-                  <p className="text-[10px] text-text-tertiary mb-2">
-                    {printWeeks.size} {printWeeks.size === 1 ? 'week' : 'weeks'} selected across all months
-                  </p>
-                )}
+                {printWeeks.size > 0 && <p className="text-[11px] text-ink-3 mb-2">{printWeeks.size} {printWeeks.size === 1 ? 'week' : 'weeks'} {lang === 'ko' ? '선택됨' : 'selected across all months'}</p>}
                 <div className="flex gap-2">
-                  <button onClick={() => { handlePrintAttendance(printWeeks); setShowPrintOptions(false); setPrintWeeks(new Set()) }}
-                    disabled={printWeeks.size === 0}
-                    className="flex-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-                    {printWeeks.size > 0 ? `Print ${printWeeks.size} Week${printWeeks.size > 1 ? 's' : ''}` : 'Print (select weeks)'}
-                  </button>
-                  <button onClick={() => { setShowPrintOptions(false); setPrintWeeks(new Set()) }}
-                    className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
-                    Cancel
-                  </button>
+                  <button onClick={() => { handlePrintAttendance(printWeeks); setShowPrintOptions(false); setPrintWeeks(new Set()) }} disabled={printWeeks.size === 0} className="flex-1 h-8 rounded bg-accent text-white text-[12px] font-semibold hover:bg-accent-hover disabled:opacity-40">{printWeeks.size > 0 ? `${lang === 'ko' ? '인쇄' : 'Print'} ${printWeeks.size}` : (lang === 'ko' ? '주를 선택하세요' : 'Select weeks')}</button>
+                  <button onClick={() => { setShowPrintOptions(false); setPrintWeeks(new Set()) }} className="h-8 px-3 rounded border border-rule-2 text-[12px] text-ink-2 hover:text-ink">{lang === 'ko' ? '취소' : 'Cancel'}</button>
                 </div>
               </div>
             )}
           </div>
+          <button onClick={handleSave} disabled={saving || !hasChanges} className="inline-flex items-center gap-2 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}{lang === 'ko' ? '출석 저장' : 'Save attendance'}
+          </button>
         </div>
       </div>
 
-      <div className="px-10 py-6">
-        {/* Controls */}
-        <div className="flex items-center gap-3 mb-5 flex-wrap">
-          <select value={selectedGrade} onChange={(e: any) => { const v = Number(e.target.value) as Grade; guardUnsaved(() => setSelectedGrade(v)) }}
-            className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
-            {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
-          </select>
-          {availableClasses.length > 1 ? (
-            <div className="flex gap-1">
-              {availableClasses.map(cls => (
-                <button key={cls} onClick={() => guardUnsaved(() => setSelectedClass(cls))}
-                  className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
-                  style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>
-                  {cls}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white" style={{ backgroundColor: classToTextColor(selectedClass) }}>{selectedClass}</div>
-          )}
-          <div className="w-px h-6 bg-border" />
-          {/* View toggle */}
-          <div className="flex rounded-lg border border-border overflow-hidden">
-            <button onClick={() => setViewMode('day')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-all ${viewMode === 'day' ? 'bg-navy text-white' : 'bg-surface text-text-secondary hover:bg-surface-alt'}`}>
-              <List size={13} /> {lang === 'ko' ? '일별' : 'Day'}
-            </button>
-            <button onClick={() => setViewMode('month')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-all ${viewMode === 'month' ? 'bg-navy text-white' : 'bg-surface text-text-secondary hover:bg-surface-alt'}`}>
-              <CalendarDays size={13} /> {lang === 'ko' ? '월별' : 'Month'}
-            </button>
+      {/* Controls */}
+      <div className="flex items-center gap-3 flex-wrap border-t border-b border-rule-2 py-3 mb-6">
+        <div className="flex gap-1.5">{GRADES.map(g => <button key={g} onClick={() => guardUnsaved(() => setSelectedGrade(g))} className={chip(selectedGrade === g)}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
+        <span className="w-px h-6 bg-rule" />
+        {availableClasses.length > 1
+          ? <div className="flex gap-1.5">{availableClasses.map(cls => <button key={cls} onClick={() => guardUnsaved(() => setSelectedClass(cls))} className={chip(selectedClass === cls)}><span className={`w-2 h-2 rounded-full ${CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
+          : <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink"><span className={`w-2 h-2 rounded-full ${CLASS_DOT[selectedClass] || 'bg-ink-3'}`} />{selectedClass}</span>}
+        <span className="w-px h-6 bg-rule" />
+        <div className="inline-flex border border-rule-2 rounded overflow-hidden">
+          <button onClick={() => setViewMode('day')} className={`inline-flex items-center gap-1.5 h-7 px-3 text-[12px] font-medium ${viewMode === 'day' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><List size={13} /> {lang === 'ko' ? '일별' : 'Day'}</button>
+          <button onClick={() => setViewMode('month')} className={`inline-flex items-center gap-1.5 h-7 px-3 text-[12px] font-medium border-l border-rule-2 ${viewMode === 'month' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><CalendarDays size={13} /> {lang === 'ko' ? '월별' : 'Month'}</button>
+        </div>
+        {viewMode === 'day' && (
+          <div className="flex items-center gap-1 ml-auto">
+            <button onClick={prevDay} className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2" aria-label="Previous class day"><ChevronLeft size={16} /></button>
+            <input id="att-date" type="date" value={selectedDate} onChange={(e: any) => guardUnsaved(() => setSelectedDate(e.target.value))} className="h-7 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink" />
+            <button onClick={nextDay} className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2" aria-label="Next class day"><ChevronRight size={16} /></button>
+            {!isToday && <button onClick={() => guardUnsaved(() => setSelectedDate(getKSTDateString()))} className="h-7 px-2 rounded text-[12px] font-medium text-ink-2 hover:bg-paper-2">{lang === 'ko' ? '오늘' : 'Today'}</button>}
           </div>
-          {viewMode === 'day' && <>
-          <div className="w-px h-6 bg-border" />
-          {/* Date nav */}
-          <div className="flex items-center gap-1">
-            <button onClick={prevDay} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronLeft size={16} /></button>
-            <input type="date" value={selectedDate} onChange={(e: any) => guardUnsaved(() => setSelectedDate(e.target.value))}
-              className="px-3 py-1.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
-            <button onClick={nextDay} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronRight size={16} /></button>
-            {!isToday && <button onClick={() => guardUnsaved(() => setSelectedDate(getKSTDateString()))} className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light ml-1">Today</button>}
+        )}
+      </div>
+
+      {viewMode === 'day' && (<>
+        <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
+          <div>
+            {isToday && <p className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '오늘' : 'Today'}</p>}
+            <h2 className="font-display text-[26px] leading-none text-ink">{dateHeading}</h2>
+            {isNoClassDay
+              ? <p className="text-[12.5px] text-warn mt-1.5">{isWeekend ? (lang === 'ko' ? '주말에는 수업이 없습니다' : 'No classes on weekends') : (lang === 'ko' ? `${selectedGrade}학년은 ${weekdayName}에 영어 수업이 없습니다` : `Grade ${selectedGrade} has no English on ${weekdayName}s`)} · {lang === 'ko' ? '화살표로 다음 수업일로 이동' : 'use the arrows to skip to the next class day'}</p>
+              : <p className="text-[12px] text-ink-3 mt-1.5">{lang === 'ko' ? '행을 클릭한 뒤' : 'Click a row, then press'} <kbd className="px-1 border border-rule-2 rounded text-[10.5px]">P</kbd> <kbd className="px-1 border border-rule-2 rounded text-[10.5px]">A</kbd> <kbd className="px-1 border border-rule-2 rounded text-[10.5px]">T</kbd> · ↑ ↓</p>}
           </div>
-          <div className="w-px h-6 bg-border" />
-          <button onClick={markAllPresent} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-green-100 text-green-700 hover:bg-green-200">
-            <UserCheck size={13} /> {lang === 'ko' ? '전원 출석' : 'Mark All Present'}
-          </button>
-          <button onClick={() => markAllAbsent('')} title="Mark every student absent without a reason"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-red-100 text-red-700 hover:bg-red-200">
-            <UserX size={13} /> {lang === 'ko' ? '전원 결석' : 'Mark All Absent'}
-          </button>
-          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-red-50 text-red-700 border border-red-200 cursor-pointer hover:bg-red-100 transition-all">
-            <input type="checkbox" checked={absentCount === students.length && students.length > 0 && Object.values(records).some((r: any) => r.note === 'Field Trip')}
-              onChange={(e: any) => {
-                if (e.target.checked) {
-                  markAllAbsent('Field Trip')
-                } else {
-                  setRecords({})
-                  setHasChanges(true)
-                }
-              }}
-              className="w-3.5 h-3.5 rounded border-red-300 text-red-600 focus:ring-red-500" />
-            {lang === 'ko' ? '현장학습 (전원 결석)' : 'Field Trip (all absent)'}
-          </label>
-          {Object.keys(records).length > 0 && (
-            <button onClick={() => { setRecords({}); setHasChanges(true) }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
-              Clear All
-            </button>
-          )}
-          </>}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={markAllPresent} className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[12.5px] font-medium text-ink hover:border-ink-3"><UserCheck size={13} className="text-good" /> {lang === 'ko' ? '전원 출석' : 'All present'}</button>
+            <button onClick={() => markAllAbsent('')} title="Mark every student absent without a reason" className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[12.5px] font-medium text-ink hover:border-ink-3"><UserX size={13} className="text-bad" /> {lang === 'ko' ? '전원 결석' : 'All absent'}</button>
+            <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[12.5px] font-medium text-ink cursor-pointer hover:border-ink-3">
+              <input type="checkbox" checked={absentCount === students.length && students.length > 0 && Object.values(records).some((r: any) => r.note === 'Field Trip')}
+                onChange={(e: any) => { if (e.target.checked) markAllAbsent('Field Trip'); else { setRecords({}); setHasChanges(true) } }} />
+              {lang === 'ko' ? '현장학습' : 'Field trip'}
+            </label>
+            {marked > 0 && <button onClick={() => { setRecords({}); setHasChanges(true) }} className="h-8 px-2.5 rounded text-[12.5px] text-ink-3 hover:text-ink">{lang === 'ko' ? '모두 지우기' : 'Clear all'}</button>}
+          </div>
         </div>
 
-        {viewMode === 'day' && (<>
-        {/* Date display */}
-        <div className="mb-4">
-          <h3 className="font-display text-lg font-semibold text-navy">
-            {new Date(selectedDate + 'T00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-          </h3>
-          {isNoClassDay && (
-            <p className="text-[12px] text-amber-600 font-medium mt-0.5">
-              {isWeekend ? 'No classes on weekends' : `Grade 5 does not attend English on Mondays`}
-              {' — '}use arrows to skip to the next class day
-            </p>
-          )}
-          {isToday && <p className="text-[12px] text-green-600 font-medium mt-0.5">Today</p>}
-          <p className="text-[10px] text-text-tertiary mt-1">Click a row, then use <kbd className="px-1.5 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border shadow-sm">P</kbd> <kbd className="px-1.5 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border shadow-sm">A</kbd> <kbd className="px-1.5 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border shadow-sm">T</kbd> and <kbd className="px-1.5 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border shadow-sm">↑</kbd> <kbd className="px-1.5 py-0.5 bg-surface-alt rounded text-[9px] font-mono border border-border shadow-sm">↓</kbd> to navigate</p>
-        </div>
-
-        {/* Quick-start prompt when today has no records */}
-        {isToday && !isNoClassDay && !loading && !loadingStudents && students.length > 0 && Object.keys(records).length === 0 && (
-          <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-4">
-            <AlertTriangle size={20} className="text-amber-500 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-[13px] font-semibold text-amber-800">{lang === 'ko' ? '오늘 출석이 아직 기록되지 않았습니다' : 'Attendance not yet recorded for today'}</p>
-              <p className="text-[11px] text-amber-600 mt-0.5">{lang === 'ko' ? '출석을 표시한 후 반드시 저장 버튼을 눌러주세요' : 'Mark attendance and press Save to record it'}</p>
-            </div>
-            <button onClick={() => { markAllPresent(); }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-bold bg-green-500 text-white hover:bg-green-600 shadow-sm transition-all">
-              <UserCheck size={14} /> {lang === 'ko' ? '전원 출석 표시' : 'Mark All Present'}
-            </button>
+        {isToday && !isNoClassDay && !loading && !loadingStudents && students.length > 0 && marked === 0 && (
+          <div className="mb-4 px-4 py-2.5 bg-warn-soft border border-rule rounded flex items-center justify-between gap-3">
+            <p className="text-[13px] text-warn">{lang === 'ko' ? '오늘 출석이 아직 기록되지 않았습니다. 표시한 뒤 저장을 누르세요.' : 'Today is not marked yet. Everyone present? Mark them all, adjust the exceptions, then save.'}</p>
+            <button onClick={markAllPresent} className="h-8 px-3 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover whitespace-nowrap">{lang === 'ko' ? '전원 출석 표시' : 'Mark all present'}</button>
           </div>
         )}
 
-        {/* Stats bar */}
-        {Object.keys(records).length > 0 && (
-          <div className="flex gap-4 mb-5 text-[12px]">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500" /> <AnimatedNumber value={presentCount} /> Present</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500" /> <AnimatedNumber value={absentCount} /> Absent</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500" /> <AnimatedNumber value={tardyCount} /> Tardy</span>
-            {unmarkedCount > 0 && <span className="text-text-tertiary"><AnimatedNumber value={unmarkedCount} /> unmarked</span>}
+        {marked > 0 && (
+          <div className="flex gap-5 mb-3 text-[12.5px] tabular-nums">
+            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-good" /><AnimatedNumber value={presentCount} /> {lang === 'ko' ? '출석' : 'present'}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-bad" /><AnimatedNumber value={absentCount} /> {lang === 'ko' ? '결석' : 'absent'}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-warn" /><AnimatedNumber value={tardyCount} /> {lang === 'ko' ? '지각' : 'tardy'}</span>
+            {unmarkedCount > 0 && <span className="text-ink-3"><AnimatedNumber value={unmarkedCount} /> {lang === 'ko' ? '미표시' : 'unmarked'}</span>}
           </div>
         )}
 
-        {/* Attendance grid */}
         {loadingStudents || loading ? (
-          <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="bg-surface-alt px-4 py-3"><div className="skeleton h-3 w-full" /></div>
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="px-4 py-3 border-t border-border flex items-center gap-4">
-                <div className="skeleton h-3 w-6" />
-                <div className="skeleton h-3 w-32" />
-                <div className="skeleton h-3 w-12 ml-auto" />
-                <div className="skeleton h-6 w-6 rounded-full" />
-                <div className="skeleton h-6 w-6 rounded-full" />
-                <div className="skeleton h-6 w-6 rounded-full" />
-              </div>
-            ))}
-          </div>
+          <div className="border-t border-rule-2">{[...Array(6)].map((_, i) => <div key={i} className="py-3 border-b border-rule flex items-center gap-4"><div className="skeleton h-3 w-6" /><div className="skeleton h-3 w-40" /><div className="skeleton h-7 w-28 ml-auto rounded" /></div>)}</div>
         ) : students.length === 0 ? (
           <EmptyState icon={UserCheck} title="No students in this class" description="Select a different grade or class to view students" />
         ) : (
-          <div className={`bg-surface border border-border rounded-xl shadow-sm overflow-hidden ${saveSuccess ? 'animate-success-flash' : ''}`}>
+          <div className={`border-t border-rule-2 ${saveSuccess ? 'animate-success-flash' : ''}`}>
             <table className="w-full text-[13px]">
-              <thead><tr className="bg-surface-alt">
-                <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
-                <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-                <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-14">{lang === 'ko' ? '반' : 'Korean Class'}</th>
-                <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-10">{lang === 'ko' ? '번호' : 'No.'}</th>
-                <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Status</th>
-                <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-green-600 font-bold w-12">P</th>
-                <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-red-600 font-bold w-12">A</th>
-                <th className="text-center px-2 py-2.5 text-[9px] uppercase tracking-wider text-amber-600 font-bold w-12">T</th>
-                <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Note</th>
+              <thead><tr>
+                <th className="text-left px-2 py-2 eyebrow font-semibold w-8 border-b border-rule">#</th>
+                <th className="text-left px-2 py-2 eyebrow font-semibold border-b border-rule">{lang === 'ko' ? '학생' : 'Student'}</th>
+                <th className="text-left px-2 py-2 eyebrow font-semibold w-24 border-b border-rule">{lang === 'ko' ? '반 · 번호' : 'Homeroom'}</th>
+                <th className="text-center px-2 py-2 eyebrow font-semibold w-[124px] border-b border-rule">P · A · T</th>
+                <th className="text-left px-2 py-2 eyebrow font-semibold border-b border-rule">{lang === 'ko' ? '메모' : 'Note'}</th>
               </tr></thead>
-              <tbody>
+              <tbody className="divide-y divide-rule">
                 {students.map((s: any, i: number) => {
                   const rec = records[s.id]
                   const status = rec?.status
+                  const focused = focusedRow === i
                   return (
-                    <tr key={s.id} className={`border-t border-border table-row-hover ${focusedRow === i ? 'ring-2 ring-inset ring-navy/30 bg-blue-50/30' : ''}`}
-                      onClick={() => setFocusedRow(i)}>
-                      <td className="px-4 py-2 text-text-tertiary">{i + 1}</td>
-                      <td className="px-4 py-2">
-                        <span className="font-medium">{s.english_name}</span>
-                        <span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span>
+                    <tr key={s.id} onClick={() => setFocusedRow(i)} className={`${focused ? 'bg-paper-2 shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-paper-2/50'}`}>
+                      <td className="px-2 py-1.5 text-ink-3 tabular-nums">{i + 1}</td>
+                      <td className="px-2 py-1.5"><span className="font-medium text-ink">{s.english_name}</span><span className="text-ink-3 ml-2 text-[12px]">{s.korean_name}</span>{status && status !== 'present' && <span className={`ml-2 text-[10.5px] font-semibold uppercase tracking-wide ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}</td>
+                      <td className="px-2 py-1.5 text-[12px] text-ink-3 tabular-nums">{s.korean_class} {s.class_number}</td>
+                      <td className="px-2 py-1.5 text-center">
+                        <div className="inline-flex border border-rule-2 rounded overflow-hidden bg-surface">
+                          <button onClick={e => { e.stopPropagation(); setFocusedRow(i); setStatus(s.id, 'present') }} className={seg(status === 'present', 'bg-good text-white')}>P</button>
+                          <button onClick={e => { e.stopPropagation(); setFocusedRow(i); setStatus(s.id, 'absent') }} className={seg(status === 'absent', 'bg-bad text-white')}>A</button>
+                          <button onClick={e => { e.stopPropagation(); setFocusedRow(i); setStatus(s.id, 'tardy') }} className={seg(status === 'tardy', 'bg-warn text-white')}>T</button>
+                        </div>
                       </td>
-                      <td className="px-2 py-2 text-center text-[12px] text-text-secondary">{s.korean_class}</td>
-                      <td className="px-2 py-2 text-center text-[12px] text-text-secondary">{s.class_number}</td>
-                      <td className="px-2 py-2 text-center">
-                        {status ? (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${STATUS_CONFIG[status as Status].bg}`}>
-                            {STATUS_CONFIG[status as Status].label}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-text-tertiary">—</span>
-                        )}
-                      </td>
-                      {(['present', 'absent', 'tardy'] as Status[]).map(st => (
-                        <td key={st} className="px-2 py-2 text-center">
-                          <button onClick={() => setStatus(s.id, st)}
-                            className={`w-7 h-7 rounded-full text-[10px] font-bold transition-all border-2 ${
-                              status === st
-                                ? st === 'present' ? 'bg-green-500 border-green-500 text-white'
-                                : st === 'absent' ? 'bg-red-500 border-red-500 text-white'
-                                : st === 'tardy' ? 'bg-amber-500 border-amber-500 text-white'
-                                : 'bg-teal-500 border-teal-500 text-white'
-                                : 'bg-surface border-border text-text-tertiary hover:border-navy/30'
-                            }`}>
-                            {STATUS_CONFIG[st].short}
-                          </button>
-                        </td>
-                      ))}
-                      <td className="px-4 py-2">
-                        <input type="text" value={rec?.note || ''} onChange={(e: any) => setNote(s.id, e.target.value)}
-                          placeholder="..." className="w-full px-2 py-1 border border-border rounded text-[11px] outline-none focus:border-navy bg-transparent" />
+                      <td className="px-2 py-1.5">
+                        <input type="text" value={rec?.note || ''} onChange={(e: any) => setNote(s.id, e.target.value)} placeholder={status && status !== 'present' ? (lang === 'ko' ? '사유' : 'Reason') : ''}
+                          className={`w-full h-7 px-2 rounded text-[12px] text-ink placeholder:text-ink-3 bg-transparent border ${status && status !== 'present' ? 'border-rule-2 bg-surface' : 'border-transparent hover:border-rule'}`} />
                       </td>
                     </tr>
                   )
@@ -751,154 +633,97 @@ export default function AttendanceView() {
           </div>
         )}
 
-        {/* Export bar */}
-        <div className="mt-4">
-          <button onClick={() => {
-            exportToCSV(`attendance-${selectedClass}-${selectedDate}`,
-              ['Student', 'Korean Name', 'Status', 'Note'],
-              students.map((s: any) => [s.english_name, s.korean_name, records[s.id]?.status || '', records[s.id]?.note || '']))
-          }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
-            <Download size={12} /> Export CSV
-          </button>
+        <div className="mt-3 flex items-center justify-between">
+          <button onClick={() => { exportToCSV(`attendance-${selectedClass}-${selectedDate}`, ['Student', 'Korean Name', 'Status', 'Note'], students.map((s: any) => [s.english_name, s.korean_name, records[s.id]?.status || '', records[s.id]?.note || ''])) }} className="inline-flex items-center gap-1.5 text-[12px] text-ink-3 hover:text-ink"><Download size={12} /> CSV</button>
         </div>
 
-        {/* Sticky save bar */}
         {hasChanges && (
-          <div className="sticky-save-bar -mx-10 mt-4 flex items-center justify-between">
-            <p className="text-[12px] text-amber-700 font-medium">{lang === 'ko' ? '저장되지 않은 변경사항이 있습니다' : 'You have unsaved changes'}</p>
-            <button onClick={handleSave} disabled={saving}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-[13px] font-bold bg-gold text-navy-dark hover:bg-gold-light transition-all shadow-md">
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              {lang === 'ko' ? '출석 저장' : 'Save Attendance'}
+          <div className="sticky-save-bar -mx-8 mt-4 flex items-center justify-between">
+            <p className="text-[12.5px] text-warn font-medium">{lang === 'ko' ? '저장되지 않은 변경사항이 있습니다' : 'Unsaved changes'}</p>
+            <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-2 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover">
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}{lang === 'ko' ? '출석 저장' : 'Save attendance'}
             </button>
           </div>
         )}
-        </>)}
+      </>)}
 
-        {/* ─── Month-at-a-glance ─── */}
-        {viewMode === 'month' && (
-          <div>
-            {/* Month nav + legend */}
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <button onClick={() => stepCalMonth(-1)} className="p-1.5 rounded-lg border border-border hover:bg-surface-alt" aria-label="Previous month"><ChevronLeft size={16} /></button>
-                <h3 className="font-display text-lg font-semibold text-navy min-w-[170px] text-center">{calMonthLabel}</h3>
-                <button onClick={() => stepCalMonth(1)} className="p-1.5 rounded-lg border border-border hover:bg-surface-alt" aria-label="Next month"><ChevronRight size={16} /></button>
-                <button onClick={() => { const d = new Date(getKSTDateString() + 'T12:00:00'); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }) }}
-                  className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light">{lang === 'ko' ? '이번 달' : 'This month'}</button>
-              </div>
-              <div className="flex items-center gap-3 text-[11px] text-text-secondary flex-wrap">
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-50 border border-green-300" /> {lang === 'ko' ? '기록됨' : 'Marked'}</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-50 border border-amber-300" /> {lang === 'ko' ? '일부' : 'Partial'}</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-100 border border-amber-400" /> {lang === 'ko' ? '미기록' : 'Not marked'}</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-surface border border-border" /> {lang === 'ko' ? '예정' : 'Upcoming'}</span>
-              </div>
+      {viewMode === 'month' && (
+        <div>
+          <div className="flex items-baseline justify-between mb-3 flex-wrap gap-3">
+            <div className="flex items-baseline gap-2">
+              <h2 className="font-display text-[26px] leading-none text-ink">{calMonthLabel}</h2>
+              <button onClick={() => stepCalMonth(-1)} className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2" aria-label="Previous month"><ChevronLeft size={16} /></button>
+              <button onClick={() => stepCalMonth(1)} className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2" aria-label="Next month"><ChevronRight size={16} /></button>
+              <button onClick={() => { const d = new Date(getKSTDateString() + 'T12:00:00'); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }) }} className="h-7 px-2 rounded text-[12px] font-medium text-ink-2 hover:bg-paper-2">{lang === 'ko' ? '이번 달' : 'This month'}</button>
             </div>
-
-            {/* Unmarked summary banner */}
-            {!monthLoading && classGrades.length > 0 && (
-              unmarkedSessions > 0 ? (
-                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-[13px] text-amber-800">
-                  <AlertTriangle size={16} className="text-amber-500 flex-shrink-0" />
-                  {unmarkedSessions} {unmarkedSessions === 1 ? 'grade session' : 'grade sessions'} this month {unmarkedSessions === 1 ? 'has' : 'have'} no attendance recorded. Click a highlighted grade to fill it in.
-                </div>
-              ) : (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2 text-[13px] text-green-800">
-                  <Check size={16} className="text-green-600 flex-shrink-0" />
-                  Every grade of {selectedClass} is marked up to today.
-                </div>
-              )
-            )}
-
-            {/* Calendar grid — one chip per grade of the class */}
-            <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-              <div className="grid grid-cols-5 bg-surface-alt">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(d => (
-                  <div key={d} className="px-3 py-2 text-[11px] uppercase tracking-wider text-text-secondary font-semibold text-center">{d}</div>
-                ))}
-              </div>
-              {monthLoading ? (
-                <div className="p-12 text-center"><Loader2 size={22} className="animate-spin text-navy mx-auto" /></div>
-              ) : classGrades.length === 0 ? (
-                <div className="p-12 text-center text-text-tertiary text-[13px]">No students in {selectedClass}.</div>
-              ) : (
-                calWeeks.map((week, wi) => (
-                  <div key={wi} className="grid grid-cols-5 border-t border-border">
-                    {week.map((d, di) => {
-                      if (!d) return <div key={di} className="min-h-[96px] border-r border-border last:border-r-0 bg-surface-alt/30" />
-                      const key = toKey(d)
-                      const future = key > todayKey
-                      const todayCell = key === todayKey
-                      return (
-                        <div key={di}
-                          className={`min-h-[96px] border-r border-border last:border-r-0 p-1.5 flex flex-col gap-1 ${todayCell ? 'ring-2 ring-inset ring-navy/40' : ''}`}>
-                          <div className="flex items-center justify-between px-0.5">
-                            <span className={`text-[12px] font-bold ${todayCell ? 'text-navy' : 'text-text-primary'}`}>{d.getDate()}</span>
-                            {todayCell && <span className="text-[8px] font-bold uppercase text-navy bg-accent-light px-1 rounded">Today</span>}
-                          </div>
-                          <div className="flex flex-col gap-0.5">
-                            {classGrades.map(g => {
-                              const nonClass = isNonClassDay(key, g)
-                              const sm = monthGradeSummary[`${g}::${key}`]
-                              const count = sm?.count || 0
-                              const total = gradeTotals[g] || 0
-                              let chipCls = 'bg-surface-alt/60 text-text-tertiary'
-                              let right: React.ReactNode = '—'
-                              let clickable = false
-                              if (nonClass) {
-                                right = '—'
-                              } else if (count === 0) {
-                                if (future) { right = '·'; clickable = true }
-                                else { chipCls = 'bg-amber-100 text-amber-800 hover:brightness-95'; right = <AlertTriangle size={10} />; clickable = true }
-                              } else if (count < total) {
-                                chipCls = 'bg-amber-50 text-amber-700 hover:brightness-95'; right = `${count}/${total}`; clickable = true
-                              } else {
-                                chipCls = 'bg-green-50 text-green-700 hover:brightness-95'; right = <span className="inline-flex items-center gap-0.5"><Check size={10} /> {count}</span>; clickable = true
-                              }
-                              const titleTxt = nonClass ? `Grade ${g}: no class`
-                                : count === 0 && !future ? `Grade ${g}: not marked`
-                                : count === 0 ? `Grade ${g}: upcoming`
-                                : `Grade ${g}: ${count}/${total} marked`
-                              return (
-                                <div key={g} title={titleTxt}
-                                  onClick={clickable ? (e) => { e.stopPropagation(); guardUnsaved(() => { setSelectedGrade(g); setSelectedDate(key); setViewMode('day') }) } : undefined}
-                                  className={`flex items-center justify-between gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${chipCls} ${clickable ? 'cursor-pointer' : ''}`}>
-                                  <span>G{g}</span>
-                                  <span className="inline-flex items-center">{right}</span>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ))
-              )}
+            <div className="flex items-center gap-4 text-[11.5px] text-ink-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-good-soft border border-good/40" />{lang === 'ko' ? '기록됨' : 'Marked'}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-warn-soft border border-warn/40" />{lang === 'ko' ? '일부' : 'Partial'}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-bad-soft border border-bad/40" />{lang === 'ko' ? '미기록' : 'Not marked'}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-surface border border-rule-2" />{lang === 'ko' ? '예정' : 'Upcoming'}</span>
             </div>
-            <p className="text-[10px] text-text-tertiary mt-2">Each chip is one grade of {selectedClass}. Click a grade to open that day in Day view and record attendance.</p>
           </div>
-        )}
-      </div>
+          {!monthLoading && classGrades.length > 0 && (
+            <p className={`mb-3 text-[13px] ${unmarkedSessions > 0 ? 'text-warn' : 'text-good'}`}>
+              {unmarkedSessions > 0
+                ? `${unmarkedSessions} ${unmarkedSessions === 1 ? 'grade session' : 'grade sessions'} this month ${unmarkedSessions === 1 ? 'has' : 'have'} no attendance recorded. Click a highlighted grade to fill it in.`
+                : `Every grade of ${selectedClass} is marked up to today.`}
+            </p>
+          )}
+          <div className="border border-rule-2 rounded-md overflow-hidden">
+            <div className="grid grid-cols-5 bg-paper-2 border-b border-rule-2">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(d => <div key={d} className="px-3 py-1.5 eyebrow font-semibold">{d}</div>)}</div>
+            {monthLoading ? <div className="p-12 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+            : classGrades.length === 0 ? <div className="p-12 text-center text-ink-3 text-[13px]">No students in {selectedClass}.</div>
+            : calWeeks.map((week, wi) => (
+              <div key={wi} className="grid grid-cols-5 border-t first:border-t-0 border-rule">
+                {week.map((d, di) => {
+                  if (!d) return <div key={di} className="min-h-[96px] border-r last:border-r-0 border-rule bg-paper-2/40" />
+                  const key = toKey(d)
+                  const future = key > todayKey
+                  const todayCell = key === todayKey
+                  return (
+                    <div key={di} className="min-h-[96px] border-r last:border-r-0 border-rule p-1.5 flex flex-col gap-1">
+                      <span className={`w-[22px] h-[22px] flex items-center justify-center rounded-full text-[12px] font-semibold tabular-nums ${todayCell ? 'bg-accent text-white' : 'text-ink-2'}`}>{d.getDate()}</span>
+                      <div className="flex flex-col gap-0.5">
+                        {classGrades.map(g => {
+                          const nonClass = isNonClassDay(key, g)
+                          const sm = monthGradeSummary[`${g}::${key}`]
+                          const count = sm?.count || 0
+                          const total = gradeTotals[g] || 0
+                          let cls = 'text-ink-3'
+                          let right: React.ReactNode = '—'
+                          let clickable = false
+                          if (nonClass) right = '—'
+                          else if (count === 0) { if (future) { right = '·'; clickable = true } else { cls = 'bg-bad-soft text-bad'; right = <AlertTriangle size={10} />; clickable = true } }
+                          else if (count < total) { cls = 'bg-warn-soft text-warn'; right = `${count}/${total}`; clickable = true }
+                          else { cls = 'bg-good-soft text-good'; right = <span className="inline-flex items-center gap-0.5"><Check size={10} /> {count}</span>; clickable = true }
+                          const titleTxt = nonClass ? `Grade ${g}: no class` : count === 0 && !future ? `Grade ${g}: not marked` : count === 0 ? `Grade ${g}: upcoming` : `Grade ${g}: ${count}/${total} marked`
+                          return (
+                            <div key={g} title={titleTxt} onClick={clickable ? (e) => { e.stopPropagation(); guardUnsaved(() => { setSelectedGrade(g); setSelectedDate(key); setViewMode('day') }) } : undefined}
+                              className={`flex items-center justify-between gap-1 rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${cls} ${clickable ? 'cursor-pointer hover:brightness-95' : ''}`}>
+                              <span>G{g}</span><span className="inline-flex items-center">{right}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+          <p className="text-[11.5px] text-ink-3 mt-2">{lang === 'ko' ? `각 칩은 ${selectedClass}의 한 학년입니다. 학년을 클릭하면 일별 보기가 열립니다.` : `Each chip is one grade of ${selectedClass}. Click a grade to open that day and record attendance.`}</p>
+        </div>
+      )}
 
-      {/* Unsaved changes confirmation modal */}
       {showUnsavedModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setShowUnsavedModal(false)}>
-          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle size={24} className="text-amber-500" />
-              <h3 className="text-[16px] font-bold text-navy">{lang === 'ko' ? '저장되지 않은 변경사항' : 'Unsaved Changes'}</h3>
-            </div>
-            <p className="text-[13px] text-text-secondary mb-5">{lang === 'ko' ? '저장하지 않으면 변경사항이 사라집니다.' : 'You have unsaved attendance changes. Save before leaving?'}</p>
+        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setShowUnsavedModal(false)}>
+          <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="font-display text-[22px] leading-none text-ink mb-2">{lang === 'ko' ? '저장되지 않은 변경사항' : 'Unsaved changes'}</h3>
+            <p className="text-[13px] text-ink-2 mb-5">{lang === 'ko' ? '저장하지 않으면 변경사항이 사라집니다.' : 'Save this attendance before leaving?'}</p>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => { setShowUnsavedModal(false); setHasChanges(false); if (pendingAction) pendingAction(); setPendingAction(null) }}
-                className="px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt">
-                {lang === 'ko' ? '저장 안 함' : 'Discard'}
-              </button>
-              <button onClick={async () => { await handleSave(); setShowUnsavedModal(false); if (pendingAction) pendingAction(); setPendingAction(null) }}
-                className="px-4 py-2 rounded-lg text-[13px] font-bold bg-gold text-navy-dark hover:bg-gold-light">
-                {lang === 'ko' ? '저장' : 'Save First'}
-              </button>
+              <button onClick={() => { setShowUnsavedModal(false); setHasChanges(false); if (pendingAction) pendingAction(); setPendingAction(null) }} className="h-9 px-3.5 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink">{lang === 'ko' ? '저장 안 함' : 'Discard'}</button>
+              <button onClick={async () => { await handleSave(); setShowUnsavedModal(false); if (pendingAction) pendingAction(); setPendingAction(null) }} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover">{lang === 'ko' ? '저장' : 'Save first'}</button>
             </div>
           </div>
         </div>
