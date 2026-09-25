@@ -45,6 +45,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
   const [map, setMap] = useState<QuestionMapItem[]>([])
   const [rangeText, setRangeText] = useState('')
   const [picking, setPicking] = useState<null | { nums: number[] }>(null)
+  const [pickingRubricFor, setPickingRubricFor] = useState<number | null>(null)
   const [editingQ, setEditingQ] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -177,7 +178,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
                     <button onClick={() => setEditingQ(editingQ === q.num ? null : q.num)}
                       className={`min-w-[58px] border rounded text-center overflow-hidden ${editingQ === q.num ? 'border-accent' : 'border-rule-2'}`}>
                       <span className="block text-[10px] text-ink-3 bg-paper-2 tracking-wide">Q{q.num}{q.max_points !== 1 || !q.answer_key ? ` · ${q.max_points}pt` : ''}</span>
-                      <span className={`block font-mono font-bold ${q.answer_key ? 'text-[15px]' : 'text-[10.5px] font-sans font-medium text-ink-2'} py-0.5`}>{q.answer_key || typeLabel[q.type]}</span>
+                      <span className={`block font-mono font-bold ${q.answer_key ? 'text-[15px]' : 'text-[10.5px] font-sans font-medium text-ink-2'} py-0.5 px-1 truncate max-w-[120px]`}>{q.answer_key || (q.type === 'rubric' && q.rubric ? q.rubric.name : typeLabel[q.type])}</span>
                       <span className="block text-[9.5px] text-info px-1 pb-0.5 min-h-[14px]">{q.standard || ''}</span>
                     </button>
                     {editingQ === q.num && (
@@ -187,6 +188,12 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
                           <select value={q.type} onChange={e => setQ(q.num, { type: e.target.value as any, answer_key: (e.target.value === 'mc' || e.target.value === 'true_false') ? q.answer_key : undefined })} className="h-7 px-2 bg-surface border border-rule-2 rounded">
                             <option value="mc">Multiple choice</option><option value="true_false">True / false</option><option value="short_answer">Written · short answer</option><option value="open_ended">Written · open response</option><option value="rubric">Rubric</option>
                           </select></label>
+                        {q.type === 'rubric' && (
+                          <div className="grid gap-1"><span className="eyebrow">Rubric</span>
+                            <div className="flex gap-1.5"><button onClick={() => setPickingRubricFor(q.num)} className="h-7 px-2 border border-rule-2 rounded text-ink-2 hover:text-ink flex-1 text-left truncate">{q.rubric ? `${q.rubric.name} · ${q.rubric.criteria.length} criteria` : (lang === 'ko' ? '루브릭 선택…' : 'Pick a rubric…')}</button>{q.rubric && <button onClick={() => setQ(q.num, { rubric: null })} className="h-7 px-2 border border-rule-2 rounded text-ink-3 hover:text-bad">×</button>}</div>
+                            <span className="text-[10.5px] text-ink-3">{lang === 'ko' ? '기준당 4점. 루브릭 없이는 0–4 점수 하나.' : 'Scored criterion by criterion, 4 each. Without one, a single 0–4 mark.'}</span>
+                          </div>
+                        )}
                         <div className="grid gap-1"><span className="eyebrow">Standard</span>
                           <div className="flex gap-1.5"><button onClick={() => { setPicking({ nums: [q.num] }) }} className="h-7 px-2 border border-rule-2 rounded text-ink-2 hover:text-ink flex-1 text-left truncate">{q.standard || 'Pick…'}</button>{q.standard && <button onClick={() => tagRange([q.num], null)} className="h-7 px-2 border border-rule-2 rounded text-ink-3 hover:text-bad">×</button>}</div></div>
                         <button onClick={() => setEditingQ(null)} className="h-7 rounded bg-ink text-paper text-[12px] font-semibold">Done</button>
@@ -230,6 +237,8 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
         </div>
       )}
 
+      {pickingRubricFor != null && <RubricPicker grade={grade} englishClass={englishClass} onClose={() => setPickingRubricFor(null)}
+        onUse={r => { setQ(pickingRubricFor, { rubric: { name: r.name, criteria: r.criteria }, max_points: r.criteria.length * 4 }); setPickingRubricFor(null) }} />}
       {picking && <StandardPicker grade={grade} domain={dom} englishClass={englishClass} onClose={() => setPicking(null)} onPick={s => { tagRange(picking.nums, s.code); setPicking(null); setRangeText('') }} />}
     </div>
   )

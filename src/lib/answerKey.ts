@@ -29,7 +29,8 @@ export function parseAnswerKey(text: string, existing: QuestionMapItem[] = []): 
     const prev = existing.find(e => e.num === it.num)
     if (!prev) return it
     const samePoints = prev.type === it.type && prev.type !== 'short_answer' && prev.type !== 'rubric'
-    return { ...it, standard: prev.standard, max_points: samePoints ? prev.max_points : it.max_points }
+    const keepRubric = it.type === 'rubric' && prev.type === 'rubric' && prev.rubric
+    return { ...it, standard: prev.standard, max_points: keepRubric ? prev.max_points : samePoints ? prev.max_points : it.max_points, ...(keepRubric ? { rubric: prev.rubric } : {}) }
   })
 }
 

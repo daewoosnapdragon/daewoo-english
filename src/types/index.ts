@@ -142,6 +142,8 @@ export interface QuestionMapItem {
   max_points: number;
   standard?: string;
   answer_key?: string; // For MC: 'A','B','C','D'; for TF: 'T','F'
+  /** A rubric item scored criterion by criterion; max_points is 4 per criterion. */
+  rubric?: { name: string; criteria: { key: string; label: string; levels: [string, string, string, string]; standard?: string }[] } | null;
 }
 
 export interface ItemResponse {
@@ -152,6 +154,8 @@ export interface ItemResponse {
   points: number;
   max: number;
   standard?: string;
+  /** Per-criterion levels (0–4) when the item carries a rubric. */
+  levels?: Record<string, number>;
 }
 
 export interface StandardTag {

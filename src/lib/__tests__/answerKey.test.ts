@@ -28,6 +28,13 @@ describe('parseAnswerKey', () => {
     expect(after[2]).toMatchObject({ answer_key: 'D', standard: 'RL.3.3', max_points: 2 })
     expect(after[3]).toMatchObject({ type: 'short_answer', max_points: 3 })
   })
+  it('keeps an attached rubric and its points when the key is retyped', () => {
+    const rubric = { name: 'Opinion', criteria: [{ key: 'a', label: 'A', levels: ['1', '2', '3', '4'] as [string, string, string, string] }, { key: 'b', label: 'B', levels: ['1', '2', '3', '4'] as [string, string, string, string] }] }
+    const before = parseAnswerKey('AB 4r').map(q => q.type === 'rubric' ? { ...q, rubric, max_points: 8 } : q)
+    const after = parseAnswerKey('ABC 4r', before)
+    expect(after[3]).toMatchObject({ type: 'rubric', max_points: 8 })
+    expect((after[3] as any).rubric?.name).toBe('Opinion')
+  })
   it('round-trips through keyToString', () => {
     const text = 'ACBDA BDCAB TF 2 2 3r'
     expect(keyToString(parseAnswerKey(text))).toBe(text)

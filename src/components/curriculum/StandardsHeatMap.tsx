@@ -64,6 +64,17 @@ export default function StandardsHeatMap() {
         const covered = new Set<string>()
         if (Array.isArray(row.item_responses)) {
           row.item_responses.forEach((ir: any) => {
+            // A rubric item inside the key: each criterion carries its own standard.
+            const qm = Array.isArray(a.question_map) ? a.question_map.find((x: any) => x.num === ir.q) : null
+            if (ir.levels && qm?.rubric?.criteria) {
+              qm.rubric.criteria.forEach((c: any) => {
+                const lv = ir.levels[c.key]
+                if (lv == null || !c.standard) return
+                covered.add(c.standard)
+                add(row.student_id, c.standard, { assessment: a.name, what: `Q${ir.q} · ${c.label}`, earned: Number(lv), possible: 4 })
+              })
+              return
+            }
             if (!ir.standard || ir.max == null) return
             if (!(ir.answer || ir.points != null)) return
             covered.add(ir.standard)
