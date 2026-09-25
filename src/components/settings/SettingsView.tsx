@@ -13,25 +13,30 @@ export default function SettingsView() {
   const { language, showToast, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
 
+  const sections: [string, string][] = [
+    ['teachers', language === 'ko' ? '교사' : 'Teachers'], ['semesters', language === 'ko' ? '학기' : 'Semesters'], ['schedule', language === 'ko' ? '수업 없는 요일' : 'Days with no class'],
+    ['benchmarks', language === 'ko' ? '프로그램 기준' : 'Program benchmarks'], ['weights', language === 'ko' ? '평가 가중치' : 'Assessment weights'],
+    ...(isAdmin ? [['classes', language === 'ko' ? '반 관리' : 'Classes'] as [string, string]] : []), ['school', language === 'ko' ? '학교 정보' : 'School information'],
+  ]
   return (
-    <div className="animate-fade-in">
-      <div className="px-10 pt-8 pb-6 bg-surface border-b border-border">
-        <h2 className="font-display text-[26px] font-semibold tracking-tight text-navy">
-          {language === 'ko' ? '설정' : 'Settings'}
-        </h2>
-        <p className="text-text-secondary text-sm mt-1">
-          {language === 'ko' ? '교사, 학교 정보, 학기 관리' : 'Manage teachers, school info, and semesters'}
-        </p>
+    <div className="px-8 py-6 animate-fade-in">
+      <div className="mb-6">
+        <p className="eyebrow eyebrow-accent mb-1.5">{language === 'ko' ? '교사, 학기, 기준, 가중치' : 'Teachers · semesters · benchmarks · weights'}</p>
+        <h1 className="font-display text-[34px] leading-none text-ink">{language === 'ko' ? '설정' : 'Settings'}</h1>
       </div>
-
-      <div className="px-10 py-8 max-w-4xl">
-        <TeacherSection />
-        <SemesterSection />
-        <ScheduleRulesSection />
-        <ProgramBenchmarksSection />
-        <AssessmentWeightsSection />
-        {isAdmin && <ClassManagementSection />}
-        <SchoolInfoSection />
+      <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-10">
+        <nav className="lg:sticky lg:top-[140px] self-start grid gap-0.5 text-[12.5px] border-t border-rule-2 pt-3" aria-label="Settings sections">
+          {sections.map(([id, l]) => <a key={id} href={`#set-${id}`} onClick={e => { e.preventDefault(); document.getElementById(`set-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className="px-2 py-1 rounded text-ink-2 hover:text-ink hover:bg-paper-2">{l}</a>)}
+        </nav>
+        <div className="min-w-0 max-w-4xl">
+          <TeacherSection />
+          <SemesterSection />
+          <ScheduleRulesSection />
+          <ProgramBenchmarksSection />
+          <AssessmentWeightsSection />
+          {isAdmin && <ClassManagementSection />}
+          <SchoolInfoSection />
+        </div>
       </div>
     </div>
   )
@@ -127,24 +132,24 @@ function TeacherSection() {
   const isCore = (t: Teacher) => coreClasses.includes(t.english_class) || t.role === 'admin'
 
   return (
-    <div className="mb-8">
+    <div id="set-teachers" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-center gap-2 mb-4">
-        <UserCog size={20} className="text-navy" />
-        <h3 className="font-display text-lg font-semibold text-navy">
+        <UserCog size={18} className="text-ink-3" />
+        <h3 className="font-display text-[22px] leading-none text-ink">
           {language === 'ko' ? '교사 관리' : 'Teacher Management'}
         </h3>
       </div>
-      <p className="text-[13px] text-text-secondary mb-4">
+      <p className="text-[12.5px] text-ink-3 mb-4">
         {language === 'ko' ? '교사 이름을 수정하고 Enter를 누르거나 저장 버튼을 클릭하세요.' : 'Edit teacher names and press Enter or click Save. Non-core teachers can be deactivated.'}
       </p>
 
-      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+      <div className="border border-rule-2 rounded-md overflow-hidden">
         {loading ? (
           <div className="p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
         ) : (
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="bg-surface-alt">
+              <tr className="bg-paper-2">
                 <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">
                   {language === 'ko' ? '영어반' : 'English Class'}
                 </th>
@@ -189,7 +194,7 @@ function TeacherSection() {
                     <td className="px-5 py-3 flex items-center gap-1">
                       {edited && (
                         <button onClick={() => handleSave(teacher)} disabled={saving === teacher.id}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark">
+                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-accent text-white hover:bg-accent-hover">
                           {saving === teacher.id ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                           {language === 'ko' ? '저장' : 'Save'}
                         </button>
@@ -215,7 +220,7 @@ function TeacherSection() {
           <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle size={20} className="text-amber-500" />
-              <h3 className="font-display text-lg font-semibold text-navy">
+              <h3 className="font-display text-[22px] leading-none text-ink">
                 {language === 'ko' ? '교사 비활성화' : 'Deactivate Teacher'}
               </h3>
             </div>
@@ -393,11 +398,11 @@ function SemesterSection() {
     : showArchived ? semesters : semesters.filter((s: any) => !s.is_archived)
 
   return (
-    <div className="mb-8">
+    <div id="set-semesters" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <CalendarDays size={20} className="text-navy" />
-          <h3 className="font-display text-lg font-semibold text-navy">{lang === 'ko' ? '학기 관리' : 'Semesters & Cutoff Dates'}</h3>
+          <CalendarDays size={18} className="text-ink-3" />
+          <h3 className="font-display text-[22px] leading-none text-ink">{lang === 'ko' ? '학기 관리' : 'Semesters & Cutoff Dates'}</h3>
         </div>
         <div className="flex items-center gap-2">
           {canManage && archivedCount > 0 && (
@@ -408,7 +413,7 @@ function SemesterSection() {
           )}
           {canManage && (
             <button onClick={() => setAdding(!adding)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-accent text-white hover:bg-accent-hover">
               <Plus size={13} /> {lang === 'ko' ? '학기 추가' : 'Add Semester'}
             </button>
           )}
@@ -464,13 +469,13 @@ function SemesterSection() {
               <input type="date" value={newSem.report_card_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, report_card_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleAdd} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Add</button>
+            <button onClick={handleAdd} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-accent text-white hover:bg-accent-hover">Add</button>
             <button onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Cancel</button>
           </div>
         </div>
       )}
 
-      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+      <div className="border border-rule-2 rounded-md overflow-hidden">
         {loading ? (
           <div className="p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
         ) : visibleSemesters.length === 0 ? (
@@ -505,7 +510,7 @@ function SemesterSection() {
                         {sem.is_archived ? <><ArchiveRestore size={10} /> Restore</> : <><Archive size={10} /> Archive</>}
                       </button>
                       <button onClick={() => handleSave(sem)} disabled={saving === sem.id}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-navy text-white hover:bg-navy-dark">
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-accent text-white hover:bg-accent-hover">
                         {saving === sem.id ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} Save
                       </button>
                       <button onClick={() => handleDelete(sem.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500"><Trash2 size={13} /></button>
@@ -663,18 +668,18 @@ function ProgramBenchmarksSection() {
   if (loading) return <div className="mb-8 p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
   return (
-    <div className="mb-8">
+    <div id="set-benchmarks" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Target size={20} className="text-navy" />
+          <Target size={18} className="text-ink-3" />
           <div>
-            <h3 className="font-display text-lg font-semibold text-navy">Program Benchmarks</h3>
-            <p className="text-[10px] text-text-tertiary">CWPM and Lexile targets per grade and class. Visible to all teachers.</p>
+            <h3 className="font-display text-[22px] leading-none text-ink">Program Benchmarks</h3>
+            <p className="text-[12px] text-ink-3 mt-1">CWPM and Lexile targets per grade and class. Visible to all teachers.</p>
           </div>
         </div>
         {(isAdmin || teacherClass) && (
           <button onClick={handleSave} disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save Benchmarks
           </button>
         )}
@@ -692,10 +697,10 @@ function ProgramBenchmarksSection() {
         ))}
       </div>
 
-      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+      <div className="border border-rule-2 rounded-md overflow-hidden">
         <table className="w-full text-[12px]">
           <thead>
-            <tr className="bg-surface-alt">
+            <tr className="bg-paper-2">
               <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
               <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold" title="Expected reading fluency by mid-semester">CWPM Mid <span className="normal-case text-text-tertiary block text-[8px]">mid-semester target</span></th>
               <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold" title="Target reading fluency by end of semester">CWPM End <span className="normal-case text-text-tertiary block text-[8px]">end-semester target</span></th>
@@ -803,18 +808,18 @@ function ClassManagementSection() {
   if (loading) return <div className="mb-8 p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
   return (
-    <div className="mb-8">
+    <div id="set-classes" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-center gap-2 mb-4">
-        <AlertTriangle size={20} className="text-amber-600" />
+        <AlertTriangle size={18} className="text-warn" />
         <div>
-          <h3 className="font-display text-lg font-semibold text-navy">Class Management</h3>
-          <p className="text-[10px] text-text-tertiary">Delete non-core classes. Core classes (Lily-Snapdragon) cannot be deleted.</p>
+          <h3 className="font-display text-[22px] leading-none text-ink">Class Management</h3>
+          <p className="text-[12px] text-ink-3 mt-1">Delete non-core classes. Core classes (Lily-Snapdragon) cannot be deleted.</p>
         </div>
       </div>
-      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
+      <div className="border border-rule-2 rounded-md overflow-hidden">
         <table className="w-full text-[13px]">
           <thead>
-            <tr className="bg-surface-alt">
+            <tr className="bg-paper-2">
               <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
               <th className="text-center px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Students</th>
               <th className="text-right px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Actions</th>
@@ -908,14 +913,12 @@ function AssessmentWeightsSection() {
   const classes: EnglishClass[] = ['Lily', 'Camellia', 'Daisy', 'Sunflower', 'Marigold', 'Snapdragon']
 
   return (
-    <div className="mb-8">
-      <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
+    <div id="set-weights" className="mb-10 scroll-mt-[140px]">
+      <div className="border-t border-rule-2 pt-5">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-            <Scale size={16} className="text-indigo-600" />
-          </div>
+          <Scale size={18} className="text-ink-3" />
           <div className="flex-1">
-            <h3 className="font-display text-lg font-semibold text-navy">Assessment Weights</h3>
+            <h3 className="font-display text-[22px] leading-none text-ink">Assessment Weights</h3>
             <p className="text-[12px] text-text-secondary">How formative, summative, and performance task grades are weighted. Weights must sum to 100%.</p>
           </div>
         </div>
@@ -1028,7 +1031,7 @@ function AssessmentWeightsSection() {
         {isAdmin && (
           <div className="flex justify-end mt-4">
             <button onClick={handleSave} disabled={saving}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
               {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Weights
             </button>
           </div>
@@ -1076,15 +1079,15 @@ function SchoolInfoSection() {
   if (!settings) return null
 
   return (
-    <div className="mb-8">
+    <div id="set-school" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-center gap-2 mb-4">
-        <School size={20} className="text-navy" />
-        <h3 className="font-display text-lg font-semibold text-navy">
+        <School size={18} className="text-ink-3" />
+        <h3 className="font-display text-[22px] leading-none text-ink">
           {language === 'ko' ? '학교 정보' : 'School Information'}
         </h3>
       </div>
 
-      <div className="bg-surface border border-border rounded-xl shadow-sm p-6">
+      <div className="border-t border-rule-2 pt-5">
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
@@ -1123,7 +1126,7 @@ function SchoolInfoSection() {
           </div>
         </div>
         <button onClick={handleSave} disabled={saving}
-          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[13px] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {language === 'ko' ? '저장' : 'Save Changes'}
         </button>
@@ -1152,7 +1155,7 @@ function ScheduleRulesSection() {
     if (err) showToast(`Error: ${err}`); else { showToast(language === 'ko' ? '시간표 규칙 저장됨' : 'Schedule rules saved'); setDirty(false) }
   }
   return (
-    <div className="mb-8">
+    <div id="set-schedule" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-baseline justify-between border-b border-rule-2 pb-2 mb-3">
         <div>
           <h3 className="font-display text-[22px] leading-none text-ink">{language === 'ko' ? '수업 없는 요일' : 'Days with no class'}</h3>
