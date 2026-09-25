@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Clock, CalendarDays } from 'lucide-react'
+import { Clock, CalendarDays, PanelRightClose } from 'lucide-react'
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const
@@ -82,7 +82,7 @@ function getGradeColor(label: string): { bg: string; text: string; border: strin
   return { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' }
 }
 
-export default function WeeklySchedule() {
+export default function WeeklySchedule({ onCollapse }: { onCollapse?: () => void } = {}) {
   const [now, setNow] = useState(getKSTNow)
   const kstDay = now.getDay() // 0=Sun, 1=Mon...
   const isWeekday = kstDay >= 1 && kstDay <= 5
@@ -128,6 +128,11 @@ export default function WeeklySchedule() {
         <div className="flex items-center gap-2">
           <CalendarDays size={14} className="text-navy" />
           <h3 className="font-display text-[12px] font-semibold text-navy">Weekly Schedule</h3>
+          {onCollapse && (
+            <button onClick={onCollapse} title="Hide schedule" className="ml-auto w-6 h-6 rounded flex items-center justify-center text-ink-3 hover:text-ink hover:bg-paper-2">
+              <PanelRightClose size={13} />
+            </button>
+          )}
         </div>
       </div>
 

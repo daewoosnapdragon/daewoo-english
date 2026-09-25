@@ -6,19 +6,21 @@ import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, Pencil, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX, Sparkles, Eye, BookOpen, CalendarDays, UserCheck, CheckCircle, XCircle, ArrowRight } from 'lucide-react'
+import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, Pencil, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX, Sparkles, Eye, BookOpen, CalendarDays, UserCheck, CheckCircle, XCircle, ArrowRight, PanelLeftClose } from 'lucide-react'
 import WeeklySchedule from './WeeklySchedule'
 
+// Nine stored types, five colours: fewer hues means each one is recognisable
+// at a glance. Days off and exams also fill their day (see `fills`).
 const EVENT_TYPES = [
-  { value: 'day_off', label: 'Day Off', color: '#22C55E', bg: 'bg-green-100 text-green-800' },
-  { value: 'deadline', label: 'Deadline', color: '#EF4444', bg: 'bg-red-100 text-red-800' },
-  { value: 'meeting', label: 'Meeting', color: '#A855F7', bg: 'bg-purple-100 text-purple-800' },
-  { value: 'midterm', label: 'Midterm', color: '#F97316', bg: 'bg-orange-100 text-orange-800' },
-  { value: 'report_cards', label: 'Report Cards', color: '#0EA5E9', bg: 'bg-sky-100 text-sky-800' },
-  { value: 'event', label: 'School Event', color: '#F59E0B', bg: 'bg-amber-100 text-amber-800' },
-  { value: 'field_trip', label: 'Field Trip', color: '#14B8A6', bg: 'bg-teal-100 text-teal-800' },
-  { value: 'testing', label: 'Testing', color: '#EC4899', bg: 'bg-pink-100 text-pink-800' },
-  { value: 'other', label: 'Other', color: '#6B7280', bg: 'bg-gray-100 text-gray-700' },
+  { value: 'day_off', label: 'Day Off', color: '#2E6B3A', bg: 'bg-good-soft text-good', fills: true },
+  { value: 'deadline', label: 'Deadline', color: '#8A2A2B', bg: 'bg-accent-soft text-accent', fills: false },
+  { value: 'meeting', label: 'Meeting', color: '#2F5C8A', bg: 'bg-info-soft text-info', fills: false },
+  { value: 'midterm', label: 'Midterm', color: '#8A2A2B', bg: 'bg-accent-soft text-accent', fills: true },
+  { value: 'report_cards', label: 'Report Cards', color: '#2F5C8A', bg: 'bg-info-soft text-info', fills: false },
+  { value: 'event', label: 'School Event', color: '#9A6A12', bg: 'bg-warn-soft text-warn', fills: false },
+  { value: 'field_trip', label: 'Field Trip', color: '#5EA89C', bg: 'bg-level-sunflower/20 text-ink', fills: false },
+  { value: 'testing', label: 'Testing', color: '#5EA89C', bg: 'bg-level-sunflower/20 text-ink', fills: true },
+  { value: 'other', label: 'Other', color: '#857D6E', bg: 'bg-paper-2 text-ink-2', fills: false },
 ]
 
 interface CalEvent { id: string; title: string; date: string; end_date?: string | null; type: string; description: string; created_by: string | null; created_at: string; show_on_parent_calendar?: boolean; target_grades?: number[] | null }
@@ -139,6 +141,10 @@ function useDashboardData(currentTeacher: any): SharedDashboardData {
 }
 
 export default function DashboardView() {
+  // The weekly schedule can be tucked away so the two months get the full width.
+  const [scheduleOpen, setScheduleOpen] = useState(true)
+  useEffect(() => { try { if (localStorage.getItem('daewoo_schedule') === 'closed') setScheduleOpen(false) } catch {} }, [])
+  useEffect(() => { try { localStorage.setItem('daewoo_schedule', scheduleOpen ? 'open' : 'closed') } catch {} }, [scheduleOpen])
   const { language, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin'
   const isTeacher = currentTeacher?.role === 'teacher'
@@ -236,9 +242,15 @@ export default function DashboardView() {
         {/* ─── Today's Status: full-width bar on top ─── */}
         <ActionableSummary shared={shared} horizontal />
         {/* ─── Calendar (two months) + Weekly schedule ─── */}
-        <div className="grid grid-cols-[1fr_220px] gap-5">
+        <div className={`grid gap-5 ${scheduleOpen ? 'grid-cols-[1fr_240px]' : 'grid-cols-[1fr_auto]'}`}>
           <SharedCalendar />
-          <WeeklySchedule />
+          {scheduleOpen
+            ? <WeeklySchedule onCollapse={() => setScheduleOpen(false)} />
+            : <button onClick={() => setScheduleOpen(true)} title="Show schedule"
+                className="w-9 self-start h-40 border border-border rounded-lg bg-surface hover:bg-paper-2 flex flex-col items-center justify-center gap-2 text-ink-3 hover:text-ink">
+                <PanelLeftClose size={14} />
+                <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ writingMode: 'vertical-rl' }}>Schedule</span>
+              </button>}
         </div>
         {isAdmin && <ClassOverviewTable />}
         {/* ─── Below: Insights + Content ─── */}
@@ -927,14 +939,15 @@ function SharedCalendar() {
   const renderMonth = (gy: number, gm: number) => {
     const first = new Date(gy, gm, 1).getDay()
     const days = new Date(gy, gm + 1, 0).getDate()
+    const cols = { gridTemplateColumns: '0.55fr repeat(5, 1fr) 0.55fr' }
     return (
       <div>
-        <div className="text-center text-[12px] font-semibold text-navy mb-2">{months[gm]} {gy}</div>
-        <div className="grid grid-cols-7 mb-1">
-          {dayN.map(d => <div key={d} className="text-center text-[9px] uppercase tracking-wider text-text-tertiary font-semibold py-0.5">{d}</div>)}
+        <div className="font-display text-[17px] text-ink mb-2">{months[gm]} <span className="text-ink-3">{gy}</span></div>
+        <div className="grid" style={cols}>
+          {dayN.map(d => <div key={d} className="text-[10px] uppercase tracking-wider text-ink-3 font-semibold py-1 px-1.5">{d}</div>)}
         </div>
-        <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
-          {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} className="bg-surface-alt/50 min-h-[76px]" />)}
+        <div className="grid gap-px bg-border border border-border" style={cols}>
+          {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} className="bg-paper-2 min-h-[104px]" />)}
           {Array.from({ length: days }).map((_, i) => {
             const d = i + 1
             const dateStr = fmt(new Date(gy, gm, d))
@@ -942,32 +955,45 @@ function SharedCalendar() {
             const isToday = dateStr === today
             const isSelected = dateStr === selDay
             const isWeekend = [0, 6].includes(new Date(gy, gm, d).getDay())
+            const filler = evts.find(ev => EVENT_TYPES.find(t => t.value === ev.type)?.fills)
+            const fillType = filler ? EVENT_TYPES.find(t => t.value === filler.type) : null
+            const shown = evts.slice(0, 3)
             return (
               <div key={d} onClick={() => setSelDay(dateStr)}
-                className={`bg-surface min-h-[76px] p-1 cursor-pointer transition-all hover:bg-accent-light/50 ${isSelected ? 'ring-2 ring-navy ring-inset' : ''} ${isWeekend ? 'bg-surface-alt/30' : ''}`}>
-                <div className={`text-[10px] font-medium mb-0.5 w-5 h-5 flex items-center justify-center rounded-full ${isToday ? 'bg-navy text-white' : 'text-text-primary'}`}>{d}</div>
-                <div className="space-y-0.5">
-                  {evts.slice(0, 2).map(ev => {
+                style={fillType ? { backgroundColor: `${fillType.color}14` } : undefined}
+                className={`min-h-[104px] p-1.5 cursor-pointer transition-colors hover:bg-paper-2 ${isWeekend ? 'bg-paper-2' : 'bg-surface'} ${isSelected ? 'ring-2 ring-accent ring-inset' : ''}`}>
+                <div className={`text-[11.5px] font-semibold mb-1 w-5 h-5 flex items-center justify-center rounded-full tabular-nums ${isToday ? 'bg-accent text-white' : isWeekend ? 'text-ink-3' : 'text-ink-2'}`}>{d}</div>
+                <div className="space-y-[3px]">
+                  {shown.map(ev => {
                     const typeInfo = EVENT_TYPES.find(t => t.value === ev.type)
+                    const color = typeInfo?.color || '#857D6E'
+                    if (typeInfo?.fills) {
+                      return (
+                        <div key={ev.id} title={ev.title} className="text-[10.5px] leading-tight px-1 py-[1px] rounded-sm font-semibold text-white truncate" style={{ backgroundColor: color }}>
+                          {ev.title}
+                        </div>
+                      )
+                    }
                     return (
-                      <div key={ev.id} className="text-[8px] px-1 py-0.5 rounded truncate font-medium" style={{ backgroundColor: `${typeInfo?.color || '#6B7280'}20`, color: typeInfo?.color || '#6B7280' }}>
-                        {ev.title}
+                      <div key={ev.id} title={ev.title} className="flex items-baseline gap-1 text-[10.5px] leading-tight text-ink truncate">
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 relative top-[-1px]" style={{ backgroundColor: color }} />
+                        <span className="truncate">{ev.title}</span>
                       </div>
                     )
                   })}
-                  {evts.length > 2 && <div className="text-[8px] text-text-tertiary text-center">+{evts.length - 2}</div>}
+                  {evts.length > 3 && <div className="text-[10px] text-ink-3 pl-2.5">+{evts.length - 3} more</div>}
                 </div>
               </div>
             )
           })}
-          {Array.from({ length: (7 - (first + days) % 7) % 7 }).map((_, i) => <div key={`t${i}`} className="bg-surface-alt/50 min-h-[76px]" />)}
+          {Array.from({ length: (7 - (first + days) % 7) % 7 }).map((_, i) => <div key={`t${i}`} className="bg-paper-2 min-h-[104px]" />)}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden card-hover">
+    <div className="bg-surface border border-border rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h3 className="font-display text-[16px] font-semibold text-navy">{headerLabel}</h3>
@@ -984,10 +1010,10 @@ function SharedCalendar() {
 
       {/* Legend */}
       <div className="px-5 py-2 bg-surface-alt/50 border-b border-border flex gap-3 flex-wrap">
-        {EVENT_TYPES.map(t => (
-          <span key={t.value} className="flex items-center gap-1.5 text-[10px] text-text-secondary">
-            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: t.color }} />
-            {t.label}
+        {[['Day off', '#2E6B3A'], ['Deadline · Midterm', '#8A2A2B'], ['Meeting · Report cards', '#2F5C8A'], ['School event', '#9A6A12'], ['Field trip · Testing', '#5EA89C'], ['Other', '#857D6E']].map(([l, c]) => (
+          <span key={l} className="flex items-center gap-1.5 text-[11px] text-ink-2">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: c }} />
+            {l}
           </span>
         ))}
       </div>
@@ -1002,7 +1028,7 @@ function SharedCalendar() {
 
       {/* Two-month grid */}
       <div className="p-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-6">
           {renderMonth(y, m)}
           {renderMonth(y2, m2)}
         </div>

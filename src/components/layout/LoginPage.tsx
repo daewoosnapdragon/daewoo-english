@@ -41,7 +41,7 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
         <div className="text-center mb-8">
           <p className="eyebrow eyebrow-accent mb-3">Daewoo Elementary · English Program</p>
           <h1 className="font-display text-[44px] leading-none text-ink">Daewoo English</h1>
-          <p className="text-ink-3 text-[13px] mt-3">{language === 'ko' ? '기록을 열려면 로그인하세요' : 'Sign in to open the record'}</p>
+          <p className="text-ink-3 text-[13px] mt-3">{language === 'ko' ? '계속하려면 로그인하세요' : 'Log in to continue'}</p>
         </div>
 
         <div className="border-t border-b border-rule-2 py-7 space-y-5">
@@ -73,7 +73,7 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
           )}
           <button onClick={handleLogin}
             className="w-full h-11 bg-accent hover:bg-accent-hover text-white rounded text-[14px] font-semibold flex items-center justify-center gap-2 group">
-            {language === 'ko' ? '로그인' : 'Sign in'}
+            {language === 'ko' ? '로그인' : 'Log in'}
             <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>

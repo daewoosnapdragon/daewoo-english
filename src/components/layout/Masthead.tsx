@@ -7,7 +7,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { NAV_ORDER, VIEW_PATHS, viewForPath } from '@/lib/routes'
 import { getDisplayName } from '@/lib/utils'
-import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, Bell } from 'lucide-react'
+import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell } from 'lucide-react'
 
 // ─── Masthead ────────────────────────────────────────────────────────
 // Brand on its own line, links centred beneath it, a thin context bar under
@@ -198,6 +198,10 @@ export default function Masthead() {
   const active = viewForPath(pathname)
   const signals = useNavSignals(pathname)
   const now = useKstClock()
+  // Collapsed: one slim row (brand · links · user). Remembered per browser.
+  const [collapsed, setCollapsed] = useState(false)
+  useEffect(() => { try { setCollapsed(localStorage.getItem('daewoo_masthead') === 'collapsed') } catch {} }, [])
+  const toggleCollapsed = () => setCollapsed(c => { try { localStorage.setItem('daewoo_masthead', c ? 'open' : 'collapsed') } catch {}; return !c })
   if (!currentTeacher) return null
 
   const label = (id: string) => language === 'ko' ? ((t.nav as any)[id] || id) : (EN_LABELS[id] || id)
@@ -205,6 +209,49 @@ export default function Masthead() {
     ? now.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
       + ' · ' + now.toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-GB', { hour: 'numeric', minute: '2-digit' }) + ' KST'
     : ''
+
+  const links = (h: string) => NAV_ORDER.map(id => {
+    const on = active === id
+    const badge = id === 'dashboard' && signals.flagged > 0 ? signals.flagged : 0
+    const dot = id === 'attendance' && signals.attendanceIncomplete
+    return (
+      <Link key={id} href={VIEW_PATHS[id]}
+        className={`relative flex items-center gap-1.5 px-3 ${h} text-[13.5px] font-medium whitespace-nowrap transition-colors ${on ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
+        {label(id)}
+        {badge ? <span className="min-w-[16px] h-4 px-1 rounded-full bg-bad text-white text-[10px] font-bold flex items-center justify-center">{badge > 9 ? '9+' : badge}</span> : null}
+        {dot ? <span className="w-1.5 h-1.5 rounded-full bg-warn" title={language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"} /> : null}
+        {on && <span className="absolute left-3 right-3 bottom-0 h-[2px] bg-accent" />}
+      </Link>
+    )
+  })
+
+  const reminder = signals.reminder && (
+    <Link href="/attendance" className="block bg-warn-soft border-t border-rule">
+      <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-warn">
+        <Bell size={13} />{language === 'ko' ? '오늘 출석을 확인하셨나요?' : 'Did you mark attendance today?'}
+      </div>
+    </Link>
+  )
+
+  const toggle = (
+    <button onClick={toggleCollapsed} title={collapsed ? (language === 'ko' ? '헤더 펼치기' : 'Expand header') : (language === 'ko' ? '헤더 접기' : 'Collapse header')}
+      className="w-7 h-7 rounded flex items-center justify-center text-ink-3 hover:text-ink hover:bg-paper-2">
+      {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+    </button>
+  )
+
+  if (collapsed) {
+    return (
+      <header className="sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
+        <div className="mx-auto max-w-[1440px] px-6 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+          <Link href="/dashboard" className="font-display text-[18px] leading-none text-ink tracking-tight whitespace-nowrap">Daewoo English</Link>
+          <nav className="flex justify-center overflow-x-auto" aria-label="Main">{links('h-10')}</nav>
+          <div className="flex items-center gap-2"><UserMenu />{toggle}</div>
+        </div>
+        {reminder}
+      </header>
+    )
+  }
 
   return (
     <header className="sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
@@ -215,25 +262,10 @@ export default function Masthead() {
           <Link href="/dashboard" className="justify-self-center font-display text-[26px] leading-none text-ink tracking-tight">
             Daewoo English
           </Link>
-          <div className="justify-self-end"><UserMenu /></div>
+          <div className="justify-self-end flex items-center gap-2"><UserMenu />{toggle}</div>
         </div>
         {/* Row 2: links, centred */}
-        <nav className="flex justify-center border-t border-rule" aria-label="Main">
-          {NAV_ORDER.map(id => {
-            const on = active === id
-            const badge = id === 'dashboard' && signals.flagged > 0 ? signals.flagged : 0
-            const dot = id === 'attendance' && signals.attendanceIncomplete
-            return (
-              <Link key={id} href={VIEW_PATHS[id]}
-                className={`relative flex items-center gap-1.5 px-3 h-10 text-[13.5px] font-medium whitespace-nowrap transition-colors ${on ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
-                {label(id)}
-                {badge ? <span className="min-w-[16px] h-4 px-1 rounded-full bg-bad text-white text-[10px] font-bold flex items-center justify-center">{badge > 9 ? '9+' : badge}</span> : null}
-                {dot ? <span className="w-1.5 h-1.5 rounded-full bg-warn" title={language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"} /> : null}
-                {on && <span className="absolute left-3 right-3 bottom-0 h-[2px] bg-accent" />}
-              </Link>
-            )
-          })}
-        </nav>
+        <nav className="flex justify-center border-t border-rule overflow-x-auto" aria-label="Main">{links('h-10')}</nav>
       </div>
       {/* Row 3: context */}
       <div className="bg-paper-2 border-t border-rule">
@@ -246,13 +278,7 @@ export default function Masthead() {
           <span className="tabular-nums">{dateStr}</span>
         </div>
       </div>
-      {signals.reminder && (
-        <Link href="/attendance" className="block bg-warn-soft border-t border-rule">
-          <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-warn">
-            <Bell size={13} />{language === 'ko' ? '오늘 출석을 확인하셨나요?' : 'Did you mark attendance today?'}
-          </div>
-        </Link>
-      )}
+      {reminder}
     </header>
   )
 }
