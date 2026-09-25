@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, Semester, QuestionMapItem, ItemResponse } from '@/types'
-import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg } from '@/lib/utils'
+import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, domainLabel } from '@/lib/utils'
 import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, ChevronUp, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
@@ -13,6 +13,7 @@ import StudentPopover from '@/components/shared/StudentPopover'
 import NewAssessmentFlow from './NewAssessmentFlow'
 import KeyScoreSheet from './KeyScoreSheet'
 import { Bars } from '@/components/charts'
+import { itemsForDomain, touchesDomain } from '@/lib/domainSplit'
 import RubricPicker from './RubricPicker'
 import RubricScoreSheet from './RubricScoreSheet'
 
@@ -54,6 +55,8 @@ interface Assessment {
   question_map?: { num: number; type: string; max_points: number; standard?: string; answer_key?: string }[] | null
   rubric?: { name: string; band?: string; criteria: { key: string; label: string; levels: [string, string, string, string]; standard?: string }[] } | null
   rubric_id?: string | null
+  mixed?: boolean
+  domain_split?: Record<string, number> | null
 }
 
 interface StudentRow { id: string; english_name: string; korean_name: string; photo_url?: string }
@@ -173,6 +176,12 @@ export default function GradesView() {
       const secs = Array.isArray(a.sections) ? a.sections : []
       return secs.some((s: any) => s.domain === selectedDomain)
     }).map((a: any) => ({ ...a, _isMultiDomain: true }))
+    // Mixed assessments (points routed by standard) that put points in this domain
+    let mixedQuery = supabase.from('assessments').select('*').eq('grade', selectedGrade).eq('english_class', selectedClass).neq('domain', selectedDomain).eq('mixed', true)
+    if (selectedSemester) mixedQuery = mixedQuery.eq('semester_id', selectedSemester)
+    const { data: mixedData } = await mixedQuery
+    const mixedHere = (mixedData || []).filter((a: any) => touchesDomain(a, selectedDomain)).map((a: any) => ({ ...a, _isMultiDomain: true }))
+    crossDomainAssessments.push(...mixedHere.filter((m: any) => !crossDomainAssessments.some((c: any) => c.id === m.id)))
 
     const allAssessments = [...(data || []), ...crossDomainAssessments]
       .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
@@ -1126,30 +1135,25 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
       const result = makeDomainStats()
       try {
         for (const domain of DOMAINS) {
-          const da = allAssessments.filter((a: any) => a.domain === domain)
+          const da = allAssessments.filter((a: any) => touchesDomain(a, domain))
           if (!result[domain]) result[domain] = { avg: null, count: 0, assessmentCount: 0, assessments: [] }
           result[domain].assessmentCount = da.length
           if (da.length === 0) continue
           const ids = da.map((a: any) => a.id)
           if (ids.length === 0) continue
-          const { data: grades } = await supabase.from('grades').select('score, assessment_id').in('assessment_id', ids).not('score', 'is', null)
+          const { data: grades } = await supabase.from('grades').select('score, assessment_id, is_exempt, is_absent, domain_scores').in('assessment_id', ids).not('score', 'is', null)
           if (cancelled) return
           if (grades && grades.length > 0) {
-            const studentScores: Record<string, { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[]> = {}
-            grades.forEach((g: any) => {
-              const a = da.find((x: any) => x.id === g.assessment_id)
-              if (!a || a.max_score <= 0) return
-              if (!studentScores['_all']) studentScores['_all'] = []
-              studentScores['_all'].push({ score: g.score, maxScore: a.max_score, assessmentType: (['formative','summative','performance_task'].includes(a.type) ? a.type : 'formative') as any })
-            })
-            const allItems = studentScores['_all'] || []
+            // Every grade row becomes one weighted item in this domain; a mixed
+            // assessment contributes only the points it routed here.
+            const allItems = grades.flatMap((g: any) => { const a = da.find((x: any) => x.id === g.assessment_id); return a ? itemsForDomain(domain, [a], () => g) : [] })
             result[domain].count = allItems.length
             result[domain].avg = calcWeightedAvg(allItems, Number(selectedGrade || 3))
             for (const a of da) {
-              const aGrades = grades.filter((g: any) => g.assessment_id === a.id)
-              if (aGrades.length > 0 && a.max_score > 0) {
-                const avg = aGrades.reduce((sum: number, g: any) => sum + (g.score / a.max_score) * 100, 0) / aGrades.length
-                result[domain].assessments.push({ name: a.name, avg })
+              const aItems = grades.filter((g: any) => g.assessment_id === a.id).flatMap((g: any) => itemsForDomain(domain, [a], () => g))
+              if (aItems.length > 0) {
+                const avg = aItems.reduce((sum: number, it: any) => sum + (it.score / it.maxScore) * 100, 0) / aItems.length
+                result[domain].assessments.push({ name: a.mixed ? `${a.name} · ${domainLabel(domain)} part` : a.name, avg })
               }
             }
           }

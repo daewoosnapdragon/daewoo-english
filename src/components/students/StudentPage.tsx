@@ -20,6 +20,7 @@ import { DOMAINS, DOMAIN_LABELS } from '@/types'
 import { calculateWeightedAverage, domainLabel } from '@/lib/utils'
 import { CWPM_BENCHMARKS } from '@/components/reading/ReadingLevelsView'
 import { loadLevelTestReadingRecords, mergeReadingRecords } from '@/lib/readingRecords'
+import { itemsForDomain, touchesDomain } from '@/lib/domainSplit'
 
 // ─── Student page ────────────────────────────────────────────────
 // One address per student, /students/<id>. A rail on the left holds the
@@ -353,23 +354,24 @@ function GradesAtAGlance({ student, semesterId, lang }: { student: Student; seme
   useEffect(() => {
     if (!semesterId) { setData([]); return }
     ;(async () => {
-      const { data: assessments } = await supabase.from('assessments').select('id, domain, type, max_score, date, created_at').eq('semester_id', semesterId).eq('english_class', student.english_class).eq('grade', student.grade)
+      const { data: assessments } = await supabase.from('assessments').select('id, domain, type, max_score, date, created_at, mixed, domain_split').eq('semester_id', semesterId).eq('english_class', student.english_class).eq('grade', student.grade)
       const list = (assessments || []) as any[]
       if (list.length === 0) { setData([]); return }
-      const { data: grades } = await supabase.from('grades').select('student_id, assessment_id, score').in('assessment_id', list.map(a => a.id)).not('score', 'is', null)
+      const { data: grades } = await supabase.from('grades').select('student_id, assessment_id, score, is_exempt, is_absent, domain_scores').in('assessment_id', list.map(a => a.id)).not('score', 'is', null)
       const g = (grades || []) as any[]
       const byA: Record<string, any> = Object.fromEntries(list.map(a => [a.id, a]))
-      const toItems = (rows: any[]) => rows.filter(r => byA[r.assessment_id]?.max_score > 0).map(r => ({ score: r.score, maxScore: byA[r.assessment_id].max_score, assessmentType: (['formative', 'summative', 'performance_task'].includes(byA[r.assessment_id].type) ? byA[r.assessment_id].type : 'formative') }))
+      const toItems = (domain: string, rows: any[]) => rows.flatMap(r => itemsForDomain(domain, [byA[r.assessment_id]], () => r))
       const out = DOMAINS.map(domain => {
-        const ids = new Set(list.filter(a => a.domain === domain).map(a => a.id))
+        const ids = new Set(list.filter(a => touchesDomain(a, domain)).map(a => a.id))
         const mineRows = g.filter(r => r.student_id === student.id && ids.has(r.assessment_id))
         const allRows = g.filter(r => ids.has(r.assessment_id))
         const ordered = [...mineRows].sort((x, y) => ((byA[x.assessment_id].date || '') + byA[x.assessment_id].created_at).localeCompare((byA[y.assessment_id].date || '') + byA[y.assessment_id].created_at))
+        const mineItems = toItems(domain, mineRows), allItems = toItems(domain, allRows)
         return {
           domain,
-          mine: mineRows.length ? calculateWeightedAverage(toItems(mineRows) as any, student.grade, null, student.english_class) : null,
-          cls: allRows.length ? calculateWeightedAverage(toItems(allRows) as any, student.grade, null, student.english_class) : null,
-          series: ordered.map(r => (r.score / byA[r.assessment_id].max_score) * 100),
+          mine: mineItems.length ? calculateWeightedAverage(mineItems as any, student.grade, null, student.english_class) : null,
+          cls: allItems.length ? calculateWeightedAverage(allItems as any, student.grade, null, student.english_class) : null,
+          series: ordered.flatMap(r => itemsForDomain(domain, [byA[r.assessment_id]], () => r)).map(it => (it.score / it.maxScore) * 100),
         }
       })
       setData(out)

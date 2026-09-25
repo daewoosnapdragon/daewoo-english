@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import type { QuestionMapItem, ItemResponse } from '@/types'
 import { isChoiceItem, markChoice } from '@/lib/answerKey'
 import { rubricScore, LEVEL_LABELS } from '@/components/curriculum/rubric-library'
+import { splitEarned } from '@/lib/domainSplit'
 import { Check, ChevronLeft, ChevronRight, Loader2, LayoutGrid, ListChecks } from 'lucide-react'
 
 // ─── Answer sheet scoring ────────────────────────────────────────
@@ -21,7 +22,7 @@ const hasRubric = (q: QuestionMapItem) => q.type === 'rubric' && !!q.rubric?.cri
 type Flags = { absent: boolean; exempt: boolean }
 
 interface Props {
-  assessment: { id: string; name: string; max_score: number; question_map: QuestionMapItem[] }
+  assessment: { id: string; name: string; max_score: number; question_map: QuestionMapItem[]; mixed?: boolean; domain?: string }
   students: StudentRow[]
   onSaved?: () => void
 }
@@ -126,7 +127,8 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
       })
       const score = item_responses.reduce((s, ir) => s + ir.points, 0)
       const anything = map.some(it => { const resp = r[it.num]; return resp && (resp.answer || resp.points != null || resp.levels) })
-      return { student_id: sid, assessment_id: assessment.id, score: anything ? score : null, item_responses: anything ? item_responses : null, is_absent: false, is_exempt: false, entered_by: currentTeacher?.id || null }
+      const domain_scores = assessment.mixed && anything ? splitEarned(map, item_responses, assessment.domain || 'reading') : null
+      return { student_id: sid, assessment_id: assessment.id, score: anything ? score : null, item_responses: anything ? item_responses : null, ...(assessment.mixed ? { domain_scores } : {}), is_absent: false, is_exempt: false, entered_by: currentTeacher?.id || null }
     })
     const { error } = await supabase.from('grades').upsert(rows, { onConflict: 'student_id,assessment_id' })
     setSaving(false)

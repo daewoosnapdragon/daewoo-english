@@ -1,5 +1,7 @@
 'use client'
 
+import { itemsForDomain } from '@/lib/domainSplit'
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
@@ -382,13 +384,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         const { data: studentGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
           .in('assessment_id', assessments.map((a: any) => a.id))
         for (const domain of DOMAINS) {
-          const domAssessments = assessments.filter((a: any) => a.domain === domain)
-          const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
-          domAssessments.forEach((a: any) => {
-            const g = (studentGrades || []).find((gr: any) => gr.assessment_id === a.id)
-            if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
-            items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
-          })
+          const items = itemsForDomain(domain, assessments, (a: any) => (studentGrades || []).find((gr: any) => gr.assessment_id === a.id))
           const avg = calcWeightedAvg(items, Number(student.grade || 3))
           if (avg != null) {
             await supabase.from('semester_grades').upsert({
@@ -1578,13 +1574,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
         const { data: studentGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
           .in('assessment_id', assessments.map((a: any) => a.id))
         for (const domain of DOMAINS) {
-          const domAssessments = assessments.filter((a: any) => a.domain === domain)
-          const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
-          domAssessments.forEach((a: any) => {
-            const g = (studentGrades || []).find((gr: any) => gr.assessment_id === a.id)
-            if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
-            items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
-          })
+          const items = itemsForDomain(domain, assessments, (a: any) => (studentGrades || []).find((gr: any) => gr.assessment_id === a.id))
           const avg = calcWeightedAvg(items, Number(student.grade || 3))
           if (avg != null) {
             await supabase.from('semester_grades').upsert({
@@ -2705,14 +2695,8 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
           if (na) { domainAvgs[domain] = null; return }
           // Calculated value from raw assessment scores (matches the report card's calc)
           let calc: number | null = null
-          const domAssessments = assessments.filter((a: any) => a.domain === domain)
-          if (domAssessments.length > 0) {
-            const items: { score: number; maxScore: number; assessmentType: 'formative' | 'summative' | 'performance_task' }[] = []
-            domAssessments.forEach((a: any) => {
-              const g = allGrades.find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id)
-              if (!g || g.score == null || g.is_exempt || a.max_score <= 0) return
-              items.push({ score: g.score, maxScore: a.max_score, assessmentType: a.type || 'formative' })
-            })
+          const items = itemsForDomain(domain, assessments, (a: any) => allGrades.find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id))
+          if (items.length > 0) {
             const avg = calcWeightedAvg(items, Number(selectedGrade))
             if (avg != null) calc = Math.round(avg * 10) / 10
           }

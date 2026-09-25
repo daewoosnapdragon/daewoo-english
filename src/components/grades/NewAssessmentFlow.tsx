@@ -5,6 +5,8 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ALL_ENGLISH_CLASSES, DOMAINS, DOMAIN_LABELS, type Domain, type EnglishClass, type QuestionMapItem } from '@/types'
 import { parseAnswerKey, keyToString, keyTotal, parseRange, rangeLabel } from '@/lib/answerKey'
+import { splitPossible, isMultiDomain } from '@/lib/domainSplit'
+import { DOMAIN_LABELS as DL } from '@/types'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
 import StandardPicker from './StandardPicker'
 import RubricPicker from './RubricPicker'
@@ -34,6 +36,9 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
   const [step, setStep] = useState<1 | 2>(1)
   // How it will be scored decides what step 2 is.
   const [scoring, setScoring] = useState<'key' | 'rubric' | 'points'>('key')
+  // Route each question's points to the domain its standard implies; untagged
+  // questions go to the domain chosen above.
+  const [routeByStandard, setRouteByStandard] = useState(false)
   const [name, setName] = useState('')
   const [dom, setDom] = useState<Domain>(domain)
   const [category, setCategory] = useState<string>('formative')
@@ -76,9 +81,12 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
     setSaving(true)
     const codes = Array.from(new Set([...(finalMap || []).map(q => q.standard), ...(rubric?.criteria || []).map((c: any) => c.standard)].filter(Boolean))) as string[]
     const standards = codes.map(code => ({ code, dok: 0, description: stdText(code) }))
+    const split = finalMap && routeByStandard ? splitPossible(finalMap, dom) : null
+    const mixed = !!split && isMultiDomain(split)
     const base = {
       name: name.trim(), domain: dom, max_score: maxScore, grade, type: category, date: date || null, description: notes.trim(),
       created_by: currentTeacher?.id || null, semester_id: semesterId, standards, sections: null, question_map: finalMap,
+      ...(routeByStandard && finalMap ? { mixed, domain_split: split } : {}),
       ...(rubric ? { rubric: { name: rubric.name, band: rubric.band, criteria: rubric.criteria }, rubric_id: rubric.rubric_id } : {}),
     }
     const { data, error } = await supabase.from('assessments').insert({ ...base, english_class: englishClass }).select().single()
@@ -203,6 +211,13 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
                 ))}
               </div>
 
+              <label className="flex items-start gap-2.5 text-[13px] text-ink cursor-pointer">
+                <input type="checkbox" checked={routeByStandard} onChange={e => setRouteByStandard(e.target.checked)} className="mt-1" />
+                <span>
+                  <span className="font-medium">{lang === 'ko' ? '기준에 따라 영역별로 점수 배분' : 'Route each question to its standard’s domain'}</span>
+                  <span className="block text-[12px] text-ink-3">{lang === 'ko' ? `RL/RI → 읽기, RF → 파닉스, W → 쓰기, SL → 말하기·듣기, L → 언어. 태그 없는 문항은 ${DL[dom][lang === 'ko' ? 'ko' : 'en']}로.` : `RL/RI to Reading, RF to Phonics, W to Writing, SL to Speaking & Listening, L to Language. Untagged questions go to ${DL[dom].en}.`}{routeByStandard && map.length ? ` · ${Object.entries(splitPossible(map, dom)).map(([d, n]) => `${DL[d as keyof typeof DL]?.[lang === 'ko' ? 'ko' : 'en'] || d} ${n}`).join(', ')}` : ''}</span>
+                </span>
+              </label>
               <div className="grid gap-2">
                 <span className={label}>{lang === 'ko' ? '문항 범위별 기준 태그' : 'Tag standards by question range'}</span>
                 <div className="flex flex-wrap items-center gap-2">
