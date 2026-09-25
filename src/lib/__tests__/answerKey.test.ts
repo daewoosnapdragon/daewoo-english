@@ -30,10 +30,13 @@ describe('parseAnswerKey', () => {
   })
   it('keeps an attached rubric and its points when the key is retyped', () => {
     const rubric = { name: 'Opinion', criteria: [{ key: 'a', label: 'A', levels: ['1', '2', '3', '4'] as [string, string, string, string] }, { key: 'b', label: 'B', levels: ['1', '2', '3', '4'] as [string, string, string, string] }] }
+    // Items are matched by number, so the rubric survives edits to the same slot …
     const before = parseAnswerKey('AB 4r').map(q => q.type === 'rubric' ? { ...q, rubric, max_points: 8 } : q)
-    const after = parseAnswerKey('ABC 4r', before)
-    expect(after[3]).toMatchObject({ type: 'rubric', max_points: 8 })
-    expect((after[3] as any).rubric?.name).toBe('Opinion')
+    const after = parseAnswerKey('AC 5r', before)
+    expect(after[2]).toMatchObject({ type: 'rubric', max_points: 8 })
+    expect((after[2] as any).rubric?.name).toBe('Opinion')
+    // … but not a renumbering that moves it to a slot that was a choice item.
+    expect((parseAnswerKey('ABC 4r', before)[3] as any).rubric).toBeUndefined()
   })
   it('round-trips through keyToString', () => {
     const text = 'ACBDA BDCAB TF 2 2 3r'
