@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { NAV_ORDER, VIEW_PATHS, viewForPath } from '@/lib/routes'
+import { isSchoolDayOff } from '@/lib/calendarDays'
 import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell } from 'lucide-react'
 
 // ─── Masthead ────────────────────────────────────────────────────────
@@ -52,7 +53,9 @@ function useNavSignals(pathname: string | null): Signals {
         isAdmin ? supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('is_flagged', true) : Promise.resolve({ count: 0 }),
       ])
       if (cancelled) return
-      const incomplete = !!(studentCount && (!attCount || attCount < studentCount))
+      const dayOff = await isSchoolDayOff(today)
+      if (cancelled) return
+      const incomplete = !dayOff && !!(studentCount && (!attCount || attCount < studentCount))
       const day = kst.getDay(), minutes = kst.getHours() * 60 + kst.getMinutes()
       const afterHalfThree = day >= 1 && day <= 5 && minutes >= 15 * 60 + 30
       setS({ attendanceIncomplete: incomplete, flagged: flaggedRes.count || 0, reminder: incomplete && afterHalfThree })

@@ -10,6 +10,7 @@ import { getKSTDateString, domainLabel } from '@/lib/utils'
 import { Plus, X, ChevronLeft, ChevronRight, Trash2, Pencil, PanelLeftClose, UserX, UserMinus, ArrowRight, Bell, Loader2 } from 'lucide-react'
 import WeeklySchedule from './WeeklySchedule'
 import AttendanceDrawer, { ATTENDANCE_SAVED_EVENT } from '@/components/attendance/AttendanceDrawer'
+import { loadDayStatus } from '@/lib/calendarDays'
 
 // ─── Event types ─────────────────────────────────────────────────
 // Nine stored types, five colors: fewer hues means each one is recognizable
@@ -168,6 +169,8 @@ export default function DashboardView() {
 
   // Attendance drawer, opened from a class period on the schedule.
   const [attendanceGrade, setAttendanceGrade] = useState<number | null>(null)
+  const [todayOff, setTodayOff] = useState<string | null>(null)
+  useEffect(() => { loadDayStatus(getKSTDateString(), null).then(s => setTodayOff(s.off)) }, [])
   useEffect(() => {
     const onSaved = () => shared.reload()
     window.addEventListener(ATTENDANCE_SAVED_EVENT, onSaved)
@@ -224,7 +227,7 @@ export default function DashboardView() {
       {/* ─── Stats ─── */}
       {!shared.loading && (
         <div className="grid grid-cols-2 md:grid-cols-5 border-t border-b border-rule-2">
-          <Stat href="/attendance" label={lang === 'ko' ? '오늘 출석' : 'Attendance today'} value={unmarked > 0 ? String(unmarked) : '✓'} sub={unmarked > 0 ? (lang === 'ko' ? '명 미체크' : 'students unmarked') : (lang === 'ko' ? '모두 완료' : 'all marked')} alert={unmarked > 0} />
+          <Stat href="/attendance" label={lang === 'ko' ? '오늘 출석' : 'Attendance today'} value={todayOff ? '—' : unmarked > 0 ? String(unmarked) : '✓'} sub={todayOff ? `${lang === 'ko' ? '휴일' : 'day off'} · ${todayOff}` : unmarked > 0 ? (lang === 'ko' ? '명 미체크' : 'students unmarked') : (lang === 'ko' ? '모두 완료' : 'all marked')} alert={!todayOff && unmarked > 0} />
           <Stat href="#grading" label={lang === 'ko' ? '미채점' : 'Ungraded'} value={String(queue.length)} sub={queue.length ? `${lang === 'ko' ? '평가' : 'assessments'} · ${ungradedStudents} ${lang === 'ko' ? '명' : 'students'}` : (lang === 'ko' ? '없음' : 'nothing waiting')} alert={queue.length > 0} />
           <Stat label={lang === 'ko' ? '중간고사 마감' : 'Midterm cutoff'} value={midtermDays != null && midtermDays >= 0 ? String(midtermDays) : '—'} sub={midtermDays != null && midtermDays >= 0 ? `${lang === 'ko' ? '일 남음' : 'days'} · ${fmtShort(sem.midterm_cutoff_date)}` : (lang === 'ko' ? '설정 없음' : 'not set')} alert={midtermDays != null && midtermDays >= 0 && midtermDays <= 3} />
           <Stat label={lang === 'ko' ? '성적표 성적 마감' : 'Report card grades due'} value={gradesDue ? fmtShort(gradesDue) : '—'} sub={gradesDays != null && gradesDays >= 0 ? `${gradesDays} ${lang === 'ko' ? '일 남음' : 'days'}` : (lang === 'ko' ? '설정 없음' : 'not set')} alert={gradesDays != null && gradesDays >= 0 && gradesDays <= 5} />

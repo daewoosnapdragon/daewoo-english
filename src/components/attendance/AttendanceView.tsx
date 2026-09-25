@@ -1,6 +1,7 @@
 'use client'
 
 import { useScheduleRules } from '@/lib/scheduleRules'
+import { loadDayStatus, type DayStatus } from '@/lib/calendarDays'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
@@ -81,6 +82,8 @@ export default function AttendanceView() {
   const [classGrades, setClassGrades] = useState<Grade[]>([])
   const [gradeTotals, setGradeTotals] = useState<Record<number, number>>({})
   const [monthLoading, setMonthLoading] = useState(false)
+  const [dayStatus, setDayStatus] = useState<DayStatus>({ off: null, trip: null })
+  useEffect(() => { loadDayStatus(selectedDate, selectedGrade).then(setDayStatus) }, [selectedDate, selectedGrade])
 
   const guardUnsaved = (action: () => void) => {
     if (hasChanges) { setPendingAction(() => action); setShowUnsavedModal(true) }
@@ -128,10 +131,20 @@ export default function AttendanceView() {
       .in('student_id', students.map((s: any) => s.id))
     const map: Record<string, { status: Status; note: string; id?: string }> = {}
     if (data) data.forEach((r: any) => { map[r.student_id] = { status: r.status, note: r.note || '', id: r.id } })
+    // A field trip on the school calendar: everyone is away. Mark them absent
+    // with the trip as the reason and save, so nobody has to.
+    if (Object.keys(map).length === 0 && students.length > 0) {
+      const st = await loadDayStatus(selectedDate, selectedGrade)
+      if (st.trip && !st.off) {
+        const rows = students.map((s: any) => ({ student_id: s.id, date: selectedDate, status: 'absent', note: st.trip, recorded_by: currentTeacher?.id || null }))
+        const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'student_id,date' })
+        if (!error) { rows.forEach(r => { map[r.student_id] = { status: 'absent', note: st.trip! } }); showToast(lang === 'ko' ? `현장학습: 전원 결석 처리됨 (${st.trip})` : `Field trip: everyone marked absent (${st.trip})`) }
+      }
+    }
     setRecords(map)
     setLoading(false)
     setHasChanges(false)
-  }, [selectedDate, students])
+  }, [selectedDate, students, selectedGrade])
 
   useEffect(() => { if (students.length > 0) loadRecords() }, [loadRecords, students])
 
@@ -216,6 +229,7 @@ export default function AttendanceView() {
   const isNonClassDay = (dateStr: string, grade: Grade) => {
     const dow = new Date(dateStr + 'T12:00:00').getDay()
     if (dow === 0 || dow === 6) return true // weekend
+    if (dateStr === selectedDate && dayStatus.off) return true // a day off on the school calendar
     return ruleNoClass(grade, dow) // e.g. no Grade 5 on Mondays, set in Settings
   }
   const prevDay = () => guardUnsaved(() => {
@@ -559,7 +573,8 @@ export default function AttendanceView() {
             {isToday && <p className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '오늘' : 'Today'}</p>}
             <h2 className="font-display text-[26px] leading-none text-ink">{dateHeading}</h2>
             {isNoClassDay
-              ? <p className="text-[12.5px] text-warn mt-1.5">{isWeekend ? (lang === 'ko' ? '주말에는 수업이 없습니다' : 'No classes on weekends') : (lang === 'ko' ? `${selectedGrade}학년은 ${weekdayName}에 영어 수업이 없습니다` : `Grade ${selectedGrade} has no English on ${weekdayName}s`)} · {lang === 'ko' ? '화살표로 다음 수업일로 이동' : 'use the arrows to skip to the next class day'}</p>
+              ? <p className="text-[12.5px] text-warn mt-1.5">{isWeekend ? (lang === 'ko' ? '주말에는 수업이 없습니다' : 'No classes on weekends') : dayStatus.off ? (lang === 'ko' ? `휴일: ${dayStatus.off}` : `Day off: ${dayStatus.off}`) : (lang === 'ko' ? `${selectedGrade}학년은 ${weekdayName}에 영어 수업이 없습니다` : `Grade ${selectedGrade} has no English on ${weekdayName}s`)} · {lang === 'ko' ? '화살표로 다음 수업일로 이동' : 'use the arrows to skip to the next class day'}</p>
+              : dayStatus.trip ? <p className="text-[12.5px] text-info mt-1.5">{lang === 'ko' ? `현장학습 (${dayStatus.trip}): 전원 결석으로 자동 기록됨. 참석한 학생은 바꾸세요.` : `Field trip (${dayStatus.trip}): everyone was marked absent automatically. Change anyone who came to class.`}</p>
               : <p className="text-[12px] text-ink-3 mt-1.5">{lang === 'ko' ? '행을 클릭한 뒤' : 'Click a row, then press'} <kbd className="px-1 border border-rule-2 rounded text-[10.5px]">P</kbd> <kbd className="px-1 border border-rule-2 rounded text-[10.5px]">A</kbd> <kbd className="px-1 border border-rule-2 rounded text-[10.5px]">T</kbd> · ↑ ↓</p>}
           </div>
           <div className="flex items-center gap-2 flex-wrap">

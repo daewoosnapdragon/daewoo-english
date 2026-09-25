@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { getDisplayName, getKSTDateString } from '@/lib/utils'
 import { X, Loader2, Check } from 'lucide-react'
+import { loadDayStatus, type DayStatus } from '@/lib/calendarDays'
 
 // ─── Attendance drawer ───────────────────────────────────────────
 // Opened from a class period on the dashboard schedule. That grade's students
@@ -28,6 +29,7 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [focus, setFocus] = useState(0)
+  const [day, setDay] = useState<DayStatus>({ off: null, trip: null })
   const today = getKSTDateString()
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -40,8 +42,11 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
       if (cancelled) return
       const rows = (st || []) as Row[]
       setStudents(rows)
+      const ds = await loadDayStatus(today, grade)
+      if (cancelled) return
+      setDay(ds)
       const init: Record<string, { status: Status; note: string }> = {}
-      rows.forEach(r => { init[r.id] = { status: 'present', note: '' } })
+      rows.forEach(r => { init[r.id] = ds.trip ? { status: 'absent', note: ds.trip } : { status: 'present', note: '' } })
       if (rows.length) {
         const { data: att } = await supabase.from('attendance').select('student_id, status, note').eq('date', today).in('student_id', rows.map(r => r.id))
         if (cancelled) return
@@ -124,6 +129,8 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
             <p className="p-6 text-[13px] text-ink-3">{lang === 'ko' ? '이 학년·반에 학생이 없습니다.' : `No Grade ${grade} students in ${cls}.`}</p>
           ) : (
             <div className="divide-y divide-rule">
+              {day.off && <p className="px-5 py-2 text-[12px] text-warn bg-warn-soft">{lang === 'ko' ? `휴일 (${day.off}): 출석이 필요하지 않습니다.` : `Day off (${day.off}): no attendance expected today.`}</p>}
+              {day.trip && !day.off && <p className="px-5 py-2 text-[12px] text-info bg-info-soft">{lang === 'ko' ? `현장학습 (${day.trip}): 전원 결석으로 미리 표시됨.` : `Field trip (${day.trip}): everyone preset to absent with the trip as the reason.`}</p>}
               {existingCount > 0 && <p className="px-5 py-2 text-[11.5px] text-ink-3 bg-paper-2">{lang === 'ko' ? `오늘 이미 ${existingCount}명 기록됨 · 수정 가능` : `${existingCount} already marked today · you can change them`}</p>}
               {students.map((s, i) => {
                 const r = records[s.id] || { status: 'present' as Status, note: '' }

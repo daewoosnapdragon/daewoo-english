@@ -8,9 +8,12 @@ import { parseAnswerKey, keyToString, keyTotal, parseRange, rangeLabel } from '@
 import { splitPossible, isMultiDomain } from '@/lib/domainSplit'
 import { DOMAIN_LABELS as DL } from '@/types'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
+import { plainName as plainNameOf } from '@/components/curriculum/standards-plain'
 import StandardPicker from './StandardPicker'
 import RubricPicker from './RubricPicker'
-import type { Band } from '@/components/curriculum/rubric-library'
+import type { Band, RubricCriterion } from '@/components/curriculum/rubric-library'
+
+interface Section { id: number; type: 'mc' | 'true_false' | 'short_answer' | 'open_ended' | 'rubric'; count: number; points: number; key: string; standard?: string; rubric?: { name: string; criteria: RubricCriterion[] } | null }
 import { ArrowRight, Check, X } from 'lucide-react'
 
 // ─── New assessment: set up → answer key → score ─────────────────
@@ -46,8 +49,34 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
   const [notes, setNotes] = useState('')
   const [points, setPoints] = useState<string>('10')
   const [share, setShare] = useState<Set<string>>(new Set())
+  // The paper is described as sections (multiple choice ×10, short answer ×2
+  // worth 5, writing with a rubric). Letters are typed only where letters
+  // belong, so nothing is ever silently dropped. The question map is derived.
+  const [sections, setSections] = useState<Section[]>([{ id: 1, type: 'mc', count: 0, points: 1, key: '' }])
+  const [overrides, setOverrides] = useState<Record<number, Partial<QuestionMapItem>>>({})
+  const [textMode, setTextMode] = useState(false)
   const [keyText, setKeyText] = useState('')
-  const [map, setMap] = useState<QuestionMapItem[]>([])
+  const map = useMemo<QuestionMapItem[]>(() => {
+    if (textMode) return parseAnswerKey(keyText)
+    const out: QuestionMapItem[] = []
+    for (const sec of sections) {
+      const isChoice = sec.type === 'mc' || sec.type === 'true_false'
+      const letters = isChoice ? sec.key.toUpperCase().replace(/[^A-E TF]/g, '').replace(/\s/g, '') : ''
+      const n = isChoice ? letters.length : Math.max(0, Math.floor(sec.count))
+      for (let i = 0; i < n; i++) {
+        const num = out.length + 1
+        const base: QuestionMapItem = sec.type === 'rubric' && sec.rubric
+          ? { num, type: 'rubric', max_points: sec.rubric.criteria.length * 4, standard: sec.standard, rubric: sec.rubric }
+          : { num, type: sec.type, max_points: sec.points, standard: sec.standard, ...(isChoice ? { answer_key: letters[i] } : {}) }
+        out.push({ ...base, ...(overrides[num] || {}) })
+      }
+    }
+    return out
+  }, [sections, overrides, textMode, keyText])
+  const setSection = (id: number, patch: Partial<Section>) => setSections(prev => prev.map(x => x.id === id ? { ...x, ...patch } : x))
+  const addSection = (type: Section['type']) => setSections(prev => [...prev, { id: Date.now(), type, count: type === 'rubric' ? 1 : 1, points: type === 'short_answer' ? 5 : type === 'open_ended' ? 10 : 1, key: '' }])
+  const [pickingSectionStd, setPickingSectionStd] = useState<number | null>(null)
+  const [pickingSectionRubric, setPickingSectionRubric] = useState<number | null>(null)
   const [rangeText, setRangeText] = useState('')
   const [rangePoints, setRangePoints] = useState('')
   const [picking, setPicking] = useState<null | { nums: number[] }>(null)
@@ -55,10 +84,9 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
   const [editingQ, setEditingQ] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
-  const keyRef = useRef<HTMLTextAreaElement>(null)
+  const keyRef = useRef<HTMLInputElement>(null)
   useEffect(() => { (step === 1 ? nameRef : keyRef).current?.focus() }, [step])
 
-  const onKeyChange = (text: string) => { setKeyText(text); setMap(parseAnswerKey(text, map)) }
   const total = map.length ? keyTotal(map) : Number(points) || 0
 
   const stdText = (code: string) => CCSS_STANDARDS.find(s => s.code === code)?.text || ''
@@ -70,9 +98,9 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
   }, [map])
 
   const tagRange = (nums: number[], code: string | null) => {
-    setMap(prev => prev.map(q => nums.includes(q.num) ? { ...q, standard: code || undefined } : q))
+    setOverrides(prev => { const n = { ...prev }; nums.forEach(num => { n[num] = { ...(n[num] || {}), standard: code || undefined } }); return n })
   }
-  const setQ = (num: number, patch: Partial<QuestionMapItem>) => setMap(prev => prev.map(q => q.num === num ? { ...q, ...patch } : q))
+  const setQ = (num: number, patch: Partial<QuestionMapItem>) => setOverrides(prev => ({ ...prev, [num]: { ...(prev[num] || {}), ...patch } }))
 
   const create = async (withKey: boolean, rubric?: { rubric_id: string | null; name: string; band: Band; criteria: any[] }) => {
     if (!name.trim()) { showToast(lang === 'ko' ? '이름을 입력하세요' : 'Give the assessment a name'); setStep(1); return }
@@ -177,18 +205,70 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
       )}
       {step === 2 && scoring === 'key' && (
         <div className="p-5 grid gap-4">
-          <div>
-            <label htmlFor="na-key" className={label}>{lang === 'ko' ? '정답 키 입력 · 문자, T/F, 또는 서술형 점수' : 'Type the key · letters, T/F, or a number of points for written items'}</label>
-            <textarea ref={keyRef} id="na-key" value={keyText} onChange={e => onKeyChange(e.target.value)} rows={2} spellCheck={false}
-              placeholder="ACBDA BDCAB TF 2 2 3"
-              className="w-full max-w-[760px] px-3 py-2 bg-paper-2 border border-rule-2 rounded font-mono text-[20px] tracking-[0.3em] text-ink placeholder:text-ink-3 placeholder:tracking-[0.3em]" />
-            <p className="text-[12px] text-ink-2 mt-1.5">
-              {lang === 'ko' ? '공백은 무시됩니다. ' : 'Spaces are ignored. '}<code className="px-1 bg-paper-2 border border-rule rounded">A–D</code> {lang === 'ko' ? '= 객관식 1점' : 'is a multiple-choice item worth 1 point'} · <code className="px-1 bg-paper-2 border border-rule rounded">T</code>/<code className="px-1 bg-paper-2 border border-rule rounded">F</code> {lang === 'ko' ? '= 참/거짓' : 'is true or false'} · <code className="px-1 bg-paper-2 border border-rule rounded">3</code> {lang === 'ko' ? '= 서술형 3점' : 'is a written item worth 3 points'} · <code className="px-1 bg-paper-2 border border-rule rounded">4r</code> {lang === 'ko' ? '= 루브릭 4점' : 'is rubric-scored out of 4'}. {lang === 'ko' ? '아래 항목을 클릭해 점수나 유형을 바꿀 수 있습니다.' : 'Click an item below to change its points or type.'}
-            </p>
-          </div>
+          {textMode ? (
+            <div>
+              <div className="flex items-baseline justify-between"><label htmlFor="na-key" className={label}>{lang === 'ko' ? '정답 키를 한 줄로' : 'The whole key as one line'}</label><button onClick={() => setTextMode(false)} className="text-[12px] text-accent hover:underline">{lang === 'ko' ? '섹션으로 만들기' : 'Build it as sections instead'}</button></div>
+              <input ref={keyRef} id="na-key" value={keyText} onChange={e => setKeyText(e.target.value)} spellCheck={false} placeholder="ACBDA BDCAB TF 5 5 12r"
+                className="w-full max-w-[760px] h-12 px-3 bg-paper-2 border border-rule-2 rounded font-mono text-[20px] tracking-[0.3em] text-ink placeholder:text-ink-3 placeholder:tracking-[0.3em]" />
+              <p className="text-[12px] text-ink-2 mt-1.5">{lang === 'ko' ? '문자 = 객관식 1점 · T/F = 참/거짓 · 숫자 = 서술형 점수 · 12r = 루브릭. 항목 사이에 공백을 넣으세요.' : 'Letters are multiple choice worth 1 · T/F is true or false · a number is a written item worth that many points · 12r is a rubric item. Put a space between items: 3 4r is two items, 34r is one.'}</p>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-baseline justify-between mb-2"><span className={label}>{lang === 'ko' ? '시험지 구성' : 'What is on the paper'}</span><button onClick={() => setTextMode(true)} className="text-[12px] text-ink-3 hover:text-ink">{lang === 'ko' ? '한 줄로 입력' : 'Type it as one line instead'}</button></div>
+              <div className="grid gap-2">
+                {sections.map((sec, si) => {
+                  const isChoice = sec.type === 'mc' || sec.type === 'true_false'
+                  const letters = isChoice ? sec.key.toUpperCase().replace(/\s/g, '') : ''
+                  const bad = isChoice ? letters.replace(sec.type === 'mc' ? /[A-E]/g : /[TF]/g, '') : ''
+                  const startNum = sections.slice(0, si).reduce((n, x) => n + ((x.type === 'mc' || x.type === 'true_false') ? x.key.toUpperCase().replace(/[^A-E TF]/g, '').replace(/\s/g, '').length : Math.max(0, Math.floor(x.count))), 0) + 1
+                  const n = isChoice ? letters.replace(/[^A-ETF]/g, '').length : Math.max(0, Math.floor(sec.count))
+                  return (
+                    <div key={sec.id} className="grid grid-cols-[110px_minmax(0,1fr)_auto] gap-3 items-start border border-rule-2 rounded-md px-3 py-2.5 bg-surface">
+                      <div><span className="eyebrow">{n ? `Q${startNum}${n > 1 ? `–${startNum + n - 1}` : ''}` : (lang === 'ko' ? '문항' : 'Questions')}</span>
+                        <select value={sec.type} onChange={e => setSection(sec.id, { type: e.target.value as Section['type'], points: e.target.value === 'short_answer' ? 5 : e.target.value === 'open_ended' ? 10 : sec.points })} className="mt-1 h-8 w-full px-1.5 bg-surface border border-rule-2 rounded text-[12.5px] text-ink">
+                          <option value="mc">{lang === 'ko' ? '객관식' : 'Multiple choice'}</option><option value="true_false">{lang === 'ko' ? '참/거짓' : 'True / false'}</option><option value="short_answer">{lang === 'ko' ? '단답형' : 'Short answer'}</option><option value="open_ended">{lang === 'ko' ? '서술형' : 'Extended writing'}</option><option value="rubric">{lang === 'ko' ? '루브릭 채점' : 'Rubric-scored'}</option>
+                        </select></div>
+                      <div className="grid gap-1.5 min-w-0">
+                        {isChoice ? (
+                          <>
+                            <input ref={si === 0 ? keyRef : undefined} value={sec.key} onChange={e => setSection(sec.id, { key: e.target.value })} spellCheck={false} placeholder={sec.type === 'mc' ? 'ACBDA BDCAB' : 'TFTTF'}
+                              className={`h-10 px-3 bg-paper-2 border rounded font-mono text-[18px] tracking-[0.3em] text-ink placeholder:text-ink-3 placeholder:tracking-[0.3em] ${bad ? 'border-bad' : 'border-rule-2'}`} />
+                            <span className="text-[11.5px] text-ink-3">{n} {lang === 'ko' ? '문항' : n === 1 ? 'question' : 'questions'} · {lang === 'ko' ? '문항당' : 'each worth'} <input type="number" min={0} step={0.5} value={sec.points} onChange={e => setSection(sec.id, { points: Number(e.target.value) })} className="w-14 h-6 px-1.5 mx-1 bg-surface border border-rule-2 rounded text-[12px] tabular-nums text-center" /> {lang === 'ko' ? '점' : 'pt'}{bad ? <span className="text-bad ml-2">{lang === 'ko' ? `사용할 수 없는 글자: ${bad}` : `Not ${sec.type === 'mc' ? 'A–E' : 'T or F'}: ${bad}`}</span> : ''}</span>
+                          </>
+                        ) : sec.type === 'rubric' ? (
+                          <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
+                            <button onClick={() => setPickingSectionRubric(sec.id)} className="h-8 px-3 border border-rule-2 rounded text-ink-2 hover:text-ink text-left">{sec.rubric ? `${sec.rubric.name} · ${sec.rubric.criteria.length} ${lang === 'ko' ? '기준' : 'criteria'} · ${sec.rubric.criteria.length * 4} ${lang === 'ko' ? '점' : 'pt'}` : (lang === 'ko' ? '루브릭 선택…' : 'Pick a rubric…')}</button>
+                            {!sec.rubric && <span className="text-ink-3">{lang === 'ko' ? '루브릭 없이는 0–4 점수 하나' : 'or without one, a single 0–4 mark'}</span>}
+                            <span className="text-ink-3">× <input type="number" min={1} value={sec.count} onChange={e => setSection(sec.id, { count: Number(e.target.value) })} className="w-12 h-6 px-1.5 bg-surface border border-rule-2 rounded text-[12px] tabular-nums text-center" /></span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-ink-2">
+                            <input type="number" min={0} value={sec.count} onChange={e => setSection(sec.id, { count: Number(e.target.value) })} className="w-14 h-8 px-2 bg-surface border border-rule-2 rounded text-[13px] tabular-nums text-center" /> {lang === 'ko' ? '문항, 문항당' : n === 1 ? 'question worth' : 'questions, each worth'}
+                            <input type="number" min={0} step={0.5} value={sec.points} onChange={e => setSection(sec.id, { points: Number(e.target.value) })} className="w-16 h-8 px-2 bg-surface border border-rule-2 rounded text-[13px] tabular-nums text-center" /> {lang === 'ko' ? '점 (반점 가능)' : 'points (half points allowed when scoring)'}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-[12px]">
+                          <span className="text-ink-3">{lang === 'ko' ? '기준' : 'Standard'}</span>
+                          <button onClick={() => setPickingSectionStd(sec.id)} className="h-6 px-2 border border-rule-2 rounded text-ink-2 hover:text-ink">{sec.standard ? `${sec.standard} · ${plainNameOf(sec.standard)}` : (lang === 'ko' ? '선택…' : 'Pick…')}</button>
+                          {sec.standard && <button onClick={() => setSection(sec.id, { standard: undefined })} className="text-ink-3 hover:text-bad">×</button>}
+                          <span className="text-ink-3">{lang === 'ko' ? '(섹션 전체에 적용, 아래 문항별로 바꿀 수 있음)' : '(for the whole section; change any question below)'}</span>
+                        </div>
+                      </div>
+                      <button onClick={() => setSections(prev => prev.filter(x => x.id !== sec.id))} title={lang === 'ko' ? '섹션 제거' : 'Remove section'} className="w-7 h-7 rounded hover:bg-paper-2 text-ink-3 hover:text-bad flex items-center justify-center"><X size={14} /></button>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <span className="text-[12px] text-ink-3 mr-1">{lang === 'ko' ? '섹션 추가:' : 'Add a section:'}</span>
+                {([['mc', lang === 'ko' ? '객관식' : 'Multiple choice'], ['true_false', lang === 'ko' ? '참/거짓' : 'True / false'], ['short_answer', lang === 'ko' ? '단답형' : 'Short answer'], ['open_ended', lang === 'ko' ? '서술형' : 'Extended writing'], ['rubric', lang === 'ko' ? '루브릭 채점' : 'Rubric-scored']] as const).map(([t, l]) => <button key={t} onClick={() => addSection(t)} className={chip(false)}>+ {l}</button>)}
+              </div>
+            </div>
+          )}
 
           {map.length > 0 && (
             <>
+              <span className={label}>{lang === 'ko' ? '문항 미리보기 · 클릭해 개별 수정' : 'Questions · click one to change just that question'}</span>
               <div className="flex flex-wrap gap-1.5">
                 {map.map(q => (
                   <div key={q.num} className="relative">
@@ -235,7 +315,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
                   <span className="text-[12px] text-ink-3">{lang === 'ko' ? '문항당' : 'worth'}</span>
                   <input id="na-ppts" type="number" min={0} step={0.5} value={rangePoints} onChange={e => setRangePoints(e.target.value)} placeholder="2" className="h-7 w-[64px] px-2 bg-surface border border-rule-2 rounded text-[12px] tabular-nums" />
                   <span className="text-[12px] text-ink-3">{lang === 'ko' ? '점' : 'points each'}</span>
-                  <button onClick={() => { const nums = parseRange(rangeText, map.length); const pts = Number(rangePoints); if (!nums.length || !(pts >= 0)) { showToast(lang === 'ko' ? '범위와 점수를 입력하세요' : 'Type a range and the points first'); return } setMap(prev => prev.map(q => nums.includes(q.num) && !(q.type === 'rubric' && q.rubric) ? { ...q, max_points: pts } : q)); setRangePoints('') }} className="h-7 px-2.5 rounded border border-rule-2 text-[12px] text-ink-2 hover:text-ink">{lang === 'ko' ? '적용' : 'Apply'}</button>
+                  <button onClick={() => { const nums = parseRange(rangeText, map.length); const pts = Number(rangePoints); if (!nums.length || !(pts >= 0)) { showToast(lang === 'ko' ? '범위와 점수를 입력하세요' : 'Type a range and the points first'); return } setOverrides(prev => { const n = { ...prev }; nums.forEach(num => { const q = map.find(x => x.num === num); if (q && !(q.type === 'rubric' && q.rubric)) n[num] = { ...(n[num] || {}), max_points: pts } }); return n }); setRangePoints('') }} className="h-7 px-2.5 rounded border border-rule-2 text-[12px] text-ink-2 hover:text-ink">{lang === 'ko' ? '적용' : 'Apply'}</button>
                   <span className="text-[11.5px] text-ink-3">{lang === 'ko' ? '예: 객관식 2점, 서술형 5점. 루브릭 문항은 기준당 4점.' : 'e.g. multiple choice worth 2, a written item worth 5. Rubric items stay at 4 per criterion.'}</span>
                 </div>
                 <span className={label}>{lang === 'ko' ? '문항 범위별 기준 태그' : 'Tag standards by question range'}</span>
@@ -271,6 +351,8 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
         </div>
       )}
 
+      {pickingSectionStd != null && <StandardPicker grade={grade} domain={dom} englishClass={englishClass} onClose={() => setPickingSectionStd(null)} onPick={st => { setSection(pickingSectionStd, { standard: st.code }); setPickingSectionStd(null) }} />}
+      {pickingSectionRubric != null && <RubricPicker grade={grade} englishClass={englishClass} onClose={() => setPickingSectionRubric(null)} onUse={r => { setSection(pickingSectionRubric, { rubric: { name: r.name, criteria: r.criteria } }); setPickingSectionRubric(null) }} />}
       {pickingRubricFor != null && <RubricPicker grade={grade} englishClass={englishClass} onClose={() => setPickingRubricFor(null)}
         onUse={r => { setQ(pickingRubricFor, { rubric: { name: r.name, criteria: r.criteria }, max_points: r.criteria.length * 4 }); setPickingRubricFor(null) }} />}
       {picking && <StandardPicker grade={grade} domain={dom} englishClass={englishClass} onClose={() => setPicking(null)} onPick={s => { tagRange(picking.nums, s.code); setPicking(null); setRangeText('') }} />}
