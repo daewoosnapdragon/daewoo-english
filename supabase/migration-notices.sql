@@ -10,7 +10,7 @@
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS notices (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   body TEXT NOT NULL,
   style TEXT NOT NULL DEFAULT 'notice' CHECK (style IN ('notice', 'urgent')),
   author_id UUID REFERENCES teachers(id) ON DELETE SET NULL,

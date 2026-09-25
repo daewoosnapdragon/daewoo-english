@@ -15,7 +15,6 @@ import { X, Pencil, Trash2, Megaphone } from 'lucide-react'
 interface Notice {
   id: string; body: string; style: 'notice' | 'urgent'; author_id: string | null
   audience: string[] | null; expires_on: string | null; created_at: string
-  teachers?: { name: string; english_class: string } | null
 }
 interface Receipt { notice_id: string; teacher_id: string; seen_at: string | null; dismissed_at: string | null }
 
@@ -48,7 +47,7 @@ export default function NoticeBoard() {
   const { teachers } = useTeachers()
   const [notices, setNotices] = useState<Notice[]>([])
   const [receipts, setReceipts] = useState<Receipt[]>([])
-  const [missing, setMissing] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [composing, setComposing] = useState(false)
   const [editing, setEditing] = useState<Notice | null>(null)
   const seenRef = useRef<Set<string>>(new Set())
@@ -59,11 +58,11 @@ export default function NoticeBoard() {
     if (!me) return
     const today = getKSTDateString()
     const { data, error } = await supabase.from('notices')
-      .select('*, teachers ( name, english_class )')
+      .select('*')
       .or(`expires_on.is.null,expires_on.gte.${today}`)
       .order('created_at', { ascending: false })
-    if (error) { setMissing(true); return }
-    setMissing(false)
+    if (error) { console.warn('Notice board:', error.message); setLoadError(error.message); return }
+    setLoadError(null)
     const mine = (data as Notice[]).filter(n => !n.audience || n.audience.includes(me) || n.author_id === me)
     setNotices(mine)
     if (mine.length) {
@@ -105,9 +104,19 @@ export default function NoticeBoard() {
     .sort((a, b) => Number(b.style === 'urgent') - Number(a.style === 'urgent') || b.created_at.localeCompare(a.created_at)),
   [notices, receipts, me])
 
-  if (!currentTeacher || missing) return null
-
+  if (!currentTeacher) return null
   const activeTeachers = teachers.filter(t => t.is_active !== false)
+  const authorOf = (n: Notice) => activeTeachers.find(t => t.id === n.author_id) || teachers.find(t => t.id === n.author_id) || null
+
+  // Only admin sees why, so a missing table is diagnosable without a console.
+  if (loadError) {
+    if (!isAdmin) return null
+    return (
+      <div className="bg-warn-soft border-b border-rule text-[12px] text-warn px-6 py-1.5 no-print">
+        Notice board unavailable: {loadError}. Run supabase/migration-notices.sql in the Supabase SQL Editor.
+      </div>
+    )
+  }
   const audienceLabel = (n: Notice) => {
     if (!n.audience) return lang === 'ko' ? '전체' : 'to everyone'
     const names = n.audience.filter(id => id !== n.author_id).map(id => activeTeachers.find(t => t.id === id)?.name).filter(Boolean)
@@ -124,13 +133,14 @@ export default function NoticeBoard() {
       <div className="mx-auto max-w-[1440px]">
         {visible.map(n => {
           const canEdit = n.author_id === me || isAdmin
-          const initial = (n.teachers?.name || '?').charAt(0)
+          const author = authorOf(n)
+          const initial = (author?.name || '?').charAt(0)
           return (
             <div key={n.id} className={`grid grid-cols-[34px_1fr_auto] gap-3 items-center px-6 py-2 border-b border-rule text-[13.5px] ${n.style === 'urgent' ? 'bg-accent-soft shadow-[inset_4px_0_0_rgb(var(--accent))]' : ''}`}>
-              <span className={`w-6 h-6 rounded-full text-white text-[11px] font-bold flex items-center justify-center ${CLASS_BG[n.teachers?.english_class || ''] || 'bg-ink'}`}>{initial}</span>
+              <span className={`w-6 h-6 rounded-full text-white text-[11px] font-bold flex items-center justify-center ${CLASS_BG[author?.english_class || ''] || 'bg-ink'}`}>{initial}</span>
               <span className="text-ink min-w-0 whitespace-pre-wrap break-words">{n.body}</span>
               <span className="flex items-center gap-3 text-[11.5px] text-ink-3 whitespace-nowrap">
-                <span>{n.teachers?.name || (lang === 'ko' ? '알 수 없음' : 'Unknown')} · {whenLabel(n.created_at, lang)} · {audienceLabel(n)}{n.author_id === me ? ` · ${seenLabel(n)}` : ''}</span>
+                <span>{author?.name || (lang === 'ko' ? '알 수 없음' : 'Unknown')} · {whenLabel(n.created_at, lang)} · {audienceLabel(n)}{n.author_id === me ? ` · ${seenLabel(n)}` : ''}</span>
                 {canEdit && <button onClick={() => setEditing(n)} title={lang === 'ko' ? '수정' : 'Edit'} className="text-ink-3 hover:text-ink"><Pencil size={13} /></button>}
                 {canEdit && <button onClick={() => remove(n)} title={lang === 'ko' ? '모두에게서 삭제' : 'Remove for everyone'} className="text-ink-3 hover:text-bad"><Trash2 size={13} /></button>}
                 {n.author_id !== me && <button onClick={() => dismiss(n)} title={lang === 'ko' ? '닫기' : 'Dismiss'} className="text-ink-3 hover:text-ink text-[18px] leading-none">×</button>}

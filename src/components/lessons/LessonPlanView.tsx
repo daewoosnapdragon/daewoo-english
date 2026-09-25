@@ -70,7 +70,8 @@ export default function LessonPlanView() {
 }
 
 function ParentCalendarView() {
-  const { currentTeacher, showToast } = useApp()
+  const { currentTeacher, showToast, language } = useApp()
+  const lang = language
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Snapdragon'
   const teacherClass = currentTeacher?.english_class as EnglishClass
 
@@ -94,6 +95,10 @@ function ParentCalendarView() {
   const [dayData, setDayData] = useState<Record<string, DayContent>>({})
   const [weeklyHomework, setWeeklyHomework] = useState<Record<string, string>>({}) // keyed by Monday date
   const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }[]>>({})
+  // Days the school calendar takes over: a day off blocks the cell outright
+  // (no lesson can be planned on Chuseok); a midterm or testing day is tinted
+  // and stays editable, since review and test administration are planned.
+  const [blockedDays, setBlockedDays] = useState<Record<string, { title: string; kind: 'off' | 'exam' }>>({})
   const [printWeeks, setPrintWeeks] = useState<Set<number>>(new Set()) // selected week indices for printing; empty = all
   const [showPrintOptions, setShowPrintOptions] = useState(false)
   // Dates that already have a stored row, so we can tell "cleared by the
@@ -241,24 +246,28 @@ function ParentCalendarView() {
       const fallbackRes = await supabase.from('calendar_events').select('date, title, type').gte('date', firstDay).lte('date', lastDay)
       eventsList = fallbackRes.data || null
     }
+    const bd: Record<string, { title: string; kind: 'off' | 'exam' }> = {}
     if (eventsList) {
       eventsList.forEach((ev: any) => {
-        if (!ev.show_on_parent_calendar) return
         const tg = ev.target_grades as number[] | null
         const gradeMatch = !tg || tg.length === 0 || tg.includes(selectedGrade)
         if (!gradeMatch) return
+        const blockKind: 'off' | 'exam' | null = ev.type === 'day_off' ? 'off' : (ev.type === 'midterm' || ev.type === 'testing') ? 'exam' : null
+        if (!ev.show_on_parent_calendar && !blockKind) return
         // A multi-day event belongs on every day it covers, not just its first,
         // clipped to the month being shown.
         const start = ev.date > firstDay ? ev.date : firstDay
         const end = (ev.end_date && ev.end_date > ev.date) ? ev.end_date : ev.date
         const lastShown = end < lastDay ? end : lastDay
         for (let d = start; d <= lastShown; d = shiftDate(d, 1)) {
-          if (!ce[d]) ce[d] = []
-          ce[d].push({ title: ev.title, type: ev.type })
+          if (ev.show_on_parent_calendar) { if (!ce[d]) ce[d] = []; ce[d].push({ title: ev.title, type: ev.type }) }
+          // A day off outranks an exam on the same day.
+          if (blockKind && (!bd[d] || blockKind === 'off')) bd[d] = { title: ev.title, kind: blockKind }
         }
       })
     }
     setCalEvents(ce)
+    setBlockedDays(bd)
     setDayData(dd)
     // Fold write-ins already saved in this month back into the chip list.
     rememberSubjects(Object.values(dd).flatMap(d => d.subjects.map(s => s.label)))
@@ -523,11 +532,15 @@ function ParentCalendarView() {
         const data = dayData[day.date] || emptyDay()
         const evts = calEvents[day.date] || []
         const noG5 = di === 0 && selectedGrade === 5
+        const blocked = blockedDays[day.date]
 
         let inner = ''
         if (noG5) {
           inner = '<div class="no-class">No Grade 5</div>'
+        } else if (blocked?.kind === 'off') {
+          inner = `<div class="no-class">${blocked.title}</div>`
         } else {
+          if (blocked?.kind === 'exam') inner += `<div class="event">${blocked.title}</div>`
           evts.forEach(ev => { inner += `<div class="event">${ev.title}</div>` })
           // Only rows the teacher actually wrote in. A labeled-but-empty row
           // would otherwise print as a bare subject name on the parent copy.
@@ -714,13 +727,26 @@ function ParentCalendarView() {
                   const evts = calEvents[day.date] || []
                   const isToday = day.date === todayStr
                   const noG5 = di === 0 && selectedGrade === 5
+                  const blocked = blockedDays[day.date]
+                  const isOff = blocked?.kind === 'off'
                   const hasFill = data.subjects.some(s => s.content.trim()) || data.objective
+                  if (isOff) {
+                    return (
+                      <div key={di} title={`${blocked.title} · from the school calendar`}
+                        className="border-r border-border last:border-r-0 min-h-[140px] p-3 flex flex-col items-center justify-center text-center gap-1"
+                        style={{ backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--good-soft)) 0 8px, rgb(var(--paper-2)) 8px 10px)' }}>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-3">{DAY_SHORT[di]} {month + 1}/{day.dayNum}</span>
+                        <span className="text-[13px] font-semibold text-good">{blocked.title}</span>
+                        <span className="text-[10.5px] text-ink-3">{lang === 'ko' ? '휴일 · 학교 달력' : 'Day off · from the school calendar'}</span>
+                      </div>
+                    )
+                  }
                   return (
                     <div key={di}
                       onClick={() => openDayWeek(wi)}
                       className={`border-r border-border last:border-r-0 min-h-[140px] p-3 transition-all ${
                         canEdit ? 'cursor-pointer hover:bg-blue-50/30' : ''
-                      } ${isToday ? 'bg-amber-50/30 ring-2 ring-inset ring-gold/40' : 'bg-white'}`}>
+                      } ${isToday ? 'bg-amber-50/30 ring-2 ring-inset ring-gold/40' : blocked?.kind === 'exam' ? 'bg-warn-soft/60' : 'bg-white'}`}>
                       {/* Day header */}
                       <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 pb-1.5 border-b flex items-center justify-between ${isToday ? 'text-amber-700 border-gold/30' : 'text-slate-500 border-border/40'}`}>
                         <span>{DAY_SHORT[di]} <span className="text-text-primary font-extrabold">{month + 1}/{day.dayNum}</span></span>
@@ -732,6 +758,7 @@ function ParentCalendarView() {
                         <div className="text-[11px] text-text-secondary italic text-center mt-6">No G5 Mondays</div>
                       ) : (
                         <>
+                          {blocked?.kind === 'exam' && <div className="text-[10px] font-bold uppercase tracking-wider text-warn mb-1.5">{blocked.title}</div>}
                           {evts.map((ev, ei) => <div key={ei} className="text-[10px] font-bold text-slate-600 bg-slate-100 rounded px-2 py-1 mb-1.5">{ev.title}</div>)}
                           {/* Only rows with content. A labeled-but-empty row must never
                               show here or in print -- this is the parent-facing calendar. */}
@@ -762,6 +789,13 @@ function ParentCalendarView() {
                     {fw.map((day, di) => {
                       if (!day) return null
                       if (di === 0 && selectedGrade === 5) return null // no Grade 5 Mondays
+                      const off = blockedDays[day.date]?.kind === 'off' ? blockedDays[day.date] : null
+                      if (off) return (
+                        <div key={day.date} className="grid grid-cols-[64px_1fr] gap-3 items-center py-2.5 border-b border-border/40 last:border-b-0">
+                          <div className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">{DAY_SHORT[di]}<span className="block text-[12px] text-text-primary font-bold">{month + 1}/{day.dayNum}</span></div>
+                          <div className="text-[12.5px] text-good font-semibold">{off.title} <span className="text-ink-3 font-normal">· {lang === 'ko' ? '휴일, 수업 없음' : 'day off, no lesson'}</span></div>
+                        </div>
+                      )
                       const data = dayData[day.date] || emptyDay()
                       return (
                         <div key={day.date} className="grid grid-cols-[64px_1fr] gap-3 items-start py-2.5 border-b border-border/40 last:border-b-0">
