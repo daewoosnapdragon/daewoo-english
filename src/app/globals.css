@@ -375,3 +375,11 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
 .eyebrow-accent { color: rgb(var(--accent)); }
 .rule { border-top: 1px solid rgb(var(--rule)); }
 .rule-2 { border-top: 1px solid rgb(var(--rule-2)); }
+
+/* ─── Modal safety net ─────────────────────────────────────────────
+   Seventeen screens still open their own overlays, and several let a tall
+   panel run off the bottom of the viewport with no way to scroll. Until each
+   is rebuilt, the direct child of any full-screen overlay is capped to the
+   viewport and scrolls. Panels that already manage their own height and
+   overflow are unaffected. */
+.fixed.inset-0 > div:not([class*="max-h-"]) { max-height: 92vh; overflow-y: auto; }

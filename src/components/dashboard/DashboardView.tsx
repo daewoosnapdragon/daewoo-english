@@ -726,6 +726,13 @@ function AdminAlertPanel() {
     })()
   }, [])
 
+  useEffect(() => {
+    if (!detail) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDetail(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [detail])
+
   const dismiss = async (id: string) => {
     await supabase.from('behavior_logs').update({ is_flagged: false }).eq('id', id)
     setFlagged(p => p.filter(f => f.id !== id))
@@ -758,13 +765,13 @@ function AdminAlertPanel() {
         ))}
       </div>
       {detail && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6">
-          <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-md" onClick={(ev: any) => ev.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-display text-[16px] font-semibold text-navy">Flagged — {detail.student_name}</h3>
-              <button onClick={() => setDetail(null)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setDetail(null)}>
+          <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-md max-h-[85vh] flex flex-col" onClick={(ev: any) => ev.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
+              <h3 className="font-display text-[20px] leading-none text-ink">Flagged · {detail.student_name}</h3>
+              <button onClick={() => setDetail(null)} aria-label="Close" className="p-1.5 rounded hover:bg-paper-2"><X size={16} /></button>
             </div>
-            <div className="p-5 space-y-3">
+            <div className="p-5 space-y-3 overflow-y-auto min-h-0">
               <div className="grid grid-cols-2 gap-3 text-[12px]">
                 <div><span className="text-text-tertiary">Date</span><p className="font-medium">{new Date(detail.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p></div>
                 <div><span className="text-text-tertiary">Time</span><p className="font-medium">{detail.time || '—'}</p></div>
@@ -808,6 +815,11 @@ function AdminAlertPanel() {
 
 function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string; onClose: () => void; onSaved: () => void; existingEvent?: any }) {
   const { currentTeacher, showToast } = useApp()
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
   const [title, setTitle] = useState(existingEvent?.title || '')
   const [eventDate, setEventDate] = useState(existingEvent?.date || date)
   const [endDate, setEndDate] = useState(existingEvent?.end_date || '')
@@ -860,13 +872,13 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6">
-      <div className="bg-surface rounded-xl shadow-lg w-full max-w-sm" onClick={(e: any) => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-display text-[15px] font-semibold text-navy">{isEdit ? 'Edit Event' : 'Add Calendar Event'}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
+      <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-sm max-h-[85vh] flex flex-col" onClick={(e: any) => e.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
+          <h3 className="font-display text-[20px] leading-none text-ink">{isEdit ? 'Edit event' : 'Add event'}</h3>
+          <button onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-paper-2"><X size={16} /></button>
         </div>
-        <div className="p-5 space-y-3">
+        <div className="p-5 space-y-3 overflow-y-auto min-h-0">
           <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Title *</label>
             <input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="e.g. Phonics Unit 3 Lesson Plan" autoFocus
               className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
