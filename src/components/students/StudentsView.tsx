@@ -14,6 +14,7 @@ import { WIDAProfiles } from '@/components/curriculum/CurriculumView'
 import RosterUploadModal from './RosterUploadModal'
 import { exportToCSV } from '@/lib/export'
 import { Sparkline } from '@/components/charts'
+import { loadLevelTestReadingRecords, mergeReadingRecords } from '@/lib/readingRecords'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 import PassagePickerPanel from '@/components/shared/PassagePickerPanel'
@@ -894,6 +895,8 @@ function QuickNotesTab({ studentId }: { studentId: string }) {
 // ─── Academic History Tab (Domain Graphs) ───────────────────────────
 
 export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+  const { activeSemester } = useApp()
+  const activeSemesterId = activeSemester?.id || null
   const [data, setData] = useState<{ domain: string; assessments: { name: string; score: number; max: number; pct: number; classAvg: number | null; date: string | null }[] }[]>([])
   const [semesterHistory, setSemesterHistory] = useState<{ semester: string; grades: Record<string, number | null>; behavior: string | null }[]>([])
   const [loading, setLoading] = useState(true)
@@ -939,9 +942,11 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
           setSemesterHistory(history.map(({ startDate, ...rest }) => rest))
         }
 
-        // 2. Load individual assessment grades
-        const { data: grades } = await supabase.from('grades').select('score, assessment_id, assessments(name, domain, max_score, date)').eq('student_id', studentId).not('score', 'is', null)
-        if (!grades || grades.length === 0) return
+        // 2. Load individual assessment grades, for the active semester only.
+        // Older semesters are summarised in the history table above.
+        const { data: gradesAll } = await supabase.from('grades').select('score, assessment_id, assessments(name, domain, max_score, date, semester_id)').eq('student_id', studentId).not('score', 'is', null)
+        const grades = (gradesAll || []).filter((g: any) => !activeSemesterId || g.assessments?.semester_id === activeSemesterId)
+        if (grades.length === 0) return
 
         const byDomain: Record<string, { name: string; score: number; max: number; pct: number; date: string | null; assessmentId: string }[]> = {}
         for (const g of grades) {
@@ -981,7 +986,7 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
         setLoading(false)
       }
     })()
-  }, [studentId])
+  }, [studentId, activeSemesterId])
 
   if (loading) return <div className="py-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-[12px]">Loading grades...</p></div>
 
@@ -1167,8 +1172,11 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false })
-        if (data) setRecords(data)
+        const [{ data }, lt] = await Promise.all([
+          supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }),
+          loadLevelTestReadingRecords(studentId),
+        ])
+        setRecords(mergeReadingRecords(data || [], lt))
       } catch {}
       try {
         const { data: pData } = await supabase.from('reading_passages').select('*').order('created_at', { ascending: false })
@@ -1193,8 +1201,11 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
     })
     if (error) { showToast?.(`Error: ${error.message}`); return }
     // Reload
-    const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false })
-    if (data) setRecords(data)
+    const [{ data }, lt] = await Promise.all([
+      supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }),
+      loadLevelTestReadingRecords(studentId),
+    ])
+    setRecords(mergeReadingRecords(data || [], lt))
     setShowRunningRecord(false)
     setSelectedPassage(null)
     setPasteText('')
@@ -1469,16 +1480,17 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
                   </tr>
                 )
               }
+              const fromLevelTest = !!r.is_level_test
               return (
-                <tr key={r.id} className="border-t border-border hover:bg-surface-alt/30 cursor-pointer" onClick={() => startEdit(r)}>
+                <tr key={r.id} className={`border-t border-border ${fromLevelTest ? 'bg-paper-2/50' : 'hover:bg-surface-alt/30 cursor-pointer'}`} onClick={() => { if (!fromLevelTest) startEdit(r) }} title={fromLevelTest ? 'From the level test; edit it on the Level Tests screen' : undefined}>
                   <td className="px-3 py-2">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
-                  <td className="px-2 py-2 font-medium truncate max-w-[100px]">{r.passage_title || '—'}</td>
+                  <td className="px-2 py-2 font-medium truncate max-w-[140px]">{fromLevelTest ? <span className="inline-flex items-center gap-1.5"><span className="px-1.5 py-0.5 rounded bg-info-soft text-info text-[9.5px] font-bold uppercase tracking-wide">Level test</span><span className="truncate">{(r.passage_title || '').replace(/^Level test · /, '')}</span></span> : (r.passage_title || '—')}</td>
                   <td className="px-2 py-2 text-center font-semibold text-navy">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
                   <td className={`px-2 py-2 text-center font-semibold ${(r.accuracy_rate || 0) >= 96 ? 'text-green-600' : (r.accuracy_rate || 0) >= 90 ? 'text-blue-600' : 'text-red-600'}`}>{r.accuracy_rate != null ? `${r.accuracy_rate.toFixed(1)}%` : '—'}</td>
                   <td className={`px-2 py-2 text-center text-[10px] font-semibold ${level.color}`}>{level.label}</td>
                   <td className="px-2 py-2 text-center text-purple-600 font-medium">{r.reading_level || '—'}</td>
                   <td className="px-2 py-2 text-center text-text-secondary">{r.naep_fluency ? `L${r.naep_fluency}` : '—'}</td>
-                  <td className="px-2 py-2 text-center"><Pencil size={11} className="text-text-tertiary mx-auto" /></td>
+                  <td className="px-2 py-2 text-center">{fromLevelTest ? null : <Pencil size={11} className="text-text-tertiary mx-auto" />}</td>
                 </tr>
               )
             })}

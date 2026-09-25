@@ -19,6 +19,7 @@ import { LineChart, Bars, Sparkline } from '@/components/charts'
 import { DOMAINS, DOMAIN_LABELS } from '@/types'
 import { calculateWeightedAverage, domainLabel } from '@/lib/utils'
 import { CWPM_BENCHMARKS } from '@/components/reading/ReadingLevelsView'
+import { loadLevelTestReadingRecords, mergeReadingRecords } from '@/lib/readingRecords'
 
 // ─── Student page ────────────────────────────────────────────────
 // One address per student, /students/<id>. A rail on the left holds the
@@ -64,18 +65,20 @@ export default function StudentPage({ studentId }: { studentId: string }) {
       const today = getKSTDateString()
       const semStart = activeSemester?.start_date || `${new Date().getFullYear()}-01-01`
       const thirtyAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
-      const [sg, att, rd, pl, beh] = await Promise.all([
+      const [sg, att, rd, pl, beh, lt] = await Promise.all([
         activeSemester ? supabase.from('semester_grades').select('calculated_grade, final_grade').eq('student_id', student.id).eq('semester_id', activeSemester.id).eq('domain', 'overall').maybeSingle() : Promise.resolve({ data: null }),
         supabase.from('attendance').select('status').eq('student_id', student.id).gte('date', semStart).lte('date', today),
         supabase.from('reading_assessments').select('cwpm, reading_level, date').eq('student_id', student.id).order('date', { ascending: false }).limit(1),
         supabase.from('level_test_placements').select('final_placement, level_tests ( name )').eq('student_id', student.id).order('created_at', { ascending: false }).limit(1),
         supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('student_id', student.id).gte('date', thirtyAgo),
+        loadLevelTestReadingRecords(student.id),
       ])
       if (cancelled) return
+      const latestReading = mergeReadingRecords(rd.data || [], lt)[0]
       const rows = (att.data || []) as { status: string }[]
       const present = rows.filter(r => r.status === 'present').length, tardy = rows.filter(r => r.status === 'tardy').length, absent = rows.filter(r => r.status === 'absent').length
       const g: any = (sg as any).data
-      const r: any = rd.data?.[0]
+      const r: any = latestReading
       const p: any = pl.data?.[0]
       setFacts({
         overall: g ? (g.final_grade ?? g.calculated_grade ?? null) : null,
@@ -318,12 +321,14 @@ function ReadingTrend({ student, lang }: { student: Student; lang: string }) {
   const [band, setBand] = useState<{ low: number; high: number; label: string } | undefined>()
   useEffect(() => {
     ;(async () => {
-      const [rd, cb] = await Promise.all([
-        supabase.from('reading_assessments').select('date, cwpm, accuracy_rate, reading_level').eq('student_id', student.id).order('date', { ascending: true }),
+      const [rd, cb, lt] = await Promise.all([
+        supabase.from('reading_assessments').select('date, cwpm, accuracy_rate, reading_level, passage_title').eq('student_id', student.id).order('date', { ascending: true }),
         supabase.from('class_benchmarks').select('cwpm_mid, cwpm_end').eq('english_class', student.english_class).eq('grade', student.grade).limit(1).maybeSingle(),
+        loadLevelTestReadingRecords(student.id),
       ])
-      setPoints((rd.data || []).filter((r: any) => r.cwpm != null).map((r: any) => ({
-        x: r.date, y: r.cwpm, label: r.reading_level || undefined,
+      const all = mergeReadingRecords(rd.data || [], lt).reverse()
+      setPoints(all.filter((r: any) => r.cwpm != null).map((r: any) => ({
+        x: r.date, y: r.cwpm, label: r.is_level_test ? (r.passage_title || 'Level test') : (r.reading_level || undefined),
         note: r.accuracy_rate != null ? `${Number(r.accuracy_rate).toFixed(0)}% ${lang === 'ko' ? '정확도' : 'accuracy'}` : undefined,
         tone: r.accuracy_rate == null ? undefined : r.accuracy_rate >= 96 ? 'good' : r.accuracy_rate >= 90 ? 'warn' : 'bad',
       })))
