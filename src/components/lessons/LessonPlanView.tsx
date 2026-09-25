@@ -255,7 +255,8 @@ function ParentCalendarView() {
         const tg = ev.target_grades as number[] | null
         const gradeMatch = !tg || tg.length === 0 || tg.includes(selectedGrade)
         if (!gradeMatch) return
-        const blockKind: 'off' | 'exam' | null = ev.type === 'day_off' ? 'off' : (ev.type === 'midterm' || ev.type === 'testing') ? 'exam' : null
+        // Days off and field trips take the day; exams tint it and stay editable.
+        const blockKind: 'off' | 'exam' | null = (ev.type === 'day_off' || ev.type === 'field_trip') ? 'off' : (ev.type === 'midterm' || ev.type === 'testing') ? 'exam' : null
         if (!ev.show_on_parent_calendar && !blockKind) return
         // A multi-day event belongs on every day it covers, not just its first,
         // clipped to the month being shown.
@@ -740,7 +741,7 @@ function ParentCalendarView() {
                         style={{ backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--good-soft)) 0 8px, rgb(var(--paper-2)) 8px 10px)' }}>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-ink-3">{DAY_SHORT[di]} {month + 1}/{day.dayNum}</span>
                         <span className="text-[13px] font-semibold text-good">{blocked.title}</span>
-                        <span className="text-[10.5px] text-ink-3">{lang === 'ko' ? '휴일 · 학교 달력' : 'Day off · from the school calendar'}</span>
+                        <span className="text-[10.5px] text-ink-3">{lang === 'ko' ? '수업 없음 · 학교 달력' : 'No lesson · from the school calendar'}</span>
                       </div>
                     )
                   }
@@ -796,7 +797,7 @@ function ParentCalendarView() {
                       if (off) return (
                         <div key={day.date} className="grid grid-cols-[64px_1fr] gap-3 items-center py-2.5 border-b border-border/40 last:border-b-0">
                           <div className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">{DAY_SHORT[di]}<span className="block text-[12px] text-text-primary font-bold">{month + 1}/{day.dayNum}</span></div>
-                          <div className="text-[12.5px] text-good font-semibold">{off.title} <span className="text-ink-3 font-normal">· {lang === 'ko' ? '휴일, 수업 없음' : 'day off, no lesson'}</span></div>
+                          <div className="text-[12.5px] text-good font-semibold">{off.title} <span className="text-ink-3 font-normal">· {lang === 'ko' ? '수업 없음' : 'no lesson'}</span></div>
                         </div>
                       )
                       const data = dayData[day.date] || emptyDay()

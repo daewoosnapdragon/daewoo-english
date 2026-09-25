@@ -327,16 +327,16 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
-                              {it.max_points < 10 && Number.isInteger(it.max_points) ? (
+                              {it.max_points <= 8 && Number.isInteger(it.max_points) && (
                                 <div className="flex gap-1.5">
                                   {Array.from({ length: it.max_points + 1 }, (_, p) => (
                                     <button key={p} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setPoints(it.num, p) }} className={bubble(r?.points === p, r?.points === p ? (p === it.max_points ? 'right' : p === 0 ? 'wrong' : 'plain') : 'plain')}>{p}</button>
                                   ))}
                                 </div>
-                              ) : (
-                                <input type="number" min={0} max={it.max_points} step={0.5} value={r?.points ?? ''} onChange={e => setPoints(it.num, e.target.value === '' ? null : Number(e.target.value))} onFocus={() => setFocusedQ(it.num)}
-                                  className="w-16 h-7 px-2 bg-surface border border-rule-2 rounded text-[12.5px] tabular-nums text-center" />
                               )}
+                              {/* Half points (2.5 / 5) and anything over 8 go in here. */}
+                              <input type="number" min={0} max={it.max_points} step={0.5} value={r?.points ?? ''} onChange={e => setPoints(it.num, e.target.value === '' ? null : Number(e.target.value))} onFocus={() => setFocusedQ(it.num)} onClick={e => e.stopPropagation()}
+                                className="w-16 h-7 px-2 bg-surface border border-rule-2 rounded text-[12.5px] tabular-nums text-center" placeholder="2.5" />
                               <span className="text-[11px] text-ink-3">/ {it.max_points} · {it.type === 'rubric' ? (lang === 'ko' ? '루브릭' : 'rubric') : (lang === 'ko' ? '서술형' : 'written')}</span>
                             </div>
                           )}

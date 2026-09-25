@@ -389,3 +389,11 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
    accent for a comparison, status colours only for meaning. */
 :root { --paper-hex: #F5F1E8; --c-1: #2F5C8A; --c-2: #8A2A2B; --c-good: #2E6B3A; --c-warn: #9A6A12; --c-bad: #A0322E; --c-mute: #857D6E; --c-rule: #D8D0BE; --c-band: rgba(46,107,58,0.10); --c-text: #4F4A3F; --c-track: #E3DCCB; }
 html.dark { --paper-hex: #16140F; --c-1: #7FA6D6; --c-2: #D9736F; --c-good: #7FBF86; --c-warn: #D8AE4E; --c-bad: #E07A72; --c-mute: #8E8574; --c-rule: #332E24; --c-band: rgba(127,191,134,0.14); --c-text: #C2B9A5; --c-track: #2A261D; }
+
+/* ─── Legacy gold buttons ────────────────────────────────────────────
+   Older screens pair bg-gold with dark text; gold is now the oxblood
+   accent, so the text must be light. */
+.bg-gold.text-navy, .bg-gold.text-navy-dark, .bg-gold.text-navy-deep, .bg-gold.text-text-primary,
+.bg-accent.text-navy, .bg-accent.text-navy-dark { color: rgb(var(--white)) !important; }
+html.dark .bg-gold.text-navy, html.dark .bg-gold.text-navy-dark, html.dark .bg-gold.text-navy-deep, html.dark .bg-gold.text-text-primary,
+html.dark .bg-accent.text-navy, html.dark .bg-accent.text-navy-dark { color: rgb(var(--paper)) !important; }

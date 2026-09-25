@@ -49,6 +49,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
   const [keyText, setKeyText] = useState('')
   const [map, setMap] = useState<QuestionMapItem[]>([])
   const [rangeText, setRangeText] = useState('')
+  const [rangePoints, setRangePoints] = useState('')
   const [picking, setPicking] = useState<null | { nums: number[] }>(null)
   const [pickingRubricFor, setPickingRubricFor] = useState<number | null>(null)
   const [editingQ, setEditingQ] = useState<number | null>(null)
@@ -89,7 +90,15 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
       ...(routeByStandard && finalMap ? { mixed, domain_split: split } : {}),
       ...(rubric ? { rubric: { name: rubric.name, band: rubric.band, criteria: rubric.criteria }, rubric_id: rubric.rubric_id } : {}),
     }
-    const { data, error } = await supabase.from('assessments').insert({ ...base, english_class: englishClass }).select().single()
+    let { data, error } = await supabase.from('assessments').insert({ ...base, english_class: englishClass }).select().single()
+    // The routing columns need supabase/migration-mixed-assessments.sql. If
+    // they are missing, still create the assessment (without routing) rather
+    // than throw away the key the teacher just typed.
+    if (error && /domain_split|mixed/.test(error.message)) {
+      const { mixed: _m, domain_split: _d, ...plain } = base as any
+      ;({ data, error } = await supabase.from('assessments').insert({ ...plain, english_class: englishClass }).select().single())
+      if (!error) showToast(lang === 'ko' ? '영역별 배분 없이 생성됨: supabase/migration-mixed-assessments.sql을 실행하세요' : 'Created without domain routing: run supabase/migration-mixed-assessments.sql, then NOTIFY pgrst, \'reload schema\'')
+    }
     if (error) { setSaving(false); showToast(`Error: ${error.message}`); return }
     if (share.size) await supabase.from('assessments').insert(Array.from(share).map(cls => ({ ...base, english_class: cls })))
     setSaving(false)
@@ -219,6 +228,16 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
                 </span>
               </label>
               <div className="grid gap-2">
+                <span className={label}>{lang === 'ko' ? '문항 범위별 배점' : 'Points by question range'}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[12px] text-ink-3">Q</span>
+                  <input id="na-prange" value={rangeText} onChange={e => setRangeText(e.target.value)} placeholder="1-10" className="h-7 w-[72px] px-2 bg-surface border border-rule-2 rounded text-[12px] tabular-nums" />
+                  <span className="text-[12px] text-ink-3">{lang === 'ko' ? '문항당' : 'worth'}</span>
+                  <input id="na-ppts" type="number" min={0} step={0.5} value={rangePoints} onChange={e => setRangePoints(e.target.value)} placeholder="2" className="h-7 w-[64px] px-2 bg-surface border border-rule-2 rounded text-[12px] tabular-nums" />
+                  <span className="text-[12px] text-ink-3">{lang === 'ko' ? '점' : 'points each'}</span>
+                  <button onClick={() => { const nums = parseRange(rangeText, map.length); const pts = Number(rangePoints); if (!nums.length || !(pts >= 0)) { showToast(lang === 'ko' ? '범위와 점수를 입력하세요' : 'Type a range and the points first'); return } setMap(prev => prev.map(q => nums.includes(q.num) && !(q.type === 'rubric' && q.rubric) ? { ...q, max_points: pts } : q)); setRangePoints('') }} className="h-7 px-2.5 rounded border border-rule-2 text-[12px] text-ink-2 hover:text-ink">{lang === 'ko' ? '적용' : 'Apply'}</button>
+                  <span className="text-[11.5px] text-ink-3">{lang === 'ko' ? '예: 객관식 2점, 서술형 5점. 루브릭 문항은 기준당 4점.' : 'e.g. multiple choice worth 2, a written item worth 5. Rubric items stay at 4 per criterion.'}</span>
+                </div>
                 <span className={label}>{lang === 'ko' ? '문항 범위별 기준 태그' : 'Tag standards by question range'}</span>
                 <div className="flex flex-wrap items-center gap-2">
                   {groups.map(([code, nums]) => (

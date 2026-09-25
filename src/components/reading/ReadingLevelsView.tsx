@@ -47,14 +47,15 @@ const DIFFICULTY_OPTIONS = [
 // Load class benchmarks from DB for the selected class
 function useClassBenchmarks(englishClass: string, grade: number) {
   const [dbBench, setDbBench] = useState<any>(null)
+  const [tick, setTick] = useState(0)
   useEffect(() => {
     setDbBench(null) // Reset on change to prevent stale legend
     ;(async () => {
       const { data } = await supabase.from('class_benchmarks').select('*').eq('english_class', englishClass).eq('grade', grade).limit(1).single()
       if (data) setDbBench(data)
     })()
-  }, [englishClass, grade])
-  return dbBench
+  }, [englishClass, grade, tick])
+  return { bench: dbBench, reload: () => setTick(t => t + 1) }
 }
 
 export default function ReadingLevelsView() {
@@ -133,7 +134,28 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
 }) {
   const [latestRecords, setLatestRecords] = useState<Record<string, ReadingRecord>>({})
   const [loadingRecords, setLoadingRecords] = useState(true)
-  const dbBench = useClassBenchmarks(englishClass, grade)
+  const { bench: dbBench, reload: reloadBench } = useClassBenchmarks(englishClass, grade)
+  const { showToast, currentTeacher } = useApp()
+  const canEditBench = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher || currentTeacher?.english_class === englishClass
+  const [editBench, setEditBench] = useState(false)
+  const [benchForm, setBenchForm] = useState<{ cwpm_mid: string; cwpm_end: string; lexile_min: string; lexile_max: string }>({ cwpm_mid: '', cwpm_end: '', lexile_min: '', lexile_max: '' })
+  const [savingBench, setSavingBench] = useState(false)
+  const openBenchEditor = () => {
+    const f = dbBench || CWPM_BENCHMARKS[grade] || CWPM_BENCHMARKS[4]
+    setBenchForm({ cwpm_mid: String(dbBench?.cwpm_mid ?? f.approaching ?? ''), cwpm_end: String(dbBench?.cwpm_end ?? f.proficient ?? ''), lexile_min: String(dbBench?.lexile_min ?? ''), lexile_max: String(dbBench?.lexile_max ?? '') })
+    setEditBench(true)
+  }
+  const saveBench = async () => {
+    setSavingBench(true)
+    const row = { grade, english_class: englishClass, cwpm_mid: Number(benchForm.cwpm_mid) || 0, cwpm_end: Number(benchForm.cwpm_end) || 0, lexile_min: Number(benchForm.lexile_min) || 0, lexile_max: Number(benchForm.lexile_max) || 0 }
+    const res = dbBench?.id
+      ? await supabase.from('class_benchmarks').update(row).eq('id', dbBench.id)
+      : await supabase.from('class_benchmarks').insert({ ...row, reading_level: '', notes: '', display_order: 999 })
+    setSavingBench(false)
+    if (res.error) { showToast(`Error: ${res.error.message}`); return }
+    showToast(lang === 'ko' ? '목표 저장됨' : `Targets saved for ${englishClass} Grade ${grade}`)
+    setEditBench(false); reloadBench()
+  }
 
   useEffect(() => {
     if (students.length === 0) { setLoadingRecords(false); return }
@@ -213,6 +235,19 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
             <Printer size={11} /> Print
           </button>
         </div>
+        {canEditBench && !editBench && <button onClick={openBenchEditor} className="text-[12px] text-accent hover:underline mt-1">{lang === 'ko' ? '이 반의 목표 수정' : dbBench ? 'Edit these targets' : 'Set targets for this class and grade'}</button>}
+        {editBench && (
+          <div className="mt-2 flex flex-wrap items-end gap-3 border border-rule-2 rounded p-3 bg-paper-2">
+            {([['cwpm_mid', lang === 'ko' ? '중간 CWPM' : 'Mid-semester CWPM'], ['cwpm_end', lang === 'ko' ? '학기말 CWPM' : 'End-of-semester CWPM'], ['lexile_min', 'Lexile min'], ['lexile_max', 'Lexile max']] as const).map(([k, l]) => (
+              <label key={k} className="grid gap-1"><span className="eyebrow">{l}</span><input type="number" value={(benchForm as any)[k]} onChange={e => setBenchForm(f => ({ ...f, [k]: e.target.value }))} className="h-8 w-28 px-2 bg-surface border border-rule-2 rounded text-[13px] tabular-nums text-ink" /></label>
+            ))}
+            <div className="flex gap-2">
+              <button onClick={saveBench} disabled={savingBench} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-60">{lang === 'ko' ? '저장' : 'Save'}</button>
+              <button onClick={() => setEditBench(false)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '취소' : 'Cancel'}</button>
+            </div>
+            <span className="text-[11px] text-ink-3 basis-full">{lang === 'ko' ? '설정 > 프로그램 기준과 같은 값입니다.' : 'The same targets as Settings > Program benchmarks; changing them here changes them there.'}</span>
+          </div>
+        )}
         {dbBench && <p className="text-[11px] text-ink-3 mt-1">CWPM Mid ({dbBench.cwpm_mid}) = expected fluency by mid-semester. CWPM End ({dbBench.cwpm_end}) = target fluency by end of semester. Set in Settings &gt; Benchmarks.</p>}
       </div>
 
