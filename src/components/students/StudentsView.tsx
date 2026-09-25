@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
@@ -26,7 +26,7 @@ const TEACHER_MAP: Record<string, string> = {
 
 // ─── Main View ──────────────────────────────────────────────────────
 
-export default function StudentsView() {
+export default function StudentsView({ openStudentId }: { openStudentId?: string } = {}) {
   const { t, language, currentTeacher, showToast } = useApp()
   const [search, setSearch] = useState('')
   const [filterGrade, setFilterGrade] = useState<Grade | null>(null)
@@ -46,6 +46,26 @@ export default function StudentsView() {
     english_class: filterClass || teacherClass || undefined,
     search: search || undefined,
   })
+
+  // /students/<id> opens that student. The roster may be filtered to another
+  // class, so fall back to fetching the one row.
+  const openedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!openStudentId || loading || openedRef.current === openStudentId) return
+    openedRef.current = openStudentId
+    const hit = students.find(s => s.id === openStudentId)
+    if (hit) { setSelectedStudent(hit); return }
+    supabase.from('students').select('*').eq('id', openStudentId).single()
+      .then(({ data }) => { if (data) setSelectedStudent(data as Student) })
+  }, [openStudentId, loading, students])
+
+  // Keep the address in step with the open student without remounting the page.
+  const openStudent = (s: Student | null) => {
+    setSelectedStudent(s)
+    if (typeof window === 'undefined') return
+    const url = s ? `/students/${s.id}` : '/students'
+    if (window.location.pathname !== url) window.history.pushState(null, '', url)
+  }
 
   const sorted = useMemo(() => {
     let result = [...students]
@@ -263,7 +283,7 @@ export default function StudentsView() {
               <tbody>
                 {sorted.map((s, i) => (
                   <tr key={s.id} className={`border-t border-border table-row-hover ${bulkEdit ? '' : 'cursor-pointer'} ${!s.is_active ? 'opacity-40' : ''}`}
-                    onClick={() => { if (!bulkEdit) setSelectedStudent(s) }}>
+                    onClick={() => { if (!bulkEdit) openStudent(s) }}>
                     <td className="px-4 py-3 text-text-tertiary">{i + 1}</td>
                     <td className="px-4 py-2">
                       {s.photo_url ? (
@@ -318,7 +338,7 @@ export default function StudentsView() {
       </div>
       )}
 
-      {selectedStudent && <StudentModal student={selectedStudent} onClose={() => setSelectedStudent(null)} onUpdated={(s) => { setSelectedStudent(s); refetch() }} />}
+      {selectedStudent && <StudentModal student={selectedStudent} onClose={() => openStudent(null)} onUpdated={(s) => { setSelectedStudent(s); refetch() }} />}
     </div>
   )
 }

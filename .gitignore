@@ -2,3 +2,5 @@ node_modules/
 .next/
 .claude/worktrees/
 tsconfig.tsbuildinfo
+.env
+.env*.local

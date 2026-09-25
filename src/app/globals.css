@@ -2,46 +2,85 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════
+   DESIGN TOKENS — paper, ink, one accent
+   Every colour utility in tailwind.config.ts reads one of these triples, so
+   the light and dark palettes are defined here and nowhere else. Values are
+   "r g b" so Tailwind's opacity modifiers (bg-accent/15) keep working.
+   ═══════════════════════════════════════════════════ */
 :root {
-  --font-display: var(--font-inter), 'Inter', -apple-system, sans-serif;
-  --font-body: var(--font-inter), 'Inter', -apple-system, sans-serif;
+  color-scheme: light;
+  --paper: 245 241 232;      /* page */
+  --paper-2: 237 231 218;    /* panels, table heads */
+  --paper-3: 227 220 203;    /* tracks, disabled */
+  --white: 251 248 242;      /* raised surfaces: cards, modals, inputs */
+  --ink: 27 24 18;
+  --ink-2: 79 74 63;
+  --ink-3: 133 125 110;
+  --ink-block: 31 27 20;     /* dark panels that used to be navy */
+  --rule: 216 208 190;
+  --rule-2: 196 187 166;
+  --accent: 138 42 43;       /* oxblood: active nav, primary button, links */
+  --accent-2: 110 30 31;     /* hover */
+  --accent-soft: 241 220 218;
+  --good: 46 107 58;   --good-soft: 220 233 214;
+  --warn: 154 106 18;  --warn-soft: 245 231 194;
+  --bad: 160 50 46;    --bad-soft: 243 217 213;
+  --info: 47 92 138;   --info-soft: 217 228 240;
+  --lily: 201 138 152; --camellia: 180 142 110; --daisy: 201 185 74;
+  --sunflower: 94 168 156; --marigold: 95 134 176; --snapdragon: 141 125 181;
+  --font-serif-stack: var(--font-serif), 'Iowan Old Style', Georgia, serif;
+  --font-sans-stack: var(--font-sans), var(--font-kr), system-ui, -apple-system, sans-serif;
+  /* Kept for older components that read the old variables. */
+  --font-display: var(--font-serif-stack);
+  --font-body: var(--font-sans-stack);
+}
+html.dark {
+  color-scheme: dark;
+  --paper: 22 20 15;
+  --paper-2: 31 28 21;
+  --paper-3: 42 38 29;
+  --white: 31 28 21;
+  --ink: 237 230 214;
+  --ink-2: 194 185 165;
+  --ink-3: 142 133 116;
+  --ink-block: 12 11 8;
+  --rule: 51 46 36;
+  --rule-2: 74 67 51;
+  --accent: 217 115 111;
+  --accent-2: 232 140 136;
+  --accent-soft: 58 35 33;
+  --good: 127 191 134;  --good-soft: 31 49 34;
+  --warn: 216 174 78;   --warn-soft: 58 47 20;
+  --bad: 224 122 114;   --bad-soft: 62 34 32;
+  --info: 127 166 214;  --info-soft: 31 44 59;
 }
 
 body {
-  font-family: var(--font-body);
-  background-color: #E8ECF1;
-  color: #1A1F2E;
+  font-family: var(--font-sans-stack);
+  background-color: rgb(var(--paper));
+  color: rgb(var(--ink));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s, color 0.2s;
+  font-variant-numeric: tabular-nums;
 }
+h1, h2, .font-display { font-family: var(--font-serif-stack); letter-spacing: -0.01em; }
+h1, h2 { font-weight: 500; text-wrap: balance; }
+::selection { background: rgb(var(--accent) / 0.18); }
 
 /* ═══════════════════════════════════════════════════
-   DARK MODE
+   DARK MODE — raw palette remaps
+   Semantic tokens (bg-surface, text-navy, border-border …) switch through the
+   variables above and need nothing here. This block only re-tints the raw
+   Tailwind hues (bg-blue-50, text-green-700 …) that older screens still use;
+   it shrinks as each screen is rebuilt on tokens.
    ═══════════════════════════════════════════════════ */
-html.dark body {
-  background-color: #0f1419;
-  color: #e2e8f0;
-}
-html.dark .bg-surface { background-color: #1a2332 !important; }
-html.dark .bg-surface-alt { background-color: #1f2937 !important; }
-html.dark .bg-white { background-color: #1a2332 !important; }
-html.dark .border-border { border-color: #2d3748 !important; }
-html.dark .text-navy { color: #91ADC8 !important; }
-html.dark .text-text-primary { color: #e2e8f0 !important; }
-html.dark .text-text-secondary { color: #94a3b8 !important; }
-html.dark .text-text-tertiary { color: #64748b !important; }
-html.dark .bg-navy { background-color: #647FBC !important; }
-html.dark .bg-navy-dark { background-color: #141c28 !important; }
-html.dark .table-row-hover:hover td { background-color: rgba(255,255,255,0.03) !important; }
-html.dark .score-input { background: #1a2332; border-color: #2d3748; color: #e2e8f0; }
-html.dark .score-input.has-value { background: #1f2937; border-color: #91ADC8; }
 html.dark input, html.dark textarea, html.dark select {
-  background-color: #1a2332; color: #e2e8f0; border-color: #2d3748;
+  background-color: rgb(var(--white)); color: rgb(var(--ink)); border-color: rgb(var(--rule-2));
 }
-html.dark .bg-gold\/15 { background-color: rgba(232,197,71,0.2) !important; }
-html.dark ::-webkit-scrollbar-thumb { background: #374151; }
-html.dark ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+html.dark option { background-color: rgb(var(--white)); color: rgb(var(--ink)); }
+html.dark .shadow-sm, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 0 0 1px rgb(var(--rule)), 0 8px 24px rgba(0,0,0,0.5) !important; }
+html.dark .table-row-hover:hover td { background-color: rgb(var(--ink) / 0.04) !important; }
 
 /* Dark mode -- accent/status backgrounds */
 html.dark .bg-accent-light { background-color: #1a2a3d !important; }
@@ -51,8 +90,8 @@ html.dark .bg-red-50 { background-color: #2a1619 !important; }
 html.dark .bg-amber-50, html.dark .bg-yellow-50 { background-color: #2a2414 !important; }
 html.dark .bg-purple-50 { background-color: #221a30 !important; }
 html.dark .bg-pink-50 { background-color: #2a1a24 !important; }
-html.dark .bg-gray-50 { background-color: #1f2937 !important; }
-html.dark .bg-gray-100 { background-color: #1f2937 !important; }
+html.dark .bg-gray-50 { background-color: #2A261D !important; }
+html.dark .bg-gray-100 { background-color: #2A261D !important; }
 
 /* Dark mode -- status text colors */
 html.dark .text-blue-700, html.dark .text-blue-800 { color: #60a5fa !important; }
@@ -80,12 +119,12 @@ html.dark .bg-blue-100 { background-color: #17233a !important; }
 html.dark .bg-purple-100 { background-color: #221a30 !important; }
 
 /* Dark mode -- misc */
-html.dark .bg-surface-alt\/50 { background-color: rgba(31,41,55,0.5) !important; }
+html.dark .bg-surface-alt\/50 { background-color: rgba(42,38,29,0.5) !important; }
 html.dark .bg-black\/40 { background-color: rgba(0,0,0,0.6) !important; }
 html.dark .shadow-sm, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important; }
 html.dark .shadow-neu-raised { box-shadow: 4px 4px 10px rgba(0,0,0,0.5), -4px -4px 10px rgba(50,60,80,0.3) !important; }
 html.dark .shadow-neu-inset { box-shadow: inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(50,60,80,0.2) !important; }
-html.dark option { background-color: #1a2332; color: #e2e8f0; }
+html.dark option { background-color: #1F1C15; color: #EDE6D6; }
 
 /* ───────────────────────────────────────────────────
    Dark mode -- gap fill
@@ -97,9 +136,9 @@ html.dark option { background-color: #1a2332; color: #e2e8f0; }
    ─────────────────────────────────────────────────── */
 
 /* Dark text -> light (neutrals) */
-html.dark .text-gray-900, html.dark .text-gray-800 { color: #e2e8f0 !important; }
-html.dark .text-gray-700, html.dark .text-slate-700 { color: #cbd5e1 !important; }
-html.dark .text-gray-600, html.dark .text-slate-600 { color: #94a3b8 !important; }
+html.dark .text-gray-900, html.dark .text-gray-800 { color: #EDE6D6 !important; }
+html.dark .text-gray-700, html.dark .text-slate-700 { color: #D9D1BE !important; }
+html.dark .text-gray-600, html.dark .text-slate-600 { color: #C2B9A5 !important; }
 
 /* Dark text -> light (hues) */
 html.dark .text-blue-900 { color: #60a5fa !important; }
@@ -116,7 +155,7 @@ html.dark .text-orange-600, html.dark .text-orange-700,
 html.dark .text-orange-800, html.dark .text-orange-900 { color: #fb923c !important; }
 
 /* Light tint backgrounds -> dark */
-html.dark .bg-gray-200, html.dark .bg-slate-50, html.dark .bg-slate-100 { background-color: #1f2937 !important; }
+html.dark .bg-gray-200, html.dark .bg-slate-50, html.dark .bg-slate-100 { background-color: #2A261D !important; }
 html.dark .bg-blue-200 { background-color: #1b2a45 !important; }
 html.dark .bg-green-200 { background-color: #17331f !important; }
 html.dark .bg-red-200 { background-color: #331a1e !important; }
@@ -131,7 +170,7 @@ html.dark .bg-orange-50, html.dark .bg-orange-100 { background-color: #2a1e14 !i
 /* Pale borders -> dark */
 html.dark .border-gray-100, html.dark .border-gray-200,
 html.dark .border-gray-300, html.dark .border-gray-400,
-html.dark .border-slate-200 { border-color: #2d3748 !important; }
+html.dark .border-slate-200 { border-color: #3A3427 !important; }
 html.dark .border-blue-100, html.dark .border-blue-300,
 html.dark .border-blue-400, html.dark .border-sky-200 { border-color: #1e3a5f !important; }
 html.dark .border-green-100, html.dark .border-green-300, html.dark .border-green-400,
@@ -145,7 +184,7 @@ html.dark .border-pink-200 { border-color: #3d1f2e !important; }
 html.dark .border-orange-200 { border-color: #3d2a14 !important; }
 
 /* Focus rings + dividers -> dark */
-html.dark .ring-gray-300, html.dark .ring-gray-400 { --tw-ring-color: #2d3748 !important; }
+html.dark .ring-gray-300, html.dark .ring-gray-400 { --tw-ring-color: #3A3427 !important; }
 html.dark .ring-blue-300 { --tw-ring-color: #1e3a5f !important; }
 html.dark .ring-green-200, html.dark .ring-green-300,
 html.dark .ring-green-400, html.dark .ring-green-500 { --tw-ring-color: #1a3d28 !important; }
@@ -173,8 +212,8 @@ html.dark .bg-amber-100\/50 { background-color: rgba(42,36,20,0.5) !important; }
 html.dark .bg-amber-100\/60 { background-color: rgba(42,36,20,0.6) !important; }
 html.dark .bg-amber-100\/80 { background-color: rgba(42,36,20,0.8) !important; }
 html.dark .bg-amber-200\/80 { background-color: rgba(51,44,24,0.8) !important; }
-html.dark .bg-gray-50\/30 { background-color: rgba(31,41,55,0.3) !important; }
-html.dark .bg-gray-50\/50 { background-color: rgba(31,41,55,0.5) !important; }
+html.dark .bg-gray-50\/30 { background-color: rgba(42,38,29,0.3) !important; }
+html.dark .bg-gray-50\/50 { background-color: rgba(42,38,29,0.5) !important; }
 html.dark .bg-green-50\/30 { background-color: rgba(20,38,26,0.3) !important; }
 html.dark .bg-green-50\/50 { background-color: rgba(20,38,26,0.5) !important; }
 html.dark .bg-red-50\/20 { background-color: rgba(42,22,25,0.2) !important; }
@@ -200,10 +239,10 @@ html.dark .to-indigo-50\/80 { --tw-gradient-to: rgba(30,27,51,0.8) var(--tw-grad
 /* ═══════════════════════════════════════════════════
    SCROLLBARS
    ═══════════════════════════════════════════════════ */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #B8BFC8; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #8892A2; }
+::-webkit-scrollbar-thumb { background: rgb(var(--rule-2)); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--ink-3)); }
 
 /* ═══════════════════════════════════════════════════
    NUMBER INPUT SPINNERS
@@ -218,238 +257,118 @@ input[type="number"] { -moz-appearance: textfield; }
 @media print {
   .no-print { display: none !important; }
   .print-only { display: block !important; }
-  body { background: white; }
+  body { background: white; color: #1B1812; }
 }
 
 /* ═══════════════════════════════════════════════════
    ANIMATIONS
    ═══════════════════════════════════════════════════ */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes slideUp {
-  from { transform: translateY(12px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-@keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 .animate-fade-in { animation: fadeIn 0.2s ease-out; }
 .animate-slide-up { animation: slideUp 0.3s ease-out; }
 .animate-slide-in { animation: slideIn 0.25s ease-out; }
 
-/* ─── Table styling ─────────────────────────────────── */
-.table-row-hover:hover td { background-color: rgba(100,127,188,0.04); }
+/* ─── Tables ───────────────────────────────────────── */
+.table-row-hover:hover td { background-color: rgb(var(--ink) / 0.03); }
 .table-row-hover { transition: background-color 0.15s ease; }
-.table-striped tbody tr:nth-child(even) td { background-color: rgba(100,127,188,0.02); }
+.table-striped tbody tr:nth-child(even) td { background-color: rgb(var(--ink) / 0.02); }
 
-/* ─── Focus ring ───────────────────────────────────── */
-.focus-ring:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px #E8ECF1, 0 0 0 4px #647FBC;
-}
-
-/* ─── Card hover elevation ─────────────────────────── */
-.card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(100,127,188,0.12);
-}
-
-/* ─── Input focus glow ─────────────────────────────── */
+/* ─── Focus ────────────────────────────────────────── */
+.focus-ring:focus { outline: none; box-shadow: 0 0 0 2px rgb(var(--paper)), 0 0 0 4px rgb(var(--accent)); }
+:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
 input:not([type="checkbox"]):not([type="radio"]):not(.score-input):focus,
-textarea:focus,
-select:focus {
-  border-color: #647FBC !important;
-  box-shadow: 0 0 0 3px rgba(100,127,188,0.1);
+textarea:focus, select:focus {
+  border-color: rgb(var(--accent)) !important;
+  box-shadow: 0 0 0 3px rgb(var(--accent) / 0.12);
   outline: none;
 }
+
+/* ─── Card hover (kept for older screens; no lift, just a firmer rule) ── */
+.card-hover { transition: box-shadow 0.15s ease; }
+.card-hover:hover { box-shadow: 0 0 0 1px rgb(var(--rule-2)); }
 
 /* ─── Loading skeleton ─────────────────────────────── */
 .skeleton {
-  background: linear-gradient(90deg, #C8CED8 25%, #DFE4EB 50%, #C8CED8 75%);
+  background: linear-gradient(90deg, rgb(var(--paper-3)) 25%, rgb(var(--paper-2)) 50%, rgb(var(--paper-3)) 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.8s ease-in-out infinite;
-  border-radius: 6px;
+  border-radius: 3px;
 }
-@keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
+@keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
 /* ─── Success flash ────────────────────────────────── */
-@keyframes success-flash {
-  0% { background-color: transparent; }
-  15% { background-color: rgba(5, 150, 105, 0.08); }
-  100% { background-color: transparent; }
-}
+@keyframes success-flash { 0% { background-color: transparent; } 15% { background-color: rgb(var(--good) / 0.12); } 100% { background-color: transparent; } }
 .animate-success-flash { animation: success-flash 1.2s ease-out; }
 
-/* ─── Checkmark draw animation ─────────────────────── */
-@keyframes check-draw {
-  0% { stroke-dashoffset: 24; }
-  100% { stroke-dashoffset: 0; }
-}
-.animate-check-draw {
-  stroke-dasharray: 24;
-  stroke-dashoffset: 24;
-  animation: check-draw 0.4s ease-out 0.1s forwards;
-}
+/* ─── Checkmark draw ───────────────────────────────── */
+@keyframes check-draw { 0% { stroke-dashoffset: 24; } 100% { stroke-dashoffset: 0; } }
+.animate-check-draw { stroke-dasharray: 24; stroke-dashoffset: 24; animation: check-draw 0.4s ease-out 0.1s forwards; }
 
-/* ─── Toast slide + progress ───────────────────────── */
-@keyframes toast-slide-in {
-  from { transform: translateX(120%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-@keyframes toast-slide-out {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(120%); opacity: 0; }
-}
-@keyframes toast-progress {
-  from { transform: scaleX(1); }
-  to { transform: scaleX(0); }
-}
+/* ─── Toast ────────────────────────────────────────── */
+@keyframes toast-slide-in { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes toast-slide-out { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+@keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 .animate-toast-in { animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .animate-toast-out { animation: toast-slide-out 0.25s ease-in forwards; }
 
 /* ─── Page transition ──────────────────────────────── */
-@keyframes page-enter {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-page-enter { animation: page-enter 0.25s ease-out; }
+@keyframes page-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.animate-page-enter { animation: page-enter 0.2s ease-out; }
 
 /* ─── Sticky save bar ─────────────────────────────── */
 .sticky-save-bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 40;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.85);
-  border-top: 1px solid rgba(200, 206, 216, 0.6);
+  position: sticky; bottom: 0; z-index: 40;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  background: rgb(var(--paper) / 0.88);
+  border-top: 1px solid rgb(var(--rule));
   padding: 12px 24px;
 }
-html.dark .sticky-save-bar {
-  background: rgba(26, 35, 50, 0.85);
-  border-top-color: rgba(45, 55, 72, 0.6);
-}
 
-/* ─── Smooth scroll + selection ───────────────────── */
 html { scroll-behavior: smooth; }
-::selection {
-  background: rgba(100, 127, 188, 0.15);
-  color: inherit;
-}
 
 /* ═══════════════════════════════════════════════════
-   NEUMORPHIC UTILITIES
+   LEGACY "NEUMORPHIC" CLASSES
+   The names stay so older screens keep working; the look is now a flat
+   panel with a hairline, like everything else.
    ═══════════════════════════════════════════════════ */
-
-/* Raised card on #E8ECF1 surface */
-.neu-card {
-  background: #E8ECF1;
-  border-radius: 16px;
-  box-shadow: 6px 6px 12px rgba(163,174,191,0.4), -6px -6px 12px rgba(255,255,255,0.7);
-}
-
-/* Recessed input */
+.neu-card { background: rgb(var(--white)); border: 1px solid rgb(var(--rule-2)); border-radius: 6px; }
 .neu-input {
-  background: #E8ECF1;
-  border: none;
-  border-radius: 10px;
-  box-shadow: inset 3px 3px 6px rgba(163,174,191,0.3), inset -3px -3px 6px rgba(255,255,255,0.6);
-  padding: 12px 16px;
-  font-size: 14px;
-  color: #1A1F2E;
-  outline: none;
-  transition: box-shadow 0.2s ease;
+  background: rgb(var(--white)); border: 1px solid rgb(var(--rule-2)); border-radius: 4px;
+  padding: 10px 14px; font-size: 14px; color: rgb(var(--ink)); outline: none;
 }
-.neu-input:focus {
-  box-shadow: inset 3px 3px 6px rgba(100,127,188,0.25), inset -3px -3px 6px rgba(255,255,255,0.7);
-}
-.neu-input::placeholder {
-  color: #8892A2;
-}
-
-/* Raised button */
+.neu-input::placeholder { color: rgb(var(--ink-3)); }
 .neu-btn {
-  background: #E8ECF1;
-  border: none;
-  border-radius: 12px;
-  box-shadow: 3px 3px 6px rgba(163,174,191,0.35), -3px -3px 6px rgba(255,255,255,0.6);
-  padding: 12px 24px;
-  font-weight: 600;
-  color: #1A1F2E;
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.1s ease;
+  background: rgb(var(--white)); border: 1px solid rgb(var(--rule-2)); border-radius: 4px;
+  padding: 10px 20px; font-weight: 500; color: rgb(var(--ink)); cursor: pointer;
 }
-.neu-btn:hover {
-  box-shadow: 4px 4px 8px rgba(163,174,191,0.4), -4px -4px 8px rgba(255,255,255,0.7);
-}
-.neu-btn:active {
-  box-shadow: inset 2px 2px 4px rgba(163,174,191,0.3), inset -2px -2px 4px rgba(255,255,255,0.5);
-  transform: scale(0.98);
-}
-
-/* Primary gold button */
+.neu-btn:hover { border-color: rgb(var(--ink-3)); }
 .neu-btn-primary {
-  background: linear-gradient(135deg, #E8C547, #F0D76A);
-  color: #354A7C;
-  border: none;
-  border-radius: 12px;
-  box-shadow: 3px 3px 6px rgba(163,174,191,0.35), -3px -3px 6px rgba(255,255,255,0.5);
-  padding: 12px 24px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.1s ease;
+  background: rgb(var(--accent)); color: rgb(var(--white)); border: 1px solid rgb(var(--accent));
+  border-radius: 4px; padding: 10px 20px; font-weight: 600; cursor: pointer;
 }
-.neu-btn-primary:hover {
-  box-shadow: 4px 4px 8px rgba(163,174,191,0.4), -4px -4px 8px rgba(255,255,255,0.6);
-}
-.neu-btn-primary:active {
-  box-shadow: inset 2px 2px 4px rgba(180,160,50,0.3), inset -2px -2px 4px rgba(255,255,255,0.4);
-  transform: scale(0.98);
-}
+.neu-btn-primary:hover { background: rgb(var(--accent-2)); }
+html.dark .neu-btn-primary { color: rgb(var(--paper)); }
 
 /* ═══════════════════════════════════════════════════
    SCORE INPUT
    ═══════════════════════════════════════════════════ */
 .score-input {
-  width: 72px;
-  text-align: center;
-  border: 1.5px solid #C8CED8;
-  border-radius: 6px;
-  padding: 6px 4px;
-  font-size: 14px;
-  font-weight: 500;
+  width: 72px; text-align: center;
+  border: 1px solid rgb(var(--rule-2)); border-radius: 4px;
+  background: rgb(var(--white)); color: rgb(var(--ink));
+  padding: 6px 4px; font-size: 14px; font-weight: 500;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.score-input:focus {
-  outline: none;
-  border-color: #E8C547;
-  box-shadow: 0 0 0 3px rgba(232, 197, 71, 0.15);
-}
-.score-input.has-value { border-color: #647FBC; background: #F0F3F8; }
-.score-input.error { border-color: #DC2626; background: #FEF2F2; }
+.score-input:focus { outline: none; border-color: rgb(var(--accent)); box-shadow: 0 0 0 3px rgb(var(--accent) / 0.12); }
+.score-input.has-value { border-color: rgb(var(--ink-3)); background: rgb(var(--paper-2)); }
+.score-input.error { border-color: rgb(var(--bad)); background: rgb(var(--bad-soft)); }
 
 /* ═══════════════════════════════════════════════════
-   SIDEBAR ICON HOVER
+   EDITORIAL PRIMITIVES — used by the rebuilt screens
    ═══════════════════════════════════════════════════ */
-@keyframes icon-wiggle {
-  0% { transform: rotate(0deg); }
-  15% { transform: rotate(-12deg); }
-  30% { transform: rotate(10deg); }
-  45% { transform: rotate(-8deg); }
-  60% { transform: rotate(6deg); }
-  75% { transform: rotate(-3deg); }
-  100% { transform: rotate(0deg); }
-}
-.nav-icon-wiggle:hover svg,
-.nav-icon-wiggle:hover .nav-icon {
-  animation: icon-wiggle 0.5s ease-in-out;
-}
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--ink-3)); }
+.eyebrow-accent { color: rgb(var(--accent)); }
+.rule { border-top: 1px solid rgb(var(--rule)); }
+.rule-2 { border-top: 1px solid rgb(var(--rule-2)); }

@@ -1,6 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
+import { pathForView } from '@/lib/routes'
 import { Teacher, Semester, Language } from '@/types'
 import { translations } from '@/i18n/translations'
 import { canManageSemesters } from '@/lib/utils'
@@ -51,7 +53,15 @@ const AppContext = createContext<AppContextType | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null)
-  const [language, setLanguage] = useState<Language>('en')
+  const [language, setLanguageState] = useState<Language>('en')
+  // Remembered, so 한국어 mode survives a reload.
+  const setLanguage = useCallback((l: Language) => {
+    setLanguageState(l)
+    try { localStorage.setItem('daewoo_lang', l) } catch {}
+  }, [])
+  useEffect(() => {
+    try { const saved = localStorage.getItem('daewoo_lang'); if (saved === 'ko' || saved === 'en') setLanguageState(saved) } catch {}
+  }, [])
   const [semesters, setSemesters] = useState<Semester[]>([])
   const [semestersLoading, setSemestersLoading] = useState(true)
   const [toast, setToast] = useState<string | null>(null)
@@ -122,9 +132,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       : activeSemester ? [activeSemester] : semesters.slice(0, 1)
   ), [canSwitchSemester, semesters, activeSemester])
 
+  // Every view has an address now. The target's extras (student, filter) are
+  // still published through pendingNavigation for views that read them.
+  const router = useRouter()
   const navigateTo = useCallback((target: NavigationTarget) => {
     setPendingNavigation(target)
-  }, [])
+    router.push(pathForView(target.view, { studentId: target.preSelectedStudent }))
+  }, [router])
 
   const clearNavigation = useCallback(() => {
     setPendingNavigation(null)
