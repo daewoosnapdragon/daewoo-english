@@ -1,12 +1,14 @@
 'use client'
 
+import StandardsHeatMap from './StandardsHeatMap'
+
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { BookOpen, Users2, Loader2, Info, Save, Globe2, Trash2 } from 'lucide-react'
+import { BookOpen, Users2, Loader2, Info, Save, Globe2, Trash2, Grid3x3 } from 'lucide-react'
 import { CCSS_STANDARDS, CCSS_DOMAINS, type CCSSDomain } from './ccss-standards'
 import { invalidateWIDACache } from '@/components/shared/WIDABadge'
 import WIDAGuide from './WIDAGuide'
@@ -50,7 +52,7 @@ function getClusters(domain: CCSSDomain, grade: number) {
 // ═══════════════════════════════════════════════════════════════════
 export default function CurriculumView() {
   const { language } = useApp()
-  const [view, setView] = useState<'standards' | 'guide' | 'quickcheck'>('standards')
+  const [view, setView] = useState<'mastery' | 'standards' | 'guide' | 'quickcheck'>('mastery')
 
   return (
     <div className="animate-fade-in">
@@ -58,7 +60,7 @@ export default function CurriculumView() {
         <h2 className="font-display text-2xl font-bold text-navy">{language === 'ko' ? '표준' : 'Standards'}</h2>
         <p className="text-[13px] text-text-secondary mt-1">CCSS standards tracking and WIDA/CCSS reference guide</p>
         <div className="flex gap-1 mt-4">
-          {([['standards', 'Standards Checklist', BookOpen], ['guide', 'WIDA/CCSS Guide', Globe2]] as const).map(([id, label, Icon]) => (
+          {([['mastery', 'Mastery', Grid3x3], ['standards', 'Standards Checklist', BookOpen], ['guide', 'WIDA/CCSS Guide', Globe2]] as const).map(([id, label, Icon]) => (
             <button key={id} onClick={() => setView(id as any)}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium transition-all ${view === id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
               <Icon size={15} /> {label}
@@ -67,6 +69,7 @@ export default function CurriculumView() {
         </div>
       </div>
       <div className="px-8 py-6">
+        {view === 'mastery' && <StandardsHeatMap />}
         {view === 'standards' && <ClusterTracker />}
         {view === 'guide' && <WIDAGuide />}
       </div>
