@@ -529,7 +529,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                 <button onClick={() => setSheetMode(false)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '점수 목록으로' : 'Score list'}</button>
               </div>
             </div>
-            <RubricScoreSheet key={selectedAssessment.id + ':' + (selectedAssessment.rubric.criteria.length)} assessment={selectedAssessment as any} students={students} onSaved={onSheetSaved} />
+            <RubricScoreSheet key={selectedAssessment.id + ':' + (selectedAssessment.rubric.criteria.length)} assessment={selectedAssessment as any} students={students} onSaved={onSheetSaved} onExit={() => setSheetMode(false)} />
           </div>
         ) : hasQuestionMap && sheetMode ? (
           <div className="p-4">

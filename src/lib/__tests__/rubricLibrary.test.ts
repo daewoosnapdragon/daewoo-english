@@ -25,17 +25,18 @@ describe('rubric library', () => {
 })
 
 describe('rubricScore', () => {
-  it('scales marked levels to the total and leaves N/A out', () => {
-    // 6 criteria, total 24: all 4s → 24; all 3s → 18
+  it('adds the levels up, out of 4 per criterion, scaled to the total', () => {
     expect(rubricScore({ a: 4, b: 4, c: 4, d: 4, e: 4, f: 4 }, 6, 24)).toBe(24)
     expect(rubricScore({ a: 3, b: 3, c: 3, d: 3, e: 3, f: 3 }, 6, 24)).toBe(18)
-    // one N/A: 5 marked, all 4s → still full marks
-    expect(rubricScore({ a: 4, b: 4, c: 4, d: 4, e: 4, f: 0 }, 6, 24)).toBe(24)
-    // half marks
-    expect(rubricScore({ a: 2, b: 2, c: 0 }, 3, 12)).toBe(6)
+    // a 0 is a real zero
+    expect(rubricScore({ a: 4, b: 4, c: 4, d: 4, e: 4, f: 0 }, 6, 24)).toBe(20)
+    expect(rubricScore({ a: 2, b: 2, c: 0 }, 3, 12)).toBe(4)
+    // a different total scales
+    expect(rubricScore({ a: 2, b: 2 }, 2, 100)).toBe(50)
   })
-  it('is null when nothing is marked', () => {
+  it('is null when nothing is marked, and partial while marking', () => {
     expect(rubricScore({}, 6, 24)).toBeNull()
-    expect(rubricScore({ a: 0 }, 6, 24)).toBeNull()
+    expect(rubricScore({ a: 0 }, 6, 24)).toBe(0)
+    expect(rubricScore({ a: 4 }, 6, 24)).toBe(4)
   })
 })

@@ -1,5 +1,6 @@
 // ─── Rubric library ──────────────────────────────────────────────
-// A rubric is a chosen set of criteria on a 1–4 scale (0 = not applicable).
+// A rubric is a chosen set of criteria on a 0–4 scale: 0 is no evidence yet,
+// 1–4 are the written levels. Every criterion counts toward the total.
 // Each criterion carries four level descriptors in two wordings, K–2 and 3–5,
 // written so a line can double as a comment to a student or a parent, and a
 // standard code with the grade left as {g}. Templates are named sets of
@@ -7,8 +8,10 @@
 // save the result to the rubrics table; these are the starting points.
 
 export type Band = 'k2' | 'g35'
-export const LEVEL_LABELS: Record<number, string> = { 0: 'N/A', 1: 'Needs guidance', 2: 'Developing', 3: 'Meets', 4: 'Exceeds' }
-export const LEVEL_LABELS_KO: Record<number, string> = { 0: '해당 없음', 1: '지도 필요', 2: '발전 중', 3: '기준 충족', 4: '기준 초과' }
+export const LEVEL_LABELS: Record<number, string> = { 0: 'No evidence', 1: 'Needs guidance', 2: 'Developing', 3: 'Meets', 4: 'Exceeds' }
+export const LEVEL_ZERO_TEXT = 'Not attempted, or nothing to assess yet.'
+export const LEVEL_ZERO_TEXT_KO = '시도하지 않았거나 평가할 내용이 없음.'
+export const LEVEL_LABELS_KO: Record<number, string> = { 0: '없음', 1: '지도 필요', 2: '발전 중', 3: '기준 충족', 4: '기준 초과' }
 
 export interface LibraryCriterion {
   key: string
@@ -159,12 +162,15 @@ export function buildFromTemplate(templateKey: string, grade: number): { name: s
   const band = bandForGrade(grade)
   return { name: t.name, task: t.key, band, criteria: t.criteria.map(k => criterionFor(k, band, grade)).filter(Boolean) as RubricCriterion[] }
 }
-/** Scaled score for a set of levels: N/A criteria are left out, and the rest are scaled to the assessment total. */
+/**
+ * Score for a set of levels. Every criterion is out of 4 and a 0 is a real
+ * zero, so the score is the marked levels added up, scaled to the assessment
+ * total (which is 4 per criterion unless someone changed it). Unmarked
+ * criteria contribute nothing until they are marked.
+ */
 export function rubricScore(levels: Record<string, number>, criteriaCount: number, maxScore: number): number | null {
-  const vals = Object.values(levels).filter(v => v > 0)
-  if (vals.length === 0) return null
+  const vals = Object.values(levels).filter(v => v != null && v >= 0)
+  if (vals.length === 0 || criteriaCount === 0) return null
   const raw = vals.reduce((a, b) => a + b, 0)
-  const possible = vals.length * 4
-  void criteriaCount
-  return Math.round((raw / possible) * maxScore * 100) / 100
+  return Math.round((raw / (criteriaCount * 4)) * maxScore * 100) / 100
 }

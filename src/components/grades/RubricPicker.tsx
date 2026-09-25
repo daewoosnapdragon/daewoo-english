@@ -80,7 +80,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
     <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-4xl max-h-[85vh] grid grid-rows-[auto_minmax(0,1fr)_auto]" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-center justify-between">
-          <div><h3 className="font-display text-[22px] leading-none text-ink">{lang === 'ko' ? '루브릭 선택' : 'Choose a rubric'}</h3><p className="text-[12px] text-ink-3 mt-1">{lang === 'ko' ? `${grade}학년 · 1–4 척도, 0 = 해당 없음` : `Grade ${grade} · levels 1–4, 0 for N/A`}</p></div>
+          <div><h3 className="font-display text-[22px] leading-none text-ink">{lang === 'ko' ? '루브릭 선택' : 'Choose a rubric'}</h3><p className="text-[12px] text-ink-3 mt-1">{lang === 'ko' ? `${grade}학년 · 0–4 척도` : `Grade ${grade} · each criterion 0–4`}</p></div>
           <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={16} /></button>
         </div>
         <div className="grid grid-cols-[280px_minmax(0,1fr)] min-h-0">

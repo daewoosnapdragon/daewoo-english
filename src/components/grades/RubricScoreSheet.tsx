@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
-import { LEVEL_LABELS, LEVEL_LABELS_KO, rubricScore, type RubricCriterion } from '@/components/curriculum/rubric-library'
-import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO, rubricScore, type RubricCriterion } from '@/components/curriculum/rubric-library'
+import { Check, ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react'
 
 // ─── Rubric scoring ──────────────────────────────────────────────
-// Reads like the answer sheet: students on the left with totals, one paper in
-// the middle with a criterion per row and 0–4 as a segment, the level's
-// descriptor shown for the mark you chose, and a rail with the class average
-// per criterion so a class-wide weakness shows before the last paper.
-// Levels are saved per criterion on the grade row; the score is derived.
+// A full-screen page, no scrolling: students on the left, the rubric in the
+// middle with one row per criterion and five buttons across it, each holding
+// the number, its label and the descriptor, so the whole rubric is readable
+// while you mark. A 0 is a real zero. The rail shows the class average per
+// criterion so a class-wide weakness shows before the last paper.
 
 interface StudentRow { id: string; english_name: string; korean_name: string }
 type Flags = { absent: boolean; exempt: boolean }
@@ -20,9 +20,10 @@ interface Props {
   assessment: { id: string; name: string; max_score: number; rubric: { name: string; criteria: RubricCriterion[] } }
   students: StudentRow[]
   onSaved?: () => void
+  onExit?: () => void
 }
 
-export default function RubricScoreSheet({ assessment, students, onSaved }: Props) {
+export default function RubricScoreSheet({ assessment, students, onSaved, onExit }: Props) {
   const { currentTeacher, language: lang, showToast } = useApp()
   const criteria = assessment.rubric.criteria
   const [levels, setLevels] = useState<Record<string, Record<string, number>>>({})
@@ -36,6 +37,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved }: Prop
   const flagsRef = useRef(flags); flagsRef.current = flags
   const dirtyRef = useRef(dirty); dirtyRef.current = dirty
   const labels = lang === 'ko' ? LEVEL_LABELS_KO : LEVEL_LABELS
+  const zeroText = lang === 'ko' ? LEVEL_ZERO_TEXT_KO : LEVEL_ZERO_TEXT
 
   useEffect(() => {
     let cancelled = false
@@ -95,6 +97,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved }: Prop
     if (active && dirtyRef.current.has(active.id)) await saveStudents([active.id])
     setActiveIdx(idx); setRow(0)
   }
+  const exit = async () => { if (dirtyRef.current.size) await saveStudents(Array.from(dirtyRef.current)); onExit?.() }
 
   useEffect(() => {
     const id = setInterval(() => { if (dirtyRef.current.size) saveStudents(Array.from(dirtyRef.current)) }, 30_000)
@@ -107,6 +110,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved }: Prop
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key === 'Escape') { exit(); return }
       if (e.key === 'ArrowDown') { e.preventDefault(); setRow(r => Math.min(r + 1, criteria.length - 1)); return }
       if (e.key === 'ArrowUp') { e.preventDefault(); setRow(r => Math.max(r - 1, 0)); return }
       if (e.key === 'Tab' || e.key === 'Enter') { e.preventDefault(); goTo(e.shiftKey ? activeIdx - 1 : activeIdx + 1); return }
@@ -119,99 +123,106 @@ export default function RubricScoreSheet({ assessment, students, onSaved }: Prop
   })
 
   const classAvg = useMemo(() => criteria.map(c => {
-    const vals = students.map(s => levels[s.id]?.[c.key]).filter((v): v is number => v != null && v > 0)
+    const vals = students.map(s => levels[s.id]?.[c.key]).filter((v): v is number => v != null)
     return { key: c.key, label: c.label, n: vals.length, avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null }
   }), [criteria, students, levels])
 
   const doneCount = students.filter(s => complete(s.id)).length
-  const tone = (v: number) => v === 0 ? 'bg-paper-3 text-ink-2 border-rule-2' : v === 1 ? 'bg-bad text-white border-bad' : v === 2 ? 'bg-warn text-white border-warn' : v === 3 ? 'bg-good text-white border-good' : 'bg-ink text-paper border-ink'
-
-  if (loading) return <div className="p-10 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+  const tone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good border-good text-white' : 'bg-ink border-ink text-paper'
+  const isOff = active ? !!(flags[active.id]?.absent || flags[active.id]?.exempt) : false
 
   return (
-    <div>
-      <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-        <span className="text-[13px] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'} · <span className="text-ink-3">{assessment.rubric.name}</span></span>
-        <div className="flex items-center gap-2">
-          {dirty.size > 0 && <span className="text-[12px] text-warn">{dirty.size} {lang === 'ko' ? '명 미저장' : 'unsaved'}</span>}
-          <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? '모두 저장' : 'Save all'}</button>
-        </div>
+    <div className="fixed inset-0 z-[60] bg-paper flex flex-col">
+      {/* Top bar */}
+      <div className="h-12 px-5 border-b border-rule-2 bg-surface flex items-center gap-4 flex-shrink-0">
+        <button onClick={exit} className="inline-flex items-center gap-1.5 text-[12.5px] text-ink-2 hover:text-ink"><X size={14} />{lang === 'ko' ? '나가기' : 'Exit'}</button>
+        <span className="font-display text-[18px] leading-none text-ink truncate">{assessment.name}</span>
+        <span className="text-[12px] text-ink-3 truncate">{assessment.rubric.name} · {criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · /{assessment.max_score}</span>
+        <span className="ml-auto text-[12.5px] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'}</span>
+        {dirty.size > 0 && <span className="text-[12px] text-warn">{dirty.size} {lang === 'ko' ? '명 미저장' : 'unsaved'}</span>}
+        <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? '모두 저장' : 'Save all'}</button>
       </div>
-      <div className="grid grid-cols-[200px_minmax(0,1fr)_240px] border border-rule-2 rounded-lg overflow-hidden min-h-[420px]">
-        <div className="border-r border-rule-2 bg-paper-2 overflow-y-auto max-h-[70vh]">
-          {students.map((s, i) => {
-            const fl = flags[s.id]; const done = complete(s.id); const part = !done && marked(s.id) > 0; const sc = scoreOf(s.id)
-            return (
-              <button key={s.id} onClick={() => goTo(i)} className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[12.5px] border-b border-rule ${i === activeIdx ? 'bg-surface font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-surface/60'}`}>
-                <span className="truncate text-ink">{s.english_name}</span>
-                <span className={`tabular-nums text-[11.5px] ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : part ? 'text-warn' : 'text-ink-3'}`}>{fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done && sc != null ? `${sc} ✓` : part ? `${sc ?? ''} ~` : ''}</span>
-              </button>
-            )
-          })}
-        </div>
-        <div className="px-5 py-4 overflow-y-auto max-h-[70vh]">
-          {active && (
-            <>
-              <div className="flex items-baseline justify-between mb-3">
-                <h3 className="font-display text-[22px] leading-none text-ink">{active.english_name} <span className="font-sans text-[12px] text-ink-3 ml-1">{active.korean_name}</span></h3>
-                <div className="flex items-center gap-3">
-                  <span className="font-display text-[22px] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : (scoreOf(active.id) ?? '—')} <span className="font-sans text-[12px] text-ink-3">/ {assessment.max_score}</span></span>
-                  <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
-                  <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
+
+      {loading ? <div className="flex-1 flex items-center justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div> : (
+        <div className="flex-1 min-h-0 grid grid-cols-[210px_minmax(0,1fr)_230px]">
+          {/* Students */}
+          <div className="border-r border-rule-2 bg-paper-2 overflow-y-auto">
+            {students.map((s, i) => {
+              const fl = flags[s.id]; const done = complete(s.id); const part = !done && marked(s.id) > 0; const sc = scoreOf(s.id)
+              return (
+                <button key={s.id} onClick={() => goTo(i)} className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[12.5px] border-b border-rule ${i === activeIdx ? 'bg-surface font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-surface/60'}`}>
+                  <span className="truncate text-ink">{s.english_name}</span>
+                  <span className={`tabular-nums text-[11.5px] ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : part ? 'text-warn' : 'text-ink-3'}`}>{fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done && sc != null ? `${sc} ✓` : part ? `${sc ?? ''} ~` : ''}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* The rubric */}
+          <div className="min-h-0 flex flex-col px-6 py-3">
+            {active && (
+              <>
+                <div className="flex items-center justify-between gap-3 mb-2 flex-shrink-0">
+                  <h3 className="font-display text-[24px] leading-none text-ink">{active.english_name} <span className="font-sans text-[12px] text-ink-3 ml-1">{active.korean_name}</span></h3>
+                  <div className="flex items-center gap-3">
+                    <span className="font-display text-[24px] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : (scoreOf(active.id) ?? '—')} <span className="font-sans text-[12px] text-ink-3">/ {assessment.max_score}</span></span>
+                    <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
+                    <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
+                  </div>
                 </div>
-              </div>
-              {(flags[active.id]?.absent || flags[active.id]?.exempt) ? (
-                <p className="text-[13px] text-ink-3 py-6">{lang === 'ko' ? '결석/면제 처리됨. 점수를 표시하면 다시 채점됩니다.' : 'Marked absent or exempt. Choosing a level clears it.'}</p>
-              ) : (
-                <div className="divide-y divide-rule">
-                  {criteria.map((c, i) => {
-                    const v = mine[c.key]
-                    return (
-                      <div key={c.key} onClick={() => setRow(i)} className={`py-2.5 -mx-2 px-2 rounded ${row === i ? 'bg-paper-2' : ''}`}>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0"><span className="text-[14px] font-semibold text-ink">{c.label}</span>{c.standard && <span className="text-[11px] text-info ml-2">{c.standard}</span>}</div>
-                          <div className="flex gap-1.5">
-                            {[0, 1, 2, 3, 4].map(n => (
-                              <button key={n} onClick={e => { e.stopPropagation(); setRow(i); setLevel(c.key, n) }} title={labels[n]}
-                                className={`h-8 min-w-[34px] px-2 rounded border text-[12.5px] font-bold ${v === n ? tone(n) : 'border-rule-2 text-ink-2 hover:border-ink-3'}`}>{n === 0 ? 'N/A' : n}</button>
-                            ))}
+                {isOff ? (
+                  <p className="text-[13px] text-ink-3 py-6">{lang === 'ko' ? '결석/면제 처리됨. 점수를 표시하면 다시 채점됩니다.' : 'Marked absent or exempt. Choosing a level clears it.'}</p>
+                ) : (
+                  <div className="flex-1 min-h-0 grid gap-2 overflow-y-auto" style={{ gridTemplateRows: `repeat(${criteria.length}, minmax(${criteria.length > 7 ? '96px' : '0'}, 1fr))` }}>
+                    {criteria.map((c, i) => {
+                      const v = mine[c.key]
+                      return (
+                        <div key={c.key} onClick={() => setRow(i)} className={`min-h-0 grid grid-rows-[auto_minmax(0,1fr)] gap-1 rounded px-2 py-1.5 -mx-2 ${row === i ? 'bg-paper-2' : ''}`}>
+                          <div className="flex items-baseline gap-2"><span className="text-[14px] font-semibold text-ink">{c.label}</span>{c.standard && <span className="text-[11px] text-info">{c.standard}</span>}{row === i && <span className="eyebrow eyebrow-accent ml-auto">{lang === 'ko' ? '0–4 키' : 'press 0–4'}</span>}</div>
+                          <div className="min-h-0 grid grid-cols-[minmax(0,0.6fr)_repeat(4,minmax(0,1fr))] gap-1.5">
+                            {[0, 1, 2, 3, 4].map(n => {
+                              const on = v === n
+                              return (
+                                <button key={n} onClick={e => { e.stopPropagation(); setRow(i); setLevel(c.key, n) }}
+                                  className={`min-h-0 text-left rounded border px-2.5 py-1.5 overflow-hidden flex flex-col gap-0.5 transition-colors ${on ? tone(n) : 'bg-surface border-rule-2 text-ink hover:border-ink-3'}`}>
+                                  <span className="flex items-baseline gap-1.5 flex-shrink-0"><span className="text-[16px] font-bold tabular-nums leading-none">{n}</span><span className={`text-[10.5px] font-semibold uppercase tracking-wide ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[n]}</span></span>
+                                  <span className={`text-[11.5px] leading-snug min-h-0 overflow-hidden ${on ? 'opacity-90' : 'text-ink-2'}`}>{n === 0 ? zeroText : c.levels[n - 1]}</span>
+                                </button>
+                              )
+                            })}
                           </div>
                         </div>
-                        <p className="text-[12px] text-ink-2 mt-1.5 leading-snug min-h-[16px]">
-                          {v == null ? <span className="text-ink-3">{c.levels.map((l, li) => <span key={li} className="mr-3"><span className="font-semibold">{li + 1}</span> {l}</span>)}</span> : v === 0 ? (lang === 'ko' ? '해당 없음 · 총점에서 제외' : 'Not applicable · left out of the total') : <><span className="font-semibold text-ink">{labels[v]}.</span> {c.levels[v - 1]}</>}
-                        </p>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-2 mt-2 border-t border-rule flex-shrink-0">
+                  <button onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1"><ChevronLeft size={13} />{lang === 'ko' ? '이전' : 'Previous'}</button>
+                  <span className="text-[11.5px] text-ink-3">0–4 {lang === 'ko' ? '표시 후 다음 기준' : 'mark and move down'} · ↑ ↓ · ⇥ / ↩ {lang === 'ko' ? '다음 학생' : 'next student'} · X {lang === 'ko' ? '결석' : 'absent'} · ⇧X {lang === 'ko' ? '면제' : 'exempt'} · Esc {lang === 'ko' ? '나가기' : 'exit'}</span>
+                  <button onClick={() => goTo(activeIdx + 1)} disabled={activeIdx >= students.length - 1} className="h-8 px-3.5 rounded bg-ink text-paper text-[12.5px] font-semibold disabled:opacity-40 inline-flex items-center gap-1">{lang === 'ko' ? '다음 학생' : 'Next student'}<ChevronRight size={13} /></button>
                 </div>
-              )}
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-rule">
-                <button onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1"><ChevronLeft size={13} />{lang === 'ko' ? '이전' : 'Previous'}</button>
-                <button onClick={() => goTo(activeIdx + 1)} disabled={activeIdx >= students.length - 1} className="h-8 px-3.5 rounded bg-ink text-paper text-[12.5px] font-semibold disabled:opacity-40 inline-flex items-center gap-1">{lang === 'ko' ? '다음 학생' : 'Next student'}<ChevronRight size={13} /></button>
-              </div>
-            </>
-          )}
-        </div>
-        <div className="border-l border-rule-2 bg-paper-2 px-4 py-4 space-y-4 text-[12px] overflow-y-auto max-h-[70vh]">
-          <div>
-            <p className="eyebrow mb-1.5">{lang === 'ko' ? '반 평균 (기준별)' : 'Class average so far'}</p>
-            {classAvg.map(c => (
-              <div key={c.key} className="grid grid-cols-[1fr_auto] gap-2 items-center py-1">
-                <span className="min-w-0"><span className="block text-ink truncate">{c.label}</span><span className="block h-1.5 bg-paper-3 rounded-sm overflow-hidden mt-1"><span className={`block h-full ${c.avg != null && c.avg < 2 ? 'bg-bad' : c.avg != null && c.avg < 3 ? 'bg-warn' : 'bg-good'}`} style={{ width: `${c.avg ? (c.avg / 4) * 100 : 0}%` }} /></span></span>
-                <span className="tabular-nums text-ink-2 text-right w-9">{c.avg != null ? c.avg.toFixed(1) : '—'}</span>
-              </div>
-            ))}
+              </>
+            )}
           </div>
-          <div>
-            <p className="eyebrow mb-1.5">{lang === 'ko' ? '척도' : 'Scale'}</p>
-            <p className="text-ink-2 leading-relaxed">1 {labels[1]} · 2 {labels[2]}<br />3 {labels[3]} · 4 {labels[4]}<br />0 {labels[0]} · {lang === 'ko' ? '총점에서 제외' : 'left out of the total'}</p>
-          </div>
-          <div>
-            <p className="eyebrow mb-1.5">{lang === 'ko' ? '키보드' : 'Keyboard'}</p>
-            <p className="text-ink-2 leading-relaxed">0–4 {lang === 'ko' ? '표시 후 다음 기준' : 'mark and move down'} · ↑ ↓<br />⇥ / ↩ {lang === 'ko' ? '다음 학생' : 'next student'} · X {lang === 'ko' ? '결석' : 'absent'} · ⇧X {lang === 'ko' ? '면제' : 'exempt'}</p>
+
+          {/* Rail */}
+          <div className="border-l border-rule-2 bg-paper-2 px-4 py-4 space-y-4 text-[12px] overflow-y-auto">
+            <div>
+              <p className="eyebrow mb-1.5">{lang === 'ko' ? '반 평균 (기준별)' : 'Class average so far'}</p>
+              {classAvg.map(c => (
+                <div key={c.key} className="grid grid-cols-[1fr_auto] gap-2 items-center py-1">
+                  <span className="min-w-0"><span className="block text-ink truncate">{c.label}</span><span className="block h-1.5 bg-paper-3 rounded-sm overflow-hidden mt-1"><span className={`block h-full ${c.avg != null && c.avg < 2 ? 'bg-bad' : c.avg != null && c.avg < 3 ? 'bg-warn' : 'bg-good'}`} style={{ width: `${c.avg != null ? (c.avg / 4) * 100 : 0}%` }} /></span></span>
+                  <span className="tabular-nums text-ink-2 text-right w-9">{c.avg != null ? c.avg.toFixed(1) : '—'}</span>
+                </div>
+              ))}
+            </div>
+            <div>
+              <p className="eyebrow mb-1.5">{lang === 'ko' ? '척도' : 'Scale'}</p>
+              <p className="text-ink-2 leading-relaxed">0 {labels[0]} · 1 {labels[1]}<br />2 {labels[2]} · 3 {labels[3]} · 4 {labels[4]}</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
