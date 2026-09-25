@@ -92,7 +92,11 @@ export default function RubricBuilder({ draft, grade, englishClass, onClose, onS
           )}
         </div>
         <div className="px-5 py-3 border-t border-rule-2 flex items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-[13px] text-ink-2"><input type="checkbox" checked={shareSchool} onChange={e => setShareSchool(e.target.checked)} />{lang === 'ko' ? '학교 전체와 공유' : 'Share with the whole school'}{!shareSchool && <span className="text-ink-3">· {englishClass} {lang === 'ko' ? '전용' : 'only'}</span>}</label>
+          <div className="flex items-center gap-2">
+            <span className="eyebrow mr-1">{lang === 'ko' ? '저장 위치' : 'Save to'}</span>
+            <button onClick={() => setShareSchool(false)} className={chip(!shareSchool)} title={lang === 'ko' ? '내 반의 목록에만 표시' : `Only teachers of ${englishClass} see it`}>{lang === 'ko' ? `${englishClass} 반만` : `${englishClass} only`}</button>
+            <button onClick={() => setShareSchool(true)} className={chip(shareSchool)} title={lang === 'ko' ? '모든 교사의 목록에 표시' : 'Every teacher can pick it'}>{lang === 'ko' ? '학교 전체' : 'Whole school'}</button>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-[12px] text-ink-3">{criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · {criteria.length * 4} {lang === 'ko' ? '점' : 'points'}</span>
             <button onClick={onClose} className="h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink">{lang === 'ko' ? '취소' : 'Cancel'}</button>

@@ -7,6 +7,8 @@ import { ALL_ENGLISH_CLASSES, DOMAINS, DOMAIN_LABELS, type Domain, type EnglishC
 import { parseAnswerKey, keyToString, keyTotal, parseRange, rangeLabel } from '@/lib/answerKey'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
 import StandardPicker from './StandardPicker'
+import RubricPicker from './RubricPicker'
+import type { Band } from '@/components/curriculum/rubric-library'
 import { ArrowRight, Check, X } from 'lucide-react'
 
 // ─── New assessment: set up → answer key → score ─────────────────
@@ -24,12 +26,14 @@ const CATEGORIES = [
 interface Props {
   grade: number; englishClass: EnglishClass; domain: Domain; semesterId: string | null
   onClose: () => void
-  onCreated: (assessment: any, hasKey: boolean) => void
+  onCreated: (assessment: any, scoring: 'key' | 'rubric' | 'points') => void
 }
 
 export default function NewAssessmentFlow({ grade, englishClass, domain, semesterId, onClose, onCreated }: Props) {
   const { currentTeacher, language: lang, showToast } = useApp()
   const [step, setStep] = useState<1 | 2>(1)
+  // How it will be scored decides what step 2 is.
+  const [scoring, setScoring] = useState<'key' | 'rubric' | 'points'>('key')
   const [name, setName] = useState('')
   const [dom, setDom] = useState<Domain>(domain)
   const [category, setCategory] = useState<string>('formative')
@@ -63,24 +67,25 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
   }
   const setQ = (num: number, patch: Partial<QuestionMapItem>) => setMap(prev => prev.map(q => q.num === num ? { ...q, ...patch } : q))
 
-  const create = async (withKey: boolean) => {
+  const create = async (withKey: boolean, rubric?: { rubric_id: string | null; name: string; band: Band; criteria: any[] }) => {
     if (!name.trim()) { showToast(lang === 'ko' ? '이름을 입력하세요' : 'Give the assessment a name'); setStep(1); return }
     const finalMap = withKey && map.length ? map : null
-    const maxScore = finalMap ? keyTotal(finalMap) : Number(points)
+    const maxScore = rubric ? rubric.criteria.length * 4 : finalMap ? keyTotal(finalMap) : Number(points)
     if (!maxScore || maxScore <= 0) { showToast(lang === 'ko' ? '총점을 입력하세요' : 'Set the total points'); return }
     setSaving(true)
-    const codes = Array.from(new Set((finalMap || []).map(q => q.standard).filter(Boolean))) as string[]
+    const codes = Array.from(new Set([...(finalMap || []).map(q => q.standard), ...(rubric?.criteria || []).map((c: any) => c.standard)].filter(Boolean))) as string[]
     const standards = codes.map(code => ({ code, dok: 0, description: stdText(code) }))
     const base = {
       name: name.trim(), domain: dom, max_score: maxScore, grade, type: category, date: date || null, description: notes.trim(),
       created_by: currentTeacher?.id || null, semester_id: semesterId, standards, sections: null, question_map: finalMap,
+      ...(rubric ? { rubric: { name: rubric.name, band: rubric.band, criteria: rubric.criteria }, rubric_id: rubric.rubric_id } : {}),
     }
     const { data, error } = await supabase.from('assessments').insert({ ...base, english_class: englishClass }).select().single()
     if (error) { setSaving(false); showToast(`Error: ${error.message}`); return }
     if (share.size) await supabase.from('assessments').insert(Array.from(share).map(cls => ({ ...base, english_class: cls })))
     setSaving(false)
     showToast(lang === 'ko' ? `"${name}" 생성됨` : `Created "${name}"${share.size ? ` · shared with ${share.size} more` : ''}`)
-    onCreated(data, !!finalMap)
+    onCreated(data, rubric ? 'rubric' : finalMap ? 'key' : 'points')
   }
 
   const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[12px] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
@@ -93,7 +98,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
       {/* Steps */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-rule-2">
         <div className="flex items-center gap-6 text-[13px]">
-          {[[1, lang === 'ko' ? '설정' : 'Set up'], [2, lang === 'ko' ? '정답 키' : 'Answer key']].map(([n, l]) => (
+          {[[1, lang === 'ko' ? '설정' : 'Set up'], [2, scoring === 'rubric' ? (lang === 'ko' ? '루브릭' : 'Rubric') : scoring === 'points' ? (lang === 'ko' ? '총점' : 'Points') : (lang === 'ko' ? '정답 키' : 'Answer key')]].map(([n, l]) => (
             <button key={n} onClick={() => setStep(n as 1 | 2)} className={`flex items-center gap-2 ${step === n ? 'text-ink font-semibold' : 'text-ink-3'}`}>
               <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center ${step === n ? 'bg-accent text-white' : step > (n as number) ? 'bg-good text-white' : 'border border-rule-2'}`}>{step > (n as number) ? <Check size={11} /> : n}</span>{l}
             </button>
@@ -117,9 +122,17 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
             <span className={label}>{lang === 'ko' ? '유형' : 'Category'}</span>
             <div className="flex flex-wrap gap-1.5">{CATEGORIES.map(c => <button key={c.value} onClick={() => setCategory(c.value)} title={c.hint} className={chip(category === c.value)}>{lang === 'ko' ? c.ko : c.label}</button>)}</div>
           </div>
+          <div>
+            <span className={label}>{lang === 'ko' ? '채점 방식' : 'How will you score it?'}</span>
+            <div className="flex flex-wrap gap-1.5">
+              <button onClick={() => setScoring('key')} className={chip(scoring === 'key')} title={lang === 'ko' ? '정답 키를 입력하고 답안지로 채점' : 'Type the key, then bubble in answers'}>{lang === 'ko' ? '정답 키' : 'Answer key'}</button>
+              <button onClick={() => setScoring('rubric')} className={chip(scoring === 'rubric')} title={lang === 'ko' ? '기준별 1–4 척도' : 'Criteria on a 1–4 scale'}>{lang === 'ko' ? '루브릭' : 'Rubric'}</button>
+              <button onClick={() => setScoring('points')} className={chip(scoring === 'points')} title={lang === 'ko' ? '학생별 점수 하나' : 'One score per student'}>{lang === 'ko' ? '점수만' : 'Points only'}</button>
+            </div>
+          </div>
           <div className="grid grid-cols-[160px_140px_1fr] gap-4">
             <div><label htmlFor="na-date" className={label}>{lang === 'ko' ? '날짜' : 'Date'}</label><input id="na-date" type="date" value={date} onChange={e => setDate(e.target.value)} className={field} /></div>
-            <div><label htmlFor="na-points" className={label}>{lang === 'ko' ? '총점' : 'Total points'}</label><input id="na-points" type="number" min={1} value={map.length ? String(keyTotal(map)) : points} disabled={map.length > 0} onChange={e => setPoints(e.target.value)} className={`${field} tabular-nums disabled:text-ink-3`} />{map.length > 0 && <p className="text-[11px] text-ink-3 mt-1">{lang === 'ko' ? '정답 키에서 계산됨' : 'From the answer key'}</p>}</div>
+            <div><label htmlFor="na-points" className={label}>{lang === 'ko' ? '총점' : 'Total points'}</label><input id="na-points" type="number" min={1} value={scoring === 'key' && map.length ? String(keyTotal(map)) : points} disabled={scoring !== 'points'} onChange={e => setPoints(e.target.value)} className={`${field} tabular-nums disabled:text-ink-3`} />{scoring !== 'points' && <p className="text-[11px] text-ink-3 mt-1">{scoring === 'rubric' ? (lang === 'ko' ? '기준당 4점' : '4 per criterion') : (lang === 'ko' ? '정답 키에서 계산됨' : 'From the answer key')}</p>}</div>
             <div><label htmlFor="na-notes" className={label}>{lang === 'ko' ? '메모' : 'Notes'}</label><input id="na-notes" value={notes} onChange={e => setNotes(e.target.value)} className={field} placeholder={lang === 'ko' ? '선택' : 'optional'} /></div>
           </div>
           <div>
@@ -131,13 +144,20 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
             </div>
           </div>
           <div className="flex items-center gap-2 pt-1">
-            <button onClick={() => setStep(2)} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5">{lang === 'ko' ? '정답 키 입력' : 'Next: answer key'} <ArrowRight size={13} /></button>
-            <button onClick={() => create(false)} disabled={saving} className="h-9 px-3.5 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink">{lang === 'ko' ? '키 없이 생성' : 'No key · create and enter scores'}</button>
+            {scoring === 'points'
+              ? <button onClick={() => create(false)} disabled={saving} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5 disabled:opacity-60">{lang === 'ko' ? '생성 후 점수 입력' : 'Create and enter scores'} <ArrowRight size={13} /></button>
+              : <button onClick={() => setStep(2)} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5">{scoring === 'rubric' ? (lang === 'ko' ? '루브릭 선택' : 'Next: choose a rubric') : (lang === 'ko' ? '정답 키 입력' : 'Next: answer key')} <ArrowRight size={13} /></button>}
           </div>
         </div>
       )}
 
-      {step === 2 && (
+      {step === 2 && scoring === 'rubric' && (
+        <div className="p-5">
+          <p className="text-[13px] text-ink-2 mb-3">{lang === 'ko' ? '템플릿이나 저장된 루브릭을 고르면 평가가 만들어지고 바로 채점할 수 있습니다.' : 'Pick a template or a saved rubric. The assessment is created with it and scoring opens right away.'}</p>
+          <RubricPicker grade={grade} englishClass={englishClass} onClose={() => setStep(1)} onUse={r => create(false, r)} />
+        </div>
+      )}
+      {step === 2 && scoring === 'key' && (
         <div className="p-5 grid gap-4">
           <div>
             <label htmlFor="na-key" className={label}>{lang === 'ko' ? '정답 키 입력 · 문자, T/F, 또는 서술형 점수' : 'Type the key · letters, T/F, or a number of points for written items'}</label>
@@ -210,7 +230,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
         </div>
       )}
 
-      {picking && <StandardPicker grade={grade} domain={dom} onClose={() => setPicking(null)} onPick={s => { tagRange(picking.nums, s.code); setPicking(null); setRangeText('') }} />}
+      {picking && <StandardPicker grade={grade} domain={dom} englishClass={englishClass} onClose={() => setPicking(null)} onPick={s => { tagRange(picking.nums, s.code); setPicking(null); setRangeText('') }} />}
     </div>
   )
 }
