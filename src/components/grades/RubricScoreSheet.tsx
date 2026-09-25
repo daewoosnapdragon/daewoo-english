@@ -159,11 +159,11 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
           </div>
 
           {/* The rubric */}
-          <div className="min-h-0 flex flex-col px-6 py-3">
+          <div className="min-h-0 flex flex-col px-8 py-4">
             {active && (
               <>
-                <div className="flex items-center justify-between gap-3 mb-2 flex-shrink-0">
-                  <h3 className="font-display text-[24px] leading-none text-ink">{active.english_name} <span className="font-sans text-[12px] text-ink-3 ml-1">{active.korean_name}</span></h3>
+                <div className="flex items-center justify-between gap-3 mb-3 flex-shrink-0">
+                  <h3 className="font-display text-[26px] leading-none text-ink">{active.english_name} <span className="font-sans text-[12px] text-ink-3 ml-1">{active.korean_name}</span></h3>
                   <div className="flex items-center gap-3">
                     <span className="font-display text-[24px] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : (scoreOf(active.id) ?? '—')} <span className="font-sans text-[12px] text-ink-3">/ {assessment.max_score}</span></span>
                     <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
@@ -173,20 +173,26 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                 {isOff ? (
                   <p className="text-[13px] text-ink-3 py-6">{lang === 'ko' ? '결석/면제 처리됨. 점수를 표시하면 다시 채점됩니다.' : 'Marked absent or exempt. Choosing a level clears it.'}</p>
                 ) : (
-                  <div className="flex-1 min-h-0 grid gap-2 overflow-y-auto" style={{ gridTemplateRows: `repeat(${criteria.length}, minmax(${criteria.length > 7 ? '96px' : '0'}, 1fr))` }}>
+                  <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 pr-1">
                     {criteria.map((c, i) => {
                       const v = mine[c.key]
+                      const current = row === i
                       return (
-                        <div key={c.key} onClick={() => setRow(i)} className={`min-h-0 grid grid-rows-[auto_minmax(0,1fr)] gap-1 rounded px-2 py-1.5 -mx-2 ${row === i ? 'bg-paper-2' : ''}`}>
-                          <div className="flex items-baseline gap-2"><span className="text-[14px] font-semibold text-ink">{c.label}</span>{c.standard && <span className="text-[11px] text-info">{c.standard}</span>}{row === i && <span className="eyebrow eyebrow-accent ml-auto">{lang === 'ko' ? '0–4 키' : 'press 0–4'}</span>}</div>
-                          <div className="min-h-0 grid grid-cols-[minmax(0,0.6fr)_repeat(4,minmax(0,1fr))] gap-1.5">
+                        <div key={c.key} onClick={() => setRow(i)} className={`rounded-md px-3 py-2.5 -mx-3 border ${current ? 'bg-paper-2 border-rule-2' : 'border-transparent'}`}>
+                          <div className="flex items-baseline gap-2 mb-2">
+                            <span className="text-[15px] font-semibold text-ink">{c.label}</span>
+                            {c.standard && <span className="text-[11px] text-info">{c.standard}</span>}
+                            {v != null && <span className="ml-auto text-[11.5px] text-ink-3">{labels[v]}</span>}
+                          </div>
+                          <div className="grid grid-cols-[76px_repeat(4,minmax(0,1fr))] gap-2">
                             {[0, 1, 2, 3, 4].map(n => {
                               const on = v === n
                               return (
-                                <button key={n} onClick={e => { e.stopPropagation(); setRow(i); setLevel(c.key, n) }}
-                                  className={`min-h-0 text-left rounded border px-2.5 py-1.5 overflow-hidden flex flex-col gap-0.5 transition-colors ${on ? tone(n) : 'bg-surface border-rule-2 text-ink hover:border-ink-3'}`}>
-                                  <span className="flex items-baseline gap-1.5 flex-shrink-0"><span className="text-[16px] font-bold tabular-nums leading-none">{n}</span><span className={`text-[10.5px] font-semibold uppercase tracking-wide ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[n]}</span></span>
-                                  <span className={`text-[11.5px] leading-snug min-h-0 overflow-hidden ${on ? 'opacity-90' : 'text-ink-2'}`}>{n === 0 ? zeroText : c.levels[n - 1]}</span>
+                                <button key={n} onClick={e => { e.stopPropagation(); setRow(i); setLevel(c.key, n) }} title={n === 0 ? zeroText : undefined}
+                                  className={`text-left rounded-md border px-3 py-2.5 flex flex-col gap-1 transition-colors ${n === 0 ? 'items-center justify-center' : ''} ${on ? tone(n) : 'bg-surface border-rule-2 text-ink hover:border-ink-3 hover:bg-paper-2/60'}`}>
+                                  <span className="flex items-baseline gap-2"><span className="font-display text-[22px] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[10.5px] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[n]}</span>}</span>
+                                  {n === 0 ? <span className={`text-[10.5px] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[0]}</span>
+                                    : <span className={`text-[12.5px] leading-snug ${on ? 'opacity-95' : 'text-ink-2'}`}>{c.levels[n - 1]}</span>}
                                 </button>
                               )
                             })}
@@ -196,7 +202,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                     })}
                   </div>
                 )}
-                <div className="flex items-center justify-between pt-2 mt-2 border-t border-rule flex-shrink-0">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-rule flex-shrink-0">
                   <button onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1"><ChevronLeft size={13} />{lang === 'ko' ? '이전' : 'Previous'}</button>
                   <span className="text-[11.5px] text-ink-3">0–4 {lang === 'ko' ? '표시 후 다음 기준' : 'mark and move down'} · ↑ ↓ · ⇥ / ↩ {lang === 'ko' ? '다음 학생' : 'next student'} · X {lang === 'ko' ? '결석' : 'absent'} · ⇧X {lang === 'ko' ? '면제' : 'exempt'} · Esc {lang === 'ko' ? '나가기' : 'exit'}</span>
                   <button onClick={() => goTo(activeIdx + 1)} disabled={activeIdx >= students.length - 1} className="h-8 px-3.5 rounded bg-ink text-paper text-[12.5px] font-semibold disabled:opacity-40 inline-flex items-center gap-1">{lang === 'ko' ? '다음 학생' : 'Next student'}<ChevronRight size={13} /></button>

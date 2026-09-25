@@ -8,7 +8,7 @@
 // save the result to the rubrics table; these are the starting points.
 
 export type Band = 'k2' | 'g35'
-export const LEVEL_LABELS: Record<number, string> = { 0: 'No evidence', 1: 'Needs guidance', 2: 'Developing', 3: 'Meets', 4: 'Exceeds' }
+export const LEVEL_LABELS: Record<number, string> = { 0: 'None', 1: 'Needs guidance', 2: 'Developing', 3: 'Meets', 4: 'Exceeds' }
 export const LEVEL_ZERO_TEXT = 'Not attempted, or nothing to assess yet.'
 export const LEVEL_ZERO_TEXT_KO = '시도하지 않았거나 평가할 내용이 없음.'
 export const LEVEL_LABELS_KO: Record<number, string> = { 0: '없음', 1: '지도 필요', 2: '발전 중', 3: '기준 충족', 4: '기준 초과' }
