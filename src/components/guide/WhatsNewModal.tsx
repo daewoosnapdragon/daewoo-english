@@ -48,7 +48,7 @@ export default function WhatsNewModal() {
       <div onClick={ev => ev.stopPropagation()} className="w-full max-w-[720px] bg-surface border border-rule-2 rounded-lg shadow-lg overflow-hidden">
         {e ? (
           <>
-            <div className="relative bg-paper-2 border-b border-rule-2" style={{ aspectRatio: '16 / 9' }}>
+            <div className="relative bg-paper-2 border-b border-rule-2" style={{ aspectRatio: '2000 / 817' }}>
               <img src={e.highlight!.image} alt={e.title} className="absolute inset-0 w-full h-full object-cover object-top" onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = 'none' }} />
             </div>
             <div className="px-6 py-5">
