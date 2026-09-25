@@ -5,7 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import type { QuestionMapItem, ItemResponse } from '@/types'
 import { isChoiceItem, markChoice } from '@/lib/answerKey'
-import { rubricScore, LEVEL_LABELS } from '@/components/curriculum/rubric-library'
+import { rubricScore, LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO } from '@/components/curriculum/rubric-library'
 import { splitEarned } from '@/lib/domainSplit'
 import { Check, ChevronLeft, ChevronRight, Loader2, LayoutGrid, ListChecks } from 'lucide-react'
 
@@ -38,6 +38,9 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
   const [focusedQ, setFocusedQ] = useState<number>(map[0]?.num || 1)
   // Inside a rubric item, which criterion the keyboard marks next.
   const [critIdx, setCritIdx] = useState(0)
+  const levelLabels = lang === 'ko' ? LEVEL_LABELS_KO : LEVEL_LABELS
+  const zeroText = lang === 'ko' ? LEVEL_ZERO_TEXT_KO : LEVEL_ZERO_TEXT
+  const levelTone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good border-good text-white' : 'bg-ink border-ink text-paper'
   const [view, setView] = useState<'sheet' | 'grid'>('sheet')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -290,24 +293,34 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                       const focused = focusedQ === it.num
                       return (
                         <div key={it.num} onClick={() => setFocusedQ(it.num)}
-                          className={`grid grid-cols-[34px_1fr_auto] gap-3 items-center py-1.5 -mx-2 px-2 rounded ${focused ? 'bg-paper-2' : ''}`}>
+                          className={`grid grid-cols-[34px_minmax(0,1fr)_auto] gap-3 items-center py-1.5 -mx-2 px-2 rounded ${focused ? 'bg-paper-2' : ''}`}>
                           <span className="text-[11px] text-ink-3 tabular-nums">Q{it.num}</span>
                           {hasRubric(it) ? (
-                            <div className="grid gap-1.5 py-1">
+                            <div className="grid gap-2 py-1 min-w-0">
                               <span className="text-[11px] text-ink-3">{it.rubric!.name} · {r?.points ?? 0} / {it.max_points}</span>
                               {it.rubric!.criteria.map((c, ci) => {
                                 const lv = r?.levels?.[c.key]
                                 const cf = focused && critIdx === ci
                                 return (
-                                  <div key={c.key} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setCritIdx(ci) }} className={`grid grid-cols-[150px_auto_1fr] gap-3 items-center rounded px-1.5 py-0.5 -mx-1.5 ${cf ? 'bg-paper-3/60' : ''}`}>
-                                    <span className="text-[12.5px] font-medium text-ink truncate" title={c.label}>{c.label}</span>
-                                    <div className="flex gap-1">
-                                      {[0, 1, 2, 3, 4].map(n => (
-                                        <button key={n} title={n === 0 ? LEVEL_LABELS[0] : `${LEVEL_LABELS[n]}: ${c.levels[n - 1]}`} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setCritIdx(ci); setCritLevel(it.num, c.key, n) }}
-                                          className={`w-7 h-7 rounded border text-[11px] font-bold ${lv === n ? (n === 0 ? 'bg-ink-3 text-paper border-ink-3' : n === 1 ? 'bg-bad text-white border-bad' : n === 2 ? 'bg-warn text-white border-warn' : n === 3 ? 'bg-good text-white border-good' : 'bg-ink text-paper border-ink') : 'border-rule-2 text-ink-2 hover:border-ink-3'}`}>{n}</button>
-                                      ))}
+                                  <div key={c.key} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setCritIdx(ci) }} className={`rounded-md border px-2.5 py-2 -mx-1 ${cf ? 'bg-paper-3/60 border-rule-2' : 'border-transparent'}`}>
+                                    <div className="flex items-baseline gap-2 mb-1.5">
+                                      <span className="text-[13px] font-semibold text-ink">{c.label}</span>
+                                      {c.standard && <span className="text-[11px] text-info">{c.standard}</span>}
+                                      {lv != null && <span className="ml-auto text-[11px] text-ink-3">{levelLabels[lv]}</span>}
                                     </div>
-                                    <span className="text-[11px] text-ink-2 leading-snug truncate" title={lv != null && lv > 0 ? c.levels[lv - 1] : ''}>{lv == null ? '' : lv === 0 ? LEVEL_LABELS[0] : c.levels[lv - 1]}</span>
+                                    <div className="grid grid-cols-[56px_repeat(4,minmax(0,1fr))] gap-1.5">
+                                      {[0, 1, 2, 3, 4].map(n => {
+                                        const on = lv === n
+                                        return (
+                                          <button key={n} title={n === 0 ? zeroText : undefined} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setCritIdx(ci); setCritLevel(it.num, c.key, n) }}
+                                            className={`text-left rounded border px-2 py-1.5 flex flex-col gap-0.5 min-w-0 ${n === 0 ? 'items-center justify-center' : ''} ${on ? levelTone(n) : 'bg-surface border-rule-2 text-ink hover:border-ink-3 hover:bg-paper-2/60'}`}>
+                                            <span className="flex items-baseline gap-1.5"><span className="font-display text-[17px] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[9.5px] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{levelLabels[n]}</span>}</span>
+                                            {n === 0 ? <span className={`text-[9.5px] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{levelLabels[0]}</span>
+                                              : <span className={`text-[11.5px] leading-snug ${on ? 'opacity-95' : 'text-ink-2'}`}>{c.levels[n - 1]}</span>}
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
                                   </div>
                                 )
                               })}
