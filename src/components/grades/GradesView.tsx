@@ -11,6 +11,8 @@ import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
 import { SCORING_RUBRICS, LEVEL_LABELS, LEVEL_COLORS, RUBRIC_CATEGORIES } from '@/components/curriculum/scoring-rubrics'
+import NewAssessmentFlow from './NewAssessmentFlow'
+import KeyScoreSheet from './KeyScoreSheet'
 
 // Normalize CCSS input: "rl21" -> "RL.2.1", "rf13a" -> "RF.1.3a", "sl42" -> "SL.4.2"
 function normalizeCCSS(input: string): string {
@@ -82,8 +84,12 @@ export default function GradesView() {
   const [exemptMap, setExemptMap] = useState<Record<string, boolean>>({})
   const [saving, setSaving] = useState(false)
   const [loadingAssessments, setLoadingAssessments] = useState(false)
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showCreateFlow, setShowCreateFlow] = useState(false)
   const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null)
+  // Assessments with an answer key open on the answer sheet; the plain score
+  // list is one click away for either kind.
+  const [sheetMode, setSheetMode] = useState(true)
+  const [scoresTick, setScoresTick] = useState(0)
   const [hasChanges, setHasChanges] = useState(false)
 
   // Warn on page leave with unsaved changes
@@ -222,6 +228,7 @@ export default function GradesView() {
   const selectedAssessmentId = selectedAssessment?.id
   useEffect(() => {
     const req = ++scoresReq.current
+    void scoresTick
     if (!selectedAssessmentId) { setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); return }
     const aid = selectedAssessmentId
     // Blank the table first so the previous assessment's numbers are never on
@@ -239,7 +246,7 @@ export default function GradesView() {
       setScores(map); setAbsentMap(abs); setExemptMap(exm); setRawInputs({}); setHasChanges(false)
     }
     loadScores()
-  }, [selectedAssessmentId])
+  }, [selectedAssessmentId, scoresTick])
 
   useEffect(() => {
     if (currentTeacher?.role === 'teacher' && currentTeacher.english_class !== 'Admin')
@@ -342,7 +349,7 @@ export default function GradesView() {
       <div className="px-10 pt-8 pb-5 bg-surface border-b border-border">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display text-[26px] font-semibold tracking-tight text-navy">{t.grades.title}</h2>
+            <h2 className="font-display text-[30px] leading-none text-ink">{t.grades.title}</h2>
             <p className="text-text-secondary text-sm mt-1">
               Grade {selectedGrade} · {selectedClass} · {students.length} students
               {selectedAssessment && subView === 'entry' && ` · ${selectedAssessment.name} (/${selectedAssessment.max_score})`}
@@ -355,9 +362,9 @@ export default function GradesView() {
                 {lang === 'ko' ? '저장' : 'Save All'}
               </button>
             )}
-            {subView === 'entry' && (
-              <button onClick={() => setShowCreateModal(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark transition-all">
-                <Plus size={15} /> {t.grades.createAssessment}
+            {subView === 'entry' && !showCreateFlow && (
+              <button onClick={() => setShowCreateFlow(true)} className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover">
+                <Plus size={15} /> {lang === 'ko' ? '새 평가' : 'New assessment'}
               </button>
             )}
           </div>
@@ -415,26 +422,33 @@ export default function GradesView() {
           )}
         </div>
 
-        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateModal(true)} createLabel={t.grades.createAssessment} onToggleAbsent={(sid: string) => { setAbsentMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setExemptMap(p => { const e = { ...p }; delete e[sid]; return e }) }; return n }); setHasChanges(true) }} onToggleExempt={(sid: string) => { setExemptMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setAbsentMap(p => { const a = { ...p }; delete a[sid]; return a }) }; return n }); setHasChanges(true) }} onRubricApply={(newScores: Record<string, number>, rubricMax?: number) => { if (rubricMax && selectedAssessment && rubricMax !== selectedAssessment.max_score) { supabase.from('assessments').update({ max_score: rubricMax }).eq('id', selectedAssessment.id).then(() => { setSelectedAssessment({ ...selectedAssessment, max_score: rubricMax }); setAllAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)); setAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)) }) } setScores(prev => ({ ...prev, ...newScores })); setHasChanges(true) }} />}
+        {subView === 'entry' && showCreateFlow && (
+          <div className="mb-6">
+            <NewAssessmentFlow grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} semesterId={selectedSemester}
+              onClose={() => setShowCreateFlow(false)}
+              onCreated={(a, hasKey) => { setShowCreateFlow(false); setSelectedDomain(a.domain); setSheetMode(hasKey); setSelectedAssessment(a); loadAssessments(); loadAllAssessments() }} />
+          </div>
+        )}
+        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateFlow(true)} createLabel={lang === 'ko' ? '새 평가' : 'New assessment'} sheetMode={sheetMode} setSheetMode={setSheetMode} onSheetSaved={() => { setScoresTick(t => t + 1); loadAllAssessments() }} onToggleAbsent={(sid: string) => { setAbsentMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setExemptMap(p => { const e = { ...p }; delete e[sid]; return e }) }; return n }); setHasChanges(true) }} onToggleExempt={(sid: string) => { setExemptMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setAbsentMap(p => { const a = { ...p }; delete a[sid]; return a }) }; return n }); setHasChanges(true) }} onRubricApply={(newScores: Record<string, number>, rubricMax?: number) => { if (rubricMax && selectedAssessment && rubricMax !== selectedAssessment.max_score) { supabase.from('assessments').update({ max_score: rubricMax }).eq('id', selectedAssessment.id).then(() => { setSelectedAssessment({ ...selectedAssessment, max_score: rubricMax }); setAllAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)); setAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)) }) } setScores(prev => ({ ...prev, ...newScores })); setHasChanges(true) }} />}
         {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
         {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
         {subView === 'calendar' && <AssessmentCalendarView allAssessments={allAssessments} lang={lang} />}
       </div>
 
-      {(showCreateModal || editingAssessment) && <AssessmentModal grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} editing={editingAssessment} semesterId={selectedSemester} onClose={() => { setShowCreateModal(false); setEditingAssessment(null) }} onSaved={(a: Assessment) => { setShowCreateModal(false); setEditingAssessment(null); loadAssessments().then(() => setSelectedAssessment(a)); loadAllAssessments() }} />}
+      {editingAssessment && <AssessmentModal grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} editing={editingAssessment} semesterId={selectedSemester} onClose={() => setEditingAssessment(null)} onSaved={(a: Assessment) => { setEditingAssessment(null); loadAssessments().then(() => setSelectedAssessment(a)); loadAllAssessments() }} />}
     </div>
   )
 }
 
 // ─── Score Entry ─────────────────────────────────────────────────────
 
-function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, selectedAssessment, setSelectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleScoreChange, handleKeyDown, commitScore, handleSaveAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onToggleAbsent, onToggleExempt, onRubricApply }: {
+function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, selectedAssessment, setSelectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleScoreChange, handleKeyDown, commitScore, handleSaveAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onToggleAbsent, onToggleExempt, onRubricApply, sheetMode, setSheetMode, onSheetSaved }: {
   selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; absentMap: Record<string, boolean>; exemptMap: Record<string, boolean>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onToggleAbsent: (sid: string) => void; onToggleExempt: (sid: string) => void; onRubricApply: (scores: Record<string, number>, rubricMax?: number) => void
+  sheetMode: boolean; setSheetMode: (v: boolean) => void; onSheetSaved: () => void
 }) {
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [rubricOpen, setRubricOpen] = useState(false)
-  const [itemEntryOpen, setItemEntryOpen] = useState(false)
   const isRubricDomain = selectedDomain === 'writing' || selectedDomain === 'reading' || selectedDomain === 'speaking'
   const hasQuestionMap = selectedAssessment?.question_map && selectedAssessment.question_map.length > 0
   return (
@@ -499,6 +513,17 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
             <p className="text-text-tertiary text-sm max-w-md mx-auto">{assessments.length === 0 ? (lang === 'ko' ? '"평가 생성" 버튼을 클릭하여 시작하세요.' : 'Click "Create Assessment" to get started. Name it, pick the domain and category, set the total points, then enter scores.') : ''}</p>
             {assessments.length === 0 && <button onClick={onCreateAssessment} className="mt-4 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark transition-all"><Plus size={15} /> {createLabel}</button>}
           </div>
+        ) : hasQuestionMap && sheetMode ? (
+          <div className="p-4">
+            <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <div className="flex items-baseline gap-3 min-w-0">
+                <span className="font-display text-[20px] leading-none text-ink truncate">{selectedAssessment.name}</span>
+                <span className="text-[12px] text-ink-3">/{selectedAssessment.max_score} · {catLabel(selectedAssessment.type)}{selectedAssessment.date ? ` · ${new Date(selectedAssessment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
+              </div>
+              <button onClick={() => setSheetMode(false)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '점수 목록으로' : 'Score list'}</button>
+            </div>
+            <KeyScoreSheet key={selectedAssessment.id} assessment={selectedAssessment as any} students={students} onSaved={onSheetSaved} />
+          </div>
         ) : selectedAssessment.sections && selectedAssessment.sections.length > 0 ? (
           /* Section-based score entry */
           <SectionScoreEntry assessment={selectedAssessment} students={students} lang={lang} selectedClass={selectedClass} selectedGrade={selectedGrade} selectedSemester={selectedSemester || ''} catLabel={catLabel} />
@@ -517,7 +542,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                   <span className="text-[12px] text-text-secondary">{enteredCount}/{students.length} entered</span>
                   <div className="w-24 h-1.5 bg-navy/10 rounded-full overflow-hidden"><div className="h-full bg-navy rounded-full transition-all" style={{ width: `${students.length > 0 ? (enteredCount / students.length) * 100 : 0}%` }} /></div>
                   {isRubricDomain && <button onClick={() => setRubricOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-all"><ClipboardEdit size={13} />Score with Rubric</button>}
-                  {hasQuestionMap && <button onClick={() => setItemEntryOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all"><Zap size={13} />Score by Question</button>}
+                                    {hasQuestionMap && <button onClick={() => setSheetMode(true)} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink"><Zap size={12} /> {lang === 'ko' ? '답안지로 채점' : 'Answer sheet'}</button>}
                   <CrossClassCompare assessmentName={selectedAssessment.name} domain={selectedAssessment.domain} maxScore={selectedAssessment.max_score} currentClass={selectedClass} grade={selectedGrade} semesterId={selectedSemester || ''} />
                 </div>
               </div>
@@ -576,31 +601,6 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
           </>
         )}
       </div>
-      {/* Item-by-Question modal for assessments with question_map */}
-      {itemEntryOpen && hasQuestionMap && selectedAssessment && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setItemEntryOpen(false)}>
-          <div className="bg-surface rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
-              <h3 className="font-display text-lg font-semibold text-navy">Score by Question: {selectedAssessment.name}</h3>
-              <button onClick={() => setItemEntryOpen(false)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
-            </div>
-            <ItemEntryScorePhase
-              students={students}
-              questionMap={selectedAssessment.question_map! as QuestionMapItem[]}
-              maxScore={selectedAssessment.max_score}
-              assessmentId={selectedAssessment.id}
-              onDone={(savedCount: number) => {
-                setItemEntryOpen(false)
-                // Trigger a reload by re-selecting the assessment
-                const a = selectedAssessment
-                setSelectedAssessment(null)
-                setTimeout(() => setSelectedAssessment(a), 50)
-              }}
-              onSkip={() => setItemEntryOpen(false)}
-            />
-          </div>
-        </div>
-      )}
     </>
   )
 }
@@ -1538,17 +1538,10 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
 
             {/* Question-map based entry: student sidebar + question grid */}
             {createdAssessment?.question_map && createdAssessment.question_map.length > 0 ? (
-              <ItemEntryScorePhase
-                students={scoreStudents}
-                questionMap={createdAssessment.question_map}
-                maxScore={createdAssessment.max_score}
-                assessmentId={createdAssessment.id}
-                onDone={(savedCount: number) => {
-                  showToast(`Saved item responses for ${savedCount} students`)
-                  onSaved(createdAssessment!)
-                }}
-                onSkip={() => onSaved(createdAssessment!)}
-              />
+              <div>
+                <KeyScoreSheet assessment={createdAssessment as any} students={scoreStudents} />
+                <div className="flex justify-end mt-3"><button onClick={() => onSaved(createdAssessment!)} className="h-8 px-3.5 rounded bg-ink text-paper text-[12.5px] font-semibold">Done</button></div>
+              </div>
             ) : (
               <>
               <div className="p-6 max-h-[60vh] overflow-y-auto">
@@ -2517,327 +2510,3 @@ function RubricScoringModal({ students, existingScores, maxScore, domain, grade,
 
 
 // ─── Item Entry Score Phase (rubric-style student sidebar + question grid) ───
-function ItemEntryScorePhase({ students, questionMap, maxScore, assessmentId, onDone, onSkip }: {
-  students: { id: string; english_name: string; korean_name: string }[]
-  questionMap: QuestionMapItem[]
-  maxScore: number
-  assessmentId: string
-  onDone: (savedCount: number) => void
-  onSkip: () => void
-}) {
-  const { showToast } = useApp()
-  const [activeIdx, setActiveIdx] = useState(0)
-  const [saving, setSaving] = useState(false)
-  const [focusedQ, setFocusedQ] = useState<number | null>(null)
-  const [loadingExisting, setLoadingExisting] = useState(true)
-  // responses[studentId][questionNum] = { answer, points }
-  const [responses, setResponses] = useState<Record<string, Record<number, { answer?: string; points: number }>>>({})
-
-  // Load existing item_responses from database
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('grades').select('student_id, item_responses').eq('assessment_id', assessmentId)
-      if (data) {
-        const loaded: Record<string, Record<number, { answer?: string; points: number }>> = {}
-        data.forEach((g: any) => {
-          if (g.item_responses && Array.isArray(g.item_responses)) {
-            loaded[g.student_id] = {}
-            g.item_responses.forEach((ir: any) => {
-              if (ir.q != null) {
-                loaded[g.student_id][ir.q] = { answer: ir.answer || undefined, points: ir.points ?? 0 }
-              }
-            })
-          }
-        })
-        if (Object.keys(loaded).length > 0) setResponses(loaded)
-      }
-      setLoadingExisting(false)
-    })()
-  }, [assessmentId])
-
-  const activeStudent = students[activeIdx]
-  const studentResp = activeStudent ? (responses[activeStudent.id] || {}) : {}
-
-  const setAnswer = (qNum: number, answer: string, autoPoints?: number) => {
-    if (!activeStudent) return
-    setResponses(prev => ({
-      ...prev,
-      [activeStudent.id]: {
-        ...(prev[activeStudent.id] || {}),
-        [qNum]: { answer, points: autoPoints ?? (prev[activeStudent.id]?.[qNum]?.points || 0) }
-      }
-    }))
-  }
-
-  const setPoints = (qNum: number, pts: number) => {
-    if (!activeStudent) return
-    setResponses(prev => ({
-      ...prev,
-      [activeStudent.id]: {
-        ...(prev[activeStudent.id] || {}),
-        [qNum]: { ...(prev[activeStudent.id]?.[qNum] || {}), points: pts }
-      }
-    }))
-  }
-
-  const studentTotal = (sid: string) => {
-    const r = responses[sid]
-    if (!r) return null
-    const answered = Object.keys(r).length
-    if (answered === 0) return null
-    return Object.values(r).reduce((s, v) => s + (v.points || 0), 0)
-  }
-
-  const isStudentComplete = (sid: string) => {
-    const r = responses[sid]
-    if (!r) return false
-    return questionMap.every(q => r[q.num] !== undefined)
-  }
-
-  const scoredCount = students.filter(s => isStudentComplete(s.id)).length
-  const currentTotal = studentTotal(activeStudent?.id) ?? 0
-
-  const goNext = () => { if (activeIdx < students.length - 1) setActiveIdx(activeIdx + 1) }
-  const goPrev = () => { if (activeIdx > 0) setActiveIdx(activeIdx - 1) }
-
-  useEffect(() => {
-    const el = document.getElementById(`item-student-${activeIdx}`)
-    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [activeIdx])
-
-  const handleSave = async () => {
-    setSaving(true)
-    let saved = 0
-    for (const s of students) {
-      const r = responses[s.id]
-      if (!r || Object.keys(r).length === 0) continue
-      const itemResponses: ItemResponse[] = questionMap.map(q => {
-        const resp = r[q.num]
-        const isCorrect = resp?.answer && q.answer_key ? resp.answer === q.answer_key : undefined
-        return { q: q.num, type: q.type, answer: resp?.answer, correct: isCorrect, points: resp?.points || 0, max: q.max_points, standard: q.standard }
-      })
-      const total = itemResponses.reduce((s, ir) => s + ir.points, 0)
-      const { error } = await supabase.from('grades').upsert({
-        student_id: s.id, assessment_id: assessmentId, score: total, item_responses: itemResponses
-      }, { onConflict: 'student_id,assessment_id' })
-      if (!error) saved++
-    }
-    setSaving(false)
-    onDone(saved)
-  }
-
-  return (
-    <div className="flex" style={{ height: '65vh' }}>
-      {/* Student Sidebar */}
-      <div className="w-48 shrink-0 border-r border-border overflow-y-auto bg-surface-alt/30">
-        <div className="p-2 space-y-0.5">
-          {students.map((s, i) => {
-            const total = studentTotal(s.id)
-            const complete = isStudentComplete(s.id)
-            const isActive = i === activeIdx
-            return (
-              <button key={s.id} id={`item-student-${i}`} onClick={() => setActiveIdx(i)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-[11px] transition-all flex items-center gap-2 ${
-                  isActive ? 'bg-navy text-white' : 'hover:bg-surface-alt text-text-primary'
-                }`}>
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
-                  complete ? (isActive ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700') :
-                  total != null ? (isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700') :
-                  (isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400')
-                }`}>
-                  {complete ? '✓' : total != null ? '~' : (i + 1)}
-                </span>
-                <span className="truncate font-medium">{s.english_name}</span>
-                {total != null && <span className={`ml-auto text-[10px] shrink-0 ${isActive ? 'text-white/70' : 'text-text-tertiary'}`}>{total}</span>}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Main Question Grid */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Student header */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-surface shrink-0">
-          <div className="flex items-center gap-2">
-            <button onClick={goPrev} disabled={activeIdx === 0} className="p-1 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={13} className="rotate-90" /></button>
-            <div>
-              <h3 className="text-[13px] font-bold text-navy">{activeStudent?.english_name} <span className="text-text-tertiary font-normal text-[11px]">{activeStudent?.korean_name}</span></h3>
-              <p className="text-[9px] text-text-tertiary">{activeIdx + 1} of {students.length}</p>
-            </div>
-            <button onClick={goNext} disabled={activeIdx === students.length - 1} className="p-1 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={13} className="-rotate-90" /></button>
-          </div>
-          <div className="text-right">
-            <div className="text-[20px] font-bold text-navy">{currentTotal}<span className="text-[12px] text-text-tertiary">/{maxScore}</span></div>
-            <div className="text-[9px] text-text-secondary">{maxScore > 0 ? Math.round((currentTotal / maxScore) * 100) : 0}%</div>
-          </div>
-        </div>
-
-        {/* Questions */}
-        <div className="flex-1 overflow-y-auto p-4" tabIndex={0} onKeyDown={e => {
-          if (!activeStudent) return
-          const qIdx = focusedQ != null ? questionMap.findIndex(q => q.num === focusedQ) : -1
-          const currentQ = focusedQ != null ? questionMap.find(q => q.num === focusedQ) : null
-
-          // ABCD for MC questions
-          if (currentQ?.type === 'mc' && ['a', 'b', 'c', 'd'].includes(e.key.toLowerCase())) {
-            e.preventDefault()
-            const opt = e.key.toUpperCase()
-            const hasKey = currentQ.answer_key != null && currentQ.answer_key !== ''
-            const pts = hasKey ? (opt === currentQ.answer_key ? currentQ.max_points : 0) : 0
-            setAnswer(currentQ.num, opt, pts)
-            // Auto-advance to next question
-            if (qIdx < questionMap.length - 1) setFocusedQ(questionMap[qIdx + 1].num)
-          }
-          // T/F for true_false questions
-          if (currentQ?.type === 'true_false' && ['t', 'f'].includes(e.key.toLowerCase())) {
-            e.preventDefault()
-            const opt = e.key.toUpperCase()
-            const hasKey = currentQ.answer_key != null && currentQ.answer_key !== ''
-            const pts = hasKey ? (opt === currentQ.answer_key ? currentQ.max_points : 0) : 0
-            setAnswer(currentQ.num, opt, pts)
-            if (qIdx < questionMap.length - 1) setFocusedQ(questionMap[qIdx + 1].num)
-          }
-          // Arrow keys to navigate questions
-          if (e.key === 'ArrowDown' && qIdx < questionMap.length - 1) { e.preventDefault(); setFocusedQ(questionMap[qIdx + 1].num) }
-          if (e.key === 'ArrowUp' && qIdx > 0) { e.preventDefault(); setFocusedQ(questionMap[qIdx - 1].num) }
-        }}>
-          <div className="space-y-1.5">
-            {questionMap.map((q) => {
-              const resp = studentResp[q.num]
-              const hasKey = q.answer_key != null && q.answer_key !== ''
-              const isCorrect = resp?.answer && hasKey ? resp.answer === q.answer_key : undefined
-              const isMC = q.type === 'mc'
-              const isTF = q.type === 'true_false'
-              const isRubric = q.type === 'rubric'
-
-              return (
-                <div key={q.num} onClick={() => setFocusedQ(q.num)} className={`flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-all ${
-                  focusedQ === q.num ? 'ring-2 ring-navy/40 ' : ''
-                }${
-                  isCorrect === true ? 'border-green-300 bg-green-50/50' :
-                  isCorrect === false ? 'border-red-300 bg-red-50/50' :
-                  resp ? 'border-border bg-surface-alt/30' : 'border-border bg-surface'
-                }`}>
-                  {/* Question number & type */}
-                  <div className="w-8 text-center shrink-0">
-                    <div className="text-[13px] font-bold text-navy">{q.num}</div>
-                    <div className="text-[7px] uppercase text-text-tertiary">{q.type === 'true_false' ? 'T/F' : q.type === 'mc' ? 'MC' : q.type === 'short_answer' ? 'SA' : q.type === 'open_ended' ? 'OE' : q.type === 'rubric' ? 'RUB' : q.type}</div>
-                  </div>
-
-                  {/* Answer input area */}
-                  <div className="flex-1 flex items-center gap-2">
-                    {isMC ? (
-                      <div className="flex gap-1">
-                        {['A', 'B', 'C', 'D'].map(opt => (
-                          <button key={opt} onClick={() => {
-                            const pts = hasKey ? (opt === q.answer_key ? q.max_points : 0) : (resp?.points || 0)
-                            setAnswer(q.num, opt, pts)
-                          }}
-                            className={`w-8 h-8 rounded-lg text-[12px] font-bold border-2 transition-all ${
-                              resp?.answer === opt
-                                ? (hasKey
-                                    ? (opt === q.answer_key ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-400 text-red-700')
-                                    : 'bg-navy/10 border-navy text-navy')
-                                : 'border-border text-text-tertiary hover:bg-surface-alt'
-                            }`}>
-                            {opt}
-                          </button>
-                        ))}
-                      </div>
-                    ) : isTF ? (
-                      <div className="flex gap-1">
-                        {['T', 'F'].map(opt => (
-                          <button key={opt} onClick={() => {
-                            const pts = hasKey ? (opt === q.answer_key ? q.max_points : 0) : (resp?.points || 0)
-                            setAnswer(q.num, opt, pts)
-                          }}
-                            className={`w-10 h-8 rounded-lg text-[12px] font-bold border-2 transition-all ${
-                              resp?.answer === opt
-                                ? (hasKey
-                                    ? (opt === q.answer_key ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-400 text-red-700')
-                                    : 'bg-navy/10 border-navy text-navy')
-                                : 'border-border text-text-tertiary hover:bg-surface-alt'
-                            }`}>
-                            {opt === 'T' ? 'True' : 'False'}
-                          </button>
-                        ))}
-                      </div>
-                    ) : isRubric ? (
-                      <div className="flex gap-1">
-                        {[
-                          { level: 1, label: 'Beginning', color: 'red' },
-                          { level: 2, label: 'Developing', color: 'amber' },
-                          { level: 3, label: 'Proficient', color: 'blue' },
-                          { level: 4, label: 'Advanced', color: 'green' },
-                        ].map(({ level, label, color }) => {
-                          const pts = Math.round((level / 4) * q.max_points * 10) / 10
-                          const isSelected = resp?.answer === String(level)
-                          return (
-                            <button key={level} onClick={() => setAnswer(q.num, String(level), pts)}
-                              className={`px-2.5 h-8 rounded-lg text-[10px] font-bold border-2 transition-all ${
-                                isSelected
-                                  ? `bg-${color}-100 border-${color}-400 text-${color}-700`
-                                  : 'border-border text-text-tertiary hover:bg-surface-alt'
-                              }`}
-                              style={isSelected ? { backgroundColor: color === 'red' ? '#fef2f2' : color === 'amber' ? '#fffbeb' : color === 'blue' ? '#eff6ff' : '#f0fdf4', borderColor: color === 'red' ? '#f87171' : color === 'amber' ? '#fbbf24' : color === 'blue' ? '#60a5fa' : '#4ade80', color: color === 'red' ? '#b91c1c' : color === 'amber' ? '#b45309' : color === 'blue' ? '#1d4ed8' : '#15803d' } : undefined}>
-                              L{level}
-                              <div className="text-[7px] font-normal leading-none mt-0.5">{label}</div>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <input type="number" min={0} max={q.max_points} step="any"
-                        value={resp?.points ?? ''}
-                        onChange={e => { const v = parseFloat(e.target.value); setPoints(q.num, isNaN(v) ? 0 : Math.min(v, q.max_points)) }}
-                        onFocus={e => e.target.select()}
-                        placeholder={`/ ${q.max_points}`}
-                        className="w-16 px-2 py-1.5 text-center border border-border rounded-lg text-[12px] outline-none focus:border-navy"
-                      />
-                    )}
-
-                    {/* Correct answer hint */}
-                    {hasKey && <span className="text-[8px] text-text-tertiary">Key: {q.answer_key}</span>}
-                  </div>
-
-                  {/* Points & standard */}
-                  <div className="text-right shrink-0 flex items-center gap-2">
-                    {q.standard && <span className="text-[8px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">{q.standard}</span>}
-                    <span className={`text-[11px] font-bold w-8 text-center ${
-                      isCorrect === true ? 'text-green-600' : isCorrect === false ? 'text-red-500' : 'text-text-secondary'
-                    }`}>
-                      {resp ? resp.points : '-'}<span className="text-text-tertiary font-normal">/{q.max_points}</span>
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Auto-advance */}
-          {isStudentComplete(activeStudent?.id) && activeIdx < students.length - 1 && (
-            <div className="mt-3 flex justify-end">
-              <button onClick={goNext} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-gold text-navy-dark hover:bg-gold-light">
-                Next Student →
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-4 py-3 border-t border-border flex items-center justify-between bg-surface shrink-0">
-          <span className="text-[11px] text-text-tertiary">{scoredCount}/{students.length} complete</span>
-          <div className="flex gap-2">
-            <button onClick={onSkip} className="px-4 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Skip</button>
-            <button onClick={handleSave} disabled={saving || scoredCount === 0}
-              className="px-4 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
-              {saving && <Loader2 size={13} className="animate-spin" />} Save {scoredCount} Score{scoredCount !== 1 ? 's' : ''}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
