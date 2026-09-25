@@ -10,7 +10,6 @@ import { supabase } from '@/lib/supabase'
 import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw, BookOpen } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WIDABadge from '@/components/shared/WIDABadge'
-import { WIDAProfiles } from '@/components/curriculum/CurriculumView'
 import RosterUploadModal from './RosterUploadModal'
 import { exportToCSV } from '@/lib/export'
 import { Sparkline } from '@/components/charts'
@@ -37,7 +36,6 @@ export default function StudentsView() {
   const [filterClass, setFilterClass] = useState<EnglishClass | null>(null)
   const [sortMode, setSortMode] = useState<'name' | 'korean_class' | 'english_class' | 'grade'>('english_class')
   const [showManage, setShowManage] = useState(false)
-  const [subView, setSubView] = useState<'roster' | 'wida'>('roster')
   const [filterReview, setFilterReview] = useState(false)
   const [bulkEdit, setBulkEdit] = useState(false)
   const [bulkEdits, setBulkEdits] = useState<Record<string, Partial<Student>>>({})
@@ -86,15 +84,8 @@ export default function StudentsView() {
             <Settings2 size={15} /> {language === 'ko' ? '학생 관리' : 'Manage Students'}
           </button>
         </div>
-        <div className="flex gap-1 mt-4">
-          <button onClick={() => setSubView('roster')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium transition-all ${subView === 'roster' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><User size={15} /> Roster</button>
-          <button onClick={() => setSubView('wida')} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-medium transition-all ${subView === 'wida' ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}><Users2 size={15} /> WIDA Profiles</button>
-        </div>
       </div>
 
-      {subView === 'wida' ? (
-        <div className="px-8 py-6"><WIDAProfiles /></div>
-      ) : (
       <div className="px-10 py-6">
         {/* Manage Panel - slides open */}
         {showManage && (
@@ -319,7 +310,6 @@ export default function StudentsView() {
           )}
         </div>
       </div>
-      )}
 
     </div>
   )

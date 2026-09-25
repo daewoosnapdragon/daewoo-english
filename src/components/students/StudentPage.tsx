@@ -252,7 +252,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
           </Section>
           <Section id="support" title={lang === 'ko' ? '지원' : 'Support'} meta={lang === 'ko' ? 'WIDA 수준 · 스캐폴드 · 목표 · 그룹' : 'WIDA levels · scaffolds · goals · groups'}>
             <div className="space-y-8">
-              <WidaSupport studentId={student.id} grade={student.grade} />
+              <WidaSupport studentId={student.id} grade={student.grade} summary />
               <WIDAPerformanceInsight studentId={student.id} lang={lang} />
               <div><h3 className="eyebrow mb-2">{lang === 'ko' ? '목표' : 'Goals'}</h3><GoalsTab studentId={student.id} studentName={student.english_name} /></div>
               <div><h3 className="eyebrow mb-2">{lang === 'ko' ? '그룹' : 'Groups'}</h3><StudentGroupsTab studentId={student.id} studentName={student.english_name} /></div>

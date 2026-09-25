@@ -21,7 +21,7 @@ const CLASS_DOT: Record<string, string> = {
 /** Plainer English labels than the translation file's; Korean keeps its own. */
 const EN_LABELS: Record<string, string> = {
   dashboard: 'Dashboard', grades: 'Grades', attendance: 'Attendance', lessonPlans: 'Lesson Plans',
-  students: 'Students', readingLevels: 'Reading', reports: 'Reports', leveling: 'Level Tests', curriculum: 'Standards',
+  students: 'Students', readingLevels: 'Reading', reports: 'Reports', leveling: 'Level Tests', curriculum: 'Standards', wida: 'WIDA',
 }
 
 interface Signals { attendanceIncomplete: boolean; flagged: number; reminder: boolean }

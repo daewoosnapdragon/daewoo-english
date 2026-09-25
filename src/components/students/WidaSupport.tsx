@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { WIDA_DOMAINS, WIDA_LEVELS, type WIDADomainKey } from '@/lib/wida'
@@ -19,7 +20,16 @@ const LEVEL_TONE: Record<number, string> = { 1: 'text-bad', 2: 'text-warn', 3: '
 
 interface Scaffold { id: string; domain: string; scaffold_text: string; wida_level: number | null; effectiveness: string | null; assigned_at: string }
 
-export default function WidaSupport({ studentId, grade }: { studentId: string; grade: number }) {
+interface Props {
+  studentId: string; grade: number
+  /** On the student page: show levels, scaffolds and history, but change them on the WIDA page. */
+  summary?: boolean
+  /** Open this domain's questionnaire as soon as the data is in (WIDA page cell click). */
+  initialDomain?: WIDADomainKey
+  onSaved?: () => void
+}
+
+export default function WidaSupport({ studentId, grade, summary = false, initialDomain, onSaved }: Props) {
   const { currentTeacher, language: lang, showToast, activeSemester } = useApp()
   const band = widaBandForGrade(grade)
   const [levels, setLevels] = useState<Record<string, number>>({})
@@ -49,6 +59,7 @@ export default function WidaSupport({ studentId, grade }: { studentId: string; g
     setLevels(l); setTicks(t); setHistory((hs.data as any) || []); setScaffolds((sc.data as Scaffold[]) || []); setLoading(false)
   }
   useEffect(() => { setLoading(true); load() }, [studentId])
+  useEffect(() => { if (!loading && initialDomain && !summary) openDomain(initialDomain) }, [loading, initialDomain]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const openDomain = (d: WIDADomainKey) => { setOpen(d); setDraft(new Set(ticks[d] || [])); setOverride(null) }
   const suggestion = useMemo(() => open ? suggestLevel(open, band, draft) : null, [open, band, draft])
@@ -68,7 +79,7 @@ export default function WidaSupport({ studentId, grade }: { studentId: string; g
     if (err) { showToast(`Error: ${err.message}${/student_wida_cando/.test(err.message) ? ' · run supabase/migration-wida-cando.sql' : ''}`); return }
     invalidateWIDACache()
     showToast(lang === 'ko' ? `${DOMAIN_LABEL[open][1]} ${chosen} (${widaLevelName(chosen)}) 저장됨` : `${DOMAIN_LABEL[open][0]} set to ${chosen} · ${widaLevelName(chosen)}`)
-    setOpen(null); load()
+    setOpen(null); load(); onSaved?.()
   }
 
   const addScaffold = async (text: string, domain: string, level: number | null) => {
@@ -99,13 +110,15 @@ export default function WidaSupport({ studentId, grade }: { studentId: string; g
       <div>
         <div className="flex items-baseline justify-between mb-1.5">
           <p className="eyebrow">WIDA {lang === 'ko' ? '수준' : 'levels'}{overall != null ? ` · ${lang === 'ko' ? '평균' : 'overall'} ${overall.toFixed(1)}` : ''}</p>
-          <p className="text-[11.5px] text-ink-3">{lang === 'ko' ? `${band === 'k2' ? 'K–2' : '3–5'} 문항 · 영역을 클릭해 업데이트` : `${band === 'k2' ? 'K–2' : '3–5'} statements · click a domain to update it`}</p>
+          {summary
+            ? <Link href={`/wida?student=${studentId}`} className="text-[12px] text-accent hover:underline">{lang === 'ko' ? 'WIDA 페이지에서 변경 →' : 'Change on the WIDA page →'}</Link>
+            : <p className="text-[11.5px] text-ink-3">{lang === 'ko' ? `${band === 'k2' ? 'K–2' : '3–5'} 문항 · 영역을 클릭해 업데이트` : `${band === 'k2' ? 'K–2' : '3–5'} statements · click a domain to update it`}</p>}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 border-t border-b border-rule-2">
           {WIDA_DOMAINS.map(d => {
             const lv = levels[d]
             return (
-              <button key={d} onClick={() => open === d ? setOpen(null) : openDomain(d)} className={`text-left px-3 py-3 border-r border-rule last:border-r-0 hover:bg-paper-2/60 ${open === d ? 'bg-paper-2' : ''}`}>
+              <button key={d} disabled={summary} onClick={() => open === d ? setOpen(null) : openDomain(d)} className={`text-left px-3 py-3 border-r border-rule last:border-r-0 ${summary ? 'cursor-default' : 'hover:bg-paper-2/60'} ${open === d ? 'bg-paper-2' : ''}`}>
                 <p className="eyebrow">{dl(d)}</p>
                 <p className={`font-display text-[30px] leading-none mt-1 tabular-nums ${lv ? LEVEL_TONE[lv] : 'text-ink-3'}`}>{lv || '—'}</p>
                 <p className="text-[11.5px] text-ink-2 mt-0.5">{lv ? widaLevelName(lv) : (lang === 'ko' ? '미설정' : 'not set')}</p>
@@ -150,7 +163,7 @@ export default function WidaSupport({ studentId, grade }: { studentId: string; g
       {/* Scaffolds */}
       <div>
         <p className="eyebrow mb-1.5">{lang === 'ko' ? '스캐폴드' : 'Scaffolds'} · {scaffolds.length}</p>
-        {scaffolds.length === 0 && <p className="text-[12.5px] text-ink-3 mb-2">{lang === 'ko' ? '아직 없습니다. 아래 제안에서 추가하세요.' : 'None yet. Add one from the suggestions below.'}</p>}
+        {scaffolds.length === 0 && <p className="text-[12.5px] text-ink-3 mb-2">{summary ? (lang === 'ko' ? '아직 없습니다. WIDA 페이지에서 추가하세요.' : 'None yet. Add some on the WIDA page.') : (lang === 'ko' ? '아직 없습니다. 아래 제안에서 추가하세요.' : 'None yet. Add one from the suggestions below.')}</p>}
         <div className="divide-y divide-rule border-t border-rule-2">
           {scaffolds.map(s => (
             <div key={s.id} className="grid grid-cols-[80px_1fr_auto] gap-3 items-center py-1.5 text-[13px]">
@@ -158,12 +171,12 @@ export default function WidaSupport({ studentId, grade }: { studentId: string; g
               <span className="text-ink">{s.scaffold_text}</span>
               <span className="flex items-center gap-2">
                 <button onClick={() => toggleEff(s)} className={`h-6 px-2 rounded-full border text-[11px] font-semibold ${s.effectiveness === 'working' ? 'bg-good-soft text-good border-good/40' : s.effectiveness === 'not_working' ? 'bg-bad-soft text-bad border-bad/40' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>{s.effectiveness === 'working' ? (lang === 'ko' ? '효과 있음' : 'Working') : s.effectiveness === 'not_working' ? (lang === 'ko' ? '효과 없음' : 'Not working') : (lang === 'ko' ? '평가' : 'Rate')}</button>
-                <button onClick={() => removeScaffold(s)} title={lang === 'ko' ? '제거' : 'Remove'} className="text-ink-3 hover:text-bad"><X size={13} /></button>
+                {!summary && <button onClick={() => removeScaffold(s)} title={lang === 'ko' ? '제거' : 'Remove'} className="text-ink-3 hover:text-bad"><X size={13} /></button>}
               </span>
             </div>
           ))}
         </div>
-        {suggested.length > 0 && (
+        {!summary && suggested.length > 0 && (
           <div className="mt-3">
             <p className="text-[11.5px] text-ink-3 mb-1.5">{lang === 'ko' ? '현재 수준에 맞는 제안 · 클릭해 추가' : 'Suggested for the current levels · click to add'}</p>
             <div className="flex flex-wrap gap-1.5">
@@ -171,13 +184,13 @@ export default function WidaSupport({ studentId, grade }: { studentId: string; g
             </div>
           </div>
         )}
-        <div className="flex items-center gap-2 mt-3">
+        {!summary && <div className="flex items-center gap-2 mt-3">
           <select value={customDomain} onChange={e => setCustomDomain(e.target.value)} className="h-8 px-2 bg-surface border border-rule-2 rounded text-[12px] text-ink">
             <option value="general">{lang === 'ko' ? '일반' : 'General'}</option>{WIDA_DOMAINS.map(d => <option key={d} value={d}>{dl(d)}</option>)}
           </select>
           <input value={custom} onChange={e => setCustom(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && custom.trim()) { addScaffold(custom.trim(), customDomain, customDomain === 'general' ? null : (levels[customDomain] || null)); setCustom('') } }} placeholder={lang === 'ko' ? '직접 입력…' : 'Write your own scaffold…'} className="flex-1 h-8 px-2.5 bg-surface border border-rule-2 rounded text-[12.5px] text-ink placeholder:text-ink-3" />
           <button onClick={() => { if (custom.trim()) { addScaffold(custom.trim(), customDomain, customDomain === 'general' ? null : (levels[customDomain] || null)); setCustom('') } }} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '추가' : 'Add'}</button>
-        </div>
+        </div>}
       </div>
 
       {/* History */}

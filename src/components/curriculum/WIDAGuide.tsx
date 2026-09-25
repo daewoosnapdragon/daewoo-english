@@ -400,7 +400,7 @@ export default function WIDAGuide() {
 
 // ─── SECTION: CCSS Overview ────────────────────────────────────────
 
-function CCSSOverview() {
+export function CCSSOverview() {
   const [expandedStrand, setExpandedStrand] = useState<string | null>(null)
 
   return (
@@ -599,7 +599,7 @@ function CCSSOverview() {
 
 // ─── SECTION 1: WIDA Overview ──────────────────────────────────────
 
-function WIDAOverview() {
+export function WIDAOverview() {
   const [expandedLevel, setExpandedLevel] = useState<number | null>(null)
 
   return (
@@ -827,7 +827,7 @@ function WIDAOverview() {
 
 // ─── SECTION 2: WIDA vs CCSS Comparison ────────────────────────────
 
-function WIDAvsCCSS() {
+export function WIDAvsCCSS() {
   return (
     <div className="max-w-4xl">
       <div className="bg-navy/5 border border-navy/10 rounded-xl p-5 mb-6">
@@ -1115,7 +1115,7 @@ function WIDAvsCCSS() {
 
 // ─── SECTION 3: Scaffold Index ─────────────────────────────────────
 
-function ScaffoldIndex() {
+export function ScaffoldIndex() {
   const [filterDomain, setFilterDomain] = useState<string>('all')
   const [filterLevel, setFilterLevel] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
@@ -1227,7 +1227,7 @@ function ScaffoldIndex() {
 
 // ─── SECTION 4: Assign Scaffolds to Students ───────────────────────
 
-function AssignScaffolds() {
+export function AssignScaffolds() {
   const { currentTeacher, showToast } = useApp()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Admin'
   const [cls, setCls] = useState<EnglishClass>((currentTeacher?.english_class as EnglishClass) || 'Snapdragon')

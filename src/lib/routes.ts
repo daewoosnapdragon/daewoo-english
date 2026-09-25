@@ -11,13 +11,14 @@ export const VIEW_PATHS: Record<string, string> = {
   reports: '/reports',
   leveling: '/level-tests',
   curriculum: '/standards',
+  wida: '/wida',
   settings: '/settings',
 }
 
 /** The order links appear in the masthead. Settings lives in the user menu. */
 export const NAV_ORDER = [
   'dashboard', 'grades', 'attendance', 'lessonPlans', 'students',
-  'readingLevels', 'reports', 'leveling', 'curriculum',
+  'readingLevels', 'reports', 'leveling', 'curriculum', 'wida',
 ]
 
 export function pathForView(view: string, opts: { studentId?: string } = {}): string {
@@ -36,5 +37,5 @@ export const PAGE_TITLES: Record<string, string> = {
   dashboard: 'Dashboard', students: 'Students', grades: 'Grades',
   reports: 'Reports', leveling: 'Level Tests', attendance: 'Attendance',
   readingLevels: 'Reading', lessonPlans: 'Lesson Plans',
-  curriculum: 'Standards', settings: 'Settings',
+  curriculum: 'Standards', wida: 'WIDA', settings: 'Settings',
 }
