@@ -9,8 +9,9 @@ import { WIDA_DOMAINS, WIDA_LEVELS, type WIDADomainKey } from '@/lib/wida'
 import { widaLevelName } from '@/components/curriculum/wida-cando'
 import WidaSupport from '@/components/students/WidaSupport'
 import WidaTimeline from './WidaTimeline'
+import WidaAssessSheet from './WidaAssessSheet'
 import { AssignScaffolds, ScaffoldIndex, WIDAOverview, WIDAvsCCSS } from '@/components/curriculum/WIDAGuide'
-import { Loader2, Printer, Camera, Trash2 } from 'lucide-react'
+import { Loader2, Printer, Camera, Trash2, ListChecks } from 'lucide-react'
 
 // ─── WIDA ─────────────────────────────────────────────────────────
 // Everything about English language proficiency in one place: the class's
@@ -42,6 +43,7 @@ export default function WidaView() {
   const [history, setHistory] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [guideTab, setGuideTab] = useState<'levels' | 'ccss' | 'index'>('levels')
+  const [assessing, setAssessing] = useState(false)
 
   const ids = useMemo(() => students.map(s => s.id), [students])
 
@@ -75,8 +77,10 @@ export default function WidaView() {
   // /wida?student=<id> (from the student page) lands on that student.
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const id = new URLSearchParams(window.location.search).get('student')
-    if (!id) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('assess')) setAssessing(true)
+    const id = params.get('student')
+    if (!id) { if (params.get('assess')) window.history.replaceState(null, '', '/wida'); return }
     ;(async () => {
       const { data } = await supabase.from('students').select('id, grade, english_class').eq('id', id).single()
       if (!data) return
@@ -130,13 +134,18 @@ export default function WidaView() {
           <p className="eyebrow eyebrow-accent mb-1.5">{cls} · {ko ? `${gr}학년` : `Grade ${gr}`} · {students.length} {ko ? '명' : 'students'}{students.length ? ` · ${setCount} ${ko ? '명 완료' : 'fully leveled'}` : ''}</p>
           <h1 className="font-display text-[34px] leading-none text-ink">WIDA</h1>
         </div>
-        {tab === 'levels' && (
+        {tab === 'levels' && !assessing && (
           <div className="flex items-center gap-2">
+            <button onClick={() => setAssessing(true)} disabled={!students.length} className="inline-flex items-center gap-1.5 h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50"><ListChecks size={14} />{ko ? '반 전체 평가' : 'Assess the class'}</button>
             <button onClick={printOnePager} className="inline-flex items-center gap-1.5 h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink"><Printer size={14} />{ko ? '인쇄' : 'Print'}</button>
             <button onClick={saveSnapshot} className="inline-flex items-center gap-1.5 h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink"><Camera size={14} />{ko ? '스냅샷 저장' : 'Save snapshot'}</button>
           </div>
         )}
       </div>
+      {assessing ? (
+        loadingStudents ? <div className="py-12 text-center"><Loader2 size={18} className="animate-spin text-ink-3 mx-auto" /></div>
+          : <WidaAssessSheet key={`${cls}-${gr}`} students={students} grade={gr} startStudentId={selected} onExit={() => { setAssessing(false); loadLevels() }} onSaved={loadLevels} />
+      ) : (<>
       <div className="flex border-b border-rule-2 mb-4">
         {([['levels', ko ? '수준' : 'Levels'], ['progress', ko ? '변화' : 'Progress'], ['scaffolds', ko ? '스캐폴드' : 'Scaffolds'], ['guide', ko ? '안내' : 'Guide']] as [Tab, string][]).map(([id, l]) => (
           <button key={id} onClick={() => setTab(id)} className={`relative px-4 h-10 text-[13.5px] font-medium ${tab === id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{l}{tab === id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}</button>
@@ -204,7 +213,7 @@ export default function WidaView() {
                 </table>
               </div>
             )}
-            <p className="text-[11px] text-ink-3 mt-2">{WIDA_LEVELS.map(l => `${l.level} ${l.name}`).join(' · ')} · {ko ? '칸을 클릭하면 그 영역의 질문이 열립니다.' : 'Click a cell to answer that domain’s can-do questions for the student.'}</p>
+            <p className="text-[11px] text-ink-3 mt-2">{WIDA_LEVELS.map(l => `${l.level} ${l.name}`).join(' · ')} · {ko ? '칸을 클릭하면 그 영역의 질문이 열립니다.' : 'Click a cell for one domain, or “Assess the class” to go student by student.'}</p>
           </div>
 
           <div className="border border-rule-2 rounded-lg p-5 sticky top-[120px]">
@@ -240,6 +249,7 @@ export default function WidaView() {
           {guideTab === 'index' && <ScaffoldIndex />}
         </div>
       )}
+      </>)}
     </div>
   )
 }

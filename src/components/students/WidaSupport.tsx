@@ -115,7 +115,7 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
         <div className="flex items-baseline justify-between mb-1.5">
           <p className="eyebrow">WIDA {lang === 'ko' ? '수준' : 'levels'}{overall != null ? ` · ${lang === 'ko' ? '평균' : 'overall'} ${overall.toFixed(1)}` : ''}</p>
           {summary
-            ? <Link href={`/wida?student=${studentId}`} className="text-[12px] text-accent hover:underline">{lang === 'ko' ? 'WIDA 페이지에서 변경 →' : 'Change on the WIDA page →'}</Link>
+            ? <Link href={`/wida?student=${studentId}&assess=1`} className="text-[12px] text-accent hover:underline">{lang === 'ko' ? 'WIDA 페이지에서 변경 →' : 'Change on the WIDA page →'}</Link>
             : <p className="text-[11.5px] text-ink-3">{lang === 'ko' ? `${band === 'k2' ? 'K–2' : '3–5'} 문항 · 영역을 클릭해 업데이트` : `${band === 'k2' ? 'K–2' : '3–5'} statements · click a domain to update it`}</p>}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 border-t border-b border-rule-2">
