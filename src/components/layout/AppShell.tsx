@@ -8,6 +8,7 @@ import { viewForPath, PAGE_TITLES } from '@/lib/routes'
 import LoginPage from '@/components/layout/LoginPage'
 import Masthead from '@/components/layout/Masthead'
 import NoticeBoard from '@/components/layout/NoticeBoard'
+import CommandPalette from '@/components/layout/CommandPalette'
 import Toast from '@/components/ui/Toast'
 import { Loader2 } from 'lucide-react'
 
@@ -63,6 +64,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </main>
       <Toast />
+      <CommandPalette />
     </div>
   )
 }

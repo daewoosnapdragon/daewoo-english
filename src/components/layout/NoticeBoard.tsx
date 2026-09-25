@@ -73,6 +73,11 @@ export default function NoticeBoard() {
 
   useEffect(() => { load() }, [load])
   useEffect(() => {
+    const onCompose = () => { setComposing(true); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+    window.addEventListener('daewoo:compose-notice', onCompose)
+    return () => window.removeEventListener('daewoo:compose-notice', onCompose)
+  }, [])
+  useEffect(() => {
     const id = setInterval(load, 60_000)
     const onFocus = () => load()
     window.addEventListener('focus', onFocus)

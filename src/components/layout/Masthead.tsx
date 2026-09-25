@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { NAV_ORDER, VIEW_PATHS, viewForPath } from '@/lib/routes'
-import { getDisplayName } from '@/lib/utils'
 import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell } from 'lucide-react'
 
 // ─── Masthead ────────────────────────────────────────────────────────
@@ -78,73 +77,16 @@ function useKstClock() {
   return now
 }
 
-// ─── Find a student ──────────────────────────────────────────────────
-// Type two letters of either name and jump to the student. The full command
-// palette (⌘K with actions) replaces this later; the shortcut already works.
-interface Lite { id: string; english_name: string; korean_name: string; english_class: string; grade: number }
-
+// ─── Find anything ───────────────────────────────────────────────
+// Looks like a search box; opens the command palette (⌘K).
 function StudentFinder() {
-  const { currentTeacher, language } = useApp()
-  const router = useRouter()
-  const [q, setQ] = useState('')
-  const [open, setOpen] = useState(false)
-  const [all, setAll] = useState<Lite[]>([])
-  const [hi, setHi] = useState(0)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    supabase.from('students').select('id, english_name, korean_name, english_class, grade').eq('is_active', true)
-      .then(({ data }) => { if (data) setAll(data as Lite[]) })
-  }, [])
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); inputRef.current?.focus() }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
-  const hits = useMemo(() => {
-    const s = q.trim().toLowerCase()
-    if (s.length < 2) return []
-    const own = currentTeacher?.english_class
-    return all
-      .filter(st => st.english_name?.toLowerCase().includes(s) || st.korean_name?.includes(s))
-      .sort((a, b) => Number(b.english_class === own) - Number(a.english_class === own) || a.english_name.localeCompare(b.english_name))
-      .slice(0, 7)
-  }, [q, all, currentTeacher])
-
-  const go = (st: Lite) => { setQ(''); setOpen(false); router.push(`/students/${st.id}`) }
-
+  const { language } = useApp()
   return (
-    <div className="relative w-[220px]">
+    <button onClick={() => window.dispatchEvent(new Event('daewoo:open-palette'))}
+      className="relative w-[220px] h-8 pl-8 pr-2 text-left text-[12.5px] bg-paper-2 border border-rule-2 rounded text-ink-3 hover:border-ink-3">
       <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
-      <input ref={inputRef} id="masthead-find" value={q}
-        onChange={e => { setQ(e.target.value); setOpen(true); setHi(0) }}
-        onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 120)}
-        onKeyDown={e => {
-          if (e.key === 'ArrowDown') { e.preventDefault(); setHi(h => Math.min(h + 1, hits.length - 1)) }
-          if (e.key === 'ArrowUp') { e.preventDefault(); setHi(h => Math.max(h - 1, 0)) }
-          if (e.key === 'Enter' && hits[hi]) go(hits[hi])
-          if (e.key === 'Escape') { setQ(''); inputRef.current?.blur() }
-        }}
-        placeholder={language === 'ko' ? '학생 찾기…  ⌘K' : 'Find a student…  ⌘K'}
-        className="w-full h-8 pl-8 pr-2 text-[12.5px] bg-paper-2 border border-rule-2 rounded text-ink placeholder:text-ink-3" />
-      {open && hits.length > 0 && (
-        <div className="absolute left-0 top-9 w-[300px] bg-surface border border-rule-2 rounded shadow-lg z-50 py-1">
-          {hits.map((st, i) => (
-            <button key={st.id} onMouseDown={() => go(st)}
-              className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[13px] ${i === hi ? 'bg-paper-2' : ''}`}>
-              <span className={`w-2 h-2 rounded-full ${CLASS_DOT[st.english_class] || 'bg-rule-2'}`} />
-              <span className="font-medium text-ink">{getDisplayName(st)}</span>
-              <span className="text-ink-3">{st.korean_name}</span>
-              <span className="ml-auto text-[11px] text-ink-3">G{st.grade} · {st.english_class}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+      {language === 'ko' ? '학생, 페이지, 동작…  ⌘K' : 'Find anything…  ⌘K'}
+    </button>
   )
 }
 

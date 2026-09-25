@@ -212,7 +212,9 @@ export default function GradesView() {
   // useSearchParams, which would force a Suspense boundary on the route.
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const id = new URLSearchParams(window.location.search).get('assessment')
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('new')) { setShowCreateFlow(true); window.history.replaceState(null, '', '/grades') }
+    const id = params.get('assessment')
     if (!id) return
     ;(async () => {
       const { data } = await supabase.from('assessments').select('*').eq('id', id).single()
