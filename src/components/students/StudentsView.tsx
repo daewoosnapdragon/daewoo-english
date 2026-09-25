@@ -574,7 +574,7 @@ export function WIDAPerformanceInsight({ studentId, lang }: { studentId: string;
       if (!widaData || widaData.length === 0) { setMissingWida(true); setLoading(false); return }
 
       const widaMap: Record<string, number> = {}
-      widaData.forEach((w: any) => { if (w.wida_level > 0) widaMap[w.domain] = w.wida_level })
+      widaData.forEach((w: any) => { if (w.wida_level > 0) widaMap[w.domain] = Math.floor(w.wida_level) })
       if (Object.keys(widaMap).length === 0) { setMissingWida(true); setLoading(false); return }
 
       // Get semester grades

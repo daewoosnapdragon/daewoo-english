@@ -6,7 +6,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { WIDA_DOMAINS, WIDA_LEVELS, type WIDADomainKey } from '@/lib/wida'
 import { invalidateWIDACache } from '@/components/shared/WIDABadge'
-import { WIDA_CAN_DO, LEVELS, SCAFFOLD_SUGGESTIONS, suggestLevel, widaBandForGrade, widaLevelName, type Level } from '@/components/curriculum/wida-cando'
+import { WIDA_CAN_DO, LEVELS, SCAFFOLD_SUGGESTIONS, suggestLevel, ticksThrough, ticksClearFrom, widaBandForGrade, widaLevelName, type Level } from '@/components/curriculum/wida-cando'
 import { Check, ChevronDown, ChevronUp, Loader2, Plus, X } from 'lucide-react'
 
 // ─── WIDA support on the student page ────────────────────────────
@@ -39,7 +39,8 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState<WIDADomainKey | null>(null)
   const [draft, setDraft] = useState<Set<string>>(new Set())
-  const [override, setOverride] = useState<Level | null>(null)
+  const [override, setOverride] = useState<number | null>(null)
+  const [ovText, setOvText] = useState('')
   const [saving, setSaving] = useState(false)
   const [custom, setCustom] = useState('')
   const [customDomain, setCustomDomain] = useState<string>('general')
@@ -53,7 +54,7 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
       supabase.from('student_wida_history').select('domain, wida_level, recorded_at').eq('student_id', studentId).order('recorded_at', { ascending: false }).limit(40),
       supabase.from('student_scaffolds').select('id, domain, scaffold_text, wida_level, effectiveness, assigned_at').eq('student_id', studentId).eq('is_active', true).order('assigned_at', { ascending: false }),
     ])
-    const l: Record<string, number> = {}; (lv.data || []).forEach((r: any) => { l[r.domain] = r.wida_level })
+    const l: Record<string, number> = {}; (lv.data || []).forEach((r: any) => { l[r.domain] = Number(r.wida_level) })
     const t: Record<string, Set<string>> = {}; (cd.data || []).forEach((r: any) => { t[r.domain] = new Set(r.ticked || []) })
     if (cd.error) setCandoMissing(true)
     setLevels(l); setTicks(t); setHistory((hs.data as any) || []); setScaffolds((sc.data as Scaffold[]) || []); setLoading(false)
@@ -63,7 +64,10 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
 
   const openDomain = (d: WIDADomainKey) => { setOpen(d); setDraft(new Set(ticks[d] || [])); setOverride(null) }
   const suggestion = useMemo(() => open ? suggestLevel(open, band, draft) : null, [open, band, draft])
-  const chosen: Level | null = open ? (override ?? suggestion!.level) : null
+  const chosen: number | null = open ? (override ?? suggestion!.decimal) : null
+  useEffect(() => { setOvText(chosen != null ? String(chosen) : '') }, [chosen])
+  const commitOverride = () => { const n = Math.round(parseFloat(ovText) * 10) / 10; if (Number.isFinite(n) && n >= 1 && n <= 6) setOverride(n === suggestion?.decimal ? null : n); else setOvText(chosen != null ? String(chosen) : '') }
+  const floorLv = (v: number | undefined | null) => (v ? Math.floor(v) : 0) as Level
 
   const saveLevel = async () => {
     if (!open || !chosen) return
@@ -98,7 +102,7 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
   }
 
   const active = new Set(scaffolds.map(s => s.scaffold_text))
-  const suggested = WIDA_DOMAINS.flatMap(d => { const lv = levels[d] as Level | undefined; return lv ? SCAFFOLD_SUGGESTIONS[d][lv].filter(t => !active.has(t)).map(t => ({ d, lv, t })) : [] })
+  const suggested = WIDA_DOMAINS.flatMap(d => { const lv = levels[d] ? floorLv(levels[d]) : undefined; return lv ? SCAFFOLD_SUGGESTIONS[d][lv].filter(t => !active.has(t)).map(t => ({ d, lv, t })) : [] })
   const overall = useMemo(() => { const vals = WIDA_DOMAINS.map(d => levels[d]).filter(Boolean); return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null }, [levels])
   const dl = (d: WIDADomainKey) => DOMAIN_LABEL[d][lang === 'ko' ? 1 : 0]
 
@@ -120,7 +124,7 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
             return (
               <button key={d} disabled={summary} onClick={() => open === d ? setOpen(null) : openDomain(d)} className={`text-left px-3 py-3 border-r border-rule last:border-r-0 ${summary ? 'cursor-default' : 'hover:bg-paper-2/60'} ${open === d ? 'bg-paper-2' : ''}`}>
                 <p className="eyebrow">{dl(d)}</p>
-                <p className={`font-display text-[30px] leading-none mt-1 tabular-nums ${lv ? LEVEL_TONE[lv] : 'text-ink-3'}`}>{lv || '—'}</p>
+                <p className={`font-display text-[30px] leading-none mt-1 tabular-nums ${lv ? LEVEL_TONE[Math.floor(lv)] : 'text-ink-3'}`}>{lv || '—'}</p>
                 <p className="text-[11.5px] text-ink-2 mt-0.5">{lv ? widaLevelName(lv) : (lang === 'ko' ? '미설정' : 'not set')}</p>
               </button>
             )
@@ -135,10 +139,19 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
             <div><h4 className="font-display text-[20px] leading-none text-ink">{dl(open)}: {lang === 'ko' ? '이 학생이 할 수 있는 것' : 'what this student does'}</h4><p className="text-[12px] text-ink-3 mt-1">{lang === 'ko' ? '해당하는 항목을 체크하세요. 체크에 따라 수준이 제안되고, 직접 바꿀 수 있습니다.' : 'Tick what you see in class. The level is suggested from the ticks; you can override it.'}</p></div>
             <button onClick={() => setOpen(null)} className="w-7 h-7 rounded hover:bg-surface flex items-center justify-center text-ink-3 hover:text-ink"><X size={14} /></button>
           </div>
+          <div className="flex items-center gap-2 flex-wrap mb-3 text-[12px]">
+            <span className="text-ink-3">{lang === 'ko' ? '건너뛰기 · 이 수준까지 전부 할 수 있음:' : 'Skip ahead · does everything through level'}</span>
+            <div className="flex gap-1">{LEVELS.map(lv => <button key={lv} onClick={() => { setDraft(ticksThrough(open, band, lv, draft)); setOverride(null) }} className={`w-7 h-7 rounded border text-[12px] font-bold ${suggestion.strength[lv] === 1 ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:border-ink-3'}`}>{lv}</button>)}</div>
+            <span className="text-ink-3">{lang === 'ko' ? '· 그 다음 수준만 체크하면 됩니다' : '· then tick only what applies at the next level'}</span>
+          </div>
           <div className="grid gap-3">
             {LEVELS.map(lv => (
-              <div key={lv} className={`grid grid-cols-[110px_1fr] gap-3 rounded px-2 py-1.5 ${chosen === lv ? 'bg-surface' : ''}`}>
-                <div><span className={`font-display text-[20px] tabular-nums ${chosen === lv ? 'text-ink' : 'text-ink-3'}`}>{lv}</span><span className="block text-[10.5px] uppercase tracking-wide text-ink-3">{widaLevelName(lv)}</span><span className="block h-1 rounded-sm bg-paper-3 mt-1 overflow-hidden"><span className="block h-full bg-ink-3" style={{ width: `${suggestion.strength[lv] * 100}%` }} /></span></div>
+              <div key={lv} className={`grid grid-cols-[110px_1fr] gap-3 rounded px-2 py-1.5 ${floorLv(chosen) === lv ? 'bg-surface' : ''}`}>
+                <div><span className={`font-display text-[20px] tabular-nums ${floorLv(chosen) === lv ? 'text-ink' : 'text-ink-3'}`}>{lv}</span><span className="block text-[10.5px] uppercase tracking-wide text-ink-3">{widaLevelName(lv)}</span><span className="block h-1 rounded-sm bg-paper-3 mt-1 overflow-hidden"><span className="block h-full bg-ink-3" style={{ width: `${suggestion.strength[lv] * 100}%` }} /></span>
+                  {suggestion.strength[lv] === 1
+                    ? <button onClick={() => { setDraft(ticksClearFrom(open, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[11px] text-ink-3 hover:text-bad">{lang === 'ko' ? '여기부터 해제' : 'Clear from here'}</button>
+                    : <button onClick={() => { setDraft(ticksThrough(open, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[11px] text-ink-3 hover:text-ink">{lang === 'ko' ? '여기까지 전부' : 'All through here'}</button>}
+                </div>
                 <div className="grid gap-1">
                   {WIDA_CAN_DO[open][band][lv].map(item => (
                     <label key={item.id} className="flex items-start gap-2 text-[13px] text-ink cursor-pointer">
@@ -151,9 +164,10 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
             ))}
           </div>
           <div className="flex items-center gap-3 flex-wrap mt-4 pt-3 border-t border-rule">
-            <span className="text-[13px] text-ink-2">{lang === 'ko' ? '제안' : 'Suggested'}: <span className="font-semibold text-ink">{suggestion.level} · {widaLevelName(suggestion.level)}</span></span>
+            <span className="text-[13px] text-ink-2">{lang === 'ko' ? '제안' : 'Suggested'}: <span className="font-semibold text-ink">{suggestion.decimal} · {widaLevelName(suggestion.level)}</span>{suggestion.decimal > suggestion.level && suggestion.level < 6 && <span className="text-ink-3"> · {Math.round((suggestion.decimal - suggestion.level) * 100)}% {lang === 'ko' ? '의' : 'of'} {widaLevelName(suggestion.level + 1)}</span>}</span>
             <span className="text-[12px] text-ink-3">{lang === 'ko' ? '직접 설정' : 'or set'}</span>
-            <div className="flex gap-1">{LEVELS.map(lv => <button key={lv} onClick={() => setOverride(lv === suggestion.level ? null : lv)} className={`w-7 h-7 rounded border text-[12px] font-bold ${chosen === lv ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:border-ink-3'}`}>{lv}</button>)}</div>
+            <div className="flex gap-1">{LEVELS.map(lv => <button key={lv} onClick={() => setOverride(lv === suggestion.decimal ? null : lv)} className={`w-7 h-7 rounded border text-[12px] font-bold ${chosen === lv ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:border-ink-3'}`}>{lv}</button>)}</div>
+            <input value={ovText} onChange={e => { if (/^\d?(\.\d?)?$/.test(e.target.value)) setOvText(e.target.value) }} onBlur={commitOverride} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitOverride() } }} inputMode="decimal" title={lang === 'ko' ? '소수점 한 자리 (예: 3.5)' : 'One decimal, e.g. 3.5'} className="w-14 h-7 px-2 bg-surface border border-rule-2 rounded text-[12.5px] tabular-nums text-center text-ink" />
             <button onClick={saveLevel} disabled={saving} className="ml-auto h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? `${dl(open)} ${chosen}로 저장` : `Save ${dl(open)} as ${chosen}`}</button>
           </div>
           {candoMissing && <p className="text-[11.5px] text-warn mt-2">{lang === 'ko' ? '체크 항목을 저장하려면 supabase/migration-wida-cando.sql을 실행하세요. 수준은 저장됩니다.' : 'Ticks are not remembered until supabase/migration-wida-cando.sql is run; the level still saves.'}</p>}
@@ -188,8 +202,8 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
           <select value={customDomain} onChange={e => setCustomDomain(e.target.value)} className="h-8 px-2 bg-surface border border-rule-2 rounded text-[12px] text-ink">
             <option value="general">{lang === 'ko' ? '일반' : 'General'}</option>{WIDA_DOMAINS.map(d => <option key={d} value={d}>{dl(d)}</option>)}
           </select>
-          <input value={custom} onChange={e => setCustom(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && custom.trim()) { addScaffold(custom.trim(), customDomain, customDomain === 'general' ? null : (levels[customDomain] || null)); setCustom('') } }} placeholder={lang === 'ko' ? '직접 입력…' : 'Write your own scaffold…'} className="flex-1 h-8 px-2.5 bg-surface border border-rule-2 rounded text-[12.5px] text-ink placeholder:text-ink-3" />
-          <button onClick={() => { if (custom.trim()) { addScaffold(custom.trim(), customDomain, customDomain === 'general' ? null : (levels[customDomain] || null)); setCustom('') } }} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '추가' : 'Add'}</button>
+          <input value={custom} onChange={e => setCustom(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && custom.trim()) { addScaffold(custom.trim(), customDomain, customDomain === 'general' ? null : (floorLv(levels[customDomain]) || null)); setCustom('') } }} placeholder={lang === 'ko' ? '직접 입력…' : 'Write your own scaffold…'} className="flex-1 h-8 px-2.5 bg-surface border border-rule-2 rounded text-[12.5px] text-ink placeholder:text-ink-3" />
+          <button onClick={() => { if (custom.trim()) { addScaffold(custom.trim(), customDomain, customDomain === 'general' ? null : (floorLv(levels[customDomain]) || null)); setCustom('') } }} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '추가' : 'Add'}</button>
         </div>}
       </div>
 

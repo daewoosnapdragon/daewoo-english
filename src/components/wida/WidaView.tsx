@@ -50,7 +50,7 @@ export default function WidaView() {
     setLoadingLevels(true)
     const { data } = await supabase.from('student_wida_levels').select('student_id, domain, wida_level, updated_at').in('student_id', ids)
     const m: Record<string, Record<string, number>> = {}; const u: Record<string, string> = {}
-    ;(data || []).forEach((r: any) => { (m[r.student_id] ||= {})[r.domain] = r.wida_level; if (r.updated_at && (!u[r.student_id] || r.updated_at > u[r.student_id])) u[r.student_id] = r.updated_at })
+    ;(data || []).forEach((r: any) => { (m[r.student_id] ||= {})[r.domain] = Number(r.wida_level); if (r.updated_at && (!u[r.student_id] || r.updated_at > u[r.student_id])) u[r.student_id] = r.updated_at })
     setLevels(m); setUpdated(u); setLoadingLevels(false)
   }, [ids])
   useEffect(() => { loadLevels() }, [loadLevels])
@@ -188,7 +188,7 @@ export default function WidaView() {
                             return (
                               <td key={d} className="px-1.5 py-1 text-center">
                                 <button onClick={e => { e.stopPropagation(); setSelected(s.id); setDomain(d) }} title={ko ? `${DOMAIN_LABEL[d][1]} 질문에 답하기` : `Answer the ${DOMAIN_LABEL[d][0].toLowerCase()} can-do questions`}
-                                  className={`w-full h-9 rounded border ${on && domain === d ? 'border-accent' : 'border-transparent'} ${lv ? LEVEL_TONE[lv] : 'text-ink-3 hover:bg-paper-2'} hover:border-ink-3`}>
+                                  className={`w-full h-9 rounded border ${on && domain === d ? 'border-accent' : 'border-transparent'} ${lv ? LEVEL_TONE[Math.floor(lv)] : 'text-ink-3 hover:bg-paper-2'} hover:border-ink-3`}>
                                   <span className="font-display text-[17px] leading-none">{lv || '—'}</span>{lv ? <span className="block text-[9.5px] uppercase tracking-wider leading-none mt-0.5 opacity-80">{widaLevelName(lv)}</span> : null}
                                   {diff != null && diff !== 0 && <span className={`block text-[10px] font-bold leading-none ${diff > 0 ? 'text-good' : 'text-bad'}`}>{diff > 0 ? `+${diff}` : diff}</span>}
                                 </button>

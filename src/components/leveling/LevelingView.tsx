@@ -2259,7 +2259,7 @@ function WIDADetail({ studentId }: { studentId: string }) {
   return (
     <div className="mt-1 space-y-0.5">
       {Object.entries(levels).filter(([, v]) => v > 0).map(([dom, lvl]) => {
-        const wl = WIDA_LEVELS.find(w => w.level === lvl)
+        const wl = WIDA_LEVELS.find(w => w.level === Math.floor(lvl))
         return (
           <p key={dom} className="text-[10px]">
             {domLabels[dom] || dom}: <span className="font-bold" style={{ color: wl ? '#1e293b' : undefined }}>{lvl}</span>

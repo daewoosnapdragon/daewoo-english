@@ -199,7 +199,7 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
                   <p className="text-[8px] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">WIDA Profile</p>
                   <div className="flex gap-1.5">
                     {Object.entries(data.wida).map(([d, v]) => {
-                      const info = WIDA_LEVELS.find(w => w.level === v)
+                      const info = WIDA_LEVELS.find(w => w.level === Math.floor(v))
                       return (
                         <div key={d} className="flex-1 rounded-lg p-1.5 text-center border"
                           style={{ backgroundColor: info?.bg || '#f8fafc', borderColor: info?.color || '#e2e8f0' }}>

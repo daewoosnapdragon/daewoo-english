@@ -336,12 +336,14 @@ export const WIDA_CAN_DO: Record<WIDADomainKey, Record<WidaBand, Record<Level, C
 export function widaBandForGrade(grade: number): WidaBand { return grade <= 2 ? 'k2' : 'g35' }
 
 /**
- * The level the ticks point to: the highest level where at least half of its
- * statements are ticked and every lower level also has at least half. Ticks
- * above a gap are ignored, so one optimistic tick at level 5 does not lift a
- * child who cannot yet do level 3. Returns 1 when nothing is ticked.
+ * What the ticks point to. A level is "met" when at least three quarters of
+ * its statements are ticked and every level below it is met too, so one
+ * optimistic tick at level 5 does not lift a child who cannot yet do level 3.
+ * `level` is the highest met level (1 when nothing is ticked). `decimal` adds
+ * the share of the next level's statements that are ticked, so a student who
+ * does all of level 3 and half of level 4 reads as 3.5.
  */
-export function suggestLevel(domain: WIDADomainKey, band: WidaBand, ticked: Set<string>): { level: Level; strength: Record<Level, number> } {
+export function suggestLevel(domain: WIDADomainKey, band: WidaBand, ticked: Set<string>): { level: Level; decimal: number; strength: Record<Level, number> } {
   const strength = {} as Record<Level, number>
   for (const lv of LEVELS) {
     const items = WIDA_CAN_DO[domain][band][lv]
@@ -349,12 +351,27 @@ export function suggestLevel(domain: WIDADomainKey, band: WidaBand, ticked: Set<
   }
   let level: Level = 1
   for (const lv of LEVELS) {
-    if (strength[lv] >= 0.5) level = lv; else break
+    if (strength[lv] >= 0.75) level = lv; else break
   }
-  return { level, strength }
+  const next = LEVELS.find(lv => lv === level + 1)
+  const decimal = Math.min(6, Math.round((level + (next ? strength[next] : 0)) * 10) / 10)
+  return { level, decimal, strength }
 }
 
-export function widaLevelName(level: number): string { return WIDA_LEVELS.find(l => l.level === level)?.name || String(level) }
+/** Tick every statement from level 1 through `through`: the skip-ahead for a student you already know well. */
+export function ticksThrough(domain: WIDADomainKey, band: WidaBand, through: Level, existing: Set<string> = new Set()): Set<string> {
+  const out = new Set(existing)
+  for (const lv of LEVELS) if (lv <= through) WIDA_CAN_DO[domain][band][lv].forEach(i => out.add(i.id))
+  return out
+}
+/** Untick every statement from `from` upward. */
+export function ticksClearFrom(domain: WIDADomainKey, band: WidaBand, from: Level, existing: Set<string>): Set<string> {
+  const out = new Set(existing)
+  for (const lv of LEVELS) if (lv >= from) WIDA_CAN_DO[domain][band][lv].forEach(i => out.delete(i.id))
+  return out
+}
+
+export function widaLevelName(level: number): string { return WIDA_LEVELS.find(l => l.level === Math.floor(level))?.name || String(level) }
 
 // ─── Scaffolds suggested by level and domain ──────────────────────
 // Short, assignable in one tap. Level 6 needs none.

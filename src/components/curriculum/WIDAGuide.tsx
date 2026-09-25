@@ -1604,7 +1604,7 @@ export function AssignScaffolds() {
                   <div className="flex gap-2">
                     {WIDA_DOMAINS.map(d => {
                       const lvl = widaLevels[d]
-                      const info = lvl ? WIDA_LEVELS.find(w => w.level === lvl) : null
+                      const info = lvl ? WIDA_LEVELS.find(w => w.level === Math.floor(lvl)) : null
                       return (
                         <div key={d} className="text-center px-2.5 py-1.5 rounded-lg border"
                           style={{ backgroundColor: info?.bg || '#f8fafc', borderColor: info?.color || '#e2e8f0' }}>
