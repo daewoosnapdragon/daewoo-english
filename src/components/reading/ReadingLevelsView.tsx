@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
@@ -23,6 +25,8 @@ interface ReadingRecord {
 }
 
 // Grade-level CWPM benchmarks -- fallback defaults (used if no DB benchmarks found)
+const READING_CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy', Sunflower: 'bg-level-sunflower', Marigold: 'bg-level-marigold', Snapdragon: 'bg-level-snapdragon' }
+
 export const CWPM_BENCHMARKS: Record<number, { below: number; approaching: number; proficient: number; advanced: number }> = {
   1: { below: 30, approaching: 53, proficient: 80, advanced: 100 },
   2: { below: 50, approaching: 72, proficient: 100, advanced: 120 },
@@ -78,53 +82,38 @@ export default function ReadingLevelsView() {
   const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
 
   return (
-    <div className="animate-fade-in">
-      <div className="px-10 pt-8 pb-5 bg-surface border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display text-[26px] font-semibold tracking-tight text-navy">Reading Fluency</h2>
-            <p className="text-text-secondary text-sm mt-1">{selectedClass} · Grade {selectedGrade} · {students.length} students</p>
-          </div>
-          <button onClick={() => { setShowAddModal(true); setAddForStudentId(selectedStudentId || (students[0]?.id || null)) }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark transition-all">
-            <Plus size={15} /> Add ORF Record
-          </button>
+    <div className="px-8 py-6 animate-fade-in">
+      <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
+        <div>
+          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`} · {students.length} {lang === 'ko' ? '명' : 'students'}</p>
+          <h1 className="font-display text-[34px] leading-none text-ink">{lang === 'ko' ? '읽기' : 'Reading'}</h1>
         </div>
-        <div className="flex gap-1 mt-4">
-          {([
-            { id: 'class', icon: BookOpen, label: 'Class Overview' },
-            { id: 'student', icon: User, label: 'Student Detail' },
-            { id: 'bypassage', icon: Users, label: 'By Passage' },
-            { id: 'passages', icon: FileText, label: 'Passage Library' },
-          ] as const).map((tab) => (
-            <button key={tab.id} onClick={() => setSubView(tab.id)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium transition-all ${subView === tab.id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
-              <tab.icon size={14} /> {tab.label}
-            </button>
-          ))}
-        </div>
+        <button onClick={() => { setShowAddModal(true); setAddForStudentId(selectedStudentId || (students[0]?.id || null)) }}
+          className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover">
+          <Plus size={15} /> {lang === 'ko' ? '읽기 기록 추가' : 'Add reading record'}
+        </button>
       </div>
-
-      <div className="px-10 py-6">
-        <div className="flex items-center gap-3 mb-5">
-          <select value={selectedGrade} onChange={(e: any) => { const g = Number(e.target.value) as Grade; setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) }}
-            className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
-            {GRADES.map((g: any) => <option key={g} value={g}>Grade {g}</option>)}
-          </select>
-          {availableClasses.length > 1 ? (
-            <div className="flex gap-1">
-              {availableClasses.map((cls: any) => (
-                <button key={cls} onClick={() => setSelectedClass(cls)}
-                  className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
-                  style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>
-                  {cls}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white" style={{ backgroundColor: classToTextColor(selectedClass) }}>{selectedClass}</div>
-          )}
-        </div>
+      <div className="flex border-b border-rule-2 mb-4">
+        {([
+          { id: 'class', label: lang === 'ko' ? '반 개요' : 'Class overview' },
+          { id: 'student', label: lang === 'ko' ? '학생별' : 'Student detail' },
+          { id: 'bypassage', label: lang === 'ko' ? '지문별' : 'By passage' },
+          { id: 'passages', label: lang === 'ko' ? '지문 라이브러리' : 'Passage library' },
+        ] as const).map((tab) => (
+          <button key={tab.id} onClick={() => setSubView(tab.id)}
+            className={`relative px-4 h-10 text-[13.5px] font-medium ${subView === tab.id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
+            {tab.label}{subView === tab.id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 flex-wrap mb-6">
+        <div className="flex gap-1.5">{GRADES.map((g: any) => <button key={g} onClick={() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) }} className={`px-2.5 h-7 rounded-full border text-[12px] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
+        <span className="w-px h-6 bg-rule" />
+        {availableClasses.length > 1
+          ? <div className="flex gap-1.5">{availableClasses.map((cls: any) => <button key={cls} onClick={() => setSelectedClass(cls)} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[12px] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
+          : <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink"><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[selectedClass] || 'bg-ink-3'}`} />{selectedClass}</span>}
+      </div>
+      <div>
 
         {subView === 'class' && <ClassOverview key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} onSelectStudent={(sid: string) => { setSelectedStudentId(sid); setSubView('student') }} />}
         {subView === 'student' && <StudentReadingView key={refreshKey} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} grade={selectedGrade} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} />}
@@ -184,22 +173,22 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
     : CWPM_BENCHMARKS[grade] || CWPM_BENCHMARKS[4]
 
   const getBand = (cwpm: number) => {
-    if (cwpm >= bench.advanced) return { label: 'Advanced', color: 'bg-blue-100 text-blue-700 border-blue-300' }
-    if (cwpm >= bench.proficient) return { label: 'Proficient', color: 'bg-green-100 text-green-700 border-green-300' }
-    if (cwpm >= bench.approaching) return { label: 'Approaching', color: 'bg-amber-100 text-amber-700 border-amber-300' }
-    return { label: 'Below', color: 'bg-red-100 text-red-700 border-red-300' }
+    if (cwpm >= bench.advanced) return { label: 'Advanced', color: 'bg-ink text-paper' }
+    if (cwpm >= bench.proficient) return { label: 'Proficient', color: 'bg-good-soft text-good' }
+    if (cwpm >= bench.approaching) return { label: 'Approaching', color: 'bg-warn-soft text-warn' }
+    return { label: 'Below', color: 'bg-bad-soft text-bad' }
   }
 
   return (
     <div>
       {/* Benchmark legend */}
-      <div className="mb-4">
-        <div className="flex items-center gap-4 text-[11px]">
-          <span className="text-text-tertiary font-semibold">{englishClass} Gr {grade} Benchmarks{dbBench ? '' : ' (defaults)'}:</span>
-          <span className="px-2 py-0.5 rounded border bg-red-100 text-red-700 border-red-300">Below &lt;{bench.approaching}</span>
-          <span className="px-2 py-0.5 rounded border bg-amber-100 text-amber-700 border-amber-300">Approaching {bench.approaching}-{bench.proficient - 1}</span>
-          <span className="px-2 py-0.5 rounded border bg-green-100 text-green-700 border-green-300">Proficient {bench.proficient}-{bench.advanced - 1}</span>
-          <span className="px-2 py-0.5 rounded border bg-blue-100 text-blue-700 border-blue-300">Advanced {bench.advanced}+</span>
+      <div className="mb-3">
+        <div className="flex items-center gap-4 text-[11.5px] text-ink-2 flex-wrap">
+          <span className="eyebrow">{englishClass} · {lang === 'ko' ? `${grade}학년 기준` : `Grade ${grade} benchmarks`}{dbBench ? '' : (lang === 'ko' ? ' (기본값)' : ' (defaults)')}</span>
+          <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-bad-soft border border-bad/40" />Below &lt;{bench.approaching}</span>
+          <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-warn-soft border border-warn/40" />Approaching {bench.approaching}–{bench.proficient - 1}</span>
+          <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-good-soft border border-good/40" />Proficient {bench.proficient}–{bench.advanced - 1}</span>
+          <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-ink" />Advanced {bench.advanced}+</span>
           <button onClick={() => {
             exportToCSV(`reading-${englishClass}-G${grade}`,
               ['Student', 'Korean Name', 'CWPM', 'Band', 'Accuracy', 'Lexile', 'Last Assessed'],
@@ -208,7 +197,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
                 const band = r?.cwpm != null ? getBand(r.cwpm) : null
                 return [s.english_name, s.korean_name, r?.cwpm != null ? Math.round(r.cwpm) : '', band?.label || '', r?.accuracy_rate?.toFixed(1) || '', r?.reading_level || '', r?.date || '']
               }))
-          }} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+          }} className="ml-auto inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink">
             <Download size={11} /> CSV
           </button>
           <button onClick={() => {
@@ -220,56 +209,54 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
             }).join('')
             pw.document.write(`<html><head><title>Reading Report - ${englishClass} Gr ${grade}</title><style>body{font-family:'Segoe UI',sans-serif;padding:24px}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#f1f5f9;padding:8px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #cbd5e1}@media print{body{padding:12px}}</style></head><body><h2 style="color:#647FBC;font-size:18px;margin:0">${englishClass} Grade ${grade} -- Reading Fluency Report</h2><p style="color:#94a3b8;font-size:11px;margin-top:4px">Benchmarks: Below &lt;${bench.approaching} | Approaching ${bench.approaching}-${bench.proficient - 1} | Proficient ${bench.proficient}-${bench.advanced - 1} | Advanced ${bench.advanced}+</p><table><thead><tr><th style="text-align:left">Student</th><th>CWPM</th><th>Band</th><th>Accuracy</th><th>Lexile</th></tr></thead><tbody>${rows}</tbody></table><p style="color:#94a3b8;font-size:10px;margin-top:16px;text-align:center">Printed ${new Date().toLocaleDateString()}</p></body></html>`)
             pw.document.close(); pw.print()
-          }} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+          }} className="inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink">
             <Printer size={11} /> Print
           </button>
         </div>
-        {dbBench && <p className="text-[10px] text-text-tertiary mt-1">CWPM Mid ({dbBench.cwpm_mid}) = expected fluency by mid-semester. CWPM End ({dbBench.cwpm_end}) = target fluency by end of semester. Set in Settings &gt; Benchmarks.</p>}
+        {dbBench && <p className="text-[11px] text-ink-3 mt-1">CWPM Mid ({dbBench.cwpm_mid}) = expected fluency by mid-semester. CWPM End ({dbBench.cwpm_end}) = target fluency by end of semester. Set in Settings &gt; Benchmarks.</p>}
       </div>
 
-      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full text-[13px]">
-          <thead><tr className="bg-surface-alt">
-            <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
-            <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">CWPM</th>
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Band</th>
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Lexile</th>
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Accuracy</th>
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-28">Last Assessed</th>
-            <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-32">Progress</th>
+      <div className="border-t border-rule-2">
+        <table className="w-full text-[13px] tabular-nums">
+          <thead><tr>
+            <th className="text-left px-2 py-2 eyebrow font-semibold w-8 border-b border-rule">#</th>
+            <th className="text-left px-2 py-2 eyebrow font-semibold border-b border-rule">Student</th>
+            <th className="text-right px-2 py-2 eyebrow font-semibold w-20 border-b border-rule">CWPM</th>
+            <th className="text-left px-3 py-2 eyebrow font-semibold w-28 border-b border-rule">Band</th>
+            <th className="text-left px-2 py-2 eyebrow font-semibold w-20 border-b border-rule">Lexile</th>
+            <th className="text-right px-2 py-2 eyebrow font-semibold w-28 border-b border-rule">Accuracy</th>
+            <th className="text-left px-3 py-2 eyebrow font-semibold w-28 border-b border-rule">Last test</th>
+            <th className="text-left px-2 py-2 eyebrow font-semibold w-40 border-b border-rule">Progress to target</th>
           </tr></thead>
-          <tbody>
+          <tbody className="divide-y divide-rule">
             {students.map((s: any, i: number) => {
               const rec = latestRecords[s.id]
               const band = rec?.cwpm != null ? getBand(rec.cwpm) : null
               return (
-                <tr key={s.id} className="border-t border-border table-row-hover cursor-pointer" onClick={() => onSelectStudent(s.id)}>
-                  <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
-                  <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
-                  <td className="px-4 py-2.5 text-center font-bold text-navy text-[15px]">{rec?.cwpm != null ? Math.round(rec.cwpm) : '—'}</td>
-                  <td className="px-4 py-2.5 text-center">
-                    {band ? <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${band.color}`}>{band.label}</span> : '—'}
+                <tr key={s.id} className="hover:bg-paper-2/60 cursor-pointer" onClick={() => onSelectStudent(s.id)}>
+                  <td className="px-2 py-2 text-ink-3">{i + 1}</td>
+                  <td className="px-2 py-2"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
+                  <td className="px-2 py-2 text-right font-display text-[18px] text-ink">{rec?.cwpm != null ? Math.round(rec.cwpm) : <span className="text-ink-3 font-sans text-[13px]">—</span>}</td>
+                  <td className="px-3 py-2">
+                    {band ? <span className={`inline-block px-2 py-0.5 rounded-full text-[10.5px] font-semibold ${band.color}`}>{band.label}</span> : <span className="text-ink-3">—</span>}
                   </td>
-                  <td className="px-4 py-2.5 text-center text-[12px] text-purple-600 font-medium">{rec?.reading_level || '—'}</td>
-                  <td className="px-4 py-2.5 text-center">
+                  <td className="px-2 py-2 text-[12px] text-ink-2">{rec?.reading_level || '—'}</td>
+                  <td className="px-2 py-2 text-right">
                     {rec?.accuracy_rate != null ? (() => {
                       const acc = rec.accuracy_rate
                       const level = acc >= 96 ? 'Independent' : acc >= 90 ? 'Instructional' : 'Frustration'
-                      const lColor = acc >= 96 ? 'text-green-600' : acc >= 90 ? 'text-amber-600' : 'text-red-600'
-                      const lBg = acc >= 96 ? 'bg-green-50' : acc >= 90 ? 'bg-amber-50' : 'bg-red-50'
+                      const lColor = acc >= 96 ? 'text-good' : acc >= 90 ? 'text-warn' : 'text-bad'
                       return (
                         <span className={`font-semibold ${lColor}`} title={`${level} level (${acc >= 96 ? '96%+ accuracy' : acc >= 90 ? '90-95% accuracy' : '<90% accuracy'})`}>
-                          {acc.toFixed(1)}%
-                          <span className={`block text-[8px] font-bold px-1 py-0 rounded ${lBg} ${lColor}`}>{level}</span>
+                          {acc.toFixed(1)}%<span className="block text-[10px] font-normal text-ink-3">{level}</span>
                         </span>
                       )
                     })() : '—'}
                   </td>
-                  <td className="px-4 py-2.5 text-center text-[11px] text-text-tertiary">
-                    {rec?.date ? new Date(rec.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                  <td className="px-3 py-2 text-[12px] text-ink-3">
+                    {rec?.date ? new Date(rec.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}{(rec as any)?.is_level_test ? <span className="block text-[10px] text-info">level test</span> : null}
                   </td>
-                  <td className="px-2 py-2.5">
+                  <td className="px-2 py-2">
                     {rec?.cwpm != null && bench.proficient > 0 ? (() => {
                       const mid = bench.approaching
                       const end = bench.proficient
@@ -279,15 +266,15 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
                       const pct = Math.min(100, (cwpmVal / maxBar) * 100)
                       const midPct = (mid / maxBar) * 100
                       const endPct = (end / maxBar) * 100
-                      const barColor = cwpmVal >= end ? '#22c55e' : cwpmVal >= mid ? '#f59e0b' : '#ef4444'
+                      const barColor = cwpmVal >= end ? 'var(--c-good)' : cwpmVal >= mid ? 'var(--c-warn)' : 'var(--c-bad)'
                       return (
-                        <div className="relative h-3 bg-gray-100 rounded-full overflow-visible" title={`CWPM: ${cwpmVal} | Mid: ${mid} | End: ${end}`}>
-                          <div className="absolute h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: barColor }} />
-                          <div className="absolute top-0 h-full border-l-2 border-dashed border-amber-400" style={{ left: `${midPct}%` }} title={`Mid: ${mid}`} />
-                          <div className="absolute top-0 h-full border-l-2 border-dashed border-green-500" style={{ left: `${endPct}%` }} title={`End: ${end}`} />
+                        <div className="relative h-2 rounded-sm" style={{ background: 'var(--c-track)' }} title={`${cwpmVal} cwpm · mid target ${mid} · end target ${end}`}>
+                          <div className="absolute h-full rounded-sm" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                          <div className="absolute -top-[3px] h-[14px] w-px" style={{ left: `${midPct}%`, background: 'var(--c-mute)' }} />
+                          <div className="absolute -top-[3px] h-[14px] w-px" style={{ left: `${endPct}%`, background: 'rgb(var(--ink))' }} />
                         </div>
                       )
-                    })() : <span className="text-text-tertiary text-[10px]">--</span>}
+                    })() : <span className="text-ink-3 text-[11px]">—</span>}
                   </td>
                 </tr>
               )
@@ -402,31 +389,24 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 
   return (
     <div className="space-y-4">
-      <div className="bg-surface border border-border rounded-xl p-5">
-        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-2">Select Student</label>
-        <select value={selectedStudentId || ''} onChange={(e: any) => setSelectedStudentId(e.target.value || null)}
-          className="w-full max-w-sm px-3 py-2.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
-          <option value="">Choose a student...</option>
-          {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name} ({s.korean_name})</option>)}
-        </select>
+      <div className="flex flex-wrap gap-1.5">
+        {students.map((s: any) => <button key={s.id} onClick={() => setSelectedStudentId(s.id)} className={`px-2.5 h-7 rounded-full border text-[12px] font-medium ${selectedStudentId === s.id ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{s.english_name}</button>)}
       </div>
 
       {selected && !loading && (
-        <div className="bg-surface border border-border rounded-xl overflow-hidden">
-          <div className="px-5 py-4 bg-accent-light border-b border-border flex items-center justify-between">
+        <div>
+          <div className="flex items-end justify-between gap-3 border-b border-rule-2 pb-2 mb-4">
             <div>
-              <h3 className="font-display text-lg font-semibold text-navy">{selected.english_name}<span className="text-text-tertiary ml-2 text-[14px] font-normal">{selected.korean_name}</span></h3>
-              <p className="text-[12px] text-text-secondary mt-0.5">{records.length} reading assessments{classBench && <span> | {selected.english_class} target: {classBench.cwpm_end} CWPM</span>}</p>
+              <h3 className="font-display text-[26px] leading-none text-ink">{selected.english_name}<span className="font-sans text-ink-3 ml-2 text-[13px]">{selected.korean_name}</span></h3>
+              <p className="text-[12px] text-ink-3 mt-1.5">{records.length} {lang === 'ko' ? '개 기록' : records.length === 1 ? 'reading record' : 'reading records'}{classBench && <span> · {selected.english_class} {lang === 'ko' ? '목표' : 'target'} {classBench.cwpm_end} cwpm</span>}</p>
             </div>
-            <button onClick={() => onAddRecord(selected.id)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark">
-              <Plus size={12} /> Add Record
-            </button>
+            <div className="flex items-center gap-2"><Link href={`/students/${selected.id}`} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center">{lang === 'ko' ? '학생 페이지' : 'Student page'}</Link><button onClick={() => onAddRecord(selected.id)} className="inline-flex items-center gap-1 h-8 px-3 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover"><Plus size={12} /> {lang === 'ko' ? '기록 추가' : 'Add record'}</button></div>
           </div>
 
           {records.length > 0 ? (
             <>
               {growthSentence && (
-                <div className={`px-5 py-3 border-b text-[12px] leading-relaxed ${growthSentence.onTrack ? 'bg-green-50/50 border-green-200 text-green-800' : 'bg-amber-50/50 border-amber-200 text-amber-800'}`}>
+                <div className={`mb-4 text-[13px] leading-relaxed ${growthSentence.onTrack ? 'text-good' : 'text-warn'}`}>
                   <span className="font-semibold">{selected.english_name}</span> has gained <span className="font-bold">{growthSentence.gain > 0 ? '+' : ''}{growthSentence.gain} CWPM</span> over {growthSentence.assessments} assessments ({growthSentence.perMonth}/month).
                   {growthSentence.current >= growthSentence.target
                     ? <span> Already at or above the <span className="font-semibold">{selected.english_class}</span> end-of-semester target of {growthSentence.target} CWPM.</span>
@@ -436,38 +416,32 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                   }
                 </div>
               )}
-              <div className="px-5 py-5 border-b border-border">
-                <p className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold mb-3 flex items-center gap-1"><TrendingUp size={13} /> CWPM Progression</p>
+              <div className="mb-6">
+                <p className="eyebrow mb-2">{lang === 'ko' ? '읽기 속도 추이' : 'Reading speed over time'}</p>
                 <CwpmLineChart records={records} classBench={classBench} />
-                <div className="flex gap-4 mt-3 text-[9px] text-text-tertiary flex-wrap">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> 95%+ accuracy</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> 90-94% accuracy</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> &lt;90% accuracy</span>
-                  {classBench && <span className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-green-200 inline-block border border-green-300" /> Target corridor ({classBench.cwpm_mid}-{classBench.cwpm_end} CWPM)</span>}
-                </div>
               </div>
 
               {/* NAEP Oral Reading Fluency Scale Reference */}
-              <div className="mx-0 my-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200/60 rounded-xl p-4">
-                <p className="text-[10px] font-bold text-navy uppercase tracking-wider mb-2.5">NAEP Oral Reading Fluency Scale -- Teacher Reference</p>
-                <div className="grid grid-cols-4 gap-2">
+              <details className="mb-6 group">
+                <summary className="eyebrow cursor-pointer list-none hover:text-ink">{lang === 'ko' ? 'NAEP 구술 읽기 유창성 척도 · 참고' : 'NAEP oral reading fluency scale · reference'} <span className="text-ink-3 group-open:hidden">▸</span><span className="text-ink-3 hidden group-open:inline">▾</span></summary>
+                <div className="grid grid-cols-4 gap-2 mt-2">
                   {[
                     { level: 1, label: 'Level 1', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', desc: 'Word-by-word reading. No phrasing or expression. Frequent pauses, false starts, and sound-outs. Text is not read as connected thought.' },
                     { level: 2, label: 'Level 2', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', desc: 'Reads in two-word phrases with some three- or four-word groupings. Some word-by-word reading persists. Little expression or intonation.' },
                     { level: 3, label: 'Level 3', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', desc: 'Reads in three- or four-word phrase groups. Mostly appropriate phrasing and expression. Some breaks in rhythm, but self-corrects.' },
                     { level: 4, label: 'Level 4', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', desc: 'Reads in meaningful phrases with expression and conversational pace. Smooth, expressive, and well-paced throughout. Sounds like natural speech.' },
                   ].map(n => (
-                    <div key={n.level} className={`rounded-lg border p-2.5 ${n.bg} ${n.border} ${n.text}`}>
-                      <span className="text-[11px] font-bold">{n.label}</span>
-                      <p className="text-[10px] leading-relaxed mt-1 opacity-90">{n.desc}</p>
+                    <div key={n.level} className="rounded border border-rule-2 p-2.5">
+                      <span className="text-[12px] font-semibold text-ink">{n.label}</span>
+                      <p className="text-[11.5px] leading-snug mt-1 text-ink-2">{n.desc}</p>
                     </div>
                   ))}
                 </div>
-              </div>
+              </details>
 
-              <table className="w-full text-[12px]">
-                <thead><tr className="bg-surface-alt text-[10px] uppercase tracking-wider text-text-tertiary">
-                  <th className="text-left px-5 py-2">Date</th>
+              <table className="w-full text-[12.5px] tabular-nums border-t border-rule-2">
+                <thead><tr className="eyebrow">
+                  <th className="text-left px-2 py-2 font-semibold border-b border-rule">Date</th>
                   <th className="text-left px-3 py-2">Passage</th>
                   <th className="text-center px-2 py-2">Lexile</th>
                   <th className="text-center px-3 py-2">Words</th>
@@ -481,23 +455,23 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                 </tr></thead>
                 <tbody>
                   {[...records].reverse().map((r: any) => (
-                    <tr key={r.id} className="border-t border-border/50 table-row-hover group cursor-pointer" onClick={() => setDetailRecord(r)}>
-                      <td className="px-5 py-2 text-text-secondary">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                    <tr key={r.id} className="border-t border-rule hover:bg-paper-2/60 group cursor-pointer" onClick={() => setDetailRecord(r)}>
+                      <td className="px-2 py-2 text-ink-2">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                       <td className="px-3 py-2 font-medium">
-                        {r.is_level_test && <span className="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-100 text-purple-700 mr-1">LT</span>}
+                        {r.is_level_test && <span className="inline-block px-1.5 py-0.5 rounded text-[9.5px] font-bold uppercase tracking-wide bg-info-soft text-info mr-1.5">Level test</span>}
                         {r.passage_title || '—'}
                       </td>
-                      <td className="px-2 py-2 text-center font-medium text-purple-600">{r.reading_level || '—'}</td>
+                      <td className="px-2 py-2 text-center text-ink-2">{r.reading_level || '—'}</td>
                       <td className="px-3 py-2 text-center">{r.word_count || '—'}</td>
                       <td className="px-3 py-2 text-center">{r.time_seconds ? `${Math.floor(r.time_seconds / 60)}:${String(r.time_seconds % 60).padStart(2, '0')}` : '—'}</td>
                       <td className="px-3 py-2 text-center">{r.errors ?? '—'}</td>
-                      <td className="px-3 py-2 text-center font-bold text-navy">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
+                      <td className="px-3 py-2 text-center font-semibold text-ink">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
                       <td className="px-3 py-2 text-center">
                         {r.accuracy_rate != null ? (() => {
                           const acc = r.accuracy_rate
                           const level = acc >= 96 ? 'Indep' : acc >= 90 ? 'Instr' : 'Frust'
-                          const lColor = acc >= 96 ? 'text-green-600' : acc >= 90 ? 'text-amber-600' : 'text-red-600'
-                          return <span className={`font-semibold ${lColor}`}>{acc.toFixed(1)}% <span className="text-[8px] font-bold opacity-70">({level})</span></span>
+                          const lColor = acc >= 96 ? 'text-good' : acc >= 90 ? 'text-warn' : 'text-bad'
+                          return <span className={`font-semibold ${lColor}`}>{acc.toFixed(1)}% <span className="text-[10px] font-normal text-ink-3">{level}</span></span>
                         })() : '—'}
                       </td>
                       <td className="px-2 py-2 text-center text-[11px] text-text-secondary">{r.naep_fluency ? `L${r.naep_fluency}` : '—'}</td>
@@ -516,7 +490,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
               </table>
             </>
           ) : (
-            <div className="p-8 text-center text-text-tertiary text-sm">No reading assessments yet.</div>
+            <p className="py-8 text-ink-3 text-[13px]">{lang === 'ko' ? '아직 읽기 기록이 없습니다.' : 'No reading records yet.'}</p>
           )}
         </div>
       )}
@@ -527,13 +501,13 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 
       {/* ORF Detail Modal */}
       {detailRecord && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setDetailRecord(null)}>
-          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-display text-lg font-semibold text-navy">
-                {detailRecord.is_level_test ? 'Level Test ORF' : 'ORF Assessment Detail'}
+        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setDetailRecord(null)}>
+          <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-rule flex items-center justify-between">
+              <h3 className="font-display text-[22px] leading-none text-ink">
+                {detailRecord.is_level_test ? (lang === 'ko' ? '레벨 테스트 읽기' : 'Level test reading') : (lang === 'ko' ? '읽기 기록' : 'Reading record')}
               </h3>
-              <button onClick={() => setDetailRecord(null)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+              <button onClick={() => setDetailRecord(null)} aria-label="Close" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center"><X size={16} /></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4 text-[13px]">
@@ -542,23 +516,23 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                 <div><span className="text-text-tertiary block text-[11px] mb-0.5">Lexile</span><span className="font-medium text-purple-600">{detailRecord.reading_level || '—'}</span></div>
                 <div><span className="text-text-tertiary block text-[11px] mb-0.5">Word Count</span><span className="font-medium">{detailRecord.word_count || '—'}</span></div>
               </div>
-              <div className="bg-surface-alt rounded-xl p-4">
+              <div className="border-t border-b border-rule-2 py-3">
                 <div className="grid grid-cols-4 gap-4 text-center">
                   <div>
                     <p className="text-[10px] text-text-tertiary uppercase">Time</p>
-                    <p className="text-[18px] font-bold text-navy">{detailRecord.time_seconds ? `${Math.floor(detailRecord.time_seconds / 60)}:${String(detailRecord.time_seconds % 60).padStart(2, '0')}` : '—'}</p>
+                    <p className="font-display text-[24px] text-ink">{detailRecord.time_seconds ? `${Math.floor(detailRecord.time_seconds / 60)}:${String(detailRecord.time_seconds % 60).padStart(2, '0')}` : '—'}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-text-tertiary uppercase">Errors</p>
-                    <p className="text-[18px] font-bold text-red-600">{detailRecord.errors ?? '—'}</p>
+                    <p className="font-display text-[24px] text-bad">{detailRecord.errors ?? '—'}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-text-tertiary uppercase">CWPM</p>
-                    <p className="text-[18px] font-bold text-navy">{detailRecord.cwpm != null ? Math.round(detailRecord.cwpm) : '—'}</p>
+                    <p className="font-display text-[24px] text-ink">{detailRecord.cwpm != null ? Math.round(detailRecord.cwpm) : '—'}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-text-tertiary uppercase">Accuracy</p>
-                    <p className={`text-[18px] font-bold ${detailRecord.accuracy_rate >= 96 ? 'text-green-600' : detailRecord.accuracy_rate >= 90 ? 'text-amber-600' : 'text-red-600'}`}>
+                    <p className={`font-display text-[24px] ${detailRecord.accuracy_rate >= 96 ? 'text-good' : detailRecord.accuracy_rate >= 90 ? 'text-warn' : 'text-bad'}`}>
                       {detailRecord.accuracy_rate != null ? `${detailRecord.accuracy_rate.toFixed(1)}%` : '—'}
                     </p>
                   </div>
@@ -571,7 +545,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                 <div className="text-[13px]"><span className="text-text-tertiary">NAEP Fluency:</span> <span className="font-medium">Level {detailRecord.naep_fluency}</span></div>
               )}
               {detailRecord.notes && (
-                <div><span className="text-text-tertiary block text-[11px] mb-1">Notes</span><p className="text-[13px] bg-amber-50 rounded-lg p-3 border border-amber-100">{detailRecord.notes}</p></div>
+                <div><span className="text-text-tertiary block text-[11px] mb-1">Notes</span><p className="text-[13px] text-ink-2 border-l-2 border-rule-2 pl-3">{detailRecord.notes}</p></div>
               )}
               {!detailRecord.is_level_test && (
                 <div className="flex gap-2 pt-2">
