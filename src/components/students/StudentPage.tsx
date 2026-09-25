@@ -43,7 +43,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
   const [form, setForm] = useState<any>({})
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [active, setActive] = useState('grades')
+  const [active, setActive] = useState('behavior')
 
   const load = async () => {
     const { data } = await supabase.from('students').select('*, teachers ( name )').eq('id', studentId).single()
@@ -85,7 +85,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
   }, [student?.id, activeSemester?.id])
 
   // Section list follows the scroll.
-  const sectionIds = ['grades', 'reading', 'attendance', 'behavior', 'standards', 'leveltests', 'support', 'notes']
+  const sectionIds = ['behavior', 'grades', 'reading', 'attendance', 'standards', 'leveltests', 'support', 'notes']
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {
       const vis = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
@@ -144,9 +144,11 @@ export default function StudentPage({ studentId }: { studentId: string }) {
   if (missing) return <div className="px-8 py-16 text-center"><p className="font-display text-[26px] text-ink">{lang === 'ko' ? '학생을 찾을 수 없습니다' : 'No such student'}</p><Link href="/students" className="text-accent underline text-[13px]">{lang === 'ko' ? '학생 명단으로' : 'Back to students'}</Link></div>
   if (!student) return <div className="p-16 flex justify-center"><Loader2 size={20} className="animate-spin text-ink-3" /></div>
 
+  // Behavior first: it is what teachers open a student for most often.
   const sections: [string, string][] = [
+    ['behavior', lang === 'ko' ? '행동' : 'Behavior'],
     ['grades', lang === 'ko' ? '성적' : 'Grades'], ['reading', lang === 'ko' ? '읽기' : 'Reading'], ['attendance', lang === 'ko' ? '출석' : 'Attendance'],
-    ['behavior', lang === 'ko' ? '행동' : 'Behavior'], ['standards', lang === 'ko' ? '기준' : 'Standards'], ['leveltests', lang === 'ko' ? '레벨 테스트' : 'Level tests'],
+    ['standards', lang === 'ko' ? '기준' : 'Standards'], ['leveltests', lang === 'ko' ? '레벨 테스트' : 'Level tests'],
     ['support', lang === 'ko' ? '지원 · WIDA, 스캐폴드, 목표, 그룹' : 'Support · WIDA, scaffolds, goals, groups'], ['notes', lang === 'ko' ? '메모와 이력' : 'Notes and history'],
   ]
   const letter = facts?.overall != null ? percentToLetter(facts.overall) : null
@@ -219,6 +221,9 @@ export default function StudentPage({ studentId }: { studentId: string }) {
             </section>
           )}
 
+          <Section id="behavior" title={lang === 'ko' ? '행동 기록' : 'Behavior'} meta={facts ? `${facts.behavior30} ${lang === 'ko' ? '건 · 30일' : facts.behavior30 === 1 ? 'log in 30 days' : 'logs in 30 days'}` : ''}>
+            <BehaviorTracker studentId={student.id} studentName={student.english_name} />
+          </Section>
           <Section id="grades" title={lang === 'ko' ? '성적' : 'Grades'} meta={activeSemester ? (lang === 'ko' ? activeSemester.name_ko || activeSemester.name : activeSemester.name) : ''}>
             <AcademicHistoryTab studentId={student.id} lang={lang as 'en' | 'ko'} />
           </Section>
@@ -227,9 +232,6 @@ export default function StudentPage({ studentId }: { studentId: string }) {
           </Section>
           <Section id="attendance" title={lang === 'ko' ? '출석' : 'Attendance'} meta={facts?.attendanceRate != null ? `${facts.attendanceRate}% · ${facts.absences} ${lang === 'ko' ? '결석' : 'absent'} · ${facts.tardies} ${lang === 'ko' ? '지각' : 'tardy'}` : ''}>
             <AttendanceTabInModal studentId={student.id} studentName={student.english_name} lang={lang as 'en' | 'ko'} />
-          </Section>
-          <Section id="behavior" title={lang === 'ko' ? '행동 기록' : 'Behavior'}>
-            <BehaviorTracker studentId={student.id} studentName={student.english_name} />
           </Section>
           <Section id="standards" title={lang === 'ko' ? '기준 숙달' : 'Standards'}>
             <StandardsMasteryTab studentId={student.id} lang={lang as 'en' | 'ko'} />

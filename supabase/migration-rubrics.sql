@@ -10,6 +10,10 @@
 -- row next to the total, so they can feed comments and the standards view.
 -- ============================================================================
 
+-- An older, unused `rubrics` table (name, domain, criteria, created_by,
+-- created_at) may already exist from 20260220_peer_parent_tables.sql. This
+-- creates the table if it is missing and then adds every column the app
+-- needs, so it is safe to run on either state, and safe to run twice.
 CREATE TABLE IF NOT EXISTS rubrics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -21,6 +25,20 @@ CREATE TABLE IF NOT EXISTS rubrics (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE rubrics ADD COLUMN IF NOT EXISTS task TEXT;
+ALTER TABLE rubrics ADD COLUMN IF NOT EXISTS band TEXT NOT NULL DEFAULT 'g35';
+ALTER TABLE rubrics ADD COLUMN IF NOT EXISTS criteria JSONB;
+ALTER TABLE rubrics ADD COLUMN IF NOT EXISTS english_class TEXT DEFAULT NULL;
+ALTER TABLE rubrics ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES teachers(id) ON DELETE SET NULL;
+ALTER TABLE rubrics ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE rubrics ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+-- The old table's `domain` column is NOT NULL; give it a default so new rows need not set it.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'rubrics' AND column_name = 'domain') THEN
+    ALTER TABLE rubrics ALTER COLUMN domain SET DEFAULT 'writing';
+  END IF;
+END $$;
 
 ALTER TABLE assessments ADD COLUMN IF NOT EXISTS rubric_id UUID REFERENCES rubrics(id) ON DELETE SET NULL;
 ALTER TABLE assessments ADD COLUMN IF NOT EXISTS rubric JSONB;          -- snapshot: {name, band, criteria}
