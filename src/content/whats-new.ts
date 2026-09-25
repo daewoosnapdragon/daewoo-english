@@ -101,7 +101,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   },
   {
     id: 'look', date: '2026-09-25', title: 'A calmer look, with dark mode',
-    body: 'You can now collapse the header, switch to dark mode from your name menu, and read the whole app in American English. Every screen has its own address, so the back button and bookmarks work.',
+    body: 'You can now collapse the header and switch to dark mode from your name menu. Every screen has its own address, so the back button and bookmarks work.',
     path: '/dashboard', guide: 'dashboard',
   },
 ]
