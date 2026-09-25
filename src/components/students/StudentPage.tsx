@@ -15,6 +15,10 @@ import {
   ScaffoldsTab, StudentGroupsTab, GoalsTab, WIDAPerformanceInsight, ClassTransferHistory, buildStudentPDFHtml, TEACHER_MAP,
 } from './StudentsView'
 import { ArrowLeft, Loader2, Pencil, Printer, Trash2 } from 'lucide-react'
+import { LineChart, Bars, Sparkline } from '@/components/charts'
+import { DOMAINS, DOMAIN_LABELS } from '@/types'
+import { calculateWeightedAverage, domainLabel } from '@/lib/utils'
+import { CWPM_BENCHMARKS } from '@/components/reading/ReadingLevelsView'
 
 // ─── Student page ────────────────────────────────────────────────
 // One address per student, /students/<id>. A rail on the left holds the
@@ -225,9 +229,11 @@ export default function StudentPage({ studentId }: { studentId: string }) {
             <BehaviorTracker studentId={student.id} studentName={student.english_name} />
           </Section>
           <Section id="grades" title={lang === 'ko' ? '성적' : 'Grades'} meta={activeSemester ? (lang === 'ko' ? activeSemester.name_ko || activeSemester.name : activeSemester.name) : ''}>
+            <GradesAtAGlance student={student} semesterId={activeSemester?.id || null} lang={lang} />
             <AcademicHistoryTab studentId={student.id} lang={lang as 'en' | 'ko'} />
           </Section>
           <Section id="reading" title={lang === 'ko' ? '읽기' : 'Reading'} meta={facts?.readingDate ? `${lang === 'ko' ? '최근' : 'last test'} ${fmtDate(facts.readingDate)}` : ''}>
+            <ReadingTrend student={student} lang={lang} />
             <ReadingTabInModal studentId={student.id} studentName={student.english_name} lang={lang as 'en' | 'ko'} />
           </Section>
           <Section id="attendance" title={lang === 'ko' ? '출석' : 'Attendance'} meta={facts?.attendanceRate != null ? `${facts.attendanceRate}% · ${facts.absences} ${lang === 'ko' ? '결석' : 'absent'} · ${facts.tardies} ${lang === 'ko' ? '지각' : 'tardy'}` : ''}>
@@ -303,5 +309,86 @@ function LevelTestHistory({ studentId, lang }: { studentId: string; lang: string
         ))}
       </tbody>
     </table>
+  )
+}
+
+// ── Reading speed over time, against the class target ─────────────
+function ReadingTrend({ student, lang }: { student: Student; lang: string }) {
+  const [points, setPoints] = useState<{ x: string; y: number; label?: string; note?: string; tone?: 'good' | 'warn' | 'bad' }[] | null>(null)
+  const [band, setBand] = useState<{ low: number; high: number; label: string } | undefined>()
+  useEffect(() => {
+    ;(async () => {
+      const [rd, cb] = await Promise.all([
+        supabase.from('reading_assessments').select('date, cwpm, accuracy_rate, reading_level').eq('student_id', student.id).order('date', { ascending: true }),
+        supabase.from('class_benchmarks').select('cwpm_mid, cwpm_end').eq('english_class', student.english_class).eq('grade', student.grade).limit(1).maybeSingle(),
+      ])
+      setPoints((rd.data || []).filter((r: any) => r.cwpm != null).map((r: any) => ({
+        x: r.date, y: r.cwpm, label: r.reading_level || undefined,
+        note: r.accuracy_rate != null ? `${Number(r.accuracy_rate).toFixed(0)}% ${lang === 'ko' ? '정확도' : 'accuracy'}` : undefined,
+        tone: r.accuracy_rate == null ? undefined : r.accuracy_rate >= 96 ? 'good' : r.accuracy_rate >= 90 ? 'warn' : 'bad',
+      })))
+      const b: any = (cb as any).data
+      if (b && b.cwpm_mid != null && b.cwpm_end != null) setBand({ low: Number(b.cwpm_mid), high: Number(b.cwpm_end), label: `${student.english_class} ${lang === 'ko' ? '목표' : 'target'} ${b.cwpm_mid}–${b.cwpm_end}` })
+      else { const f = CWPM_BENCHMARKS[student.grade]; if (f) setBand({ low: f.approaching, high: f.proficient, label: `${lang === 'ko' ? `${student.grade}학년 기준` : `Grade ${student.grade} benchmark`} ${f.approaching}–${f.proficient}` }) }
+    })()
+  }, [student.id, student.english_class, student.grade, lang])
+  if (!points) return null
+  if (points.length === 0) return null
+  return (
+    <div className="mb-6">
+      <LineChart points={points} band={band} height={200} unit="" />
+      <p className="text-[11px] text-ink-3 mt-1">{lang === 'ko' ? '점 색은 정확도: 초록 96%+, 노랑 90–95%, 빨강 그 이하.' : 'Dot color is accuracy: green 96%+, amber 90–95%, red below.'}</p>
+    </div>
+  )
+}
+
+// ── Domain tiles and student-vs-class bars for the active semester ──
+function GradesAtAGlance({ student, semesterId, lang }: { student: Student; semesterId: string | null; lang: string }) {
+  const [data, setData] = useState<{ domain: string; mine: number | null; cls: number | null; series: number[] }[] | null>(null)
+  useEffect(() => {
+    if (!semesterId) { setData([]); return }
+    ;(async () => {
+      const { data: assessments } = await supabase.from('assessments').select('id, domain, type, max_score, date, created_at').eq('semester_id', semesterId).eq('english_class', student.english_class).eq('grade', student.grade)
+      const list = (assessments || []) as any[]
+      if (list.length === 0) { setData([]); return }
+      const { data: grades } = await supabase.from('grades').select('student_id, assessment_id, score').in('assessment_id', list.map(a => a.id)).not('score', 'is', null)
+      const g = (grades || []) as any[]
+      const byA: Record<string, any> = Object.fromEntries(list.map(a => [a.id, a]))
+      const toItems = (rows: any[]) => rows.filter(r => byA[r.assessment_id]?.max_score > 0).map(r => ({ score: r.score, maxScore: byA[r.assessment_id].max_score, assessmentType: (['formative', 'summative', 'performance_task'].includes(byA[r.assessment_id].type) ? byA[r.assessment_id].type : 'formative') }))
+      const out = DOMAINS.map(domain => {
+        const ids = new Set(list.filter(a => a.domain === domain).map(a => a.id))
+        const mineRows = g.filter(r => r.student_id === student.id && ids.has(r.assessment_id))
+        const allRows = g.filter(r => ids.has(r.assessment_id))
+        const ordered = [...mineRows].sort((x, y) => ((byA[x.assessment_id].date || '') + byA[x.assessment_id].created_at).localeCompare((byA[y.assessment_id].date || '') + byA[y.assessment_id].created_at))
+        return {
+          domain,
+          mine: mineRows.length ? calculateWeightedAverage(toItems(mineRows) as any, student.grade, null, student.english_class) : null,
+          cls: allRows.length ? calculateWeightedAverage(toItems(allRows) as any, student.grade, null, student.english_class) : null,
+          series: ordered.map(r => (r.score / byA[r.assessment_id].max_score) * 100),
+        }
+      })
+      setData(out)
+    })()
+  }, [student.id, student.english_class, student.grade, semesterId])
+  if (!data || data.every(d => d.mine == null)) return null
+  const label = (d: string) => (DOMAIN_LABELS as any)[d]?.[lang === 'ko' ? 'ko' : 'en'] || domainLabel(d)
+  return (
+    <div className="mb-6 space-y-5">
+      <div className="grid grid-cols-2 md:grid-cols-5 border border-rule-2 rounded-md overflow-hidden">
+        {data.map(d => {
+          const drop = d.series.length >= 3 ? ((d.series[d.series.length - 3] + d.series[d.series.length - 2]) / 2) - d.series[d.series.length - 1] : 0
+          const tone = d.mine != null && d.mine < 70 ? 'bad' : drop >= 15 ? 'warn' : undefined
+          return (
+            <div key={d.domain} className="px-3 py-2.5 border-r border-rule last:border-r-0 min-w-0">
+              <p className="eyebrow truncate">{label(d.domain)}</p>
+              <p className={`font-display text-[24px] leading-none mt-1 tabular-nums ${tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink'}`}>{d.mine != null ? Math.round(d.mine) : '—'}</p>
+              <div className="mt-1.5"><Sparkline values={d.series} tone={tone} width={110} height={22} /></div>
+              <p className="text-[10.5px] text-ink-3 mt-0.5">{d.series.length} {lang === 'ko' ? '개 평가' : d.series.length === 1 ? 'assessment' : 'assessments'}{drop >= 15 ? ` · ${lang === 'ko' ? '최근 하락' : 'recent drop'}` : ''}</p>
+            </div>
+          )
+        })}
+      </div>
+      <Bars rows={data.filter(d => d.mine != null).map(d => ({ label: label(d.domain), a: d.mine, b: d.cls, tone: d.mine != null && d.mine < 70 ? 'bad' as const : undefined }))} aLabel={student.english_name} bLabel={`${student.english_class} ${lang === 'ko' ? '평균' : 'average'}`} />
+    </div>
   )
 }

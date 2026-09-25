@@ -8,6 +8,7 @@ import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } fro
 import { getKSTDateString, classToColor, classToTextColor, levelTestToReadingRecord } from '@/lib/utils'
 import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download, Printer, BarChart3, Upload, FileText } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
+import { LineChart } from '@/components/charts'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
 import PassagePickerPanel from '@/components/shared/PassagePickerPanel'
@@ -22,7 +23,7 @@ interface ReadingRecord {
 }
 
 // Grade-level CWPM benchmarks -- fallback defaults (used if no DB benchmarks found)
-const CWPM_BENCHMARKS: Record<number, { below: number; approaching: number; proficient: number; advanced: number }> = {
+export const CWPM_BENCHMARKS: Record<number, { below: number; approaching: number; proficient: number; advanced: number }> = {
   1: { below: 30, approaching: 53, proficient: 80, advanced: 100 },
   2: { below: 50, approaching: 72, proficient: 100, advanced: 120 },
   3: { below: 70, approaching: 92, proficient: 120, advanced: 145 },
@@ -668,101 +669,21 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
 
 function CwpmLineChart({ records, classBench }: { records: any[]; classBench: any | null }) {
   if (records.length === 0) return null
-
-  const W = 600, H = 220, PAD = { top: 20, right: 30, bottom: 35, left: 45 }
-  const chartW = W - PAD.left - PAD.right
-  const chartH = H - PAD.top - PAD.bottom
-
-  const cwpmValues = records.map((r: any) => r.cwpm || 0)
-  const targetMax = classBench ? classBench.cwpm_end : 0
-  const maxY = Math.max(...cwpmValues, targetMax, 20) * 1.15
-  const minY = 0
-
-  const xScale = (i: number) => PAD.left + (i / Math.max(records.length - 1, 1)) * chartW
-  const yScale = (v: number) => PAD.top + chartH - ((v - minY) / (maxY - minY)) * chartH
-
-  // Target corridor
-  const corridorY1 = classBench ? yScale(classBench.cwpm_end) : 0
-  const corridorY2 = classBench ? yScale(classBench.cwpm_mid) : 0
-
-  // Line path
-  const linePath = records.map((r: any, i: number) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(r.cwpm || 0)}`).join(' ')
-
-  // Y-axis ticks
-  const yTicks: number[] = []
-  const step = maxY <= 50 ? 10 : maxY <= 100 ? 20 : maxY <= 200 ? 25 : 50
-  for (let v = 0; v <= maxY; v += step) yTicks.push(v)
-
-  const dotColor = (acc: number) => acc >= 96 ? '#22C55E' : acc >= 90 ? '#F59E0B' : '#EF4444'
-
+  const points = records.map((r: any) => ({
+    x: r.date, y: r.cwpm || 0, label: r.reading_level || undefined,
+    note: r.accuracy_rate != null ? `${Number(r.accuracy_rate).toFixed(0)}% accuracy` : undefined,
+    tone: r.accuracy_rate == null ? undefined : r.accuracy_rate >= 96 ? 'good' as const : r.accuracy_rate >= 90 ? 'warn' as const : 'bad' as const,
+  }))
+  const band = classBench && classBench.cwpm_mid != null && classBench.cwpm_end != null
+    ? { low: Number(classBench.cwpm_mid), high: Number(classBench.cwpm_end), label: `Target ${classBench.cwpm_mid}–${classBench.cwpm_end} cwpm` }
+    : undefined
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 240 }}>
-      {/* Grid lines */}
-      {yTicks.map((v) => (
-        <g key={v}>
-          <line x1={PAD.left} y1={yScale(v)} x2={W - PAD.right} y2={yScale(v)} stroke="#e5e7eb" strokeWidth="0.5" />
-          <text x={PAD.left - 6} y={yScale(v) + 3} textAnchor="end" fontSize="9" fill="#94a3b8">{v}</text>
-        </g>
-      ))}
-
-      {/* Target corridor */}
-      {classBench && (
-        <rect x={PAD.left} y={corridorY1} width={chartW} height={Math.max(corridorY2 - corridorY1, 1)}
-          fill="#dcfce7" stroke="#bbf7d0" strokeWidth="0.5" opacity="0.6" rx="2" />
-      )}
-
-      {/* Midterm target line */}
-      {classBench && (
-        <>
-          <line x1={PAD.left} y1={yScale(classBench.cwpm_mid)} x2={W - PAD.right} y2={yScale(classBench.cwpm_mid)}
-            stroke="#86efac" strokeWidth="1" strokeDasharray="4 3" />
-          <text x={W - PAD.right + 3} y={yScale(classBench.cwpm_mid) + 3} fontSize="8" fill="#16a34a" fontWeight="600">Mid {classBench.cwpm_mid}</text>
-        </>
-      )}
-
-      {/* End target line */}
-      {classBench && (
-        <>
-          <line x1={PAD.left} y1={yScale(classBench.cwpm_end)} x2={W - PAD.right} y2={yScale(classBench.cwpm_end)}
-            stroke="#22c55e" strokeWidth="1.5" strokeDasharray="6 3" />
-          <text x={W - PAD.right + 3} y={yScale(classBench.cwpm_end) + 3} fontSize="8" fill="#16a34a" fontWeight="700">End {classBench.cwpm_end}</text>
-        </>
-      )}
-
-      {/* Data line */}
-      <path d={linePath} fill="none" stroke="#647FBC" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-
-      {/* Data points with accuracy color */}
-      {records.map((r: any, i: number) => {
-        const x = xScale(i), y = yScale(r.cwpm || 0)
-        return (
-          <g key={r.id || i}>
-            {/* White border */}
-            <circle cx={x} cy={y} r="6" fill="white" stroke="#e5e7eb" strokeWidth="1" />
-            {/* Colored dot */}
-            <circle cx={x} cy={y} r="5" fill={dotColor(r.accuracy_rate || 0)} stroke="white" strokeWidth="1.5" />
-            {/* CWPM label */}
-            <text x={x} y={y - 10} textAnchor="middle" fontSize="9" fontWeight="700" fill="#647FBC">{Math.round(r.cwpm || 0)}</text>
-            {/* Passage level + Lexile above dot */}
-            {r.reading_level && (
-              <text x={x} y={y - 20} textAnchor="middle" fontSize="7" fill="#94a3b8">
-                {r.reading_level}
-              </text>
-            )}
-            {/* Date on x-axis */}
-            <text x={x} y={H - 8} textAnchor="middle" fontSize="8" fill="#94a3b8">
-              {new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </text>
-          </g>
-        )
-      })}
-
-      {/* Y-axis label */}
-      <text x={12} y={PAD.top + chartH / 2} textAnchor="middle" fontSize="9" fill="#94a3b8" fontWeight="600" transform={`rotate(-90, 12, ${PAD.top + chartH / 2})`}>CWPM</text>
-    </svg>
+    <div>
+      <LineChart points={points} band={band} height={220} />
+      <p className="text-[11px] text-ink-3 mt-1">Dot colour is accuracy: green 96%+, amber 90–95%, red below. Hover a dot for the passage level.</p>
+    </div>
   )
 }
-
 // ─── Fluency Groups ─────────────────────────────────────────────────
 
 function FluencyGroups({ students, loading, lang, grade }: {

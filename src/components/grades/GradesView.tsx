@@ -12,6 +12,7 @@ import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
 import NewAssessmentFlow from './NewAssessmentFlow'
 import KeyScoreSheet from './KeyScoreSheet'
+import { Bars } from '@/components/charts'
 import RubricPicker from './RubricPicker'
 import RubricScoreSheet from './RubricScoreSheet'
 
@@ -1202,28 +1203,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
             </div>
             </div>
           </div>
-          {/* Domain bar chart */}
-          <div className="space-y-3">
-            {DOMAINS.map(domain => {
-              const s = stats[domain]; const pct = s.avg
-              const color = domainColors[domain]
-              return (
-                <div key={domain} className="flex items-center gap-3">
-                  <span className="text-[11px] font-semibold text-text-secondary w-20 text-right">{DOMAIN_LABELS[domain][lang]}</span>
-                  <div className="flex-1 h-7 bg-surface-alt rounded-lg overflow-hidden relative">
-                    {pct != null ? (
-                      <div className="h-full rounded-lg transition-all duration-700 flex items-center" style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: color }}>
-                        <span className="text-[10px] font-bold text-white ml-2 whitespace-nowrap">{pct.toFixed(1)}%</span>
-                      </div>
-                    ) : (
-                      <span className="absolute inset-0 flex items-center justify-center text-[10px] text-text-tertiary">No data</span>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-text-tertiary w-10">{s.assessmentCount} {lang === 'ko' ? '개' : ''}</span>
-                </div>
-              )
-            })}
-          </div>
+          <Bars rows={DOMAINS.map(domain => ({ label: DOMAIN_LABELS[domain][lang], a: stats[domain].avg, sub: `${stats[domain].assessmentCount} ${lang === 'ko' ? '개 평가' : stats[domain].assessmentCount === 1 ? 'assessment' : 'assessments'}`, tone: stats[domain].avg != null && stats[domain].avg! < 70 ? 'bad' as const : undefined }))} />
         </div>
       )}
 

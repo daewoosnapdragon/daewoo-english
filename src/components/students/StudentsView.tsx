@@ -13,6 +13,7 @@ import WIDABadge from '@/components/shared/WIDABadge'
 import { WIDAProfiles } from '@/components/curriculum/CurriculumView'
 import RosterUploadModal from './RosterUploadModal'
 import { exportToCSV } from '@/lib/export'
+import { Sparkline } from '@/components/charts'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 import PassagePickerPanel from '@/components/shared/PassagePickerPanel'
@@ -1083,24 +1084,12 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
               const color = domainColors[domain] || '#6B7280'
               const pts = assessments.map(a => a.pct)
               if (pts.length < 2) return <div key={domain} className="text-center text-[9px] text-text-tertiary">{DOMAIN_LABELS[domain]?.[lang] || domain}<br/>--</div>
-              const min = Math.min(...pts), max = Math.max(...pts)
-              const range = max - min || 1
-              const w = 80, h = 32, pad = 2
-              const pathD = pts.map((p, i) => {
-                const x = pad + (i / (pts.length - 1)) * (w - pad * 2)
-                const y = h - pad - ((p - min) / range) * (h - pad * 2)
-                return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
-              }).join(' ')
               const first = pts[0], last = pts[pts.length - 1]
               const trend = last - first
               return (
                 <div key={domain} className="text-center">
                   <span className="text-[9px] font-semibold block mb-1" style={{ color }}>{DOMAIN_LABELS[domain]?.[lang] || domain}</span>
-                  <svg width={w} height={h} className="mx-auto">
-                    <path d={pathD} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-                    <circle cx={pad} cy={h - pad - ((first - min) / range) * (h - pad * 2)} r={2} fill={color} />
-                    <circle cx={w - pad} cy={h - pad - ((last - min) / range) * (h - pad * 2)} r={2.5} fill={color} />
-                  </svg>
+                  <div className="flex justify-center"><Sparkline values={pts} tone={trend > 2 ? 'good' : trend < -2 ? 'bad' : undefined} width={80} height={32} /></div>
                   <span className={`text-[9px] font-bold ${trend > 2 ? 'text-green-600' : trend < -2 ? 'text-red-600' : 'text-text-tertiary'}`}>
                     {trend > 0 ? '+' : ''}{trend.toFixed(0)}% {trend > 2 ? '▲' : trend < -2 ? '▼' : '→'}
                   </span>

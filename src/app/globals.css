@@ -383,3 +383,9 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
    viewport and scrolls. Panels that already manage their own height and
    overflow are unaffected. */
 .fixed.inset-0 > div:not([class*="max-h-"]) { max-height: 92vh; overflow-y: auto; }
+
+/* ─── Chart colours ─────────────────────────────────────────────────
+   Hex, so SVG attributes can use them directly. One series colour, the
+   accent for a comparison, status colours only for meaning. */
+:root { --paper-hex: #F5F1E8; --c-1: #2F5C8A; --c-2: #8A2A2B; --c-good: #2E6B3A; --c-warn: #9A6A12; --c-bad: #A0322E; --c-mute: #857D6E; --c-rule: #D8D0BE; --c-band: rgba(46,107,58,0.10); --c-text: #4F4A3F; --c-track: #E3DCCB; }
+html.dark { --paper-hex: #16140F; --c-1: #7FA6D6; --c-2: #D9736F; --c-good: #7FBF86; --c-warn: #D8AE4E; --c-bad: #E07A72; --c-mute: #8E8574; --c-rule: #332E24; --c-band: rgba(127,191,134,0.14); --c-text: #C2B9A5; --c-track: #2A261D; }
