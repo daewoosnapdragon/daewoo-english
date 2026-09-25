@@ -10,9 +10,10 @@ import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, ChevronUp, BarCha
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
-import { SCORING_RUBRICS, LEVEL_LABELS, LEVEL_COLORS, RUBRIC_CATEGORIES } from '@/components/curriculum/scoring-rubrics'
 import NewAssessmentFlow from './NewAssessmentFlow'
 import KeyScoreSheet from './KeyScoreSheet'
+import RubricPicker from './RubricPicker'
+import RubricScoreSheet from './RubricScoreSheet'
 
 // Normalize CCSS input: "rl21" -> "RL.2.1", "rf13a" -> "RF.1.3a", "sl42" -> "SL.4.2"
 function normalizeCCSS(input: string): string {
@@ -50,6 +51,8 @@ interface Assessment {
   standards?: { code: string; dok?: number; description?: string }[]
   sections?: { label: string; standard: string; max_points: number }[] | null
   question_map?: { num: number; type: string; max_points: number; standard?: string; answer_key?: string }[] | null
+  rubric?: { name: string; band?: string; criteria: { key: string; label: string; levels: [string, string, string, string]; standard?: string }[] } | null
+  rubric_id?: string | null
 }
 
 interface StudentRow { id: string; english_name: string; korean_name: string; photo_url?: string }
@@ -447,23 +450,24 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
   selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; absentMap: Record<string, boolean>; exemptMap: Record<string, boolean>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onToggleAbsent: (sid: string) => void; onToggleExempt: (sid: string) => void; onRubricApply: (scores: Record<string, number>, rubricMax?: number) => void
   sheetMode: boolean; setSheetMode: (v: boolean) => void; onSheetSaved: () => void
 }) {
+  const { showToast } = useApp()
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [rubricOpen, setRubricOpen] = useState(false)
-  const isRubricDomain = selectedDomain === 'writing' || selectedDomain === 'reading' || selectedDomain === 'speaking'
   const hasQuestionMap = selectedAssessment?.question_map && selectedAssessment.question_map.length > 0
   return (
     <>
       {rubricOpen && selectedAssessment && (
-        <RubricScoringModal
-          students={students}
-          existingScores={scores}
-          maxScore={selectedAssessment.max_score}
-          domain={selectedDomain}
-          grade={selectedGrade}
-          assessmentId={selectedAssessment.id}
-          onApplyScores={(newScores, rubricMax) => onRubricApply(newScores, rubricMax)}
-          onClose={() => setRubricOpen(false)}
-        />
+        <RubricPicker grade={selectedGrade} englishClass={selectedClass} onClose={() => setRubricOpen(false)}
+          onUse={async r => {
+            // Snapshot the rubric onto the assessment; the total becomes 4 per criterion.
+            const snapshot = { name: r.name, band: r.band, criteria: r.criteria }
+            const maxScore = r.criteria.length * 4
+            const { error } = await supabase.from('assessments').update({ rubric: snapshot, rubric_id: r.rubric_id, max_score: maxScore }).eq('id', selectedAssessment.id)
+            if (error) { showToast(`Error: ${error.message}${error.message.includes('rubric') ? ' · run supabase/migration-rubrics.sql first' : ''}`); return }
+            setRubricOpen(false)
+            setSelectedAssessment({ ...selectedAssessment, rubric: snapshot, rubric_id: r.rubric_id, max_score: maxScore })
+            setSheetMode(true)
+          }} />
       )}
       <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
         {DOMAINS.map(d => {
@@ -513,6 +517,20 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
             <p className="text-text-tertiary text-sm max-w-md mx-auto">{assessments.length === 0 ? (lang === 'ko' ? '"평가 생성" 버튼을 클릭하여 시작하세요.' : 'Click "Create Assessment" to get started. Name it, pick the domain and category, set the total points, then enter scores.') : ''}</p>
             {assessments.length === 0 && <button onClick={onCreateAssessment} className="mt-4 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark transition-all"><Plus size={15} /> {createLabel}</button>}
           </div>
+        ) : selectedAssessment.rubric && sheetMode ? (
+          <div className="p-4">
+            <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <div className="flex items-baseline gap-3 min-w-0">
+                <span className="font-display text-[20px] leading-none text-ink truncate">{selectedAssessment.name}</span>
+                <span className="text-[12px] text-ink-3">/{selectedAssessment.max_score} · {catLabel(selectedAssessment.type)} · {lang === 'ko' ? '루브릭' : 'rubric'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setRubricOpen(true)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '루브릭 변경' : 'Change rubric'}</button>
+                <button onClick={() => setSheetMode(false)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '점수 목록으로' : 'Score list'}</button>
+              </div>
+            </div>
+            <RubricScoreSheet key={selectedAssessment.id + ':' + (selectedAssessment.rubric.criteria.length)} assessment={selectedAssessment as any} students={students} onSaved={onSheetSaved} />
+          </div>
         ) : hasQuestionMap && sheetMode ? (
           <div className="p-4">
             <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
@@ -541,7 +559,8 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                 <div className="flex items-center gap-3">
                   <span className="text-[12px] text-text-secondary">{enteredCount}/{students.length} entered</span>
                   <div className="w-24 h-1.5 bg-navy/10 rounded-full overflow-hidden"><div className="h-full bg-navy rounded-full transition-all" style={{ width: `${students.length > 0 ? (enteredCount / students.length) * 100 : 0}%` }} /></div>
-                  {isRubricDomain && <button onClick={() => setRubricOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-all"><ClipboardEdit size={13} />Score with Rubric</button>}
+                  {selectedAssessment.rubric && <button onClick={() => setSheetMode(true)} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink">{lang === 'ko' ? '루브릭으로 채점' : 'Rubric sheet'}</button>}
+                  {!selectedAssessment.rubric && <button onClick={() => setRubricOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-all"><ClipboardEdit size={13} />Score with Rubric</button>}
                                     {hasQuestionMap && <button onClick={() => setSheetMode(true)} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink"><Zap size={12} /> {lang === 'ko' ? '답안지로 채점' : 'Answer sheet'}</button>}
                   <CrossClassCompare assessmentName={selectedAssessment.name} domain={selectedAssessment.domain} maxScore={selectedAssessment.max_score} currentClass={selectedClass} grade={selectedGrade} semesterId={selectedSemester || ''} />
                 </div>
@@ -2187,326 +2206,4 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
 // Full-class rubric scoring: student sidebar + rubric grid + auto-fill scores
 
 
-// Uses LEVEL_COLORS and LEVEL_LABELS from scoring-rubrics.ts
-
 // ─── Rubric Picker ──────────────────────────────────────────────────
-function RubricPicker({ grade, domain, onSelect }: { grade: number; domain: string; onSelect: (idx: number) => void }) {
-  const [search, setSearch] = useState('')
-  const [filterCat, setFilterCat] = useState<string>('all')
-  const [previewIdx, setPreviewIdx] = useState<number | null>(null)
-
-  const filtered = SCORING_RUBRICS.map((r, i) => ({ ...r, idx: i })).filter(r => {
-    if (filterCat !== 'all' && r.category !== filterCat) return false
-    if (search) {
-      const q = search.toLowerCase()
-      return r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q) || r.criteria.some(c => c.label.toLowerCase().includes(q))
-    }
-    return true
-  })
-
-  // Sort: grade match first, then alphabetical
-  filtered.sort((a, b) => {
-    const aMatch = a.grades.includes(grade) ? 0 : 1
-    const bMatch = b.grades.includes(grade) ? 0 : 1
-    if (aMatch !== bMatch) return aMatch - bMatch
-    return a.name.localeCompare(b.name)
-  })
-
-  const previewRubric = previewIdx != null ? SCORING_RUBRICS[previewIdx] : null
-
-  return (
-    <div className="flex flex-1 overflow-hidden">
-      {/* Left: Search + List */}
-      <div className={`${previewRubric ? 'w-1/2' : 'w-full'} flex flex-col border-r border-border`}>
-        <div className="p-4 border-b border-border space-y-2 shrink-0">
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search rubrics by name or topic..."
-              className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
-          </div>
-          <div className="flex gap-1 flex-wrap">
-            <button onClick={() => setFilterCat('all')}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${filterCat === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
-              All ({SCORING_RUBRICS.length})
-            </button>
-            {RUBRIC_CATEGORIES.map(cat => {
-              const count = SCORING_RUBRICS.filter(r => r.category === cat).length
-              return (
-                <button key={cat} onClick={() => setFilterCat(filterCat === cat ? 'all' : cat)}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${filterCat === cat ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
-                  {cat} ({count})
-                </button>
-              )
-            })}
-          </div>
-        </div>
-        <div className="overflow-y-auto flex-1 p-2 space-y-1">
-          {filtered.length === 0 && <p className="text-center text-text-tertiary text-[12px] py-8">No rubrics match your search.</p>}
-          {filtered.map(r => {
-            const isGradeMatch = r.grades.includes(grade)
-            const isPreviewing = previewIdx === r.idx
-            return (
-              <div key={r.idx}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl cursor-pointer transition-all border ${
-                  isPreviewing ? 'bg-purple-50 border-purple-200' : isGradeMatch ? 'bg-surface border-border hover:border-navy/30 hover:bg-surface-alt/50' : 'bg-surface/60 border-border/50 hover:border-border hover:bg-surface-alt/30 opacity-70 hover:opacity-100'
-                }`}>
-                <div className="flex-1 min-w-0" onClick={() => setPreviewIdx(isPreviewing ? null : r.idx)}>
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${isGradeMatch ? 'bg-navy/10 text-navy' : 'bg-gray-100 text-gray-500'}`}>
-                      Gr {r.grades.join(',')}
-                    </span>
-                    <span className="text-[8px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full">{r.category}</span>
-                    <span className="text-[8px] text-text-tertiary">{r.criteria.length} criteria</span>
-                  </div>
-                  <h4 className="text-[12px] font-semibold text-navy leading-tight truncate">{r.name}</h4>
-                  <p className="text-[9px] text-text-tertiary mt-0.5 truncate">{r.criteria.map(c => c.label).join(' · ')}</p>
-                </div>
-                <button onClick={() => onSelect(r.idx)}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-navy text-white hover:bg-navy-dark shrink-0">
-                  Use
-                </button>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Right: Preview panel */}
-      {previewRubric && (
-        <div className="w-1/2 overflow-y-auto p-5 bg-surface-alt/30">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-[15px] font-bold text-navy">{previewRubric.name}</h3>
-              <p className="text-[10px] text-text-tertiary">{previewRubric.category} · Grades {previewRubric.grades.join(', ')} · {previewRubric.criteria.length} criteria</p>
-            </div>
-            <button onClick={() => { if (previewIdx != null) onSelect(previewIdx) }}
-              className="px-4 py-2 rounded-xl text-[11px] font-semibold bg-navy text-white hover:bg-navy-dark">
-              Use This Rubric
-            </button>
-          </div>
-          <div className="space-y-2">
-            {previewRubric.criteria.map((c, ci) => (
-              <div key={ci} className="bg-surface border border-border rounded-xl p-3">
-                <div className="flex items-start gap-2">
-                  <span className="text-[11px] font-bold text-navy shrink-0">{ci + 1}.</span>
-                  <div>
-                    <h4 className="text-[12px] font-bold text-navy">{c.label}</h4>
-                    {c.description && <p className="text-[10px] text-text-secondary mt-0.5 leading-relaxed">{c.description}</p>}
-                  </div>
-                </div>
-              </div>
-            ))}
-            <div className="mt-3 p-3 bg-surface-alt rounded-lg">
-              <p className="text-[10px] text-text-secondary">Each criterion is scored 1–4:</p>
-              <div className="flex gap-2 mt-1.5">
-                {LEVEL_LABELS.map((lvl, i) => (
-                  <span key={i} className={`px-2 py-0.5 rounded text-[9px] font-medium border ${LEVEL_COLORS[i]}`}>{i + 1} = {lvl}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function RubricScoringModal({ students, existingScores, maxScore, domain, grade, assessmentId, onApplyScores, onClose }: {
-  students: { id: string; english_name: string; korean_name: string }[]
-  existingScores: Record<string, number | null>
-  maxScore: number
-  domain: string
-  grade: number
-  assessmentId?: string
-  onApplyScores: (scores: Record<string, number>, rubricMax?: number) => void
-  onClose: () => void
-}) {
-  // Auto-select the same rubric used last time for this assessment
-  const [selectedRubric, setSelectedRubric] = useState<number | null>(() => {
-    if (assessmentId && typeof window !== 'undefined') {
-      const saved = localStorage.getItem(`daewoo_rubric_${assessmentId}`)
-      if (saved != null) return Number(saved)
-    }
-    return null
-  })
-  const [activeStudentIdx, setActiveStudentIdx] = useState(0)
-  // Per-student scores: { studentId: number[] (one per criterion) }
-  const [allScores, setAllScores] = useState<Record<string, number[]>>({})
-
-  const rubric = selectedRubric != null ? SCORING_RUBRICS[selectedRubric] : null
-  const activeStudent = students[activeStudentIdx]
-  const studentScores = activeStudent ? (allScores[activeStudent.id] || []) : []
-  const studentTotal = studentScores.reduce((s, v) => s + v, 0)
-  const maxTotal = rubric ? rubric.criteria.length * 4 : 0
-
-  const setStudentScore = (criterionIdx: number, value: number) => {
-    if (!activeStudent || !rubric) return
-    const current = allScores[activeStudent.id] || new Array(rubric.criteria.length).fill(0)
-    const updated = [...current]
-    updated[criterionIdx] = value
-    setAllScores(prev => ({ ...prev, [activeStudent.id]: updated }))
-  }
-
-  const getStudentTotal = (sid: string) => {
-    const sc = allScores[sid]
-    return sc ? sc.reduce((s, v) => s + v, 0) : null
-  }
-
-  const scoredCount = Object.keys(allScores).filter(sid => {
-    const sc = allScores[sid]
-    return sc && sc.length > 0 && sc.every(v => v != null && v >= 0)
-  }).length
-
-  const handleApply = () => {
-    const result: Record<string, number> = {}
-    Object.entries(allScores).forEach(([sid, sc]) => {
-      if (sc && sc.length > 0 && sc.every(v => v != null && v >= 0)) {
-        result[sid] = sc.reduce((s, v) => s + v, 0)
-      }
-    })
-    onApplyScores(result, maxTotal || undefined)
-    onClose()
-  }
-
-  const goNext = () => { if (activeStudentIdx < students.length - 1) setActiveStudentIdx(activeStudentIdx + 1) }
-  const goPrev = () => { if (activeStudentIdx > 0) setActiveStudentIdx(activeStudentIdx - 1) }
-
-  // Auto-scroll sidebar to active student
-  useEffect(() => {
-    const el = document.getElementById(`rubric-student-${activeStudentIdx}`)
-    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [activeStudentIdx])
-
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-5xl max-h-[92vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-2.5 border-b border-border shrink-0">
-          <div>
-            <h2 className="text-[15px] font-bold text-navy">Score with Rubric</h2>
-            <p className="text-[10px] text-text-secondary">{scoredCount}/{students.length} scored{rubric ? ` · ${rubric.category} › ${rubric.name}` : ''}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {rubric && <button onClick={() => setSelectedRubric(null)} className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-border text-text-secondary hover:bg-surface-alt">Change Rubric</button>}
-            {rubric && <button onClick={handleApply} disabled={scoredCount === 0}
-              className="px-4 py-1.5 rounded-xl text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-              Apply {scoredCount} Score{scoredCount !== 1 ? 's' : ''}
-            </button>}
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
-          </div>
-        </div>
-
-        {!rubric ? (
-          /* Rubric Selection - searchable with category filter and preview */
-          <RubricPicker grade={grade} domain={domain} onSelect={(idx) => {
-            setSelectedRubric(idx)
-            if (assessmentId && typeof window !== 'undefined') localStorage.setItem(`daewoo_rubric_${assessmentId}`, String(idx))
-          }} />
-        ) : (
-          /* Scoring Interface: Sidebar + Rubric Grid */
-          <div className="flex flex-1 overflow-hidden">
-            {/* Student Sidebar */}
-            <div className="w-52 shrink-0 border-r border-border overflow-y-auto bg-surface-alt/30">
-              <div className="p-2 space-y-0.5">
-                {students.map((s, i) => {
-                  const total = getStudentTotal(s.id)
-                  const isComplete = total != null && allScores[s.id]?.every(v => v != null && v >= 0)
-                  const isActive = i === activeStudentIdx
-                  return (
-                    <button key={s.id} id={`rubric-student-${i}`} onClick={() => setActiveStudentIdx(i)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-[11px] transition-all flex items-center gap-2 ${
-                        isActive ? 'bg-navy text-white' : 'hover:bg-surface-alt text-text-primary'
-                      }`}>
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
-                        isComplete ? (isActive ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700') :
-                        total != null ? (isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700') :
-                        (isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400')
-                      }`}>
-                        {isComplete ? '✓' : total != null ? '~' : (i + 1)}
-                      </span>
-                      <span className="truncate font-medium">{s.english_name}</span>
-                      {total != null && <span className={`ml-auto text-[10px] shrink-0 ${isActive ? 'text-white/70' : 'text-text-tertiary'}`}>{total}</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Main Scoring Area */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {activeStudent && (
-                <>
-                  {/* Student header + nav - compact */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <button onClick={goPrev} disabled={activeStudentIdx === 0} className="p-1 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={13} className="rotate-90" /></button>
-                      <div>
-                        <h3 className="text-[14px] font-bold text-navy">{activeStudent.english_name} <span className="text-text-tertiary font-normal text-[12px]">{activeStudent.korean_name}</span></h3>
-                        <p className="text-[9px] text-text-tertiary">{activeStudentIdx + 1} of {students.length}</p>
-                      </div>
-                      <button onClick={goNext} disabled={activeStudentIdx === students.length - 1} className="p-1 rounded-lg border border-border hover:bg-surface-alt disabled:opacity-30"><ChevronDown size={13} className="-rotate-90" /></button>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[24px] font-bold text-navy">{studentTotal}<span className="text-[13px] text-text-tertiary">/{maxTotal}</span></div>
-                      <div className="text-[10px] text-text-secondary">{maxTotal > 0 ? Math.round((studentTotal / maxTotal) * 100) : 0}%</div>
-                    </div>
-                  </div>
-
-                  {/* Level legend - compact */}
-                  <div className="flex gap-1.5 mb-2">
-                    <span className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">0 = N/A</span>
-                    {LEVEL_LABELS.map((l, i) => (
-                      <span key={i} className={`text-[8px] font-semibold px-1.5 py-0.5 rounded-full ${LEVEL_COLORS[i].split(' ').slice(0, 2).join(' ')}`}>{i + 1} = {l}</span>
-                    ))}
-                  </div>
-
-                  {/* Criteria Grid - compact */}
-                  <div className="space-y-2">
-                    {rubric.criteria.map((c, ci) => (
-                      <div key={ci} className="bg-surface-alt/40 border border-border rounded-xl p-2.5">
-                        <p className="text-[11px] font-semibold text-navy">{c.label}</p>
-                        <p className="text-[9px] text-text-tertiary mb-1.5 leading-snug">{c.description}</p>
-                        <div className="grid grid-cols-5 gap-1.5">
-                          {/* 0 / N/A button */}
-                          <button onClick={() => setStudentScore(ci, 0)}
-                            className={`py-1.5 px-1 rounded-lg border-2 text-center transition-all ${
-                              studentScores[ci] === 0 ? 'bg-gray-100 border-gray-400 text-gray-700 ring-2 ring-gray-300 shadow-sm' : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'
-                            }`}>
-                            <div className="text-[13px] font-bold">0</div>
-                            <div className="text-[7px] leading-tight mt-0.5">N/A</div>
-                          </button>
-                          {[1, 2, 3, 4].map(v => (
-                            <button key={v} onClick={() => setStudentScore(ci, v)}
-                              className={`py-1.5 px-1 rounded-lg border-2 text-center transition-all ${
-                                studentScores[ci] === v ? LEVEL_COLORS[v - 1] + ' ring-2 shadow-sm' : 'bg-surface border-border text-text-tertiary hover:bg-surface-alt'
-                              }`}>
-                              <div className="text-[13px] font-bold">{v}</div>
-                              <div className="text-[7px] leading-tight mt-0.5">{LEVEL_LABELS[v - 1]}</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Auto-advance to next unscored */}
-                  {studentScores.length === rubric.criteria.length && studentScores.every(v => v != null && v >= 0) && activeStudentIdx < students.length - 1 && (
-                    <div className="mt-4 flex justify-end">
-                      <button onClick={goNext} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-gold text-navy-dark hover:bg-gold-light">
-                        Next Student →
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-
-
-// ─── Item Entry Score Phase (rubric-style student sidebar + question grid) ───
