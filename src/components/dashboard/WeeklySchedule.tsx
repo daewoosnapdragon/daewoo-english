@@ -82,7 +82,7 @@ function gradeDot(label: string): string {
   return 'bg-ink-3'
 }
 
-export default function WeeklySchedule({ onCollapse }: { onCollapse?: () => void } = {}) {
+export default function WeeklySchedule({ onCollapse, onPickPeriod }: { onCollapse?: () => void; onPickPeriod?: (grade: number) => void } = {}) {
   const [now, setNow] = useState(getKSTNow)
   const kstDay = now.getDay() // 0=Sun, 1=Mon...
   const isWeekday = kstDay >= 1 && kstDay <= 5
@@ -158,9 +158,13 @@ export default function WeeklySchedule({ onCollapse }: { onCollapse?: () => void
           const isActive = idx === activePeriodIndex
           const isNext = idx === nextPeriodIndex
           const [startTime] = period.time.split('-')
+          const gradeNum = /Grade (\d)/.test(slot.label) ? Number(slot.label.match(/Grade (\d)/)![1]) : null
+          const clickable = !!onPickPeriod && gradeNum != null && isToday
+          const Row: any = clickable ? 'button' : 'div'
           return (
-            <div key={period.time}
-              className={`grid grid-cols-[44px_1fr] gap-2 items-center py-1.5 px-1 -mx-1 ${isActive ? 'bg-accent-soft' : ''}`}>
+            <Row key={period.time} onClick={clickable ? () => onPickPeriod!(gradeNum!) : undefined}
+              title={clickable ? 'Mark attendance for this class' : undefined}
+              className={`w-full text-left grid grid-cols-[44px_1fr] gap-2 items-center py-1.5 px-1 -mx-1 ${isActive ? 'bg-accent-soft' : ''} ${clickable ? 'hover:bg-paper-2 rounded cursor-pointer' : ''}`}>
               <span className={`text-[11px] tabular-nums text-right ${isActive ? 'text-accent font-semibold' : 'text-ink-3'}`}>{startTime}</span>
               <span className="flex items-center gap-2 min-w-0">
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${gradeDot(slot.label)}`} />
@@ -169,10 +173,11 @@ export default function WeeklySchedule({ onCollapse }: { onCollapse?: () => void
                 {isNext && !isActive && <span className="eyebrow">next</span>}
                 {slot.note && <span className="text-[10.5px] text-accent ml-auto flex-shrink-0">{slot.note}</span>}
               </span>
-            </div>
+            </Row>
           )
         })}
       </div>
+      {onPickPeriod && isToday && <p className="text-[11px] text-ink-3 pt-2">Click a class to mark its attendance.</p>}
     </div>
   )
 }

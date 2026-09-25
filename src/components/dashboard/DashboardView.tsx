@@ -9,6 +9,7 @@ import { ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { getKSTDateString, domainLabel } from '@/lib/utils'
 import { Plus, X, ChevronLeft, ChevronRight, Trash2, Pencil, PanelLeftClose, UserX, UserMinus, ArrowRight, Bell, Loader2 } from 'lucide-react'
 import WeeklySchedule from './WeeklySchedule'
+import AttendanceDrawer, { ATTENDANCE_SAVED_EVENT } from '@/components/attendance/AttendanceDrawer'
 
 // ─── Event types ─────────────────────────────────────────────────
 // Nine stored types, five colors: fewer hues means each one is recognizable
@@ -165,6 +166,14 @@ export default function DashboardView() {
   useEffect(() => { try { if (localStorage.getItem('daewoo_schedule') === 'closed') setScheduleOpen(false) } catch {} }, [])
   const toggleSchedule = (open: boolean) => { setScheduleOpen(open); try { localStorage.setItem('daewoo_schedule', open ? 'open' : 'closed') } catch {} }
 
+  // Attendance drawer, opened from a class period on the schedule.
+  const [attendanceGrade, setAttendanceGrade] = useState<number | null>(null)
+  useEffect(() => {
+    const onSaved = () => shared.reload()
+    window.addEventListener(ATTENDANCE_SAVED_EVENT, onSaved)
+    return () => window.removeEventListener(ATTENDANCE_SAVED_EVENT, onSaved)
+  }, [shared.reload])
+
   // Students marked absent/exempt from this page, so the queue updates without a refetch.
   const [resolved, setResolved] = useState<Record<string, Set<string>>>({})
   const queue = useGradingQueue(shared, resolved)
@@ -226,7 +235,7 @@ export default function DashboardView() {
       {/* ─── Month + agenda + schedule ─── */}
       <SharedCalendar aside={
         scheduleOpen
-          ? <WeeklySchedule onCollapse={() => toggleSchedule(false)} />
+          ? <WeeklySchedule onCollapse={() => toggleSchedule(false)} onPickPeriod={g => setAttendanceGrade(g)} />
           : <button onClick={() => toggleSchedule(true)} className="w-full h-9 border border-rule rounded flex items-center justify-center gap-2 text-[12px] text-ink-3 hover:text-ink hover:bg-paper-2">
               <PanelLeftClose size={13} />{lang === 'ko' ? '주간 시간표 보기' : 'Show weekly schedule'}
             </button>
@@ -244,6 +253,7 @@ export default function DashboardView() {
           <AdminAlertPanel />
         </div>
       )}
+      {attendanceGrade != null && <AttendanceDrawer grade={attendanceGrade} onClose={() => setAttendanceGrade(null)} />}
     </div>
   )
 }

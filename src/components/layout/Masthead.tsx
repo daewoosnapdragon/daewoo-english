@@ -60,7 +60,8 @@ function useNavSignals(pathname: string | null): Signals {
     }
     check()
     const id = setInterval(check, 60_000)
-    return () => { cancelled = true; clearInterval(id) }
+    window.addEventListener('daewoo:attendance-saved', check)
+    return () => { cancelled = true; clearInterval(id); window.removeEventListener('daewoo:attendance-saved', check) }
   }, [currentTeacher, pathname])
   return s
 }
