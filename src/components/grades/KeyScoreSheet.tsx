@@ -9,7 +9,8 @@ import { rubricScore, LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO
 import { splitEarned } from '@/lib/domainSplit'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
 import { plainName } from '@/components/curriculum/standards-plain'
-import { Check, ChevronLeft, ChevronRight, Loader2, LayoutGrid, ListChecks } from 'lucide-react'
+import AssessmentAnalysis from './AssessmentAnalysis'
+import { BarChart3, Check, ChevronLeft, ChevronRight, Loader2, LayoutGrid, ListChecks } from 'lucide-react'
 
 // ─── Answer sheet scoring ────────────────────────────────────────
 // The same bubble sheet the written level test uses: one student at a time,
@@ -24,7 +25,7 @@ const hasRubric = (q: QuestionMapItem) => q.type === 'rubric' && !!q.rubric?.cri
 type Flags = { absent: boolean; exempt: boolean }
 
 interface Props {
-  assessment: { id: string; name: string; max_score: number; question_map: QuestionMapItem[]; mixed?: boolean; domain?: string }
+  assessment: { id: string; name: string; max_score: number; question_map: QuestionMapItem[]; mixed?: boolean; domain?: string; english_class?: string }
   students: StudentRow[]
   onSaved?: () => void
 }
@@ -43,7 +44,7 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
   const levelLabels = lang === 'ko' ? LEVEL_LABELS_KO : LEVEL_LABELS
   const zeroText = lang === 'ko' ? LEVEL_ZERO_TEXT_KO : LEVEL_ZERO_TEXT
   const levelTone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good border-good text-white' : 'bg-ink border-ink text-paper'
-  const [view, setView] = useState<'sheet' | 'grid'>('sheet')
+  const [view, setView] = useState<'sheet' | 'grid' | 'analysis'>('sheet')
   // Hovering a column header on the class grid shows what the column is:
   // the question, its key and points, the standard in plain words, the
   // rubric criterion with its levels, and how the class did on it.
@@ -253,6 +254,7 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
           <div className="inline-flex border border-rule-2 rounded overflow-hidden">
             <button onClick={() => setView('sheet')} className={`h-8 px-3 text-[12.5px] font-medium inline-flex items-center gap-1.5 ${view === 'sheet' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><ListChecks size={13} />{lang === 'ko' ? '답안지' : 'Answer sheet'}</button>
             <button onClick={() => setView('grid')} className={`h-8 px-3 text-[12.5px] font-medium inline-flex items-center gap-1.5 border-l border-rule-2 ${view === 'grid' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><LayoutGrid size={13} />{lang === 'ko' ? '반 전체' : 'Class grid'}</button>
+            <button onClick={() => setView('analysis')} className={`h-8 px-3 text-[12.5px] font-medium inline-flex items-center gap-1.5 border-l border-rule-2 ${view === 'analysis' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><BarChart3 size={13} />{lang === 'ko' ? '분석' : 'Analysis'}</button>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -408,6 +410,8 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
             </div>
           </div>
         </div>
+      ) : view === 'analysis' ? (
+        <AssessmentAnalysis map={map} students={students} responses={responses} flags={flags} letters={letters} maxScore={assessment.max_score} englishClass={assessment.english_class} lang={lang} onOpenStudent={i => { if (i >= 0) { setActiveIdx(i); setView('sheet') } }} />
       ) : (
         <div className="border border-rule-2 rounded-lg overflow-auto max-h-[70vh]">
           <table className="text-[12px] tabular-nums border-collapse min-w-full">
