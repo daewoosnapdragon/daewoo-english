@@ -9,6 +9,7 @@ import LoginPage from '@/components/layout/LoginPage'
 import Masthead from '@/components/layout/Masthead'
 import NoticeBoard from '@/components/layout/NoticeBoard'
 import CommandPalette from '@/components/layout/CommandPalette'
+import Spotlight from '@/components/guide/Spotlight'
 import Toast from '@/components/ui/Toast'
 import { Loader2 } from 'lucide-react'
 
@@ -65,6 +66,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       <Toast />
       <CommandPalette />
+      <Spotlight />
     </div>
   )
 }

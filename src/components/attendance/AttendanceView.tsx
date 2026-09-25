@@ -539,7 +539,7 @@ export default function AttendanceView() {
               </div>
             )}
           </div>
-          <button onClick={handleSave} disabled={saving || !hasChanges} className="inline-flex items-center gap-2 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+          <button data-guide="attendance.save" onClick={handleSave} disabled={saving || !hasChanges} className="inline-flex items-center gap-2 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}{lang === 'ko' ? '출석 저장' : 'Save attendance'}
           </button>
         </div>

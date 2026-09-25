@@ -136,7 +136,7 @@ export default function WidaView() {
         </div>
         {tab === 'levels' && !assessing && (
           <div className="flex items-center gap-2">
-            <button onClick={() => setAssessing(true)} disabled={!students.length} className="inline-flex items-center gap-1.5 h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50"><ListChecks size={14} />{ko ? '반 전체 평가' : 'Assess the class'}</button>
+            <button data-guide="wida.assess" onClick={() => setAssessing(true)} disabled={!students.length} className="inline-flex items-center gap-1.5 h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50"><ListChecks size={14} />{ko ? '반 전체 평가' : 'Assess the class'}</button>
             <button onClick={printOnePager} className="inline-flex items-center gap-1.5 h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink"><Printer size={14} />{ko ? '인쇄' : 'Print'}</button>
             <button onClick={saveSnapshot} className="inline-flex items-center gap-1.5 h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink"><Camera size={14} />{ko ? '스냅샷 저장' : 'Save snapshot'}</button>
           </div>

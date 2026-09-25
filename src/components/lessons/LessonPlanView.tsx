@@ -939,7 +939,7 @@ function ParentCalendarView() {
                       <span className="text-[10px] text-amber-900">{hw || '--'}</span>
                     )}
                     {canEdit && weekMonday && (
-                      <button
+                      <button data-guide="lessons.copy"
                         onClick={() => copyLastWeek(weekMonday)}
                         disabled={copyingWeek === weekMonday}
                         title="Fill this week's empty days from last week. Days that already have content are left untouched."

@@ -222,7 +222,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
           </div>
           <div>
             <span className={label}>{ko ? '채점 방식' : 'How will you score it?'}</span>
-            <div className="flex flex-wrap gap-1.5">
+            <div data-guide="grades.scoring" className="flex flex-wrap gap-1.5">
               <button onClick={() => setScoring('key')} className={chip(scoring === 'key')} title={ko ? '정답 키를 입력하고 답안지로 채점' : 'Type the key, then bubble in answers'}>{ko ? '정답 키' : 'Answer key'}</button>
               <button onClick={() => setScoring('rubric')} className={chip(scoring === 'rubric')} title={ko ? '기준별 0–4 척도' : 'Criteria on a 0–4 scale'}>{ko ? '루브릭' : 'Rubric'}</button>
               <button onClick={() => setScoring('points')} className={chip(scoring === 'points')} title={ko ? '학생별 점수 하나' : 'One score per student'}>{ko ? '점수만' : 'Points only'}</button>

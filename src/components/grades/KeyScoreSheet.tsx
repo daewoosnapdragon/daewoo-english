@@ -251,7 +251,7 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div className="flex items-center gap-3">
           <span className="text-[13px] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'}</span>
-          <div className="inline-flex border border-rule-2 rounded overflow-hidden">
+          <div data-guide="grades.views" className="inline-flex border border-rule-2 rounded overflow-hidden">
             <button onClick={() => setView('sheet')} className={`h-8 px-3 text-[12.5px] font-medium inline-flex items-center gap-1.5 ${view === 'sheet' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><ListChecks size={13} />{lang === 'ko' ? '답안지' : 'Answer sheet'}</button>
             <button onClick={() => setView('grid')} className={`h-8 px-3 text-[12.5px] font-medium inline-flex items-center gap-1.5 border-l border-rule-2 ${view === 'grid' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><LayoutGrid size={13} />{lang === 'ko' ? '반 전체' : 'Class grid'}</button>
             <button onClick={() => setView('analysis')} className={`h-8 px-3 text-[12.5px] font-medium inline-flex items-center gap-1.5 border-l border-rule-2 ${view === 'analysis' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><BarChart3 size={13} />{lang === 'ko' ? '분석' : 'Analysis'}</button>

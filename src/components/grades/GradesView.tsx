@@ -378,7 +378,7 @@ export default function GradesView() {
               </button>
             )}
             {subView === 'entry' && !showCreateFlow && (
-              <button onClick={() => setShowCreateFlow(true)} className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover">
+              <button data-guide="grades.new" onClick={() => setShowCreateFlow(true)} className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover">
                 <Plus size={15} /> {lang === 'ko' ? '새 평가' : 'New assessment'}
               </button>
             )}

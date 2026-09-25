@@ -6,7 +6,9 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { NAV_ORDER, VIEW_PATHS, PAGE_TITLES } from '@/lib/routes'
 import { getDisplayName } from '@/lib/utils'
-import { Search, User, ArrowRight, Moon, Sun, Globe, Megaphone, Plus, ClipboardCheck, CalendarDays, FileText } from 'lucide-react'
+import { Search, User, ArrowRight, Moon, Sun, Globe, Megaphone, Plus, ClipboardCheck, CalendarDays, FileText, BookOpen, Sparkles } from 'lucide-react'
+import { GUIDE_SECTIONS, ADMIN_SECTIONS } from '@/content/guide'
+import { releasedEntries } from '@/content/whats-new'
 
 // ─── Command palette ─────────────────────────────────────────────
 // ⌘K from anywhere. Type a student's name to jump to them (⌘↩ opens their
@@ -17,7 +19,7 @@ export const OPEN_PALETTE_EVENT = 'daewoo:open-palette'
 export const COMPOSE_NOTICE_EVENT = 'daewoo:compose-notice'
 
 interface Lite { id: string; english_name: string; korean_name: string; english_class: string; grade: number }
-interface Item { key: string; kind: 'student' | 'page' | 'action'; label: string; hint?: string; icon: any; run: (alt: boolean) => void; dot?: string }
+interface Item { key: string; kind: 'student' | 'page' | 'action' | 'help'; label: string; hint?: string; icon: any; run: (alt: boolean) => void; dot?: string }
 
 const CLASS_DOT: Record<string, string> = {
   Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy',
@@ -88,7 +90,14 @@ export default function CommandPalette() {
         hint: `${st.korean_name} · G${st.grade} · ${st.english_class}`, icon: User,
         run: alt => go(alt ? `/students/${st.id}#sec-behavior` : `/students/${st.id}`),
       }))
-    out.push(...actions.filter(a => matches(`${a.label} ${a.hint || ''}`)), ...studentHits, ...pages.filter(p => matches(p.label)))
+    const help: Item[] = [
+      ...GUIDE_SECTIONS.concat(currentTeacher?.role === 'admin' ? ADMIN_SECTIONS : []).flatMap(sec => [
+        { key: `g-${sec.id}`, kind: 'help' as const, label: `Guide · ${sec.title}`, hint: sec.purpose, icon: BookOpen, run: () => go(`/guide#${sec.id}`) },
+        ...sec.tasks.map(t => ({ key: `g-${sec.id}-${t.title}`, kind: 'help' as const, label: t.title, hint: `Guide · ${sec.title}`, icon: BookOpen, run: () => go(`/guide#${sec.id}`) })),
+      ]),
+      ...releasedEntries().map(e => ({ key: `n-${e.id}`, kind: 'help' as const, label: e.title, hint: 'What’s new', icon: Sparkles, run: () => go('/whats-new') })),
+    ]
+    out.push(...actions.filter(a => matches(`${a.label} ${a.hint || ''}`)), ...studentHits, ...pages.filter(p => matches(p.label)), ...help.filter(h => matches(`${h.label} ${h.hint || ''}`)).slice(0, 6))
     return out
   }, [q, students, currentTeacher, lang, theme, pathname])
 

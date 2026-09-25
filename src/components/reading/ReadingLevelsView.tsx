@@ -89,7 +89,7 @@ export default function ReadingLevelsView() {
           <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`} · {students.length} {lang === 'ko' ? '명' : 'students'}</p>
           <h1 className="font-display text-[34px] leading-none text-ink">{lang === 'ko' ? '읽기' : 'Reading'}</h1>
         </div>
-        <button onClick={() => { setShowAddModal(true); setAddForStudentId(selectedStudentId || (students[0]?.id || null)) }}
+        <button data-guide="reading.add" onClick={() => { setShowAddModal(true); setAddForStudentId(selectedStudentId || (students[0]?.id || null)) }}
           className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover">
           <Plus size={15} /> {lang === 'ko' ? '읽기 기록 추가' : 'Add reading record'}
         </button>

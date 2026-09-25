@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react'
 import Link from 'next/link'
+import WhatsNewCard from '@/components/guide/WhatsNewCard'
 import { useApp } from '@/lib/context'
 import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
@@ -223,6 +224,8 @@ export default function DashboardView() {
           </Link>
         </div>
       </div>
+
+      <WhatsNewCard />
 
       {/* ─── Stats ─── */}
       {!shared.loading && (

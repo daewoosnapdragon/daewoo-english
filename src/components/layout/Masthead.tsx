@@ -7,7 +7,9 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { NAV_ORDER, VIEW_PATHS, viewForPath } from '@/lib/routes'
 import { isSchoolDayOff } from '@/lib/calendarDays'
-import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell } from 'lucide-react'
+import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen } from 'lucide-react'
+import { useWhatsNew } from '@/components/guide/useWhatsNew'
+import { SECTION_FOR_VIEW } from '@/content/guide'
 
 // ─── Masthead ────────────────────────────────────────────────────────
 // Brand on its own line, links centered beneath it, a thin context bar under
@@ -85,7 +87,7 @@ function useKstClock() {
 function StudentFinder() {
   const { language } = useApp()
   return (
-    <button onClick={() => window.dispatchEvent(new Event('daewoo:open-palette'))}
+    <button data-guide="find" onClick={() => window.dispatchEvent(new Event('daewoo:open-palette'))}
       className="relative w-[220px] h-8 pl-8 pr-2 text-left text-[12.5px] bg-paper-2 border border-rule-2 rounded text-ink-3 hover:border-ink-3">
       <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
       {language === 'ko' ? '학생, 페이지, 동작…  ⌘K' : 'Find anything…  ⌘K'}
@@ -98,6 +100,7 @@ function UserMenu() {
   const { currentTeacher, setCurrentTeacher, language, setLanguage, theme, setTheme } = useApp()
   const [open, setOpen] = useState(false)
   const router = useRouter()
+  const { unseen } = useWhatsNew()
   if (!currentTeacher) return null
   const signOut = () => { setCurrentTeacher(null); sessionStorage.removeItem('daewoo_teacher_id'); router.push('/dashboard') }
   const item = 'w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-ink-2 hover:bg-paper-2 hover:text-ink text-left'
@@ -109,6 +112,7 @@ function UserMenu() {
           {currentTeacher.name.charAt(0)}
         </span>
         <span className="font-medium text-ink">{currentTeacher.name}</span>
+        {unseen.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-accent" title="Something new" />}
         <span className="text-ink-3 hidden md:inline">· {currentTeacher.role === 'admin' ? 'Admin' : currentTeacher.english_class}</span>
         <ChevronDown size={13} className="text-ink-3" />
       </button>
@@ -125,6 +129,13 @@ function UserMenu() {
             </button>
             <Link href="/settings" className={item} onClick={() => setOpen(false)}>
               <Settings size={14} />{language === 'ko' ? '설정' : 'Settings'}
+            </Link>
+            <div className="border-t border-rule my-1" />
+            <Link href="/whats-new" className={item} onClick={() => setOpen(false)}>
+              <Sparkles size={14} />{language === 'ko' ? '새로운 기능' : 'What’s new'}{unseen.length > 0 && <span className="ml-auto text-[10.5px] font-semibold text-white bg-accent rounded-full px-1.5">{unseen.length}</span>}
+            </Link>
+            <Link href="/guide" className={item} onClick={() => setOpen(false)}>
+              <BookOpen size={14} />{language === 'ko' ? '사용 안내' : 'How to use this app'}
             </Link>
             <div className="border-t border-rule my-1" />
             <button className={item} onClick={signOut}>
@@ -222,6 +233,7 @@ export default function Masthead() {
             <span className="font-semibold text-ink">{currentTeacher.role === 'admin' ? 'Admin' : currentTeacher.english_class}</span>
           </span>
           <span className="tabular-nums">{dateStr}</span>
+          {SECTION_FOR_VIEW[active] && <Link href={`/guide#${SECTION_FOR_VIEW[active]}`} className="text-ink-3 hover:text-ink">{language === 'ko' ? '이 페이지 사용법' : 'How this page works'}</Link>}
         </div>
       </div>
       {reminder}
