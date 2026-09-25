@@ -15,6 +15,8 @@ export interface WhatsNewEntry {
   path?: string           // where it lives
   guide?: string          // guide section id
   tour?: Tour
+  /** A card with a picture in the first-visit modal. Entries without one go on the last card as one-liners. */
+  highlight?: { image: string; how: string }
 }
 
 export const WHATS_NEW: WhatsNewEntry[] = [
@@ -37,16 +39,20 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   },
   {
     id: 'attendance-auto', date: '2026-09-28', title: 'Attendance from the schedule, and days off handled for you',
-    body: 'You can now click a period on the dashboard schedule to mark that class without leaving the page. A day off on the calendar means no attendance is expected; a field trip marks everyone absent with a note automatically.',
-    path: '/attendance', guide: 'attendance',
-    tour: { path: '/attendance', steps: [{ anchor: 'attendance.save', text: 'Tap a status per student, then save. The masthead dot goes away once today is done.' }] },
+    body: 'Click a period on the dashboard schedule to mark that class in a drawer, without leaving the page. A day off on the calendar means no attendance is expected. A field trip marks everyone absent with the trip as the note, and both block the day on lesson plans.',
+    path: '/dashboard', guide: 'attendance',
+    highlight: { image: '/whats-new/attendance-drawer.png', how: 'Dashboard → weekly schedule → click the period. Days off and field trips come from the calendar events admin adds.' },
+    tour: { path: '/dashboard', steps: [{ anchor: '#schedule', text: 'Click a period to mark that class here. The drawer saves the same attendance as the Attendance page.' }] },
   },
+
   {
     id: 'answer-sheet', date: '2026-09-28', title: 'Score a test on an answer sheet',
-    body: 'You can now describe a paper as sections (ten multiple choice, two short answers worth 5, a writing task with a rubric), type the key where letters belong, and score student by student with the keyboard: A–D, T/F, numbers, Enter for the next student, X for absent. Half points are allowed on written items.',
+    body: 'Tests can be scored question by question instead of one total. Describe the paper as sections (ten multiple choice, two short answers worth 5, a writing task), type the key where letters belong, and mark each student with the keyboard. Half points are allowed. The old way, one total per student, is still there under Points only.',
     path: '/grades', guide: 'grades',
+    highlight: { image: '/whats-new/answer-sheet.png', how: 'Grades → New assessment → Answer key. A–D and numbers mark, Enter moves to the next student, X marks absent. Choose Points only to keep entering one score per student.' },
     tour: { path: '/grades', steps: [{ anchor: 'grades.new', text: 'Start here. Name it, choose how it will be scored, then build the key as sections.' }] },
   },
+
   {
     id: 'class-grid-analysis', date: '2026-09-28', title: 'See the whole class and what to reteach',
     body: 'You can now switch a scored test to a class grid (hover a column for the question, its standard, and how many chose each answer) or to Analysis: the score spread, mastery by standard with the names in each band, the questions most missed and why, and the weak criterion on a rubric.',
@@ -55,9 +61,12 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   },
   {
     id: 'rubrics', date: '2026-09-28', title: 'Rubrics with descriptors, scored 0 to 4',
-    body: 'You can now pick a rubric from the library, build your own from ready-made criteria, and score it on a full page where each level button carries its descriptor. 0 is a real zero. Rubrics you save can be kept to your class or shared with the school, and deleting one never touches grades.',
+    body: 'Pick a rubric from the library or build your own from ready-made criteria, then score on a full page where every level button carries its descriptor. A rubric can also sit inside an answer key as one section. Save rubrics to your class or share them with the school; deleting one never touches grades.',
     path: '/grades', guide: 'grades',
+    highlight: { image: '/whats-new/rubric-scoring.png', how: 'Grades → New assessment → Rubric, or add a “Rubric-scored” section to an answer key. Keys 0–4 mark and move down; Enter goes to the next student.' },
+    tour: { path: '/grades', steps: [{ anchor: 'grades.scoring', text: 'Rubric here scores the whole assessment with one rubric. A rubric can also be one section of an answer key.' }] },
   },
+
   {
     id: 'standards-plain', date: '2026-09-28', title: 'Standards in plain language',
     body: 'You can now search standards by what they mean ("main idea", "compare characters") instead of the legal text, filter by grade, and see which ones your class has used before. The Standards page has a mastery heat map built from every scored question.',
@@ -65,9 +74,12 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   },
   {
     id: 'student-page', date: '2026-09-28', title: 'A full page for every student',
-    body: 'You can now open a student at their own address, behavior log first, then grades at a glance, the reading trend, attendance, standards, level tests, support, and notes. Share the link with a colleague and it opens the same page.',
+    body: 'Each student has their own page and address: behavior log first, then grades at a glance, the reading trend with level test scores, attendance, standards, level tests, support, and notes. Share the link and a colleague opens the same page.',
     path: '/students', guide: 'students',
+    highlight: { image: '/whats-new/student-page.png', how: 'Type the name in the box at the top left (or press ⌘K), or click a name anywhere in the app.' },
+    tour: { path: '/students', steps: [{ anchor: 'find', text: 'The fastest way to a student: type a name here, or press ⌘K from any page.' }] },
   },
+
   {
     id: 'reading-targets', date: '2026-09-28', title: 'Reading targets on the Reading page',
     body: 'You can now edit your class’s fluency and Lexile targets right on the Reading page, and the level test oral scores show up in each student’s trend beside your running records.',

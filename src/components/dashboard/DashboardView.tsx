@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react'
 import Link from 'next/link'
-import WhatsNewCard from '@/components/guide/WhatsNewCard'
+import WhatsNewModal from '@/components/guide/WhatsNewModal'
 import { useApp } from '@/lib/context'
 import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
@@ -225,7 +225,7 @@ export default function DashboardView() {
         </div>
       </div>
 
-      <WhatsNewCard />
+      <WhatsNewModal />
 
       {/* ─── Stats ─── */}
       {!shared.loading && (
@@ -241,7 +241,7 @@ export default function DashboardView() {
       {/* ─── Month + agenda + schedule ─── */}
       <SharedCalendar aside={
         scheduleOpen
-          ? <WeeklySchedule onCollapse={() => toggleSchedule(false)} onPickPeriod={g => setAttendanceGrade(g)} />
+          ? <div id="schedule"><WeeklySchedule onCollapse={() => toggleSchedule(false)} onPickPeriod={g => setAttendanceGrade(g)} /></div>
           : <button onClick={() => toggleSchedule(true)} className="w-full h-9 border border-rule rounded flex items-center justify-center gap-2 text-[12px] text-ink-3 hover:text-ink hover:bg-paper-2">
               <PanelLeftClose size={13} />{lang === 'ko' ? '주간 시간표 보기' : 'Show weekly schedule'}
             </button>

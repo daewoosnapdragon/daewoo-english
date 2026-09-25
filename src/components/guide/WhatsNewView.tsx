@@ -42,8 +42,10 @@ export default function WhatsNewView() {
               <article key={e.id} className="py-3 grid grid-cols-[14px_minmax(0,1fr)] gap-3">
                 <span className={`mt-2 w-2 h-2 rounded-full ${unseenIds.has(e.id) ? 'bg-accent' : 'bg-transparent'}`} />
                 <div>
+                  {e.highlight && <img src={e.highlight.image} alt="" className="w-full max-w-[520px] rounded border border-rule-2 mb-3" onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = 'none' }} />}
                   <h3 className="text-[15px] font-semibold text-ink">{e.title}</h3>
                   <p className="text-[13.5px] text-ink-2 leading-relaxed mt-1 max-w-[65ch]">{e.body}</p>
+                  {e.highlight && <p className="text-[13px] text-ink leading-relaxed mt-1 max-w-[65ch]"><span className="font-semibold">To use it:</span> {e.highlight.how}</p>}
                   <p className="mt-1.5 flex gap-4 text-[12.5px]">
                     {e.tour && <button onClick={() => startTour(e.tour!, p => router.push(p))} className="text-accent hover:underline">Show me</button>}
                     {e.path && !e.tour && <Link href={e.path} className="text-accent hover:underline">Open</Link>}
