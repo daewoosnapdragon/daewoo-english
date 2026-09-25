@@ -1,5 +1,5 @@
-import StudentsView from '@/components/students/StudentsView'
+import StudentPage from '@/components/students/StudentPage'
 
 export default function Page({ params }: { params: { id: string } }) {
-  return <StudentsView openStudentId={params.id} />
+  return <StudentPage studentId={params.id} />
 }

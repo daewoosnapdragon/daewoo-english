@@ -23,15 +23,15 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
   const me = currentTeacher?.id || ''
   const isAdmin = currentTeacher?.role === 'admin'
   const [saved, setSaved] = useState<SavedRubric[]>([])
-  const [tableMissing, setTableMissing] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [sel, setSel] = useState<{ kind: 'template'; key: string } | { kind: 'saved'; id: string } | null>(null)
   const [building, setBuilding] = useState<RubricDraft | null>(null)
   const band = bandForGrade(grade)
 
   const load = async () => {
     const { data, error } = await supabase.from('rubrics').select('*').order('updated_at', { ascending: false })
-    if (error) { setTableMissing(true); return }
-    setTableMissing(false)
+    if (error) { console.warn('Rubrics:', error.message); setLoadError(error.message); return }
+    setLoadError(null)
     setSaved(((data || []) as SavedRubric[]).filter(r => !r.english_class || r.english_class === englishClass))
   }
   useEffect(() => { load() }, [englishClass])
@@ -89,8 +89,13 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
               <p className="eyebrow px-3 mb-1">{lang === 'ko' ? '템플릿' : 'Templates'}</p>
               {templates.map(t => <button key={t.key} onClick={() => setSel({ kind: 'template', key: t.key })} className={row(sel?.kind === 'template' && sel.key === t.key)}><span><span className="block font-medium">{t.name}</span><span className={`block text-[11px] ${sel?.kind === 'template' && sel.key === t.key ? 'text-paper/70' : 'text-ink-3'}`}>{t.description}</span></span></button>)}
             </div>
-            {tableMissing ? (
-              <p className="px-3 text-[12px] text-warn">{lang === 'ko' ? '저장된 루브릭 표가 없습니다. supabase/migration-rubrics.sql을 실행하세요.' : 'Saved rubrics need supabase/migration-rubrics.sql run once.'}</p>
+            {loadError ? (
+              <div className="px-3 text-[12px] text-warn space-y-1">
+                <p>{lang === 'ko' ? '저장된 루브릭을 불러올 수 없습니다.' : 'Saved rubrics could not be loaded.'}</p>
+                <p className="text-ink-3 break-words">{loadError}</p>
+                <p className="text-ink-3">{/schema cache|does not exist|relation/i.test(loadError) ? (lang === 'ko' ? 'migration-rubrics.sql을 실행했다면 Supabase SQL 편집기에서 NOTIFY pgrst, \'reload schema\'; 를 실행하거나 잠시 후 다시 시도하세요.' : "If migration-rubrics.sql has been run, the API may not have noticed yet: run NOTIFY pgrst, 'reload schema'; in the SQL Editor, or retry in a minute.") : ''}</p>
+                <button onClick={load} className="h-7 px-2.5 rounded border border-rule-2 text-ink-2 hover:text-ink">{lang === 'ko' ? '다시 시도' : 'Retry'}</button>
+              </div>
             ) : (
               <>
                 {[

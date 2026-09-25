@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
@@ -18,7 +19,7 @@ import PassagePickerPanel from '@/components/shared/PassagePickerPanel'
 
 // ─── Constants ───────────────────────────────────────────────────────
 
-const TEACHER_MAP: Record<string, string> = {
+export const TEACHER_MAP: Record<string, string> = {
   Lily: '00000000-0000-0000-0000-000000000001', Camellia: '00000000-0000-0000-0000-000000000002',
   Daisy: '00000000-0000-0000-0000-000000000003', Sunflower: '00000000-0000-0000-0000-000000000004',
   Marigold: '00000000-0000-0000-0000-000000000005', Snapdragon: '00000000-0000-0000-0000-000000000006',
@@ -26,13 +27,13 @@ const TEACHER_MAP: Record<string, string> = {
 
 // ─── Main View ──────────────────────────────────────────────────────
 
-export default function StudentsView({ openStudentId }: { openStudentId?: string } = {}) {
+export default function StudentsView() {
   const { t, language, currentTeacher, showToast } = useApp()
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [filterGrade, setFilterGrade] = useState<Grade | null>(null)
   const [filterClass, setFilterClass] = useState<EnglishClass | null>(null)
   const [sortMode, setSortMode] = useState<'name' | 'korean_class' | 'english_class' | 'grade'>('english_class')
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [showManage, setShowManage] = useState(false)
   const [subView, setSubView] = useState<'roster' | 'wida'>('roster')
   const [filterReview, setFilterReview] = useState(false)
@@ -46,26 +47,6 @@ export default function StudentsView({ openStudentId }: { openStudentId?: string
     english_class: filterClass || teacherClass || undefined,
     search: search || undefined,
   })
-
-  // /students/<id> opens that student. The roster may be filtered to another
-  // class, so fall back to fetching the one row.
-  const openedRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (!openStudentId || loading || openedRef.current === openStudentId) return
-    openedRef.current = openStudentId
-    const hit = students.find(s => s.id === openStudentId)
-    if (hit) { setSelectedStudent(hit); return }
-    supabase.from('students').select('*').eq('id', openStudentId).single()
-      .then(({ data }) => { if (data) setSelectedStudent(data as Student) })
-  }, [openStudentId, loading, students])
-
-  // Keep the address in step with the open student without remounting the page.
-  const openStudent = (s: Student | null) => {
-    setSelectedStudent(s)
-    if (typeof window === 'undefined') return
-    const url = s ? `/students/${s.id}` : '/students'
-    if (window.location.pathname !== url) window.history.pushState(null, '', url)
-  }
 
   const sorted = useMemo(() => {
     let result = [...students]
@@ -283,7 +264,7 @@ export default function StudentsView({ openStudentId }: { openStudentId?: string
               <tbody>
                 {sorted.map((s, i) => (
                   <tr key={s.id} className={`border-t border-border table-row-hover ${bulkEdit ? '' : 'cursor-pointer'} ${!s.is_active ? 'opacity-40' : ''}`}
-                    onClick={() => { if (!bulkEdit) openStudent(s) }}>
+                    onClick={() => { if (!bulkEdit) router.push(`/students/${s.id}`) }}>
                     <td className="px-4 py-3 text-text-tertiary">{i + 1}</td>
                     <td className="px-4 py-2">
                       {s.photo_url ? (
@@ -338,7 +319,6 @@ export default function StudentsView({ openStudentId }: { openStudentId?: string
       </div>
       )}
 
-      {selectedStudent && <StudentModal student={selectedStudent} onClose={() => openStudent(null)} onUpdated={(s) => { setSelectedStudent(s); refetch() }} />}
     </div>
   )
 }
@@ -571,43 +551,6 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
 
 // ─── Student Module Tabs ────────────────────────────────────────────
 
-function StudentModuleTabs({ studentId, studentName, lang }: { studentId: string; studentName: string; lang: 'en' | 'ko' }) {
-  const [activeTab, setActiveTab] = useState('about')
-  const tabs = [
-    { id: 'about', label: lang === 'ko' ? '정보' : 'About' },
-    { id: 'behavior', label: lang === 'ko' ? '행동 기록' : 'Behavior Log' },
-    { id: 'academic', label: lang === 'ko' ? '학업 이력' : 'Academic History' },
-    { id: 'reading', label: lang === 'ko' ? '읽기 수준' : 'Reading' },
-    { id: 'attendance', label: lang === 'ko' ? '출석' : 'Attendance' },
-    { id: 'standards', label: lang === 'ko' ? '표준 숙달' : 'Standards' },
-    { id: 'scaffolds', label: lang === 'ko' ? '스캐폴드' : 'Scaffolds' },
-    { id: 'groups', label: lang === 'ko' ? '그룹' : 'Groups' },
-    { id: 'goals', label: lang === 'ko' ? '목표' : 'Goals' },
-  ]
-
-  return (
-    <div>
-      <div className="flex gap-1 mb-4 border-b border-border overflow-x-auto">
-        {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-2 text-[12px] font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${activeTab === tab.id ? 'border-navy text-navy' : 'border-transparent text-text-tertiary hover:text-text-secondary'}`}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      {activeTab === 'about' && <AboutTab studentId={studentId} lang={lang} />}
-      {activeTab === 'behavior' && <BehaviorTracker studentId={studentId} studentName={studentName} />}
-      {activeTab === 'academic' && <AcademicHistoryTab studentId={studentId} lang={lang} />}
-      {activeTab === 'reading' && <ReadingTabInModal studentId={studentId} studentName={studentName} lang={lang} />}
-      {activeTab === 'attendance' && <AttendanceTabInModal studentId={studentId} studentName={studentName} lang={lang} />}
-      {activeTab === 'standards' && <StandardsMasteryTab studentId={studentId} lang={lang} />}
-      {activeTab === 'scaffolds' && <ScaffoldsTab studentId={studentId} />}
-      {activeTab === 'groups' && <StudentGroupsTab studentId={studentId} studentName={studentName} />}
-      {activeTab === 'goals' && <GoalsTab studentId={studentId} studentName={studentName} />}
-    </div>
-  )
-}
-
 // ─── About Tab ──────────────────────────────────────────────────────
 
 // ─── WIDA-to-Performance Insight ──────────────────────────────────
@@ -627,7 +570,7 @@ const WIDA_DOMAIN_MAP: Record<string, string[]> = {
   writing: ['writing'],
 }
 
-function WIDAPerformanceInsight({ studentId, lang }: { studentId: string; lang: string }) {
+export function WIDAPerformanceInsight({ studentId, lang }: { studentId: string; lang: string }) {
   const [insights, setInsights] = useState<{ domain: string; widaLevel: number; widaLabel: string; actualPct: number; expected: { min: number; max: number }; status: 'within' | 'above' | 'below'; message: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [missingWida, setMissingWida] = useState(false)
@@ -731,7 +674,7 @@ function WIDAPerformanceInsight({ studentId, lang }: { studentId: string; lang: 
   )
 }
 
-function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+export function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
   const { currentTeacher, showToast } = useApp()
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(true)
@@ -784,7 +727,7 @@ function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' })
   )
 }
 
-function ClassTransferHistory({ studentId }: { studentId: string }) {
+export function ClassTransferHistory({ studentId }: { studentId: string }) {
   const [transfers, setTransfers] = useState<any[]>([])
   useEffect(() => {
     (async () => {
@@ -949,7 +892,7 @@ function QuickNotesTab({ studentId }: { studentId: string }) {
 
 // ─── Academic History Tab (Domain Graphs) ───────────────────────────
 
-function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
   const [data, setData] = useState<{ domain: string; assessments: { name: string; score: number; max: number; pct: number; classAvg: number | null; date: string | null }[] }[]>([])
   const [semesterHistory, setSemesterHistory] = useState<{ semester: string; grades: Record<string, number | null>; behavior: string | null }[]>([])
   const [loading, setLoading] = useState(true)
@@ -1212,226 +1155,9 @@ function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en'
 
 // ─── Student Modal (BIGGER) ─────────────────────────────────────────
 
-function StudentModal({ student, onClose, onUpdated }: { student: Student; onClose: () => void; onUpdated: (s: Student) => void }) {
-  const { language, showToast, confirmDialog } = useApp()
-  const { updateStudent } = useStudentActions()
-  const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState<any>({
-    english_name: student.english_name, korean_name: student.korean_name, grade: student.grade,
-    korean_class: student.korean_class as KoreanClass, class_number: student.class_number,
-    english_class: student.english_class as EnglishClass, notes: student.notes || '',
-    is_transfer: (student as any).is_transfer || false, transfer_date: (student as any).transfer_date || '',
-  })
-  const [saving, setSaving] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-
-  const handleDelete = async () => {
-    const counts: Record<string, number> = {}
-    const tables = [
-      'semester_grades', 'grades', 'summative_scores', 'comments',
-      'reading_assessments', 'behavior_logs', 'attendance', 'level_test_scores',
-      'level_test_placements', 'student_scaffolds', 'student_goals',
-      'student_vocabulary', 'student_wida_levels', 'peer_observations',
-      'parent_communications', 'class_transfers',
-    ]
-    for (const t of tables) {
-      try {
-        const { count } = await supabase.from(t).select('*', { count: 'exact', head: true }).eq('student_id', student.id)
-        if ((count || 0) > 0) counts[t] = count || 0
-      } catch {} // table might not exist yet
-    }
-    const total = Object.values(counts).reduce((a, b) => a + b, 0)
-    const details = Object.entries(counts).map(([t, c]) => `${c} ${t.replace(/_/g, ' ')}`).join(', ')
-    const msg = total > 0
-      ? `Delete ${student.english_name}?\n\nThis will permanently remove ${total} linked records:\n${details}\n\nThis cannot be undone.`
-      : `Delete ${student.english_name}? This cannot be undone.`
-    
-    if (!await confirmDialog({ title: `Delete ${student.english_name}?`, message: total > 0 ? `This permanently removes ${total} linked records:\n${details}\n\nThis cannot be undone.` : 'This cannot be undone.', danger: true, confirmLabel: 'Delete' })) return
-
-    setDeleting(true)
-    const { error } = await supabase.from('students').delete().eq('id', student.id)
-    setDeleting(false)
-    if (error) showToast(`Error: ${error.message}`)
-    else { showToast(`${student.english_name} deleted`); onClose(); onUpdated(student) }
-  }
-
-  const handleExportPDF = async () => {
-    showToast('Generating student portfolio...')
-    const [grades, semGrades, reading, behavior, attendance, comments, scaffolds, goals, assessments] = await Promise.all([
-      supabase.from('grades').select('*, assessments(name, domain, date, max_score, standards, sections)').eq('student_id', student.id).order('created_at', { ascending: false }),
-      supabase.from('semester_grades').select('*, semesters(name, type, academic_year)').eq('student_id', student.id),
-      supabase.from('reading_assessments').select('*').eq('student_id', student.id).order('date', { ascending: true }),
-      supabase.from('behavior_logs').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(100),
-      supabase.from('attendance').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(200),
-      supabase.from('comments').select('*, semesters(name, type, academic_year)').eq('student_id', student.id).eq('report_type', 'report_card'),
-      supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', student.id).eq('is_active', true),
-      supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', student.id).eq('is_active', true),
-      supabase.from('assessments').select('id, name, domain, date, max_score, standards, sections').eq('english_class', student.english_class).eq('grade', student.grade),
-    ])
-    const html = buildStudentPDFHtml(student, {
-      grades: grades.data || [], semesterGrades: semGrades.data || [],
-      readingRecords: reading.data || [], behaviorLogs: behavior.data || [],
-      attendanceRecords: attendance.data || [], comments: comments.data || [],
-      scaffolds: scaffolds.data || [], goals: goals.data || [],
-      assessments: assessments.data || [],
-    })
-    const w = window.open('', '_blank')
-    if (w) { w.document.write(html); w.document.close() }
-  }
-
-  const handleSaveEdit = async () => {
-    setSaving(true)
-    const updateData: any = { ...form, teacher_id: TEACHER_MAP[form.english_class] || null }
-    if ((form as any).is_transfer !== undefined) { updateData.is_transfer = (form as any).is_transfer; updateData.transfer_date = (form as any).transfer_date || null }
-    const { data, error } = await updateStudent(student.id, updateData)
-    setSaving(false)
-    if (error) showToast(`Error: ${error.message}`)
-    else { showToast('Student updated'); setEditing(false); if (data) onUpdated(data) }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      {/* BIGGER MODAL: max-w-5xl */}
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto">
-        {/* Header */}
-        <div className="px-8 py-6 border-b border-border flex items-start justify-between">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-full border-2 border-border flex items-center justify-center text-lg font-bold text-navy bg-accent-light shrink-0"
-              style={{ backgroundColor: classToColor(student.english_class as EnglishClass) + '22' }}>
-              {student.english_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
-            </div>
-            <div>
-              <h3 className="font-display text-xl font-semibold text-navy">{student.english_name}</h3>
-              <p className="text-text-secondary text-[14px]">{student.korean_name}</p>
-              <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-[12px] text-text-tertiary">Grade {student.grade}</span>
-                <span className="text-text-tertiary">·</span>
-                <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                  style={{ backgroundColor: classToColor(student.english_class as EnglishClass), color: classToTextColor(student.english_class as EnglishClass) }}>
-                  {student.english_class}
-                </span>
-                <span className="text-text-tertiary">·</span>
-                <span className="text-[12px] text-text-tertiary">{student.korean_class} {student.class_number}</span>
-                {(student as any).is_transfer && (
-                  <>
-                    <span className="text-text-tertiary">·</span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
-                      Transfer {(student as any).transfer_date ? `(${new Date((student as any).transfer_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })})` : ''}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Export PDF */}
-            <button onClick={handleExportPDF}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface border border-border text-text-secondary hover:bg-surface-alt transition-all"
-              title="Export student portfolio as PDF">
-              <FileSpreadsheet size={13} /> Export PDF
-            </button>
-            {!editing && (
-              <button onClick={() => setEditing(true)} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary hover:text-navy transition-all" title="Edit"><Pencil size={16} /></button>
-            )}
-            <button onClick={handleDelete} disabled={deleting}
-              className="p-2 rounded-lg hover:bg-red-50 text-text-tertiary hover:text-red-500 transition-all" title="Delete student">
-              {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-            </button>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
-          </div>
-        </div>
-
-        {/* Needs Review Banner */}
-        {student.needs_review && (
-          <div className="px-8 py-3 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-amber-600 text-[16px]">⚠</span>
-              <p className="text-[12px] text-gray-900 font-medium">
-                This student was flagged for review during roster upload. Verify their info is correct.
-              </p>
-            </div>
-            <button onClick={async () => {
-              const { error } = await supabase.from('students').update({ needs_review: false }).eq('id', student.id)
-              if (!error) {
-                showToast('Review flag cleared')
-                onUpdated({ ...student, needs_review: false } as any)
-              }
-            }} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-amber-600 text-white hover:bg-amber-700 transition-all whitespace-nowrap">
-              ✓ Mark Reviewed
-            </button>
-          </div>
-        )}
-
-        {/* Edit Mode */}
-        {editing && (
-          <div className="px-8 py-5 bg-accent-light border-b border-border">
-            <h4 className="text-[12px] uppercase tracking-wider text-navy font-semibold mb-3">Edit Student Info</h4>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Korean Name</label>
-                  <input value={form.korean_name} onChange={e => setForm({ ...form, korean_name: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface" /></div>
-                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">English Name</label>
-                  <input value={form.english_name} onChange={e => setForm({ ...form, english_name: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface" /></div>
-              </div>
-              <div className="grid grid-cols-4 gap-3">
-                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Grade</label>
-                  <select value={form.grade} onChange={e => setForm({ ...form, grade: Number(e.target.value) as Grade })} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none bg-surface">{GRADES.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
-                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Korean Class</label>
-                  <select value={form.korean_class} onChange={e => setForm({ ...form, korean_class: e.target.value as KoreanClass })} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none bg-surface">{KOREAN_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Number</label>
-                  <input type="number" min={1} max={35} value={form.class_number} onChange={e => setForm({ ...form, class_number: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface" /></div>
-                <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">English Class</label>
-                  <select value={form.english_class} onChange={e => setForm({ ...form, english_class: e.target.value as EnglishClass })} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none bg-surface">{ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-              </div>
-              {/* Transfer Student */}
-              <div className="flex items-center gap-4 pt-1">
-                <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={(form as any).is_transfer || false}
-                    onChange={e => setForm({ ...form, is_transfer: e.target.checked, transfer_date: e.target.checked ? ((form as any).transfer_date || new Date().toISOString().split('T')[0]) : '' } as any)}
-                    className="w-4 h-4 rounded border-border text-navy focus:ring-navy" />
-                  <span className="text-[12px] font-medium text-text-secondary">Transfer Student</span>
-                </label>
-                {(form as any).is_transfer && (
-                  <div className="flex items-center gap-2">
-                    <label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Transfer Date:</label>
-                    <input type="date" value={(form as any).transfer_date || ''} onChange={e => setForm({ ...form, transfer_date: e.target.value } as any)}
-                      className="px-2 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-surface" />
-                  </div>
-                )}
-              </div>
-              <div className="flex justify-end gap-2">
-                <button onClick={() => setEditing(false)} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface">Cancel</button>
-                <button onClick={handleSaveEdit} disabled={saving} className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
-                  {saving && <Loader2 size={14} className="animate-spin" />} Save
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="px-8 py-6">
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="bg-surface-alt rounded-lg p-4">
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Teacher</p>
-              <p className="text-[14px] font-medium text-navy">{student.teacher_name || '—'}</p>
-            </div>
-            <div className="bg-surface-alt rounded-lg p-4">
-              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Homeroom</p>
-              <p className="text-[14px] font-medium text-navy">{student.korean_class} {student.class_number}</p>
-            </div>
-          </div>
-
-          <StudentModuleTabs studentId={student.id} studentName={student.english_name} lang={language as 'en' | 'ko'} />
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Reading Tab (in Modal) ──────────────────────────────────────────
 
-function ReadingTabInModal({ studentId, studentName, lang }: { studentId: string; studentName?: string; lang: 'en' | 'ko' }) {
+export function ReadingTabInModal({ studentId, studentName, lang }: { studentId: string; studentName?: string; lang: 'en' | 'ko' }) {
   const { currentTeacher, showToast } = useApp()
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -1777,7 +1503,7 @@ function ReadingTabInModal({ studentId, studentName, lang }: { studentId: string
 
 // ─── Attendance Tab (in Modal) ──────────────────────────────────────
 
-function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: string; studentName: string; lang: 'en' | 'ko' }) {
+export function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: string; studentName: string; lang: 'en' | 'ko' }) {
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [correlation, setCorrelation] = useState<string | null>(null)
@@ -1901,7 +1627,7 @@ function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: str
 
 // ─── Standards Mastery Tab ──────────────────────────────────────────
 
-function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+export function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
   const [loading, setLoading] = useState(true)
   const [standardsData, setStandardsData] = useState<{ code: string; description: string; domain: string; assessments: { name: string; pct: number }[]; avgPct: number }[]>([])
 
@@ -2067,7 +1793,7 @@ function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en
 
 // ─── Scaffolds Tab ──────────────────────────────────────────────────
 
-function ScaffoldsTab({ studentId }: { studentId: string }) {
+export function ScaffoldsTab({ studentId }: { studentId: string }) {
   const { showToast, currentTeacher } = useApp()
   const [scaffolds, setScaffolds] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -2233,7 +1959,7 @@ function ScaffoldsTab({ studentId }: { studentId: string }) {
 
 // ─── Student PDF Export ─────────────────────────────────────────────
 
-function buildStudentPDFHtml(student: Student, data: {
+export function buildStudentPDFHtml(student: Student, data: {
   grades: any[]; semesterGrades: any[]; readingRecords: any[];
   behaviorLogs: any[]; attendanceRecords: any[]; comments: any[];
   scaffolds?: any[]; goals?: any[]; assessments?: any[];
@@ -2366,7 +2092,7 @@ ${attendanceRecords.length > 0 ? (() => {
 }
 
 // ─── Student Groups Tab ─────────────────────────────────────────────
-function StudentGroupsTab({ studentId, studentName }: { studentId: string; studentName: string }) {
+export function StudentGroupsTab({ studentId, studentName }: { studentId: string; studentName: string }) {
   const [groups, setGroups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -2429,7 +2155,7 @@ interface StudentGoal {
   created_at: string
 }
 
-function GoalsTab({ studentId, studentName }: { studentId: string; studentName: string }) {
+export function GoalsTab({ studentId, studentName }: { studentId: string; studentName: string }) {
   const { showToast, currentTeacher } = useApp()
   const [goals, setGoals] = useState<StudentGoal[]>([])
   const [loading, setLoading] = useState(true)
