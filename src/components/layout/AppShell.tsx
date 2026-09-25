@@ -7,6 +7,7 @@ import { useTeachers } from '@/hooks/useData'
 import { viewForPath, PAGE_TITLES } from '@/lib/routes'
 import LoginPage from '@/components/layout/LoginPage'
 import Masthead from '@/components/layout/Masthead'
+import NoticeBoard from '@/components/layout/NoticeBoard'
 import Toast from '@/components/ui/Toast'
 import { Loader2 } from 'lucide-react'
 
@@ -55,6 +56,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-paper">
       <Masthead />
+      <NoticeBoard />
       <main className="mx-auto max-w-[1440px]">
         <div key={pathname} className="animate-page-enter">
           {children}
