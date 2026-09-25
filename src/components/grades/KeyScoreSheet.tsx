@@ -7,6 +7,8 @@ import type { QuestionMapItem, ItemResponse } from '@/types'
 import { isChoiceItem, markChoice } from '@/lib/answerKey'
 import { rubricScore, LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO } from '@/components/curriculum/rubric-library'
 import { splitEarned } from '@/lib/domainSplit'
+import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
+import { plainName } from '@/components/curriculum/standards-plain'
 import { Check, ChevronLeft, ChevronRight, Loader2, LayoutGrid, ListChecks } from 'lucide-react'
 
 // ─── Answer sheet scoring ────────────────────────────────────────
@@ -42,6 +44,15 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
   const zeroText = lang === 'ko' ? LEVEL_ZERO_TEXT_KO : LEVEL_ZERO_TEXT
   const levelTone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good border-good text-white' : 'bg-ink border-ink text-paper'
   const [view, setView] = useState<'sheet' | 'grid'>('sheet')
+  // Hovering a column header on the class grid shows what the column is:
+  // the question, its key and points, the standard in plain words, the
+  // rubric criterion with its levels, and how the class did on it.
+  type Crit = { key: string; label: string; levels: string[]; standard?: string }
+  const [hover, setHover] = useState<null | { x: number; y: number; it: QuestionMapItem; crit?: Crit }>(null)
+  const showHover = (e: React.MouseEvent<HTMLElement>, it: QuestionMapItem, crit?: Crit) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    setHover({ x: Math.min(Math.max(r.left + r.width / 2, 170), window.innerWidth - 170), y: r.bottom, it, crit })
+  }
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const respRef = useRef(responses); respRef.current = responses
@@ -407,11 +418,11 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                     const vals = students.map(s => responses[s.id]?.[it.num]?.levels?.[c.key]).filter((v): v is number => v != null)
                     const avg = vals.length ? vals.reduce((x, y) => x + y, 0) / vals.length : null
                     return (
-                      <th key={`${it.num}-${c.key}`} className="px-1 py-2 border-b border-rule-2 text-center min-w-[44px]" title={`${c.label}${c.standard ? ` · ${c.standard}` : ''}`}>
+                      <th key={`${it.num}-${c.key}`} className="px-1 py-2 border-b border-rule-2 text-center min-w-[44px] cursor-help" onMouseEnter={e => showHover(e, it, c)} onMouseLeave={() => setHover(null)}>
                         <span className="block text-[10.5px] text-ink-2 truncate max-w-[60px]">Q{it.num} · {c.label}</span>
                         <span className={`block text-[10px] ${avg != null && avg < 2 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{avg != null ? avg.toFixed(1) : ''}</span>
                       </th>) }); return (
-                  <th key={it.num} className="px-1 py-2 border-b border-rule-2 text-center min-w-[34px]" title={`${it.standard || ''} · ${it.answer_key ? `key ${it.answer_key}` : `${it.max_points} pt`}`}>
+                  <th key={it.num} className="px-1 py-2 border-b border-rule-2 text-center min-w-[34px] cursor-help" onMouseEnter={e => showHover(e, it)} onMouseLeave={() => setHover(null)}>
                     <span className="block text-[10.5px] text-ink-2">Q{it.num}</span>
                     <span className={`block text-[10px] ${a.pct != null && a.pct < 0.6 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{a.pct == null ? '' : `${Math.round(a.pct * 100)}%`}</span>
                   </th>) })}
@@ -449,6 +460,50 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
           </table>
         </div>
       )}
+      {hover && (() => {
+        const { it, crit } = hover
+        const a = analysis.perQ.find(x => x.num === it.num)
+        const std = crit ? crit.standard : it.standard
+        const stdRow = std ? CCSS_STANDARDS.find(x => x.code === std) : null
+        const scored = students.filter(s => !flags[s.id]?.absent && !flags[s.id]?.exempt)
+        const typeName = it.type === 'mc' ? (lang === 'ko' ? '객관식' : 'Multiple choice') : it.type === 'true_false' ? (lang === 'ko' ? '참/거짓' : 'True / false') : it.type === 'rubric' ? (lang === 'ko' ? '루브릭' : 'Rubric') : it.type === 'open_ended' ? (lang === 'ko' ? '서술형' : 'Extended writing') : (lang === 'ko' ? '단답형' : 'Short answer')
+        // Answer spread for choice items, so a popular wrong answer stands out.
+        const dist = isChoiceItem(it) ? (it.type === 'true_false' ? ['T', 'F'] : letters).map(L => ({ L, n: scored.filter(s => responses[s.id]?.[it.num]?.answer === L).length })) : []
+        const distTotal = dist.reduce((n, d) => n + d.n, 0)
+        const critVals = crit ? scored.map(s => responses[s.id]?.[it.num]?.levels?.[crit.key]).filter((v): v is number => v != null) : []
+        const critAvg = critVals.length ? critVals.reduce((x, y) => x + y, 0) / critVals.length : null
+        return (
+          <div className="fixed z-50 w-[340px] bg-surface border border-rule-2 rounded-md shadow-lg p-3.5 text-[12px] text-ink-2 pointer-events-none" style={{ left: hover.x, top: hover.y + 6, transform: 'translateX(-50%)' }}>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-[14px] font-semibold text-ink">Q{it.num}{crit ? ` · ${crit.label}` : ''}</span>
+              <span className="text-ink-3">{crit ? `${it.rubric?.name || typeName} · 0–4` : `${typeName}${it.answer_key ? ` · ${lang === 'ko' ? '정답' : 'key'} ${it.answer_key}` : ''} · ${it.max_points} ${lang === 'ko' ? '점' : 'pt'}`}</span>
+            </div>
+            {std ? (
+              <div className="mt-2 grid gap-0.5">
+                <span><span className="font-mono text-[11px] text-info bg-info-soft px-1.5 py-0.5 rounded mr-1.5">{std}</span><span className="font-medium text-ink">{plainName(std)}</span></span>
+                {stdRow?.text && <span className="text-[11.5px] text-ink-3 leading-snug">{stdRow.text}</span>}
+              </div>
+            ) : <p className="mt-2 text-ink-3">{lang === 'ko' ? '기준 태그 없음' : 'No standard tagged'}</p>}
+            {crit && (
+              <div className="mt-2 grid gap-0.5 text-[11.5px]">
+                {crit.levels.map((t, i) => <span key={i} className="leading-snug"><span className="font-semibold text-ink tabular-nums">{i + 1}</span> <span className="text-ink-3">{levelLabels[i + 1]}:</span> {t}</span>)}
+              </div>
+            )}
+            <div className="mt-2.5 pt-2 border-t border-rule flex items-center gap-3 flex-wrap">
+              {crit
+                ? <span>{critAvg != null ? <><span className={`font-semibold tabular-nums ${critAvg < 2 ? 'text-bad' : 'text-ink'}`}>{critAvg.toFixed(1)}</span> {lang === 'ko' ? `평균 · ${critVals.length}명` : `class average · ${critVals.length} scored`}{critVals.length ? ` · ${[0, 1, 2, 3, 4].map(n => `${n}:${critVals.filter(v => v === n).length}`).join(' ')}` : ''}</> : (lang === 'ko' ? '아직 채점 없음' : 'Nothing scored yet')}</span>
+                : a && a.n > 0 && a.pct != null
+                  ? <span><span className={`font-semibold tabular-nums ${a.pct < 0.6 ? 'text-bad' : 'text-ink'}`}>{Math.round(a.pct * 100)}%</span> {lang === 'ko' ? `정답률 · ${a.n}명` : `of points earned · ${a.n} scored`}</span>
+                  : <span>{lang === 'ko' ? '아직 채점 없음' : 'Nothing scored yet'}</span>}
+              {distTotal > 0 && (
+                <span className="flex gap-1.5 ml-auto">
+                  {dist.map(d => <span key={d.L} className={`inline-flex items-center gap-0.5 tabular-nums ${d.L === it.answer_key ? 'text-good font-semibold' : d.n && d.n >= Math.max(2, distTotal * 0.3) ? 'text-bad font-semibold' : 'text-ink-3'}`}>{d.L}<span className="text-[10.5px]">{d.n}</span></span>)}
+                </span>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
