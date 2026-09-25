@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Clock, CalendarDays, PanelRightClose } from 'lucide-react'
+import { PanelRightClose } from 'lucide-react'
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const
@@ -71,15 +71,15 @@ function getKSTNow(): Date {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
 }
 
-function getGradeColor(label: string): { bg: string; text: string; border: string } {
-  if (label === 'Lunch') return { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200' }
-  if (label === 'Prep') return { bg: 'bg-slate-50', text: 'text-slate-500', border: 'border-slate-200' }
-  if (label.includes('1')) return { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200' }
-  if (label.includes('2')) return { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' }
-  if (label.includes('3')) return { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200' }
-  if (label.includes('4')) return { bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200' }
-  if (label.includes('5')) return { bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-teal-200' }
-  return { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' }
+function gradeDot(label: string): string {
+  if (label === 'Lunch') return 'bg-good'
+  if (label === 'Prep') return 'bg-ink-3'
+  if (label.includes('1')) return 'bg-level-lily'
+  if (label.includes('2')) return 'bg-level-camellia'
+  if (label.includes('3')) return 'bg-level-marigold'
+  if (label.includes('4')) return 'bg-level-snapdragon'
+  if (label.includes('5')) return 'bg-level-sunflower'
+  return 'bg-ink-3'
 }
 
 export default function WeeklySchedule({ onCollapse }: { onCollapse?: () => void } = {}) {
@@ -122,112 +122,57 @@ export default function WeeklySchedule({ onCollapse }: { onCollapse?: () => void
     : -1
 
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden flex flex-col card-hover" style={{ minHeight: 320 }}>
-      {/* Header */}
-      <div className="px-3 py-2.5 border-b border-border bg-gradient-to-r from-navy/5 to-transparent">
+    <div className="flex flex-col">
+      <div className="flex items-baseline justify-between border-b border-rule-2 pb-1.5 mb-1">
+        <h3 className="font-display text-[18px] leading-none text-ink">Weekly schedule</h3>
         <div className="flex items-center gap-2">
-          <CalendarDays size={14} className="text-navy" />
-          <h3 className="font-display text-[12px] font-semibold text-navy">Weekly Schedule</h3>
+          {isToday && <span className="eyebrow">{now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Seoul' })}</span>}
           {onCollapse && (
-            <button onClick={onCollapse} title="Hide schedule" className="ml-auto w-6 h-6 rounded flex items-center justify-center text-ink-3 hover:text-ink hover:bg-paper-2">
+            <button onClick={onCollapse} title="Hide schedule" className="w-6 h-6 rounded flex items-center justify-center text-ink-3 hover:text-ink hover:bg-paper-2">
               <PanelRightClose size={13} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Day Tabs */}
-      <div className="flex border-b border-border">
+      {/* Day tabs */}
+      <div className="flex border-b border-rule">
         {DAYS.map((day, i) => {
           const isSelected = selectedDay === i
           const isDayToday = isWeekday && i === kstDay - 1
           return (
-            <button
-              key={day}
-              onClick={() => setSelectedDay(i)}
-              className={`flex-1 py-1.5 text-[10px] font-semibold transition-all relative ${
-                isSelected
-                  ? 'text-navy bg-navy/5'
-                  : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-alt/50'
-              }`}
-            >
+            <button key={day} onClick={() => setSelectedDay(i)}
+              className={`flex-1 py-1.5 text-[11px] font-semibold relative ${isSelected ? 'text-ink' : 'text-ink-3 hover:text-ink-2'}`}>
               {DAY_LABELS[i]}
-              {isDayToday && (
-                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-navy" />
-              )}
+              {isSelected && <span className="absolute left-2 right-2 bottom-0 h-[2px] bg-accent" />}
+              {isDayToday && !isSelected && <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />}
             </button>
           )
         })}
       </div>
 
-      {/* Schedule Rows */}
-      <div className="flex-1 overflow-y-auto px-2 py-1.5 space-y-1">
+      {/* Periods */}
+      <div className="divide-y divide-rule">
         {SCHEDULE.map((period, idx) => {
           const slot = period.slots[dayKey]
           const isActive = idx === activePeriodIndex
           const isNext = idx === nextPeriodIndex
-          const colors = getGradeColor(slot.label)
-          const isClass = slot.label !== 'Lunch' && slot.label !== 'Prep'
           const [startTime] = period.time.split('-')
-
           return (
-            <div
-              key={period.time}
-              className={`relative flex items-center gap-2 px-2 py-2 rounded-lg transition-all ${
-                isActive
-                  ? 'bg-navy/8 ring-1 ring-navy/20 shadow-sm'
-                  : isNext
-                  ? 'bg-amber-50/60 ring-1 ring-amber-200/50'
-                  : 'hover:bg-surface-alt/40'
-              }`}
-            >
-              {/* Active indicator */}
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-navy" />
-              )}
-              {isNext && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-amber-400" />
-              )}
-
-              {/* Time */}
-              <div className="w-[42px] flex-shrink-0 text-right">
-                <p className={`text-[9px] font-mono leading-tight ${isActive ? 'text-navy font-bold' : 'text-text-tertiary'}`}>
-                  {startTime}
-                </p>
-              </div>
-
-              {/* Content */}
-              <div className={`flex-1 flex items-center gap-1.5 px-2 py-1 rounded-md border ${colors.border} ${colors.bg}`}>
-                {isActive && (
-                  <span className="relative flex h-1.5 w-1.5 flex-shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-navy opacity-50" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-navy" />
-                  </span>
-                )}
-                {isNext && !isActive && (
-                  <Clock size={9} className="text-amber-500 flex-shrink-0" />
-                )}
-                <span className={`text-[11px] font-semibold ${isActive ? 'text-navy' : colors.text}`}>
-                  {slot.label}
-                </span>
-                {slot.note && (
-                  <span className="text-[9px] font-medium text-red-400 ml-auto flex-shrink-0">{slot.note}</span>
-                )}
-              </div>
+            <div key={period.time}
+              className={`grid grid-cols-[44px_1fr] gap-2 items-center py-1.5 px-1 -mx-1 ${isActive ? 'bg-accent-soft' : ''}`}>
+              <span className={`text-[11px] tabular-nums text-right ${isActive ? 'text-accent font-semibold' : 'text-ink-3'}`}>{startTime}</span>
+              <span className="flex items-center gap-2 min-w-0">
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${gradeDot(slot.label)}`} />
+                <span className={`text-[13px] ${isActive ? 'font-semibold text-ink' : slot.label === 'Prep' || slot.label === 'Lunch' ? 'text-ink-3' : 'text-ink'}`}>{slot.label}</span>
+                {isActive && <span className="eyebrow eyebrow-accent">now</span>}
+                {isNext && !isActive && <span className="eyebrow">next</span>}
+                {slot.note && <span className="text-[10.5px] text-accent ml-auto flex-shrink-0">{slot.note}</span>}
+              </span>
             </div>
           )
         })}
       </div>
-
-      {/* Footer: current time */}
-      {isToday && (
-        <div className="px-3 py-1.5 border-t border-border bg-surface-alt/30 flex items-center justify-center gap-1.5">
-          <Clock size={10} className="text-text-tertiary" />
-          <span className="text-[9px] text-text-tertiary font-mono">
-            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Seoul' })} KST
-          </span>
-        </div>
-      )}
     </div>
   )
 }

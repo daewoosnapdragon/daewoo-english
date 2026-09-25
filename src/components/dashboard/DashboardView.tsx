@@ -1,37 +1,42 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react'
+import Link from 'next/link'
 import { useApp } from '@/lib/context'
 import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
-import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
-import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { Bell, Plus, X, Loader2, ChevronLeft, ChevronRight, Trash2, Pencil, GraduationCap, ClipboardCheck, TrendingDown, AlertTriangle, FileX, Sparkles, Eye, BookOpen, CalendarDays, UserCheck, CheckCircle, XCircle, ArrowRight, PanelLeftClose } from 'lucide-react'
+import { ENGLISH_CLASSES, EnglishClass } from '@/types'
+import { getKSTDateString, domainLabel } from '@/lib/utils'
+import { Plus, X, ChevronLeft, ChevronRight, Trash2, Pencil, PanelLeftClose, UserX, UserMinus, ArrowRight, Bell, Loader2 } from 'lucide-react'
 import WeeklySchedule from './WeeklySchedule'
 
+// ─── Event types ─────────────────────────────────────────────────
 // Nine stored types, five colours: fewer hues means each one is recognisable
-// at a glance. Days off and exams also fill their day (see `fills`).
+// at a glance. Days off and exams also fill their day (`fills`).
 const EVENT_TYPES = [
-  { value: 'day_off', label: 'Day Off', color: '#2E6B3A', bg: 'bg-good-soft text-good', fills: true },
-  { value: 'deadline', label: 'Deadline', color: '#8A2A2B', bg: 'bg-accent-soft text-accent', fills: false },
-  { value: 'meeting', label: 'Meeting', color: '#2F5C8A', bg: 'bg-info-soft text-info', fills: false },
-  { value: 'midterm', label: 'Midterm', color: '#8A2A2B', bg: 'bg-accent-soft text-accent', fills: true },
-  { value: 'report_cards', label: 'Report Cards', color: '#2F5C8A', bg: 'bg-info-soft text-info', fills: false },
-  { value: 'event', label: 'School Event', color: '#9A6A12', bg: 'bg-warn-soft text-warn', fills: false },
-  { value: 'field_trip', label: 'Field Trip', color: '#5EA89C', bg: 'bg-level-sunflower/20 text-ink', fills: false },
-  { value: 'testing', label: 'Testing', color: '#5EA89C', bg: 'bg-level-sunflower/20 text-ink', fills: true },
-  { value: 'other', label: 'Other', color: '#857D6E', bg: 'bg-paper-2 text-ink-2', fills: false },
+  { value: 'day_off', label: 'Day Off', color: 'var(--ev-good)', fills: true },
+  { value: 'deadline', label: 'Deadline', color: 'var(--ev-accent)', fills: false },
+  { value: 'meeting', label: 'Meeting', color: 'var(--ev-info)', fills: false },
+  { value: 'midterm', label: 'Midterm', color: 'var(--ev-accent)', fills: true },
+  { value: 'report_cards', label: 'Report Cards', color: 'var(--ev-info)', fills: false },
+  { value: 'event', label: 'School Event', color: 'var(--ev-warn)', fills: false },
+  { value: 'field_trip', label: 'Field Trip', color: 'var(--ev-teal)', fills: false },
+  { value: 'testing', label: 'Testing', color: 'var(--ev-teal)', fills: true },
+  { value: 'other', label: 'Other', color: 'var(--ev-other)', fills: false },
 ]
+const LEGEND: [string, string][] = [
+  ['Day off', 'var(--ev-good)'], ['Deadline · Midterm', 'var(--ev-accent)'], ['Meeting · Report cards', 'var(--ev-info)'],
+  ['School event', 'var(--ev-warn)'], ['Field trip · Testing', 'var(--ev-teal)'], ['Other', 'var(--ev-other)'],
+]
+const typeOf = (t: string) => EVENT_TYPES.find(x => x.value === t) || EVENT_TYPES[EVENT_TYPES.length - 1]
 
 interface CalEvent { id: string; title: string; date: string; end_date?: string | null; type: string; description: string; created_by: string | null; created_at: string; show_on_parent_calendar?: boolean; target_grades?: number[] | null }
 interface FlaggedEntry { id: string; student_id: string; date: string; type: string; note: string; time: string; behaviors: string[]; antecedents: string[]; consequences: string[]; intensity: number; frequency: number; activity: string; duration: string; is_flagged: boolean; teacher_name: string; student_name: string; student_class: string; created_at: string }
 
-// ─── Shared Dashboard Data ───────────────────────────────────────
-// Fetches common data once and shares across all sub-components.
-// Before: ~30 independent Supabase round trips on mount.
-// After: ~10 queries in parallel via Promise.all.
-
+// ─── Shared data ─────────────────────────────────────────────────
+// Fetched once and shared across every panel: about ten queries in parallel.
 interface DashboardStudent { id: string; english_name: string; english_class: string; grade: number }
+interface GradeRow { student_id: string; assessment_id: string; score: number | null; is_absent?: boolean; is_exempt?: boolean }
 interface SharedDashboardData {
   students: DashboardStudent[]
   activeSemester: any | null
@@ -39,20 +44,24 @@ interface SharedDashboardData {
   todayEvents: any[]
   todayBehaviorCount: number
   readingAssessments: { student_id: string; cwpm: number | null; date: string }[]
-  absences30d: { student_id: string }[]
+  absences30d: { student_id: string; date: string }[]
   behaviorLogs28d: { student_id: string; date: string }[]
   semesterAssessments: any[]
-  semesterGrades: any[]
+  /** Rows that count as graded: a score, or absent, or exempt. */
+  semesterGrades: GradeRow[]
   loading: boolean
+  reload: () => void
 }
 
 function useDashboardData(currentTeacher: any): SharedDashboardData {
-  const [data, setData] = useState<Omit<SharedDashboardData, 'loading'>>({
+  const [data, setData] = useState<Omit<SharedDashboardData, 'loading' | 'reload'>>({
     students: [], activeSemester: null, todayAttendanceIds: new Set(),
     todayEvents: [], todayBehaviorCount: 0, readingAssessments: [],
     absences30d: [], behaviorLogs28d: [], semesterAssessments: [], semesterGrades: [],
   })
   const [loading, setLoading] = useState(true)
+  const [tick, setTick] = useState(0)
+  const reload = useCallback(() => setTick(t => t + 1), [])
 
   const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
   const isAdmin = currentTeacher?.role === 'admin'
@@ -66,68 +75,49 @@ function useDashboardData(currentTeacher: any): SharedDashboardData {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
       const twentyEightDaysAgo = new Date(Date.now() - 28 * 86400000).toISOString().split('T')[0]
 
-      // Phase 1: Fetch students + semester (needed to scope other queries)
       let studQuery = supabase.from('students').select('id, english_name, english_class, grade').eq('is_active', true)
       if (classFilter) studQuery = studQuery.eq('english_class', classFilter)
-
       const [studRes, semRes] = await Promise.all([
         studQuery,
-        // Ordered + limit(1) rather than .single(): .single() errors outright if
-        // more than one semester is flagged active, and every screen has to pick
-        // the same one as the app context does.
         supabase.from('semesters').select('*').eq('is_active', true).order('start_date', { ascending: false }).limit(1),
       ])
       if (cancelled) return
-
       const students: DashboardStudent[] = studRes.data || []
       const activeSemester = semRes.data?.[0] || null
       const studentIds = students.map(s => s.id)
+      if (studentIds.length === 0) { setData(prev => ({ ...prev, students, activeSemester })); setLoading(false); return }
 
-      if (studentIds.length === 0) {
-        setData(prev => ({ ...prev, students, activeSemester }))
-        setLoading(false)
-        return
-      }
-
-      // Phase 2: All other queries in parallel (scoped to student IDs)
       const [attRes, eventsRes, behaviorCountRes, readingRes, absRes, behaviorLogsRes, assessmentsRes] = await Promise.all([
-        // Today's attendance
         supabase.from('attendance').select('student_id').eq('date', today).in('student_id', studentIds),
-        // Today's calendar events
         supabase.from('calendar_events').select('title, type').eq('date', today),
-        // Today's behavior log count
         supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('date', today),
-        // All reading assessments (for growth tracking in InsightsBanner + missing ORF in Watchlist)
         supabase.from('reading_assessments').select('student_id, cwpm, date').in('student_id', studentIds).order('date', { ascending: true }),
-        // Absences in last 30 days
-        supabase.from('attendance').select('student_id').eq('status', 'absent').in('student_id', studentIds).gte('date', thirtyDaysAgo),
-        // Behavior logs in last 28 days (covers both 14-day and 28-day windows)
+        supabase.from('attendance').select('student_id, date').eq('status', 'absent').in('student_id', studentIds).gte('date', thirtyDaysAgo),
         supabase.from('behavior_logs').select('student_id, date').in('student_id', studentIds).gte('date', twentyEightDaysAgo),
-        // Semester assessments (if we have a semester)
         activeSemester
-          ? supabase.from('assessments').select('id, domain, name, english_class, grade, max_score, created_at').eq('semester_id', activeSemester.id)
+          ? supabase.from('assessments').select('id, domain, name, english_class, grade, max_score, date, created_at').eq('semester_id', activeSemester.id)
           : Promise.resolve({ data: [] as any[] }),
       ])
       if (cancelled) return
 
-      // Fetch grades for semester assessments (separate because we need assessment IDs)
       const semAssessments = (assessmentsRes as any).data || []
-      let semGrades: any[] = []
+      let semGrades: GradeRow[] = []
       if (semAssessments.length > 0) {
-        const { data: grades } = await supabase.from('grades').select('student_id, assessment_id, score')
-          .in('assessment_id', semAssessments.map((a: any) => a.id)).not('score', 'is', null)
-        if (grades) semGrades = grades
+        // Absent and exempt rows carry no score but the student IS dealt with;
+        // they must not show up as "ungraded".
+        const { data: grades } = await supabase.from('grades').select('student_id, assessment_id, score, is_absent, is_exempt')
+          .in('assessment_id', semAssessments.map((a: any) => a.id))
+        if (grades) semGrades = (grades as GradeRow[]).filter(g => g.score != null || g.is_absent || g.is_exempt)
       }
       if (cancelled) return
 
       setData({
-        students,
-        activeSemester,
+        students, activeSemester,
         todayAttendanceIds: new Set((attRes.data || []).map((a: any) => a.student_id)),
         todayEvents: eventsRes.data || [],
         todayBehaviorCount: (behaviorCountRes as any).count || 0,
         readingAssessments: readingRes.data || [],
-        absences30d: absRes.data || [],
+        absences30d: (absRes.data || []) as any,
         behaviorLogs28d: behaviorLogsRes.data || [],
         semesterAssessments: semAssessments,
         semesterGrades: semGrades,
@@ -135,259 +125,529 @@ function useDashboardData(currentTeacher: any): SharedDashboardData {
       setLoading(false)
     })()
     return () => { cancelled = true }
-  }, [currentTeacher?.id, classFilter, isAdmin])
+  }, [currentTeacher?.id, classFilter, isAdmin, tick])
 
-  return useMemo(() => ({ ...data, loading }), [data, loading])
+  return useMemo(() => ({ ...data, loading, reload }), [data, loading, reload])
 }
 
-export default function DashboardView() {
-  // The weekly schedule can be tucked away so the two months get the full width.
-  const [scheduleOpen, setScheduleOpen] = useState(true)
-  useEffect(() => { try { if (localStorage.getItem('daewoo_schedule') === 'closed') setScheduleOpen(false) } catch {} }, [])
-  useEffect(() => { try { localStorage.setItem('daewoo_schedule', scheduleOpen ? 'open' : 'closed') } catch {} }, [scheduleOpen])
-  const { language, currentTeacher } = useApp()
-  const isAdmin = currentTeacher?.role === 'admin'
-  const isTeacher = currentTeacher?.role === 'teacher'
-  const [semesters, setSemesters] = useState<{ id: string; name: string; name_ko: string; is_active: boolean }[]>([])
-  const [activeSem, setActiveSem] = useState<string>('')
+// ─── Grading queue: assessments with students still ungraded ─────
+interface QueueItem { id: string; name: string; domain: string; max_score: number; date: string | null; english_class: string; grade: number; total: number; done: number; ungraded: DashboardStudent[] }
 
-  // Shared data: fetched once, shared across all sub-components
+function useGradingQueue(shared: SharedDashboardData, resolved: Record<string, Set<string>>): QueueItem[] {
+  return useMemo(() => {
+    if (shared.loading || !shared.activeSemester) return []
+    const graded: Record<string, Set<string>> = {}
+    shared.semesterGrades.forEach(g => { (graded[g.assessment_id] ||= new Set()).add(g.student_id) })
+    const items: QueueItem[] = []
+    for (const a of shared.semesterAssessments) {
+      const roster = shared.students.filter(s => s.english_class === a.english_class && s.grade === a.grade)
+      if (roster.length === 0) continue
+      const done = new Set([...Array.from(graded[a.id] || []), ...Array.from(resolved[a.id] || [])])
+      const ungraded = roster.filter(s => !done.has(s.id))
+      // Nothing entered at all means the test has not been given yet, not that
+      // grading stalled; only partly graded assessments are a queue.
+      if (ungraded.length === 0 || ungraded.length === roster.length) continue
+      items.push({ id: a.id, name: a.name, domain: a.domain, max_score: a.max_score, date: a.date, english_class: a.english_class, grade: a.grade, total: roster.length, done: roster.length - ungraded.length, ungraded })
+    }
+    return items.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+  }, [shared.loading, shared.activeSemester, shared.semesterAssessments, shared.semesterGrades, shared.students, resolved])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+export default function DashboardView() {
+  const { language, currentTeacher, showToast } = useApp()
+  const lang = language
+  const isAdmin = currentTeacher?.role === 'admin'
   const shared = useDashboardData(currentTeacher)
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('semesters').select('id, name, name_ko, is_active, type').eq('is_archived', false).order('start_date', { ascending: false })
-      if (data && data.length > 0) {
-        const activeSems = data.filter((s: any) => s.type !== 'archive')
-        setSemesters(activeSems.length > 0 ? activeSems : data)
-        const active = data.find((s: any) => s.is_active)
-        setActiveSem(active?.name || data[0].name)
-      } else {
-        setActiveSem('Spring 2026')
-      }
-    })()
-  }, [])
+  // The weekly schedule can be tucked away; remembered per browser.
+  const [scheduleOpen, setScheduleOpen] = useState(true)
+  useEffect(() => { try { if (localStorage.getItem('daewoo_schedule') === 'closed') setScheduleOpen(false) } catch {} }, [])
+  const toggleSchedule = (open: boolean) => { setScheduleOpen(open); try { localStorage.setItem('daewoo_schedule', open ? 'open' : 'closed') } catch {} }
 
-  const today = new Date()
-  const greeting = today.getHours() < 12 ? 'Good morning' : today.getHours() < 17 ? 'Good afternoon' : 'Good evening'
-  const dayStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  // Students marked absent/exempt from this page, so the queue updates without a refetch.
+  const [resolved, setResolved] = useState<Record<string, Set<string>>>({})
+  const queue = useGradingQueue(shared, resolved)
 
-  // Compute quick stats for hero card
-  const totalStudents = shared.students.length
-  const attendanceMarked = shared.todayAttendanceIds.size
-  const attendancePct = totalStudents > 0 ? Math.round((attendanceMarked / totalStudents) * 100) : 0
-  const urgentItems = shared.todayEvents.filter((ev: any) => ev.type === 'deadline' || ev.type === 'testing').length
+  const markStudent = async (item: QueueItem, student: DashboardStudent, how: 'absent' | 'exempt') => {
+    const { error } = await supabase.from('grades').upsert(
+      { assessment_id: item.id, student_id: student.id, score: null, is_absent: how === 'absent', is_exempt: how === 'exempt', entered_by: currentTeacher?.id || null },
+      { onConflict: 'student_id,assessment_id' })
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setResolved(prev => ({ ...prev, [item.id]: new Set([...Array.from(prev[item.id] || []), student.id]) }))
+    showToast(lang === 'ko'
+      ? `${student.english_name} · ${how === 'absent' ? '결석' : '면제'} 처리됨`
+      : `${student.english_name} marked ${how} on ${item.name}`)
+  }
+
+  const kst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
+  const hour = kst.getHours()
+  const greeting = lang === 'ko' ? '안녕하세요' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const dayStr = kst.toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+  const unmarked = shared.students.length - shared.todayAttendanceIds.size
+  const ungradedStudents = queue.reduce((n, q) => n + q.ungraded.length, 0)
+  const sem = shared.activeSemester
+  const daysUntil = (d?: string | null) => d ? Math.ceil((new Date(d).getTime() - new Date(getKSTDateString()).getTime()) / 86400000) : null
+  const fmtShort = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-GB', { day: 'numeric', month: 'short' })
+  const midtermDays = daysUntil(sem?.midterm_cutoff_date)
+  const gradesDue: string | null = sem?.report_card_cutoff_date || sem?.grades_due_date || null
+  const gradesDays = daysUntil(gradesDue)
 
   return (
-    <div className="animate-fade-in">
-      {/* Header */}
-      <div className="px-10 pt-7 pb-5 bg-[#F0F3F8] border-b border-border">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="font-display text-[24px] font-semibold tracking-tight text-text-primary">
-              {language === 'ko' ? '대시보드' : `${greeting}${currentTeacher?.name ? `, ${currentTeacher.name}` : ''}`}
-            </h2>
-            <p className="text-text-tertiary text-[13px] mt-0.5">{dayStr}</p>
-          </div>
-          {semesters.length > 0 && (
-            <select value={activeSem} onChange={(e: any) => setActiveSem(e.target.value)}
-              className="px-3 py-2 border border-border rounded-lg text-[12px] bg-surface outline-none focus:border-navy cursor-pointer">
-              {semesters.map((sem: any) => (
-                <option key={sem.id} value={language === 'ko' ? sem.name_ko : sem.name}>
-                  {language === 'ko' ? sem.name_ko : sem.name}{sem.is_active ? ' *' : ''}
-                </option>
-              ))}
-            </select>
-          )}
+    <div className="px-8 py-6 space-y-8 animate-fade-in">
+      {/* ─── Header ─── */}
+      <div className="flex items-end justify-between gap-6 flex-wrap">
+        <div>
+          <p className="eyebrow eyebrow-accent mb-1.5">{dayStr}{sem ? ` · ${lang === 'ko' ? sem.name_ko || sem.name : sem.name}` : ''}</p>
+          <h1 className="font-display text-[34px] leading-none text-ink">{greeting}{currentTeacher?.name ? `, ${currentTeacher.name}` : ''}</h1>
         </div>
-        {/* Quick stats row */}
-        {!shared.loading && totalStudents > 0 && (
-          <div className="flex gap-5 mt-4">
-            <div className="flex items-center gap-2.5 bg-surface rounded-lg border border-border px-3.5 py-2">
-              <UserCheck size={15} className={attendancePct === 100 ? 'text-green-600' : 'text-amber-500'} />
-              <div>
-                <p className="text-text-primary text-[14px] font-bold leading-tight">{attendanceMarked}/{totalStudents}</p>
-                <p className="text-text-tertiary text-[10px]">{language === 'ko' ? '출석' : 'Attendance'}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5 bg-surface rounded-lg border border-border px-3.5 py-2">
-              <GraduationCap size={15} className="text-navy" />
-              <div>
-                <p className="text-text-primary text-[14px] font-bold leading-tight">{totalStudents}</p>
-                <p className="text-text-tertiary text-[10px]">{language === 'ko' ? '학생' : 'Students'}</p>
-              </div>
-            </div>
-            {shared.todayBehaviorCount > 0 && (
-              <div className="flex items-center gap-2.5 bg-surface rounded-lg border border-border px-3.5 py-2">
-                <ClipboardCheck size={15} className="text-amber-500" />
-                <div>
-                  <p className="text-text-primary text-[14px] font-bold leading-tight">{shared.todayBehaviorCount}</p>
-                  <p className="text-text-tertiary text-[10px]">{language === 'ko' ? '행동 기록' : 'Behavior'}</p>
-                </div>
-              </div>
-            )}
-            {shared.todayEvents.length > 0 && (
-              <div className="flex items-center gap-2.5 bg-surface rounded-lg border border-border px-3.5 py-2">
-                <CalendarDays size={15} className={urgentItems > 0 ? 'text-red-500' : 'text-navy'} />
-                <div>
-                  <p className="text-text-primary text-[14px] font-bold leading-tight">{shared.todayEvents.length}</p>
-                  <p className="text-text-tertiary text-[10px]">{language === 'ko' ? '일정' : 'Events'}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        <div className="flex gap-2">
+          <Link href="/attendance" className="h-9 px-3.5 inline-flex items-center rounded border border-rule-2 bg-surface text-[13px] font-medium text-ink hover:border-ink-3">
+            {lang === 'ko' ? '출석 체크' : 'Mark attendance'}
+          </Link>
+          <Link href="/grades" className="h-9 px-3.5 inline-flex items-center rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover">
+            {lang === 'ko' ? '성적 입력' : 'Enter grades'}
+          </Link>
+        </div>
       </div>
-      <div className="px-10 py-6 space-y-5">
-        {/* ─── Today's Status: full-width bar on top ─── */}
-        <ActionableSummary shared={shared} horizontal />
-        {/* ─── Calendar (two months) + Weekly schedule ─── */}
-        <div className={`grid gap-5 ${scheduleOpen ? 'grid-cols-[1fr_240px]' : 'grid-cols-[1fr_auto]'}`}>
-          <SharedCalendar />
-          {scheduleOpen
-            ? <WeeklySchedule onCollapse={() => setScheduleOpen(false)} />
-            : <button onClick={() => setScheduleOpen(true)} title="Show schedule"
-                className="w-9 self-start h-40 border border-border rounded-lg bg-surface hover:bg-paper-2 flex flex-col items-center justify-center gap-2 text-ink-3 hover:text-ink">
-                <PanelLeftClose size={14} />
-                <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ writingMode: 'vertical-rl' }}>Schedule</span>
-              </button>}
+
+      {/* ─── Stats ─── */}
+      {!shared.loading && (
+        <div className="grid grid-cols-2 md:grid-cols-5 border-t border-b border-rule-2">
+          <Stat href="/attendance" label={lang === 'ko' ? '오늘 출석' : 'Attendance today'} value={unmarked > 0 ? String(unmarked) : '✓'} sub={unmarked > 0 ? (lang === 'ko' ? '명 미체크' : 'students unmarked') : (lang === 'ko' ? '모두 완료' : 'all marked')} alert={unmarked > 0} />
+          <Stat href="#grading" label={lang === 'ko' ? '미채점' : 'Ungraded'} value={String(queue.length)} sub={queue.length ? `${lang === 'ko' ? '평가' : 'assessments'} · ${ungradedStudents} ${lang === 'ko' ? '명' : 'students'}` : (lang === 'ko' ? '없음' : 'nothing waiting')} alert={queue.length > 0} />
+          <Stat label={lang === 'ko' ? '중간고사 마감' : 'Midterm cutoff'} value={midtermDays != null && midtermDays >= 0 ? String(midtermDays) : '—'} sub={midtermDays != null && midtermDays >= 0 ? `${lang === 'ko' ? '일 남음' : 'days'} · ${fmtShort(sem.midterm_cutoff_date)}` : (lang === 'ko' ? '설정 없음' : 'not set')} alert={midtermDays != null && midtermDays >= 0 && midtermDays <= 3} />
+          <Stat label={lang === 'ko' ? '성적 마감' : 'Grades due'} value={gradesDue ? fmtShort(gradesDue) : '—'} sub={gradesDays != null && gradesDays >= 0 ? `${gradesDays} ${lang === 'ko' ? '일 남음' : 'days'}` : (lang === 'ko' ? '설정 없음' : 'not set')} alert={gradesDays != null && gradesDays >= 0 && gradesDays <= 5} />
+          <Stat label={lang === 'ko' ? '오늘 행동 기록' : 'Behaviour logs today'} value={String(shared.todayBehaviorCount)} sub={shared.todayEvents.length ? `${shared.todayEvents.length} ${lang === 'ko' ? '개 일정' : 'events today'}` : ''} />
         </div>
-        {isAdmin && <ClassOverviewTable />}
-        {/* ─── Below: Insights + Content ─── */}
-        <InsightsBanner shared={shared} />
-        <div className="grid grid-cols-2 gap-5">
-          <div className="space-y-5">
-            <NeedsAttentionWatchlist shared={shared} />
-          </div>
-          <div className="space-y-5">
-            <QuickActions shared={shared} />
-            {isAdmin && <AdminAlertPanel />}
-          </div>
+      )}
+
+      {/* ─── Month + agenda + schedule ─── */}
+      <SharedCalendar aside={
+        scheduleOpen
+          ? <WeeklySchedule onCollapse={() => toggleSchedule(false)} />
+          : <button onClick={() => toggleSchedule(true)} className="w-full h-9 border border-rule rounded flex items-center justify-center gap-2 text-[12px] text-ink-3 hover:text-ink hover:bg-paper-2">
+              <PanelLeftClose size={13} />{lang === 'ko' ? '주간 시간표 보기' : 'Show weekly schedule'}
+            </button>
+      } />
+
+      {/* ─── Attention + grading ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <NeedsAttention shared={shared} />
+        <GradingQueue queue={queue} loading={shared.loading} onMark={markStudent} />
+      </div>
+
+      {isAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <ClassOverviewTable />
+          <AdminAlertPanel />
         </div>
+      )}
+    </div>
+  )
+}
+
+function Stat({ label, value, sub, alert, href }: { label: string; value: string; sub?: string; alert?: boolean; href?: string }) {
+  const inner = (
+    <>
+      <p className="eyebrow">{label}</p>
+      <p className={`font-display text-[28px] leading-none mt-1.5 tabular-nums ${alert ? 'text-accent' : 'text-ink'}`}>{value}</p>
+      {sub ? <p className="text-[11.5px] text-ink-3 mt-1 truncate">{sub}</p> : <p className="text-[11.5px] mt-1">&nbsp;</p>}
+    </>
+  )
+  const cls = 'px-4 py-3 border-r border-rule last:border-r-0 min-w-0 block'
+  return href ? <a href={href} className={`${cls} hover:bg-paper-2 transition-colors`}>{inner}</a> : <div className={cls}>{inner}</div>
+}
+
+function SectionHead({ title, meta, children }: { title: string; meta?: string; children?: ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 mb-2 border-b border-rule-2 pb-2">
+      <h2 className="font-display text-[22px] leading-none text-ink">{title}</h2>
+      <div className="flex items-center gap-3">
+        {meta && <span className="eyebrow">{meta}</span>}
+        {children}
       </div>
     </div>
   )
 }
 
-// ─── Recent Notes Preview ─────────────────────────────────────────
-// ─── Weekly Insight (rotating spotlight) ──────────────────────────
-function InsightsBanner({ shared }: { shared: SharedDashboardData }) {
-  const [showModal, setShowModal] = useState(false)
-  const { currentTeacher, navigateTo } = useApp()
-  const [dismissed, setDismissed] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set()
+// ─── Grading queue ───────────────────────────────────────────────
+function GradingQueue({ queue, loading, onMark }: { queue: QueueItem[]; loading: boolean; onMark: (item: QueueItem, s: DashboardStudent, how: 'absent' | 'exempt') => void }) {
+  const { language: lang } = useApp()
+  const [showAll, setShowAll] = useState(false)
+  const shown = showAll ? queue : queue.slice(0, 4)
+  return (
+    <section id="grading">
+      <SectionHead title={lang === 'ko' ? '채점 대기' : 'Grading'} meta={loading ? '' : queue.length ? `${queue.length} ${lang === 'ko' ? '개 평가' : queue.length === 1 ? 'assessment' : 'assessments'}` : (lang === 'ko' ? '완료' : 'all caught up')} />
+      {!loading && queue.length === 0 && (
+        <p className="text-[13px] text-ink-3 py-4">{lang === 'ko' ? '미채점 평가가 없습니다.' : 'Every started assessment is fully graded.'}</p>
+      )}
+      <div className="divide-y divide-rule">
+        {shown.map(item => (
+          <div key={item.id} className="py-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[14px] font-semibold text-ink truncate">{item.name}</p>
+                <p className="text-[11.5px] text-ink-3">{domainLabel(item.domain)} · /{item.max_score}{item.date ? ` · ${new Date(item.date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''} · {item.english_class} G{item.grade}</p>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <span className="text-[12px] text-ink-2 tabular-nums">{item.done} / {item.total}</span>
+                <Link href={`/grades?assessment=${item.id}`} className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-accent hover:underline">
+                  {lang === 'ko' ? '계속 채점' : 'Continue'} <ArrowRight size={12} />
+                </Link>
+              </div>
+            </div>
+            <div className="h-1 bg-paper-3 rounded-sm mt-2 overflow-hidden"><div className="h-full bg-ink-3" style={{ width: `${(item.done / item.total) * 100}%` }} /></div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {item.ungraded.map(s => (
+                <span key={s.id} className="inline-flex items-center border border-rule-2 rounded text-[12px] bg-surface overflow-hidden">
+                  <span className="px-2 py-0.5 text-ink">{s.english_name}</span>
+                  <button onClick={() => onMark(item, s, 'absent')} title={lang === 'ko' ? '결석 처리' : 'Mark absent for this assessment'}
+                    className="px-1.5 py-0.5 border-l border-rule-2 text-ink-3 hover:bg-warn-soft hover:text-warn inline-flex items-center gap-1"><UserX size={11} />ABS</button>
+                  <button onClick={() => onMark(item, s, 'exempt')} title={lang === 'ko' ? '면제 처리' : 'Exempt from this assessment'}
+                    className="px-1.5 py-0.5 border-l border-rule-2 text-ink-3 hover:bg-info-soft hover:text-info inline-flex items-center gap-1"><UserMinus size={11} />EXM</button>
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      {queue.length > 4 && (
+        <button onClick={() => setShowAll(v => !v)} className="mt-2 text-[12.5px] font-medium text-accent hover:underline">
+          {showAll ? (lang === 'ko' ? '접기' : 'Show fewer') : `${lang === 'ko' ? '모두 보기' : 'Show all'} ${queue.length}`}
+        </button>
+      )}
+    </section>
+  )
+}
+
+// ─── Needs attention ─────────────────────────────────────────────
+// Students the numbers point at: grade drops, behaviour spikes, absences,
+// reading-speed changes. Each row is a link; each can be put away for a week.
+interface Concern { key: string; kind: string; studentId: string; name: string; cls: string; text: string; href: string }
+
+function NeedsAttention({ shared }: { shared: SharedDashboardData }) {
+  const { currentTeacher, language: lang } = useApp()
+  const storageKey = `daewoo_dismissed_${currentTeacher?.id || ''}`
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const [showAll, setShowAll] = useState(false)
+  useEffect(() => {
     try {
-      const saved = localStorage.getItem(`daewoo_dismissed_insights_${currentTeacher?.id || ''}`)
+      const saved = localStorage.getItem(storageKey)
       if (saved) {
         const parsed: { key: string; at: number }[] = JSON.parse(saved)
         const weekAgo = Date.now() - 7 * 86400000
-        return new Set(parsed.filter(d => d.at > weekAgo).map(d => d.key))
+        setDismissed(new Set(parsed.filter(d => d.at > weekAgo).map(d => d.key)))
       }
     } catch {}
-    return new Set()
-  })
-
-  // Compute insights from shared data — only past 7 days
-  const insights = useMemo(() => {
-    if (shared.loading || shared.students.length === 0) return []
-    const allInsights: { key: string; text: string; detail: string; type: string; navView?: string; navStudent?: string; navDomain?: string }[] = []
-    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
-
-    // Reading growth & decline (only assessments from past 7 days)
-    const recentReadings = shared.readingAssessments.filter(r => r.date >= sevenDaysAgo)
-    if (recentReadings.length > 0) {
-      const byStudent: Record<string, { name: string; id: string; first: number; last: number }> = {}
-      recentReadings.forEach(r => {
-        const s = shared.students.find(st => st.id === r.student_id)
-        if (!s || r.cwpm == null) return
-        if (!byStudent[r.student_id]) byStudent[r.student_id] = { name: s.english_name, id: s.id, first: r.cwpm, last: r.cwpm }
-        byStudent[r.student_id].last = r.cwpm
-      })
-      const growths = Object.values(byStudent).filter(s => s.last > s.first + 5).sort((a, b) => (b.last - b.first) - (a.last - a.first))
-      growths.slice(0, 3).forEach(top => {
-        allInsights.push({ key: `reading_growth_${top.id}`, text: `${top.name} improved CWPM from ${top.first} to ${top.last}`, detail: 'Check their reading profile for the full growth trajectory.', type: 'positive', navView: 'readingLevels', navStudent: top.id })
-      })
-      const declines = Object.values(byStudent).filter(s => s.first > s.last + 10).sort((a, b) => (a.last - a.first) - (b.last - b.first))
-      declines.slice(0, 2).forEach(d => {
-        allInsights.push({ key: `reading_decline_${d.id}`, text: `${d.name}'s CWPM dropped from ${d.first} to ${d.last}`, detail: 'A drop this large may mean the assigned reading level is too high.', type: 'concern', navView: 'readingLevels', navStudent: d.id })
-      })
-    }
-
-    // Attendance pattern (only past 7 days)
-    const recentAbsences = shared.absences30d.filter(a => a.date >= sevenDaysAgo)
-    const counts: Record<string, number> = {}
-    recentAbsences.forEach(a => { counts[a.student_id] = (counts[a.student_id] || 0) + 1 })
-    Object.entries(counts).filter(([, c]) => c >= 2).sort((a, b) => b[1] - a[1]).slice(0, 2).forEach(([sid, count]) => {
-      const s = shared.students.find(st => st.id === sid)
-      if (s) allInsights.push({ key: `attendance_${sid}`, text: `${s.english_name} has been absent ${count} times in the last month`, detail: 'Consider reaching out to parents or checking in with the homeroom teacher.', type: 'concern', navView: 'attendance', navStudent: sid })
-    })
-
-    return allInsights
-  }, [shared.loading, shared.students, shared.readingAssessments, shared.absences30d])
-
-  const dismissInsight = (key: string) => {
+  }, [storageKey])
+  const putAway = (key: string) => {
     setDismissed(prev => {
-      const next = new Set(prev)
-      next.add(key)
-      try { localStorage.setItem(`daewoo_dismissed_insights_${currentTeacher?.id || ''}`, JSON.stringify(Array.from(next).map(k => ({ key: k, at: Date.now() })))) } catch {}
+      const next = new Set(prev); next.add(key)
+      try { localStorage.setItem(storageKey, JSON.stringify(Array.from(next).map(k => ({ key: k, at: Date.now() })))) } catch {}
       return next
     })
   }
+  const bringBack = () => { setDismissed(new Set()); try { localStorage.removeItem(storageKey) } catch {} }
 
-  const visible = insights.filter(i => !dismissed.has(i.key))
-  const positiveCount = visible.filter(i => i.type === 'positive').length
-  const concernCount = visible.filter(i => i.type === 'concern').length
+  const concerns = useMemo<Concern[]>(() => {
+    if (shared.loading || shared.students.length === 0) return []
+    const out: Concern[] = []
+    const students = shared.students
+    const byId = (id: string) => students.find(s => s.id === id)
+    const push = (kind: string, s: DashboardStudent, text: string, href: string) =>
+      out.push({ key: `${kind}_${s.id}`, kind, studentId: s.id, name: s.english_name, cls: s.english_class, text, href })
 
-  if (shared.loading || visible.length === 0) return null
+    // Grade decline: average of two earlier scores vs the latest, per domain
+    if (shared.activeSemester && shared.semesterAssessments.length && shared.semesterGrades.length) {
+      for (const s of students) {
+        const mine = shared.semesterAssessments.filter((a: any) => a.english_class === s.english_class && a.grade === s.grade)
+        for (const domain of Array.from(new Set(mine.map((a: any) => a.domain)))) {
+          const scores = mine.filter((a: any) => a.domain === domain).map((a: any) => {
+            const g = shared.semesterGrades.find(gr => gr.student_id === s.id && gr.assessment_id === a.id)
+            return g?.score != null && a.max_score > 0 ? (g.score / a.max_score) * 100 : null
+          }).filter((x): x is number => x != null)
+          if (scores.length >= 3) {
+            const [a, b, c] = scores.slice(-3)
+            const before = (a + b) / 2
+            if (before - c >= 15) push('grade', s, `${domainLabel(String(domain))} ${lang === 'ko' ? '하락' : 'dropped'} ${before.toFixed(0)}% → ${c.toFixed(0)}%`, `/students/${s.id}`)
+          }
+        }
+      }
+    }
+    // Behaviour spike: 3+ logs this week and at least double the week before
+    const sevenAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+    const fourteenAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0]
+    const recent: Record<string, number> = {}, prior: Record<string, number> = {}
+    shared.behaviorLogs28d.forEach(b => { if (b.date >= sevenAgo) recent[b.student_id] = (recent[b.student_id] || 0) + 1; else if (b.date >= fourteenAgo) prior[b.student_id] = (prior[b.student_id] || 0) + 1 })
+    for (const [sid, n] of Object.entries(recent)) {
+      const s = byId(sid)
+      if (s && n >= 3 && n >= (prior[sid] || 0) * 2) push('behaviour', s, `${n} ${lang === 'ko' ? '건의 행동 기록 (7일)' : 'behaviour logs in 7 days'} (${lang === 'ko' ? '이전' : 'was'} ${prior[sid] || 0})`, `/students/${sid}`)
+    }
+    // Absences: 2+ in the last 3 days, or 2+ in the last week
+    const threeAgo = new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0]
+    const abs3: Record<string, number> = {}, abs7: Record<string, number> = {}
+    shared.absences30d.forEach(a => { if (a.date >= threeAgo) abs3[a.student_id] = (abs3[a.student_id] || 0) + 1; if (a.date >= sevenAgo) abs7[a.student_id] = (abs7[a.student_id] || 0) + 1 })
+    for (const s of students) {
+      if ((abs3[s.id] || 0) >= 2) push('attendance', s, `${lang === 'ko' ? '3일 중' : 'Absent'} ${abs3[s.id]} ${lang === 'ko' ? '일 결석' : 'of the last 3 days'}`, '/attendance')
+      else if ((abs7[s.id] || 0) >= 2) push('attendance', s, `${lang === 'ko' ? '이번 주' : 'Absent'} ${abs7[s.id]} ${lang === 'ko' ? '회 결석' : 'times this week'}`, '/attendance')
+    }
+    // Reading speed: first vs last test in the past week
+    const byStudent: Record<string, { first: number; last: number }> = {}
+    shared.readingAssessments.filter(r => r.date >= sevenAgo && r.cwpm != null).forEach(r => {
+      if (!byStudent[r.student_id]) byStudent[r.student_id] = { first: r.cwpm!, last: r.cwpm! }
+      byStudent[r.student_id].last = r.cwpm!
+    })
+    for (const [sid, v] of Object.entries(byStudent)) {
+      const s = byId(sid); if (!s) continue
+      if (v.first > v.last + 10) push('reading', s, `CWPM ${v.first} → ${v.last}`, `/students/${sid}`)
+      else if (v.last > v.first + 5) push('reading-up', s, `CWPM ${v.first} → ${v.last}`, `/students/${sid}`)
+    }
+    return out
+  }, [shared, lang])
+
+  const live = concerns.filter(c => !dismissed.has(c.key))
+  const away = concerns.filter(c => dismissed.has(c.key))
+  const shown = showAll ? live : live.slice(0, 6)
+  const kindLabel: Record<string, string> = { grade: lang === 'ko' ? '성적' : 'Grades', behaviour: lang === 'ko' ? '행동' : 'Behaviour', attendance: lang === 'ko' ? '출석' : 'Attend.', reading: lang === 'ko' ? '읽기' : 'Reading', 'reading-up': lang === 'ko' ? '읽기 ↑' : 'Reading ↑' }
+  const kindTone: Record<string, string> = { grade: 'text-bad', behaviour: 'text-warn', attendance: 'text-warn', reading: 'text-bad', 'reading-up': 'text-good' }
 
   return (
-    <>
-      {/* Compact banner */}
-      <button onClick={() => setShowModal(true)}
-        className="w-full rounded-xl border border-gold/30 bg-gold/5 px-4 py-3 flex items-center gap-3 hover:bg-gold/10 transition-all text-left group">
-        <Sparkles size={16} className="text-gold flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <span className="text-[12px] font-semibold text-navy">{visible.length} insight{visible.length !== 1 ? 's' : ''}</span>
-          {positiveCount > 0 && <span className="text-[10px] text-green-600 ml-2">✦ {positiveCount} positive</span>}
-          {concernCount > 0 && <span className="text-[10px] text-amber-600 ml-2">⚠ {concernCount} concern{concernCount !== 1 ? 's' : ''}</span>}
-        </div>
-        <span className="text-[10px] text-text-tertiary group-hover:text-navy transition-colors">View all →</span>
-      </button>
+    <section>
+      <SectionHead title={lang === 'ko' ? '주의 필요' : 'Needs attention'} meta={shared.loading ? '' : `${live.length} ${lang === 'ko' ? '건' : live.length === 1 ? 'item' : 'items'}${away.length ? ` · ${away.length} ${lang === 'ko' ? '보류' : 'put away'}` : ''}`} />
+      {!shared.loading && live.length === 0 && (
+        <p className="text-[13px] text-ink-3 py-4">{lang === 'ko' ? '지금은 주의할 항목이 없습니다.' : 'Nothing needs you right now.'}</p>
+      )}
+      <div className="divide-y divide-rule">
+        {shown.map(c => (
+          <div key={c.key} className="group grid grid-cols-[72px_1fr_auto] gap-3 items-baseline py-2.5">
+            <span className={`eyebrow ${kindTone[c.kind] || ''}`}>{kindLabel[c.kind] || c.kind}</span>
+            <Link href={c.href} className="min-w-0 hover:underline">
+              <span className="text-[14px] font-semibold text-ink">{c.name}</span>
+              <span className="text-[13px] text-ink-2 ml-2">{c.text}</span>
+            </Link>
+            <span className="flex items-center gap-2 text-[11.5px] text-ink-3">
+              {c.cls}
+              <button onClick={() => putAway(c.key)} title={lang === 'ko' ? '7일간 보류' : 'Put away for a week'} className="opacity-0 group-hover:opacity-100 text-ink-3 hover:text-ink"><X size={13} /></button>
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-4 mt-2">
+        {live.length > 6 && <button onClick={() => setShowAll(v => !v)} className="text-[12.5px] font-medium text-accent hover:underline">{showAll ? (lang === 'ko' ? '접기' : 'Show fewer') : `${lang === 'ko' ? '모두 보기' : 'Show all'} ${live.length}`}</button>}
+        {away.length > 0 && <button onClick={bringBack} className="text-[12.5px] text-ink-3 hover:text-ink">{lang === 'ko' ? '보류 항목 다시 보기' : `Bring back ${away.length} put away`}</button>}
+      </div>
+    </section>
+  )
+}
 
-      {/* Insights Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setShowModal(false)}>
-          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-gold" />
-                <h3 className="text-[14px] font-bold text-navy">Insights</h3>
-                <span className="text-[9px] bg-gold/20 text-gold-dark px-1.5 py-0.5 rounded-full font-bold">{visible.length}</span>
+// ─── Calendar: one month, an agenda, and a slot for the schedule ────
+function SharedCalendar({ aside }: { aside: ReactNode }) {
+  const { showToast, confirmDialog, language: lang } = useApp()
+  const [cur, setCur] = useState(new Date())
+  const [events, setEvents] = useState<CalEvent[]>([])
+  const [selDay, setSelDay] = useState<string | null>(null)
+  const [showAdd, setShowAdd] = useState(false)
+  const [editEvent, setEditEvent] = useState<any>(null)
+  const [tableError, setTableError] = useState(false)
+  const loadRef = useRef(0)
+
+  const y = cur.getFullYear(), m = cur.getMonth()
+  const today = getKSTDateString()
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  const monthsKo = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월']
+  const dayN = lang === 'ko' ? ['일','월','화','수','목','금','토'] : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`
+  const nextM = new Date(y, m + 1, 1)
+  const monthName = (yy: number, mm: number) => lang === 'ko' ? `${yy}년 ${monthsKo[mm]}` : `${months[mm]} ${yy}`
+
+  const load = useCallback(async () => {
+    const token = ++loadRef.current
+    // This month and the next (the agenda), plus a month of lead-in so
+    // multi-day events that began earlier still render.
+    const bufferStart = fmt(new Date(y, m - 1, 1))
+    const windowEnd = fmt(new Date(y, m + 2, 0))
+    const { data, error } = await supabase.from('calendar_events').select('*').gte('date', bufferStart).lte('date', windowEnd).order('date')
+    if (token !== loadRef.current) return
+    if (error) { console.warn('Calendar table error:', error.message); setTableError(true) }
+    else { if (data) setEvents(data); setTableError(false) }
+  }, [y, m])
+  useEffect(() => { load() }, [load])
+
+  const dayEvts = (d: string) => events.filter(e => d >= e.date && d <= (e.end_date || e.date))
+  const isMulti = (e: CalEvent) => !!e.end_date && e.end_date > e.date
+
+  useEffect(() => {
+    if (!selDay || showAdd || editEvent) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelDay(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selDay, showAdd, editEvent])
+
+  const handleDelete = async (id: string) => {
+    if (!await confirmDialog({ title: lang === 'ko' ? '이 일정을 삭제할까요?' : 'Delete this event?', danger: true, confirmLabel: lang === 'ko' ? '삭제' : 'Delete' })) return
+    await supabase.from('calendar_events').delete().eq('id', id)
+    showToast(lang === 'ko' ? '삭제되었습니다' : 'Deleted'); load()
+  }
+
+  // ── Month grid ──
+  const first = new Date(y, m, 1).getDay()
+  const days = new Date(y, m + 1, 0).getDate()
+  const cols = { gridTemplateColumns: 'minmax(0,0.6fr) repeat(5, minmax(0,1fr)) minmax(0,0.6fr)' }
+  const cells: ReactNode[] = []
+  for (let i = 0; i < first; i++) cells.push(<div key={`e${i}`} className="bg-paper-2/40 min-h-[112px]" />)
+  for (let i = 0; i < days; i++) {
+    const d = i + 1
+    const date = new Date(y, m, d)
+    const dateStr = fmt(date)
+    const evts = dayEvts(dateStr)
+    const dow = date.getDay()
+    const isWeekend = dow === 0 || dow === 6
+    const isToday = dateStr === today
+    const filler = evts.find(ev => typeOf(ev.type).fills)
+    const shown = evts.slice(0, 3)
+    cells.push(
+      <div key={d} onClick={() => setSelDay(dateStr)}
+        style={filler ? { backgroundColor: `color-mix(in srgb, ${typeOf(filler.type).color} 8%, transparent)` } : undefined}
+        className={`min-h-[112px] min-w-0 overflow-hidden px-1.5 py-1 cursor-pointer transition-colors hover:bg-paper-2/60 ${isWeekend ? 'bg-paper-2/40' : 'bg-surface'} ${selDay === dateStr ? 'ring-2 ring-accent ring-inset' : ''}`}>
+        <div className={`text-[12px] font-semibold mb-1 w-[22px] h-[22px] flex items-center justify-center rounded-full tabular-nums ${isToday ? 'bg-accent text-white' : isWeekend ? 'text-ink-3' : 'text-ink-2'}`}>{d}</div>
+        <div className="space-y-[3px]">
+          {shown.map(ev => {
+            const t = typeOf(ev.type)
+            if (t.fills || isMulti(ev)) {
+              // One continuous bar across the days it covers; the title sits on the
+              // first day and again at the start of each new week.
+              const showTitle = dateStr === ev.date || dow === 0
+              return (
+                <div key={ev.id} title={ev.title} className="text-[10.5px] leading-tight -mx-1.5 px-1.5 py-[2px] font-semibold text-white truncate min-h-[16px]" style={{ backgroundColor: t.color }}>
+                  {showTitle ? ev.title : ' '}
+                </div>
+              )
+            }
+            return (
+              <div key={ev.id} title={ev.title} className="flex items-start gap-1 text-[11px] leading-[1.25] text-ink min-w-0">
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[4px]" style={{ backgroundColor: t.color }} />
+                <span className="line-clamp-2 break-words">{ev.title}</span>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
+            )
+          })}
+          {evts.length > 3 && <div className="text-[10px] text-ink-3 pl-2.5">+{evts.length - 3} {lang === 'ko' ? '더' : 'more'}</div>}
+        </div>
+      </div>
+    )
+  }
+  const trailing = (7 - (first + days) % 7) % 7
+  for (let i = 0; i < trailing; i++) cells.push(<div key={`t${i}`} className="bg-paper-2/40 min-h-[112px]" />)
+
+  // ── Agenda: from today through the end of next month ──
+  const agendaEnd = fmt(new Date(y, m + 2, 0))
+  const agenda = events
+    .filter(e => (e.end_date || e.date) >= today && e.date <= agendaEnd)
+    .sort((a, b) => a.date.localeCompare(b.date))
+  const agendaDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-GB', { day: 'numeric', month: 'short' })
+
+  return (
+    <section>
+      <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+        <div className="flex items-baseline gap-3">
+          <h2 className="font-display text-[26px] leading-none text-ink">{monthName(y, m)}</h2>
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => setCur(new Date(y, m-1, 1))} aria-label="Previous month" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2"><ChevronLeft size={16} /></button>
+            <button onClick={() => setCur(new Date(y, m+1, 1))} aria-label="Next month" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2"><ChevronRight size={16} /></button>
+            <button onClick={() => setCur(new Date())} className="px-2 h-7 rounded text-[12px] font-medium text-ink-2 hover:bg-paper-2">{lang === 'ko' ? '오늘' : 'Today'}</button>
+          </div>
+        </div>
+        <button onClick={() => { if (tableError) { showToast('Run the SQL migration first to create the calendar_events table'); return }; setShowAdd(true) }}
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 bg-surface text-[12.5px] font-medium text-ink hover:border-ink-3"><Plus size={13} /> {lang === 'ko' ? '일정 추가' : 'Add event'}</button>
+      </div>
+
+      {tableError && (
+        <div className="my-3 p-3 bg-warn-soft border border-rule rounded text-[12.5px] text-warn">
+          The calendar table is missing. Run the SQL migration in Supabase, then <button onClick={() => load()} className="underline font-semibold">retry</button>.
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-8">
+        <div>
+          <div className="grid" style={cols}>
+            {dayN.map(d => <div key={d} className="text-[10.5px] uppercase tracking-wider text-ink-3 font-semibold py-1 px-1.5">{d}</div>)}
+          </div>
+          <div className="grid gap-px bg-rule border border-rule" style={cols}>{cells}</div>
+          <div className="flex gap-4 flex-wrap mt-2.5">
+            {LEGEND.map(([l, c]) => (
+              <span key={l} className="flex items-center gap-1.5 text-[11px] text-ink-3">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c }} />{l}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-6 min-w-0">
+          {aside}
+          <div>
+            <div className="flex items-baseline justify-between border-b border-rule-2 pb-1.5 mb-1">
+              <h3 className="font-display text-[18px] leading-none text-ink">{lang === 'ko' ? '다가오는 일정' : 'Coming up'}</h3>
+              <span className="eyebrow">{lang === 'ko' ? `${monthsKo[nextM.getMonth()]}까지` : `through ${months[nextM.getMonth()]}`}</span>
             </div>
-            <div className="overflow-y-auto p-4 space-y-2">
-              {visible.map(insight => {
-                const colors = insight.type === 'positive'
-                  ? { bg: 'bg-green-50', border: 'border-green-200', icon: 'text-green-500', text: 'text-green-800', detail: 'text-green-600' }
-                  : { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-500', text: 'text-amber-800', detail: 'text-amber-600' }
+            {agenda.length === 0 ? (
+              <p className="text-[12.5px] text-ink-3 py-3">{lang === 'ko' ? '예정된 일정이 없습니다.' : 'Nothing scheduled.'}</p>
+            ) : (
+              <div className="divide-y divide-rule max-h-[560px] overflow-y-auto">
+                {agenda.map(ev => {
+                  const t = typeOf(ev.type)
+                  const isTodayEv = ev.date <= today && (ev.end_date || ev.date) >= today
+                  return (
+                    <button key={ev.id} onClick={() => setSelDay(ev.date >= today ? ev.date : today)}
+                      className="w-full grid grid-cols-[64px_1fr] gap-2 items-baseline py-2 text-left hover:bg-paper-2/60 -mx-1 px-1 rounded">
+                      <span className={`text-[10.5px] font-semibold uppercase tracking-wide tabular-nums ${isTodayEv ? 'text-accent' : 'text-ink-3'}`}>
+                        {isTodayEv ? (lang === 'ko' ? '오늘' : 'Today') : agendaDate(ev.date)}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="flex items-start gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[6px]" style={{ backgroundColor: t.color }} />
+                          <span className="text-[13px] text-ink leading-snug">{ev.title}</span>
+                        </span>
+                        <span className="block text-[11px] text-ink-3 pl-3">{t.label}{isMulti(ev) ? ` · ${agendaDate(ev.date)} – ${agendaDate(ev.end_date!)}` : ''}</span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Day detail */}
+      {selDay && !showAdd && !editEvent && (
+        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setSelDay(null)}>
+          <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-rule">
+              <h4 className="font-display text-[20px] text-ink leading-none">
+                {new Date(selDay + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </h4>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-rule-2 text-[12px] font-medium text-ink hover:border-ink-3"><Plus size={11} /> {lang === 'ko' ? '추가' : 'Add'}</button>
+                <button onClick={() => setSelDay(null)} aria-label="Close" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center"><X size={16} /></button>
+              </div>
+            </div>
+            <div className="px-5 py-3 overflow-y-auto divide-y divide-rule">
+              {dayEvts(selDay).length === 0 ? (
+                <p className="text-[13px] text-ink-3 py-3">{lang === 'ko' ? '일정이 없습니다.' : 'No events this day.'}</p>
+              ) : dayEvts(selDay).map(ev => {
+                const t = typeOf(ev.type)
                 return (
-                  <div key={insight.key} className={`rounded-xl border ${colors.border} ${colors.bg} p-3.5 group`}>
-                    <div className="flex items-start gap-2.5">
-                      <div className="mt-0.5"><Sparkles size={14} className={colors.icon} /></div>
-                      <div className="flex-1 min-w-0">
-                        <button onClick={() => { if (insight.navView) { navigateTo({ view: insight.navView, preSelectedStudent: insight.navStudent }); setShowModal(false) } }}
-                          className={`text-[12px] font-semibold ${colors.text} leading-snug text-left hover:underline cursor-pointer`}>
-                          {insight.text}
-                          {insight.navView && <ArrowRight size={10} className="inline ml-1 opacity-50" />}
-                        </button>
-                        <p className={`text-[10px] ${colors.detail} mt-0.5`}>{insight.detail}</p>
-                      </div>
-                      <button onClick={(e) => { e.stopPropagation(); dismissInsight(insight.key) }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-white/50 text-text-tertiary hover:text-text-secondary flex-shrink-0"
-                        title="Dismiss for 7 days">
-                        <X size={13} />
-                      </button>
+                  <div key={ev.id} className="flex items-start gap-3 py-3">
+                    <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: t.color }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-semibold text-ink">{ev.title}</p>
+                      <p className="text-[11.5px] text-ink-3">{t.label}{isMulti(ev) ? ` · ${ev.date} → ${ev.end_date}` : ''}{ev.show_on_parent_calendar ? ` · ${lang === 'ko' ? '학부모 달력' : 'Parent calendar'}${ev.target_grades?.length ? ` (G${ev.target_grades.join(',')})` : ''}` : ''}</p>
+                      {ev.description && <p className="text-[12.5px] text-ink-2 mt-1">{ev.description}</p>}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setEditEvent(ev)} className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><Pencil size={13} /></button>
+                      <button onClick={() => handleDelete(ev.id)} className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-bad"><Trash2 size={13} /></button>
                     </div>
                   </div>
                 )
@@ -396,390 +656,50 @@ function InsightsBanner({ shared }: { shared: SharedDashboardData }) {
           </div>
         </div>
       )}
-    </>
+      {showAdd && <AddEventModal date={selDay || today} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
+      {editEvent && <AddEventModal date={editEvent.date} existingEvent={editEvent} onClose={() => setEditEvent(null)} onSaved={() => { setEditEvent(null); load() }} />}
+    </section>
   )
 }
 
-// ─── Actionable Summary (sidebar) ────────────────────────────────
-function ActionableSummary({ shared, horizontal = false }: { shared: SharedDashboardData; horizontal?: boolean }) {
-  const { currentTeacher, language, navigateTo } = useApp()
-  const today = getKSTDateString()
-
-  // Compute items from shared data (no independent fetching)
-  const items = useMemo(() => {
-    if (shared.loading) return []
-    const newItems: { icon: any; text: string; urgent: boolean; nav?: string }[] = []
-
-    // Unmarked attendance
-    const unmarked = shared.students.length - shared.todayAttendanceIds.size
-    if (unmarked > 0) {
-      newItems.push({ icon: UserCheck, text: `${unmarked} students need attendance marked`, urgent: true, nav: 'attendance' })
-    } else {
-      newItems.push({ icon: UserCheck, text: 'All attendance recorded today', urgent: false })
-    }
-
-    // Today's events
-    shared.todayEvents.forEach((ev: any) => {
-      newItems.push({ icon: CalendarDays, text: ev.title, urgent: ev.type === 'deadline' || ev.type === 'testing' })
-    })
-
-    // Upcoming deadlines
-    if (shared.activeSemester) {
-      const sem = shared.activeSemester
-      const daysUntil = (d: string) => Math.ceil((new Date(d).getTime() - new Date(today).getTime()) / 86400000)
-      if (sem.midterm_cutoff_date) {
-        const days = daysUntil(sem.midterm_cutoff_date)
-        if (days >= 0 && days <= 7) newItems.push({ icon: AlertTriangle, text: `Midterm cutoff in ${days} day${days !== 1 ? 's' : ''}`, urgent: days <= 3 })
-      }
-      if (sem.report_card_cutoff_date) {
-        const days = daysUntil(sem.report_card_cutoff_date)
-        if (days >= 0 && days <= 14) newItems.push({ icon: AlertTriangle, text: `Report card cutoff in ${days} day${days !== 1 ? 's' : ''}`, urgent: days <= 5 })
-      }
-    }
-
-    // Behavior logs today
-    if (shared.todayBehaviorCount > 0) {
-      newItems.push({ icon: ClipboardCheck, text: `${shared.todayBehaviorCount} behavior log${shared.todayBehaviorCount > 1 ? 's' : ''} recorded today`, urgent: false })
-    }
-
-    return newItems
-  }, [shared.loading, shared.students.length, shared.todayAttendanceIds.size, shared.todayEvents, shared.activeSemester, shared.todayBehaviorCount, today])
-
-  if (shared.loading) return null
-
-  // Horizontal top-bar variant — frees the main row for a wider calendar
-  if (horizontal) {
-    return (
-      <div className="bg-surface border border-border rounded-xl px-5 py-3 flex items-center gap-3 flex-wrap">
-        <span className="text-[11px] font-bold text-navy uppercase tracking-wider flex-shrink-0">Today's Status</span>
-        {items.length === 0 ? (
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-green-700"><CheckCircle size={14} /> All caught up</span>
-        ) : items.map((item, i) => {
-          const Icon = item.icon
-          const cls = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] border ${item.urgent ? 'bg-amber-50 border-amber-200 text-amber-800 font-medium' : 'bg-surface-alt/60 border-border text-text-secondary'}`
-          return item.nav ? (
-            <button key={i} onClick={() => navigateTo({ view: item.nav! })} className={`${cls} hover:brightness-95 transition-all`}>
-              <Icon size={13} className={item.urgent ? 'text-amber-500' : 'text-text-tertiary'} />
-              {item.text}
-              <ArrowRight size={11} className="opacity-60" />
-            </button>
-          ) : (
-            <div key={i} className={cls}>
-              <Icon size={13} className={item.urgent ? 'text-amber-500' : 'text-text-tertiary'} />
-              {item.text}
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
+// ─── Students by class (admin) ───────────────────────────────────
+function ClassOverviewTable() {
+  const { language: lang } = useApp()
+  const { counts } = useClassCounts()
+  const classes = ENGLISH_CLASSES.filter(c => c !== 'Unplaced')
   return (
-    <div className="bg-surface border border-border rounded-xl overflow-hidden">
-      <div className="px-4 py-2.5 bg-navy/5 border-b border-border">
-        <p className="text-[11px] font-bold text-navy uppercase tracking-wider">Today's Status</p>
-      </div>
-      <div className="divide-y divide-border">
-        {items.map((item, i) => {
-          const Icon = item.icon
-          const content = (
-            <>
-              <Icon size={14} className={item.urgent ? 'text-amber-500' : 'text-text-tertiary'} />
-              <p className={`text-[12px] flex-1 ${item.urgent ? 'text-amber-800 font-medium' : 'text-text-secondary'}`}>{item.text}</p>
-              {item.nav && <ArrowRight size={12} className="text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />}
-            </>
-          )
-          return item.nav ? (
-            <button key={i} onClick={() => navigateTo({ view: item.nav! })}
-              className={`w-full px-4 py-2.5 flex items-center gap-2.5 group hover:bg-navy/5 transition-colors text-left ${item.urgent ? 'bg-amber-50/50' : ''}`}>
-              {content}
-            </button>
-          ) : (
-            <div key={i} className={`px-4 py-2.5 flex items-center gap-2.5 ${item.urgent ? 'bg-amber-50/50' : ''}`}>
-              {content}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ─── Quick Actions ────────────────────────────────────────────────
-function QuickActions({ shared }: { shared: SharedDashboardData }) {
-  const { currentTeacher } = useApp()
-  const isTeacher = currentTeacher?.role === 'teacher' && currentTeacher?.english_class !== 'Admin'
-
-  // Compute incomplete assessments from shared data (no independent fetching, no N+1)
-  const incomplete = useMemo(() => {
-    if (shared.loading || !isTeacher || shared.semesterAssessments.length === 0) return []
-
-    // Get recent assessments for this teacher's class (sorted by created_at desc, limit 3)
-    const classAssessments = shared.semesterAssessments
-      .filter((a: any) => a.english_class === currentTeacher.english_class)
-      .sort((a: any, b: any) => (b.created_at || '').localeCompare(a.created_at || ''))
-      .slice(0, 3)
-
-    if (classAssessments.length === 0) return []
-
-    // Count grades from shared data instead of N+1 queries
-    const gradesByAssessment: Record<string, number> = {}
-    shared.semesterGrades.forEach((g: any) => {
-      gradesByAssessment[g.assessment_id] = (gradesByAssessment[g.assessment_id] || 0) + 1
-    })
-
-    return classAssessments.map((a: any) => {
-      const total = shared.students.filter(s => s.english_class === a.english_class && s.grade === a.grade).length
-      const entered = gradesByAssessment[a.id] || 0
-      return { ...a, entered, total }
-    }).filter((a: any) => a.total > 0 && a.entered < a.total)
-  }, [shared.loading, shared.semesterAssessments, shared.semesterGrades, shared.students, isTeacher, currentTeacher?.english_class])
-
-  if (!isTeacher || incomplete.length === 0) return null
-
-  return (
-    <div className="">
-      <h3 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-3">Continue Grading</h3>
-      <div className="flex gap-3">
-        {incomplete.map(a => (
-          <div key={a.id} className="flex-1 bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <p className="text-[13px] font-semibold text-navy">{a.name}</p>
-            <p className="text-[11px] text-text-tertiary mt-0.5 capitalize">{a.domain} -- /{a.max_score}</p>
-            <div className="mt-2 flex items-center gap-2">
-              <div className="flex-1 h-1.5 bg-amber-200 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full" style={{ width: `${(a.entered / a.total) * 100}%` }} />
-              </div>
-              <span className="text-[11px] font-medium text-amber-700">{a.entered}/{a.total}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ─── Needs Attention Watchlist ─────────────────────────────────────
-interface WatchlistStudent {
-  id: string
-  name: string
-  class: string
-  concerns: { type: 'grade_decline' | 'behavior_spike' | 'missing_orf' | 'attendance' | 'missing_grades'; text: string }[]
-}
-
-function NeedsAttentionWatchlist({ shared }: { shared: SharedDashboardData }) {
-  const { currentTeacher, navigateTo } = useApp()
-  const [expanded, setExpanded] = useState(false)
-  const [dismissedStudents, setDismissedStudents] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set()
-    try {
-      const saved = localStorage.getItem(`daewoo_watchlist_dismissed_${currentTeacher?.id || ''}`)
-      if (saved) {
-        const parsed: { id: string; at: number }[] = JSON.parse(saved)
-        const weekAgo = Date.now() - 7 * 86400000
-        return new Set(parsed.filter(d => d.at > weekAgo).map(d => d.id))
-      }
-    } catch {}
-    return new Set()
-  })
-
-  // Compute watchlist + class alerts from shared data
-  const { watchlist, classAlerts } = useMemo(() => {
-    if (shared.loading || shared.students.length === 0 || !shared.activeSemester) {
-      return { watchlist: [] as WatchlistStudent[], classAlerts: [] as { id: string; text: string }[] }
-    }
-
-    const students = shared.students
-    const studentConcerns: Record<string, WatchlistStudent> = {}
-    const addConcern = (s: DashboardStudent, type: WatchlistStudent['concerns'][0]['type'], text: string) => {
-      if (!studentConcerns[s.id]) studentConcerns[s.id] = { id: s.id, name: s.english_name, class: s.english_class, concerns: [] }
-      studentConcerns[s.id].concerns.push({ type, text })
-    }
-
-    // Grade decline (from shared semester assessments + grades)
-    const cAlerts: { id: string; text: string }[] = []
-    if (shared.semesterAssessments.length > 0 && shared.semesterGrades.length > 0) {
-      for (const student of students) {
-        const sAssessments = shared.semesterAssessments.filter((a: any) => a.english_class === student.english_class && a.grade === student.grade)
-        const domains = Array.from(new Set(sAssessments.map((a: any) => a.domain)))
-        for (const domain of domains) {
-          const scores = sAssessments.filter((a: any) => a.domain === domain).map((a: any) => {
-            const g = shared.semesterGrades.find((gr: any) => gr.student_id === student.id && gr.assessment_id === a.id)
-            return g?.score != null && a.max_score > 0 ? (g.score / a.max_score) * 100 : null
-          }).filter((s): s is number => s != null)
-          if (scores.length >= 3) {
-            const recent = scores.slice(-3)
-            const firstAvg = (recent[0] + recent[1]) / 2
-            const last = recent[2]
-            if (firstAvg - last >= 15) {
-              addConcern(student, 'grade_decline', `${domain.charAt(0).toUpperCase() + domain.slice(1)} dropped ${firstAvg.toFixed(0)}% to ${last.toFixed(0)}%`)
-            }
-          }
-        }
-      }
-
-      // Class-level: missing grades
-      for (const a of shared.semesterAssessments) {
-        const classStudents = students.filter(s => s.english_class === a.english_class && s.grade === a.grade)
-        if (classStudents.length === 0) continue
-        const gradedSet = new Set(shared.semesterGrades.filter((g: any) => g.assessment_id === a.id).map((g: any) => g.student_id))
-        const ungradedCount = classStudents.filter(s => !gradedSet.has(s.id)).length
-        if (ungradedCount > 0 && ungradedCount < classStudents.length) {
-          cAlerts.push({ id: `mg-${a.id}`, text: `"${a.name}" (${a.english_class}) -- ${ungradedCount} of ${classStudents.length} students ungraded` })
-        }
-      }
-    }
-
-    // Behavior spike (past 7 days only)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
-    const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0]
-    const recentBeh: Record<string, number> = {}
-    const priorBeh: Record<string, number> = {}
-    shared.behaviorLogs28d.forEach(b => {
-      if (b.date >= sevenDaysAgo) recentBeh[b.student_id] = (recentBeh[b.student_id] || 0) + 1
-      else if (b.date >= twoWeeksAgo) priorBeh[b.student_id] = (priorBeh[b.student_id] || 0) + 1
-    })
-    for (const [sid, count] of Object.entries(recentBeh)) {
-      if (count >= 3 && count >= (priorBeh[sid] || 0) * 2) {
-        const s = students.find(st => st.id === sid)
-        if (s) addConcern(s, 'behavior_spike', `${count} behavior logs in 7 days (was ${priorBeh[sid] || 0})`)
-      }
-    }
-
-    // Attendance pattern (past 3 days only)
-    const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0]
-    const absCounts: Record<string, number> = {}
-    shared.absences30d.filter(a => a.date >= threeDaysAgo).forEach(a => { absCounts[a.student_id] = (absCounts[a.student_id] || 0) + 1 })
-    Object.entries(absCounts).forEach(([sid, c]) => {
-      if (c >= 2) {
-        const s = students.find(st => st.id === sid)
-        if (s) addConcern(s, 'attendance', `Absent ${c} times in 3 days`)
-      }
-    })
-
-    // Sort by concern count
-    const list = Object.values(studentConcerns)
-      .sort((a, b) => b.concerns.length - a.concerns.length)
-
-    return { watchlist: list, classAlerts: cAlerts }
-  }, [shared.loading, shared.students, shared.activeSemester, shared.semesterAssessments, shared.semesterGrades, shared.behaviorLogs28d, shared.readingAssessments, shared.absences30d])
-
-  if (shared.loading) return null
-  if (watchlist.length === 0 && classAlerts.length === 0) return null
-
-  const dismissStudent = (sid: string) => {
-    setDismissedStudents(prev => {
-      const next = new Set(prev)
-      next.add(sid)
-      try {
-        const arr = Array.from(next).map(k => ({ id: k, at: Date.now() }))
-        localStorage.setItem(`daewoo_watchlist_dismissed_${currentTeacher?.id || ''}`, JSON.stringify(arr))
-      } catch {}
-      return next
-    })
-  }
-
-  const filteredWatchlist = watchlist.filter(s => !dismissedStudents.has(s.id))
-  const shown = expanded ? filteredWatchlist : filteredWatchlist.slice(0, 5)
-  const icons: Record<string, any> = { grade_decline: TrendingDown, behavior_spike: AlertTriangle, missing_orf: BookOpen, attendance: CalendarDays, missing_grades: FileX }
-  const tagColors: Record<string, string> = { grade_decline: 'bg-red-100 text-red-700', behavior_spike: 'bg-amber-100 text-amber-700', missing_orf: 'bg-blue-100 text-blue-700', attendance: 'bg-purple-100 text-purple-700' }
-
-  const handleConcernClick = (studentId: string, type: string) => {
-    switch (type) {
-      case 'grade_decline':
-      case 'missing_grades':
-        navigateTo({ view: 'grades', preSelectedStudent: studentId })
-        break
-      case 'behavior_spike':
-        navigateTo({ view: 'students', preSelectedStudent: studentId, preSelectedFilter: 'behavior' })
-        break
-      case 'missing_orf':
-        navigateTo({ view: 'readingLevels', preSelectedStudent: studentId })
-        break
-      case 'attendance':
-        navigateTo({ view: 'attendance', preSelectedStudent: studentId })
-        break
-    }
-  }
-
-  return (
-    <div>
-      <div className="bg-surface border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 bg-amber-50/60 border-b border-amber-200/60 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Eye size={15} className="text-amber-600" />
-            <h3 className="text-[13px] font-semibold text-amber-900">Needs Attention</h3>
-            <span className="text-[10px] bg-amber-200 text-amber-700 px-2 py-0.5 rounded-full font-bold">{filteredWatchlist.length}</span>
-          </div>
-        </div>
-
-        {/* Class-level alerts (missing grades) */}
-        {classAlerts.length > 0 && (
-          <div className="px-5 py-2 bg-blue-50/40 border-b border-blue-100">
-            {classAlerts.slice(0, 3).map(a => (
-              <div key={a.id} className="flex items-center gap-2 py-1">
-                <FileX size={12} className="text-blue-500 flex-shrink-0" />
-                <p className="text-[11px] text-blue-700">{a.text}</p>
-              </div>
-            ))}
-            {classAlerts.length > 3 && <p className="text-[10px] text-blue-500 mt-1">+ {classAlerts.length - 3} more</p>}
-          </div>
-        )}
-
-        {/* Student watchlist */}
-        <div className="divide-y divide-border">
-          {shown.map(student => (
-            <div key={student.id} className="px-5 py-3 hover:bg-surface-alt/30 transition-colors group">
-              <div className="flex items-center justify-between mb-1.5">
-                <div>
-                  <span className="text-[13px] font-semibold text-navy">{student.name}</span>
-                  <span className="text-[10px] ml-2 px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: classToColor(student.class as EnglishClass), color: classToTextColor(student.class as EnglishClass) }}>{student.class}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-text-tertiary">{student.concerns.length} concern{student.concerns.length > 1 ? 's' : ''}</span>
-                  <button onClick={() => dismissStudent(student.id)} title="Dismiss for 7 days"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-amber-100 text-text-tertiary hover:text-amber-600">
-                    <X size={12} />
-                  </button>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {student.concerns.map((c, i) => {
-                  const Icon = icons[c.type] || AlertTriangle
-                  return (
-                    <button key={i} onClick={() => handleConcernClick(student.id, c.type)}
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium ${tagColors[c.type] || 'bg-gray-100 text-gray-700'} hover:ring-1 hover:ring-current/30 transition-all cursor-pointer`}
-                      title={`Go to ${c.type.replace(/_/g, ' ')}`}>
-                      <Icon size={10} /> {c.text}
-                      <ArrowRight size={8} className="opacity-40" />
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+    <section>
+      <SectionHead title={lang === 'ko' ? '반별 학생 수' : 'Students by class'} />
+      <table className="w-full text-[13px] tabular-nums">
+        <thead>
+          <tr>
+            <th className="text-left py-1.5 eyebrow font-semibold">{lang === 'ko' ? '학년' : 'Grade'}</th>
+            {classes.map(cls => <th key={cls} className="text-right py-1.5 eyebrow font-semibold">{cls}</th>)}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-rule">
+          {[1,2,3,4,5].map(grade => (
+            <tr key={grade}>
+              <td className="py-1.5 font-semibold text-ink">{grade}</td>
+              {classes.map(cls => {
+                const c = counts.find(c => c.grade === grade && c.english_class === cls)
+                return <td key={cls} className="text-right py-1.5 text-ink-2">{c?.count || <span className="text-ink-3">—</span>}</td>
+              })}
+            </tr>
           ))}
-        </div>
-
-        {filteredWatchlist.length > 5 && (
-          <div className="px-5 py-2.5 border-t border-border">
-            <button onClick={() => setExpanded(!expanded)} className="text-[11px] font-medium text-navy hover:text-navy-dark">
-              {expanded ? 'Show fewer' : `Show all ${filteredWatchlist.length} students...`}
-            </button>
-          </div>
-        )}
-        {dismissedStudents.size > 0 && (
-          <div className="px-5 py-1.5 border-t border-border">
-            <button onClick={() => { setDismissedStudents(new Set()); localStorage.removeItem(`daewoo_watchlist_dismissed_${currentTeacher?.id || ''}`) }}
-              className="text-[10px] text-text-tertiary hover:text-navy">
-              Show {dismissedStudents.size} dismissed student{dismissedStudents.size > 1 ? 's' : ''}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+          <tr className="border-t border-rule-2">
+            <td className="py-1.5 font-semibold text-ink">{lang === 'ko' ? '합계' : 'Total'}</td>
+            {classes.map(cls => {
+              const total = counts.filter((c: any) => c.english_class === cls).reduce((a, c) => a + c.count, 0)
+              return <td key={cls} className="text-right py-1.5 font-semibold text-ink">{total || '—'}</td>
+            })}
+          </tr>
+        </tbody>
+      </table>
+    </section>
   )
 }
 
-// ─── Admin Alert Panel ─────────────────────────────────────────────
 function AdminAlertPanel() {
   const { showToast } = useApp()
   const [flagged, setFlagged] = useState<FlaggedEntry[]>([])
@@ -802,34 +722,34 @@ function AdminAlertPanel() {
     showToast('Flag dismissed')
   }
 
-  if (loading || flagged.length === 0) return null
+  if (loading || flagged.length === 0) return <section><SectionHead title="Flagged for review" meta="nothing flagged" /></section>
 
   return (
-    <div className="border border-red-200 rounded-xl bg-red-50/50 overflow-hidden">
-      <div className="px-5 py-3 bg-red-100/60 border-b border-red-200 flex items-center gap-2">
-        <Bell size={16} className="text-red-600" />
-        <h3 className="text-[14px] font-semibold text-red-800">Flagged for Your Review</h3>
-        <span className="text-[11px] bg-red-200 text-red-700 px-2 py-0.5 rounded-full font-bold ml-1">{flagged.length}</span>
+    <div className="border border-rule-2 rounded-lg overflow-hidden">
+      <div className="px-5 py-3 bg-bad-soft border-b border-rule-2 flex items-center gap-2">
+        <Bell size={16} className="text-bad" />
+        <h3 className="font-display text-[18px] leading-none text-ink">Flagged for Your Review</h3>
+        <span className="text-[11px] bg-bad text-white px-2 py-0.5 rounded-full font-bold ml-1">{flagged.length}</span>
       </div>
-      <div className="divide-y divide-red-100 max-h-[280px] overflow-y-auto">
+      <div className="divide-y divide-rule max-h-[280px] overflow-y-auto">
         {flagged.map(e => (
-          <div key={e.id} className="px-5 py-3 flex items-start gap-3 hover:bg-red-50/80 transition-colors cursor-pointer" onClick={() => setDetail(e)}>
+          <div key={e.id} className="px-5 py-3 flex items-start gap-3 hover:bg-paper-2 transition-colors cursor-pointer" onClick={() => setDetail(e)}>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[13px] font-semibold text-red-900">{e.student_name}</span>
-                {e.student_class && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: classToColor(e.student_class as EnglishClass), color: classToTextColor(e.student_class as EnglishClass) }}>{e.student_class}</span>}
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">{e.type.toUpperCase()}</span>
+                <span className="text-[13px] font-semibold text-ink">{e.student_name}</span>
+                {e.student_class && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-paper-2 text-ink-2">{e.student_class}</span>}
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-info-soft text-info font-medium">{e.type.toUpperCase()}</span>
               </div>
-              <p className="text-[12px] text-red-800 truncate">{e.note || (e.behaviors || []).join(', ')}</p>
-              <p className="text-[10px] text-red-600 mt-0.5">{new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{e.time && ` at ${e.time}`} — {e.teacher_name || 'Unknown'}</p>
+              <p className="text-[12px] text-ink-2 truncate">{e.note || (e.behaviors || []).join(', ')}</p>
+              <p className="text-[10px] text-ink-3 mt-0.5">{new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{e.time && ` at ${e.time}`} — {e.teacher_name || 'Unknown'}</p>
             </div>
-            <button onClick={(ev: any) => { ev.stopPropagation(); dismiss(e.id) }} className="p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-100 flex-shrink-0" title="Dismiss"><X size={14} /></button>
+            <button onClick={(ev: any) => { ev.stopPropagation(); dismiss(e.id) }} className="p-1.5 rounded text-ink-3 hover:text-bad hover:bg-bad-soft flex-shrink-0" title="Dismiss"><X size={14} /></button>
           </div>
         ))}
       </div>
       {detail && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={(ev: any) => ev.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6">
+          <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-md" onClick={(ev: any) => ev.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <h3 className="font-display text-[16px] font-semibold text-navy">Flagged — {detail.student_name}</h3>
               <button onClick={() => setDetail(null)} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
@@ -845,28 +765,28 @@ function AdminAlertPanel() {
               {detail.duration && <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Duration</p><p className="text-[12px]">{detail.duration}</p></div>}
               {(detail.antecedents || []).length > 0 && (
                 <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Antecedent</p>
-                  <div className="flex flex-wrap gap-1">{detail.antecedents.map((a: string, i: number) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{a}</span>)}</div></div>
+                  <div className="flex flex-wrap gap-1">{detail.antecedents.map((a: string, i: number) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-info-soft text-info">{a}</span>)}</div></div>
               )}
               {(detail.behaviors || []).length > 0 && (
                 <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Behaviors</p>
-                  <div className="flex flex-wrap gap-1">{detail.behaviors.map((b: string, i: number) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">{b}</span>)}</div></div>
+                  <div className="flex flex-wrap gap-1">{detail.behaviors.map((b: string, i: number) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-warn-soft text-warn">{b}</span>)}</div></div>
               )}
               {(detail.consequences || []).length > 0 && (
                 <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Consequence</p>
-                  <div className="flex flex-wrap gap-1">{detail.consequences.map((c: string, i: number) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700">{c}</span>)}</div></div>
+                  <div className="flex flex-wrap gap-1">{detail.consequences.map((c: string, i: number) => <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-bad-soft text-bad">{c}</span>)}</div></div>
               )}
               {detail.intensity > 1 && (
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-text-tertiary font-semibold uppercase">Intensity:</span>
-                  {[1,2,3,4,5].map(i => <div key={i} className={`w-4 h-4 rounded-full ${i <= detail.intensity ? (detail.intensity >= 4 ? 'bg-red-500' : detail.intensity >= 3 ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-200'}`} />)}
+                  {[1,2,3,4,5].map(i => <div key={i} className={`w-4 h-4 rounded-full ${i <= detail.intensity ? (detail.intensity >= 4 ? 'bg-bad' : detail.intensity >= 3 ? 'bg-warn' : 'bg-good') : 'bg-paper-3'}`} />)}
                 </div>
               )}
               {detail.frequency > 1 && <div><span className="text-[10px] text-text-tertiary font-semibold uppercase">Frequency:</span><span className="text-[12px] ml-1">{detail.frequency}x</span></div>}
               {detail.note && <div><p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Notes</p><p className="text-[13px] whitespace-pre-wrap">{detail.note}</p></div>}
             </div>
             <div className="px-5 py-3 border-t border-border flex justify-between">
-              <button onClick={() => { dismiss(detail.id); setDetail(null) }} className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-red-600 hover:bg-red-50">Dismiss Flag</button>
-              <button onClick={() => setDetail(null)} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Close</button>
+              <button onClick={() => { dismiss(detail.id); setDetail(null) }} className="px-3 py-1.5 rounded text-[12px] font-medium text-bad hover:bg-bad-soft">Dismiss Flag</button>
+              <button onClick={() => setDetail(null)} className="px-4 py-1.5 rounded text-[12px] font-medium bg-accent text-white hover:bg-accent-hover">Close</button>
             </div>
           </div>
         </div>
@@ -875,221 +795,6 @@ function AdminAlertPanel() {
   )
 }
 
-// ─── Shared Calendar ───────────────────────────────────────────────
-function SharedCalendar() {
-  const { showToast, currentTeacher, confirmDialog } = useApp()
-  const [cur, setCur] = useState(new Date())
-  const [events, setEvents] = useState<CalEvent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selDay, setSelDay] = useState<string | null>(null)
-  const [showAdd, setShowAdd] = useState(false)
-  const [editEvent, setEditEvent] = useState<any>(null)
-
-  const y = cur.getFullYear(), m = cur.getMonth()
-  const today = getKSTDateString()
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
-  const dayN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-  const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`
-  // Second visible month
-  const nextM = new Date(y, m + 1, 1)
-  const y2 = nextM.getFullYear(), m2 = nextM.getMonth()
-  const headerLabel = y === y2 ? `${months[m]} – ${months[m2]} ${y}` : `${months[m]} ${y} – ${months[m2]} ${y2}`
-
-  const [tableError, setTableError] = useState(false)
-  const loadRef = useRef(0)
-
-  const load = useCallback(async () => {
-    const token = ++loadRef.current
-    setLoading(true)
-    // Fetch across both visible months, plus a month of lead-in so multi-day
-    // events that start shortly before the window still render inside it.
-    const bufferStart = fmt(new Date(y, m - 1, 1))
-    const windowEnd = fmt(new Date(y, m + 2, 0))
-    const { data, error } = await supabase.from('calendar_events').select('*').gte('date', bufferStart).lte('date', windowEnd).order('date')
-    if (token !== loadRef.current) return // stale request, discard
-    if (error) {
-      console.warn('Calendar table error:', error.message)
-      setTableError(true)
-    } else {
-      if (data) setEvents(data)
-      setTableError(false)
-    }
-    setLoading(false)
-  }, [y, m])
-
-  useEffect(() => { load() }, [load])
-
-  // An event covers every day in [date, end_date] (end_date null = single day)
-  const dayEvts = (d: string) => events.filter((e: any) => d >= e.date && d <= (e.end_date || e.date))
-
-  // Escape closes the day modal (but not while a nested add/edit modal is up)
-  useEffect(() => {
-    if (!selDay || showAdd || editEvent) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelDay(null) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [selDay, showAdd, editEvent])
-
-  const handleDelete = async (id: string) => {
-    if (!await confirmDialog({ title: 'Delete this event?', danger: true, confirmLabel: 'Delete' })) return
-    await supabase.from('calendar_events').delete().eq('id', id)
-    showToast('Deleted'); load()
-  }
-
-  const renderMonth = (gy: number, gm: number) => {
-    const first = new Date(gy, gm, 1).getDay()
-    const days = new Date(gy, gm + 1, 0).getDate()
-    // minmax(0, …) so a long title can never widen its column; weekends get a bit over half a weekday.
-    const cols = { gridTemplateColumns: 'minmax(0,0.6fr) repeat(5, minmax(0,1fr)) minmax(0,0.6fr)' }
-    return (
-      <div>
-        <div className="font-display text-[17px] text-ink mb-2">{months[gm]} <span className="text-ink-3">{gy}</span></div>
-        <div className="grid" style={cols}>
-          {dayN.map(d => <div key={d} className="text-[10px] uppercase tracking-wider text-ink-3 font-semibold py-1 px-1.5">{d}</div>)}
-        </div>
-        <div className="grid gap-px bg-border border border-border" style={cols}>
-          {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} className="bg-paper-2/40 min-h-[104px]" />)}
-          {Array.from({ length: days }).map((_, i) => {
-            const d = i + 1
-            const dateStr = fmt(new Date(gy, gm, d))
-            const evts = dayEvts(dateStr)
-            const isToday = dateStr === today
-            const isSelected = dateStr === selDay
-            const isWeekend = [0, 6].includes(new Date(gy, gm, d).getDay())
-            const filler = evts.find(ev => EVENT_TYPES.find(t => t.value === ev.type)?.fills)
-            const fillType = filler ? EVENT_TYPES.find(t => t.value === filler.type) : null
-            const shown = evts.slice(0, 3)
-            return (
-              <div key={d} onClick={() => setSelDay(dateStr)}
-                style={fillType ? { backgroundColor: `${fillType.color}0d` } : undefined}
-                className={`min-h-[104px] min-w-0 overflow-hidden p-1.5 cursor-pointer transition-colors hover:bg-paper-2/60 ${isWeekend ? 'bg-paper-2/40' : 'bg-surface'} ${isSelected ? 'ring-2 ring-accent ring-inset' : ''}`}>
-                <div className={`text-[11.5px] font-semibold mb-1 w-5 h-5 flex items-center justify-center rounded-full tabular-nums ${isToday ? 'bg-accent text-white' : isWeekend ? 'text-ink-3' : 'text-ink-2'}`}>{d}</div>
-                <div className="space-y-[3px]">
-                  {shown.map(ev => {
-                    const typeInfo = EVENT_TYPES.find(t => t.value === ev.type)
-                    const color = typeInfo?.color || '#857D6E'
-                    if (typeInfo?.fills) {
-                      return (
-                        <div key={ev.id} title={ev.title} className="text-[10.5px] leading-tight -mx-1.5 px-1.5 py-[2px] font-semibold text-white truncate" style={{ backgroundColor: color }}>
-                          {ev.title}
-                        </div>
-                      )
-                    }
-                    return (
-                      <div key={ev.id} title={ev.title} className="flex items-start gap-1 text-[10.5px] leading-[1.25] text-ink min-w-0">
-                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[3px]" style={{ backgroundColor: color }} />
-                        <span className="line-clamp-2 break-words">{ev.title}</span>
-                      </div>
-                    )
-                  })}
-                  {evts.length > 3 && <div className="text-[10px] text-ink-3 pl-2.5">+{evts.length - 3} more</div>}
-                </div>
-              </div>
-            )
-          })}
-          {Array.from({ length: (7 - (first + days) % 7) % 7 }).map((_, i) => <div key={`t${i}`} className="bg-paper-2/40 min-h-[104px]" />)}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="bg-surface border border-border rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h3 className="font-display text-[16px] font-semibold text-navy">{headerLabel}</h3>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setCur(new Date(y, m-1, 1))} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronLeft size={16} /></button>
-            <button onClick={() => setCur(new Date(y, m+1, 1))} className="p-1.5 rounded-lg hover:bg-surface-alt"><ChevronRight size={16} /></button>
-            <button onClick={() => setCur(new Date())} className="px-2 py-1 rounded text-[11px] font-medium text-navy hover:bg-accent-light ml-1">Today</button>
-          </div>
-        </div>
-        {/* Defaults to today's date inside the modal; deliberately does not select
-            a day, so saving returns you to the calendar rather than a day modal. */}
-        <button onClick={() => { if (tableError) { showToast('Run the SQL migration first to create the calendar_events table'); return }; setShowAdd(true) }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Plus size={13} /> Add Event</button>
-      </div>
-
-      {/* Legend */}
-      <div className="px-5 py-2 bg-surface-alt/50 border-b border-border flex gap-3 flex-wrap">
-        {[['Day off', '#2E6B3A'], ['Deadline · Midterm', '#8A2A2B'], ['Meeting · Report cards', '#2F5C8A'], ['School event', '#9A6A12'], ['Field trip · Testing', '#5EA89C'], ['Other', '#857D6E']].map(([l, c]) => (
-          <span key={l} className="flex items-center gap-1.5 text-[11px] text-ink-2">
-            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: c }} />
-            {l}
-          </span>
-        ))}
-      </div>
-
-      {tableError && (
-        <div className="mx-5 my-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <p className="text-[13px] font-medium text-amber-800 mb-1">Calendar table needs setup</p>
-          <p className="text-[11px] text-amber-700">Run the SQL migration in Supabase SQL Editor to create the <code className="bg-amber-100 px-1 rounded">calendar_events</code> table.</p>
-          <button onClick={() => load()} className="mt-2 px-3 py-1 rounded text-[11px] font-medium bg-amber-200 text-amber-800 hover:bg-amber-300">Retry</button>
-        </div>
-      )}
-
-      {/* Two-month grid */}
-      <div className="p-4">
-        <div className="grid grid-cols-2 gap-6">
-          {renderMonth(y, m)}
-          {renderMonth(y2, m2)}
-        </div>
-      </div>
-
-      {/* Day Detail — a modal, so clicking a square never means scrolling to find it */}
-      {selDay && !showAdd && !editEvent && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setSelDay(null)}>
-          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h4 className="text-[15px] font-semibold text-navy">
-                {new Date(selDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-              </h4>
-              <div className="flex items-center gap-2">
-                <button onClick={() => { setShowAdd(true) }} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-accent-light text-navy hover:bg-accent-light/80"><Plus size={11} /> Add</button>
-                <button onClick={() => setSelDay(null)} aria-label="Close" className="p-1 rounded hover:bg-surface-alt"><X size={16} /></button>
-              </div>
-            </div>
-            <div className="px-5 py-4 overflow-y-auto">
-              {dayEvts(selDay).length === 0 ? (
-                <p className="text-[12px] text-text-tertiary italic py-3">No events this day.</p>
-              ) : (
-                <div className="space-y-2">
-                  {dayEvts(selDay).map(ev => {
-                    const typeInfo = EVENT_TYPES.find(t => t.value === ev.type)
-                    return (
-                      <div key={ev.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-surface-alt/30">
-                        <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: typeInfo?.color || '#6B7280' }} />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[13px] font-medium">{ev.title}</span>
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${typeInfo?.bg || 'bg-gray-100 text-gray-700'}`}>{typeInfo?.label || ev.type}</span>
-                            {(ev as any).end_date && (ev as any).end_date > ev.date && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-navy/10 text-navy font-medium">{ev.date} → {(ev as any).end_date}</span>
-                            )}
-                          </div>
-                          {ev.description && <p className="text-[11px] text-text-secondary mt-0.5">{ev.description}</p>}
-                          <div className="flex gap-1.5 mt-1">
-                            {(ev as any).show_on_parent_calendar && <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">Parent Cal{(ev as any).target_grades?.length > 0 ? ` (G${(ev as any).target_grades.join(',')})` : ''}</span>}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => setEditEvent(ev)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy"><Pencil size={13} /></button>
-                          <button onClick={() => handleDelete(ev.id)} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-danger"><Trash2 size={13} /></button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showAdd && <AddEventModal date={selDay || today} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
-      {editEvent && <AddEventModal date={editEvent.date} existingEvent={editEvent} onClose={() => setEditEvent(null)} onSaved={() => { setEditEvent(null); load() }} />}
-    </div>
-  )
-}
 
 function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string; onClose: () => void; onSaved: () => void; existingEvent?: any }) {
   const { currentTeacher, showToast } = useApp()
@@ -1145,7 +850,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6">
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-sm" onClick={(e: any) => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-[15px] font-semibold text-navy">{isEdit ? 'Edit Event' : 'Add Calendar Event'}</h3>
@@ -1209,7 +914,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
         <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Cancel</button>
           <button onClick={handleSave} disabled={saving || !title.trim()}
-            className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
+            className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40 flex items-center gap-1.5">
             {saving && <Loader2 size={12} className="animate-spin" />} {isEdit ? 'Update' : 'Add Event'}
           </button>
         </div>
@@ -1219,48 +924,4 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
 }
 
 // ─── Class Overview Table (Admin only) ────────────────────────────
-function ClassOverviewTable() {
-  const { language } = useApp()
-  const { counts, loading } = useClassCounts()
-  const totalStudents = counts.reduce((a: any, c: any) => a + c.count, 0)
 
-  return (
-    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden card-hover">
-      <div className="px-4 py-3 border-b border-border">
-        <h3 className="font-display text-[13px] font-semibold text-navy">{language === 'ko' ? '반별 학생 수' : 'Students by Class'}</h3>
-      </div>
-      <div className="p-3 overflow-x-auto">
-        <table className="w-full text-[11px]">
-          <thead>
-            <tr>
-              <th className="text-left px-1.5 py-1.5 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">{language === 'ko' ? '학년' : 'Gr'}</th>
-              {ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(cls => (
-                <th key={cls} className="text-center px-1 py-1.5">
-                  <span className="inline-flex px-1.5 py-0.5 rounded-full text-[8px] font-bold" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>{cls.slice(0, 3)}</span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[1,2,3,4,5].map(grade => (
-              <tr key={grade} className="border-t border-border">
-                <td className="px-1.5 py-1.5 font-semibold text-navy">{grade}</td>
-                {ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(cls => {
-                  const c = counts.find(c => c.grade === grade && c.english_class === cls)
-                  return <td key={cls} className="text-center px-1 py-1.5 font-medium">{c?.count || <span className="text-text-tertiary">—</span>}</td>
-                })}
-              </tr>
-            ))}
-            <tr className="border-t-2 border-navy/20">
-              <td className="px-1.5 py-1.5 font-bold text-navy">Σ</td>
-              {ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(cls => {
-                const total = counts.filter((c: any) => c.english_class === cls).reduce((a, c) => a + c.count, 0)
-                return <td key={cls} className="text-center px-1 py-1.5 font-bold">{total || '—'}</td>
-              })}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}

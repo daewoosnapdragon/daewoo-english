@@ -197,6 +197,26 @@ export default function GradesView() {
   }, [selectedGrade, selectedClass, selectedSemester, semesterUnresolved])
 
   useEffect(() => { loadAssessments() }, [loadAssessments])
+
+  // /grades?assessment=<id> (from the dashboard's grading queue) opens that
+  // assessment directly. Read from the URL in an effect rather than through
+  // useSearchParams, which would force a Suspense boundary on the route.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const id = new URLSearchParams(window.location.search).get('assessment')
+    if (!id) return
+    ;(async () => {
+      const { data } = await supabase.from('assessments').select('*').eq('id', id).single()
+      if (!data) return
+      setSubView('entry')
+      setSelectedGrade(data.grade)
+      setSelectedClass(data.english_class)
+      setSelectedDomain(data.domain)
+      if (data.semester_id) setSelectedSemester(data.semester_id)
+      setSelectedAssessment(data)
+      window.history.replaceState(null, '', '/grades')
+    })()
+  }, [])
   useEffect(() => { loadAllAssessments() }, [loadAllAssessments])
 
   const selectedAssessmentId = selectedAssessment?.id
