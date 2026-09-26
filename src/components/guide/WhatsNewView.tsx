@@ -6,6 +6,7 @@ import { useApp } from '@/lib/context'
 import { WHATS_NEW, todayISO } from '@/content/whats-new'
 import { useWhatsNew } from './useWhatsNew'
 import { startTour } from '@/lib/tour'
+import { REPLAY_KEY } from './WhatsNewModal'
 
 // ─── What's new ──────────────────────────────────────────────────
 // Every released entry, newest batch first. Admins also see held entries,
@@ -32,6 +33,7 @@ export default function WhatsNewView() {
         <div className="flex items-center gap-3 text-[13px]">
           <Link href="/guide" className="text-ink-2 hover:text-ink">How to use this app →</Link>
           {unseen.length > 0 && <button onClick={markSeen} className="h-8 px-3 rounded border border-rule-2 text-ink-2 hover:text-ink">Mark all as read</button>}
+          <button onClick={() => { try { sessionStorage.setItem(REPLAY_KEY, '1') } catch {}; router.push('/') }} title="Opens the dashboard with the popup other teachers see on their first visit after a release" className="h-8 px-3 rounded border border-rule-2 text-ink-2 hover:text-ink">See the popup again</button>
         </div>
       </div>
       {dates.map(d => (

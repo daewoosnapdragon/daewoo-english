@@ -128,7 +128,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
   }), [criteria, students, levels])
 
   const doneCount = students.filter(s => complete(s.id)).length
-  const tone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good border-good text-white' : 'bg-ink border-ink text-paper'
+  const tone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good-soft border-good text-good' : 'bg-good border-good text-white'
   const isOff = active ? !!(flags[active.id]?.absent || flags[active.id]?.exempt) : false
 
   return (

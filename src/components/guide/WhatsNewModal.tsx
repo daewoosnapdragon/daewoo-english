@@ -15,17 +15,28 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 // the name menu keeps the count until Done.
 
 const LATER_KEY = 'daewoo_whats_new_later'
+// Set by the What's new page's "See the popup again" button: the next visit
+// to the dashboard shows the latest batch as a teacher who has not seen it
+// gets it, whatever this teacher's own seen date is.
+export const REPLAY_KEY = 'daewoo_whats_new_replay'
 
 export default function WhatsNewModal() {
-  const { unseen, loaded, markSeen } = useWhatsNew()
+  const { released, unseen: reallyUnseen, loaded, markSeen } = useWhatsNew()
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [replay, setReplay] = useState(false)
   const [i, setI] = useState(0)
+  const latest = released[0]?.date
+  const unseen = replay ? released.filter(e => e.date === latest) : reallyUnseen
   useEffect(() => {
-    if (!loaded || !unseen.length) return
-    try { if (sessionStorage.getItem(LATER_KEY) === unseen[0].date) return } catch {}
+    if (!loaded) return
+    let wantReplay = false
+    try { wantReplay = sessionStorage.getItem(REPLAY_KEY) === '1'; if (wantReplay) sessionStorage.removeItem(REPLAY_KEY) } catch {}
+    if (wantReplay && released.length) { setReplay(true); setI(0); setOpen(true); return }
+    if (!reallyUnseen.length) return
+    try { if (sessionStorage.getItem(LATER_KEY) === reallyUnseen[0].date) return } catch {}
     setOpen(true)
-  }, [loaded, unseen])
+  }, [loaded, reallyUnseen, released])
 
   const highlights = unseen.filter(e => e.highlight)
   const rest = unseen.filter(e => !e.highlight)

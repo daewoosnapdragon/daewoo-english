@@ -43,7 +43,9 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
   const [critIdx, setCritIdx] = useState(0)
   const levelLabels = lang === 'ko' ? LEVEL_LABELS_KO : LEVEL_LABELS
   const zeroText = lang === 'ko' ? LEVEL_ZERO_TEXT_KO : LEVEL_ZERO_TEXT
-  const levelTone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good border-good text-white' : 'bg-ink border-ink text-paper'
+  // Rubric levels climb one colour scale: grey 0, red 1, amber 2, light green 3,
+  // solid green 4. The top level used to be black, which read as a warning.
+  const levelTone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good-soft border-good text-good' : 'bg-good border-good text-white'
   const [view, setView] = useState<'sheet' | 'grid' | 'analysis'>('sheet')
   // Hovering a column header on the class grid shows what the column is:
   // the question, its key and points, the standard in plain words, the
@@ -446,7 +448,7 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                       if (hasRubric(it)) return it.rubric!.criteria.map(c => {
                         const lv = r?.levels?.[c.key]
                         if (lv == null) return <td key={`${it.num}-${c.key}`} className="text-center text-ink-3 py-1.5">·</td>
-                        return <td key={`${it.num}-${c.key}`} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold ${lv === 0 ? 'bg-paper-3 text-ink-2' : lv === 1 ? 'bg-bad-soft text-bad' : lv === 2 ? 'bg-warn-soft text-warn' : lv === 3 ? 'bg-good-soft text-good' : 'bg-ink text-paper'}`}>{lv}</span></td>
+                        return <td key={`${it.num}-${c.key}`} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold ${lv === 0 ? 'bg-paper-3 text-ink-2' : lv === 1 ? 'bg-bad-soft text-bad' : lv === 2 ? 'bg-warn-soft text-warn' : lv === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{lv}</span></td>
                       })
                       if (!r || (isChoiceItem(it) ? !r.answer : r.points == null)) return <td key={it.num} className="text-center text-ink-3 py-1.5">·</td>
                       if (isChoiceItem(it)) {
@@ -462,6 +464,12 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
               })}
             </tbody>
           </table>
+          {map.some(hasRubric) && (
+            <div className="flex items-center gap-3 px-3 py-2 border-t border-rule-2 bg-paper-2/60 text-[11px] text-ink-3 flex-wrap">
+              <span>{lang === 'ko' ? '루브릭 단계' : 'Rubric levels'}</span>
+              {[0, 1, 2, 3, 4].map(n => <span key={n} className="inline-flex items-center gap-1.5"><span className={`inline-flex w-5 h-5 rounded items-center justify-center text-[10px] font-bold ${n === 0 ? 'bg-paper-3 text-ink-2' : n === 1 ? 'bg-bad-soft text-bad' : n === 2 ? 'bg-warn-soft text-warn' : n === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{n}</span>{levelLabels[n]}</span>)}
+            </div>
+          )}
         </div>
       )}
       {hover && (() => {

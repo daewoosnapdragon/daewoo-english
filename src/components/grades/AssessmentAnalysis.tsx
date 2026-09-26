@@ -172,8 +172,9 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
               )
             })}
           </div>
-          <div className="flex gap-3 mt-3 text-[11px] text-ink-3 flex-wrap">
+          <div className="flex gap-3 mt-3 text-[11px] text-ink-3 flex-wrap" title={ko ? `총점 기준: 우수 ${bands.above}%+, 도달 ${bands.on}%+, 근접 ${bands.approaching}%+` : `By total score: Above ${bands.above}%+, On target ${bands.on}%+, Approaching ${bands.approaching}%+, Below under ${bands.approaching}%`}>
             {(['above', 'on', 'approaching', 'below'] as const).map(k => <span key={k} className="inline-flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-sm ${bandBg[k]} ${k === 'above' ? '' : 'border border-rule-2'}`} />{bandLabel[k]} <span className="tabular-nums text-ink">{d.bandCounts[k]}</span></span>)}
+            <span className="text-ink-3">{ko ? `(총점 기준: ${bands.above} / ${bands.on} / ${bands.approaching}%)` : `(by total score: ${bands.above} / ${bands.on} / ${bands.approaching}%)`}</span>
           </div>
           <div className="mt-3 pt-3 border-t border-rule grid gap-1 text-[12px]">
             <div className="flex justify-between"><span className="text-ink-3">{ko ? '최고' : 'Highest'}</span><span className="text-ink tabular-nums">{d.scored[0]?.english_name} · {Math.round(d.pctOf(d.scored[0].id))}%</span></div>
@@ -183,7 +184,13 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
 
         {/* Standards */}
         <section className="border border-rule-2 rounded-lg p-4">
-          <div className="flex items-baseline justify-between mb-3"><span className="eyebrow">{ko ? '기준별 도달' : 'Standards mastery'}</span><span className="text-[11.5px] text-ink-3">{ko ? '낮은 순 · 클릭하면 학생 이름' : 'weakest first · click for names'}</span></div>
+          <div className="flex items-baseline justify-between mb-1"><span className="eyebrow">{ko ? '기준별 도달' : 'Standards mastery'}</span><span className="text-[11.5px] text-ink-3">{ko ? '낮은 순 · 클릭하면 학생 이름' : 'weakest first · click for names'}</span></div>
+          <p className="text-[11.5px] text-ink-3 leading-snug mb-2">{ko
+            ? `막대는 이 기준 문항에서 각 학생이 받은 점수 비율로 반을 나눈 것입니다: 우수 ${bands.above}% 이상, 도달 ${bands.on}% 이상, 근접 ${bands.approaching}% 이상, 그 아래는 미달. 오른쪽 숫자는 반 전체의 정답률입니다.`
+            : `Each bar splits the class by each student's own score on this standard's questions: Above is ${bands.above}%+, On target ${bands.on}%+, Approaching ${bands.approaching}%+, and Below is under that. The number on the right is the whole class's percent correct.`}</p>
+          <div className="flex gap-3 mb-3 text-[11px] text-ink-3 flex-wrap">
+            {(['above', 'on', 'approaching', 'below'] as const).map(k => <span key={k} className="inline-flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-sm ${bandBg[k]} ${k === 'above' ? '' : 'border border-rule-2'}`} />{bandLabel[k]}</span>)}
+          </div>
           {!d.standards.length ? <p className="text-[12.5px] text-ink-3">{ko ? '이 평가에는 태그된 기준이 없습니다. 평가 편집에서 문항에 기준을 태그하면 여기에 나타납니다.' : 'No standards are tagged on this assessment. Tag questions and they show up here.'}</p> : (
             <div className="divide-y divide-rule">
               {d.standards.map(s => {
@@ -265,7 +272,7 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
               <div key={c.key} className="grid grid-cols-[180px_minmax(0,1fr)_56px_minmax(0,1fr)] gap-3 items-center text-[12.5px]">
                 <span className={`truncate ${weakest?.c.key === c.key ? 'font-semibold text-ink' : 'text-ink'}`} title={c.label}>{c.label}{c.standard && <span className="block font-mono text-[10.5px] text-info">{c.standard}</span>}</span>
                 <span className="flex h-3 rounded-sm overflow-hidden bg-paper-3" title={spread.map((k, i) => `${levelLabels[i]} ${k}`).join(' · ')}>
-                  {spread.map((k, i) => k ? <span key={i} className={`flex items-center justify-center text-[9px] font-bold ${i === 0 ? 'bg-ink-3 text-paper' : i === 1 ? 'bg-bad text-white' : i === 2 ? 'bg-warn text-white' : i === 3 ? 'bg-good text-white' : 'bg-ink text-paper'}`} style={{ width: `${(k / Math.max(1, n)) * 100}%` }}>{i}</span> : null)}
+                  {spread.map((k, i) => k ? <span key={i} className={`flex items-center justify-center text-[9px] font-bold ${i === 0 ? 'bg-ink-3 text-paper' : i === 1 ? 'bg-bad text-white' : i === 2 ? 'bg-warn text-white' : i === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`} style={{ width: `${(k / Math.max(1, n)) * 100}%` }}>{i}</span> : null)}
                 </span>
                 <span className={`text-right font-semibold tabular-nums ${avg == null ? 'text-ink-3' : avg < 2 ? 'text-bad' : avg < 3 ? 'text-warn' : 'text-good'}`}>{avg != null ? avg.toFixed(1) : '—'}</span>
                 <span className="text-[11.5px] text-ink-3 min-w-0">{low.length ? <span className="flex items-center gap-1.5 flex-wrap"><span>{ko ? '0–1점:' : 'At 0 or 1:'}</span>{names(low)}</span> : ''}</span>

@@ -447,7 +447,7 @@ export default function GradesView() {
         {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateFlow(true)} createLabel={lang === 'ko' ? '새 평가' : 'New assessment'} sheetMode={sheetMode} setSheetMode={setSheetMode} onSheetSaved={() => { setScoresTick(t => t + 1); loadAllAssessments() }} onToggleAbsent={(sid: string) => { setAbsentMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setExemptMap(p => { const e = { ...p }; delete e[sid]; return e }) }; return n }); setHasChanges(true) }} onToggleExempt={(sid: string) => { setExemptMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setAbsentMap(p => { const a = { ...p }; delete a[sid]; return a }) }; return n }); setHasChanges(true) }} onRubricApply={(newScores: Record<string, number>, rubricMax?: number) => { if (rubricMax && selectedAssessment && rubricMax !== selectedAssessment.max_score) { supabase.from('assessments').update({ max_score: rubricMax }).eq('id', selectedAssessment.id).then(() => { setSelectedAssessment({ ...selectedAssessment, max_score: rubricMax }); setAllAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)); setAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)) }) } setScores(prev => ({ ...prev, ...newScores })); setHasChanges(true) }} />}
         {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
-        {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} />}
+        {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} selectedGrade={selectedGrade} lang={lang} />}
         {subView === 'calendar' && <AssessmentCalendarView allAssessments={allAssessments} lang={lang} />}
       </div>
 
@@ -1253,10 +1253,18 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
 }
 
 // ─── Student Drill-Down ─────────────────────────────────────────────
+// One row per assessment per domain, split the same way the Domain Overview
+// and the report cards split it: a mixed assessment (TEST 1 with reading,
+// phonics, writing and language questions) shows up once in each domain it
+// touches, with only that domain's points, and the domain average is the
+// same weighted average the progress report prints.
 
-function StudentDrillDown({ allAssessments, students, selectedStudentId, setSelectedStudentId, lang }: { allAssessments: Assessment[]; students: StudentRow[]; selectedStudentId: string | null; setSelectedStudentId: (id: string | null) => void; lang: LangKey }) {
-  const [studentGrades, setStudentGrades] = useState<Record<string, number | null>>({})
-  const [classAvgs, setClassAvgs] = useState<Record<string, number | null>>({})
+type DrillRow = { key: string; name: string; date: string | null; score: number | null; max: number; pct: number | null; classPct: number | null; flag: 'absent' | 'exempt' | null }
+const fmtPts = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, '')
+
+function StudentDrillDown({ allAssessments, students, selectedStudentId, setSelectedStudentId, selectedGrade, lang }: { allAssessments: Assessment[]; students: StudentRow[]; selectedStudentId: string | null; setSelectedStudentId: (id: string | null) => void; selectedGrade: Grade; lang: LangKey }) {
+  const [studentGrades, setStudentGrades] = useState<Record<string, any>>({})
+  const [classGrades, setClassGrades] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const selected = students.find(s => s.id === selectedStudentId)
 
@@ -1266,18 +1274,45 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
     async function load() {
       setLoading(true)
       const ids = allAssessments.map(a => a.id)
-      const { data: sg } = await supabase.from('grades').select('assessment_id, score').eq('student_id', selectedStudentId!).in('assessment_id', ids)
+      const [{ data: sg }, { data: ag }] = await Promise.all([
+        supabase.from('grades').select('assessment_id, score, is_absent, is_exempt, domain_scores').eq('student_id', selectedStudentId!).in('assessment_id', ids),
+        supabase.from('grades').select('assessment_id, score, is_absent, is_exempt, domain_scores').in('assessment_id', ids).not('score', 'is', null),
+      ])
       if (cancelled) return
-      const gm: Record<string, number | null> = {}; if (sg) sg.forEach(g => { gm[g.assessment_id] = g.score }); setStudentGrades(gm)
-      const { data: ag } = await supabase.from('grades').select('assessment_id, score').in('assessment_id', ids).not('score', 'is', null)
-      if (cancelled) return
-      const am: Record<string, number | null> = {}
-      if (ag) { const grouped: Record<string, number[]> = {}; ag.forEach(g => { if (!grouped[g.assessment_id]) grouped[g.assessment_id] = []; grouped[g.assessment_id].push(g.score) }); for (const [id, sc] of Object.entries(grouped)) { am[id] = sc.reduce((a, b) => a + b, 0) / sc.length } }
-      setClassAvgs(am); setLoading(false)
+      const gm: Record<string, any> = {}; (sg || []).forEach((g: any) => { gm[g.assessment_id] = g })
+      setStudentGrades(gm); setClassGrades(ag || []); setLoading(false)
     }
     load()
     return () => { cancelled = true }
   }, [selectedStudentId, allAssessments])
+
+  const byDomain = useMemo(() => {
+    const out: Record<string, { rows: DrillRow[]; avg: number | null }> = {}
+    for (const domain of DOMAINS) {
+      const da = allAssessments.filter(a => touchesDomain(a, domain))
+      if (da.length === 0) continue
+      const rows: DrillRow[] = da.map(a => {
+        const g = studentGrades[a.id]
+        const mine = g ? itemsForDomain(domain, [a], () => g)[0] : null
+        const cls = classGrades.filter(x => x.assessment_id === a.id).flatMap(x => itemsForDomain(domain, [a], () => x))
+        const classPct = cls.length ? cls.reduce((s, x) => s + (x.score / x.maxScore) * 100, 0) / cls.length : null
+        const max = a.mixed && a.domain_split ? Number(a.domain_split[domain] || 0) : Number(a.max_score)
+        return {
+          key: a.id, name: a.mixed ? `${a.name} · ${domainLabel(domain)} part` : a.name, date: a.date,
+          score: mine ? mine.score : null, max: mine ? mine.maxScore : max, pct: mine && mine.maxScore > 0 ? (mine.score / mine.maxScore) * 100 : null,
+          classPct, flag: g?.is_absent ? 'absent' : g?.is_exempt ? 'exempt' : null,
+        }
+      })
+      const items = da.flatMap(a => studentGrades[a.id] ? itemsForDomain(domain, [a], () => studentGrades[a.id]) : [])
+      out[domain] = { rows, avg: calcWeightedAvg(items, Number(selectedGrade || 3)) }
+    }
+    return out
+  }, [allAssessments, studentGrades, classGrades, selectedGrade])
+
+  const domainAvgs = DOMAINS.map(d => byDomain[d]?.avg).filter((v): v is number => v != null)
+  const overallAvg = domainAvgs.length > 0 ? domainAvgs.reduce((a, b) => a + b, 0) / domainAvgs.length : null
+  const totalAssessed = allAssessments.filter(a => studentGrades[a.id]?.score != null).length
+  const toneOf = (v: number) => v >= 80 ? 'text-success' : v >= 60 ? 'text-amber-600' : 'text-danger'
 
   return (
     <div className="space-y-4">
@@ -1296,15 +1331,12 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
               const pw = window.open('', '_blank'); if (!pw) return
               let domainsHTML = ''
               DOMAINS.forEach(domain => {
-                const da = allAssessments.filter(a => a.domain === domain)
-                if (da.length === 0) return
-                const sp = da.map(a => { const s = studentGrades[a.id]; return s != null && a.max_score > 0 ? (s / a.max_score) * 100 : null }).filter((p): p is number => p != null)
-                const dAvg = sp.length > 0 ? sp.reduce((a, b) => a + b, 0) / sp.length : null
-                let rows = da.map(a => {
-                  const sc = studentGrades[a.id]; const pct = sc != null && a.max_score > 0 ? ((sc / a.max_score) * 100).toFixed(1) : '—'
-                  return `<tr><td style="padding:4px 8px;border:1px solid #e2e8f0">${a.name}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">${sc != null ? `${sc}/${a.max_score}` : '—'}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:600">${pct}%</td></tr>`
+                const d = byDomain[domain]; if (!d) return
+                const rows = d.rows.map(r => {
+                  const pct = r.pct != null ? r.pct.toFixed(1) : '—'
+                  return `<tr><td style="padding:4px 8px;border:1px solid #e2e8f0">${r.name}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">${r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag === 'absent' ? 'Absent' : r.flag === 'exempt' ? 'Exempt' : '—'}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:600">${pct}${r.pct != null ? '%' : ''}</td></tr>`
                 }).join('')
-                domainsHTML += `<div style="margin-bottom:16px"><h3 style="font-size:13px;font-weight:700;color:#647FBC;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;display:flex;justify-content:space-between">${DOMAIN_LABELS[domain][lang]}${dAvg != null ? `<span style="color:${dAvg >= 80 ? '#16a34a' : dAvg >= 60 ? '#d97706' : '#dc2626'}">${dAvg.toFixed(1)}%</span>` : ''}</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f1f5f9"><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left">Assessment</th><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">Score</th><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">%</th></tr></thead><tbody>${rows}</tbody></table></div>`
+                domainsHTML += `<div style="margin-bottom:16px"><h3 style="font-size:13px;font-weight:700;color:#647FBC;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;display:flex;justify-content:space-between">${DOMAIN_LABELS[domain][lang]}${d.avg != null ? `<span style="color:${d.avg >= 80 ? '#16a34a' : d.avg >= 60 ? '#d97706' : '#dc2626'}">${d.avg.toFixed(1)}%</span>` : ''}</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f1f5f9"><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left">Assessment</th><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">Score</th><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">%</th></tr></thead><tbody>${rows}</tbody></table></div>`
               })
               pw.document.write(`<!DOCTYPE html><html><head><title>Grade Report - ${selected.english_name}</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style>body{font-family:Inter,sans-serif;margin:24px;color:#1a1a2e}@media print{@page{margin:15mm}}</style></head><body><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#647FBC;border-radius:8px;color:white;margin-bottom:16px"><div><span style="font-size:20px;font-weight:700;font-family:Inter,sans-serif;font-weight:700">${selected.english_name}</span><span style="font-size:14px;margin-left:8px;opacity:0.7">${selected.korean_name}</span></div><div style="font-size:11px;text-align:right">Grade Report<br>${new Date().toLocaleDateString()}</div></div>${domainsHTML}<p style="font-size:9px;color:#94a3b8;margin-top:16px">Daewoo Elementary English Program</p></body></html>`)
               pw.document.close(); pw.print()
@@ -1312,61 +1344,43 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
               Print Report
             </button>
           </div>
-          {/* Overall score summary */}
-          {(() => {
-            const domainAvgs = DOMAINS.map(domain => {
-              const da = allAssessments.filter(a => a.domain === domain)
-              if (da.length === 0) return null
-              const sp = da.map(a => { const s = studentGrades[a.id]; return s != null && a.max_score > 0 ? (s / a.max_score) * 100 : null }).filter((p): p is number => p != null)
-              return sp.length > 0 ? sp.reduce((a, b) => a + b, 0) / sp.length : null
-            }).filter((v): v is number => v != null)
-            const overallAvg = domainAvgs.length > 0 ? domainAvgs.reduce((a, b) => a + b, 0) / domainAvgs.length : null
-            const totalAssessed = allAssessments.filter(a => studentGrades[a.id] != null).length
-            if (overallAvg == null) return null
-            return (
-              <div className="px-5 py-3 bg-surface-alt/50 border-b border-border flex items-center gap-6">
-                <div className="flex items-center gap-3">
-                  <span className={`text-2xl font-display font-bold ${overallAvg >= 80 ? 'text-success' : overallAvg >= 60 ? 'text-amber-600' : 'text-danger'}`}>{overallAvg.toFixed(1)}%</span>
-                  <span className="text-[10px] text-text-tertiary uppercase tracking-wider font-semibold">Overall</span>
-                </div>
-                {DOMAINS.map(d => {
-                  const da = allAssessments.filter(a => a.domain === d)
-                  if (da.length === 0) return null
-                  const sp = da.map(a => { const s = studentGrades[a.id]; return s != null && a.max_score > 0 ? (s / a.max_score) * 100 : null }).filter((p): p is number => p != null)
-                  const avg = sp.length > 0 ? sp.reduce((a, b) => a + b, 0) / sp.length : null
-                  if (avg == null) return null
-                  const SHORT: Record<string, string> = { reading: 'R', phonics: 'PF', writing: 'W', speaking: 'SL', language: 'L' }
-                  return <span key={d} className={`text-[11px] font-semibold ${avg >= 80 ? 'text-success' : avg >= 60 ? 'text-amber-600' : 'text-danger'}`}>{SHORT[d]}: {avg.toFixed(0)}%</span>
-                })}
-                <span className="text-[10px] text-text-tertiary ml-auto">{totalAssessed}/{allAssessments.length} assessed</span>
+          {/* Overall score summary: the mean of the domain averages, the same number the progress report shows */}
+          {overallAvg != null && (
+            <div className="px-5 py-3 bg-surface-alt/50 border-b border-border flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <span className={`text-2xl font-display font-bold ${toneOf(overallAvg)}`}>{overallAvg.toFixed(1)}%</span>
+                <span className="text-[10px] text-text-tertiary uppercase tracking-wider font-semibold">Overall</span>
               </div>
-            )
-          })()}
+              {DOMAINS.map(d => {
+                const avg = byDomain[d]?.avg
+                if (avg == null) return null
+                const SHORT: Record<string, string> = { reading: 'R', phonics: 'PF', writing: 'W', speaking: 'SL', language: 'L' }
+                return <span key={d} className={`text-[11px] font-semibold ${toneOf(avg)}`}>{SHORT[d]}: {avg.toFixed(0)}%</span>
+              })}
+              <span className="text-[10px] text-text-tertiary ml-auto">{totalAssessed}/{allAssessments.length} assessed</span>
+            </div>
+          )}
           {DOMAINS.map(domain => {
-            const da = allAssessments.filter(a => a.domain === domain)
-            if (da.length === 0) return null
-            const sp = da.map(a => { const s = studentGrades[a.id]; return s != null && a.max_score > 0 ? (s / a.max_score) * 100 : null }).filter((p): p is number => p != null)
-            const dAvg = sp.length > 0 ? sp.reduce((a, b) => a + b, 0) / sp.length : null
+            const d = byDomain[domain]
+            if (!d) return null
             return (
               <div key={domain} className="border-b border-border last:border-b-0">
                 <div className="px-5 py-3 bg-surface-alt flex items-center justify-between">
                   <span className="text-[12px] font-semibold text-navy uppercase tracking-wider">{DOMAIN_LABELS[domain][lang]}</span>
-                  {dAvg != null && <span className={`text-[13px] font-bold ${dAvg >= 80 ? 'text-success' : dAvg >= 60 ? 'text-amber-600' : 'text-danger'}`}>{dAvg.toFixed(1)}%</span>}
+                  {d.avg != null && <span className={`text-[13px] font-bold ${toneOf(d.avg)}`}>{d.avg.toFixed(1)}%</span>}
                 </div>
                 <table className="w-full text-[12px]">
                   <thead><tr className="text-[10px] uppercase tracking-wider text-text-tertiary">
                     <th className="text-left px-5 py-2">Assessment</th><th className="text-left px-3 py-2 w-20">Score</th><th className="text-left px-3 py-2 w-14">%</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균' : 'Class Avg'}</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균 대비' : 'vs. Class'}</th>
                   </tr></thead>
-                  <tbody>{da.map(a => {
-                    const sc = studentGrades[a.id]; const pct = sc != null && a.max_score > 0 ? (sc / a.max_score) * 100 : null
-                    const ca = classAvgs[a.id]; const caP = ca != null && a.max_score > 0 ? (ca / a.max_score) * 100 : null
-                    const diff = pct != null && caP != null ? pct - caP : null
+                  <tbody>{d.rows.map(r => {
+                    const diff = r.pct != null && r.classPct != null ? r.pct - r.classPct : null
                     return (
-                      <tr key={a.id} className="border-t border-border/50 table-row-hover">
-                        <td className="px-5 py-2"><span className="font-medium">{a.name}</span>{a.date && <span className="text-text-tertiary ml-1.5 text-[10px]">{new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}</td>
-                        <td className="text-left px-3 py-2 font-medium tabular-nums">{sc != null ? `${sc}/${a.max_score}` : '—'}</td>
-                        <td className={`text-left px-3 py-2 font-semibold tabular-nums ${pct == null ? 'text-text-tertiary' : pct >= 80 ? 'text-success' : pct >= 60 ? 'text-amber-600' : 'text-danger'}`}>{pct != null ? `${pct.toFixed(1)}%` : '—'}</td>
-                        <td className="text-center px-3 py-2 text-text-secondary">{caP != null ? `${caP.toFixed(1)}%` : '—'}</td>
+                      <tr key={r.key} className="border-t border-border/50 table-row-hover">
+                        <td className="px-5 py-2"><span className="font-medium">{r.name}</span>{r.date && <span className="text-text-tertiary ml-1.5 text-[10px]">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}</td>
+                        <td className="text-left px-3 py-2 font-medium tabular-nums">{r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag ? <span className="text-text-tertiary text-[10px] uppercase tracking-wider">{r.flag}</span> : '—'}</td>
+                        <td className={`text-left px-3 py-2 font-semibold tabular-nums ${r.pct == null ? 'text-text-tertiary' : toneOf(r.pct)}`}>{r.pct != null ? `${r.pct.toFixed(1)}%` : '—'}</td>
+                        <td className="text-center px-3 py-2 text-text-secondary">{r.classPct != null ? `${r.classPct.toFixed(1)}%` : '—'}</td>
                         <td className={`text-center px-3 py-2 font-semibold ${diff == null ? 'text-text-tertiary' : diff >= 0 ? 'text-success' : 'text-danger'}`}>{diff != null ? `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}` : '—'}</td>
                       </tr>
                     )

@@ -1,6 +1,7 @@
 'use client'
 
 import { itemsForDomain } from '@/lib/domainSplit'
+import { syncSemesterGrades } from '@/lib/semesterGrades'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
@@ -375,26 +376,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     if (!semester) { setLoading(false); return }
 
     // ─── STEP 1: For active semesters, calculate from assessments and sync to semester_grades ───
-    const isArchive = semester.type === 'archive'
-    if (!isArchive) {
-      const { data: assessments } = await supabase.from('assessments').select('*')
-        .eq('semester_id', semesterId).eq('grade', student.grade).eq('english_class', selectedClass)
-      if (assessments && assessments.length > 0) {
-        // Only calculate for the selected student (not all students)
-        const { data: studentGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
-          .in('assessment_id', assessments.map((a: any) => a.id))
-        for (const domain of DOMAINS) {
-          const items = itemsForDomain(domain, assessments, (a: any) => (studentGrades || []).find((gr: any) => gr.assessment_id === a.id))
-          const avg = calcWeightedAvg(items, Number(student.grade || 3))
-          if (avg != null) {
-            await supabase.from('semester_grades').upsert({
-              student_id: studentId, semester_id: semesterId, domain,
-              calculated_grade: Math.round(avg * 10) / 10, english_class: student.english_class, grade: student.grade,
-            }, { onConflict: 'student_id,semester_id,domain' })
-          }
-        }
-      }
-    }
+    // The whole class is synced, not just this student, so the class averages
+    // below reflect every paper that has been scored.
+    await syncSemesterGrades({ semesterId, semesterType: semester.type, englishClass: selectedClass, grade: Number(student.grade), students })
 
     // ─── STEP 2: Read this student's grades from semester_grades ───
     const { data: myGrades } = await supabase.from('semester_grades').select('*')
@@ -1286,6 +1270,12 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
         const gIds = gradeStudents.map(s => s.id)
         setProgress({ current: 0, total: gradeStudents.length })
 
+        const semType = allSemesters.find((s: any) => s.id === semesterId)?.type
+        for (const ec of PLACED_ENGLISH_CLASSES as unknown as string[]) {
+          const inClass = gradeStudents.filter(s => s.english_class === ec)
+          if (inClass.length) await syncSemesterGrades({ semesterId, semesterType: semType, englishClass: ec, grade: Number(grade), students: inClass })
+        }
+
         const [gradesRes, settingsRes, commentsRes, teachersRes] = await Promise.all([
           supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na').eq('semester_id', semesterId).in('student_id', gIds),
           supabase.from('class_report_settings').select('english_class, domain, is_na').eq('semester_id', semesterId).eq('grade', grade),
@@ -1372,6 +1362,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
       const semesterName = semData?.name || ''
       const grade = students[0]?.grade
       const studentIds = students.map(s => s.id)
+      await syncSemesterGrades({ semesterId, semesterType: allSemesters.find((s: any) => s.id === semesterId)?.type, englishClass: cls, grade: Number(grade), students })
       const { data: classSettings } = await supabase.from('class_report_settings').select('domain, is_na')
         .eq('semester_id', semesterId).eq('english_class', cls).eq('grade', grade)
       const domainClassNa: Record<string, boolean> = {}
@@ -1565,26 +1556,8 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     const sem = allSemesters.find((s: any) => s.id === semesterId)
     if (!sem) { setLoading(false); return }
 
-    // Sync calculated grades from assessments → semester_grades for active semesters
-    const isArchive = sem.type === 'archive'
-    if (!isArchive) {
-      const { data: assessments } = await supabase.from('assessments').select('*')
-        .eq('semester_id', semesterId).eq('grade', student.grade).eq('english_class', selectedClass)
-      if (assessments && assessments.length > 0) {
-        const { data: studentGrades } = await supabase.from('grades').select('*').eq('student_id', studentId)
-          .in('assessment_id', assessments.map((a: any) => a.id))
-        for (const domain of DOMAINS) {
-          const items = itemsForDomain(domain, assessments, (a: any) => (studentGrades || []).find((gr: any) => gr.assessment_id === a.id))
-          const avg = calcWeightedAvg(items, Number(student.grade || 3))
-          if (avg != null) {
-            await supabase.from('semester_grades').upsert({
-              student_id: studentId, semester_id: semesterId, domain,
-              calculated_grade: Math.round(avg * 10) / 10, english_class: student.english_class, grade: student.grade,
-            }, { onConflict: 'student_id,semester_id,domain' })
-          }
-        }
-      }
-    }
+    // Sync calculated grades from assessments → semester_grades for active semesters (whole class)
+    await syncSemesterGrades({ semesterId, semesterType: sem.type, englishClass: selectedClass, grade: Number(student.grade), students })
 
     // Read final grades from semester_grades
     const { data: myGrades } = await supabase.from('semester_grades').select('*')
@@ -2829,6 +2802,10 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
     }
     const studentIds = students.map(s => s.id)
 
+    // Grades come straight from the assessments: sync the whole class first so
+    // nobody has to open each report one by one for a grade to appear.
+    await syncSemesterGrades({ semesterId, semesterType: semester?.type, englishClass: selectedClass, grade: Number(selectedGrade), students })
+
     // Class N/A settings
     const { data: cls } = await supabase.from('class_report_settings').select('domain, is_na')
       .eq('semester_id', semesterId).eq('english_class', selectedClass).eq('grade', selectedGrade)
@@ -2881,7 +2858,7 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
     setStudentRows(rows)
     setDomainAvgs(avgs)
     setLoading(false)
-  }, [students, semesterId, selectedClass, selectedGrade, reportType])
+  }, [students, semesterId, semester?.type, selectedClass, selectedGrade, reportType])
 
   useEffect(() => { load() }, [load])
 
