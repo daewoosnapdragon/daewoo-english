@@ -55,7 +55,6 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
   const bandOf = (p: number): 'above' | 'on' | 'approaching' | 'below' => p >= bands.above ? 'above' : p >= bands.on ? 'on' : p >= bands.approaching ? 'approaching' : 'below'
   const bandLabel: Record<string, string> = { above: ko ? '우수' : 'Above', on: ko ? '도달' : 'On target', approaching: ko ? '근접' : 'Approaching', below: ko ? '미달' : 'Below' }
   const bandBg: Record<string, string> = { above: 'bg-good', on: 'bg-good-soft', approaching: 'bg-warn-soft', below: 'bg-bad-soft' }
-  const bandText: Record<string, string> = { above: 'text-white', on: 'text-good', approaching: 'text-warn', below: 'text-bad' }
   const idxOf = (sid: string) => students.findIndex(s => s.id === sid)
   const nameOf = (sid: string) => students.find(s => s.id === sid)?.english_name || ''
 
@@ -185,34 +184,34 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
         {/* Standards */}
         <section className="border border-rule-2 rounded-lg p-4">
           <div className="flex items-baseline justify-between mb-1"><span className="eyebrow">{ko ? '기준별 도달' : 'Standards mastery'}</span><span className="text-[11.5px] text-ink-3">{ko ? '낮은 순 · 클릭하면 학생 이름' : 'weakest first · click for names'}</span></div>
-          <p className="text-[11.5px] text-ink-3 leading-snug mb-2">{ko
-            ? `막대는 이 기준 문항에서 각 학생이 받은 점수 비율로 반을 나눈 것입니다: 우수 ${bands.above}% 이상, 도달 ${bands.on}% 이상, 근접 ${bands.approaching}% 이상, 그 아래는 미달. 오른쪽 숫자는 반 전체의 정답률입니다.`
-            : `Each bar splits the class by each student's own score on this standard's questions: Above is ${bands.above}%+, On target ${bands.on}%+, Approaching ${bands.approaching}%+, and Below is under that. The number on the right is the whole class's percent correct.`}</p>
-          <div className="flex gap-3 mb-3 text-[11px] text-ink-3 flex-wrap">
-            {(['above', 'on', 'approaching', 'below'] as const).map(k => <span key={k} className="inline-flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-sm ${bandBg[k]} ${k === 'above' ? '' : 'border border-rule-2'}`} />{bandLabel[k]}</span>)}
-          </div>
+          <p className="text-[11.5px] text-ink-3 leading-snug mb-3">{ko
+            ? `초록 막대는 이 기준의 문항에서 ${bands.on}% 이상 받은 학생 수입니다. 평균은 반 전체가 받은 점수의 비율입니다.`
+            : `The green bar is how many students scored ${bands.on}% or better on this standard's questions. Avg is the class's points earned out of points possible.`}</p>
           {!d.standards.length ? <p className="text-[12.5px] text-ink-3">{ko ? '이 평가에는 태그된 기준이 없습니다. 평가 편집에서 문항에 기준을 태그하면 여기에 나타납니다.' : 'No standards are tagged on this assessment. Tag questions and they show up here.'}</p> : (
             <div className="divide-y divide-rule">
               {d.standards.map(s => {
                 const open = openStd === s.code
-                const total = Object.values(s.groups).reduce((n, g) => n + g.length, 0) || 1
+                // Met = on target or above, the same cut the histogram uses.
+                const met = [...s.groups.above, ...s.groups.on]
+                const notMet = [...s.groups.approaching, ...s.groups.below]
+                const total = met.length + notMet.length || 1
                 return (
                   <div key={s.code} className="py-2">
-                    <button onClick={() => setOpenStd(open ? null : s.code)} className="w-full grid grid-cols-[16px_88px_minmax(0,1fr)_120px_44px] gap-2 items-center text-left">
+                    <button onClick={() => setOpenStd(open ? null : s.code)} className="w-full grid grid-cols-[16px_88px_minmax(0,1fr)_96px_72px_64px] gap-2 items-center text-left">
                       <span className="text-ink-3">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
                       <span className="font-mono text-[11px] text-info">{s.code}</span>
                       <span className="text-[12.5px] text-ink truncate" title={stdRow(s.code)?.text}>{plainName(s.code)}<span className="text-ink-3"> · {s.nQ} {ko ? '문항' : s.nQ === 1 ? 'question' : 'questions'}</span></span>
-                      <span className="flex h-2.5 rounded-sm overflow-hidden bg-paper-3">
-                        {(['above', 'on', 'approaching', 'below'] as const).map(k => s.groups[k].length ? <span key={k} className={`${bandBg[k]} ${k === 'above' ? '' : 'border-r border-surface'}`} style={{ width: `${(s.groups[k].length / total) * 100}%` }} title={`${bandLabel[k]} ${s.groups[k].length}`} /> : null)}
+                      <span className="flex h-2.5 rounded-sm overflow-hidden bg-paper-3" title={`${met.length} of ${total} ${ko ? '명 도달' : 'met it'}`}>
+                        {met.length > 0 && <span className="bg-good" style={{ width: `${(met.length / total) * 100}%` }} />}
                       </span>
-                      <span className={`text-right text-[12.5px] font-semibold tabular-nums ${tone(s.pct)}`}>{s.pct != null ? `${Math.round(s.pct)}%` : '—'}</span>
+                      <span className={`text-[12px] tabular-nums whitespace-nowrap ${met.length === total ? 'text-good' : met.length < total / 2 ? 'text-bad' : 'text-ink-2'}`}>{met.length}/{total} {ko ? '도달' : 'met it'}</span>
+                      <span className={`text-right text-[12.5px] font-semibold tabular-nums ${tone(s.pct)}`}>{s.pct != null ? `${Math.round(s.pct)}%` : '—'}<span className="text-[10.5px] font-normal text-ink-3"> {ko ? '평균' : 'avg'}</span></span>
                     </button>
                     {open && (
                       <div className="mt-2 ml-6 grid gap-1.5 text-[12px]">
                         <p className="text-ink-3 leading-snug">{stdRow(s.code)?.text}</p>
-                        {(['below', 'approaching', 'on', 'above'] as const).filter(k => s.groups[k].length).map(k => (
-                          <div key={k} className="grid grid-cols-[96px_minmax(0,1fr)] gap-2 items-start"><span className={`inline-flex h-6 items-center px-2 rounded ${bandBg[k]} ${bandText[k]} text-[11px] font-semibold w-fit`}>{bandLabel[k]} · {s.groups[k].length}</span>{names(s.groups[k])}</div>
-                        ))}
+                        <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-2 items-start"><span className="inline-flex h-6 items-center px-2 rounded bg-good text-white text-[11px] font-semibold w-fit">{ko ? '도달' : 'Met it'} · {met.length}</span>{met.length ? names(met) : <span className="text-ink-3">{ko ? '없음' : 'nobody'}</span>}</div>
+                        <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-2 items-start"><span className="inline-flex h-6 items-center px-2 rounded bg-bad-soft text-bad text-[11px] font-semibold w-fit">{ko ? '미도달' : 'Not yet'} · {notMet.length}</span>{notMet.length ? names(notMet) : <span className="text-ink-3">{ko ? '없음' : 'nobody'}</span>}</div>
                       </div>
                     )}
                   </div>
