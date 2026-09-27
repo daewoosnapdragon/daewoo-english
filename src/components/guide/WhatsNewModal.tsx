@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useWhatsNew } from './useWhatsNew'
@@ -54,9 +55,13 @@ export default function WhatsNewModal() {
   if (!open || !cards) return null
   const e = highlights[i]
 
-  return (
+  // Rendered on <body>, not inside the dashboard, so the backdrop covers the
+  // whole window, masthead included. The card is capped to the window: the
+  // picture and text scroll inside it and the buttons stay in view.
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-ink/50" onClick={later}>
-      <div onClick={ev => ev.stopPropagation()} className="w-full max-w-[720px] bg-surface border border-rule-2 rounded-lg shadow-lg overflow-hidden">
+      <div onClick={ev => ev.stopPropagation()} className="w-full max-w-[720px] max-h-full flex flex-col bg-surface border border-rule-2 rounded-lg shadow-lg overflow-hidden">
+        <div className="min-h-0 overflow-y-auto">
         {e ? (
           <>
             <div className="relative bg-paper-2 border-b border-rule-2" style={{ aspectRatio: '2000 / 817' }}>
@@ -84,7 +89,8 @@ export default function WhatsNewModal() {
             <p className="text-[12.5px] text-ink-3 mt-4">The full list, and how each page works, stay under your name at the top right.</p>
           </div>
         )}
-        <div className="px-6 py-3 border-t border-rule-2 bg-paper-2/60 flex items-center gap-3">
+        </div>
+        <div className="shrink-0 px-6 py-3 border-t border-rule-2 bg-paper-2/60 flex items-center gap-3">
           <span className="text-[12px] text-ink-3 tabular-nums">{i + 1} / {cards}</span>
           <button onClick={later} className="text-[12.5px] text-ink-3 hover:text-ink inline-flex items-center gap-1"><X size={12} />Later</button>
           <div className="ml-auto flex items-center gap-2">
@@ -96,6 +102,7 @@ export default function WhatsNewModal() {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

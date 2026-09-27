@@ -104,6 +104,8 @@ function ParentCalendarView() {
   const [blockedDays, setBlockedDays] = useState<Record<string, { title: string; kind: 'off' | 'exam' }>>({})
   const [printWeeks, setPrintWeeks] = useState<Set<number>>(new Set()) // selected week indices for printing; empty = all
   const [showPrintOptions, setShowPrintOptions] = useState(false)
+  const [printAllGrades, setPrintAllGrades] = useState(false) // print every grade of the class in one document
+  const [printingAll, setPrintingAll] = useState(false)
   // Dates that already have a stored row, so we can tell "cleared by the
   // teacher" apart from "never filled in".
   const persistedDates = useRef<Set<string>>(new Set())
@@ -194,8 +196,10 @@ function ParentCalendarView() {
   const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
   const todayStr = getKSTDateString()
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
+  // One class and grade's month: its plans, the calendar events shown on it,
+  // the days the calendar takes over, and each week's homework. The page
+  // loads the grade on screen with it; printing every grade loads all five.
+  const fetchMonth = useCallback(async (selectedClass: EnglishClass, selectedGrade: Grade) => {
     const firstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`
     const lastDay = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`
     // Three months of lead-in: enough for any realistic multi-day event that
@@ -273,14 +277,6 @@ function ParentCalendarView() {
         }
       })
     }
-    setCalEvents(ce)
-    setBlockedDays(bd)
-    setDayData(dd)
-    // Fold write-ins already saved in this month back into the chip list.
-    rememberSubjects(Object.values(dd).flatMap(d => d.subjects.map(s => s.label)))
-    // Remember which days already have a stored row, so clearing one still
-    // saves while a never-saved template-only day stays out of the database.
-    persistedDates.current = new Set(Object.keys(dd))
 
     // Load weekly homework (stored as class_hw entries keyed by Monday date)
     // Extend range to cover Mondays that might fall in adjacent months
@@ -308,9 +304,23 @@ function ParentCalendarView() {
         if (!hw[mon]) hw[mon] = (d as any).homework
       }
     })
+    return { dd, ce, bd, hw }
+  }, [year, month])
+
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    const { dd, ce, bd, hw } = await fetchMonth(selectedClass, selectedGrade)
+    setCalEvents(ce)
+    setBlockedDays(bd)
+    setDayData(dd)
+    // Fold write-ins already saved in this month back into the chip list.
+    rememberSubjects(Object.values(dd).flatMap(d => d.subjects.map(s => s.label)))
+    // Remember which days already have a stored row, so clearing one still
+    // saves while a never-saved template-only day stays out of the database.
+    persistedDates.current = new Set(Object.keys(dd))
     setWeeklyHomework(hw)
     setLoading(false)
-  }, [year, month, selectedClass, selectedGrade, rememberSubjects])
+  }, [fetchMonth, selectedClass, selectedGrade, rememberSubjects])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -519,15 +529,24 @@ function ParentCalendarView() {
     setOpenWeek(weekIdx)
   }
 
-  // Print full month
-  const handlePrint = (selectedWeekIndices?: Set<number>) => {
-    const pw = window.open('', '_blank'); if (!pw) return
-    const mn = MONTH_NAMES[month]
-    const weeksToPrint = selectedWeekIndices && selectedWeekIndices.size > 0
-      ? weeks.filter((_, i) => selectedWeekIndices.has(i))
-      : weeks
-    const isPartial = selectedWeekIndices && selectedWeekIndices.size > 0 && selectedWeekIndices.size < weeks.length
+  // ─── Printing ───
+  // Each grade prints as its own landscape page: header, the chosen weeks,
+  // footer. One grade prints the page on screen; "all grades" loads the
+  // other four and puts all five pages in one document, so Save as PDF gives
+  // a single file for the whole class.
+  type MonthPlan = Awaited<ReturnType<typeof fetchMonth>>
 
+  const pickWeeks = (selectedWeekIndices?: Set<number>) =>
+    selectedWeekIndices && selectedWeekIndices.size > 0 ? weeks.filter((_, i) => selectedWeekIndices.has(i)) : weeks
+
+  /** True when a teacher wrote anything for this grade in these weeks. */
+  const hasPlans = (plan: MonthPlan, weeksToPrint: typeof weeks) =>
+    weeksToPrint.some(week =>
+      !!plan.hw[getMondayOf(week[0].date)]?.trim() ||
+      week.some(d => { const data = plan.dd[d.date]; return !!data && (data.subjects.some(s => s.content.trim()) || !!data.objective?.trim()) }))
+
+  const gradePageHTML = (grade: Grade, plan: MonthPlan, weeksToPrint: typeof weeks, isPartial: boolean) => {
+    const mn = MONTH_NAMES[month]
     let weeksHTML = ''
     weeksToPrint.forEach(week => {
       const fw: (typeof monthDays[0] | null)[] = [null, null, null, null, null]
@@ -536,14 +555,14 @@ function ParentCalendarView() {
       let daysHTML = ''
       fw.forEach((day, di) => {
         if (!day) { daysHTML += '<td class="day empty"></td>'; return }
-        const data = dayData[day.date] || emptyDay()
-        const evts = calEvents[day.date] || []
-        const noG5 = isNoClassDay(selectedGrade, di + 1)
-        const blocked = blockedDays[day.date]
+        const data = plan.dd[day.date] || emptyDay()
+        const evts = plan.ce[day.date] || []
+        const noG5 = isNoClassDay(grade, di + 1)
+        const blocked = plan.bd[day.date]
 
         let inner = ''
         if (noG5) {
-          inner = `<div class="no-class">No Grade ${selectedGrade}</div>`
+          inner = `<div class="no-class">No Grade ${grade}</div>`
         } else if (blocked?.kind === 'off') {
           inner = `<div class="no-class">${blocked.title}</div>`
         } else {
@@ -567,7 +586,7 @@ function ParentCalendarView() {
 
       // Add weekly homework row if this week has homework
       const weekMonday = week.length > 0 ? getMondayOf(week[0].date) : ''
-      const hw = weeklyHomework[weekMonday] || ''
+      const hw = plan.hw[weekMonday] || ''
       if (hw) {
         weeksHTML += `<tr>${daysHTML}</tr><tr><td colspan="5" class="hw-row"><span class="hw-label">Weekly Homework:</span> ${hw}</td></tr>`
       } else {
@@ -575,11 +594,28 @@ function ParentCalendarView() {
       }
     })
 
-    pw.document.write(`<!DOCTYPE html><html><head><title>${selectedClass} Grade ${selectedGrade} - ${mn} ${year}</title>
+    return `<div class="page">
+  <div class="header">
+    <div><h1>${selectedClass} -- ${mn} ${year}${isPartial ? ' (Selected Weeks)' : ''}</h1><div class="sub">Grade ${grade} -- Daewoo Elementary School English Program</div></div>
+    <div class="right">Daewoo Elementary School<br>English Program</div>
+  </div>
+  <table>
+    <tr><th class="col-hdr">Monday</th><th class="col-hdr">Tuesday</th><th class="col-hdr">Wednesday</th><th class="col-hdr">Thursday</th><th class="col-hdr">Friday</th></tr>
+    ${weeksHTML}
+  </table>
+  <div class="footer">Daewoo Elementary School -- English Program -- ${mn} ${year}</div>
+</div>`
+  }
+
+  const writePrintDoc = (pw: Window, title: string, pages: string[]) => {
+    pw.document.open()
+    pw.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
 <style>
   @page { size: landscape; margin: 8mm 10mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page + .page { break-before: page; page-break-before: always; }
+  @media screen { .page + .page { margin-top: 32px; } }
   .header { background: #647FBC; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: relative; }
   .header::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #C9A84C, #e8d48b, #C9A84C); }
   .header h1 { font-size: 20px; font-weight: 700; font-family: Georgia, serif; }
@@ -603,17 +639,50 @@ function ParentCalendarView() {
   .hw-label { font-weight: 700; }
   .footer { text-align: center; margin-top: 8px; font-size: 8px; color: #94a3b8; letter-spacing: 1px; }
 </style></head><body>
-  <div class="header">
-    <div><h1>${selectedClass} -- ${mn} ${year}${isPartial ? ' (Selected Weeks)' : ''}</h1><div class="sub">Grade ${selectedGrade} -- Daewoo Elementary School English Program</div></div>
-    <div class="right">Daewoo Elementary School<br>English Program</div>
-  </div>
-  <table>
-    <tr><th class="col-hdr">Monday</th><th class="col-hdr">Tuesday</th><th class="col-hdr">Wednesday</th><th class="col-hdr">Thursday</th><th class="col-hdr">Friday</th></tr>
-    ${weeksHTML}
-  </table>
-  <div class="footer">Daewoo Elementary School -- English Program -- ${mn} ${year}</div>
+${pages.join('\n')}
 </body></html>`)
     pw.document.close(); setTimeout(() => pw.print(), 400)
+  }
+
+  const isPartialPick = (selectedWeekIndices?: Set<number>) =>
+    !!selectedWeekIndices && selectedWeekIndices.size > 0 && selectedWeekIndices.size < weeks.length
+
+  // Print the grade on screen
+  const handlePrint = (selectedWeekIndices?: Set<number>) => {
+    const pw = window.open('', '_blank'); if (!pw) return
+    const plan: MonthPlan = { dd: dayData, ce: calEvents, bd: blockedDays, hw: weeklyHomework }
+    writePrintDoc(pw, `${selectedClass} Grade ${selectedGrade} - ${MONTH_NAMES[month]} ${year}`,
+      [gradePageHTML(selectedGrade, plan, pickWeeks(selectedWeekIndices), isPartialPick(selectedWeekIndices))])
+  }
+
+  // Print every grade of this class, one page per grade. The window opens
+  // straight from the click (so the browser doesn't block it) and fills in
+  // once the other grades have loaded. Grades with nothing written for these
+  // weeks are left out rather than printed blank.
+  const handlePrintAllGrades = async (selectedWeekIndices?: Set<number>) => {
+    const pw = window.open('', '_blank'); if (!pw) return
+    pw.document.write('<p style="font-family: Arial, sans-serif; color: #64748b; padding: 24px">Loading Grades 1–5…</p>')
+    setPrintingAll(true)
+    try {
+      await flushDirty()
+      const plans = await Promise.all(GRADES.map(g => fetchMonth(selectedClass, g)))
+      const weeksToPrint = pickWeeks(selectedWeekIndices)
+      const withPlans = GRADES.filter((_, i) => hasPlans(plans[i], weeksToPrint))
+      if (!withPlans.length) {
+        pw.close()
+        showToast(`No ${selectedClass} lesson plans written for ${isPartialPick(selectedWeekIndices) ? 'these weeks' : MONTH_NAMES[month]} yet`)
+        return
+      }
+      const skipped = GRADES.filter(g => !withPlans.includes(g))
+      writePrintDoc(pw, `${selectedClass} Grades 1-5 - ${MONTH_NAMES[month]} ${year}`,
+        withPlans.map(g => gradePageHTML(g, plans[GRADES.indexOf(g)], weeksToPrint, isPartialPick(selectedWeekIndices))))
+      if (skipped.length) showToast(`Left out Grade ${skipped.join(', ')}: nothing written for these weeks`)
+    } catch {
+      pw.close()
+      showToast('Could not load the other grades. Try again.')
+    } finally {
+      setPrintingAll(false)
+    }
   }
 
   const fmtShort = (dateStr: string) => {
@@ -647,12 +716,16 @@ function ParentCalendarView() {
           <div className="flex items-center gap-2">
             <div className="relative">
               <div className="flex">
-                <button onClick={() => handlePrint()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark"><Printer size={14} /> Print Month</button>
+                <button onClick={() => handlePrint()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">{printingAll ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />} Print Month</button>
                 <button onClick={() => setShowPrintOptions(!showPrintOptions)} className="px-2 py-2 rounded-r-lg text-white bg-navy hover:bg-navy-dark border-l border-white/20"><ChevronDown size={14} /></button>
               </div>
               {showPrintOptions && (
-                <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-50 p-3 min-w-[220px]">
-                  <p className="text-[11px] font-semibold text-navy mb-2">Print Selected Weeks</p>
+                <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-50 p-3 min-w-[240px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[11px] font-semibold text-navy">Print Selected Weeks</p>
+                    <button onClick={() => setPrintWeeks(printWeeks.size === weeks.length ? new Set() : new Set(weeks.map((_, i) => i)))}
+                      className="text-[10.5px] text-text-secondary hover:text-navy">{printWeeks.size === weeks.length ? 'Clear' : 'All weeks'}</button>
+                  </div>
                   <div className="space-y-1.5 mb-3">
                     {weeks.map((week, i) => {
                       const firstDay = week[0]; const lastDay = week[week.length - 1]
@@ -667,11 +740,17 @@ function ParentCalendarView() {
                       )
                     })}
                   </div>
+                  {/* Every grade of this class in one document: one page per
+                      grade, so Save as PDF gives a single file. */}
+                  <label className="flex items-start gap-2 text-[11px] text-text-primary cursor-pointer hover:bg-surface-alt rounded px-1.5 py-1 mb-3 border-t border-border pt-2.5">
+                    <input type="checkbox" checked={printAllGrades} onChange={() => setPrintAllGrades(v => !v)} className="rounded border-border text-navy mt-px" />
+                    <span>All grades (1–5)<span className="block text-[10px] text-text-tertiary">{selectedClass}, one page per grade, one file</span></span>
+                  </label>
                   <div className="flex gap-2">
-                    <button onClick={() => { handlePrint(printWeeks); setShowPrintOptions(false); setPrintWeeks(new Set()) }}
-                      disabled={printWeeks.size === 0}
+                    <button onClick={() => { if (printAllGrades) handlePrintAllGrades(printWeeks); else handlePrint(printWeeks); setShowPrintOptions(false); setPrintWeeks(new Set()) }}
+                      disabled={printWeeks.size === 0 || printingAll}
                       className="flex-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-                      Print {printWeeks.size > 0 ? `${printWeeks.size} Week${printWeeks.size > 1 ? 's' : ''}` : '(select weeks)'}
+                      Print {printWeeks.size > 0 ? `${printWeeks.size} Week${printWeeks.size > 1 ? 's' : ''}${printAllGrades ? ' · Grades 1–5' : ''}` : '(select weeks)'}
                     </button>
                     <button onClick={() => { setShowPrintOptions(false); setPrintWeeks(new Set()) }}
                       className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">Cancel</button>
