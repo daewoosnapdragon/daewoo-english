@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { getDisplayName, getKSTDateString } from '@/lib/utils'
 import { X, Loader2, Check } from 'lucide-react'
-import { loadDayStatus, type DayStatus } from '@/lib/calendarDays'
+import { loadDayStatus, awayReason, type DayStatus } from '@/lib/calendarDays'
 
 // ─── Attendance drawer ───────────────────────────────────────────
 // Opened from a class period on the dashboard schedule. That grade's students
@@ -46,7 +46,8 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
       if (cancelled) return
       setDay(ds)
       const init: Record<string, { status: Status; note: string }> = {}
-      rows.forEach(r => { init[r.id] = ds.trip ? { status: 'absent', note: ds.trip } : { status: 'present', note: '' } })
+      const away = awayReason(ds)
+      rows.forEach(r => { init[r.id] = away ? { status: 'absent', note: away } : { status: 'present', note: '' } })
       if (rows.length) {
         const { data: att } = await supabase.from('attendance').select('student_id, status, note').eq('date', today).in('student_id', rows.map(r => r.id))
         if (cancelled) return

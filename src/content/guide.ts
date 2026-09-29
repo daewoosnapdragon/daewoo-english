@@ -34,7 +34,7 @@ export const QUICK_START: { title: string; steps: string[] } = {
 
 export const GUIDE_SECTIONS: GuideSection[] = [
   {
-    id: 'dashboard', title: 'Dashboard', updated: '2026-09-25',
+    id: 'dashboard', title: 'Dashboard', updated: '2026-09-29',
     purpose: 'The page that opens to “now”: what is due, what is unmarked, and what needs a look, with the month and the week’s agenda beside it.',
     screen: [
       'The header greets you with today’s date and the active semester. Two buttons jump to marking attendance and entering grades.',
@@ -53,7 +53,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
     rules: [
       'Report card grades due comes from the semester’s cutoff date in Settings.',
-      'A day off on the calendar means attendance is not expected and the stat shows a dash.',
+      'A day off on the calendar means attendance is not expected and the stat shows a dash. The attendance page still records everyone absent for the day, with the holiday as the note.',
       'Needs attention flags a student whose domain average fell more than the threshold since the last assessment, or with three or more absences in two weeks.',
     ],
     watchOut: ['The header can be collapsed with the arrow at the top right; click it again to bring the links back.', 'Notices expire on the date the poster set, so an old one disappears on its own.'],
@@ -84,7 +84,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     watchOut: ['A 0 on a rubric is a real zero, not “not assessed”. Leave the criterion unmarked if you have not seen it.', 'Half points are allowed on written items when scoring, not on the key.', 'Deleting a rubric from the library does not change any assessment already scored with it.'],
   },
   {
-    id: 'attendance', title: 'Attendance', updated: '2026-09-25',
+    id: 'attendance', title: 'Attendance', updated: '2026-09-29',
     purpose: 'Today’s attendance in a few taps, the month at a glance, and printing for the office.',
     screen: [
       'Day and Month at the top. Day is where you mark; Month is the record.',
@@ -99,8 +99,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       { title: 'Print for the office', steps: ['Click Print, tick the weeks, Print selected.'] },
     ],
     rules: [
-      'A day off on the school calendar means no class: the page says so and nothing is expected.',
-      'A field trip marks every student absent with the trip as the note, automatically, the first time the day is opened. Change any student afterwards if they stayed behind.',
+      'A day off or a field trip on the school calendar marks every student absent with the day as the note, automatically, the first time attendance is opened afterwards. Days from the last two months are filled in too, so a holiday nobody opened still shows on the record. Change any student who came in.',
       'Weekends have no class. Grade 5 has no Monday class if that rule is on in Settings.',
     ],
     watchOut: ['Leaving the page with unsaved changes asks first.', 'The dashboard stat counts students still unmarked across all your classes today.'],
@@ -229,7 +228,7 @@ export const WORKFLOWS: Workflow[] = [
   { id: 'wf-test', title: 'From a test to the gradebook', when: 'The day of a quiz or unit test', steps: ['Grades → New assessment. Build the key as sections and tag standards.', 'Score on the answer sheet with the keyboard; mark absentees with X.', 'Open Analysis; note the standards below target and who is in that band.', 'Reteach; the heat map on Standards updates as later work is scored.'] },
   { id: 'wf-reports', title: 'Report card week', when: 'The two weeks before grades are due', steps: ['Dashboard: the Ungraded stat must reach zero. Clear the queue.', 'Reports → Report card: write comments student by student. Class summary shows who is missing one.', 'Admin: Review & approve, then print.'] },
   { id: 'wf-wida', title: 'Leveling the class in WIDA', when: 'Twice a year, or when a student changes fast', steps: ['WIDA → Levels → Assess the class.', 'Keys 1–6 to skip ahead, tick the next level, Enter.', 'Save snapshot when done; the Progress tab shows change over the year.'] },
-  { id: 'wf-dayoff', title: 'A field trip or day off', when: 'When the office announces it', steps: ['Admin: add the event on the dashboard calendar with the grades it applies to.', 'Attendance for that day handles itself: no class for a day off, everyone absent with a note for a field trip.', 'Lesson plans block the day.'] },
+  { id: 'wf-dayoff', title: 'A field trip or day off', when: 'When the office announces it', steps: ['Admin: add the event on the dashboard calendar with the grades it applies to.', 'Attendance for that day handles itself: everyone is marked absent with the day as the note the next time attendance is opened.', 'Lesson plans block the day.'] },
   { id: 'wf-leveltest', title: 'Level test week', when: 'Twice a year', steps: ['Admin: create the level test for the semester under Level tests.', 'Each teacher enters the sections they scored; saves write only that section.', 'Admin: read the placement suggestions, decide, keep classes at or under fifteen.'] },
 ]
 
@@ -266,7 +265,7 @@ export const ADMIN_SECTIONS: GuideSection[] = [
     watchOut: ['Only one semester is active. Grades at a glance, the heat map, and the academic history read from it.'],
   },
   {
-    id: 'admin-calendar', title: 'Calendar events', updated: '2026-09-25',
+    id: 'admin-calendar', title: 'Calendar events', updated: '2026-09-29',
     purpose: 'Days off, field trips, exams, deadlines, and events on the shared calendar. Admin only.',
     screen: ['Add an event from the dashboard calendar: title, type, date and end date, which grades, and whether it shows on the parent calendar.'],
     tasks: [{ title: 'Add a day off', steps: ['Type: day off. Set the grades it applies to (or none for everyone).', 'Attendance and lesson plans pick it up the same day.'] }],

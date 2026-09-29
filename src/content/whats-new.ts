@@ -100,6 +100,11 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     tour: { path: '/lesson-plans', steps: [{ anchor: 'lessons.copy', text: 'Copy last week fills the week from the one before, then edit the days that differ.' }] },
   },
   {
+    id: 'days-off-on-the-record', date: '2026-09-29', title: 'Days off show on the attendance record',
+    body: 'A day off on the school calendar now marks every student absent with the holiday as the note, the same way a field trip does, so the day shows up in the month view and on printouts instead of only as a line at the top. Holidays from the last two months, Chuseok included, are filled in the next time you open attendance.',
+    path: '/attendance', guide: 'attendance',
+  },
+  {
     id: 'look', date: '2026-09-25', title: 'A calmer look, with dark mode',
     body: 'You can now collapse the header and switch to dark mode from your name menu. Every screen has its own address, so the back button and bookmarks work.',
     path: '/dashboard', guide: 'dashboard',
