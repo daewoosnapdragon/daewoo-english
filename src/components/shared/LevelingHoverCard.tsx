@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { withoutAwayDays } from '@/lib/calendarDays'
 import { EnglishClass, ENGLISH_CLASSES } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { WIDA_LEVELS } from '@/lib/wida'
@@ -57,7 +58,7 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
       supabase.from('semester_grades').select('*').eq('student_id', studentId).order('created_at', { ascending: false }).limit(10),
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(4),
       supabase.from('student_wida_levels').select('*').eq('student_id', studentId),
-      supabase.from('attendance').select('status').eq('student_id', studentId),
+      supabase.from('attendance').select('status, date').eq('student_id', studentId),
     ])
     const attCounts = { present: 0, absent: 0, tardy: 0 }
     at?.forEach((a: any) => { if (attCounts[a.status as keyof typeof attCounts] !== undefined) attCounts[a.status as keyof typeof attCounts]++ })

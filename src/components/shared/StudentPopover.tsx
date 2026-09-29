@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { withoutAwayDays } from '@/lib/calendarDays'
 import { useApp } from '@/lib/context'
 import { Loader2, X, BookOpen, BarChart3, AlertTriangle, MessageSquare } from 'lucide-react'
 import WIDABadge from './WIDABadge'
@@ -52,7 +53,7 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
       supabase.from('reading_assessments').select('cwpm, date').eq('student_id', studentId).order('date', { ascending: false }).limit(1),
       supabase.from('grades').select('score, assessments(max_score)').eq('student_id', studentId).not('score', 'is', null).limit(50),
       supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('student_id', studentId),
-      supabase.from('attendance').select('status').eq('student_id', studentId),
+      supabase.from('attendance').select('status, date').eq('student_id', studentId),
       supabase.from('student_notes').select('note').eq('student_id', studentId).order('created_at', { ascending: false }).limit(1),
     ])
 
@@ -64,9 +65,10 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
     }
     const behaviorCount = behaviorRes.count || 0
     let attendanceRate: number | null = null
-    if (attRes.data && attRes.data.length > 0) {
-      const present = attRes.data.filter((a: any) => a.status === 'present').length
-      attendanceRate = Math.round((present / attRes.data.length) * 100)
+    const attRows = await withoutAwayDays((attRes.data || []) as { status: string; date: string }[], null)
+    if (attRows.length > 0) {
+      const present = attRows.filter((a: any) => a.status === 'present').length
+      attendanceRate = Math.round((present / attRows.length) * 100)
     }
 
     setData({ reading, gradeAvg, behaviorCount, attendanceRate, note: noteRes.data?.[0]?.note || '' })

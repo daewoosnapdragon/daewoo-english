@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useStudentActions } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
+import { withoutAwayDays } from '@/lib/calendarDays'
 import { ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, type Student, type EnglishClass, type Grade, type KoreanClass } from '@/types'
 import { getKSTDateString, percentToLetter } from '@/lib/utils'
 import WIDABadge from '@/components/shared/WIDABadge'
@@ -69,7 +70,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
       const thirtyAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
       const [sg, att, rd, pl, beh, lt] = await Promise.all([
         activeSemester ? supabase.from('semester_grades').select('calculated_grade, final_grade').eq('student_id', student.id).eq('semester_id', activeSemester.id).eq('domain', 'overall').maybeSingle() : Promise.resolve({ data: null }),
-        supabase.from('attendance').select('status').eq('student_id', student.id).gte('date', semStart).lte('date', today),
+        supabase.from('attendance').select('status, date').eq('student_id', student.id).gte('date', semStart).lte('date', today),
         supabase.from('reading_assessments').select('cwpm, reading_level, date').eq('student_id', student.id).order('date', { ascending: false }).limit(1),
         supabase.from('level_test_placements').select('final_placement, level_tests ( name )').eq('student_id', student.id).order('created_at', { ascending: false }).limit(1),
         supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('student_id', student.id).gte('date', thirtyAgo),
@@ -77,7 +78,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
       ])
       if (cancelled) return
       const latestReading = mergeReadingRecords(rd.data || [], lt)[0]
-      const rows = (att.data || []) as { status: string }[]
+      const rows = await withoutAwayDays((att.data || []) as { status: string; date: string }[], student.grade)
       const present = rows.filter(r => r.status === 'present').length, tardy = rows.filter(r => r.status === 'tardy').length, absent = rows.filter(r => r.status === 'absent').length
       const g: any = (sg as any).data
       const r: any = latestReading

@@ -11,7 +11,7 @@ import { getKSTDateString, domainLabel } from '@/lib/utils'
 import { Plus, X, ChevronLeft, ChevronRight, Trash2, Pencil, PanelLeftClose, UserX, UserMinus, ArrowRight, Bell, Loader2 } from 'lucide-react'
 import WeeklySchedule from './WeeklySchedule'
 import AttendanceDrawer, { ATTENDANCE_SAVED_EVENT } from '@/components/attendance/AttendanceDrawer'
-import { loadDayStatus } from '@/lib/calendarDays'
+import { loadDayStatus, withoutAwayDays } from '@/lib/calendarDays'
 
 // ─── Event types ─────────────────────────────────────────────────
 // Nine stored types, five colors: fewer hues means each one is recognizable
@@ -103,6 +103,14 @@ function useDashboardData(currentTeacher: any): SharedDashboardData {
       ])
       if (cancelled) return
 
+      // Absences on a day off or field trip are nobody's fault: drop them per
+      // grade before anything counts them.
+      const absRows = (absRes.data || []) as { student_id: string; date: string }[]
+      const gradeOf: Record<string, number> = {}
+      students.forEach(s => { gradeOf[s.id] = s.grade })
+      const absences30d = (await Promise.all(Array.from(new Set(students.map(s => s.grade))).map(g => withoutAwayDays(absRows.filter(r => gradeOf[r.student_id] === g), g)))).flat()
+      if (cancelled) return
+
       const semAssessments = (assessmentsRes as any).data || []
       let semGrades: GradeRow[] = []
       if (semAssessments.length > 0) {
@@ -120,7 +128,7 @@ function useDashboardData(currentTeacher: any): SharedDashboardData {
         todayEvents: eventsRes.data || [],
         todayBehaviorCount: (behaviorCountRes as any).count || 0,
         readingAssessments: readingRes.data || [],
-        absences30d: (absRes.data || []) as any,
+        absences30d,
         behaviorLogs28d: behaviorLogsRes.data || [],
         semesterAssessments: semAssessments,
         semesterGrades: semGrades,

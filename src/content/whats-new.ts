@@ -101,7 +101,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   },
   {
     id: 'days-off-on-the-record', date: '2026-09-29', title: 'Days off show on the attendance record',
-    body: 'A day off on the school calendar now marks every student absent with the holiday as the note, the same way a field trip does, so the day shows up in the month view and on printouts instead of only as a line at the top. Holidays from the last two months, Chuseok included, are filled in the next time you open attendance.',
+    body: 'A day off on the school calendar now marks every student absent with the holiday as the note, the same way a field trip does, so the day shows up in the month view and on printouts instead of only as a line at the top. Holidays from the last two months, Chuseok included, are filled in the next time you open attendance. Those days are not counted as absences on report cards, the student page, or the dashboard.',
     path: '/attendance', guide: 'attendance',
   },
   {

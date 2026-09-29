@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
+import { withoutAwayDays } from '@/lib/calendarDays'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, KOREAN_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord } from '@/lib/utils'
 import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, ChevronDown, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle, AlertTriangle, FileDown, MessageSquare, Save, Lock } from 'lucide-react'
@@ -481,12 +482,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const [readingRes, ltScoreRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(5),
       supabase.from('level_test_scores').select('level_test_id, raw_scores, calculated_metrics').eq('student_id', studentId),
-      supabase.from('attendance').select('status').eq('student_id', studentId),
+      supabase.from('attendance').select('status, date').eq('student_id', studentId),
       supabase.from('behavior_logs').select('id, date, type, note, behaviors, is_flagged').eq('student_id', studentId).order('date', { ascending: false }).limit(20),
       supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', studentId).eq('is_active', true),
       supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', studentId).eq('is_active', true),
     ])
-    const attRecords = attRes.data || []
+    const attRecords = await withoutAwayDays((attRes.data || []) as { status: string; date: string }[], student?.grade ?? null)
     const attCounts = { present: 0, absent: 0, tardy: 0 }
     attRecords.forEach((r: any) => { if (r.status === 'present') attCounts.present++; else if (r.status === 'absent') attCounts.absent++; else if (r.status === 'tardy') attCounts.tardy++ })
 
@@ -1593,12 +1594,12 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     const [readingRes, ltScoreRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1),
       supabase.from('level_test_scores').select('level_test_id, raw_scores, calculated_metrics').eq('student_id', studentId),
-      supabase.from('attendance').select('status').eq('student_id', studentId),
+      supabase.from('attendance').select('status, date').eq('student_id', studentId),
       supabase.from('behavior_logs').select('id, date, type, note, behaviors, is_flagged').eq('student_id', studentId).order('date', { ascending: false }).limit(20),
       supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', studentId).eq('is_active', true),
       supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', studentId).eq('is_active', true),
     ])
-    const attRecords = attRes.data || []
+    const attRecords = await withoutAwayDays((attRes.data || []) as { status: string; date: string }[], student?.grade ?? null)
     const attCounts = { present: 0, absent: 0, tardy: 0 }
     attRecords.forEach((r: any) => { if (r.status === 'present') attCounts.present++; else if (r.status === 'absent') attCounts.absent++; else if (r.status === 'tardy') attCounts.tardy++ })
 

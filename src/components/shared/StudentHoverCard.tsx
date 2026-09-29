@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { withoutAwayDays } from '@/lib/calendarDays'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
 import { EnglishClass } from '@/types'
 import WIDABadge from '@/components/shared/WIDABadge'
@@ -69,7 +70,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
     const [{ data: sg }, { data: rd }, { data: at }, { count: bhCount }, { data: scaffData }] = await Promise.all([
       supabase.from('semester_grades').select('domain, score').eq('student_id', studentId).order('created_at', { ascending: false }).limit(10),
       supabase.from('reading_assessments').select('date, cwpm').eq('student_id', studentId).order('date', { ascending: false }).limit(3),
-      supabase.from('attendance').select('status').eq('student_id', studentId),
+      supabase.from('attendance').select('status, date').eq('student_id', studentId),
       supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('student_id', studentId),
       supabase.from('student_scaffolds').select('domain, scaffold_text').eq('student_id', studentId).eq('is_active', true).limit(5),
     ])

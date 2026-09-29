@@ -7,6 +7,7 @@ import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, sortByKoreanClassAndNumber, domainLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import { withoutAwayDays } from '@/lib/calendarDays'
 import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw, BookOpen } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WIDABadge from '@/components/shared/WIDABadge'
@@ -1383,8 +1384,9 @@ export function AttendanceTabInModal({ studentId, studentName, lang }: { student
       if (data && data.length >= 10) {
         const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
         const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0]
-        const recentAbs = data.filter((r: any) => r.date >= thirtyDaysAgo && r.status === 'absent').length
-        const priorAbs = data.filter((r: any) => r.date >= sixtyDaysAgo && r.date < thirtyDaysAgo && r.status === 'absent').length
+        const counted = await withoutAwayDays(data as { date: string; status: string }[], null)
+        const recentAbs = counted.filter((r: any) => r.date >= thirtyDaysAgo && r.status === 'absent').length
+        const priorAbs = counted.filter((r: any) => r.date >= sixtyDaysAgo && r.date < thirtyDaysAgo && r.status === 'absent').length
 
         if (recentAbs >= 3) {
           // Check if grades also declined in that period

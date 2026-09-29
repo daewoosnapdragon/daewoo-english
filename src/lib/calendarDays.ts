@@ -73,6 +73,20 @@ export function expandAwayDays(events: CalendarRow[], from: string, to: string, 
 }
 
 /**
+ * Attendance rows with days off and field trips taken out, so a holiday never
+ * counts as an absence (or a day present) anywhere absences are totalled.
+ * Pass the student's grade when it is known, so a trip for another grade is
+ * not mistaken for one of theirs.
+ */
+export async function withoutAwayDays<T extends { date: string }>(rows: T[], grade: number | null): Promise<T[]> {
+  if (rows.length === 0) return rows
+  let from = rows[0].date, to = rows[0].date
+  rows.forEach(r => { if (r.date < from) from = r.date; if (r.date > to) to = r.date })
+  const away = new Set((await loadAwayDays(from, to, grade)).map(a => a.date))
+  return away.size === 0 ? rows : rows.filter(r => !away.has(r.date))
+}
+
+/**
  * Marks every student absent, with the day's reason as the note, on each away
  * day in [from, to] that has no attendance yet for these students. A day a
  * teacher already touched is left alone, so a student who came in anyway

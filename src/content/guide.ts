@@ -53,7 +53,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
     rules: [
       'Report card grades due comes from the semester’s cutoff date in Settings.',
-      'A day off on the calendar means attendance is not expected and the stat shows a dash. The attendance page still records everyone absent for the day, with the holiday as the note.',
+      'A day off on the calendar means attendance is not expected and the stat shows a dash. The attendance page still records everyone absent for the day, with the holiday as the note, but those days never count toward Needs attention.',
       'Needs attention flags a student whose domain average fell more than the threshold since the last assessment, or with three or more absences in two weeks.',
     ],
     watchOut: ['The header can be collapsed with the arrow at the top right; click it again to bring the links back.', 'Notices expire on the date the poster set, so an old one disappears on its own.'],
@@ -99,7 +99,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       { title: 'Print for the office', steps: ['Click Print, tick the weeks, Print selected.'] },
     ],
     rules: [
-      'A day off or a field trip on the school calendar marks every student absent with the day as the note, automatically, the first time attendance is opened afterwards. Days from the last two months are filled in too, so a holiday nobody opened still shows on the record. Change any student who came in.',
+      'A day off or a field trip on the school calendar marks every student absent with the day as the note, automatically, the first time attendance is opened afterwards. Days from the last two months are filled in too, so a holiday nobody opened still shows on the record. Change any student who came in. These days are left out of every absence total: report cards, the student page, hover cards, and the dashboard.',
       'Weekends have no class. Grade 5 has no Monday class if that rule is on in Settings.',
     ],
     watchOut: ['Leaving the page with unsaved changes asks first.', 'The dashboard stat counts students still unmarked across all your classes today.'],
