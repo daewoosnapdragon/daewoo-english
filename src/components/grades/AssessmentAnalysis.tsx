@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { QuestionMapItem } from '@/types'
 import { isChoiceItem } from '@/lib/answerKey'
+import { isMarked } from '@/lib/blankAnswers'
 import { LEVEL_LABELS, LEVEL_LABELS_KO } from '@/components/curriculum/rubric-library'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
 import { plainName } from '@/components/curriculum/standards-plain'
@@ -17,7 +18,7 @@ import { AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
 // papers are marked.
 
 interface StudentRow { id: string; english_name: string; korean_name: string }
-interface Resp { answer?: string; points?: number; levels?: Record<string, number> }
+interface Resp { answer?: string; points?: number; levels?: Record<string, number>; blank?: boolean }
 type Bands = { above: number; on: number; approaching: number }
 
 interface Props {
@@ -59,7 +60,8 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
   const nameOf = (sid: string) => students.find(s => s.id === sid)?.english_name || ''
 
   const d = useMemo(() => {
-    const answered = (sid: string, it: QuestionMapItem) => { const r = responses[sid]?.[it.num]; if (!r) return false; if (hasRubric(it)) return it.rubric!.criteria.some(c => r.levels?.[c.key] != null); return isChoiceItem(it) ? !!r.answer : r.points != null }
+    // A blank counts as marked (and wrong), so it lowers the item's percent like any other miss.
+    const answered = (sid: string, it: QuestionMapItem) => isMarked(responses[sid]?.[it.num], it)
     const scored = students.filter(s => !flags[s.id]?.absent && !flags[s.id]?.exempt && map.some(it => answered(s.id, it)))
     const totalOf = (sid: string) => map.reduce((n, it) => n + (responses[sid]?.[it.num]?.points || 0), 0)
     const pctOf = (sid: string) => maxScore ? (totalOf(sid) / maxScore) * 100 : 0
@@ -80,19 +82,20 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
     // an item the strong students missed as often as the weak ones is
     // either untaught or badly written.
     const items = map.filter(it => !hasRubric(it)).map(it => {
-      const rs = scored.map(s => ({ s, r: responses[s.id]?.[it.num] })).filter(x => x.r && (isChoiceItem(it) ? x.r.answer : x.r.points != null))
+      const rs = scored.map(s => ({ s, r: responses[s.id]?.[it.num] })).filter(x => isMarked(x.r, it))
       const earned = rs.reduce((a, x) => a + (x.r!.points || 0), 0)
       const pct = rs.length ? (earned / (rs.length * it.max_points)) * 100 : null
       const grp = (set: Set<string>) => { const g = rs.filter(x => set.has(x.s.id)); return g.length ? g.reduce((a, x) => a + (x.r!.points || 0), 0) / (g.length * it.max_points) : null }
       const pTop = third >= 2 ? grp(top) : null, pBottom = third >= 2 ? grp(bottom) : null
       const disc = pTop != null && pBottom != null ? pTop - pBottom : null
       const missed = rs.filter(x => isChoiceItem(it) ? x.r!.answer !== it.answer_key : (x.r!.points || 0) < it.max_points / 2).map(x => x.s.id)
-      const wrong = isChoiceItem(it) ? letters.concat(it.type === 'true_false' ? ['T', 'F'] : []).filter(L => L !== it.answer_key).map(L => ({ L, n: rs.filter(x => x.r!.answer === L).length })).filter(x => x.n > 0).sort((a, b) => b.n - a.n)[0] || null : null
+      const blank = rs.filter(x => x.r!.blank).length
+      const wrong = isChoiceItem(it) ? letters.concat(it.type === 'true_false' ? ['T', 'F'] : []).filter(L => L !== it.answer_key).map(L => ({ L, n: rs.filter(x => x.r!.answer === L).length })).concat(blank ? [{ L: '—', n: blank }] : []).filter(x => x.n > 0).sort((a, b) => b.n - a.n)[0] || null : null
       const flag: null | 'everyone' | 'flat' | 'popular' = pct == null || rs.length < 4 ? null
         : pct < 40 ? 'everyone'
         : disc != null && disc < 0.1 && pct < 80 ? 'flat'
         : wrong && wrong.n >= Math.max(3, rs.length * 0.4) ? 'popular' : null
-      return { it, n: rs.length, pct, disc, missed, wrong, flag }
+      return { it, n: rs.length, pct, disc, missed, wrong, blank, flag }
     })
 
     // Standards: class percent, and each student's own percent on that
@@ -104,7 +107,7 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
         const r = responses[s.id]?.[it.num]; if (!r) return
         if (hasRubric(it)) { it.rubric!.criteria.forEach(c => { const lv = r.levels?.[c.key]; if (lv == null) return; const code = c.standard || it.standard; if (code) addStd(code, s.id, lv, 4) }); return }
         if (!it.standard) return
-        if (isChoiceItem(it) ? !r.answer : r.points == null) return
+        if (!isMarked(r, it)) return
         addStd(it.standard, s.id, r.points || 0, it.max_points)
       })
     })
@@ -239,7 +242,7 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
                       <td className="px-4 py-1.5 text-ink font-medium">Q{x.it.num}<span className="text-ink-3 font-normal text-[11px]"> {x.it.answer_key ? x.it.answer_key : `${x.it.max_points}pt`}</span></td>
                       <td className="px-2 py-1.5 text-ink-2 truncate max-w-[320px]">{x.it.standard ? <><span className="font-mono text-[11px] text-info mr-1.5">{x.it.standard}</span>{plainName(x.it.standard)}</> : <span className="text-ink-3">—</span>}</td>
                       <td className={`px-2 py-1.5 text-right font-semibold ${tone(x.pct)}`}>{x.pct != null ? `${Math.round(x.pct)}%` : '—'}</td>
-                      <td className="px-2 py-1.5 text-ink-2">{x.wrong ? <><span className="font-bold text-bad">{x.wrong.L}</span> <span className="text-ink-3">× {x.wrong.n}</span></> : x.n ? <span className="text-ink-3">{isChoiceItem(x.it) ? (ko ? '없음' : 'none') : `${x.missed.length} ${ko ? '명 절반 미만' : 'under half'}`}</span> : ''}</td>
+                      <td className="px-2 py-1.5 text-ink-2">{x.wrong ? <><span className="font-bold text-bad">{x.wrong.L}</span> <span className="text-ink-3">× {x.wrong.n}{x.wrong.L === '—' ? ` ${ko ? '무응답' : 'blank'}` : ''}</span></> : x.n ? <span className="text-ink-3">{isChoiceItem(x.it) ? (ko ? '없음' : 'none') : `${x.missed.length} ${ko ? '명 절반 미만' : 'under half'}`}</span> : ''}{x.blank > 0 && x.wrong?.L !== '—' && <span className="text-ink-3 text-[11px] ml-1.5">· {x.blank} {ko ? '무응답' : 'blank'}</span>}</td>
                       <td className={`px-2 py-1.5 text-right ${x.disc != null && x.disc < 0.1 && (x.pct ?? 100) < 80 ? 'text-warn font-semibold' : 'text-ink-3'}`}>{x.disc != null ? `${x.disc >= 0 ? '+' : ''}${Math.round(x.disc * 100)}` : ''}</td>
                       <td className="px-2 py-1.5 text-[11.5px] text-ink-2">{x.flag ? <span className="inline-flex items-center gap-1.5"><AlertTriangle size={12} className="text-warn" />{flagText[x.flag]}</span> : ''}</td>
                     </tr>

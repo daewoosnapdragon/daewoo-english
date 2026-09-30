@@ -21,6 +21,12 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'blank-answers', date: '2026-10-05', title: 'Blank answers are marked wrong, and you can see them',
+    body: 'You can now mark a question the student left blank with the — bubble or the minus key, and it counts as wrong. A question you skip on the answer sheet is shaded amber so you notice it, and when you move to the next student anything still unmarked on that paper becomes a blank worth 0. A paper you have not started stays untouched. The class grid shows blanks as —.',
+    path: '/grades', guide: 'grades',
+    tour: { path: '/grades', steps: [{ anchor: 'grades.views', text: 'Score on the answer sheet. A skipped question turns amber; − marks it blank. Blanks are wrong.' }] },
+  },
+  {
     id: 'find-anything', date: '2026-09-25', title: 'Find anything with ⌘K',
     body: 'You can now press ⌘K (Ctrl K on Windows) anywhere and type a student, a page, or an action such as "mark attendance" or "post a notice". Enter opens it; ⌘Enter on a student opens their behavior log.',
     path: '/dashboard', guide: 'dashboard',
