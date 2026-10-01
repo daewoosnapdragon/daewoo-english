@@ -5,6 +5,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import type { QuestionMapItem, ItemResponse } from '@/types'
 import { isChoiceItem, markChoice } from '@/lib/answerKey'
+import { isMarked, isAnswered, blankResponse, skippedItems, finalizeBlanks, blankCount } from '@/lib/blankAnswers'
 import { rubricScore, LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO } from '@/components/curriculum/rubric-library'
 import { splitEarned } from '@/lib/domainSplit'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
@@ -18,9 +19,14 @@ import { BarChart3, Check, ChevronLeft, ChevronRight, Loader2, LayoutGrid, ListC
 // keyboard drives it, and the rail shows the most-missed questions and the
 // per-standard picture while papers are still coming in. Saves the same
 // grades rows (score + item_responses) as before.
+//
+// A question the student left blank is wrong. The teacher marks one with
+// the — bubble or the minus key; anything still unmarked on a started paper
+// becomes a blank when they move to the next student or save. Skipped and
+// blank rows are shaded amber so nothing slips by unnoticed.
 
 interface StudentRow { id: string; english_name: string; korean_name: string }
-interface Resp { answer?: string; points?: number; levels?: Record<string, number> }
+interface Resp { answer?: string; points?: number; levels?: Record<string, number>; blank?: boolean }
 const hasRubric = (q: QuestionMapItem) => q.type === 'rubric' && !!q.rubric?.criteria?.length
 type Flags = { absent: boolean; exempt: boolean }
 
@@ -73,7 +79,7 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
       ;(data || []).forEach((g: any) => {
         if (Array.isArray(g.item_responses)) {
           r[g.student_id] = {}
-          g.item_responses.forEach((ir: any) => { if (ir.q != null && (ir.answer || ir.points != null || ir.levels)) r[g.student_id][ir.q] = { answer: ir.answer || undefined, points: ir.points ?? undefined, levels: ir.levels || undefined } })
+          g.item_responses.forEach((ir: any) => { if (ir.q != null && (ir.answer || ir.points != null || ir.levels || ir.blank)) r[g.student_id][ir.q] = { answer: ir.answer || undefined, points: ir.points ?? undefined, levels: ir.levels || undefined, ...(ir.blank ? { blank: true } : {}) } })
         }
         if (g.is_absent || g.is_exempt) f[g.student_id] = { absent: !!g.is_absent, exempt: !!g.is_exempt }
       })
@@ -85,10 +91,13 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
   const active = students[activeIdx]
   const mine = active ? (responses[active.id] || {}) : {}
   const q = (num: number) => map.find(x => x.num === num)!
-  const answered = (sid: string, item: QuestionMapItem) => { const r = responses[sid]?.[item.num]; if (!r) return false; if (hasRubric(item)) return item.rubric!.criteria.every(c => r.levels?.[c.key] != null); return isChoiceItem(item) ? !!r.answer : r.points != null }
+  const answered = (sid: string, item: QuestionMapItem) => isAnswered(responses[sid]?.[item.num], item)
   const isComplete = (sid: string) => flags[sid]?.absent || flags[sid]?.exempt || map.every(it => answered(sid, it))
   const total = (sid: string) => { const r = responses[sid]; if (!r) return 0; return map.reduce((s, it) => s + (r[it.num]?.points || 0), 0) }
   const answeredCount = (sid: string) => map.filter(it => answered(sid, it)).length
+  const blanks = (sid: string) => blankCount(responses[sid], map)
+  // Questions the teacher passed over on the open paper: unmarked, with a later question marked.
+  const skipped = useMemo(() => new Set(skippedItems(mine, map).map(it => it.num)), [mine, map])
 
   const touch = (sid: string) => setDirty(prev => { const n = new Set(prev); n.add(sid); return n })
   const setAnswer = (num: number, answer: string) => {
@@ -118,6 +127,33 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
     setFlags(prev => { const n = { ...prev }; delete n[active.id]; return n })
     touch(active.id)
   }
+  // The student left this question blank: 0 points, counted as wrong.
+  const setBlank = (num: number) => {
+    if (!active) return
+    setResponses(prev => ({ ...prev, [active.id]: { ...(prev[active.id] || {}), [num]: blankResponse(q(num)) } }))
+    setFlags(prev => { const n = { ...prev }; delete n[active.id]; return n })
+    touch(active.id)
+  }
+  // Take a mark off again (Backspace), so a slip is not stuck as a blank or a wrong letter.
+  const clearMark = (num: number) => {
+    if (!active) return
+    setResponses(prev => { const row = { ...(prev[active.id] || {}) }; delete row[num]; return { ...prev, [active.id]: row } })
+    touch(active.id)
+  }
+  // Leaving a started paper: whatever is still unmarked is a blank, marked
+  // wrong. Written straight into the ref too, so the save that follows in
+  // the same tick sees it. An untouched paper is left alone.
+  const finalizeActive = () => {
+    if (!active) return
+    if (flagsRef.current[active.id]?.absent || flagsRef.current[active.id]?.exempt) return
+    const row = respRef.current[active.id]
+    const next = finalizeBlanks(row, map)
+    if (next === row || !next) return
+    const all = { ...respRef.current, [active.id]: next }
+    respRef.current = all
+    setResponses(all)
+    const d = new Set(dirtyRef.current); d.add(active.id); dirtyRef.current = d; setDirty(d)
+  }
   const setFlag = (sid: string, which: 'absent' | 'exempt') => {
     setFlags(prev => {
       const cur = prev[sid]
@@ -139,11 +175,11 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
       const r = respRef.current[sid] || {}
       const item_responses: ItemResponse[] = map.map(it => {
         const resp = r[it.num]
-        const correct = isChoiceItem(it) && resp?.answer ? resp.answer === it.answer_key : undefined
-        return { q: it.num, type: it.type, answer: resp?.answer, correct, points: resp?.points || 0, max: it.max_points, standard: it.standard, ...(resp?.levels ? { levels: resp.levels } : {}) }
+        const correct = isChoiceItem(it) && (resp?.answer || resp?.blank) ? resp.answer === it.answer_key : undefined
+        return { q: it.num, type: it.type, answer: resp?.answer, correct, points: resp?.points || 0, max: it.max_points, standard: it.standard, ...(resp?.levels ? { levels: resp.levels } : {}), ...(resp?.blank ? { blank: true } : {}) }
       })
       const score = item_responses.reduce((s, ir) => s + ir.points, 0)
-      const anything = map.some(it => { const resp = r[it.num]; return resp && (resp.answer || resp.points != null || resp.levels) })
+      const anything = map.some(it => isMarked(r[it.num], it))
       const domain_scores = assessment.mixed && anything ? splitEarned(map, item_responses, assessment.domain || 'reading') : null
       return { student_id: sid, assessment_id: assessment.id, score: anything ? score : null, item_responses: anything ? item_responses : null, ...(assessment.mixed ? { domain_scores } : {}), is_absent: false, is_exempt: false, entered_by: currentTeacher?.id || null }
     })
@@ -155,9 +191,10 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
     return true
   }, [assessment.id, map, currentTeacher?.id, showToast, onSaved])
 
-  const saveAll = () => saveStudents(Array.from(dirtyRef.current))
+  const saveAll = () => { finalizeActive(); return saveStudents(Array.from(dirtyRef.current)) }
   const goTo = async (idx: number) => {
     if (idx < 0 || idx >= students.length) return
+    finalizeActive()
     if (active && dirtyRef.current.has(active.id)) await saveStudents([active.id])
     setActiveIdx(idx); setFocusedQ(map[0]?.num || 1); setCritIdx(0)
   }
@@ -189,6 +226,8 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
       if (k === 'X' && active) { setFlag(active.id, e.shiftKey ? 'exempt' : 'absent'); return }
       const item = map[idx]
       if (!item) return
+      if (e.key === '-' || e.key === '_') { e.preventDefault(); setBlank(item.num); next(); return }
+      if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); clearMark(item.num); return }
       if (hasRubric(item)) {
         if (/^[0-4]$/.test(k)) {
           const c = item.rubric!.criteria[critIdx]
@@ -209,7 +248,7 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
   const analysis = useMemo(() => {
     const scored = students.filter(s => !flags[s.id]?.absent && !flags[s.id]?.exempt && answeredCount(s.id) > 0)
     const perQ = map.map(it => {
-      const rs = scored.map(s => responses[s.id]?.[it.num]).filter(r => r && (isChoiceItem(it) ? r.answer : r.points != null)) as Resp[]
+      const rs = scored.map(s => responses[s.id]?.[it.num]).filter(r => isMarked(r, it)) as Resp[]
       const earned = rs.reduce((a, r) => a + (r.points || 0), 0)
       const possible = rs.length * it.max_points
       const missed = isChoiceItem(it) ? rs.filter(r => (r.points || 0) === 0).length : 0
@@ -232,7 +271,7 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
       if (!it.standard) return
       scored.forEach(s => {
         const r = responses[s.id]?.[it.num]
-        if (!r || (isChoiceItem(it) ? !r.answer : r.points == null)) return
+        if (!isMarked(r, it)) return
         const e = (perStd[it.standard!] ||= { earned: 0, possible: 0 })
         e.earned += r.points || 0; e.possible += it.max_points
       })
@@ -279,8 +318,11 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                 <button key={s.id} onClick={() => goTo(i)}
                   className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[12.5px] border-b border-rule ${i === activeIdx ? 'bg-surface font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-surface/60'}`}>
                   <span className="truncate text-ink">{s.english_name}</span>
-                  <span className={`tabular-nums text-[11.5px] ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : part ? 'text-warn' : 'text-ink-3'}`}>
-                    {fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done ? `${total(s.id)} ✓` : part ? `${total(s.id)} ~` : ''}
+                  <span className="inline-flex items-center gap-1.5 shrink-0">
+                    {!fl && blanks(s.id) > 0 && <span title={lang === 'ko' ? `${blanks(s.id)}문항 무응답 · 오답 처리` : `${blanks(s.id)} blank · marked wrong`} className="tabular-nums text-[10.5px] font-semibold text-warn bg-warn-soft rounded px-1">{blanks(s.id)} —</span>}
+                    <span className={`tabular-nums text-[11.5px] ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : part ? 'text-warn' : 'text-ink-3'}`}>
+                      {fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done ? `${total(s.id)} ✓` : part ? `${total(s.id)} ~` : ''}
+                    </span>
                   </span>
                 </button>
               )
@@ -306,13 +348,25 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                     {map.map(it => {
                       const r = mine[it.num]
                       const focused = focusedQ === it.num
+                      const isBlank = !!r?.blank
+                      const wasSkipped = !isBlank && skipped.has(it.num)
+                      // Amber for a blank, and for a question passed over: the teacher sees it before it becomes a blank.
+                      const rowTone = isBlank || wasSkipped ? `${focused ? 'bg-warn-soft' : 'bg-warn-soft/50'} shadow-[inset_3px_0_0_rgb(var(--warn))]` : focused ? 'bg-paper-2' : ''
+                      const blankNote = isBlank
+                        ? <span className="text-[11px] font-semibold text-warn whitespace-nowrap">{lang === 'ko' ? '무응답 · 오답 처리' : 'Blank · marked wrong'}</span>
+                        : wasSkipped ? <span className="text-[11px] text-warn whitespace-nowrap">{lang === 'ko' ? '건너뜀 · 비워 두면 오답 처리' : 'Skipped · counts as wrong if left blank'}</span> : null
+                      const blankBubble = <button onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setBlank(it.num) }} title={lang === 'ko' ? '무응답 (오답 처리)' : 'No answer (marked wrong)'} className={bubble(false, isBlank ? 'wrong' : 'plain')}>—</button>
                       return (
                         <div key={it.num} onClick={() => setFocusedQ(it.num)}
-                          className={`grid grid-cols-[34px_minmax(0,1fr)_auto] gap-3 items-center py-1.5 -mx-2 px-2 rounded ${focused ? 'bg-paper-2' : ''}`}>
-                          <span className="text-[11px] text-ink-3 tabular-nums">Q{it.num}</span>
+                          className={`grid grid-cols-[34px_minmax(0,1fr)_auto] gap-3 items-center py-1.5 -mx-2 px-2 rounded ${rowTone}`}>
+                          <span className={`text-[11px] tabular-nums ${isBlank || wasSkipped ? 'text-warn font-semibold' : 'text-ink-3'}`}>Q{it.num}</span>
                           {hasRubric(it) ? (
                             <div className="grid gap-2 py-1 min-w-0">
-                              <span className="text-[11px] text-ink-3">{it.rubric!.name} · {r?.points ?? 0} / {it.max_points}</span>
+                              <span className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[11px] text-ink-3">{it.rubric!.name} · {r?.points ?? 0} / {it.max_points}</span>
+                                <button onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setBlank(it.num) }} title={lang === 'ko' ? '무응답 (모든 기준 0, 오답 처리)' : 'Nothing written (0 on every criterion, marked wrong)'} className={`h-5 px-1.5 rounded border text-[10.5px] font-bold ${isBlank ? 'bg-bad border-bad text-white' : 'border-rule-2 text-ink-3 hover:text-ink hover:border-ink-3'}`}>—</button>
+                                {blankNote}
+                              </span>
                               {it.rubric!.criteria.map((c, ci) => {
                                 const lv = r?.levels?.[c.key]
                                 const cf = focused && critIdx === ci
@@ -346,26 +400,30 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                                 {(it.type === 'true_false' ? ['T', 'F'] : letters).map(L => {
                                   const chosen = r?.answer === L
                                   const isKey = it.answer_key === L
-                                  const tone = chosen ? (isKey ? 'right' : 'wrong') : (r?.answer && isKey ? 'key' : 'plain')
+                                  const tone = chosen ? (isKey ? 'right' : 'wrong') : ((r?.answer || isBlank) && isKey ? 'key' : 'plain')
                                   return <button key={L} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setAnswer(it.num, L) }} className={bubble(false, tone)}>{L}</button>
                                 })}
+                                {blankBubble}
                               </div>
-                              {r?.answer && r.answer !== it.answer_key && <span className="text-[11px] text-ink-3">{lang === 'ko' ? '정답' : 'key'} {it.answer_key}</span>}
+                              {((r?.answer && r.answer !== it.answer_key) || isBlank) && <span className="text-[11px] text-ink-3">{lang === 'ko' ? '정답' : 'key'} {it.answer_key}</span>}
                               {it.max_points !== 1 && <span className="text-[11px] text-ink-3">{it.max_points} pt</span>}
+                              {blankNote}
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
                               {it.max_points <= 8 && Number.isInteger(it.max_points) && (
                                 <div className="flex gap-1.5">
                                   {Array.from({ length: it.max_points + 1 }, (_, p) => (
-                                    <button key={p} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setPoints(it.num, p) }} className={bubble(r?.points === p, r?.points === p ? (p === it.max_points ? 'right' : p === 0 ? 'wrong' : 'plain') : 'plain')}>{p}</button>
+                                    <button key={p} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setPoints(it.num, p) }} className={bubble(!isBlank && r?.points === p, !isBlank && r?.points === p ? (p === it.max_points ? 'right' : p === 0 ? 'wrong' : 'plain') : 'plain')}>{p}</button>
                                   ))}
+                                  {blankBubble}
                                 </div>
                               )}
                               {/* Half points (2.5 / 5) and anything over 8 go in here. */}
-                              <input type="number" min={0} max={it.max_points} step={0.5} value={r?.points ?? ''} onChange={e => setPoints(it.num, e.target.value === '' ? null : Number(e.target.value))} onFocus={() => setFocusedQ(it.num)} onClick={e => e.stopPropagation()}
+                              <input type="number" min={0} max={it.max_points} step={0.5} value={isBlank ? '' : r?.points ?? ''} onChange={e => setPoints(it.num, e.target.value === '' ? null : Number(e.target.value))} onFocus={() => setFocusedQ(it.num)} onClick={e => e.stopPropagation()}
                                 className="w-16 h-7 px-2 bg-surface border border-rule-2 rounded text-[12.5px] tabular-nums text-center" placeholder="2.5" />
                               <span className="text-[11px] text-ink-3">/ {it.max_points} · {it.type === 'rubric' ? (lang === 'ko' ? '루브릭' : 'rubric') : (lang === 'ko' ? '서술형' : 'written')}</span>
+                              {blankNote}
                             </div>
                           )}
                           <span className="text-[10.5px] text-info text-right">{it.standard || ''}</span>
@@ -408,7 +466,8 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
             )}
             <div>
               <p className="eyebrow mb-1.5">{lang === 'ko' ? '키보드' : 'Keyboard'}</p>
-              <p className="text-ink-2 leading-relaxed">{letters.join(' ')} · T F · 0–9 {lang === 'ko' ? '답 입력 후 다음 문항' : 'answer and move on'}<br />↑ ↓ {lang === 'ko' ? '문항 이동' : 'change question'} · ⇥ / ↩ {lang === 'ko' ? '다음 학생' : 'next student'}<br />X {lang === 'ko' ? '결석' : 'absent'} · ⇧X {lang === 'ko' ? '면제' : 'exempt'}</p>
+              <p className="text-ink-2 leading-relaxed">{letters.join(' ')} · T F · 0–9 {lang === 'ko' ? '답 입력 후 다음 문항' : 'answer and move on'}<br />− {lang === 'ko' ? '무응답 (오답 처리)' : 'blank, marked wrong'} · ⌫ {lang === 'ko' ? '표시 지우기' : 'clear a mark'}<br />↑ ↓ {lang === 'ko' ? '문항 이동' : 'change question'} · ⇥ / ↩ {lang === 'ko' ? '다음 학생' : 'next student'}<br />X {lang === 'ko' ? '결석' : 'absent'} · ⇧X {lang === 'ko' ? '면제' : 'exempt'}</p>
+              <p className="text-ink-3 leading-relaxed mt-1.5">{lang === 'ko' ? '다음 학생으로 넘어가면 비워 둔 문항은 무응답(0점)으로 처리됩니다. 아직 시작하지 않은 답안지는 그대로 둡니다.' : 'Moving on to the next student turns any question left unmarked into a blank worth 0. A paper you have not started stays untouched.'}</p>
             </div>
           </div>
         </div>
@@ -445,11 +504,14 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                       <td colSpan={map.reduce((n, it) => n + (hasRubric(it) ? it.rubric!.criteria.length : 1), 0)} className="px-3 py-1.5 text-ink-3 text-center">{fl.absent ? (lang === 'ko' ? '결석' : 'Absent') : (lang === 'ko' ? '면제' : 'Exempt')}</td>
                     ) : map.map(it => {
                       const r = responses[s.id]?.[it.num]
+                      const blankCell = (key: string) => <td key={key} className="py-1 text-center"><span title={lang === 'ko' ? '무응답 · 오답 처리' : 'Blank · marked wrong'} className="inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold bg-warn-soft text-warn">—</span></td>
                       if (hasRubric(it)) return it.rubric!.criteria.map(c => {
+                        if (r?.blank) return blankCell(`${it.num}-${c.key}`)
                         const lv = r?.levels?.[c.key]
                         if (lv == null) return <td key={`${it.num}-${c.key}`} className="text-center text-ink-3 py-1.5">·</td>
                         return <td key={`${it.num}-${c.key}`} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold ${lv === 0 ? 'bg-paper-3 text-ink-2' : lv === 1 ? 'bg-bad-soft text-bad' : lv === 2 ? 'bg-warn-soft text-warn' : lv === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{lv}</span></td>
                       })
+                      if (r?.blank) return blankCell(String(it.num))
                       if (!r || (isChoiceItem(it) ? !r.answer : r.points == null)) return <td key={it.num} className="text-center text-ink-3 py-1.5">·</td>
                       if (isChoiceItem(it)) {
                         const ok = r.answer === it.answer_key
@@ -464,10 +526,13 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
               })}
             </tbody>
           </table>
-          {map.some(hasRubric) && (
+          {(map.some(hasRubric) || students.some(s => blanks(s.id) > 0)) && (
             <div className="flex items-center gap-3 px-3 py-2 border-t border-rule-2 bg-paper-2/60 text-[11px] text-ink-3 flex-wrap">
-              <span>{lang === 'ko' ? '루브릭 단계' : 'Rubric levels'}</span>
-              {[0, 1, 2, 3, 4].map(n => <span key={n} className="inline-flex items-center gap-1.5"><span className={`inline-flex w-5 h-5 rounded items-center justify-center text-[10px] font-bold ${n === 0 ? 'bg-paper-3 text-ink-2' : n === 1 ? 'bg-bad-soft text-bad' : n === 2 ? 'bg-warn-soft text-warn' : n === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{n}</span>{levelLabels[n]}</span>)}
+              {students.some(s => blanks(s.id) > 0) && <span className="inline-flex items-center gap-1.5"><span className="inline-flex w-5 h-5 rounded items-center justify-center text-[10px] font-bold bg-warn-soft text-warn">—</span>{lang === 'ko' ? '무응답 · 오답 처리' : 'blank · marked wrong'}</span>}
+              {map.some(hasRubric) && <>
+                <span>{lang === 'ko' ? '루브릭 단계' : 'Rubric levels'}</span>
+                {[0, 1, 2, 3, 4].map(n => <span key={n} className="inline-flex items-center gap-1.5"><span className={`inline-flex w-5 h-5 rounded items-center justify-center text-[10px] font-bold ${n === 0 ? 'bg-paper-3 text-ink-2' : n === 1 ? 'bg-bad-soft text-bad' : n === 2 ? 'bg-warn-soft text-warn' : n === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{n}</span>{levelLabels[n]}</span>)}
+              </>}
             </div>
           )}
         </div>
@@ -480,7 +545,7 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
         const scored = students.filter(s => !flags[s.id]?.absent && !flags[s.id]?.exempt)
         const typeName = it.type === 'mc' ? (lang === 'ko' ? '객관식' : 'Multiple choice') : it.type === 'true_false' ? (lang === 'ko' ? '참/거짓' : 'True / false') : it.type === 'rubric' ? (lang === 'ko' ? '루브릭' : 'Rubric') : it.type === 'open_ended' ? (lang === 'ko' ? '서술형' : 'Extended writing') : (lang === 'ko' ? '단답형' : 'Short answer')
         // Answer spread for choice items, so a popular wrong answer stands out.
-        const dist = isChoiceItem(it) ? (it.type === 'true_false' ? ['T', 'F'] : letters).map(L => ({ L, n: scored.filter(s => responses[s.id]?.[it.num]?.answer === L).length })) : []
+        const dist = isChoiceItem(it) ? (it.type === 'true_false' ? ['T', 'F'] : letters).map(L => ({ L, n: scored.filter(s => responses[s.id]?.[it.num]?.answer === L).length })).concat([{ L: '—', n: scored.filter(s => responses[s.id]?.[it.num]?.blank).length }]).filter(d => d.L !== '—' || d.n > 0) : []
         const distTotal = dist.reduce((n, d) => n + d.n, 0)
         const critVals = crit ? scored.map(s => responses[s.id]?.[it.num]?.levels?.[crit.key]).filter((v): v is number => v != null) : []
         const critAvg = critVals.length ? critVals.reduce((x, y) => x + y, 0) / critVals.length : null

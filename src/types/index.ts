@@ -151,6 +151,8 @@ export interface ItemResponse {
   type: string;
   answer?: string; // Student's answer for MC/TF
   correct?: boolean;
+  /** The student left the question blank: 0 points, counted as wrong. */
+  blank?: boolean;
   points: number;
   max: number;
   standard?: string;
