@@ -14,9 +14,19 @@ export const metadata: Metadata = {
   description: 'The record of the Daewoo Elementary English Program',
 }
 
+// Runs before anything is painted so a remembered dark mode never flashes
+// light. Must stay in step with the 'daewoo_theme' key and the `dark` class
+// that AppProvider's setTheme writes.
+const themeInit = `try{if(localStorage.getItem('daewoo_theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${serif.variable} ${sans.variable} ${kr.variable}`}>
+    // suppressHydrationWarning: the script above may add `dark` to this
+    // element before React hydrates it, which is expected, not a mismatch.
+    <html lang="en" className={`${serif.variable} ${sans.variable} ${kr.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+      </head>
       <body>
         <AppProvider>
           {children}

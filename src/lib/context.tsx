@@ -148,16 +148,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setThemeState(t)
     if (typeof document !== 'undefined') {
       document.documentElement.classList.toggle('dark', t === 'dark')
-      localStorage.setItem('daewoo_theme', t)
+      try { localStorage.setItem('daewoo_theme', t) } catch {}
     }
   }, [])
 
-  // Init theme from localStorage
-  if (typeof window !== 'undefined' && !window.__themeInit) {
-    window.__themeInit = true
-    const saved = localStorage.getItem('daewoo_theme') as 'light' | 'dark' | null
-    if (saved === 'dark') { setThemeState('dark'); document.documentElement.classList.add('dark') }
-  }
+  // Pick up the remembered theme on every mount, not just the first render of
+  // the page. A one-shot guard used to do this during render, which left the
+  // choice behind whenever React re-rendered from the root (after a hydration
+  // error, for instance): the <html> class was wiped and never put back, so
+  // the app looked light again even though 'dark' was still saved. The inline
+  // script in the root layout applies the class before first paint; this
+  // effect brings React state in line with it and re-applies the class if
+  // anything removed it.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('daewoo_theme')
+      const t = saved === 'dark' ? 'dark' : 'light'
+      setThemeState(t)
+      document.documentElement.classList.toggle('dark', t === 'dark')
+    } catch {}
+  }, [])
 
   const t = language === 'ko' ? translations.ko : translations.en
 
