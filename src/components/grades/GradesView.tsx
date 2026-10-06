@@ -17,6 +17,7 @@ import { Bars } from '@/components/charts'
 import { itemsForDomain, touchesDomain, routingFor, splitPossible, isMultiDomain } from '@/lib/domainSplit'
 import { syncDomainScores, isRoutingColumnError } from '@/lib/domainRouting'
 import { DOMAIN_COLOR, domainColor, domainShort } from '@/lib/domainTone'
+import { loadAssessmentWeights, useAssessmentWeights } from '@/lib/assessmentWeights'
 import RubricPicker from './RubricPicker'
 import RubricScoreSheet from './RubricScoreSheet'
 
@@ -967,6 +968,7 @@ function StatsBar({ scores, maxScore, lang }: { scores: Record<string, number | 
 function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, students, selectedClass, selectedGrade, lang }: {
   selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; allAssessments: Assessment[]; students: StudentRow[]; selectedClass: EnglishClass; selectedGrade: Grade; lang: LangKey
 }) {
+  const weightTable = useAssessmentWeights()
   const { showToast } = useApp()
   const [scores, setScores] = useState<any>({})
   const [sectionScores, setSectionScores] = useState<any>({})
@@ -1131,7 +1133,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                       weightedItems.push({ score: sc, maxScore: a.max_score, assessmentType: (['formative','summative','performance_task'].includes(a.type) ? a.type : 'formative') as any })
                     }
                   })
-                  const avg = calcWeightedAvg(weightedItems, Number(selectedGrade))
+                  const avg = calcWeightedAvg(weightedItems, Number(selectedGrade), null, selectedClass, weightTable)
                   return (
                     <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
                       <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="text-text-tertiary font-normal text-[10px]">{s.korean_name}</span></td>
@@ -1196,6 +1198,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
       setLoading(true)
       const result = makeDomainStats()
       try {
+        const weightTable = await loadAssessmentWeights()
         for (const domain of DOMAINS) {
           const da = allAssessments.filter((a: any) => touchesDomain(a, domain))
           if (!result[domain]) result[domain] = { avg: null, count: 0, assessmentCount: 0, assessments: [] }
@@ -1210,7 +1213,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
             // assessment contributes only the points it routed here.
             const allItems = grades.flatMap((g: any) => { const a = da.find((x: any) => x.id === g.assessment_id); return a ? itemsForDomain(domain, [a], () => g) : [] })
             result[domain].count = allItems.length
-            result[domain].avg = calcWeightedAvg(allItems, Number(selectedGrade || 3))
+            result[domain].avg = calcWeightedAvg(allItems, Number(selectedGrade || 3), null, selectedClass, weightTable)
             for (const a of da) {
               const mine = grades.filter((g: any) => g.assessment_id === a.id)
               const aItems = mine.flatMap((g: any) => itemsForDomain(domain, [a], () => g))

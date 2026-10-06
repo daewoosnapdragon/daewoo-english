@@ -5,6 +5,7 @@ import { useScheduleRules, saveScheduleRules, WEEKDAY_LABELS } from '@/lib/sched
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
+import { invalidateAssessmentWeights } from '@/lib/assessmentWeights'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, canManageSemesters, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
 import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown, Archive, ArchiveRestore } from 'lucide-react'
@@ -885,6 +886,7 @@ function AssessmentWeightsSection() {
   const handleSave = async () => {
     setSaving(true)
     await supabase.from('app_settings').upsert({ key: 'assessment_weights', value: JSON.stringify(weights) }, { onConflict: 'key' })
+    invalidateAssessmentWeights()
     setSaving(false)
     showToast('Assessment weights saved')
   }

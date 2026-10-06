@@ -9,7 +9,8 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { withoutAwayDays } from '@/lib/calendarDays'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, KOREAN_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
-import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord } from '@/lib/utils'
+import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord, percentToLetter } from '@/lib/utils'
+import { loadAssessmentWeights } from '@/lib/assessmentWeights'
 import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, ChevronDown, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle, AlertTriangle, FileDown, MessageSquare, Save, Lock } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
@@ -36,13 +37,8 @@ const SCALE_DISPLAY = [
 
 const REPORT_CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy', Sunflower: 'bg-level-sunflower', Marigold: 'bg-level-marigold', Snapdragon: 'bg-level-snapdragon' }
 
-function getLetterGrade(score: number): string {
-  if (score >= 97) return 'A+'; if (score >= 93) return 'A'; if (score >= 90) return 'A-'
-  if (score >= 87) return 'B+'; if (score >= 83) return 'B'; if (score >= 80) return 'B-'
-  if (score >= 77) return 'C+'; if (score >= 73) return 'C'; if (score >= 70) return 'C-'
-  if (score >= 67) return 'D+'; if (score >= 63) return 'D'; if (score >= 60) return 'D-'
-  return 'E'
-}
+// One letter scale for the whole app (see percentToLetter).
+function getLetterGrade(score: number): string { return percentToLetter(score) }
 
 function letterColor(l: string): string {
   if (l.startsWith('A')) return '#16a34a'; if (l.startsWith('B')) return '#2563eb'
@@ -2652,6 +2648,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
       ])
       const assessments = assessmentsRes.data || []
       const allGrades = allGradesRes.data || []
+      const weightTable = await loadAssessmentWeights()
       const semGrades = semGradesRes.data || []
       const classNa: Record<string, boolean> = {}
       DOMAINS.forEach((d) => { classNa[d] = false })
@@ -2671,7 +2668,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
           let calc: number | null = null
           const items = itemsForDomain(domain, assessments, (a: any) => allGrades.find((gr: any) => gr.assessment_id === a.id && gr.student_id === s.id))
           if (items.length > 0) {
-            const avg = calcWeightedAvg(items, Number(selectedGrade))
+            const avg = calcWeightedAvg(items, Number(selectedGrade), null, selectedClass, weightTable)
             if (avg != null) calc = Math.round(avg * 10) / 10
           }
           // Report-card override wins; else calculated; else any stored calculated_grade.

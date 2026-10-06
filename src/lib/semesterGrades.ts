@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { itemsForDomain } from '@/lib/domainSplit'
 import { calculateWeightedAverage } from '@/lib/utils'
+import { loadAssessmentWeights } from '@/lib/assessmentWeights'
 
 // ─── Assessment scores → semester_grades ─────────────────────────
 // Report cards and progress reports read from semester_grades, where a
@@ -10,7 +11,9 @@ import { calculateWeightedAverage } from '@/lib/utils'
 // student's weighted domain average from the class's assessments for the
 // semester and writes calculated_grade for the whole class in one upsert.
 // final_grade, is_na and the behaviour row are never touched. Archived
-// semesters have no assessments to sync from and are skipped.
+// semesters have no assessments to sync from and are skipped. The weights
+// come from Settings (class override, else grade), the same table every
+// gradebook screen reads.
 
 const DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language'] as const
 
@@ -31,6 +34,7 @@ export async function syncSemesterGrades(opts: {
     .eq('semester_id', semesterId).eq('grade', grade).eq('english_class', englishClass)
   if (!assessments || assessments.length === 0) return out
 
+  const weightTable = await loadAssessmentWeights()
   const ids = students.map(s => s.id)
   const { data: grades } = await supabase.from('grades').select('student_id, assessment_id, score, is_exempt, is_absent, domain_scores')
     .in('assessment_id', assessments.map((a: any) => a.id)).in('student_id', ids)
@@ -43,7 +47,7 @@ export async function syncSemesterGrades(opts: {
     out[s.id] = {}
     for (const domain of DOMAINS) {
       const items = itemsForDomain(domain, assessments, (a: any) => mine.find((g: any) => g.assessment_id === a.id))
-      const avg = calculateWeightedAverage(items, Number(s.grade || grade || 3))
+      const avg = calculateWeightedAverage(items, Number(s.grade || grade || 3), null, s.english_class || englishClass, weightTable)
       out[s.id][domain] = avg == null ? null : Math.round(avg * 10) / 10
       if (avg == null) continue
       rows.push({

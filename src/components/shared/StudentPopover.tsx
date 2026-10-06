@@ -4,6 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { withoutAwayDays } from '@/lib/calendarDays'
 import { useApp } from '@/lib/context'
+import { itemsForDomain } from '@/lib/domainSplit'
+import { calculateWeightedAverage } from '@/lib/utils'
+import { loadAssessmentWeights } from '@/lib/assessmentWeights'
+import { DOMAINS } from '@/types'
 import { Loader2, X, BookOpen, BarChart3, AlertTriangle, MessageSquare } from 'lucide-react'
 import WIDABadge from './WIDABadge'
 
@@ -18,7 +22,7 @@ interface PopoverData {
 export default function StudentPopover({ studentId, name, koreanName, trigger }: {
   studentId: string; name: string; koreanName?: string; trigger: React.ReactNode
 }) {
-  const { currentTeacher } = useApp()
+  const { currentTeacher, activeSemester } = useApp()
   const [open, setOpen] = useState(false)
   const [data, setData] = useState<PopoverData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -51,17 +55,23 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
     setOpen(true); setLoading(true)
     const [readingRes, gradesRes, behaviorRes, attRes, noteRes] = await Promise.all([
       supabase.from('reading_assessments').select('cwpm, date').eq('student_id', studentId).order('date', { ascending: false }).limit(1),
-      supabase.from('grades').select('score, assessments(max_score)').eq('student_id', studentId).not('score', 'is', null).limit(50),
+      supabase.from('grades').select('score, is_absent, is_exempt, domain_scores, assessments(id, max_score, domain, type, mixed, domain_split, semester_id, grade, english_class)').eq('student_id', studentId).not('score', 'is', null),
       supabase.from('behavior_logs').select('id', { count: 'exact', head: true }).eq('student_id', studentId),
       supabase.from('attendance').select('status, date').eq('student_id', studentId),
       supabase.from('student_notes').select('note').eq('student_id', studentId).order('created_at', { ascending: false }).limit(1),
     ])
 
     const reading = readingRes.data?.[0] ? { cwpm: readingRes.data[0].cwpm, date: readingRes.data[0].date } : null
+    // The same overall the gradebook and report card show: the mean of the
+    // weighted domain averages for the active semester, with Settings weights.
     let gradeAvg: number | null = null
-    if (gradesRes.data && gradesRes.data.length > 0) {
-      const pcts = gradesRes.data.map((g: any) => g.assessments?.max_score > 0 ? (g.score / g.assessments.max_score) * 100 : 0).filter((p: number) => p > 0)
-      if (pcts.length > 0) gradeAvg = Math.round(pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length)
+    const rows = ((gradesRes.data || []) as any[]).filter(g => g.assessments && (!activeSemester || g.assessments.semester_id === activeSemester.id))
+    if (rows.length > 0) {
+      const weightTable = await loadAssessmentWeights()
+      const assessments = rows.map(g => g.assessments)
+      const first = assessments[0]
+      const avgs = DOMAINS.map(d => calculateWeightedAverage(itemsForDomain(d, assessments, a => rows.find(g => g.assessments.id === a.id)), Number(first.grade || 3), null, first.english_class, weightTable)).filter((v): v is number => v != null)
+      if (avgs.length) gradeAvg = Math.round(avgs.reduce((a, b) => a + b, 0) / avgs.length)
     }
     const behaviorCount = behaviorRes.count || 0
     let attendanceRate: number | null = null

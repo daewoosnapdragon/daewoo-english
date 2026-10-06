@@ -20,6 +20,7 @@ import { ArrowLeft, Loader2, Pencil, Printer, Trash2 } from 'lucide-react'
 import { LineChart, Bars, Sparkline } from '@/components/charts'
 import { DOMAINS, DOMAIN_LABELS } from '@/types'
 import { calculateWeightedAverage, domainLabel } from '@/lib/utils'
+import { loadAssessmentWeights } from '@/lib/assessmentWeights'
 import { CWPM_BENCHMARKS } from '@/components/reading/ReadingLevelsView'
 import { loadLevelTestReadingRecords, mergeReadingRecords } from '@/lib/readingRecords'
 import { itemsForDomain, touchesDomain } from '@/lib/domainSplit'
@@ -361,6 +362,7 @@ function GradesAtAGlance({ student, semesterId, lang }: { student: Student; seme
       if (list.length === 0) { setData([]); return }
       const { data: grades } = await supabase.from('grades').select('student_id, assessment_id, score, is_exempt, is_absent, domain_scores').in('assessment_id', list.map(a => a.id)).not('score', 'is', null)
       const g = (grades || []) as any[]
+      const weightTable = await loadAssessmentWeights()
       const byA: Record<string, any> = Object.fromEntries(list.map(a => [a.id, a]))
       const toItems = (domain: string, rows: any[]) => rows.flatMap(r => itemsForDomain(domain, [byA[r.assessment_id]], () => r))
       const out = DOMAINS.map(domain => {
@@ -371,8 +373,8 @@ function GradesAtAGlance({ student, semesterId, lang }: { student: Student; seme
         const mineItems = toItems(domain, mineRows), allItems = toItems(domain, allRows)
         return {
           domain,
-          mine: mineItems.length ? calculateWeightedAverage(mineItems as any, student.grade, null, student.english_class) : null,
-          cls: allItems.length ? calculateWeightedAverage(allItems as any, student.grade, null, student.english_class) : null,
+          mine: mineItems.length ? calculateWeightedAverage(mineItems as any, student.grade, null, student.english_class, weightTable) : null,
+          cls: allItems.length ? calculateWeightedAverage(allItems as any, student.grade, null, student.english_class, weightTable) : null,
           series: ordered.flatMap(r => itemsForDomain(domain, [byA[r.assessment_id]], () => r)).map(it => (it.score / it.maxScore) * 100),
         }
       })

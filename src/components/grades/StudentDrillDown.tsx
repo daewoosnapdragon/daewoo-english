@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { DOMAINS, DOMAIN_LABELS, type QuestionMapItem } from '@/types'
-import { calculateWeightedAverage, DEFAULT_WEIGHTS, domainLabel, percentToLetter, type AssessmentType } from '@/lib/utils'
+import { calculateWeightedAverage, domainLabel, percentToLetter, type AssessmentType } from '@/lib/utils'
+import { useAssessmentWeights, weightsFor } from '@/lib/assessmentWeights'
 import { itemsForDomain, touchesDomain, domainForStandard } from '@/lib/domainSplit'
 import { DOMAIN_COLOR, domainColor, domainShort, domainTint } from '@/lib/domainTone'
 import { Sparkline } from '@/components/charts'
@@ -59,6 +60,7 @@ const typeLabel = (t: string, ko: boolean) => t === 'summative' ? (ko ? '총괄'
 export default function StudentDrillDown({ allAssessments, students, selectedStudentId, setSelectedStudentId, selectedGrade, selectedClass, selectedSemester, lang, onOpenAssessment }: Props) {
   const ko = lang === 'ko'
   const { navigateTo, visibleSemesters } = useApp()
+  const weightTable = useAssessmentWeights()
   const [classGrades, setClassGrades] = useState<GradeRow[]>([])
   const [mine, setMine] = useState<Record<string, GradeRow>>({})
   const [semRows, setSemRows] = useState<{ domain: string; calculated_grade: number | null; final_grade: number | null; is_overridden?: boolean }[]>([])
@@ -134,11 +136,11 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
     const out: Record<string, number | null> = {}
     for (const s of students) {
       const rows = byStudent[s.id] || []
-      const avgs = DOMAINS.map(d => calculateWeightedAverage(itemsForDomain(d, allAssessments, a => rows.find(r => r.assessment_id === a.id)), grade)).filter((v): v is number => v != null)
+      const avgs = DOMAINS.map(d => calculateWeightedAverage(itemsForDomain(d, allAssessments, a => rows.find(r => r.assessment_id === a.id)), grade, null, selectedClass, weightTable)).filter((v): v is number => v != null)
       out[s.id] = avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null
     }
     return out
-  }, [classGrades, students, allAssessments, grade])
+  }, [classGrades, students, allAssessments, grade, selectedClass, weightTable])
 
   // ── Rows per domain, with class averages and the class spread ──
   const byDomain = useMemo(() => {
@@ -170,10 +172,10 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
       const items = da.flatMap(a => mine[a.id] ? itemsForDomain(domain, [a], () => mine[a.id]).map(it => ({ type: it.assessmentType, pct: it.maxScore > 0 ? (it.score / it.maxScore) * 100 : 0, name: a.name })) : [])
       const weighted = da.flatMap(a => mine[a.id] ? itemsForDomain(domain, [a], () => mine[a.id]) : [])
       const classItems = classGrades.flatMap(x => { const a = da.find(y => y.id === x.assessment_id); return a ? itemsForDomain(domain, [a], () => x) : [] })
-      out[domain] = { rows, avg: calculateWeightedAverage(weighted, grade), classAvg: calculateWeightedAverage(classItems, grade), items }
+      out[domain] = { rows, avg: calculateWeightedAverage(weighted, grade, null, selectedClass, weightTable), classAvg: calculateWeightedAverage(classItems, grade, null, selectedClass, weightTable), items }
     }
     return out
-  }, [allAssessments, mine, classGrades, grade])
+  }, [allAssessments, mine, classGrades, grade, selectedClass, weightTable])
 
   const domainAvgs = DOMAINS.map(d => byDomain[d]?.avg).filter((v): v is number => v != null)
   const overall = domainAvgs.length ? domainAvgs.reduce((a, b) => a + b, 0) / domainAvgs.length : null
@@ -262,7 +264,8 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
 
   const semFor = (d: string) => semRows.find(r => r.domain === d)
   const prevFor = (d: string) => { const r = prevRows.find(x => x.domain === d); return r ? (r.final_grade ?? r.calculated_grade) : null }
-  const weights = DEFAULT_WEIGHTS[grade] || DEFAULT_WEIGHTS[3]
+  const { weights, source: weightSource } = weightsFor(weightTable, grade, selectedClass)
+  const weightSourceText = weightSource === 'class' ? (ko ? `${selectedClass} 반 설정 가중치` : `${selectedClass} weights from Settings`) : weightSource === 'grade' ? (ko ? `${grade}학년 설정 가중치` : `grade ${grade} weights from Settings`) : (ko ? `${grade}학년 기본 가중치` : `grade ${grade} default weights`)
 
   // ── Print: the summary, the table and the standards, in the domain colours ──
   const printReport = () => {
@@ -461,7 +464,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                             ) : (
                               <>
                                 {groups.map(g => { const avg = g.pcts.reduce((a, b) => a + b, 0) / g.pcts.length; return <span key={g.t} className="block"><b className="text-text-primary">{typeLabel(g.t, ko)}</b> {g.pcts.map(p => Math.round(p)).join(', ')} → {avg.toFixed(1)}% × {ko ? '가중치' : 'weight'} {weights[g.t]}{totalW !== 100 ? ` (${Math.round((weights[g.t] / totalW) * 100)}% ${ko ? '정규화' : 'after scaling to the types present'})` : ''}</span> })}
-                                <span className="block mt-1">= <b className="text-text-primary">{d.avg?.toFixed(1)}%</b>{ko ? ` · ${grade}학년 가중치` : ` · grade ${grade} weights`}{(prevFor(domain) != null) ? ` · ${prevSemester?.name || (ko ? '지난 학기' : 'last semester')} ${Math.round(prevFor(domain)!)}%` : ''}</span>
+                                <span className="block mt-1">= <b className="text-text-primary">{d.avg?.toFixed(1)}%</b> · {weightSourceText}{(prevFor(domain) != null) ? ` · ${prevSemester?.name || (ko ? '지난 학기' : 'last semester')} ${Math.round(prevFor(domain)!)}%` : ''}</span>
                               </>
                             )}
                           </div>
