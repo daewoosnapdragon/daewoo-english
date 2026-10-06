@@ -58,6 +58,19 @@ export function isMultiDomain(split: Record<string, number>): boolean {
   return Object.values(split).filter(v => v > 0).length > 1
 }
 
+/**
+ * The routing columns an assessment should carry for its question map.
+ * Routing is automatic: tagging a question with a standard from another
+ * domain is the whole instruction. No map (or a map that stays inside the
+ * assessment's own domain) means no routing, so the columns are cleared
+ * rather than left stale from an earlier version of the paper.
+ */
+export function routingFor(map: QuestionMapItem[] | null | undefined, domain: string): { mixed: boolean; domain_split: Record<string, number> | null } {
+  if (!map || map.length === 0) return { mixed: false, domain_split: null }
+  const split = splitPossible(map, domain)
+  return isMultiDomain(split) ? { mixed: true, domain_split: split } : { mixed: false, domain_split: null }
+}
+
 const TYPES = ['formative', 'summative', 'performance_task']
 const typeOf = (a: any): AssessmentType => (TYPES.includes(a?.type) ? a.type : 'formative')
 

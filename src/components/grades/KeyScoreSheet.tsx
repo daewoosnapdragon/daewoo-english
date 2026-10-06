@@ -7,11 +7,12 @@ import type { QuestionMapItem, ItemResponse } from '@/types'
 import { isChoiceItem, markChoice } from '@/lib/answerKey'
 import { isMarked, isAnswered, blankResponse, skippedItems, finalizeBlanks, blankCount } from '@/lib/blankAnswers'
 import { rubricScore, LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO } from '@/components/curriculum/rubric-library'
-import { splitEarned } from '@/lib/domainSplit'
+import { splitEarned, splitPossible, isMultiDomain } from '@/lib/domainSplit'
+import { isRoutingColumnError } from '@/lib/domainRouting'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
 import { plainName } from '@/components/curriculum/standards-plain'
 import AssessmentAnalysis from './AssessmentAnalysis'
-import { BarChart3, Check, ChevronLeft, ChevronRight, Loader2, LayoutGrid, ListChecks } from 'lucide-react'
+import { BarChart3, Check, ChevronLeft, ChevronRight, Eraser, Loader2, LayoutGrid, ListChecks } from 'lucide-react'
 
 // ─── Answer sheet scoring ────────────────────────────────────────
 // The same bubble sheet the written level test uses: one student at a time,
@@ -37,8 +38,11 @@ interface Props {
 }
 
 export default function KeyScoreSheet({ assessment, students, onSaved }: Props) {
-  const { currentTeacher, language: lang, showToast } = useApp()
+  const { currentTeacher, language: lang, showToast, confirmDialog } = useApp()
   const map = assessment.question_map
+  // Points split across domains whenever a tagged standard crosses them, so the
+  // per-domain earned points are stored even if the assessment row predates routing.
+  const routed = useMemo(() => !!assessment.mixed || isMultiDomain(splitPossible(map, assessment.domain || 'reading')), [map, assessment.mixed, assessment.domain])
   const letters = useMemo(() => map.some(q => q.answer_key === 'E') ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'], [map])
   const [responses, setResponses] = useState<Record<string, Record<number, Resp>>>({})
   const [flags, setFlags] = useState<Record<string, Flags>>({})
@@ -180,16 +184,55 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
       })
       const score = item_responses.reduce((s, ir) => s + ir.points, 0)
       const anything = map.some(it => isMarked(r[it.num], it))
-      const domain_scores = assessment.mixed && anything ? splitEarned(map, item_responses, assessment.domain || 'reading') : null
-      return { student_id: sid, assessment_id: assessment.id, score: anything ? score : null, item_responses: anything ? item_responses : null, ...(assessment.mixed ? { domain_scores } : {}), is_absent: false, is_exempt: false, entered_by: currentTeacher?.id || null }
+      const domain_scores = routed && anything ? splitEarned(map, item_responses, assessment.domain || 'reading') : null
+      return { student_id: sid, assessment_id: assessment.id, score: anything ? score : null, item_responses: anything ? item_responses : null, ...(routed ? { domain_scores } : {}), is_absent: false, is_exempt: false, entered_by: currentTeacher?.id || null }
     })
-    const { error } = await supabase.from('grades').upsert(rows, { onConflict: 'student_id,assessment_id' })
+    let { error } = await supabase.from('grades').upsert(rows, { onConflict: 'student_id,assessment_id' })
+    if (error && isRoutingColumnError(error.message)) {
+      // The grades.domain_scores column needs supabase/migration-mixed-assessments.sql; keep the marks regardless.
+      ;({ error } = await supabase.from('grades').upsert(rows.map(({ domain_scores: _d, ...r }: any) => r), { onConflict: 'student_id,assessment_id' }))
+      if (!error) showToast(lang === 'ko' ? '영역별 점수 없이 저장됨: supabase/migration-mixed-assessments.sql을 실행하세요' : 'Saved without per-domain points: run supabase/migration-mixed-assessments.sql')
+    }
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return false }
     setDirty(prev => { const n = new Set(prev); ids.forEach(id => n.delete(id)); return n })
     onSaved?.()
     return true
-  }, [assessment.id, map, currentTeacher?.id, showToast, onSaved])
+  }, [assessment.id, map, routed, currentTeacher?.id, showToast, onSaved, lang])
+
+  // ── Clear ──
+  // A paper marked against the wrong student, or the wrong paper: wipe the
+  // student's marks and flags and delete their grade row, so nothing of it
+  // reaches the averages. Clear all does the same for the whole class.
+  const hasAnything = (sid: string) => !!flags[sid] || Object.keys(responses[sid] || {}).length > 0
+  const clearStudent = async (sid: string) => {
+    const s = students.find(x => x.id === sid); if (!s) return
+    const ok = await confirmDialog({ title: lang === 'ko' ? `${s.english_name} 점수 지우기` : `Clear ${s.english_name}'s paper?`, message: lang === 'ko' ? '이 평가의 모든 표시와 점수가 삭제됩니다. 되돌릴 수 없습니다.' : 'Every mark on this paper and the saved score are removed. This cannot be undone.', danger: true, confirmLabel: lang === 'ko' ? '지우기' : 'Clear', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })
+    if (!ok) return
+    setSaving(true)
+    const { error } = await supabase.from('grades').delete().eq('assessment_id', assessment.id).eq('student_id', sid)
+    setSaving(false)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setResponses(prev => { const n = { ...prev }; delete n[sid]; return n })
+    setFlags(prev => { const n = { ...prev }; delete n[sid]; return n })
+    setDirty(prev => { const n = new Set(prev); n.delete(sid); return n })
+    setFocusedQ(map[0]?.num || 1); setCritIdx(0)
+    showToast(lang === 'ko' ? `${s.english_name} 점수를 지웠습니다` : `Cleared ${s.english_name}'s paper`)
+    onSaved?.()
+  }
+  const clearAll = async () => {
+    const n = students.filter(s => hasAnything(s.id)).length
+    if (n === 0) return
+    const ok = await confirmDialog({ title: lang === 'ko' ? '모든 점수 지우기' : `Clear all ${n} papers?`, message: lang === 'ko' ? `${n}명의 표시와 점수가 모두 삭제됩니다. 되돌릴 수 없습니다.` : `Every mark and saved score for "${assessment.name}" is removed for the whole class. This cannot be undone.`, danger: true, confirmLabel: lang === 'ko' ? '모두 지우기' : 'Clear all', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })
+    if (!ok) return
+    setSaving(true)
+    const { error } = await supabase.from('grades').delete().eq('assessment_id', assessment.id)
+    setSaving(false)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setResponses({}); setFlags({}); setDirty(new Set()); setActiveIdx(0); setFocusedQ(map[0]?.num || 1); setCritIdx(0)
+    showToast(lang === 'ko' ? '모든 점수를 지웠습니다' : `Cleared ${n} papers`)
+    onSaved?.()
+  }
 
   const saveAll = () => { finalizeActive(); return saveStudents(Array.from(dirtyRef.current)) }
   const goTo = async (idx: number) => {
@@ -300,6 +343,9 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
         </div>
         <div className="flex items-center gap-2">
           {dirty.size > 0 && <span className="text-[12px] text-warn">{dirty.size} {lang === 'ko' ? '명 미저장' : 'unsaved'}</span>}
+          <button onClick={clearAll} disabled={saving || !students.some(s => hasAnything(s.id))} title={lang === 'ko' ? '반 전체의 표시와 점수를 지웁니다' : 'Remove every mark and score for the whole class'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2 inline-flex items-center gap-1.5">
+            <Eraser size={13} />{lang === 'ko' ? '모두 지우기' : 'Clear all'}
+          </button>
           <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? '모두 저장' : 'Save all'}
           </button>
@@ -339,6 +385,7 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                     <span className="font-display text-[22px] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : total(active.id)} <span className="font-sans text-[12px] text-ink-3">/ {assessment.max_score}</span></span>
                     <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
                     <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
+                    <button onClick={() => clearStudent(active.id)} disabled={saving || !hasAnything(active.id)} title={lang === 'ko' ? '이 학생의 표시와 점수를 지웁니다' : 'Remove every mark and the saved score for this student'} className="h-7 px-2 rounded border border-rule-2 text-[11px] font-bold text-ink-3 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-3 disabled:hover:border-rule-2 inline-flex items-center gap-1"><Eraser size={11} />{lang === 'ko' ? '지우기' : 'Clear'}</button>
                   </div>
                 </div>
                 {(flags[active.id]?.absent || flags[active.id]?.exempt) ? (

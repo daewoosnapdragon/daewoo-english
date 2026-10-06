@@ -6,14 +6,15 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, Semester, QuestionMapItem, ItemResponse } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, domainLabel } from '@/lib/utils'
-import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, ChevronUp, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search } from 'lucide-react'
+import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, ChevronUp, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search, Eraser } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
 import NewAssessmentFlow from './NewAssessmentFlow'
 import KeyScoreSheet from './KeyScoreSheet'
 import { Bars } from '@/components/charts'
-import { itemsForDomain, touchesDomain } from '@/lib/domainSplit'
+import { itemsForDomain, touchesDomain, routingFor, splitPossible, isMultiDomain } from '@/lib/domainSplit'
+import { syncDomainScores, isRoutingColumnError } from '@/lib/domainRouting'
 import RubricPicker from './RubricPicker'
 import RubricScoreSheet from './RubricScoreSheet'
 
@@ -52,7 +53,7 @@ interface Assessment {
   created_at: string
   standards?: { code: string; dok?: number; description?: string }[]
   sections?: { label: string; standard: string; max_points: number }[] | null
-  question_map?: { num: number; type: string; max_points: number; standard?: string; answer_key?: string }[] | null
+  question_map?: QuestionMapItem[] | null
   rubric?: { name: string; band?: string; criteria: { key: string; label: string; levels: [string, string, string, string]; standard?: string }[] } | null
   rubric_id?: string | null
   mixed?: boolean
@@ -335,9 +336,40 @@ export default function GradesView() {
         { onConflict: 'student_id,assessment_id' })
       if (error) { showToast(`Error saving: ${error.message}`); setSaving(false); return }
     }
+    // A score the teacher emptied (or cleared with ×) is removed, not left as
+    // the old number: the grade row goes so the averages forget it too.
+    const cleared = students.map(s => s.id).filter(sid => !allStudentIds.has(sid))
+    if (cleared.length > 0) {
+      const { error } = await supabase.from('grades').delete().eq('assessment_id', selectedAssessment.id).in('student_id', cleared)
+      if (error) { showToast(`Error clearing: ${error.message}`); setSaving(false); return }
+    }
     setHasChanges(false); setSaving(false)
     showToast(lang === 'ko' ? '저장 완료!' : `Saved ${allStudentIds.size} entries`)
     loadAllAssessments() // Refresh so domain overview picks up new grades
+  }
+
+  // Clear one student's score in the list (saved with the next Save), or every
+  // score for the assessment at once (deleted right away, after a confirm).
+  const handleClearStudent = (sid: string) => {
+    setScores(prev => ({ ...prev, [sid]: null }))
+    setRawInputs(prev => { const n = { ...prev }; delete n[sid]; return n })
+    setAbsentMap(prev => { const n = { ...prev }; delete n[sid]; return n })
+    setExemptMap(prev => { const n = { ...prev }; delete n[sid]; return n })
+    setHasChanges(true)
+  }
+  const handleClearAll = async () => {
+    if (!selectedAssessment) return
+    const n = students.filter(s => scores[s.id] != null || rawInputs[s.id] || absentMap[s.id] || exemptMap[s.id]).length
+    if (n === 0) return
+    const ok = await confirmDialog({ title: lang === 'ko' ? '모든 점수 지우기' : `Clear all ${n} scores?`, message: lang === 'ko' ? `"${selectedAssessment.name}"의 모든 점수가 삭제됩니다. 되돌릴 수 없습니다.` : `Every score, absence and exemption for "${selectedAssessment.name}" is removed for the whole class. This cannot be undone.`, danger: true, confirmLabel: lang === 'ko' ? '모두 지우기' : 'Clear all', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })
+    if (!ok) return
+    setSaving(true)
+    const { error } = await supabase.from('grades').delete().eq('assessment_id', selectedAssessment.id)
+    setSaving(false)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); setHasChanges(false)
+    showToast(lang === 'ko' ? '모든 점수를 지웠습니다' : `Cleared ${n} scores`)
+    loadAllAssessments()
   }
 
   const handleDeleteAssessment = async (a: Assessment) => {
@@ -444,7 +476,7 @@ export default function GradesView() {
               onCreated={(a, scoring) => { setShowCreateFlow(false); setSelectedDomain(a.domain); setSheetMode(scoring !== 'points'); setSelectedAssessment(a); loadAssessments(); loadAllAssessments() }} />
           </div>
         )}
-        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateFlow(true)} createLabel={lang === 'ko' ? '새 평가' : 'New assessment'} sheetMode={sheetMode} setSheetMode={setSheetMode} onSheetSaved={() => { setScoresTick(t => t + 1); loadAllAssessments() }} onToggleAbsent={(sid: string) => { setAbsentMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setExemptMap(p => { const e = { ...p }; delete e[sid]; return e }) }; return n }); setHasChanges(true) }} onToggleExempt={(sid: string) => { setExemptMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setAbsentMap(p => { const a = { ...p }; delete a[sid]; return a }) }; return n }); setHasChanges(true) }} onRubricApply={(newScores: Record<string, number>, rubricMax?: number) => { if (rubricMax && selectedAssessment && rubricMax !== selectedAssessment.max_score) { supabase.from('assessments').update({ max_score: rubricMax }).eq('id', selectedAssessment.id).then(() => { setSelectedAssessment({ ...selectedAssessment, max_score: rubricMax }); setAllAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)); setAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)) }) } setScores(prev => ({ ...prev, ...newScores })); setHasChanges(true) }} />}
+        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} onClearStudent={handleClearStudent} onClearAll={handleClearAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateFlow(true)} createLabel={lang === 'ko' ? '새 평가' : 'New assessment'} sheetMode={sheetMode} setSheetMode={setSheetMode} onSheetSaved={() => { setScoresTick(t => t + 1); loadAllAssessments() }} onToggleAbsent={(sid: string) => { setAbsentMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setExemptMap(p => { const e = { ...p }; delete e[sid]; return e }) }; return n }); setHasChanges(true) }} onToggleExempt={(sid: string) => { setExemptMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setAbsentMap(p => { const a = { ...p }; delete a[sid]; return a }) }; return n }); setHasChanges(true) }} onRubricApply={(newScores: Record<string, number>, rubricMax?: number) => { if (rubricMax && selectedAssessment && rubricMax !== selectedAssessment.max_score) { supabase.from('assessments').update({ max_score: rubricMax }).eq('id', selectedAssessment.id).then(() => { setSelectedAssessment({ ...selectedAssessment, max_score: rubricMax }); setAllAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)); setAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)) }) } setScores(prev => ({ ...prev, ...newScores })); setHasChanges(true) }} />}
         {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
         {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} selectedGrade={selectedGrade} lang={lang} />}
@@ -458,8 +490,8 @@ export default function GradesView() {
 
 // ─── Score Entry ─────────────────────────────────────────────────────
 
-function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, selectedAssessment, setSelectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleScoreChange, handleKeyDown, commitScore, handleSaveAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onToggleAbsent, onToggleExempt, onRubricApply, sheetMode, setSheetMode, onSheetSaved }: {
-  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; absentMap: Record<string, boolean>; exemptMap: Record<string, boolean>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onToggleAbsent: (sid: string) => void; onToggleExempt: (sid: string) => void; onRubricApply: (scores: Record<string, number>, rubricMax?: number) => void
+function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, selectedAssessment, setSelectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleScoreChange, handleKeyDown, commitScore, handleSaveAll, onClearStudent, onClearAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onToggleAbsent, onToggleExempt, onRubricApply, sheetMode, setSheetMode, onSheetSaved }: {
+  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; absentMap: Record<string, boolean>; exemptMap: Record<string, boolean>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; onClearStudent: (sid: string) => void; onClearAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onToggleAbsent: (sid: string) => void; onToggleExempt: (sid: string) => void; onRubricApply: (scores: Record<string, number>, rubricMax?: number) => void
   sheetMode: boolean; setSheetMode: (v: boolean) => void; onSheetSaved: () => void
 }) {
   const { showToast } = useApp()
@@ -499,7 +531,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
             <div key={a.id} className="relative">
               <button onClick={() => setSelectedAssessment(a)} className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all border ${selectedAssessment?.id === a.id ? 'border-navy bg-navy text-white' : 'border-border bg-surface text-text-secondary hover:border-navy/30'}`}>
                 <span>{a.name}</span><span className="opacity-60 ml-1">/{a.max_score}</span>
-                {(a as any)._isMultiDomain && <span className={`ml-1.5 text-[8px] px-1 py-0.5 rounded font-bold ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-purple-100 text-purple-700'}`}>Multi</span>}
+                {((a as any)._isMultiDomain || a.mixed) && <span title={a.mixed && a.domain_split ? Object.entries(a.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => `${domainLabel(d)} ${v}`).join(' · ') : undefined} className={`ml-1.5 text-[8px] px-1 py-0.5 rounded font-bold ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-purple-100 text-purple-700'}`}>Multi</span>}
                 {a.type !== 'formative' && <span className={`ml-1.5 text-[9px] px-1 py-0.5 rounded ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-surface-alt'}`}>{catLabel(a.type)}</span>}
                 {a.date && <span className={`ml-1 text-[10px] ${selectedAssessment?.id === a.id ? 'opacity-60' : 'text-text-tertiary'}`}>{new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
               </button>
@@ -575,6 +607,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                   {!selectedAssessment.rubric && <button onClick={() => setRubricOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-all"><ClipboardEdit size={13} />Score with Rubric</button>}
                                     {hasQuestionMap && <button onClick={() => setSheetMode(true)} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink"><Zap size={12} /> {lang === 'ko' ? '답안지로 채점' : 'Answer sheet'}</button>}
                   <CrossClassCompare assessmentName={selectedAssessment.name} domain={selectedAssessment.domain} maxScore={selectedAssessment.max_score} currentClass={selectedClass} grade={selectedGrade} semesterId={selectedSemester || ''} />
+                  <button onClick={onClearAll} disabled={saving || enteredCount === 0} title={lang === 'ko' ? '반 전체의 점수를 지웁니다' : 'Remove every score for the whole class'} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2"><Eraser size={12} /> {lang === 'ko' ? '모두 지우기' : 'Clear all'}</button>
                 </div>
               </div>
             </div>
@@ -612,6 +645,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                           <div className="inline-flex gap-1">
                             <button onClick={() => onToggleAbsent(s.id)} title="Mark absent" className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${isAbsent ? 'bg-red-100 text-red-600 ring-1 ring-red-300' : 'bg-surface-alt text-text-tertiary hover:bg-red-50 hover:text-red-500'}`}>ABS</button>
                             <button onClick={() => onToggleExempt(s.id)} title="Mark exempt" className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${isExempt ? 'bg-amber-100 text-amber-600 ring-1 ring-amber-300' : 'bg-surface-alt text-text-tertiary hover:bg-amber-50 hover:text-amber-500'}`}>EXM</button>
+                            <button onClick={() => onClearStudent(s.id)} disabled={score == null && rawInputs[s.id] === undefined && !isAbsent && !isExempt} title={lang === 'ko' ? '이 학생의 점수 지우기 (저장 시 반영)' : 'Clear this score (removed when you save)'} className="px-1.5 py-0.5 rounded text-[9px] font-bold transition-all bg-surface-alt text-text-tertiary hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-surface-alt disabled:hover:text-text-tertiary"><X size={10} /></button>
                           </div>
                         </td>
                       </tr>
@@ -1150,10 +1184,14 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
             result[domain].count = allItems.length
             result[domain].avg = calcWeightedAvg(allItems, Number(selectedGrade || 3))
             for (const a of da) {
-              const aItems = grades.filter((g: any) => g.assessment_id === a.id).flatMap((g: any) => itemsForDomain(domain, [a], () => g))
+              const mine = grades.filter((g: any) => g.assessment_id === a.id)
+              const aItems = mine.flatMap((g: any) => itemsForDomain(domain, [a], () => g))
               if (aItems.length > 0) {
                 const avg = aItems.reduce((sum: number, it: any) => sum + (it.score / it.maxScore) * 100, 0) / aItems.length
-                result[domain].assessments.push({ name: a.mixed ? `${a.name} · ${domainLabel(domain)} part` : a.name, avg })
+                // A mixed paper shows its part here and the whole-paper average beside it.
+                const wholeRows = a.mixed ? mine.filter((g: any) => !g.is_absent && !g.is_exempt && g.score != null) : []
+                const whole = a.mixed && wholeRows.length && Number(a.max_score) > 0 ? wholeRows.reduce((sum: number, g: any) => sum + (Number(g.score) / Number(a.max_score)) * 100, 0) / wholeRows.length : null
+                result[domain].assessments.push({ name: a.mixed ? `${a.name} · ${domainLabel(domain)} part` : a.name, avg, whole })
               }
             }
           }
@@ -1224,7 +1262,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
                 {s.avg != null && <span className="text-[14px] font-bold" style={{ color }}>{s.avg.toFixed(1)}%</span>}
               </div>
               <div className="p-4 space-y-2">
-                {s.assessments.length > 0 ? s.assessments.map((a, i) => (
+                {s.assessments.length > 0 ? s.assessments.map((a: { name: string; avg: number; whole?: number | null }, i: number) => (
                   <div key={i} className="flex items-center gap-2">
                     <span className="text-[10px] text-text-secondary w-28 truncate text-right" title={a.name}>{a.name}</span>
                     <div className="flex-1 h-5 bg-surface-alt rounded overflow-hidden">
@@ -1233,6 +1271,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
                       </div>
                     </div>
                     {a.avg <= 15 && <span className="text-[9px] font-medium text-text-tertiary">{a.avg.toFixed(0)}%</span>}
+                    {a.whole != null && <span className="text-[9px] text-text-tertiary whitespace-nowrap" title={lang === 'ko' ? '시험지 전체 평균' : 'Class average on the whole paper'}>{lang === 'ko' ? '전체' : 'whole'} {a.whole.toFixed(0)}%</span>}
                   </div>
                 )) : (
                   <p className="text-[11px] text-text-tertiary text-center py-2">No scores entered yet</p>
@@ -1259,7 +1298,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
 // touches, with only that domain's points, and the domain average is the
 // same weighted average the progress report prints.
 
-type DrillRow = { key: string; name: string; date: string | null; score: number | null; max: number; pct: number | null; classPct: number | null; flag: 'absent' | 'exempt' | null }
+type DrillRow = { key: string; name: string; date: string | null; score: number | null; max: number; pct: number | null; classPct: number | null; flag: 'absent' | 'exempt' | null; whole?: { score: number | null; max: number; pct: number | null; classPct: number | null } | null }
 const fmtPts = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, '')
 
 function StudentDrillDown({ allAssessments, students, selectedStudentId, setSelectedStudentId, selectedGrade, lang }: { allAssessments: Assessment[]; students: StudentRow[]; selectedStudentId: string | null; setSelectedStudentId: (id: string | null) => void; selectedGrade: Grade; lang: LangKey }) {
@@ -1297,10 +1336,19 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
         const cls = classGrades.filter(x => x.assessment_id === a.id).flatMap(x => itemsForDomain(domain, [a], () => x))
         const classPct = cls.length ? cls.reduce((s, x) => s + (x.score / x.maxScore) * 100, 0) / cls.length : null
         const max = a.mixed && a.domain_split ? Number(a.domain_split[domain] || 0) : Number(a.max_score)
+        // The whole paper stays visible under a mixed assessment's part, so the
+        // teacher sees both 12/16 and the 5/7 that counts in this domain.
+        let whole: DrillRow['whole'] = null
+        if (a.mixed) {
+          const wmax = Number(a.max_score)
+          const sc = g && !g.is_absent && !g.is_exempt && g.score != null ? Number(g.score) : null
+          const wcls = classGrades.filter(x => x.assessment_id === a.id && !x.is_absent && !x.is_exempt && x.score != null)
+          whole = { score: sc, max: wmax, pct: sc != null && wmax > 0 ? (sc / wmax) * 100 : null, classPct: wcls.length && wmax > 0 ? wcls.reduce((s, x) => s + (Number(x.score) / wmax) * 100, 0) / wcls.length : null }
+        }
         return {
           key: a.id, name: a.mixed ? `${a.name} · ${domainLabel(domain)} part` : a.name, date: a.date,
           score: mine ? mine.score : null, max: mine ? mine.maxScore : max, pct: mine && mine.maxScore > 0 ? (mine.score / mine.maxScore) * 100 : null,
-          classPct, flag: g?.is_absent ? 'absent' : g?.is_exempt ? 'exempt' : null,
+          classPct, flag: g?.is_absent ? 'absent' : g?.is_exempt ? 'exempt' : null, whole,
         }
       })
       const items = da.flatMap(a => studentGrades[a.id] ? itemsForDomain(domain, [a], () => studentGrades[a.id]) : [])
@@ -1334,7 +1382,8 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
                 const d = byDomain[domain]; if (!d) return
                 const rows = d.rows.map(r => {
                   const pct = r.pct != null ? r.pct.toFixed(1) : '—'
-                  return `<tr><td style="padding:4px 8px;border:1px solid #e2e8f0">${r.name}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">${r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag === 'absent' ? 'Absent' : r.flag === 'exempt' ? 'Exempt' : '—'}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:600">${pct}${r.pct != null ? '%' : ''}</td></tr>`
+                  const whole = r.whole && r.whole.score != null ? `<br><span style="font-size:9px;color:#64748b">whole paper ${fmtPts(r.whole.score)}/${fmtPts(r.whole.max)} · ${r.whole.pct != null ? r.whole.pct.toFixed(1) + '%' : ''}</span>` : ''
+                  return `<tr><td style="padding:4px 8px;border:1px solid #e2e8f0">${r.name}${whole}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">${r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag === 'absent' ? 'Absent' : r.flag === 'exempt' ? 'Exempt' : '—'}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:600">${pct}${r.pct != null ? '%' : ''}</td></tr>`
                 }).join('')
                 domainsHTML += `<div style="margin-bottom:16px"><h3 style="font-size:13px;font-weight:700;color:#647FBC;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;display:flex;justify-content:space-between">${DOMAIN_LABELS[domain][lang]}${d.avg != null ? `<span style="color:${d.avg >= 80 ? '#16a34a' : d.avg >= 60 ? '#d97706' : '#dc2626'}">${d.avg.toFixed(1)}%</span>` : ''}</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f1f5f9"><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left">Assessment</th><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">Score</th><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">%</th></tr></thead><tbody>${rows}</tbody></table></div>`
               })
@@ -1377,7 +1426,15 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
                     const diff = r.pct != null && r.classPct != null ? r.pct - r.classPct : null
                     return (
                       <tr key={r.key} className="border-t border-border/50 table-row-hover">
-                        <td className="px-5 py-2"><span className="font-medium">{r.name}</span>{r.date && <span className="text-text-tertiary ml-1.5 text-[10px]">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}</td>
+                        <td className="px-5 py-2">
+                          <span className="font-medium">{r.name}</span>{r.date && <span className="text-text-tertiary ml-1.5 text-[10px]">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                          {r.whole && (
+                            <span className="block text-[10px] text-text-tertiary tabular-nums">
+                              {lang === 'ko' ? '시험지 전체' : 'whole paper'} {r.whole.score != null ? `${fmtPts(r.whole.score)}/${fmtPts(r.whole.max)} · ${r.whole.pct != null ? r.whole.pct.toFixed(1) : '—'}%` : '—'}
+                              {r.whole.classPct != null && <span className="ml-1.5">({lang === 'ko' ? '반' : 'class'} {r.whole.classPct.toFixed(1)}%)</span>}
+                            </span>
+                          )}
+                        </td>
                         <td className="text-left px-3 py-2 font-medium tabular-nums">{r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag ? <span className="text-text-tertiary text-[10px] uppercase tracking-wider">{r.flag}</span> : '—'}</td>
                         <td className={`text-left px-3 py-2 font-semibold tabular-nums ${r.pct == null ? 'text-text-tertiary' : toneOf(r.pct)}`}>{r.pct != null ? `${r.pct.toFixed(1)}%` : '—'}</td>
                         <td className="text-center px-3 py-2 text-text-secondary">{r.classPct != null ? `${r.classPct.toFixed(1)}%` : '—'}</td>
@@ -1418,9 +1475,14 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
   )
   const [focusedSection, setFocusedSection] = useState<number | null>(null)
   const [useQuestionMap, setUseQuestionMap] = useState(!!editing?.question_map?.length)
-  const [questionMap, setQuestionMap] = useState<{ num: number; type: string; max_points: number; standard: string; answer_key: string }[]>(
-    editing?.question_map?.map(q => ({ num: q.num, type: q.type, max_points: q.max_points, standard: q.standard || '', answer_key: q.answer_key || '' })) || []
+  // A rubric item keeps its criteria through an edit, so re-saving the map never strips them.
+  type MapRow = { num: number; type: string; max_points: number; standard: string; answer_key: string; rubric?: QuestionMapItem['rubric'] }
+  const [questionMap, setQuestionMap] = useState<MapRow[]>(
+    editing?.question_map?.map(q => ({ num: q.num, type: q.type, max_points: q.max_points, standard: q.standard || '', answer_key: q.answer_key || '', ...(q.rubric ? { rubric: q.rubric } : {}) })) || []
   )
+  // Where the points will land once a question is tagged with another domain's standard.
+  const mapSplit = useMemo(() => useQuestionMap && questionMap.length ? splitPossible(questionMap.map((q, i) => ({ num: i + 1, type: q.type as QuestionMapItem['type'], max_points: q.max_points, standard: q.standard || undefined, rubric: q.rubric })), selDomain) : null, [useQuestionMap, questionMap, selDomain])
+  const mapCrosses = !!mapSplit && isMultiDomain(mapSplit)
   const nameRef = useRef<HTMLInputElement>(null)
   useEffect(() => { nameRef.current?.focus() }, [])
 
@@ -1472,16 +1534,36 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
     // Merge section standards into the assessment-level standards
     const sectionStds = (finalSections || []).map(s => s.standard).filter(s => s && !standards.includes(s))
     const allStdTags = [...stdTags, ...sectionStds.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.text || '' } })]
-    const basePayload = { name: name.trim(), domain: selDomain, max_score: finalMaxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null, standards: allStdTags, sections: finalSections, question_map: useQuestionMap && questionMap.length > 0 ? questionMap.map((q, i) => ({ num: i + 1, type: q.type, max_points: q.max_points, standard: q.standard || undefined, answer_key: q.answer_key || undefined })) : null }
+    const savedMap: QuestionMapItem[] | null = useQuestionMap && questionMap.length > 0 ? questionMap.map((q, i) => ({ num: i + 1, type: q.type as QuestionMapItem['type'], max_points: q.max_points, standard: q.standard || undefined, answer_key: q.answer_key || undefined, ...(q.rubric ? { rubric: q.rubric } : {}) })) : null
+    // Routing is automatic: the map decides whether points split across domains.
+    const routing = routingFor(savedMap, selDomain)
+    const basePayload = { name: name.trim(), domain: selDomain, max_score: finalMaxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null, standards: allStdTags, sections: finalSections, question_map: savedMap, ...routing }
+    // The routing columns need supabase/migration-mixed-assessments.sql; without them, still save the rest.
+    const write = async (payload: Record<string, any>, run: (p: Record<string, any>) => any) => {
+      let res = await run(payload)
+      if (res.error && isRoutingColumnError(res.error.message)) {
+        const { mixed: _m, domain_split: _d, ...plain } = payload
+        res = await run(plain)
+        if (!res.error && routing.mixed) showToast(lang === 'ko' ? '영역별 배분 없이 저장됨: supabase/migration-mixed-assessments.sql을 실행하세요' : 'Saved without domain routing: run supabase/migration-mixed-assessments.sql, then NOTIFY pgrst, \'reload schema\'')
+      }
+      return res
+    }
     if (editing) {
-      const { data, error } = await supabase.from('assessments').update({ ...basePayload, english_class: englishClass }).eq('id', editing.id).select().single()
+      const { data, error } = await write({ ...basePayload, english_class: englishClass }, p => supabase.from('assessments').update(p).eq('id', editing.id).select().single())
+      if (!error && data) {
+        // Papers already marked get their per-domain points recomputed for the new map.
+        const n = await syncDomainScores({ id: editing.id, domain: selDomain, mixed: data.mixed, question_map: data.question_map })
+        if (n > 0) showToast(lang === 'ko' ? `${n}명의 영역별 점수를 다시 계산했습니다` : `Recomputed domain points for ${n} ${n === 1 ? 'student' : 'students'}`)
+      }
       setSaving(false)
       if (error) showToast(`Error: ${error.message}`); else { showToast(lang === 'ko' ? `"${name}" 수정 완료` : `Updated "${name}"`); onSaved(data) }
     } else {
-      const { data, error } = await supabase.from('assessments').insert({ ...basePayload, english_class: englishClass }).select().single()
+      const { data, error } = await write({ ...basePayload, english_class: englishClass }, p => supabase.from('assessments').insert(p).select().single())
       if (error) { setSaving(false); showToast(`Error: ${error.message}`); return }
       if (shareClasses.length > 0) {
-        const copies = shareClasses.map((cls: string) => ({ ...basePayload, english_class: cls }))
+        const hasRouting = data && 'mixed' in data
+        const { mixed: _m, domain_split: _d, ...plain } = basePayload
+        const copies = shareClasses.map((cls: string) => ({ ...(hasRouting ? basePayload : plain), english_class: cls }))
         await supabase.from('assessments').insert(copies)
       }
       setSaving(false)
@@ -1902,7 +1984,14 @@ function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onC
                     {questionMap.length} Q · {questionMap.reduce((s, q) => s + q.max_points, 0)} pts total
                   </span>
                 </div>
-                <p className="text-[9px] text-text-tertiary">Question map enables item-by-item entry and analysis. For MC/T-F, set answer keys for auto-scoring. Standards tag each question for mastery rollups.</p>
+                {mapCrosses && mapSplit ? (
+                  <div className="rounded-md border border-info/40 bg-info-soft/40 px-3 py-2 text-[11px] text-navy">
+                    <span className="font-semibold">{lang === 'ko' ? '점수가 기준에 따라 영역별로 나뉩니다' : 'Points go to each standard’s domain'}</span>
+                    <span className="block text-text-secondary mt-0.5">{Object.entries(mapSplit).filter(([, v]) => v > 0).map(([d, v]) => `${domainLabel(d)} ${v}`).join(' · ')}. {lang === 'ko' ? `태그 없는 문항은 ${DOMAIN_LABELS[selDomain].ko}로 갑니다. 전체 점수도 함께 표시됩니다.` : `Untagged questions count toward ${DOMAIN_LABELS[selDomain].en}. Each part counts in its own gradebook and the whole paper stays visible too.`}</span>
+                  </div>
+                ) : (
+                  <p className="text-[9px] text-text-tertiary">Question map enables item-by-item entry and analysis. For MC/T-F, set answer keys for auto-scoring. Tag each question with a standard for mastery rollups; a standard from another domain (RL/RI Reading, RF Phonics, W Writing, SL Speaking, L Language) sends that question’s points to that domain.</p>
+                )}
               </div>
             )}
           </div>

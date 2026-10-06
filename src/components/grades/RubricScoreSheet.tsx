@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO, rubricScore, type RubricCriterion } from '@/components/curriculum/rubric-library'
-import { Check, ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Loader2, X, Eraser } from 'lucide-react'
 
 // ─── Rubric scoring ──────────────────────────────────────────────
 // A full-screen page, no scrolling: students on the left, the rubric in the
@@ -24,7 +24,7 @@ interface Props {
 }
 
 export default function RubricScoreSheet({ assessment, students, onSaved, onExit }: Props) {
-  const { currentTeacher, language: lang, showToast } = useApp()
+  const { currentTeacher, language: lang, showToast, confirmDialog } = useApp()
   const criteria = assessment.rubric.criteria
   const [levels, setLevels] = useState<Record<string, Record<string, number>>>({})
   const [flags, setFlags] = useState<Record<string, Flags>>({})
@@ -92,6 +92,39 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
   }, [assessment.id, assessment.max_score, criteria.length, currentTeacher?.id, showToast, onSaved])
 
   const saveAll = () => saveStudents(Array.from(dirtyRef.current))
+
+  // ── Clear ──
+  // Wrong student or wrong paper: wipe the levels and flags and delete the
+  // grade row. Clear all does the whole class.
+  const hasAnything = (sid: string) => !!flags[sid] || Object.keys(levels[sid] || {}).length > 0
+  const clearStudent = async (sid: string) => {
+    const s = students.find(x => x.id === sid); if (!s) return
+    const ok = await confirmDialog({ title: lang === 'ko' ? `${s.english_name} 점수 지우기` : `Clear ${s.english_name}'s rubric?`, message: lang === 'ko' ? '이 평가의 모든 단계와 점수가 삭제됩니다. 되돌릴 수 없습니다.' : 'Every level marked and the saved score are removed. This cannot be undone.', danger: true, confirmLabel: lang === 'ko' ? '지우기' : 'Clear', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })
+    if (!ok) return
+    setSaving(true)
+    const { error } = await supabase.from('grades').delete().eq('assessment_id', assessment.id).eq('student_id', sid)
+    setSaving(false)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setLevels(prev => { const n = { ...prev }; delete n[sid]; return n })
+    setFlags(prev => { const n = { ...prev }; delete n[sid]; return n })
+    setDirty(prev => { const n = new Set(prev); n.delete(sid); return n })
+    setRow(0)
+    showToast(lang === 'ko' ? `${s.english_name} 점수를 지웠습니다` : `Cleared ${s.english_name}'s rubric`)
+    onSaved?.()
+  }
+  const clearAll = async () => {
+    const n = students.filter(s => hasAnything(s.id)).length
+    if (n === 0) return
+    const ok = await confirmDialog({ title: lang === 'ko' ? '모든 점수 지우기' : `Clear all ${n} students?`, message: lang === 'ko' ? `${n}명의 단계와 점수가 모두 삭제됩니다. 되돌릴 수 없습니다.` : `Every level and saved score for "${assessment.name}" is removed for the whole class. This cannot be undone.`, danger: true, confirmLabel: lang === 'ko' ? '모두 지우기' : 'Clear all', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })
+    if (!ok) return
+    setSaving(true)
+    const { error } = await supabase.from('grades').delete().eq('assessment_id', assessment.id)
+    setSaving(false)
+    if (error) { showToast(`Error: ${error.message}`); return }
+    setLevels({}); setFlags({}); setDirty(new Set()); setActiveIdx(0); setRow(0)
+    showToast(lang === 'ko' ? '모든 점수를 지웠습니다' : `Cleared ${n} students`)
+    onSaved?.()
+  }
   const goTo = async (idx: number) => {
     if (idx < 0 || idx >= students.length) return
     if (active && dirtyRef.current.has(active.id)) await saveStudents([active.id])
@@ -140,6 +173,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
         <span className="text-[12px] text-ink-3 truncate">{assessment.rubric.name} · {criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · /{assessment.max_score}</span>
         <span className="ml-auto text-[12.5px] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'}</span>
         {dirty.size > 0 && <span className="text-[12px] text-warn">{dirty.size} {lang === 'ko' ? '명 미저장' : 'unsaved'}</span>}
+        <button onClick={clearAll} disabled={saving || !students.some(s => hasAnything(s.id))} title={lang === 'ko' ? '반 전체의 단계와 점수를 지웁니다' : 'Remove every level and score for the whole class'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2 inline-flex items-center gap-1.5"><Eraser size={13} />{lang === 'ko' ? '모두 지우기' : 'Clear all'}</button>
         <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? '모두 저장' : 'Save all'}</button>
       </div>
 
@@ -168,6 +202,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                     <span className="font-display text-[24px] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : (scoreOf(active.id) ?? '—')} <span className="font-sans text-[12px] text-ink-3">/ {assessment.max_score}</span></span>
                     <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
                     <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
+                    <button onClick={() => clearStudent(active.id)} disabled={saving || !hasAnything(active.id)} title={lang === 'ko' ? '이 학생의 단계와 점수를 지웁니다' : 'Remove every level and the saved score for this student'} className="h-7 px-2 rounded border border-rule-2 text-[11px] font-bold text-ink-3 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-3 disabled:hover:border-rule-2 inline-flex items-center gap-1"><Eraser size={11} />{lang === 'ko' ? '지우기' : 'Clear'}</button>
                   </div>
                 </div>
                 {isOff ? (

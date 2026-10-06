@@ -21,6 +21,16 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'routing-by-standard', date: '2026-10-06', title: 'A Language question on a Reading test counts in Language',
+    body: 'You can now tag a question with any standard and its points go to that standard’s domain on their own: L.4.3 on a reading test counts toward Language, RI.4.1 toward Reading. There is no box to tick any more. The domain overview and a student’s drill-down show each part next to the whole-paper score. Papers you tagged before today are re-routed when the admin runs the backfill.',
+    path: '/grades', guide: 'grades',
+  },
+  {
+    id: 'clear-scores', date: '2026-10-06', title: 'Clear a student’s paper, or the whole class',
+    body: 'You can now wipe one student’s marks and score with Clear next to ABS and EXM on the answer sheet or the rubric sheet, and every paper for an assessment with Clear all. In the score list, × empties a score and Save removes it; Clear all removes them all. Each asks first and cannot be undone.',
+    path: '/grades', guide: 'grades',
+  },
+  {
     id: 'blank-answers', date: '2026-10-05', title: 'Blank answers are marked wrong, and you can see them',
     body: 'You can now mark a question the student left blank with the — bubble or the minus key, and it counts as wrong. A question you skip on the answer sheet is shaded amber so you notice it, and when you move to the next student anything still unmarked on that paper becomes a blank worth 0. A paper you have not started stays untouched. The class grid shows blanks as —.',
     path: '/grades', guide: 'grades',

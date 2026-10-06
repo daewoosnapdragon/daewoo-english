@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { domainForStandard, splitPossible, splitEarned, itemsForDomain, isMultiDomain, touchesDomain } from '@/lib/domainSplit'
+import { domainForStandard, splitPossible, splitEarned, itemsForDomain, isMultiDomain, touchesDomain, routingFor } from '@/lib/domainSplit'
 import { calculateWeightedAverage } from '@/lib/utils'
+import type { QuestionMapItem } from '@/types'
 
 const map: any[] = [
   { num: 1, type: 'mc', max_points: 1, answer_key: 'A', standard: 'RL.3.3' },
@@ -68,5 +69,20 @@ describe('itemsForDomain', () => {
     expect(touchesDomain(mixed, 'language')).toBe(true)
     expect(touchesDomain(mixed, 'speaking')).toBe(false)
     expect(touchesDomain(plain, 'reading')).toBe(true)
+  })
+})
+
+describe('routingFor', () => {
+  const q = (num: number, standard?: string, max_points = 1): QuestionMapItem => ({ num, type: 'mc', max_points, standard })
+  it('routes on its own once a tagged standard crosses domains', () => {
+    const map = [q(1, 'L.4.3'), q(2, 'L.4.3'), q(3, 'RI.4.1'), q(4), q(5, 'L.4.1f', 2)]
+    expect(routingFor(map, 'reading')).toEqual({ mixed: true, domain_split: { language: 4, reading: 2 } })
+  })
+  it('stays single-domain when every tag is in the assessment domain or untagged', () => {
+    expect(routingFor([q(1, 'RL.3.1'), q(2), q(3, 'RI.3.2')], 'reading')).toEqual({ mixed: false, domain_split: null })
+  })
+  it('clears routing when there is no map', () => {
+    expect(routingFor(null, 'reading')).toEqual({ mixed: false, domain_split: null })
+    expect(routingFor([], 'language')).toEqual({ mixed: false, domain_split: null })
   })
 })

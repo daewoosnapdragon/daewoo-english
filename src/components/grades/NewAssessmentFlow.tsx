@@ -5,7 +5,8 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ALL_ENGLISH_CLASSES, DOMAINS, DOMAIN_LABELS, type Domain, type EnglishClass, type QuestionMapItem } from '@/types'
 import { parseAnswerKey, keyTotal, parseRange, rangeLabel } from '@/lib/answerKey'
-import { splitPossible, isMultiDomain } from '@/lib/domainSplit'
+import { splitPossible, isMultiDomain, routingFor } from '@/lib/domainSplit'
+import { isRoutingColumnError } from '@/lib/domainRouting'
 import { DOMAIN_LABELS as DL } from '@/types'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
 import { plainName as plainNameOf } from '@/components/curriculum/standards-plain'
@@ -67,9 +68,6 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
   const [step, setStep] = useState<1 | 2>(1)
   // How it will be scored decides what step 2 is.
   const [scoring, setScoring] = useState<'key' | 'rubric' | 'points'>('key')
-  // Route each question's points to the domain its standard implies; untagged
-  // questions go to the domain chosen above.
-  const [routeByStandard, setRouteByStandard] = useState(false)
   const [name, setName] = useState('')
   const [dom, setDom] = useState<Domain>(domain)
   const [category, setCategory] = useState<string>('formative')
@@ -136,10 +134,12 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
     map.forEach(q => { if (q.standard) (by[q.standard] ||= []).push(q.num) })
     return Object.entries(by)
   }, [map])
-  // Only offer domain routing once a tagged standard points somewhere other
-  // than the chosen domain; before that it is noise.
+  // Routing is automatic: a question tagged with a standard from another
+  // domain sends its points there. The note below the key says where the
+  // points will land once a tag crosses domains.
   const split = useMemo(() => map.length ? splitPossible(map, dom) : null, [map, dom])
   const crossesDomains = !!split && isMultiDomain(split)
+  const splitText = split ? Object.entries(split).filter(([, v]) => v > 0).map(([d, v]) => `${DL[d as keyof typeof DL]?.[ko ? 'ko' : 'en'] || d} ${v}`).join(' · ') : ''
 
   const tagRange = (nums: number[], code: string | null) => {
     setOverrides(prev => { const n = { ...prev }; nums.forEach(num => { n[num] = { ...(n[num] || {}), standard: code || undefined } }); return n })
@@ -154,19 +154,17 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
     setSaving(true)
     const codes = Array.from(new Set([...(finalMap || []).map(q => q.standard), ...(rubric?.criteria || []).map((c: any) => c.standard)].filter(Boolean))) as string[]
     const standards = codes.map(code => ({ code, dok: 0, description: stdText(code) }))
-    const finalSplit = finalMap && routeByStandard ? splitPossible(finalMap, dom) : null
-    const mixed = !!finalSplit && isMultiDomain(finalSplit)
     const base = {
       name: name.trim(), domain: dom, max_score: maxScore, grade, type: category, date: date || null, description: notes.trim(),
       created_by: currentTeacher?.id || null, semester_id: semesterId, standards, sections: null, question_map: finalMap,
-      ...(routeByStandard && finalMap ? { mixed, domain_split: finalSplit } : {}),
+      ...routingFor(finalMap, dom),
       ...(rubric ? { rubric: { name: rubric.name, band: rubric.band, criteria: rubric.criteria }, rubric_id: rubric.rubric_id } : {}),
     }
     let { data, error } = await supabase.from('assessments').insert({ ...base, english_class: englishClass }).select().single()
     // The routing columns need supabase/migration-mixed-assessments.sql. If
     // they are missing, still create the assessment (without routing) rather
     // than throw away the key the teacher just typed.
-    if (error && /domain_split|mixed/.test(error.message)) {
+    if (error && isRoutingColumnError(error.message)) {
       const { mixed: _m, domain_split: _d, ...plain } = base as any
       ;({ data, error } = await supabase.from('assessments').insert({ ...plain, english_class: englishClass }).select().single())
       if (!error) showToast(ko ? '영역별 배분 없이 생성됨: supabase/migration-mixed-assessments.sql을 실행하세요' : 'Created without domain routing: run supabase/migration-mixed-assessments.sql, then NOTIFY pgrst, \'reload schema\'')
@@ -356,13 +354,10 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
           )}
 
           {crossesDomains && (
-            <label className="flex items-start gap-2.5 text-[13px] text-ink cursor-pointer border border-info/40 bg-info-soft/40 rounded-md px-4 py-3">
-              <input type="checkbox" checked={routeByStandard} onChange={e => setRouteByStandard(e.target.checked)} className="mt-1" />
-              <span>
-                <span className="font-medium">{ko ? '기준에 따라 영역별로 점수 배분' : 'Send each question’s points to its standard’s domain'}</span>
-                <span className="block text-[12px] text-ink-2">{ko ? `태그된 기준이 여러 영역에 걸쳐 있습니다. 태그 없는 문항은 ${DL[dom].ko}로 갑니다.` : `Some tagged standards belong to another domain. Untagged questions still count toward ${DL[dom].en}.`}{routeByStandard && split ? ` · ${Object.entries(split).map(([d, v]) => `${DL[d as keyof typeof DL]?.[ko ? 'ko' : 'en'] || d} ${v}`).join(', ')}` : ''}</span>
-              </span>
-            </label>
+            <div className="text-[13px] text-ink border border-info/40 bg-info-soft/40 rounded-md px-4 py-3">
+              <span className="font-medium">{ko ? '점수가 기준에 따라 영역별로 나뉩니다' : 'Points go to each standard’s domain'}</span>
+              <span className="block text-[12px] text-ink-2">{ko ? `태그된 기준이 여러 영역에 걸쳐 있습니다. 태그 없는 문항은 ${DL[dom].ko}로 갑니다.` : `Some tagged standards belong to another domain, so each part counts in its own gradebook and the whole paper stays visible too. Untagged questions count toward ${DL[dom].en}.`} · {splitText}</span>
+            </div>
           )}
 
           {map.length > 0 && (
@@ -430,10 +425,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
                     </div>
                   </div>
                   {!crossesDomains && (
-                    <label className="flex items-start gap-2.5 text-[12.5px] text-ink-2 cursor-pointer">
-                      <input type="checkbox" checked={routeByStandard} onChange={e => setRouteByStandard(e.target.checked)} className="mt-0.5" />
-                      <span>{ko ? '기준에 따라 영역별로 점수 배분 (RL/RI → 읽기, RF → 파닉스, W → 쓰기, SL → 말하기·듣기, L → 언어)' : 'Route points by standard: RL/RI to Reading, RF to Phonics, W to Writing, SL to Speaking & Listening, L to Language.'}</span>
-                    </label>
+                    <p className="text-[12px] text-ink-3">{ko ? '다른 영역의 기준을 태그하면 그 문항의 점수는 해당 영역으로 갑니다 (RL/RI → 읽기, RF → 파닉스, W → 쓰기, SL → 말하기·듣기, L → 언어).' : 'Tag a question with a standard from another domain and its points count there: RL/RI Reading, RF Phonics, W Writing, SL Speaking & Listening, L Language.'}</p>
                   )}
                 </div>
               )}
