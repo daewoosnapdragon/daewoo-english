@@ -12,6 +12,7 @@ import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
 import NewAssessmentFlow from './NewAssessmentFlow'
 import KeyScoreSheet from './KeyScoreSheet'
+import StudentDrillDown from './StudentDrillDown'
 import { Bars } from '@/components/charts'
 import { itemsForDomain, touchesDomain, routingFor, splitPossible, isMultiDomain } from '@/lib/domainSplit'
 import { syncDomainScores, isRoutingColumnError } from '@/lib/domainRouting'
@@ -483,7 +484,8 @@ export default function GradesView() {
         {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, allAssessments, parts, selectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} onClearStudent={handleClearStudent} onClearAll={handleClearAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateFlow(true)} createLabel={lang === 'ko' ? '새 평가' : 'New assessment'} sheetMode={sheetMode} setSheetMode={setSheetMode} onSheetSaved={() => { setScoresTick(t => t + 1); loadAllAssessments() }} onToggleAbsent={(sid: string) => { setAbsentMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setExemptMap(p => { const e = { ...p }; delete e[sid]; return e }) }; return n }); setHasChanges(true) }} onToggleExempt={(sid: string) => { setExemptMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setAbsentMap(p => { const a = { ...p }; delete a[sid]; return a }) }; return n }); setHasChanges(true) }} onRubricApply={(newScores: Record<string, number>, rubricMax?: number) => { if (rubricMax && selectedAssessment && rubricMax !== selectedAssessment.max_score) { supabase.from('assessments').update({ max_score: rubricMax }).eq('id', selectedAssessment.id).then(() => { setSelectedAssessment({ ...selectedAssessment, max_score: rubricMax }); setAllAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)); setAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)) }) } setScores(prev => ({ ...prev, ...newScores })); setHasChanges(true) }} />}
         {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
-        {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} selectedGrade={selectedGrade} lang={lang} />}
+        {subView === 'student' && <StudentDrillDown allAssessments={allAssessments as any} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} selectedGrade={selectedGrade} selectedClass={selectedClass} selectedSemester={selectedSemester} lang={lang}
+          onOpenAssessment={(a: any) => { setSubView('entry'); setSelectedDomain(a.domain); setSheetMode(!!(a.question_map?.length || a.rubric)); setSelectedAssessment(a) }} />}
         {subView === 'calendar' && <AssessmentCalendarView allAssessments={allAssessments} lang={lang} />}
       </div>
 
@@ -1312,169 +1314,6 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
           <p className="text-text-tertiary text-sm">{lang === 'ko' ? '아직 평가가 없습니다.' : 'No assessments yet. Create your first assessment in Score Entry.'}</p>
         </div>
       )}
-    </div>
-  )
-}
-
-// ─── Student Drill-Down ─────────────────────────────────────────────
-// One row per assessment per domain, split the same way the Domain Overview
-// and the report cards split it: a mixed assessment (TEST 1 with reading,
-// phonics, writing and language questions) shows up once in each domain it
-// touches, with only that domain's points, and the domain average is the
-// same weighted average the progress report prints.
-
-type DrillRow = { key: string; name: string; date: string | null; score: number | null; max: number; pct: number | null; classPct: number | null; flag: 'absent' | 'exempt' | null; whole?: { score: number | null; max: number; pct: number | null; classPct: number | null } | null }
-const fmtPts = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, '')
-
-function StudentDrillDown({ allAssessments, students, selectedStudentId, setSelectedStudentId, selectedGrade, lang }: { allAssessments: Assessment[]; students: StudentRow[]; selectedStudentId: string | null; setSelectedStudentId: (id: string | null) => void; selectedGrade: Grade; lang: LangKey }) {
-  const [studentGrades, setStudentGrades] = useState<Record<string, any>>({})
-  const [classGrades, setClassGrades] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const selected = students.find(s => s.id === selectedStudentId)
-
-  useEffect(() => {
-    if (!selectedStudentId || allAssessments.length === 0) return
-    let cancelled = false
-    async function load() {
-      setLoading(true)
-      const ids = allAssessments.map(a => a.id)
-      const [{ data: sg }, { data: ag }] = await Promise.all([
-        supabase.from('grades').select('assessment_id, score, is_absent, is_exempt, domain_scores').eq('student_id', selectedStudentId!).in('assessment_id', ids),
-        supabase.from('grades').select('assessment_id, score, is_absent, is_exempt, domain_scores').in('assessment_id', ids).not('score', 'is', null),
-      ])
-      if (cancelled) return
-      const gm: Record<string, any> = {}; (sg || []).forEach((g: any) => { gm[g.assessment_id] = g })
-      setStudentGrades(gm); setClassGrades(ag || []); setLoading(false)
-    }
-    load()
-    return () => { cancelled = true }
-  }, [selectedStudentId, allAssessments])
-
-  const byDomain = useMemo(() => {
-    const out: Record<string, { rows: DrillRow[]; avg: number | null }> = {}
-    for (const domain of DOMAINS) {
-      const da = allAssessments.filter(a => touchesDomain(a, domain))
-      if (da.length === 0) continue
-      const rows: DrillRow[] = da.map(a => {
-        const g = studentGrades[a.id]
-        const mine = g ? itemsForDomain(domain, [a], () => g)[0] : null
-        const cls = classGrades.filter(x => x.assessment_id === a.id).flatMap(x => itemsForDomain(domain, [a], () => x))
-        const classPct = cls.length ? cls.reduce((s, x) => s + (x.score / x.maxScore) * 100, 0) / cls.length : null
-        const max = a.mixed && a.domain_split ? Number(a.domain_split[domain] || 0) : Number(a.max_score)
-        // The whole paper stays visible under a mixed assessment's part, so the
-        // teacher sees both 12/16 and the 5/7 that counts in this domain.
-        let whole: DrillRow['whole'] = null
-        if (a.mixed) {
-          const wmax = Number(a.max_score)
-          const sc = g && !g.is_absent && !g.is_exempt && g.score != null ? Number(g.score) : null
-          const wcls = classGrades.filter(x => x.assessment_id === a.id && !x.is_absent && !x.is_exempt && x.score != null)
-          whole = { score: sc, max: wmax, pct: sc != null && wmax > 0 ? (sc / wmax) * 100 : null, classPct: wcls.length && wmax > 0 ? wcls.reduce((s, x) => s + (Number(x.score) / wmax) * 100, 0) / wcls.length : null }
-        }
-        return {
-          key: a.id, name: a.mixed ? `${a.name} · ${domainLabel(domain)} part` : a.name, date: a.date,
-          score: mine ? mine.score : null, max: mine ? mine.maxScore : max, pct: mine && mine.maxScore > 0 ? (mine.score / mine.maxScore) * 100 : null,
-          classPct, flag: g?.is_absent ? 'absent' : g?.is_exempt ? 'exempt' : null, whole,
-        }
-      })
-      const items = da.flatMap(a => studentGrades[a.id] ? itemsForDomain(domain, [a], () => studentGrades[a.id]) : [])
-      out[domain] = { rows, avg: calcWeightedAvg(items, Number(selectedGrade || 3)) }
-    }
-    return out
-  }, [allAssessments, studentGrades, classGrades, selectedGrade])
-
-  const domainAvgs = DOMAINS.map(d => byDomain[d]?.avg).filter((v): v is number => v != null)
-  const overallAvg = domainAvgs.length > 0 ? domainAvgs.reduce((a, b) => a + b, 0) / domainAvgs.length : null
-  const totalAssessed = allAssessments.filter(a => studentGrades[a.id]?.score != null).length
-  const toneOf = (v: number) => v >= 80 ? 'text-success' : v >= 60 ? 'text-amber-600' : 'text-danger'
-
-  return (
-    <div className="space-y-4">
-      <div className="bg-surface border border-border rounded-xl p-5">
-        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-2">{lang === 'ko' ? '학생 선택' : 'Select Student'}</label>
-        <select value={selectedStudentId || ''} onChange={e => setSelectedStudentId(e.target.value || null)} className="w-full max-w-sm px-3 py-2.5 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
-          <option value="">{lang === 'ko' ? '학생을 선택하세요...' : 'Choose a student...'}</option>
-          {students.map(s => <option key={s.id} value={s.id}>{s.english_name} ({s.korean_name})</option>)}
-        </select>
-      </div>
-      {selected && !loading && (
-        <div className="bg-surface border border-border rounded-xl overflow-hidden">
-          <div className="px-5 py-4 bg-accent-light border-b border-border flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold text-navy">{selected.english_name}<span className="text-text-tertiary ml-2 text-[14px] font-normal">{selected.korean_name}</span></h3>
-            <button onClick={() => {
-              const pw = window.open('', '_blank'); if (!pw) return
-              let domainsHTML = ''
-              DOMAINS.forEach(domain => {
-                const d = byDomain[domain]; if (!d) return
-                const rows = d.rows.map(r => {
-                  const pct = r.pct != null ? r.pct.toFixed(1) : '—'
-                  const whole = r.whole && r.whole.score != null ? `<br><span style="font-size:9px;color:#64748b">whole paper ${fmtPts(r.whole.score)}/${fmtPts(r.whole.max)} · ${r.whole.pct != null ? r.whole.pct.toFixed(1) + '%' : ''}</span>` : ''
-                  return `<tr><td style="padding:4px 8px;border:1px solid #e2e8f0">${r.name}${whole}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">${r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag === 'absent' ? 'Absent' : r.flag === 'exempt' ? 'Exempt' : '—'}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:600">${pct}${r.pct != null ? '%' : ''}</td></tr>`
-                }).join('')
-                domainsHTML += `<div style="margin-bottom:16px"><h3 style="font-size:13px;font-weight:700;color:#647FBC;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;display:flex;justify-content:space-between">${DOMAIN_LABELS[domain][lang]}${d.avg != null ? `<span style="color:${d.avg >= 80 ? '#16a34a' : d.avg >= 60 ? '#d97706' : '#dc2626'}">${d.avg.toFixed(1)}%</span>` : ''}</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f1f5f9"><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left">Assessment</th><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">Score</th><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center">%</th></tr></thead><tbody>${rows}</tbody></table></div>`
-              })
-              pw.document.write(`<!DOCTYPE html><html><head><title>Grade Report - ${selected.english_name}</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style>body{font-family:Inter,sans-serif;margin:24px;color:#1a1a2e}@media print{@page{margin:15mm}}</style></head><body><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#647FBC;border-radius:8px;color:white;margin-bottom:16px"><div><span style="font-size:20px;font-weight:700;font-family:Inter,sans-serif;font-weight:700">${selected.english_name}</span><span style="font-size:14px;margin-left:8px;opacity:0.7">${selected.korean_name}</span></div><div style="font-size:11px;text-align:right">Grade Report<br>${new Date().toLocaleDateString()}</div></div>${domainsHTML}<p style="font-size:9px;color:#94a3b8;margin-top:16px">Daewoo Elementary English Program</p></body></html>`)
-              pw.document.close(); pw.print()
-            }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border border border-border">
-              Print Report
-            </button>
-          </div>
-          {/* Overall score summary: the mean of the domain averages, the same number the progress report shows */}
-          {overallAvg != null && (
-            <div className="px-5 py-3 bg-surface-alt/50 border-b border-border flex items-center gap-6">
-              <div className="flex items-center gap-3">
-                <span className={`text-2xl font-display font-bold ${toneOf(overallAvg)}`}>{overallAvg.toFixed(1)}%</span>
-                <span className="text-[10px] text-text-tertiary uppercase tracking-wider font-semibold">Overall</span>
-              </div>
-              {DOMAINS.map(d => {
-                const avg = byDomain[d]?.avg
-                if (avg == null) return null
-                const SHORT: Record<string, string> = { reading: 'R', phonics: 'PF', writing: 'W', speaking: 'SL', language: 'L' }
-                return <span key={d} className={`text-[11px] font-semibold ${toneOf(avg)}`}>{SHORT[d]}: {avg.toFixed(0)}%</span>
-              })}
-              <span className="text-[10px] text-text-tertiary ml-auto">{totalAssessed}/{allAssessments.length} assessed</span>
-            </div>
-          )}
-          {DOMAINS.map(domain => {
-            const d = byDomain[domain]
-            if (!d) return null
-            return (
-              <div key={domain} className="border-b border-border last:border-b-0">
-                <div className="px-5 py-3 bg-surface-alt flex items-center justify-between">
-                  <span className="text-[12px] font-semibold uppercase tracking-wider inline-flex items-center gap-2" style={{ color: DOMAIN_COLOR[domain] }}><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: DOMAIN_COLOR[domain] }} />{DOMAIN_LABELS[domain][lang]}</span>
-                  {d.avg != null && <span className={`text-[13px] font-bold ${toneOf(d.avg)}`}>{d.avg.toFixed(1)}%</span>}
-                </div>
-                <table className="w-full text-[12px]">
-                  <thead><tr className="text-[10px] uppercase tracking-wider text-text-tertiary">
-                    <th className="text-left px-5 py-2">Assessment</th><th className="text-left px-3 py-2 w-20">Score</th><th className="text-left px-3 py-2 w-14">%</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균' : 'Class Avg'}</th><th className="text-center px-3 py-2">{lang === 'ko' ? '반 평균 대비' : 'vs. Class'}</th>
-                  </tr></thead>
-                  <tbody>{d.rows.map(r => {
-                    const diff = r.pct != null && r.classPct != null ? r.pct - r.classPct : null
-                    return (
-                      <tr key={r.key} className="border-t border-border/50 table-row-hover">
-                        <td className="px-5 py-2">
-                          <span className="font-medium">{r.name}</span>{r.date && <span className="text-text-tertiary ml-1.5 text-[10px]">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                          {r.whole && (
-                            <span className="block text-[10px] text-text-tertiary tabular-nums">
-                              {lang === 'ko' ? '시험지 전체' : 'whole paper'} {r.whole.score != null ? `${fmtPts(r.whole.score)}/${fmtPts(r.whole.max)} · ${r.whole.pct != null ? r.whole.pct.toFixed(1) : '—'}%` : '—'}
-                              {r.whole.classPct != null && <span className="ml-1.5">({lang === 'ko' ? '반' : 'class'} {r.whole.classPct.toFixed(1)}%)</span>}
-                            </span>
-                          )}
-                        </td>
-                        <td className="text-left px-3 py-2 font-medium tabular-nums">{r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag ? <span className="text-text-tertiary text-[10px] uppercase tracking-wider">{r.flag}</span> : '—'}</td>
-                        <td className={`text-left px-3 py-2 font-semibold tabular-nums ${r.pct == null ? 'text-text-tertiary' : toneOf(r.pct)}`}>{r.pct != null ? `${r.pct.toFixed(1)}%` : '—'}</td>
-                        <td className="text-center px-3 py-2 text-text-secondary">{r.classPct != null ? `${r.classPct.toFixed(1)}%` : '—'}</td>
-                        <td className={`text-center px-3 py-2 font-semibold ${diff == null ? 'text-text-tertiary' : diff >= 0 ? 'text-success' : 'text-danger'}`}>{diff != null ? `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}` : '—'}</td>
-                      </tr>
-                    )
-                  })}</tbody>
-                </table>
-              </div>
-            )
-          })}
-          {allAssessments.length === 0 && <div className="p-8 text-center text-text-tertiary text-sm">{lang === 'ko' ? '이 반에 아직 평가가 없습니다.' : 'No assessments yet for this class.'}</div>}
-        </div>
-      )}
-      {loading && <div className="bg-surface border border-border rounded-xl p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" /></div>}
     </div>
   )
 }
