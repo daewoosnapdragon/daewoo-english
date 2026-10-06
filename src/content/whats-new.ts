@@ -22,7 +22,7 @@ export interface WhatsNewEntry {
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'routing-by-standard', date: '2026-10-06', title: 'A Language question on a Reading test counts in Language',
-    body: 'You can now tag a question with any standard and its points go to that standard’s domain on their own: L.4.3 on a reading test counts toward Language, RI.4.1 toward Reading. There is no box to tick any more. The domain overview and a student’s drill-down show each part next to the whole-paper score. Papers you tagged before today are re-routed when the admin runs the backfill.',
+    body: 'You can now tag a question with any standard and its points go to that standard’s domain on their own: L.4.3 on a reading test counts toward Language, RI.4.1 toward Reading. There is no box to tick any more. On the answer sheet the questions that count in another tab are tinted and labelled, with each student’s points per domain next to their total; the class grid and score list get a column per domain; the rail and Analysis show the class percent per domain. The domain overview and a student’s drill-down show each part next to the whole-paper score. Papers you tagged before today are re-routed when the admin runs the backfill.',
     path: '/grades', guide: 'grades',
   },
   {

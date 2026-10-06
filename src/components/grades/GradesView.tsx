@@ -15,6 +15,7 @@ import KeyScoreSheet from './KeyScoreSheet'
 import { Bars } from '@/components/charts'
 import { itemsForDomain, touchesDomain, routingFor, splitPossible, isMultiDomain } from '@/lib/domainSplit'
 import { syncDomainScores, isRoutingColumnError } from '@/lib/domainRouting'
+import { DOMAIN_COLOR, domainColor, domainShort } from '@/lib/domainTone'
 import RubricPicker from './RubricPicker'
 import RubricScoreSheet from './RubricScoreSheet'
 
@@ -94,6 +95,8 @@ export default function GradesView() {
   const [loadingAssessments, setLoadingAssessments] = useState(false)
   const [showCreateFlow, setShowCreateFlow] = useState(false)
   const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null)
+  // Per-domain earned points on each saved grade row, for the part columns of a mixed paper.
+  const [parts, setParts] = useState<Record<string, Record<string, number> | null>>({})
   // Assessments with an answer key open on the answer sheet; the plain score
   // list is one click away for either kind.
   const [sheetMode, setSheetMode] = useState(true)
@@ -245,21 +248,22 @@ export default function GradesView() {
   useEffect(() => {
     const req = ++scoresReq.current
     void scoresTick
-    if (!selectedAssessmentId) { setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); return }
+    if (!selectedAssessmentId) { setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); setParts({}); return }
     const aid = selectedAssessmentId
     // Blank the table first so the previous assessment's numbers are never on
     // screen underneath the new assessment's header.
-    setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({})
+    setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); setParts({})
     async function loadScores() {
-      const { data } = await supabase.from('grades').select('student_id, score, is_absent, is_exempt').eq('assessment_id', aid)
+      const { data } = await supabase.from('grades').select('student_id, score, is_absent, is_exempt, domain_scores').eq('assessment_id', aid)
       // Another assessment was selected while this was loading -- these numbers
       // belong to the old one and must not land in the visible table.
       if (req !== scoresReq.current) return
       const map: Record<string, number | null> = {}
       const abs: Record<string, boolean> = {}
       const exm: Record<string, boolean> = {}
-      if (data) data.forEach((g: any) => { map[g.student_id] = g.score; if (g.is_absent) abs[g.student_id] = true; if (g.is_exempt) exm[g.student_id] = true })
-      setScores(map); setAbsentMap(abs); setExemptMap(exm); setRawInputs({}); setHasChanges(false)
+      const pm: Record<string, Record<string, number> | null> = {}
+      if (data) data.forEach((g: any) => { map[g.student_id] = g.score; pm[g.student_id] = g.domain_scores || null; if (g.is_absent) abs[g.student_id] = true; if (g.is_exempt) exm[g.student_id] = true })
+      setScores(map); setAbsentMap(abs); setExemptMap(exm); setParts(pm); setRawInputs({}); setHasChanges(false)
     }
     loadScores()
   }, [selectedAssessmentId, scoresTick])
@@ -476,7 +480,7 @@ export default function GradesView() {
               onCreated={(a, scoring) => { setShowCreateFlow(false); setSelectedDomain(a.domain); setSheetMode(scoring !== 'points'); setSelectedAssessment(a); loadAssessments(); loadAllAssessments() }} />
           </div>
         )}
-        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, selectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} onClearStudent={handleClearStudent} onClearAll={handleClearAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateFlow(true)} createLabel={lang === 'ko' ? '새 평가' : 'New assessment'} sheetMode={sheetMode} setSheetMode={setSheetMode} onSheetSaved={() => { setScoresTick(t => t + 1); loadAllAssessments() }} onToggleAbsent={(sid: string) => { setAbsentMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setExemptMap(p => { const e = { ...p }; delete e[sid]; return e }) }; return n }); setHasChanges(true) }} onToggleExempt={(sid: string) => { setExemptMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setAbsentMap(p => { const a = { ...p }; delete a[sid]; return a }) }; return n }); setHasChanges(true) }} onRubricApply={(newScores: Record<string, number>, rubricMax?: number) => { if (rubricMax && selectedAssessment && rubricMax !== selectedAssessment.max_score) { supabase.from('assessments').update({ max_score: rubricMax }).eq('id', selectedAssessment.id).then(() => { setSelectedAssessment({ ...selectedAssessment, max_score: rubricMax }); setAllAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)); setAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)) }) } setScores(prev => ({ ...prev, ...newScores })); setHasChanges(true) }} />}
+        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, allAssessments, parts, selectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} onClearStudent={handleClearStudent} onClearAll={handleClearAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateFlow(true)} createLabel={lang === 'ko' ? '새 평가' : 'New assessment'} sheetMode={sheetMode} setSheetMode={setSheetMode} onSheetSaved={() => { setScoresTick(t => t + 1); loadAllAssessments() }} onToggleAbsent={(sid: string) => { setAbsentMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setExemptMap(p => { const e = { ...p }; delete e[sid]; return e }) }; return n }); setHasChanges(true) }} onToggleExempt={(sid: string) => { setExemptMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setAbsentMap(p => { const a = { ...p }; delete a[sid]; return a }) }; return n }); setHasChanges(true) }} onRubricApply={(newScores: Record<string, number>, rubricMax?: number) => { if (rubricMax && selectedAssessment && rubricMax !== selectedAssessment.max_score) { supabase.from('assessments').update({ max_score: rubricMax }).eq('id', selectedAssessment.id).then(() => { setSelectedAssessment({ ...selectedAssessment, max_score: rubricMax }); setAllAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)); setAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)) }) } setScores(prev => ({ ...prev, ...newScores })); setHasChanges(true) }} />}
         {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
         {subView === 'student' && <StudentDrillDown allAssessments={allAssessments} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} selectedGrade={selectedGrade} lang={lang} />}
@@ -490,14 +494,18 @@ export default function GradesView() {
 
 // ─── Score Entry ─────────────────────────────────────────────────────
 
-function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, selectedAssessment, setSelectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleScoreChange, handleKeyDown, commitScore, handleSaveAll, onClearStudent, onClearAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onToggleAbsent, onToggleExempt, onRubricApply, sheetMode, setSheetMode, onSheetSaved }: {
-  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; absentMap: Record<string, boolean>; exemptMap: Record<string, boolean>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; onClearStudent: (sid: string) => void; onClearAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onToggleAbsent: (sid: string) => void; onToggleExempt: (sid: string) => void; onRubricApply: (scores: Record<string, number>, rubricMax?: number) => void
+function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAssessments, parts, selectedAssessment, setSelectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleScoreChange, handleKeyDown, commitScore, handleSaveAll, onClearStudent, onClearAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onToggleAbsent, onToggleExempt, onRubricApply, sheetMode, setSheetMode, onSheetSaved }: {
+  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; allAssessments: Assessment[]; parts: Record<string, Record<string, number> | null>; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; absentMap: Record<string, boolean>; exemptMap: Record<string, boolean>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; onClearStudent: (sid: string) => void; onClearAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onToggleAbsent: (sid: string) => void; onToggleExempt: (sid: string) => void; onRubricApply: (scores: Record<string, number>, rubricMax?: number) => void
   sheetMode: boolean; setSheetMode: (v: boolean) => void; onSheetSaved: () => void
 }) {
   const { showToast } = useApp()
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [rubricOpen, setRubricOpen] = useState(false)
   const hasQuestionMap = selectedAssessment?.question_map && selectedAssessment.question_map.length > 0
+  // A mixed paper's domains, the current tab first, for the part columns of the score list.
+  const partDomains = selectedAssessment?.mixed && selectedAssessment.domain_split
+    ? Object.entries(selectedAssessment.domain_split).filter(([, v]) => Number(v) > 0).map(([d]) => d).sort((a, b) => (a === selectedDomain ? -1 : b === selectedDomain ? 1 : 0))
+    : []
   return (
     <>
       {rubricOpen && selectedAssessment && (
@@ -519,7 +527,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
           return (
           <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[12px] font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
             {SHORT[d] || DOMAIN_LABELS[d][lang]}
-            {assessments.filter(a => a.domain === d).length > 0 && <span className="ml-1.5 text-[10px] bg-accent-light text-navy px-1.5 py-0.5 rounded-full font-bold">{assessments.filter(a => a.domain === d).length}</span>}
+            {(() => { const n = allAssessments.filter((a: any) => touchesDomain(a, d)).length; return n > 0 && <span className="ml-1.5 text-[10px] bg-accent-light text-navy px-1.5 py-0.5 rounded-full font-bold">{n}</span> })()}
           </button>
         )})}
       </div>
@@ -530,8 +538,15 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
           {assessments.map(a => (
             <div key={a.id} className="relative">
               <button onClick={() => setSelectedAssessment(a)} className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all border ${selectedAssessment?.id === a.id ? 'border-navy bg-navy text-white' : 'border-border bg-surface text-text-secondary hover:border-navy/30'}`}>
-                <span>{a.name}</span><span className="opacity-60 ml-1">/{a.max_score}</span>
-                {((a as any)._isMultiDomain || a.mixed) && <span title={a.mixed && a.domain_split ? Object.entries(a.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => `${domainLabel(d)} ${v}`).join(' · ') : undefined} className={`ml-1.5 text-[8px] px-1 py-0.5 rounded font-bold ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-purple-100 text-purple-700'}`}>Multi</span>}
+                <span>{a.name}</span>
+                {a.mixed && a.domain_split && Number(a.domain_split[selectedDomain] || 0) > 0 && a.domain !== selectedDomain
+                  ? <span className="opacity-60 ml-1" title={lang === 'ko' ? `이 탭에는 ${a.max_score}점 중 ${a.domain_split[selectedDomain]}점이 반영됩니다` : `${a.domain_split[selectedDomain]} of the ${a.max_score} points count in this tab`}>/{a.domain_split[selectedDomain]} of {a.max_score}</span>
+                  : <span className="opacity-60 ml-1">/{a.max_score}</span>}
+                {a.mixed && a.domain_split
+                  ? <span className={`ml-1.5 inline-flex items-center gap-1 text-[9px] px-1 py-0.5 rounded font-bold ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-surface-alt'}`} title={Object.entries(a.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => `${domainLabel(d)} ${v}`).join(' · ')}>
+                      {Object.entries(a.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => <span key={d} style={{ color: selectedAssessment?.id === a.id ? undefined : domainColor(d) }}>{domainShort(d)} {v}</span>)}
+                    </span>
+                  : (a as any)._isMultiDomain && <span className={`ml-1.5 text-[8px] px-1 py-0.5 rounded font-bold ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-purple-100 text-purple-700'}`}>Multi</span>}
                 {a.type !== 'formative' && <span className={`ml-1.5 text-[9px] px-1 py-0.5 rounded ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-surface-alt'}`}>{catLabel(a.type)}</span>}
                 {a.date && <span className={`ml-1 text-[10px] ${selectedAssessment?.id === a.id ? 'opacity-60' : 'text-text-tertiary'}`}>{new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
               </button>
@@ -584,7 +599,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
               </div>
               <button onClick={() => setSheetMode(false)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '점수 목록으로' : 'Score list'}</button>
             </div>
-            <KeyScoreSheet key={selectedAssessment.id} assessment={selectedAssessment as any} students={students} onSaved={onSheetSaved} />
+            <KeyScoreSheet key={selectedAssessment.id} assessment={selectedAssessment as any} students={students} currentDomain={selectedDomain} onSaved={onSheetSaved} />
           </div>
         ) : selectedAssessment.sections && selectedAssessment.sections.length > 0 ? (
           /* Section-based score entry */
@@ -619,6 +634,9 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                   <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Student</th>
                   <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Score /{selectedAssessment.max_score}</th>
                   <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">%</th>
+                  {partDomains.map(d => (
+                    <th key={d} className={`text-center px-3 py-2.5 text-[11px] uppercase tracking-wider font-semibold w-20 whitespace-nowrap ${d === selectedDomain ? '' : 'opacity-80'}`} style={{ color: domainColor(d) }} title={`${domainLabel(d)}: ${lang === 'ko' ? '이 영역 성적부에 반영되는 점수' : 'the points that count in this domain'}`}>{domainShort(d)} /{selectedAssessment.domain_split![d]}</th>
+                  ))}
                   <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Status</th>
                 </tr></thead>
                 <tbody>
@@ -641,6 +659,14 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, select
                         <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
                         <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? String(score) : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onFocus={e => { if (rawInputs[s.id] === undefined && score != null) { handleScoreChange(s.id, String(score)); } e.target.select() }} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />}</td>
                         <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{isAbsent || isExempt ? '—' : pct ? `${pct}%` : '—'}</td>
+                        {partDomains.map(d => {
+                          // Saved per-domain points when the paper was marked item by item; otherwise a proportional estimate, marked ~.
+                          const saved = parts[s.id]?.[d]
+                          const possible = Number(selectedAssessment.domain_split![d] || 0)
+                          const est = saved == null && score != null && selectedAssessment.max_score > 0 ? Math.round(score * (possible / selectedAssessment.max_score) * 10) / 10 : null
+                          const v = saved != null ? Number(saved) : est
+                          return <td key={d} className={`px-3 py-2.5 text-center text-[12px] tabular-nums ${d === selectedDomain ? 'font-semibold' : ''}`} style={{ color: domainColor(d) }} title={saved == null && est != null ? (lang === 'ko' ? '문항별 채점이 없어 비례 추정' : 'Estimated in proportion: no item-by-item marks saved') : undefined}>{isAbsent || isExempt || v == null ? '—' : `${saved == null ? '~' : ''}${v}/${possible}`}</td>
+                        })}
                         <td className="px-4 py-2.5 text-center">
                           <div className="inline-flex gap-1">
                             <button onClick={() => onToggleAbsent(s.id)} title="Mark absent" className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${isAbsent ? 'bg-red-100 text-red-600 ring-1 ring-red-300' : 'bg-surface-alt text-text-tertiary hover:bg-red-50 hover:text-red-500'}`}>ABS</button>
@@ -1219,7 +1245,6 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
 
   const validAvgs = DOMAINS.map(d => stats[d].avg).filter((v: any): v is number => v != null)
   const overallAvg = validAvgs.length > 0 ? validAvgs.reduce((a: number, b: number) => a + b, 0) / validAvgs.length : null
-  const domainColors = { reading: '#3B82F6', phonics: '#8B5CF6', writing: '#F59E0B', speaking: '#22C55E', language: '#EC4899' }
 
   return (
     <div className="space-y-4">
@@ -1254,7 +1279,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
         {DOMAINS.map(domain => {
           const s = stats[domain]
           if (s.assessmentCount === 0) return null
-          const color = domainColors[domain]
+          const color = DOMAIN_COLOR[domain]
           return (
             <div key={domain} className="bg-surface border border-border rounded-xl overflow-hidden">
               <div className="px-5 py-3 border-b border-border flex items-center justify-between" style={{ backgroundColor: `${color}08` }}>
@@ -1415,7 +1440,7 @@ function StudentDrillDown({ allAssessments, students, selectedStudentId, setSele
             return (
               <div key={domain} className="border-b border-border last:border-b-0">
                 <div className="px-5 py-3 bg-surface-alt flex items-center justify-between">
-                  <span className="text-[12px] font-semibold text-navy uppercase tracking-wider">{DOMAIN_LABELS[domain][lang]}</span>
+                  <span className="text-[12px] font-semibold uppercase tracking-wider inline-flex items-center gap-2" style={{ color: DOMAIN_COLOR[domain] }}><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: DOMAIN_COLOR[domain] }} />{DOMAIN_LABELS[domain][lang]}</span>
                   {d.avg != null && <span className={`text-[13px] font-bold ${toneOf(d.avg)}`}>{d.avg.toFixed(1)}%</span>}
                 </div>
                 <table className="w-full text-[12px]">

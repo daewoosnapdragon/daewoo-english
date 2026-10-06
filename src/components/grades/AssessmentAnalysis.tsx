@@ -8,6 +8,10 @@ import { isMarked } from '@/lib/blankAnswers'
 import { LEVEL_LABELS, LEVEL_LABELS_KO } from '@/components/curriculum/rubric-library'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
 import { plainName } from '@/components/curriculum/standards-plain'
+import { domainForStandard, splitEarned, splitPossible, isMultiDomain } from '@/lib/domainSplit'
+import { domainColor, domainShort } from '@/lib/domainTone'
+import { domainLabel } from '@/lib/utils'
+import type { ItemResponse } from '@/types'
 import { AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
 
 // ─── Analysis view for a scored assessment ───────────────────────
@@ -29,13 +33,23 @@ interface Props {
   letters: string[]
   maxScore: number
   englishClass?: string
+  /** The assessment's own domain; untagged questions count there. */
+  homeDomain?: string
+  /** The gradebook tab the analysis was opened from. */
+  currentDomain?: string
   lang: string
   onOpenStudent: (idx: number) => void
 }
 
 const hasRubric = (q: QuestionMapItem) => q.type === 'rubric' && !!q.rubric?.criteria?.length
 
-export default function AssessmentAnalysis({ map, students, responses, flags, letters, maxScore, englishClass, lang, onOpenStudent }: Props) {
+export default function AssessmentAnalysis({ map, students, responses, flags, letters, maxScore, englishClass, homeDomain, currentDomain, lang, onOpenStudent }: Props) {
+  const home = homeDomain || 'reading'
+  const split = useMemo(() => splitPossible(map, home), [map, home])
+  const routed = isMultiDomain(split)
+  const here = currentDomain && split[currentDomain] > 0 ? currentDomain : home
+  const paperDomains = useMemo(() => Object.keys(split).filter(d => split[d] > 0).sort((a, b) => (a === here ? -1 : b === here ? 1 : 0)), [split, here])
+  const domOfStd = (code: string) => domainForStandard(code, home)
   const ko = lang === 'ko'
   const levelLabels = ko ? LEVEL_LABELS_KO : LEVEL_LABELS
   const [bands, setBands] = useState<Bands>({ above: 86, on: 71, approaching: 61 })
@@ -132,8 +146,16 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
       return { it, crits, weakest }
     })
 
-    return { scored: ranked, totalOf, pctOf, median, mean, buckets, bandCounts, items, standards, rubrics, third }
-  }, [map, students, responses, flags, letters, maxScore, bands]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Class percent per domain, so the split is visible before the standards.
+    const perDomain: Record<string, number | null> = {}
+    if (routed) for (const d of paperDomains) {
+      const possible = scored.length * (split[d] || 0)
+      const earned = scored.reduce((a, s) => { const r = responses[s.id] || {}; return a + (splitEarned(map, map.map(it => ({ q: it.num, type: it.type, points: r[it.num]?.points || 0, max: it.max_points, levels: r[it.num]?.levels })) as ItemResponse[], home)[d] || 0) }, 0)
+      perDomain[d] = possible ? (earned / possible) * 100 : null
+    }
+
+    return { scored: ranked, totalOf, pctOf, median, mean, buckets, bandCounts, items, standards, rubrics, third, perDomain }
+  }, [map, students, responses, flags, letters, maxScore, bands, split]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!d.scored.length) return <div className="border border-rule-2 rounded-lg p-10 text-center text-[13px] text-ink-3">{ko ? '채점된 답안지가 아직 없습니다. 답안지를 몇 장 채점하면 분석이 나타납니다.' : 'No papers scored yet. Mark a few on the answer sheet and the analysis appears here.'}</div>
 
@@ -190,6 +212,18 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
           <p className="text-[11.5px] text-ink-3 leading-snug mb-3">{ko
             ? `초록 막대는 이 기준의 문항에서 ${bands.on}% 이상 받은 학생 수입니다. 평균은 반 전체가 받은 점수의 비율입니다.`
             : `The green bar is how many students scored ${bands.on}% or better on this standard's questions. Avg is the class's points earned out of points possible.`}</p>
+          {routed && (
+            <div className="flex flex-wrap gap-x-5 gap-y-1 mb-3 px-3 py-2 rounded border border-rule bg-paper-2/60">
+              {paperDomains.map(dm => (
+                <span key={dm} className="inline-flex items-baseline gap-1.5 text-[12.5px]">
+                  <span className="w-2 h-2 rounded-sm self-center" style={{ backgroundColor: domainColor(dm) }} />
+                  <span className={dm === here ? 'font-semibold' : ''} style={{ color: domainColor(dm) }}>{domainLabel(dm)}</span>
+                  <span className={`font-semibold tabular-nums ${tone(d.perDomain[dm])}`}>{d.perDomain[dm] != null ? `${Math.round(d.perDomain[dm]!)}%` : '—'}</span>
+                  <span className="text-[11px] text-ink-3">{split[dm]} {ko ? '점' : 'pts'}{dm === here ? (ko ? ' · 이 탭' : ' · this tab') : ''}</span>
+                </span>
+              ))}
+            </div>
+          )}
           {!d.standards.length ? <p className="text-[12.5px] text-ink-3">{ko ? '이 평가에는 태그된 기준이 없습니다. 평가 편집에서 문항에 기준을 태그하면 여기에 나타납니다.' : 'No standards are tagged on this assessment. Tag questions and they show up here.'}</p> : (
             <div className="divide-y divide-rule">
               {d.standards.map(s => {
@@ -202,7 +236,7 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
                   <div key={s.code} className="py-2">
                     <button onClick={() => setOpenStd(open ? null : s.code)} className="w-full grid grid-cols-[16px_88px_minmax(0,1fr)_96px_72px_64px] gap-2 items-center text-left">
                       <span className="text-ink-3">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
-                      <span className="font-mono text-[11px] text-info">{s.code}</span>
+                      <span className="font-mono text-[11px] inline-flex items-center gap-1.5" style={{ color: routed ? domainColor(domOfStd(s.code)) : undefined }}>{routed && <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: domainColor(domOfStd(s.code)) }} title={domainLabel(domOfStd(s.code))} />}<span className={routed ? '' : 'text-info'}>{s.code}</span></span>
                       <span className="text-[12.5px] text-ink truncate" title={stdRow(s.code)?.text}>{plainName(s.code)}<span className="text-ink-3"> · {s.nQ} {ko ? '문항' : s.nQ === 1 ? 'question' : 'questions'}</span></span>
                       <span className="flex h-2.5 rounded-sm overflow-hidden bg-paper-3" title={`${met.length} of ${total} ${ko ? '명 도달' : 'met it'}`}>
                         {met.length > 0 && <span className="bg-good" style={{ width: `${(met.length / total) * 100}%` }} />}
@@ -240,7 +274,7 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
                   <>
                     <tr key={x.it.num} onClick={() => setOpenItem(open ? null : x.it.num)} className={`cursor-pointer hover:bg-paper-2 ${x.flag ? 'bg-warn-soft/30' : ''}`}>
                       <td className="px-4 py-1.5 text-ink font-medium">Q{x.it.num}<span className="text-ink-3 font-normal text-[11px]"> {x.it.answer_key ? x.it.answer_key : `${x.it.max_points}pt`}</span></td>
-                      <td className="px-2 py-1.5 text-ink-2 truncate max-w-[320px]">{x.it.standard ? <><span className="font-mono text-[11px] text-info mr-1.5">{x.it.standard}</span>{plainName(x.it.standard)}</> : <span className="text-ink-3">—</span>}</td>
+                      <td className="px-2 py-1.5 text-ink-2 truncate max-w-[320px]">{x.it.standard ? <><span className="font-mono text-[11px] mr-1.5" style={{ color: routed ? domainColor(domOfStd(x.it.standard)) : undefined }}><span className={routed ? '' : 'text-info'}>{x.it.standard}</span>{routed && <span className="opacity-70"> · {domainShort(domOfStd(x.it.standard))}</span>}</span>{plainName(x.it.standard)}</> : <span className="text-ink-3">—</span>}</td>
                       <td className={`px-2 py-1.5 text-right font-semibold ${tone(x.pct)}`}>{x.pct != null ? `${Math.round(x.pct)}%` : '—'}</td>
                       <td className="px-2 py-1.5 text-ink-2">{x.wrong ? <><span className="font-bold text-bad">{x.wrong.L}</span> <span className="text-ink-3">× {x.wrong.n}{x.wrong.L === '—' ? ` ${ko ? '무응답' : 'blank'}` : ''}</span></> : x.n ? <span className="text-ink-3">{isChoiceItem(x.it) ? (ko ? '없음' : 'none') : `${x.missed.length} ${ko ? '명 절반 미만' : 'under half'}`}</span> : ''}{x.blank > 0 && x.wrong?.L !== '—' && <span className="text-ink-3 text-[11px] ml-1.5">· {x.blank} {ko ? '무응답' : 'blank'}</span>}</td>
                       <td className={`px-2 py-1.5 text-right ${x.disc != null && x.disc < 0.1 && (x.pct ?? 100) < 80 ? 'text-warn font-semibold' : 'text-ink-3'}`}>{x.disc != null ? `${x.disc >= 0 ? '+' : ''}${Math.round(x.disc * 100)}` : ''}</td>

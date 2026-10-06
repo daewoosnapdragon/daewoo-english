@@ -7,7 +7,10 @@ import type { QuestionMapItem, ItemResponse } from '@/types'
 import { isChoiceItem, markChoice } from '@/lib/answerKey'
 import { isMarked, isAnswered, blankResponse, skippedItems, finalizeBlanks, blankCount } from '@/lib/blankAnswers'
 import { rubricScore, LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO } from '@/components/curriculum/rubric-library'
-import { splitEarned, splitPossible, isMultiDomain } from '@/lib/domainSplit'
+import { splitEarned, splitPossible, isMultiDomain, domainForStandard } from '@/lib/domainSplit'
+import { domainColor, domainShort, domainTint } from '@/lib/domainTone'
+import { domainLabel } from '@/lib/utils'
+import { rangeLabel } from '@/lib/answerKey'
 import { isRoutingColumnError } from '@/lib/domainRouting'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
 import { plainName } from '@/components/curriculum/standards-plain'
@@ -34,15 +37,32 @@ type Flags = { absent: boolean; exempt: boolean }
 interface Props {
   assessment: { id: string; name: string; max_score: number; question_map: QuestionMapItem[]; mixed?: boolean; domain?: string; english_class?: string }
   students: StudentRow[]
+  /** The gradebook tab the sheet was opened from; questions outside it are tinted. */
+  currentDomain?: string
   onSaved?: () => void
 }
 
-export default function KeyScoreSheet({ assessment, students, onSaved }: Props) {
+export default function KeyScoreSheet({ assessment, students, currentDomain, onSaved }: Props) {
   const { currentTeacher, language: lang, showToast, confirmDialog } = useApp()
   const map = assessment.question_map
   // Points split across domains whenever a tagged standard crosses them, so the
   // per-domain earned points are stored even if the assessment row predates routing.
-  const routed = useMemo(() => !!assessment.mixed || isMultiDomain(splitPossible(map, assessment.domain || 'reading')), [map, assessment.mixed, assessment.domain])
+  const home = assessment.domain || 'reading'
+  const split = useMemo(() => splitPossible(map, home), [map, home])
+  const routed = useMemo(() => !!assessment.mixed || isMultiDomain(split), [split, assessment.mixed])
+  // Which domain each question counts in, the one this tab is about ("here"),
+  // and the paper's domains with "here" first.
+  const domOf = (it: QuestionMapItem) => domainForStandard(it.standard, home)
+  const here = currentDomain && split[currentDomain] > 0 ? currentDomain : home
+  const paperDomains = useMemo(() => Object.entries(split).filter(([, v]) => v > 0).map(([d]) => d).sort((a, b) => (a === here ? -1 : b === here ? 1 : 0)), [split, here])
+  // Contiguous runs of questions in one domain, for header bands on the sheet and the grid.
+  const runs = useMemo(() => {
+    const out: { dom: string; items: QuestionMapItem[] }[] = []
+    for (const it of map) { const d = domOf(it); const last = out[out.length - 1]; if (last && last.dom === d) last.items.push(it); else out.push({ dom: d, items: [it] }) }
+    return out
+  }, [map, home]) // eslint-disable-line react-hooks/exhaustive-deps
+  const contiguous = routed && runs.length === paperDomains.length
+  const runLabel = (r: { dom: string; items: QuestionMapItem[] }) => `${domainLabel(r.dom)} · Q${rangeLabel(r.items.map(i => i.num))} · ${r.items.reduce((n, i) => n + i.max_points, 0)} ${lang === 'ko' ? '점' : 'pts'}`
   const letters = useMemo(() => map.some(q => q.answer_key === 'E') ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'], [map])
   const [responses, setResponses] = useState<Record<string, Record<number, Resp>>>({})
   const [flags, setFlags] = useState<Record<string, Flags>>({})
@@ -98,6 +118,12 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
   const answered = (sid: string, item: QuestionMapItem) => isAnswered(responses[sid]?.[item.num], item)
   const isComplete = (sid: string) => flags[sid]?.absent || flags[sid]?.exempt || map.every(it => answered(sid, it))
   const total = (sid: string) => { const r = responses[sid]; if (!r) return 0; return map.reduce((s, it) => s + (r[it.num]?.points || 0), 0) }
+  // Points earned per domain so far, the same split the gradebook will use.
+  const partsOf = (sid: string): Record<string, number> => {
+    const r = responses[sid] || {}
+    return splitEarned(map, map.map(it => ({ q: it.num, type: it.type, points: r[it.num]?.points || 0, max: it.max_points, levels: r[it.num]?.levels })) as ItemResponse[], home)
+  }
+  const partText = (sid: string, d: string) => `${partsOf(sid)[d] || 0}/${split[d] || 0}`
   const answeredCount = (sid: string) => map.filter(it => answered(sid, it)).length
   const blanks = (sid: string) => blankCount(responses[sid], map)
   // Questions the teacher passed over on the open paper: unmarked, with a later question marked.
@@ -320,8 +346,14 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
       })
     })
     const mostMissed = perQ.filter(x => x.n > 0 && x.pct != null).sort((a, b) => (a.pct! - b.pct!)).slice(0, 5)
-    return { papers: scored.length, perQ, perStd, mostMissed }
-  }, [responses, flags, students, map])
+    // Class percent per domain over the papers marked so far.
+    const perDomain: Record<string, number | null> = {}
+    for (const d of Object.keys(split)) {
+      const possible = scored.length * (split[d] || 0)
+      perDomain[d] = possible ? (scored.reduce((a, s) => a + (partsOf(s.id)[d] || 0), 0) / possible) * 100 : null
+    }
+    return { papers: scored.length, perQ, perStd, mostMissed, perDomain }
+  }, [responses, flags, students, map, split]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const doneCount = students.filter(s => isComplete(s.id)).length
   const bubble = (on: boolean, tone: 'right' | 'wrong' | 'key' | 'plain') =>
@@ -366,6 +398,7 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                   <span className="truncate text-ink">{s.english_name}</span>
                   <span className="inline-flex items-center gap-1.5 shrink-0">
                     {!fl && blanks(s.id) > 0 && <span title={lang === 'ko' ? `${blanks(s.id)}문항 무응답 · 오답 처리` : `${blanks(s.id)} blank · marked wrong`} className="tabular-nums text-[10.5px] font-semibold text-warn bg-warn-soft rounded px-1">{blanks(s.id)} —</span>}
+                    {routed && !fl && (done || part) && <span className="tabular-nums text-[10.5px] text-ink-3" title={`${domainLabel(here)}: ${partText(s.id, here)}`} style={{ color: domainColor(here) }}>{domainShort(here)} {partText(s.id, here)}</span>}
                     <span className={`tabular-nums text-[11.5px] ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : part ? 'text-warn' : 'text-ink-3'}`}>
                       {fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done ? `${total(s.id)} ✓` : part ? `${total(s.id)} ~` : ''}
                     </span>
@@ -379,15 +412,35 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
           <div className="px-5 py-4 overflow-y-auto max-h-[70vh]">
             {active && (
               <>
-                <div className="flex items-baseline justify-between mb-3">
+                <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
                   <h3 className="font-display text-[22px] leading-none text-ink">{active.english_name} <span className="font-sans text-[12px] text-ink-3 ml-1">{active.korean_name}</span></h3>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {routed && !flags[active.id] && (
+                      <span className="inline-flex items-center gap-2.5 text-[12px] tabular-nums" title={lang === 'ko' ? '영역별 점수 (각 영역 성적부에 들어가는 점수)' : 'Points per domain, as each gradebook will count them'}>
+                        {paperDomains.map(d => { const e = partsOf(active.id)[d] || 0, p = split[d] || 0; return (
+                          <span key={d} className={d === here ? 'font-semibold' : 'text-ink-2'} style={{ color: domainColor(d) }}>{domainShort(d)} {e}/{p}<span className="opacity-70"> · {p ? Math.round((e / p) * 100) : 0}%</span></span>
+                        ) })}
+                      </span>
+                    )}
                     <span className="font-display text-[22px] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : total(active.id)} <span className="font-sans text-[12px] text-ink-3">/ {assessment.max_score}</span></span>
                     <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
                     <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
                     <button onClick={() => clearStudent(active.id)} disabled={saving || !hasAnything(active.id)} title={lang === 'ko' ? '이 학생의 표시와 점수를 지웁니다' : 'Remove every mark and the saved score for this student'} className="h-7 px-2 rounded border border-rule-2 text-[11px] font-bold text-ink-3 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-3 disabled:hover:border-rule-2 inline-flex items-center gap-1"><Eraser size={11} />{lang === 'ko' ? '지우기' : 'Clear'}</button>
                   </div>
                 </div>
+                {routed && (
+                  <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-[11.5px] mb-2 px-2 py-1.5 rounded border border-rule bg-paper-2/60">
+                    {paperDomains.map(d => { const nums = map.filter(it => domOf(it) === d).map(it => it.num); return (
+                      <span key={d} className="inline-flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: domainColor(d) }} />
+                        <span className="font-semibold" style={{ color: domainColor(d) }}>{domainLabel(d)}</span>
+                        <span className="text-ink-2 tabular-nums">Q{rangeLabel(nums)} · {split[d]} {lang === 'ko' ? '점' : 'pts'}</span>
+                        <span className="text-ink-3">{d === here ? (lang === 'ko' ? '· 이 탭에 반영' : '· counts here') : (lang === 'ko' ? `· ${domainLabel(d)} 탭에 반영` : `· counts in ${domainLabel(d)}`)}</span>
+                      </span>
+                    ) })}
+                    {paperDomains.length > 1 && <span className="text-ink-3 ml-auto">{lang === 'ko' ? '다른 영역 문항은 흐리게 표시되지만 똑같이 채점합니다' : 'Other domains are tinted but still marked here'}</span>}
+                  </div>
+                )}
                 {(flags[active.id]?.absent || flags[active.id]?.exempt) ? (
                   <p className="text-[13px] text-ink-3 py-6">{flags[active.id]?.absent ? (lang === 'ko' ? '결석 처리됨. 답을 표시하면 다시 채점됩니다.' : 'Marked absent for this assessment. Marking an answer clears it.') : (lang === 'ko' ? '면제 처리됨.' : 'Exempt from this assessment. Marking an answer clears it.')}</p>
                 ) : (
@@ -397,15 +450,27 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                       const focused = focusedQ === it.num
                       const isBlank = !!r?.blank
                       const wasSkipped = !isBlank && skipped.has(it.num)
+                      const dom = domOf(it)
+                      const away = routed && dom !== here
+                      const run = contiguous ? runs.find(x => x.items[0]?.num === it.num) : null
                       // Amber for a blank, and for a question passed over: the teacher sees it before it becomes a blank.
                       const rowTone = isBlank || wasSkipped ? `${focused ? 'bg-warn-soft' : 'bg-warn-soft/50'} shadow-[inset_3px_0_0_rgb(var(--warn))]` : focused ? 'bg-paper-2' : ''
+                      const awayStyle = away && !isBlank && !wasSkipped && !focused ? { backgroundColor: domainTint(dom, '0F') } : undefined
+                      const band = run ? (
+                        <div className="flex items-center gap-2 pt-2.5 pb-1 -mx-2 px-2 text-[11px] font-semibold uppercase tracking-wider" style={{ color: domainColor(run.dom) }}>
+                          <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: domainColor(run.dom) }} />{runLabel(run)}
+                          <span className="font-normal normal-case tracking-normal text-ink-3">{run.dom === here ? (lang === 'ko' ? '이 탭에 반영' : 'counts here') : (lang === 'ko' ? `${domainLabel(run.dom)} 탭에 반영` : `counts in ${domainLabel(run.dom)}`)}</span>
+                        </div>
+                      ) : null
                       const blankNote = isBlank
                         ? <span className="text-[11px] font-semibold text-warn whitespace-nowrap">{lang === 'ko' ? '무응답 · 오답 처리' : 'Blank · marked wrong'}</span>
                         : wasSkipped ? <span className="text-[11px] text-warn whitespace-nowrap">{lang === 'ko' ? '건너뜀 · 비워 두면 오답 처리' : 'Skipped · counts as wrong if left blank'}</span> : null
                       const blankBubble = <button onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setBlank(it.num) }} title={lang === 'ko' ? '무응답 (오답 처리)' : 'No answer (marked wrong)'} className={bubble(false, isBlank ? 'wrong' : 'plain')}>—</button>
                       return (
-                        <div key={it.num} onClick={() => setFocusedQ(it.num)}
-                          className={`grid grid-cols-[34px_minmax(0,1fr)_auto] gap-3 items-center py-1.5 -mx-2 px-2 rounded ${rowTone}`}>
+                        <div key={it.num} className={band ? 'border-t-0' : ''}>
+                        {band}
+                        <div onClick={() => setFocusedQ(it.num)} style={awayStyle}
+                          className={`grid grid-cols-[34px_minmax(0,1fr)_auto] gap-3 items-center py-1.5 -mx-2 px-2 rounded ${rowTone} ${away ? 'opacity-80' : ''}`}>
                           <span className={`text-[11px] tabular-nums ${isBlank || wasSkipped ? 'text-warn font-semibold' : 'text-ink-3'}`}>Q{it.num}</span>
                           {hasRubric(it) ? (
                             <div className="grid gap-2 py-1 min-w-0">
@@ -473,7 +538,8 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                               {blankNote}
                             </div>
                           )}
-                          <span className="text-[10.5px] text-info text-right">{it.standard || ''}</span>
+                          <span className="text-[10.5px] text-right whitespace-nowrap" style={{ color: routed ? domainColor(dom) : undefined }}>{routed ? <>{it.standard || (lang === 'ko' ? '태그 없음' : 'untagged')}<span className="opacity-70"> · {domainShort(dom)}</span></> : <span className="text-info">{it.standard || ''}</span>}</span>
+                        </div>
                         </div>
                       )
                     })}
@@ -499,16 +565,37 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                 </div>
               ))}
             </div>
+            {routed && analysis.papers > 0 && (
+              <div>
+                <p className="eyebrow mb-1.5">{lang === 'ko' ? '영역별 반 평균' : 'By domain so far'}</p>
+                {paperDomains.map(d => { const p = analysis.perDomain[d]; return (
+                  <div key={d} className="grid grid-cols-[64px_1fr_40px] gap-2 items-center py-0.5">
+                    <span className={`truncate ${d === here ? 'font-semibold' : ''}`} style={{ color: domainColor(d) }}>{domainShort(d)} · {split[d]}pt</span>
+                    <span className="h-2 bg-paper-3 rounded-sm overflow-hidden"><span className="block h-full" style={{ width: `${p ?? 0}%`, backgroundColor: domainColor(d) }} /></span>
+                    <span className="tabular-nums text-right text-ink-2">{p != null ? Math.round(p) : 0}%</span>
+                  </div>
+                ) })}
+              </div>
+            )}
             {Object.keys(analysis.perStd).length > 0 && (
               <div>
                 <p className="eyebrow mb-1.5">{lang === 'ko' ? '기준별' : 'By standard so far'}</p>
-                {Object.entries(analysis.perStd).map(([code, v]) => (
-                  <div key={code} className="grid grid-cols-[64px_1fr_40px] gap-2 items-center py-0.5">
-                    <span className="text-info truncate">{code}</span>
-                    <span className="h-2 bg-paper-3 rounded-sm overflow-hidden"><span className="block h-full bg-info" style={{ width: `${v.possible ? (v.earned / v.possible) * 100 : 0}%` }} /></span>
-                    <span className="tabular-nums text-right text-ink-2">{v.possible ? Math.round((v.earned / v.possible) * 100) : 0}%</span>
-                  </div>
-                ))}
+                {(routed ? paperDomains : [home]).map(d => {
+                  const rows = Object.entries(analysis.perStd).filter(([code]) => !routed || domainForStandard(code, home) === d)
+                  if (!rows.length) return null
+                  return (
+                    <div key={d} className={routed ? 'mb-1.5' : ''}>
+                      {routed && <p className="text-[10.5px] font-semibold uppercase tracking-wider mt-1" style={{ color: domainColor(d) }}>{domainLabel(d)}</p>}
+                      {rows.map(([code, v]) => (
+                        <div key={code} className="grid grid-cols-[64px_1fr_40px] gap-2 items-center py-0.5">
+                          <span className="truncate" style={{ color: routed ? domainColor(d) : undefined }}>{routed ? code : <span className="text-info">{code}</span>}</span>
+                          <span className="h-2 bg-paper-3 rounded-sm overflow-hidden"><span className="block h-full" style={{ width: `${v.possible ? (v.earned / v.possible) * 100 : 0}%`, backgroundColor: routed ? domainColor(d) : 'rgb(var(--info))' }} /></span>
+                          <span className="tabular-nums text-right text-ink-2">{v.possible ? Math.round((v.earned / v.possible) * 100) : 0}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })}
               </div>
             )}
             <div>
@@ -519,11 +606,22 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
           </div>
         </div>
       ) : view === 'analysis' ? (
-        <AssessmentAnalysis map={map} students={students} responses={responses} flags={flags} letters={letters} maxScore={assessment.max_score} englishClass={assessment.english_class} lang={lang} onOpenStudent={i => { if (i >= 0) { setActiveIdx(i); setView('sheet') } }} />
+        <AssessmentAnalysis map={map} students={students} responses={responses} flags={flags} letters={letters} maxScore={assessment.max_score} englishClass={assessment.english_class} homeDomain={home} currentDomain={here} lang={lang} onOpenStudent={i => { if (i >= 0) { setActiveIdx(i); setView('sheet') } }} />
       ) : (
         <div className="border border-rule-2 rounded-lg overflow-auto max-h-[70vh]">
           <table className="text-[12px] tabular-nums border-collapse min-w-full">
             <thead className="sticky top-0 bg-paper-2 z-10">
+              {routed && (
+                <tr>
+                  <th className="border-b border-rule" />
+                  {runs.map((r, i) => (
+                    <th key={i} colSpan={r.items.reduce((n, it) => n + (hasRubric(it) ? it.rubric!.criteria.length : 1), 0)} className="px-2 py-1 text-[10.5px] font-semibold uppercase tracking-wider border-b border-rule text-center whitespace-nowrap" style={{ color: domainColor(r.dom), backgroundColor: domainTint(r.dom, r.dom === here ? '22' : '0F') }}>
+                      {runLabel(r)}{r.dom === here ? '' : ` · ${lang === 'ko' ? `${domainLabel(r.dom)} 탭` : `in ${domainLabel(r.dom)}`}`}
+                    </th>
+                  ))}
+                  <th colSpan={paperDomains.length + 1} className="border-b border-rule" />
+                </tr>
+              )}
               <tr>
                 <th className="text-left px-3 py-2 eyebrow font-semibold border-b border-rule-2 min-w-[160px]">{lang === 'ko' ? '학생' : 'Student'}</th>
                 {map.map(it => { const a = analysis.perQ.find(x => x.num === it.num)!; if (hasRubric(it)) return it.rubric!.criteria.map(c => {
@@ -534,10 +632,16 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                         <span className="block text-[10.5px] text-ink-2 truncate max-w-[60px]">Q{it.num} · {c.label}</span>
                         <span className={`block text-[10px] ${avg != null && avg < 2 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{avg != null ? avg.toFixed(1) : ''}</span>
                       </th>) }); return (
-                  <th key={it.num} className="px-1 py-2 border-b border-rule-2 text-center min-w-[34px] cursor-help" onMouseEnter={e => showHover(e, it)} onMouseLeave={() => setHover(null)}>
+                  <th key={it.num} className="px-1 py-2 border-b border-rule-2 text-center min-w-[34px] cursor-help" style={routed && domOf(it) !== here ? { backgroundColor: domainTint(domOf(it), '0F') } : undefined} onMouseEnter={e => showHover(e, it)} onMouseLeave={() => setHover(null)}>
                     <span className="block text-[10.5px] text-ink-2">Q{it.num}</span>
                     <span className={`block text-[10px] ${a.pct != null && a.pct < 0.6 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{a.pct == null ? '' : `${Math.round(a.pct * 100)}%`}</span>
                   </th>) })}
+                {routed && paperDomains.map(d => (
+                  <th key={d} className="px-2 py-2 border-b border-rule-2 text-right whitespace-nowrap" title={`${domainLabel(d)}: ${lang === 'ko' ? '이 영역에 반영되는 점수' : 'points that count in this domain'}`}>
+                    <span className={`block text-[10.5px] ${d === here ? 'font-semibold' : ''}`} style={{ color: domainColor(d) }}>{domainShort(d)} /{split[d]}</span>
+                    <span className="block text-[10px] text-ink-3">{analysis.perDomain[d] != null ? `${Math.round(analysis.perDomain[d]!)}%` : ''}</span>
+                  </th>
+                ))}
                 <th className="px-3 py-2 border-b border-rule-2 text-right eyebrow font-semibold">{lang === 'ko' ? '총점' : 'Total'}</th>
               </tr>
             </thead>
@@ -548,33 +652,38 @@ export default function KeyScoreSheet({ assessment, students, onSaved }: Props) 
                   <tr key={s.id} onClick={() => { setActiveIdx(i); setView('sheet') }} className="hover:bg-paper-2 cursor-pointer">
                     <td className="px-3 py-1.5 text-ink whitespace-nowrap">{s.english_name}</td>
                     {fl?.absent || fl?.exempt ? (
-                      <td colSpan={map.reduce((n, it) => n + (hasRubric(it) ? it.rubric!.criteria.length : 1), 0)} className="px-3 py-1.5 text-ink-3 text-center">{fl.absent ? (lang === 'ko' ? '결석' : 'Absent') : (lang === 'ko' ? '면제' : 'Exempt')}</td>
+                      <td colSpan={map.reduce((n, it) => n + (hasRubric(it) ? it.rubric!.criteria.length : 1), 0) + (routed ? paperDomains.length : 0)} className="px-3 py-1.5 text-ink-3 text-center">{fl.absent ? (lang === 'ko' ? '결석' : 'Absent') : (lang === 'ko' ? '면제' : 'Exempt')}</td>
                     ) : map.map(it => {
                       const r = responses[s.id]?.[it.num]
-                      const blankCell = (key: string) => <td key={key} className="py-1 text-center"><span title={lang === 'ko' ? '무응답 · 오답 처리' : 'Blank · marked wrong'} className="inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold bg-warn-soft text-warn">—</span></td>
+                      const tint = routed && domOf(it) !== here ? { backgroundColor: domainTint(domOf(it), '0F') } : undefined
+                      const blankCell = (key: string) => <td key={key} style={tint} className="py-1 text-center"><span title={lang === 'ko' ? '무응답 · 오답 처리' : 'Blank · marked wrong'} className="inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold bg-warn-soft text-warn">—</span></td>
                       if (hasRubric(it)) return it.rubric!.criteria.map(c => {
                         if (r?.blank) return blankCell(`${it.num}-${c.key}`)
                         const lv = r?.levels?.[c.key]
-                        if (lv == null) return <td key={`${it.num}-${c.key}`} className="text-center text-ink-3 py-1.5">·</td>
-                        return <td key={`${it.num}-${c.key}`} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold ${lv === 0 ? 'bg-paper-3 text-ink-2' : lv === 1 ? 'bg-bad-soft text-bad' : lv === 2 ? 'bg-warn-soft text-warn' : lv === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{lv}</span></td>
+                        if (lv == null) return <td key={`${it.num}-${c.key}`} style={tint} className="text-center text-ink-3 py-1.5">·</td>
+                        return <td key={`${it.num}-${c.key}`} style={tint} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold ${lv === 0 ? 'bg-paper-3 text-ink-2' : lv === 1 ? 'bg-bad-soft text-bad' : lv === 2 ? 'bg-warn-soft text-warn' : lv === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{lv}</span></td>
                       })
                       if (r?.blank) return blankCell(String(it.num))
-                      if (!r || (isChoiceItem(it) ? !r.answer : r.points == null)) return <td key={it.num} className="text-center text-ink-3 py-1.5">·</td>
+                      if (!r || (isChoiceItem(it) ? !r.answer : r.points == null)) return <td key={it.num} style={tint} className="text-center text-ink-3 py-1.5">·</td>
                       if (isChoiceItem(it)) {
                         const ok = r.answer === it.answer_key
-                        return <td key={it.num} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded-full items-center justify-center text-[11px] font-bold ${ok ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{r.answer}</span></td>
+                        return <td key={it.num} style={tint} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded-full items-center justify-center text-[11px] font-bold ${ok ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{r.answer}</span></td>
                       }
                       const frac = it.max_points ? (r.points || 0) / it.max_points : 0
-                      return <td key={it.num} className={`py-1.5 text-center ${frac >= 1 ? 'text-good' : frac === 0 ? 'text-bad' : 'text-ink'}`}>{r.points}</td>
+                      return <td key={it.num} style={tint} className={`py-1.5 text-center ${frac >= 1 ? 'text-good' : frac === 0 ? 'text-bad' : 'text-ink'}`}>{r.points}</td>
                     })}
+                    {routed && !(fl?.absent || fl?.exempt) && paperDomains.map(d => (
+                      <td key={d} className={`px-2 py-1.5 text-right tabular-nums ${d === here ? 'font-semibold' : ''}`} style={{ color: domainColor(d) }}>{answeredCount(s.id) ? partText(s.id, d) : ''}</td>
+                    ))}
                     <td className="px-3 py-1.5 text-right font-semibold text-ink">{fl?.absent || fl?.exempt ? '—' : answeredCount(s.id) ? total(s.id) : ''}</td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
-          {(map.some(hasRubric) || students.some(s => blanks(s.id) > 0)) && (
+          {(routed || map.some(hasRubric) || students.some(s => blanks(s.id) > 0)) && (
             <div className="flex items-center gap-3 px-3 py-2 border-t border-rule-2 bg-paper-2/60 text-[11px] text-ink-3 flex-wrap">
+              {routed && paperDomains.map(d => <span key={d} className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: domainColor(d) }} /><span style={{ color: domainColor(d) }}>{domainLabel(d)}</span>{d === here ? (lang === 'ko' ? '(이 탭)' : '(this tab)') : ''}</span>)}
               {students.some(s => blanks(s.id) > 0) && <span className="inline-flex items-center gap-1.5"><span className="inline-flex w-5 h-5 rounded items-center justify-center text-[10px] font-bold bg-warn-soft text-warn">—</span>{lang === 'ko' ? '무응답 · 오답 처리' : 'blank · marked wrong'}</span>}
               {map.some(hasRubric) && <>
                 <span>{lang === 'ko' ? '루브릭 단계' : 'Rubric levels'}</span>
