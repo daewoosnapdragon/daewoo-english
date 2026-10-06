@@ -10,6 +10,7 @@ import { withoutAwayDays } from '@/lib/calendarDays'
 import { ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, type Student, type EnglishClass, type Grade, type KoreanClass } from '@/types'
 import { getKSTDateString, percentToLetter } from '@/lib/utils'
 import WIDABadge from '@/components/shared/WIDABadge'
+import BehaviorLadderPanel from '@/components/behavior/BehaviorLadderPanel'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WidaSupport from './WidaSupport'
 import {
@@ -233,6 +234,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
           )}
 
           <Section id="behavior" title={lang === 'ko' ? '행동 기록' : 'Behavior'} meta={facts ? `${facts.behavior30} ${lang === 'ko' ? '건 · 30일' : facts.behavior30 === 1 ? 'log in 30 days' : 'logs in 30 days'}` : ''}>
+            <div className="mb-4"><BehaviorLadderPanel mode="teacher" studentId={student.id} /></div>
             <BehaviorTracker studentId={student.id} studentName={student.english_name} />
           </Section>
           <Section id="grades" title={lang === 'ko' ? '성적' : 'Grades'} meta={activeSemester ? (lang === 'ko' ? activeSemester.name_ko || activeSemester.name : activeSemester.name) : ''}>

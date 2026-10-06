@@ -5,9 +5,10 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
+import { loadLadderSettings, isOverdue } from '@/lib/behaviorLadder'
 import { NAV_ORDER, VIEW_PATHS, viewForPath } from '@/lib/routes'
 import { isSchoolDayOff } from '@/lib/calendarDays'
-import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen } from 'lucide-react'
+import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle } from 'lucide-react'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
 
 // ─── Masthead ────────────────────────────────────────────────────────
@@ -25,7 +26,7 @@ const EN_LABELS: Record<string, string> = {
   students: 'Students', readingLevels: 'Reading', reports: 'Reports', leveling: 'Level Tests', curriculum: 'Standards', wida: 'WIDA',
 }
 
-interface Signals { attendanceIncomplete: boolean; flagged: number; reminder: boolean }
+interface Signals { attendanceIncomplete: boolean; flagged: number; reminder: boolean; cases: number; overdue: number }
 
 /**
  * The two things the nav has to know: is today's attendance done, and (admin)
@@ -34,7 +35,7 @@ interface Signals { attendanceIncomplete: boolean; flagged: number; reminder: bo
  */
 function useNavSignals(pathname: string | null): Signals {
   const { currentTeacher } = useApp()
-  const [s, setS] = useState<Signals>({ attendanceIncomplete: false, flagged: 0, reminder: false })
+  const [s, setS] = useState<Signals>({ attendanceIncomplete: false, flagged: 0, reminder: false, cases: 0, overdue: 0 })
   useEffect(() => {
     if (!currentTeacher) return
     let cancelled = false
@@ -49,22 +50,30 @@ function useNavSignals(pathname: string | null): Signals {
       const attQuery = isAdmin
         ? supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today)
         : supabase.from('attendance').select('id, students!inner(english_class)', { count: 'exact', head: true }).eq('date', today).eq('students.english_class', cls)
-      const [{ count: studentCount }, { count: attCount }, flaggedRes] = await Promise.all([
+      // Behavior ladder cases: every open one for admin, the class's for a teacher.
+      const caseQuery = isAdmin
+        ? supabase.from('behavior_cases').select('id, status, created_at').neq('status', 'closed')
+        : supabase.from('behavior_cases').select('id, status, created_at, students!inner(english_class)').neq('status', 'closed').eq('students.english_class', cls)
+      const [{ count: studentCount }, { count: attCount }, flaggedRes, caseRes, ladder] = await Promise.all([
         studentQuery, attQuery,
         isAdmin ? supabase.from('behavior_logs').select('*', { count: 'exact', head: true }).eq('is_flagged', true) : Promise.resolve({ count: 0 }),
+        caseQuery, loadLadderSettings(),
       ])
       if (cancelled) return
+      const caseRows = (caseRes.data || []) as any[]
+      const overdue = isAdmin ? caseRows.filter(c => isOverdue(c, ladder.overdue_days)).length : 0
       const dayOff = await isSchoolDayOff(today)
       if (cancelled) return
       const incomplete = !dayOff && !!(studentCount && (!attCount || attCount < studentCount))
       const day = kst.getDay(), minutes = kst.getHours() * 60 + kst.getMinutes()
       const afterHalfThree = day >= 1 && day <= 5 && minutes >= 15 * 60 + 30
-      setS({ attendanceIncomplete: incomplete, flagged: flaggedRes.count || 0, reminder: incomplete && afterHalfThree })
+      setS({ attendanceIncomplete: incomplete, flagged: flaggedRes.count || 0, reminder: incomplete && afterHalfThree, cases: caseRows.length, overdue })
     }
     check()
     const id = setInterval(check, 60_000)
     window.addEventListener('daewoo:attendance-saved', check)
-    return () => { cancelled = true; clearInterval(id); window.removeEventListener('daewoo:attendance-saved', check) }
+    window.addEventListener('daewoo:ladder-changed', check)
+    return () => { cancelled = true; clearInterval(id); window.removeEventListener('daewoo:attendance-saved', check); window.removeEventListener('daewoo:ladder-changed', check) }
   }, [currentTeacher, pathname])
   return s
 }
@@ -168,7 +177,7 @@ export default function Masthead() {
 
   const links = (h: string) => NAV_ORDER.map(id => {
     const on = active === id
-    const badge = id === 'dashboard' && signals.flagged > 0 ? signals.flagged : 0
+    const badge = id === 'dashboard' ? (signals.cases || signals.flagged) : 0
     const dot = id === 'attendance' && signals.attendanceIncomplete
     return (
       <Link key={id} href={VIEW_PATHS[id]}
@@ -181,12 +190,23 @@ export default function Masthead() {
     )
   })
 
-  const reminder = signals.reminder && (
-    <Link href="/attendance" className="block bg-warn-soft border-t border-rule">
-      <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-warn">
-        <Bell size={13} />{language === 'ko' ? '오늘 출석을 확인하셨나요?' : 'Did you mark attendance today?'}
-      </div>
-    </Link>
+  const reminder = (
+    <>
+      {signals.overdue > 0 && (
+        <Link href="/dashboard" className="block bg-bad border-t border-bad">
+          <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-white">
+            <AlertTriangle size={13} />{language === 'ko' ? `행동 사례 ${signals.overdue}건이 처리되지 않고 기다리고 있습니다` : `${signals.overdue} behavior ${signals.overdue === 1 ? 'case has' : 'cases have'} been waiting for your action for days`}
+          </div>
+        </Link>
+      )}
+      {signals.reminder && (
+        <Link href="/attendance" className="block bg-warn-soft border-t border-rule">
+          <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-warn">
+            <Bell size={13} />{language === 'ko' ? '오늘 출석을 확인하셨나요?' : 'Did you mark attendance today?'}
+          </div>
+        </Link>
+      )}
+    </>
   )
 
   const toggle = (

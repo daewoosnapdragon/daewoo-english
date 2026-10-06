@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { BehaviorLog } from '@/types'
 import { Plus, X, Loader2, ChevronDown, ChevronRight, Bell } from 'lucide-react'
 import { getKSTDateString } from '@/lib/utils'
+import { ladderStatus, updateAsk, type LadderStatus } from '@/lib/behaviorLadder'
 
 // ─── ABC Options organized by category ──────────────────────────────
 
@@ -47,9 +48,12 @@ const LOG_TYPES = [
 type LangKey = 'en' | 'ko'
 
 export default function BehaviorTracker({ studentId, studentName }: { studentId: string; studentName: string }) {
-  const { language, currentTeacher, showToast, confirmDialog } = useApp()
+  const { language, currentTeacher, showToast, confirmDialog, promptDialog } = useApp()
   const lang = language as LangKey
   const [logs, setLogs] = useState<BehaviorLog[]>([])
+  // Where the student is on the behavior ladder: notes toward the next step, or an open case.
+  const [ladder, setLadder] = useState<LadderStatus | null>(null)
+  const refreshLadder = async () => { setLadder(await ladderStatus(studentId)) }
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [expandedLog, setExpandedLog] = useState<string | null>(null)
@@ -69,7 +73,22 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
     setLoading(false)
   }
 
-  useEffect(() => { loadLogs() }, [studentId])
+  useEffect(() => { loadLogs(); refreshLadder() }, [studentId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // After a note is saved the trigger may have opened a case; if so, ask the
+  // teacher for the one line admin needs, and tell the masthead to re-count.
+  const afterSave = async () => {
+    setShowAddForm(false)
+    const before = ladder?.open_case_id || null
+    loadLogs()
+    const after = await ladderStatus(studentId)
+    setLadder(after)
+    if (after?.open_case_id && after.open_case_id !== before) {
+      window.dispatchEvent(new Event('daewoo:ladder-changed'))
+      const ask = await promptDialog({ title: lang === 'ko' ? '관리자 검토 사례가 열렸습니다' : 'A case has opened for admin review', message: lang === 'ko' ? `${studentName}의 기록이 ${after.step}단계 기준에 이르렀습니다. 관리자에게 필요한 것을 한 줄로 적어 주세요 (선택).` : `${studentName} has reached step ${after.step}: ${after.step_label || 'admin review'}. Add one line about what you need from admin (optional).`, placeholder: lang === 'ko' ? '예: 때리는 행동에 대해 어머니께 전화 부탁드립니다' : 'e.g. please call Mum about the hitting', confirmLabel: lang === 'ko' ? '추가' : 'Add', cancelLabel: lang === 'ko' ? '건너뛰기' : 'Skip' })
+      if (ask && ask.trim()) { const err = await updateAsk(after.open_case_id, ask); if (err) showToast(`Error: ${err}`) }
+    }
+  }
 
   const handleDelete = async (id: string) => {
     if (!await confirmDialog({ title: lang === 'ko' ? '이 기록을 삭제하시겠습니까?' : 'Delete this log entry?', danger: true, confirmLabel: lang === 'ko' ? '삭제' : 'Delete', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })) return
@@ -116,6 +135,9 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
         <div className="flex items-center gap-3">
           <span className="text-[13px] font-medium text-navy">{logs.length} {lang === 'ko' ? '건의 기록' : 'entries'}</span>
           {flaggedCount > 0 && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">{flaggedCount} flagged</span>}
+          {ladder && (ladder.open_case_id
+            ? <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold" title={lang === 'ko' ? '관리자 검토 사례가 열려 있습니다' : 'A case is open for admin review'}>{lang === 'ko' ? `${ladder.step}단계 사례 열림` : `step ${ladder.step} case open`}</span>
+            : <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${ladder.note_count >= ladder.threshold - 1 ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`} title={lang === 'ko' ? `우려·부정 기록 ${ladder.threshold}건이면 ${ladder.step}단계(${ladder.step_label}) 사례가 열립니다` : `${ladder.threshold} concern or negative notes open a step ${ladder.step} case: ${ladder.step_label}`}>{ladder.note_count}/{ladder.threshold} {lang === 'ko' ? `· ${ladder.step}단계까지` : `toward step ${ladder.step}`}{ladder.note_count === ladder.threshold - 1 ? (lang === 'ko' ? ' · 한 건 더 기록되면 사례가 열립니다' : ' · one more opens a case') : ''}</span>)}
         </div>
         <div className="flex items-center gap-2">
           <button onClick={handlePrint} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-surface-alt border border-border">Print</button>
@@ -244,7 +266,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
         ))}
       </div>
 
-      {showAddForm && <AddBehaviorForm studentId={studentId} lang={lang} onClose={() => setShowAddForm(false)} onSaved={() => { setShowAddForm(false); loadLogs() }} />}
+      {showAddForm && <AddBehaviorForm studentId={studentId} lang={lang} onClose={() => setShowAddForm(false)} onSaved={afterSave} />}
 
       {loading ? (
         <div className="py-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>

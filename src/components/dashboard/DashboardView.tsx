@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react'
 import Link from 'next/link'
+import BehaviorLadderPanel from '@/components/behavior/BehaviorLadderPanel'
 import WhatsNewModal from '@/components/guide/WhatsNewModal'
 import { useApp } from '@/lib/context'
 import { useClassCounts } from '@/hooks/useData'
@@ -234,6 +235,9 @@ export default function DashboardView() {
       </div>
 
       <WhatsNewModal />
+
+      {/* ─── Behavior ladder: admin sees every case that needs an action, with no dismiss; a teacher sees their class's ─── */}
+      <BehaviorLadderPanel mode={isAdmin ? 'admin' : 'teacher'} onChanged={() => window.dispatchEvent(new Event('daewoo:ladder-changed'))} />
 
       {/* ─── Stats ─── */}
       {!shared.loading && (

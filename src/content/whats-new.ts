@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'behavior-ladder', date: '2026-10-06', title: 'Three behavior notes open a case for admin',
+    body: 'You can now rely on the behavior ladder: when a student reaches three concern or negative notes (or you flag one), a case opens with the notes in one place. Admin sees it at the top of the dashboard with no dismiss, marks it read, and records “Parents contacted”, which writes the contact on the student’s log and closes the case. You see on your dashboard and the student page whether admin has read it and how long it has waited, and can add a one-line ask. The behavior tracker shows how close a student is to the next step. Thresholds and steps are in Settings.',
+    path: '/dashboard', guide: 'students',
+  },
+  {
     id: 'student-drilldown', date: '2026-10-06', title: 'The student view in Grades reads like a report',
     body: 'You can now move through the class with a roster on the left (↑ ↓ work too), see five domain tiles with a sparkline and the class average, a timeline of every score against the class, notes worth a look such as a recent drop or a quiz-versus-test gap, a list of what is still unscored with a link to the sheet, one aligned table with a “how is this computed?” line under each domain, the standards the student has met or missed from their answer sheets, and what the report card will show. Print report includes the tiles and the standards.',
     path: '/grades', guide: 'grades',

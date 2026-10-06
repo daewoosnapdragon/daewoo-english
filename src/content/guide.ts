@@ -137,12 +137,13 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Print at the top right builds a one-page PDF.',
     ],
     tasks: [
-      { title: 'Log a behavior note', steps: ['Open the student. Behavior is the first section.', 'Add a note with the type (positive, concern, parent contact, and so on).', 'Flag it for admin if it needs following up.'] },
+      { title: 'Log a behavior note', steps: ['Open the student. Behavior is the first section.', 'Add a note with the type (positive, concern, parent contact, and so on).', 'The badge next to the heading shows how many concern or negative notes the student has toward the next ladder step. Flag a note to open a case for admin at once.'] },
+      { title: 'Behavior ladder', steps: ['When a student reaches the step’s number of concern or negative notes (three by default), a case opens on its own: the notes together, an urgent notice to admin and to you, and a line on your dashboard.', 'Add one line about what you need from admin when the case opens, or later from Open the notes.', 'Your dashboard and the student page say whether admin has read it and how many school days it has waited. Admin records “Parents contacted”, which writes a parent-contact entry on the student’s log and closes the case; the count then starts again.', 'Thresholds, step names and the overdue bar are in Settings → Behavior ladder.'] },
       { title: 'Read a student’s grades', steps: ['Grades at a glance shows each domain’s current average with a bar; below it the assessments of this semester.', 'For older semesters use Notes and history.'] },
       { title: 'See WIDA levels and scaffolds', steps: ['Support shows the four levels, active scaffolds, and history, read-only.', 'Click Change on the WIDA page to update them.'] },
     ],
-    rules: ['Grades at a glance covers the active semester only.', 'The reading trend merges running records with level test oral scores.'],
-    watchOut: ['Removing a student deactivates them; their records stay.'],
+    rules: ['Grades at a glance covers the active semester only.', 'The reading trend merges running records with level test oral scores.', 'Only concern and negative notes count toward the ladder; positives and plain notes do not, and nothing offsets a count.'],
+    watchOut: ['Removing a student deactivates them; their records stay.', 'A case cannot be dismissed; it closes only when the step’s action is recorded.'],
   },
   {
     id: 'reading', title: 'Reading', updated: '2026-09-25',

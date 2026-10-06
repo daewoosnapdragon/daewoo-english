@@ -6,9 +6,10 @@ import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { invalidateAssessmentWeights } from '@/lib/assessmentWeights'
+import { DEFAULT_LADDER, loadLadderSettings, saveLadderSettings, type LadderSettings } from '@/lib/behaviorLadder'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, canManageSemesters, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
-import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown, Archive, ArchiveRestore } from 'lucide-react'
+import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown, Archive, ArchiveRestore, X } from 'lucide-react'
 
 export default function SettingsView() {
   const { language, showToast, currentTeacher } = useApp()
@@ -17,6 +18,7 @@ export default function SettingsView() {
   const sections: [string, string][] = [
     ['teachers', language === 'ko' ? '교사' : 'Teachers'], ['semesters', language === 'ko' ? '학기' : 'Semesters'], ['schedule', language === 'ko' ? '수업 없는 요일' : 'Days with no class'],
     ['benchmarks', language === 'ko' ? '프로그램 기준' : 'Program benchmarks'], ['weights', language === 'ko' ? '평가 가중치' : 'Assessment weights'],
+    ['ladder', language === 'ko' ? '행동 단계' : 'Behavior ladder'],
     ...(isAdmin ? [['classes', language === 'ko' ? '반 관리' : 'Classes'] as [string, string]] : []), ['school', language === 'ko' ? '학교 정보' : 'School information'],
   ]
   return (
@@ -35,6 +37,7 @@ export default function SettingsView() {
           <ScheduleRulesSection />
           <ProgramBenchmarksSection />
           <AssessmentWeightsSection />
+          <BehaviorLadderSection />
           {isAdmin && <ClassManagementSection />}
           <SchoolInfoSection />
         </div>
@@ -1184,5 +1187,65 @@ function ScheduleRulesSection() {
       )}
       {!canEdit && <p className="text-[11.5px] text-ink-3 mt-2">{language === 'ko' ? '관리자 또는 스냅드래곤 교사만 변경할 수 있습니다.' : 'Admin or the Snapdragon teacher can change these.'}</p>}
     </div>
+  )
+}
+
+// ─── Behavior ladder ─────────────────────────────────────────────
+// How many concern or negative notes open a case, what each step asks of
+// admin, and the action that closes it. Read by the database trigger that
+// opens cases, so a change here applies to the next note saved.
+function BehaviorLadderSection() {
+  const { language, showToast, currentTeacher } = useApp()
+  const ko = language === 'ko'
+  const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
+  const [s, setS] = useState<LadderSettings>(DEFAULT_LADDER)
+  const [loaded, setLoaded] = useState(false)
+  const [saving, setSaving] = useState(false)
+  useEffect(() => { loadLadderSettings().then(v => { setS(v); setLoaded(true) }) }, [])
+  const setStep = (i: number, patch: Partial<LadderSettings['steps'][number]>) => setS(prev => ({ ...prev, steps: prev.steps.map((st, k) => k === i ? { ...st, ...patch } : st) }))
+  const save = async () => {
+    const steps = s.steps.filter(st => Number(st.threshold) > 0)
+    if (!steps.length) { showToast(ko ? '단계가 하나 이상 필요합니다' : 'Keep at least one step'); return }
+    setSaving(true)
+    const err = await saveLadderSettings({ steps: steps.map(st => ({ threshold: Math.max(1, Math.round(Number(st.threshold))), label: st.label.trim(), action: st.action.trim() || 'Done' })), overdue_days: Math.max(0, Math.round(Number(s.overdue_days))) })
+    setSaving(false)
+    if (err) showToast(`Error: ${err}`); else showToast(ko ? '행동 단계 저장됨' : 'Behavior ladder saved')
+  }
+  const field = 'h-8 px-2.5 bg-surface border border-rule-2 rounded text-[12.5px] text-ink disabled:opacity-60'
+  return (
+    <section id="set-ladder" className="mb-12 scroll-mt-[140px]">
+      <div className="flex items-end justify-between gap-4 mb-3 flex-wrap">
+        <div>
+          <h2 className="font-display text-[22px] leading-none text-ink">{ko ? '행동 단계' : 'Behavior ladder'}</h2>
+          <p className="text-[12.5px] text-ink-2 mt-1.5 max-w-2xl">{ko
+            ? '우려·부정 기록이 기준 수에 이르면 사례가 열리고, 관리자와 담임에게 긴급 공지가 갑니다. 조치를 기록하면 사례가 닫히고 학생 기록에 학부모 연락으로 남으며, 그때부터 다시 셉니다. 교사가 직접 표시한 기록은 즉시 사례를 엽니다.'
+            : 'When a student reaches the number of concern or negative notes on a step, a case opens: the notes bundled together on the admin dashboard, with no dismiss, and an urgent notice to every admin and the class teacher. Recording the step’s action closes the case, writes a parent-contact entry on the student’s log, and restarts the count. A note a teacher flags by hand opens a case at once.'}</p>
+        </div>
+        {isAdmin && <button onClick={save} disabled={saving || !loaded} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving && <Loader2 size={13} className="animate-spin" />}{ko ? '저장' : 'Save'}</button>}
+      </div>
+      <div className="border border-rule-2 rounded-lg overflow-hidden">
+        <table className="w-full text-[12.5px]">
+          <thead><tr className="bg-paper-2 text-[10px] uppercase tracking-wider text-ink-3">
+            <th className="text-left px-4 py-2 w-16">{ko ? '단계' : 'Step'}</th><th className="text-left px-3 py-2 w-28">{ko ? '기록 수' : 'Notes to open'}</th><th className="text-left px-3 py-2">{ko ? '관리자가 하는 일' : 'What admin does'}</th><th className="text-left px-3 py-2 w-56">{ko ? '종료 조치 (버튼 이름)' : 'Action that closes it (button)'}</th><th className="w-10" />
+          </tr></thead>
+          <tbody className="divide-y divide-rule">
+            {s.steps.map((st, i) => (
+              <tr key={i}>
+                <td className="px-4 py-2 font-semibold text-ink">{i + 1}</td>
+                <td className="px-3 py-2"><input type="number" min={1} value={st.threshold} disabled={!isAdmin} onChange={e => setStep(i, { threshold: Number(e.target.value) })} className={`${field} w-20 text-center tabular-nums`} /></td>
+                <td className="px-3 py-2"><input value={st.label} disabled={!isAdmin} onChange={e => setStep(i, { label: e.target.value })} placeholder={ko ? '예: 관리자 검토 및 학부모 연락' : 'e.g. Admin review and parent contact'} className={`${field} w-full`} /></td>
+                <td className="px-3 py-2"><input value={st.action} disabled={!isAdmin} onChange={e => setStep(i, { action: e.target.value })} placeholder={ko ? '예: 학부모 연락 완료' : 'e.g. Parents contacted'} className={`${field} w-full`} /></td>
+                <td className="px-2 py-2 text-right">{isAdmin && s.steps.length > 1 && <button onClick={() => setS(prev => ({ ...prev, steps: prev.steps.filter((_, k) => k !== i) }))} className="text-ink-3 hover:text-bad" title={ko ? '단계 삭제' : 'Remove step'}><X size={13} /></button>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="px-4 py-2.5 bg-paper-2/60 border-t border-rule-2 flex items-center gap-4 flex-wrap text-[12.5px] text-ink-2">
+          {isAdmin && <button onClick={() => setS(prev => ({ ...prev, steps: [...prev.steps, { threshold: 3, label: '', action: '' }] }))} className="text-accent hover:underline">+ {ko ? '단계 추가' : 'Add a step'}</button>}
+          <label className="inline-flex items-center gap-2 ml-auto">{ko ? '다음 수업일까지 확인하지 않으면 빨간 띠:' : 'Red bar on every admin page after'}<input type="number" min={0} value={s.overdue_days} disabled={!isAdmin} onChange={e => setS(prev => ({ ...prev, overdue_days: Number(e.target.value) }))} className={`${field} w-16 text-center tabular-nums`} />{ko ? '수업일' : 'school days unread'}</label>
+        </div>
+      </div>
+      <p className="text-[11.5px] text-ink-3 mt-2">{ko ? '다음 단계는 이전 사례가 종료된 뒤 그 시점부터 센 기록 수로 열립니다. 마지막 단계는 반복됩니다.' : 'The next step starts counting from the moment the previous case was closed. The last step repeats. Needs supabase/migration-behavior-ladder.sql.'}</p>
+    </section>
   )
 }
