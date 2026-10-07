@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
-import { getKSTDateString } from '@/lib/utils'
+import { getKSTDateString, toKSTDateString } from '@/lib/utils'
 import { type BehaviorCase, type LadderSettings, DEFAULT_LADDER, loadLadderSettings, fetchCases, acknowledgeCase, closeCase, updateAsk, noticeSeenBy, isOverdue, schoolDaysSince, isLadderMissing, sweepLadder } from '@/lib/behaviorLadder'
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Eye, EyeOff, Loader2, Printer, X } from 'lucide-react'
 
@@ -27,7 +27,12 @@ const TYPE_LABEL: Record<string, { en: string; ko: string; cls: string }> = {
   intervention: { en: 'Intervention', ko: '개입', cls: 'bg-orange-100 text-orange-700' },
   note: { en: 'Note', ko: '메모', cls: 'bg-gray-100 text-gray-700' },
 }
-const fmtDate = (d: string, ko: boolean) => new Date(d.slice(0, 10) + 'T12:00:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' })
+// Dates come two ways: plain YYYY-MM-DD (a note's date, the action date) and
+// UTC timestamps (opened, read). Both are shown as the Seoul calendar day;
+// slicing a timestamp would show the day before for anything before 9:00.
+const fmtDate = (d: string, ko: boolean) => new Date(toKSTDateString(d) + 'T12:00:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' })
+// A moment, with the time, so "read it" reads as a recorded timestamp rather than a chosen day.
+const fmtWhen = (iso: string, ko: boolean) => new Date(iso).toLocaleString(ko ? 'ko-KR' : 'en-US', { timeZone: 'Asia/Seoul', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Props) {
   const { currentTeacher, language, showToast } = useApp()
@@ -66,12 +71,21 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
     return () => { on = false }
   }, [load, mode, isAdmin, studentId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The dashboard stays open all day: pick up cases and notes other people
+  // add without a reload, the same way the notice board and masthead do.
+  useEffect(() => {
+    const id = setInterval(load, 60_000)
+    window.addEventListener('focus', load)
+    window.addEventListener('daewoo:ladder-changed', load)
+    return () => { clearInterval(id); window.removeEventListener('focus', load); window.removeEventListener('daewoo:ladder-changed', load) }
+  }, [load])
+
   const open = useMemo(() => cases.filter(c => c.status !== 'closed'), [cases])
   const closed = useMemo(() => cases.filter(c => c.status === 'closed'), [cases])
   const admins = useMemo(() => teachers.filter(t => t.role === 'admin'), [teachers])
   const nameOf = (id: string | null | undefined) => teachers.find(t => t.id === id)?.name || ''
   const seenByAdmin = (c: BehaviorCase) => {
-    if (c.acknowledged_at) return { label: ko ? `${nameOf(c.acknowledged_by)} 확인함 · ${fmtDate(c.acknowledged_at, ko)}` : `${nameOf(c.acknowledged_by) || 'Admin'} read it · ${fmtDate(c.acknowledged_at, ko)}`, tone: 'good' as const }
+    if (c.acknowledged_at) return { label: ko ? `${nameOf(c.acknowledged_by)} 확인함 · ${fmtWhen(c.acknowledged_at, ko)}` : `${nameOf(c.acknowledged_by) || 'Admin'} read it · ${fmtWhen(c.acknowledged_at, ko)}`, tone: 'good' as const }
     const rc = (c.notice_id ? seen[c.notice_id] : []) || []
     const who = admins.filter(a => rc.some(r => r.teacher_id === a.id && r.seen_at))
     if (who.length) return { label: ko ? `${who.map(a => a.name).join(', ')} 알림 봄 · 아직 확인 안 함` : `${who.map(a => a.name).join(', ')} saw the notice · not yet acknowledged`, tone: 'warn' as const }
@@ -265,7 +279,7 @@ function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: Behavior
           <div className="px-5 py-3 border-t border-rule-2 bg-paper-2/60">
             {!showAction ? (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[12px] text-ink-2 mr-auto">{c.status === 'open' ? (ko ? '먼저 읽었다고 표시한 뒤 조치를 기록하세요.' : 'Mark it read, then record the action when it is done.') : (ko ? `${nameOf(c.acknowledged_by)} 확인함 · 조치 기록 대기` : `Read by ${nameOf(c.acknowledged_by)} · waiting for the action`)}</span>
+                <span className="text-[12px] text-ink-2 mr-auto">{c.status === 'open' ? (ko ? '먼저 읽었다고 표시한 뒤 조치를 기록하세요.' : 'Mark it read, then record the action when it is done.') : (ko ? `${nameOf(c.acknowledged_by)} 확인함${c.acknowledged_at ? ` · ${fmtWhen(c.acknowledged_at, ko)}` : ''} · 조치 기록 대기` : `Read by ${nameOf(c.acknowledged_by)}${c.acknowledged_at ? ` · ${fmtWhen(c.acknowledged_at, ko)}` : ''} · waiting for the action`)}</span>
                 {c.status === 'open' && <button onClick={ack} disabled={busy} className="h-8 px-3 rounded border border-ink text-[12.5px] font-semibold text-ink hover:bg-surface disabled:opacity-50">{ko ? '읽었습니다' : "I've read this"}</button>}
                 <button onClick={() => setShowAction(true)} className="h-8 px-3 rounded bg-bad text-white text-[12.5px] font-semibold hover:opacity-90">{c.action_label || (ko ? '조치 기록' : 'Record action')}</button>
               </div>

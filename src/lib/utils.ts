@@ -235,6 +235,22 @@ export function getKSTNow(): string {
   return new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' })
 }
 
+/**
+ * The Seoul calendar date (YYYY-MM-DD) of an ISO timestamp. Timestamps from
+ * the database are UTC, so slicing the first ten characters gives the day
+ * before for anything that happened before 9:00 in Korea; use this instead.
+ * A plain YYYY-MM-DD string is returned as it is.
+ */
+export function toKSTDateString(iso: string): string {
+  if (!iso) return ''
+  if (!/[T ]/.test(iso)) return iso.slice(0, 10)
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso.slice(0, 10)
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d)
+  const get = (t: string) => parts.find(x => x.type === t)?.value || ''
+  return `${get('year')}-${get('month')}-${get('day')}`
+}
+
 // Domain display name helper
 const DOMAIN_DISPLAY: Record<string, string> = {
   reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing',

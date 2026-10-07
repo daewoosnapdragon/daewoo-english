@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getKSTDateString } from '@/lib/utils'
+import { getKSTDateString, toKSTDateString } from '@/lib/utils'
 
 // ─── Behavior ladder ─────────────────────────────────────────────
 // Three concern or negative notes on a student open a case for admin: the
@@ -57,7 +57,7 @@ export async function saveLadderSettings(s: LadderSettings): Promise<string | nu
 
 /** Weekdays elapsed since an ISO timestamp, in Seoul time; holidays are not subtracted. */
 export function schoolDaysSince(iso: string, today: string = getKSTDateString()): number {
-  const start = new Date(iso.slice(0, 10) + 'T00:00:00Z')
+  const start = new Date(toKSTDateString(iso) + 'T00:00:00Z')
   const end = new Date(today + 'T00:00:00Z')
   let n = 0
   for (let d = new Date(start); d < end; d.setUTCDate(d.getUTCDate() + 1)) {
@@ -106,7 +106,8 @@ export async function closeCase(c: BehaviorCase, teacherId: string, actionDate: 
   })
   if (logErr) return logErr.message
   if (c.notice_id) {
-    const y = new Date(); y.setDate(y.getDate() - 1)
+    // Expire the notice as of yesterday (Seoul), so it leaves every board at once.
+    const y = new Date(getKSTDateString() + 'T00:00:00Z'); y.setUTCDate(y.getUTCDate() - 1)
     await supabase.from('notices').update({ expires_on: y.toISOString().slice(0, 10), updated_at: now }).eq('id', c.notice_id)
   }
   return null

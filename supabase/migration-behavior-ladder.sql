@@ -14,7 +14,8 @@
 -- hand opens a case at once, whatever the count.
 --
 -- The check runs as a database trigger on behavior_logs, so it fires no
--- matter how a note is entered. behavior_ladder_sweep() re-runs it for
+-- matter how a note is entered. A note logged while a case is already open
+-- joins that case instead. behavior_ladder_sweep() re-runs the check for
 -- every student (the dashboard calls it on load, which also converts notes
 -- entered before this migration). behavior_ladder_status(student) is what
 -- the behavior tracker shows ("2 of 3 notes toward step 1").
@@ -147,10 +148,26 @@ BEGIN
 END $$;
 
 -- ── Trigger: every note goes through the check ──
+-- While a case is open, a further concern/negative/flagged note joins that
+-- case (its notes list and the notice's count), so admin sees it; nothing
+-- opens a second case. With no open case, the threshold check runs.
 CREATE OR REPLACE FUNCTION behavior_ladder_trigger() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE v_case RECORD; v_n INTEGER;
 BEGIN
   IF NEW.type IN ('concern', 'negative', 'abc') OR COALESCE(NEW.is_flagged, false) THEN
-    PERFORM behavior_ladder_check(NEW.student_id);
+    SELECT id, log_ids, notice_id INTO v_case FROM behavior_cases
+    WHERE student_id = NEW.student_id AND status <> 'closed' ORDER BY created_at DESC LIMIT 1;
+    IF FOUND THEN
+      IF NOT (NEW.id = ANY(v_case.log_ids)) THEN
+        v_n := COALESCE(array_length(v_case.log_ids, 1), 0) + 1;
+        UPDATE behavior_cases SET log_ids = array_append(log_ids, NEW.id), updated_at = now() WHERE id = v_case.id;
+        IF v_case.notice_id IS NOT NULL THEN
+          UPDATE notices SET body = regexp_replace(body, 'has \d+ notes', 'has ' || v_n || ' notes'), updated_at = now() WHERE id = v_case.notice_id;
+        END IF;
+      END IF;
+    ELSE
+      PERFORM behavior_ladder_check(NEW.student_id);
+    END IF;
   END IF;
   RETURN NEW;
 END $$;
