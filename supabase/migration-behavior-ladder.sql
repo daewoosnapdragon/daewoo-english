@@ -1,7 +1,8 @@
 -- ============================================================================
 -- MIGRATION: Behavior ladder
 -- Run this in the Supabase SQL Editor after migration-notices.sql.
--- Safe to run twice.
+-- Safe to run twice. If it already ran, migration-behavior-ladder-2.sql
+-- applies the trigger change on its own.
 --
 -- Three concern/negative notes on a student (the threshold is set in
 -- Settings → Behavior ladder) open a CASE: the notes bundled together, a
