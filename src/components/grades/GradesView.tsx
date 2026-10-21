@@ -6,7 +6,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, Semester, QuestionMapItem, ItemResponse } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, domainLabel } from '@/lib/utils'
-import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, ChevronUp, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search, Eraser } from 'lucide-react'
+import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, ChevronUp, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search, Eraser, Printer } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
@@ -20,6 +20,7 @@ import { DOMAIN_COLOR, domainColor, domainShort } from '@/lib/domainTone'
 import { loadAssessmentWeights, useAssessmentWeights } from '@/lib/assessmentWeights'
 import RubricPicker from './RubricPicker'
 import RubricScoreSheet from './RubricScoreSheet'
+import RubricPrintDialog from './RubricPrintDialog'
 
 // Normalize CCSS input: "rl21" -> "RL.2.1", "rf13a" -> "RF.1.3a", "sl42" -> "SL.4.2"
 function normalizeCCSS(input: string): string {
@@ -504,6 +505,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
   const { showToast } = useApp()
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [rubricOpen, setRubricOpen] = useState(false)
+  const [rubricPrintOpen, setRubricPrintOpen] = useState(false)
   const hasQuestionMap = selectedAssessment?.question_map && selectedAssessment.question_map.length > 0
   // A mixed paper's domains, the current tab first, for the part columns of the score list.
   const partDomains = selectedAssessment?.mixed && selectedAssessment.domain_split
@@ -511,6 +513,9 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
     : []
   return (
     <>
+      {rubricPrintOpen && selectedAssessment?.rubric && (
+        <RubricPrintDialog rubric={selectedAssessment.rubric} title={selectedAssessment.name} subtitle={`${selectedClass} · ${lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}`} students={students.map(s => ({ id: s.id, name: s.english_name }))} maxScore={selectedAssessment.max_score} onClose={() => setRubricPrintOpen(false)} />
+      )}
       {rubricOpen && selectedAssessment && (
         <RubricPicker grade={selectedGrade} englishClass={selectedClass} onClose={() => setRubricOpen(false)}
           onUse={async r => {
@@ -622,6 +627,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
                   <span className="text-[12px] text-text-secondary">{enteredCount}/{students.length} entered</span>
                   <div className="w-24 h-1.5 bg-navy/10 rounded-full overflow-hidden"><div className="h-full bg-navy rounded-full transition-all" style={{ width: `${students.length > 0 ? (enteredCount / students.length) * 100 : 0}%` }} /></div>
                   {selectedAssessment.rubric && <button onClick={() => setSheetMode(true)} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink">{lang === 'ko' ? '루브릭으로 채점' : 'Rubric sheet'}</button>}
+                  {selectedAssessment.rubric && <button onClick={() => setRubricPrintOpen(true)} title={lang === 'ko' ? '루브릭 인쇄 (전체 · 반 · 1/4 페이지)' : 'Print the rubric: full, half or quarter page'} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink"><Printer size={12} />{lang === 'ko' ? '인쇄' : 'Print'}</button>}
                   {!selectedAssessment.rubric && <button onClick={() => setRubricOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-all"><ClipboardEdit size={13} />Score with Rubric</button>}
                                     {hasQuestionMap && <button onClick={() => setSheetMode(true)} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink"><Zap size={12} /> {lang === 'ko' ? '답안지로 채점' : 'Answer sheet'}</button>}
                   <CrossClassCompare assessmentName={selectedAssessment.name} domain={selectedAssessment.domain} maxScore={selectedAssessment.max_score} currentClass={selectedClass} grade={selectedGrade} semesterId={selectedSemester || ''} />

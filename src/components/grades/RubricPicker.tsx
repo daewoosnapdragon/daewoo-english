@@ -6,7 +6,8 @@ import { useTeachers } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { TEMPLATES, buildFromTemplate, bandForGrade, type RubricCriterion, type Band } from '@/components/curriculum/rubric-library'
 import RubricBuilder, { type RubricDraft } from './RubricBuilder'
-import { X, Pencil, Plus, Trash2 } from 'lucide-react'
+import RubricPrintDialog from './RubricPrintDialog'
+import { X, Pencil, Plus, Trash2, Printer } from 'lucide-react'
 
 // ─── Rubric picker ───────────────────────────────────────────────
 // Templates by task on the left, the school's and your class's saved rubrics
@@ -26,6 +27,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
   const [loadError, setLoadError] = useState<string | null>(null)
   const [sel, setSel] = useState<{ kind: 'template'; key: string } | { kind: 'saved'; id: string } | null>(null)
   const [building, setBuilding] = useState<RubricDraft | null>(null)
+  const [printing, setPrinting] = useState(false)
   const band = bandForGrade(grade)
 
   const load = async () => {
@@ -36,9 +38,9 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
   }
   useEffect(() => { load() }, [englishClass])
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !building) onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !building && !printing) onClose() }
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey)
-  }, [onClose, building])
+  }, [onClose, building, printing])
 
   const preview = useMemo(() => {
     if (!sel) return null
@@ -78,6 +80,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
+      {printing && preview && <RubricPrintDialog rubric={{ name: preview.name, criteria: preview.criteria }} subtitle={lang === 'ko' ? `${grade}학년 · ${englishClass}` : `Grade ${grade} · ${englishClass}`} onClose={() => setPrinting(false)} />}
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-4xl max-h-[85vh] grid grid-rows-[auto_minmax(0,1fr)_auto]" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-center justify-between">
           <div><h3 className="font-display text-[22px] leading-none text-ink">{lang === 'ko' ? '루브릭 선택' : 'Choose a rubric'}</h3><p className="text-[12px] text-ink-3 mt-1">{lang === 'ko' ? `${grade}학년 · 0–4 척도` : `Grade ${grade} · each criterion 0–4`}</p></div>
@@ -148,6 +151,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
         <div className="px-5 py-3 border-t border-rule-2 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             {preview && <button onClick={() => setBuilding({ id: preview.rubric_id || undefined, name: preview.name, task: preview.task, band: preview.band, criteria: preview.criteria, english_class: sel?.kind === 'saved' ? (saved.find(x => x.id === sel.id)?.english_class ?? englishClass) : englishClass })} className="h-9 px-3.5 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Pencil size={13} />{sel?.kind === 'saved' ? (lang === 'ko' ? '편집' : 'Edit') : (lang === 'ko' ? '수정해서 저장' : 'Customize and save')}</button>}
+            {preview && preview.criteria.length > 0 && <button onClick={() => setPrinting(true)} className="h-9 px-3.5 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{lang === 'ko' ? '인쇄' : 'Print'}</button>}
             {sel?.kind === 'saved' && (() => { const r = saved.find(x => x.id === sel.id); return r && canDelete(r) ? <button onClick={() => remove(r)} className="h-9 px-3 rounded text-[13px] text-ink-3 hover:text-bad">{lang === 'ko' ? '목록에서 삭제' : 'Remove from list'}</button> : null })()}
           </div>
           <button disabled={!preview || preview.criteria.length === 0} onClick={() => preview && onUse({ rubric_id: preview.rubric_id, name: preview.name, band: preview.band, criteria: preview.criteria })} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50">{lang === 'ko' ? '이 루브릭으로 채점' : 'Use this rubric'}</button>
