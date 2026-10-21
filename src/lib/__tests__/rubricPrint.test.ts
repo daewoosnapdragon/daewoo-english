@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildFromTemplate } from '@/components/curriculum/rubric-library'
-import { buildRubricPrintHtml, esc, sheetCount, slipsFor, type PrintOptions } from '@/components/grades/rubricPrint'
+import { buildRubricPrintHtml, esc, scoredForItem, sheetCount, slipsFor, type PrintOptions } from '@/components/grades/rubricPrint'
 
 const rubric = buildFromTemplate('opinion', 3)!
 const base: PrintOptions = { layout: 'full', lang: 'en', showStandards: true, showZero: true, commentLine: true, copies: 1 }
@@ -61,5 +61,24 @@ describe('rubric print', () => {
     expect(html).not.toContain('A <script>')
     expect(html).toContain('Tom &amp; Jerry')
     expect(html).toContain('&lt;i&gt;d&lt;/i&gt;')
+  })
+})
+
+describe('scoredForItem (a rubric question inside an answer sheet)', () => {
+  it('takes the levels from that question only, with the item points as the total', () => {
+    const students = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }]
+    const responses = {
+      a: { 1: { answer: 'B', points: 1 }, 6: { levels: { prompt: 4, ideas: 3 }, points: 17.5 } },
+      b: { 1: { answer: 'A', points: 0 } },                 // no rubric marks yet
+      c: { 6: { levels: {}, points: 0 } },                   // started but nothing marked
+    }
+    const flags = { d: { absent: true, exempt: false } }
+    const out = scoredForItem(6, students, responses, flags)
+    expect(out.a).toEqual({ levels: { prompt: 4, ideas: 3 }, score: 17.5 })
+    expect(out.b).toBeUndefined()
+    expect(out.c).toBeUndefined()
+    expect(out.d).toEqual({ note: 'absent' })
+    // A different question has no rubric marks for anyone.
+    expect(Object.keys(scoredForItem(1, students, responses, flags))).toEqual(['d'])
   })
 })

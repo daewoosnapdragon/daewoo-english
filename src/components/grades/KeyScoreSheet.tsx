@@ -15,7 +15,9 @@ import { isRoutingColumnError } from '@/lib/domainRouting'
 import { CCSS_STANDARDS } from '@/components/curriculum/ccss-standards'
 import { plainName } from '@/components/curriculum/standards-plain'
 import AssessmentAnalysis from './AssessmentAnalysis'
-import { BarChart3, Check, ChevronLeft, ChevronRight, Eraser, Loader2, LayoutGrid, ListChecks } from 'lucide-react'
+import RubricPrintDialog from './RubricPrintDialog'
+import { scoredForItem } from './rubricPrint'
+import { BarChart3, Check, ChevronLeft, ChevronRight, Eraser, Loader2, LayoutGrid, ListChecks, Printer } from 'lucide-react'
 
 // ─── Answer sheet scoring ────────────────────────────────────────
 // The same bubble sheet the written level test uses: one student at a time,
@@ -77,6 +79,12 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
   // solid green 4. The top level used to be black, which read as a warning.
   const levelTone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good-soft border-good text-good' : 'bg-good border-good text-white'
   const [view, setView] = useState<'sheet' | 'grid' | 'analysis'>('sheet')
+  // Printing a rubric item: the question number being printed, and whether
+  // the pick-a-question menu is open when the paper has more than one.
+  const [printingQ, setPrintingQ] = useState<number | null>(null)
+  const [printMenu, setPrintMenu] = useState(false)
+  const rubricItems = useMemo(() => map.filter(hasRubric), [map])
+  const openPrint = () => { if (rubricItems.length === 1) setPrintingQ(rubricItems[0].num); else setPrintMenu(m => !m) }
   // Hovering a column header on the class grid shows what the column is:
   // the question, its key and points, the standard in plain words, the
   // rubric criterion with its levels, and how the class did on it.
@@ -282,7 +290,8 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.metaKey || e.ctrlKey || e.altKey || printingQ != null) return
+      if (e.key === 'Escape' && printMenu) { setPrintMenu(false); return }
       const idx = map.findIndex(it => it.num === focusedQ)
       const next = () => { setCritIdx(0); if (idx < map.length - 1) setFocusedQ(map[idx + 1].num) }
       const cur = map[idx]
@@ -362,8 +371,17 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
 
   if (loading) return <div className="p-10 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
 
+  const printItem = printingQ != null ? rubricItems.find(it => it.num === printingQ) : undefined
+
   return (
     <div>
+      {printItem && (
+        <RubricPrintDialog rubric={printItem.rubric!} title={`${assessment.name} · Q${printItem.num}`}
+          subtitle={[assessment.english_class, printItem.standard].filter(Boolean).join(' · ') || undefined}
+          students={students.map(s => ({ id: s.id, name: s.english_name }))}
+          scored={scoredForItem(printItem.num, students, responses, flags)} maxScore={printItem.max_points}
+          onClose={() => setPrintingQ(null)} />
+      )}
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div className="flex items-center gap-3">
           <span className="text-[13px] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'}</span>
@@ -375,6 +393,24 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
         </div>
         <div className="flex items-center gap-2">
           {dirty.size > 0 && <span className="text-[12px] text-warn">{dirty.size} {lang === 'ko' ? '명 미저장' : 'unsaved'}</span>}
+          {rubricItems.length > 0 && (
+            <div className="relative">
+              <button onClick={openPrint} title={lang === 'ko' ? '이 시험지의 루브릭을 빈 양식으로, 학생별로, 또는 채점 결과와 함께 인쇄' : 'Print a rubric from this paper: blank, one per student, or with the marked levels'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{lang === 'ko' ? '루브릭 인쇄' : 'Print rubric'}</button>
+              {printMenu && rubricItems.length > 1 && (
+                <>
+                  <div className="fixed inset-0 z-[90]" onClick={() => setPrintMenu(false)} />
+                  <div className="absolute right-0 top-full mt-1 z-[95] min-w-[220px] bg-surface border border-rule-2 rounded shadow-lg py-1">
+                    <p className="eyebrow px-3 py-1.5">{lang === 'ko' ? '어느 문항?' : 'Which question?'}</p>
+                    {rubricItems.map(it => (
+                      <button key={it.num} onClick={() => { setPrintMenu(false); setPrintingQ(it.num) }} className="w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-paper-2 text-ink">
+                        <span className="font-semibold tabular-nums">Q{it.num}</span> · {it.rubric!.name} <span className="text-ink-3">· {it.rubric!.criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · /{it.max_points}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <button onClick={clearAll} disabled={saving || !students.some(s => hasAnything(s.id))} title={lang === 'ko' ? '반 전체의 표시와 점수를 지웁니다' : 'Remove every mark and score for the whole class'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2 inline-flex items-center gap-1.5">
             <Eraser size={13} />{lang === 'ko' ? '모두 지우기' : 'Clear all'}
           </button>

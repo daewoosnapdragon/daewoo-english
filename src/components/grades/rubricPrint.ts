@@ -43,6 +43,30 @@ export interface PrintOptions {
 
 export const SLIPS_PER_SHEET: Record<PrintLayout, number> = { full: 1, half: 2, quarter: 4 }
 
+/** What the print dialog needs for each student: marked levels and total, or absent/exempt. */
+export type ScoredByStudent = Record<string, { levels?: Record<string, number>; score?: number | null; note?: 'absent' | 'exempt' }>
+
+/**
+ * The scored slips for one rubric item on an answer sheet. The levels live on
+ * the student's response to that question and the total is the item's points,
+ * not the paper's, so a slip reads "17 / 20" for the writing question alone.
+ */
+export function scoredForItem(
+  num: number,
+  students: { id: string }[],
+  responses: Record<string, Record<number, { levels?: Record<string, number>; points?: number }>>,
+  flags: Record<string, { absent?: boolean; exempt?: boolean } | undefined>,
+): ScoredByStudent {
+  const out: ScoredByStudent = {}
+  for (const s of students) {
+    const fl = flags[s.id]
+    if (fl?.absent || fl?.exempt) { out[s.id] = { note: fl.absent ? 'absent' : 'exempt' }; continue }
+    const r = responses[s.id]?.[num]
+    if (r?.levels && Object.keys(r.levels).length > 0) out[s.id] = { levels: r.levels, score: r.points ?? null }
+  }
+  return out
+}
+
 const WORDS = {
   en: { name: 'Name', date: 'Date', score: 'Score', criterion: 'Criterion', comment: 'Comment', scale: 'Scale', absent: 'Absent', exempt: 'Exempt', total: 'Total' },
   ko: { name: '이름', date: '날짜', score: '점수', criterion: '기준', comment: '코멘트', scale: '척도', absent: '결석', exempt: '면제', total: '합계' },
