@@ -102,6 +102,10 @@ export const translations = {
       academicHistory: 'Academic History',
       sortForPrinting: 'Sort for Printing',
       duplicateWarning: 'Duplicate student number detected',
+      widaLevel: 'WIDA Level',
+      noLevel: 'No level',
+      clearFilters: 'Clear filters',
+      sortHint: 'Click a column header to sort',
     },
     // Grades
     grades: {
@@ -258,6 +262,10 @@ export const translations = {
       academicHistory: '학업 이력',
       sortForPrinting: '인쇄 정렬',
       duplicateWarning: '중복 번호 감지',
+      widaLevel: 'WIDA 레벨',
+      noLevel: '레벨 없음',
+      clearFilters: '필터 초기화',
+      sortHint: '열 제목을 클릭하면 정렬됩니다',
     },
     grades: {
       title: '성적 입력',
