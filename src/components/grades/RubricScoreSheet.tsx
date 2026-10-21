@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO, rubricScore, type RubricCriterion } from '@/components/curriculum/rubric-library'
-import { Check, ChevronLeft, ChevronRight, Loader2, X, Eraser } from 'lucide-react'
+import RubricPrintDialog from './RubricPrintDialog'
+import { Check, ChevronLeft, ChevronRight, Loader2, X, Eraser, Printer } from 'lucide-react'
 
 // ─── Rubric scoring ──────────────────────────────────────────────
 // A full-screen page, no scrolling: students on the left, the rubric in the
@@ -33,6 +34,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
   const [row, setRow] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [printing, setPrinting] = useState(false)
   const levelsRef = useRef(levels); levelsRef.current = levels
   const flagsRef = useRef(flags); flagsRef.current = flags
   const dirtyRef = useRef(dirty); dirtyRef.current = dirty
@@ -142,7 +144,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.metaKey || e.ctrlKey || e.altKey) return
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.metaKey || e.ctrlKey || e.altKey || printing) return
       if (e.key === 'Escape') { exit(); return }
       if (e.key === 'ArrowDown') { e.preventDefault(); setRow(r => Math.min(r + 1, criteria.length - 1)); return }
       if (e.key === 'ArrowUp') { e.preventDefault(); setRow(r => Math.max(r - 1, 0)); return }
@@ -164,8 +166,21 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
   const tone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good-soft border-good text-good' : 'bg-good border-good text-white'
   const isOff = active ? !!(flags[active.id]?.absent || flags[active.id]?.exempt) : false
 
+  // Slips for printing: every student's marked levels and total, or absent/exempt.
+  const printScored = useMemo(() => {
+    const out: Record<string, { levels?: Record<string, number>; score?: number | null; note?: 'absent' | 'exempt' }> = {}
+    students.forEach(s => {
+      const fl = flags[s.id]
+      if (fl?.absent || fl?.exempt) out[s.id] = { note: fl.absent ? 'absent' : 'exempt' }
+      else if (Object.keys(levels[s.id] || {}).length > 0) out[s.id] = { levels: levels[s.id], score: scoreOf(s.id) }
+    })
+    return out
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [students, flags, levels, criteria.length, assessment.max_score])
+
   return (
     <div className="fixed inset-0 z-[60] bg-paper flex flex-col">
+      {printing && <RubricPrintDialog rubric={assessment.rubric} title={assessment.name} students={students.map(s => ({ id: s.id, name: s.english_name }))} scored={printScored} maxScore={assessment.max_score} onClose={() => setPrinting(false)} />}
       {/* Top bar */}
       <div className="h-12 px-5 border-b border-rule-2 bg-surface flex items-center gap-4 flex-shrink-0">
         <button onClick={exit} className="inline-flex items-center gap-1.5 text-[12.5px] text-ink-2 hover:text-ink"><X size={14} />{lang === 'ko' ? '나가기' : 'Exit'}</button>
@@ -173,6 +188,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
         <span className="text-[12px] text-ink-3 truncate">{assessment.rubric.name} · {criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · /{assessment.max_score}</span>
         <span className="ml-auto text-[12.5px] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'}</span>
         {dirty.size > 0 && <span className="text-[12px] text-warn">{dirty.size} {lang === 'ko' ? '명 미저장' : 'unsaved'}</span>}
+        <button onClick={() => setPrinting(true)} title={lang === 'ko' ? '루브릭을 빈 양식으로, 학생별로, 또는 채점 결과와 함께 인쇄' : 'Print the rubric blank, one per student, or with the marked levels'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{lang === 'ko' ? '인쇄' : 'Print'}</button>
         <button onClick={clearAll} disabled={saving || !students.some(s => hasAnything(s.id))} title={lang === 'ko' ? '반 전체의 단계와 점수를 지웁니다' : 'Remove every level and score for the whole class'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2 inline-flex items-center gap-1.5"><Eraser size={13} />{lang === 'ko' ? '모두 지우기' : 'Clear all'}</button>
         <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? '모두 저장' : 'Save all'}</button>
       </div>
