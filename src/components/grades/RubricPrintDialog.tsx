@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
-import { buildRubricPrintHtml, sheetCount, SLIPS_PER_SHEET, type PrintLayout, type PrintRubric, type PrintSlip } from './rubricPrint'
+import { buildRubricPrintHtml, sheetCount, SLIPS_PER_SHEET, type PrintLayout, type PrintRubric, type PrintSlip, type ScoredByStudent } from './rubricPrint'
 import { X, Printer } from 'lucide-react'
 
 // ─── Print rubric dialog ─────────────────────────────────────────
@@ -18,7 +18,7 @@ interface Props {
   /** When given, slips can be printed one per student. */
   students?: { id: string; name: string }[]
   /** Marked levels by student id; when given, slips can carry the marks. */
-  scored?: Record<string, { levels?: Record<string, number>; score?: number | null; note?: 'absent' | 'exempt' }>
+  scored?: ScoredByStudent
   maxScore?: number
   onClose: () => void
 }
