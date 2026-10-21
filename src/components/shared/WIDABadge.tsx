@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { WIDA_LEVELS } from '@/lib/wida'
+import { widaLevelFromDomains, type WidaDomainMap } from '@/lib/rosterSort'
 
 // WIDA levels are read by badges on nearly every student row, so they are
 // fetched once and shared rather than queried per badge. Mounted badges
 // subscribe so an edit in WIDA Profiles refreshes them immediately, instead of
 // showing stale levels until the next full page load.
-let widaCache: Record<string, Record<string, number>> = {}
+let widaCache: WidaDomainMap = {}
 let cacheLoaded = false
 let inFlight: Promise<typeof widaCache> | null = null
 const subscribers = new Set<() => void>()
@@ -19,7 +20,7 @@ export async function loadWIDACache() {
   if (inFlight) return inFlight
   inFlight = (async () => {
     const { data } = await supabase.from('student_wida_levels').select('student_id, domain, wida_level')
-    const next: Record<string, Record<string, number>> = {}
+    const next: WidaDomainMap = {}
     if (data) {
       data.forEach((r: any) => {
         if (!next[r.student_id]) next[r.student_id] = {}
@@ -41,6 +42,22 @@ export function invalidateWIDACache() {
   loadWIDACache().then(() => { subscribers.forEach(fn => fn()) })
 }
 
+/**
+ * The whole WIDA cache, for views that sort or filter rows by level rather
+ * than rendering one badge each. Re-renders when the cache loads or is
+ * invalidated, the same as the badges do.
+ */
+export function useWIDALevels(): WidaDomainMap {
+  const [, forceRender] = useState(0)
+  useEffect(() => {
+    if (!cacheLoaded) { loadWIDACache().then(() => forceRender(n => n + 1)) }
+    const onChange = () => forceRender(n => n + 1)
+    subscribers.add(onChange)
+    return () => { subscribers.delete(onChange) }
+  }, [])
+  return widaCache
+}
+
 export default function WIDABadge({ studentId, compact }: { studentId: string; compact?: boolean }) {
   const [, forceRender] = useState(0)
   const [ready, setReady] = useState(cacheLoaded)
@@ -56,10 +73,8 @@ export default function WIDABadge({ studentId, compact }: { studentId: string; c
   if (!ready) return null
   const sl = widaCache[studentId]
   if (!sl) return null
-  const vals = Object.values(sl).filter((v): v is number => v != null && v > 0)
-  if (vals.length === 0) return null
-  const avg = Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10
-  const rounded = Math.round(avg)
+  const rounded = widaLevelFromDomains(sl)
+  if (rounded == null) return null
   const info = WIDA_LEVELS.find(w => w.level === rounded)
   if (!info) return null
 

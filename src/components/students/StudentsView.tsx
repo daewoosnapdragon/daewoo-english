@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
-import { classToColor, classToTextColor, sortByKoreanClassAndNumber, domainLabel } from '@/lib/utils'
+import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { withoutAwayDays } from '@/lib/calendarDays'
-import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw, BookOpen } from 'lucide-react'
+import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw, BookOpen, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
-import WIDABadge from '@/components/shared/WIDABadge'
+import WIDABadge, { useWIDALevels } from '@/components/shared/WIDABadge'
+import { sortRoster, filterRoster, widaLevelFromDomains, sanitizeRosterPrefs, rosterPrefsKey, DEFAULT_ROSTER_PREFS, type RosterSortKey, type RosterSortDir, type WidaFilter } from '@/lib/rosterSort'
 import RosterUploadModal from './RosterUploadModal'
 import { exportToCSV } from '@/lib/export'
 import { Sparkline } from '@/components/charts'
@@ -35,13 +36,41 @@ export default function StudentsView() {
   const [search, setSearch] = useState('')
   const [filterGrade, setFilterGrade] = useState<Grade | null>(null)
   const [filterClass, setFilterClass] = useState<EnglishClass | null>(null)
-  const [sortMode, setSortMode] = useState<'name' | 'korean_class' | 'english_class' | 'grade'>('english_class')
+  const [filterKoreanClass, setFilterKoreanClass] = useState<KoreanClass | null>(null)
+  const [filterWida, setFilterWida] = useState<WidaFilter | null>(null)
+  const [sortKey, setSortKey] = useState<RosterSortKey>(DEFAULT_ROSTER_PREFS.sortKey)
+  const [sortDir, setSortDir] = useState<RosterSortDir>(DEFAULT_ROSTER_PREFS.sortDir)
   const [showManage, setShowManage] = useState(false)
   const [filterReview, setFilterReview] = useState(false)
   const [bulkEdit, setBulkEdit] = useState(false)
   const [bulkEdits, setBulkEdits] = useState<Record<string, Partial<Student>>>({})
 
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class as EnglishClass : null
+  const widaLevels = useWIDALevels()
+
+  // Sort and filters are remembered per teacher so the roster opens the way
+  // they left it. Saving waits until the entry for the current key has been
+  // read, otherwise the defaults would overwrite it on first render.
+  const prefsKey = rosterPrefsKey(currentTeacher?.id)
+  const [loadedPrefsKey, setLoadedPrefsKey] = useState<string | null>(null)
+  useEffect(() => {
+    let prefs = DEFAULT_ROSTER_PREFS
+    try { const raw = localStorage.getItem(prefsKey); if (raw) prefs = sanitizeRosterPrefs(JSON.parse(raw)) } catch { /* private mode or bad JSON */ }
+    setSortKey(prefs.sortKey); setSortDir(prefs.sortDir)
+    setFilterGrade(prefs.filterGrade as Grade | null); setFilterClass(prefs.filterClass as EnglishClass | null)
+    setFilterKoreanClass(prefs.filterKoreanClass); setFilterWida(prefs.filterWida)
+    setLoadedPrefsKey(prefsKey)
+  }, [prefsKey])
+  useEffect(() => {
+    if (loadedPrefsKey !== prefsKey) return
+    try { localStorage.setItem(prefsKey, JSON.stringify({ sortKey, sortDir, filterGrade, filterClass, filterKoreanClass, filterWida })) } catch { /* private mode */ }
+  }, [loadedPrefsKey, prefsKey, sortKey, sortDir, filterGrade, filterClass, filterKoreanClass, filterWida])
+
+  const toggleSort = (key: RosterSortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('asc') }
+  }
+  const hasRowFilters = filterKoreanClass != null || filterWida != null || filterReview
 
   const { students, loading, refetch } = useStudents({
     grade: filterGrade,
@@ -50,16 +79,28 @@ export default function StudentsView() {
   })
 
   const sorted = useMemo(() => {
-    let result = [...students]
-    if (sortMode === 'korean_class') result = sortByKoreanClassAndNumber(result)
-    else if (sortMode === 'english_class') {
-      const classOrder: Record<string, number> = { Lily: 1, Camellia: 2, Daisy: 3, Sunflower: 4, Marigold: 5, Snapdragon: 6 }
-      result.sort((a, b) => (classOrder[a.english_class] || 99) - (classOrder[b.english_class] || 99) || a.english_name.localeCompare(b.english_name))
-    } else if (sortMode === 'grade') result.sort((a, b) => a.grade - b.grade || a.english_name.localeCompare(b.english_name))
-    else result.sort((a, b) => a.english_name.localeCompare(b.english_name))
+    let result = filterRoster(students, { koreanClass: filterKoreanClass, wida: filterWida }, widaLevels)
     if (filterReview) result = result.filter(s => s.needs_review)
-    return result
-  }, [students, sortMode, filterReview])
+    return sortRoster(result, sortKey, sortDir, widaLevels)
+  }, [students, sortKey, sortDir, filterKoreanClass, filterWida, filterReview, widaLevels])
+
+  // Chip counts come from the grade/class-scoped list, not the filtered one,
+  // so a chip never disappears once it has been picked.
+  const koreanClassCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    students.forEach(s => { counts[s.korean_class] = (counts[s.korean_class] || 0) + 1 })
+    return counts
+  }, [students])
+  const widaCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    students.forEach(s => { const l = widaLevelFromDomains(widaLevels[s.id]); const k = l == null ? 'none' : String(l); counts[k] = (counts[k] || 0) + 1 })
+    return counts
+  }, [students, widaLevels])
+  const widaChipLevels = useMemo(() => {
+    const present = Object.keys(widaCounts).filter(k => k !== 'none').map(Number)
+    if (typeof filterWida === 'number' && !present.includes(filterWida)) present.push(filterWida)
+    return present.sort((a, b) => a - b)
+  }, [widaCounts, filterWida])
 
   const duplicates = useMemo(() => {
     const seen = new Map<string, Student[]>()
@@ -77,6 +118,8 @@ export default function StudentsView() {
               {loading ? '...' : `${sorted.length} ${t.common.students}`}
               {filterGrade ? ` — Grade ${filterGrade}` : ''}
               {(filterClass || teacherClass) ? ` — ${filterClass || teacherClass}` : ''}
+              {filterKoreanClass ? ` — ${filterKoreanClass}` : ''}
+              {filterWida != null ? ` — ${filterWida === 'none' ? t.students.noLevel : `WIDA L${filterWida}`}` : ''}
             </p>
           </div>
           {/* Manage button - opens panel for Upload Roster / Add Student */}
@@ -138,17 +181,8 @@ export default function StudentsView() {
               ⚠ {students.filter(s => s.needs_review).length} Need Review
             </button>
           )}
-          <div className="flex items-center gap-1 ml-auto">
-            <span className="text-[11px] text-text-tertiary uppercase tracking-wider mr-1">Sort:</span>
-            {(['english_class', 'korean_class', 'name', 'grade'] as const).map(mode => (
-              <button key={mode} onClick={() => setSortMode(mode)}
-                className={`px-2.5 py-1.5 rounded text-[11.5px] font-medium transition-all ${sortMode === mode ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
-                {mode === 'english_class' ? 'Class' : mode === 'korean_class' ? '반/번호' : mode === 'name' ? 'Name' : 'Grade'}
-              </button>
-            ))}
-          </div>
-          <button onClick={() => { setSortMode('korean_class'); showToast('Sorted for printing — Korean class → student number') }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium bg-warm text-white hover:opacity-90 transition-all">
+          <button onClick={() => { setSortKey('korean_class'); setSortDir('asc'); showToast('Sorted for printing — Korean class → student number') }}
+            className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium bg-warm text-white hover:opacity-90 transition-all">
             <Printer size={14} /> {t.students.sortForPrinting}
           </button>
           <button onClick={() => {
@@ -235,6 +269,42 @@ export default function StudentsView() {
           </button>
         </div>
 
+        {/* Row filters: Korean class and WIDA level. Chips show counts for the current grade/class scope. */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4 text-[11.5px]">
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] text-text-tertiary uppercase tracking-wider mr-1">{t.students.koreanClass}:</span>
+            {KOREAN_CLASSES.map(kc => (
+              <button key={kc} onClick={() => setFilterKoreanClass(filterKoreanClass === kc ? null : kc)}
+                className={`px-2.5 py-1 rounded font-medium transition-all ${filterKoreanClass === kc ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                {kc} <span className={filterKoreanClass === kc ? 'opacity-70' : 'text-text-tertiary'}>{koreanClassCounts[kc] || 0}</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] text-text-tertiary uppercase tracking-wider mr-1">{t.students.widaLevel}:</span>
+            {widaChipLevels.map(l => (
+              <button key={l} onClick={() => setFilterWida(filterWida === l ? null : l)}
+                className={`px-2.5 py-1 rounded font-medium transition-all ${filterWida === l ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                L{l} <span className={filterWida === l ? 'opacity-70' : 'text-text-tertiary'}>{widaCounts[String(l)] || 0}</span>
+              </button>
+            ))}
+            {(widaCounts.none > 0 || filterWida === 'none') && (
+              <button onClick={() => setFilterWida(filterWida === 'none' ? null : 'none')}
+                className={`px-2.5 py-1 rounded font-medium transition-all ${filterWida === 'none' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                {t.students.noLevel} <span className={filterWida === 'none' ? 'opacity-70' : 'text-text-tertiary'}>{widaCounts.none || 0}</span>
+              </button>
+            )}
+            {widaChipLevels.length === 0 && !(widaCounts.none > 0) && <span className="text-text-tertiary">—</span>}
+          </div>
+          {hasRowFilters && (
+            <button onClick={() => { setFilterKoreanClass(null); setFilterWida(null); setFilterReview(false) }}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-text-secondary hover:bg-surface-alt transition-all">
+              <X size={12} /> {t.students.clearFilters}
+            </button>
+          )}
+          <span className="ml-auto text-[11px] text-text-tertiary">{t.students.sortHint}</span>
+        </div>
+
         <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
           {loading ? (
             <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-sm">Loading...</p></div>
@@ -246,12 +316,13 @@ export default function StudentsView() {
                 <tr className="bg-surface-alt">
                   <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
                   <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-10"></th>
-                  <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">{t.students.englishName}</th>
-                  <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">{t.students.koreanName}</th>
-                  <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">{t.common.grade}</th>
-                  <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">{t.students.koreanClass}</th>
-                  <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">#</th>
-                  <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">{t.students.englishClass}</th>
+                  <SortableHeader label={t.students.englishName} sortKey="english_name" current={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableHeader label={t.students.widaLevel} sortKey="wida" current={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
+                  <SortableHeader label={t.students.koreanName} sortKey="korean_name" current={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableHeader label={t.common.grade} sortKey="grade" current={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
+                  <SortableHeader label={t.students.koreanClass} sortKey="korean_class" current={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
+                  <SortableHeader label="#" sortKey="class_number" current={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
+                  <SortableHeader label={t.students.englishClass} sortKey="english_class" current={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
                   <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-12"></th>
                 </tr>
               </thead>
@@ -278,10 +349,11 @@ export default function StudentsView() {
                       ) : (
                         <>
                           {s.needs_review && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
-                          {s.english_name} <WIDABadge studentId={s.id} compact />
+                          {s.english_name}
                         </>
                       )}
                     </td>
+                    <td className="px-4 py-3 text-center"><WIDABadge studentId={s.id} compact /></td>
                     <td className="px-4 py-3 text-text-secondary">{s.korean_name}</td>
                     <td className="px-4 py-3 text-center">{s.grade}</td>
                     <td className="px-4 py-3 text-center font-medium">{s.korean_class}</td>
@@ -313,6 +385,24 @@ export default function StudentsView() {
       </div>
 
     </div>
+  )
+}
+
+// ─── Sortable column header ─────────────────────────────────────────
+
+function SortableHeader({ label, sortKey, current, dir, onSort, align = 'left' }: {
+  label: string; sortKey: RosterSortKey; current: RosterSortKey; dir: RosterSortDir; onSort: (k: RosterSortKey) => void; align?: 'left' | 'center'
+}) {
+  const active = current === sortKey
+  return (
+    <th className={`${align === 'center' ? 'text-center' : 'text-left'} px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold ${active ? 'text-navy' : 'text-text-secondary'}`}
+      aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button type="button" onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 uppercase tracking-wider hover:text-navy transition-colors ${align === 'center' ? 'justify-center' : ''}`}>
+        {label}
+        {active ? (dir === 'asc' ? <ArrowUp size={11} /> : <ArrowDown size={11} />) : <ArrowUpDown size={11} className="opacity-30" />}
+      </button>
+    </th>
   )
 }
 
