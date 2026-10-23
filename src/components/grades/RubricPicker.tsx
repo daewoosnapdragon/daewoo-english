@@ -7,7 +7,8 @@ import { supabase } from '@/lib/supabase'
 import { TEMPLATES, buildFromTemplate, bandForGrade, type RubricCriterion, type Band } from '@/components/curriculum/rubric-library'
 import RubricBuilder, { type RubricDraft } from './RubricBuilder'
 import RubricPrintDialog from './RubricPrintDialog'
-import { X, Pencil, Plus, Trash2, Printer } from 'lucide-react'
+import RubricImportDialog from './RubricImportDialog'
+import { X, Pencil, Plus, Trash2, Printer, Upload } from 'lucide-react'
 
 // ─── Rubric picker ───────────────────────────────────────────────
 // Templates by task on the left, the school's and your class's saved rubrics
@@ -27,6 +28,8 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
   const [loadError, setLoadError] = useState<string | null>(null)
   const [sel, setSel] = useState<{ kind: 'template'; key: string } | { kind: 'saved'; id: string } | null>(null)
   const [building, setBuilding] = useState<RubricDraft | null>(null)
+  const [buildNotes, setBuildNotes] = useState<string[] | undefined>(undefined)
+  const [importing, setImporting] = useState(false)
   const [printing, setPrinting] = useState(false)
   const band = bandForGrade(grade)
 
@@ -38,9 +41,9 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
   }
   useEffect(() => { load() }, [englishClass])
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !building && !printing) onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !building && !printing && !importing) onClose() }
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey)
-  }, [onClose, building, printing])
+  }, [onClose, building, printing, importing])
 
   const preview = useMemo(() => {
     if (!sel) return null
@@ -73,9 +76,14 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
   const row = (on: boolean) => `w-full text-left px-3 py-2 rounded flex items-center justify-between gap-2 ${on ? 'bg-ink text-paper' : 'hover:bg-paper-2 text-ink'}`
 
   if (building) {
-    return <RubricBuilder draft={building} grade={grade} englishClass={englishClass}
-      onClose={() => setBuilding(null)}
-      onSaved={r => { setBuilding(null); load(); setSel({ kind: 'saved', id: r.id }) }} />
+    return <RubricBuilder draft={building} grade={grade} englishClass={englishClass} notes={buildNotes}
+      onClose={() => { setBuilding(null); setBuildNotes(undefined) }}
+      onSaved={r => { setBuilding(null); setBuildNotes(undefined); load(); setSel({ kind: 'saved', id: r.id }) }} />
+  }
+  if (importing) {
+    return <RubricImportDialog grade={grade} englishClass={englishClass} band={band}
+      onClose={() => setImporting(false)}
+      onDraft={(draft, notes) => { setImporting(false); setBuildNotes(notes); setBuilding(draft) }} />
   }
 
   return (
@@ -123,7 +131,10 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
                 ))}
               </>
             )}
-            <button onClick={() => setBuilding({ name: '', task: null, band, criteria: [], english_class: englishClass })} className="w-full px-3 py-2 rounded border border-dashed border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3 text-left inline-flex items-center gap-2"><Plus size={13} />{lang === 'ko' ? '빈 루브릭 만들기' : 'New blank rubric'}</button>
+            <div className="space-y-1.5">
+              <button onClick={() => setBuilding({ name: '', task: null, band, criteria: [], english_class: englishClass })} className="w-full px-3 py-2 rounded border border-dashed border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3 text-left inline-flex items-center gap-2"><Plus size={13} />{lang === 'ko' ? '빈 루브릭 만들기' : 'New blank rubric'}</button>
+              <button onClick={() => setImporting(true)} title={lang === 'ko' ? '내 루브릭 PDF나 사진을 올려서 앱 형식으로 변환' : 'Upload a PDF or photo of a rubric you already use; it is read into the app’s format for you to check'} className="w-full px-3 py-2 rounded border border-dashed border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3 text-left inline-flex items-center gap-2"><Upload size={13} />{lang === 'ko' ? 'PDF에서 가져오기' : 'Import from PDF or photo'}</button>
+            </div>
           </div>
           <div className="overflow-y-auto p-5">
             {!preview ? (

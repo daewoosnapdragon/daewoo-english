@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'rubric-import', date: '2026-10-26', title: 'Upload a rubric you already use',
+    body: 'You can now bring your own rubric into the app instead of rebuilding it. In Choose a rubric, “Import from PDF or photo” takes a PDF or a picture of the page, reads the criteria and levels, and fits them to the app’s 1–4 scale. A review shows every change it made (a 3-level rubric placed at 2–4, a 5-level one with its lowest dropped, a scale turned the right way round) and anything you must write before it can be saved. Fix in the builder, save, and score with it like any other rubric.',
+    path: '/grades', guide: 'grades',
+  },
+  {
     id: 'behavior-ladder', date: '2026-10-06', title: 'Three behavior notes open a case for admin',
     body: 'You can now rely on the behavior ladder: when a student reaches three concern or negative notes (or you flag one), a case opens with the notes in one place. Admin sees it at the top of the dashboard with no dismiss, marks it read, and records “Parents contacted”, which writes the contact on the student’s log and closes the case. You see on your dashboard and the student page whether admin has read it and how long it has waited, and can add a one-line ask. The behavior tracker shows how close a student is to the next step. Thresholds and steps are in Settings.',
     path: '/dashboard', guide: 'students',

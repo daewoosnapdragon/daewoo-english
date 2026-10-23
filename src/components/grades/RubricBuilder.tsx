@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { CRITERIA, criterionFor, type Band, type RubricCriterion } from '@/components/curriculum/rubric-library'
-import { X, ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react'
+import { draftProblems } from '@/lib/rubricImport'
+import { X, ChevronUp, ChevronDown, Trash2, Plus, AlertTriangle } from 'lucide-react'
 
 // ─── Rubric builder ──────────────────────────────────────────────
 // Add criteria from the library (descriptors prefilled for the grade band),
@@ -12,7 +13,8 @@ import { X, ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react'
 
 export interface RubricDraft { id?: string; name: string; task: string | null; band: Band; criteria: RubricCriterion[]; english_class: string | null }
 
-export default function RubricBuilder({ draft, grade, englishClass, onClose, onSaved }: { draft: RubricDraft; grade: number; englishClass: string; onClose: () => void; onSaved: (r: { id: string }) => void }) {
+/** `notes` are lines to show above the criteria: what an import changed, what still needs a look. */
+export default function RubricBuilder({ draft, grade, englishClass, notes, onClose, onSaved }: { draft: RubricDraft; grade: number; englishClass: string; notes?: string[]; onClose: () => void; onSaved: (r: { id: string }) => void }) {
   const { currentTeacher, language: lang, showToast } = useApp()
   const [name, setName] = useState(draft.name)
   const [band, setBand] = useState<Band>(draft.band)
@@ -20,6 +22,7 @@ export default function RubricBuilder({ draft, grade, englishClass, onClose, onS
   const [shareSchool, setShareSchool] = useState(draft.english_class === null && !!draft.id)
   const [adding, setAdding] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showNotes, setShowNotes] = useState(!!notes?.length)
 
   const available = useMemo(() => CRITERIA.filter(c => !criteria.some(x => x.key === c.key)), [criteria])
   const groups = useMemo(() => Array.from(new Set(available.map(c => c.group))), [available])
@@ -38,6 +41,9 @@ export default function RubricBuilder({ draft, grade, englishClass, onClose, onS
   const save = async () => {
     if (!name.trim()) { showToast(lang === 'ko' ? '루브릭 이름을 입력하세요' : 'Give the rubric a name'); return }
     if (criteria.length === 0) { showToast(lang === 'ko' ? '기준을 하나 이상 추가하세요' : 'Add at least one criterion'); return }
+    // Every level needs words, or the scoring sheet shows a blank button.
+    const problems = draftProblems({ name, criteria })
+    if (problems.length) { showToast((lang === 'ko' ? '저장 전에 고칠 곳: ' : 'Before saving: ') + problems[0] + (problems.length > 1 ? ` (+${problems.length - 1})` : '')); return }
     setSaving(true)
     const row = { name: name.trim(), task: draft.task, band, criteria, english_class: shareSchool ? null : englishClass, updated_at: new Date().toISOString() }
     const res = draft.id
@@ -60,6 +66,15 @@ export default function RubricBuilder({ draft, grade, englishClass, onClose, onS
           <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={16} /></button>
         </div>
         <div className="overflow-y-auto p-5 space-y-3">
+          {showNotes && notes && notes.length > 0 && (
+            <div className="rounded border border-warn/50 bg-warn-soft px-3 py-2.5 text-[12.5px] text-ink">
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-semibold flex items-center gap-1.5"><AlertTriangle size={13} className="text-warn" />{lang === 'ko' ? '가져오기에서 확인할 점' : 'From the import: check these before saving'}</p>
+                <button onClick={() => setShowNotes(false)} className="text-ink-3 hover:text-ink text-[12px]">{lang === 'ko' ? '닫기' : 'Hide'}</button>
+              </div>
+              <ul className="mt-1 list-disc pl-5 space-y-0.5 text-ink-2">{notes.map((n, i) => <li key={i}>{n}</li>)}</ul>
+            </div>
+          )}
           {criteria.length === 0 && <p className="text-[13px] text-ink-3">{lang === 'ko' ? '아래에서 기준을 추가하세요.' : 'Add criteria from the library below, or write your own.'}</p>}
           {criteria.map((c, i) => (
             <div key={c.key} className="border border-rule-2 rounded p-3 grid gap-2">
