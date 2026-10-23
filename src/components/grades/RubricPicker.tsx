@@ -7,8 +7,11 @@ import { supabase } from '@/lib/supabase'
 import { TEMPLATES, buildFromTemplate, bandForGrade, type RubricCriterion, type Band } from '@/components/curriculum/rubric-library'
 import RubricBuilder, { type RubricDraft } from './RubricBuilder'
 import RubricPrintDialog from './RubricPrintDialog'
-import RubricImportDialog from './RubricImportDialog'
+import dynamic from 'next/dynamic'
 import { X, Pencil, Plus, Trash2, Printer, Upload } from 'lucide-react'
+
+// Loaded on demand: it pulls in the spreadsheet library, which the picker does not otherwise need.
+const RubricImportDialog = dynamic(() => import('./RubricImportDialog'), { ssr: false })
 
 // ─── Rubric picker ───────────────────────────────────────────────
 // Templates by task on the left, the school's and your class's saved rubrics
@@ -133,7 +136,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
             )}
             <div className="space-y-1.5">
               <button onClick={() => setBuilding({ name: '', task: null, band, criteria: [], english_class: englishClass })} className="w-full px-3 py-2 rounded border border-dashed border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3 text-left inline-flex items-center gap-2"><Plus size={13} />{lang === 'ko' ? '빈 루브릭 만들기' : 'New blank rubric'}</button>
-              <button onClick={() => setImporting(true)} title={lang === 'ko' ? '내 루브릭 PDF나 사진을 올려서 앱 형식으로 변환' : 'Upload a PDF or photo of a rubric you already use; it is read into the app’s format for you to check'} className="w-full px-3 py-2 rounded border border-dashed border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3 text-left inline-flex items-center gap-2"><Upload size={13} />{lang === 'ko' ? 'PDF에서 가져오기' : 'Import from PDF or photo'}</button>
+              <button onClick={() => setImporting(true)} title={lang === 'ko' ? '템플릿에 옮겨 적은 루브릭(파일 또는 붙여넣기)을 앱 형식으로 가져오기' : 'Bring in a rubric you already use: fill the template (Claude can do it from your PDF), then upload or paste the sheet'} className="w-full px-3 py-2 rounded border border-dashed border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3 text-left inline-flex items-center gap-2"><Upload size={13} />{lang === 'ko' ? '시트에서 가져오기' : 'Import from a spreadsheet'}</button>
             </div>
           </div>
           <div className="overflow-y-auto p-5">

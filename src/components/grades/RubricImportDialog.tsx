@@ -1,47 +1,81 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import * as XLSX from 'xlsx'
 import { useApp } from '@/lib/context'
 import type { Band } from '@/components/curriculum/rubric-library'
-import type { ImportResult } from '@/lib/rubricImport'
+import { normalizeExtractedRubric, type ImportResult } from '@/lib/rubricImport'
+import { parseRubricSheet, parseDelimited, templateRows, instructionRows, templateAsText, CLAUDE_PROMPT, TEMPLATE_FILE_NAME } from '@/lib/rubricSheet'
 import type { RubricDraft } from './RubricBuilder'
-import { X, Upload, Loader2, AlertTriangle, Info, ArrowLeft, Pencil } from 'lucide-react'
+import { X, Upload, AlertTriangle, Info, ArrowLeft, Pencil, Download, Copy, Check, FileSpreadsheet } from 'lucide-react'
 
 // ─── Rubric import ───────────────────────────────────────────────
-// Drop a PDF or a photo of a rubric. The server reads it into the app's
-// four-level shape and sends back what it had to change. The review step
-// shows the result with every issue next to the criterion it concerns, then
-// hands the draft to the builder, where the teacher fixes and saves.
+// No server, no API. Step 1 hands the teacher a spreadsheet template and the
+// message to give Claude with their PDF; step 2 takes the filled sheet back
+// (a file or a paste), reads it with plain code, runs the format check, and
+// shows every issue beside the criterion it concerns before the builder.
 
-const ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp'
+const ACCEPT = '.xlsx,.xls,.csv,.tsv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/tab-separated-values,text/plain'
 
 interface Props { grade: number; englishClass: string; band: Band; onClose: () => void; onDraft: (draft: RubricDraft, notes: string[]) => void }
 
 export default function RubricImportDialog({ grade, englishClass, band, onClose, onDraft }: Props) {
-  const { language: lang } = useApp()
+  const { language: lang, showToast } = useApp()
   const ko = lang === 'ko'
-  const [step, setStep] = useState<'pick' | 'reading' | 'review'>('pick')
+  const [step, setStep] = useState<'pick' | 'review'>('pick')
   const [error, setError] = useState<string | null>(null)
-  const [fileName, setFileName] = useState('')
+  const [source, setSource] = useState('')
+  const [pasted, setPasted] = useState('')
   const [result, setResult] = useState<ImportResult | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [copied, setCopied] = useState<'prompt' | 'template' | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const read = useCallback(async (file: File) => {
-    setError(null); setFileName(file.name); setStep('reading')
-    const body = new FormData()
-    body.append('file', file); body.append('grade', String(grade))
-    try {
-      const res = await fetch('/api/rubric-import', { method: 'POST', body })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json.error || `Upload failed (${res.status})`)
-      setResult(json as ImportResult); setStep('review')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e)); setStep('pick')
-    }
-  }, [grade])
+  const downloadTemplate = () => {
+    const wb = XLSX.utils.book_new()
+    const ws = XLSX.utils.aoa_to_sheet(templateRows())
+    ws['!cols'] = [{ wch: 26 }, { wch: 18 }, { wch: 44 }, { wch: 44 }, { wch: 44 }, { wch: 44 }]
+    XLSX.utils.book_append_sheet(wb, ws, 'Rubric')
+    const how = XLSX.utils.aoa_to_sheet(instructionRows())
+    how['!cols'] = [{ wch: 18 }, { wch: 110 }]
+    XLSX.utils.book_append_sheet(wb, how, 'How to fill it in')
+    XLSX.writeFile(wb, TEMPLATE_FILE_NAME)
+  }
 
-  const onFiles = (files: FileList | null) => { const f = files?.[0]; if (f) read(f) }
+  const copy = async (what: 'prompt' | 'template') => {
+    try {
+      await navigator.clipboard.writeText(what === 'prompt' ? CLAUDE_PROMPT : templateAsText())
+      setCopied(what); setTimeout(() => setCopied(null), 2000)
+    } catch { showToast(ko ? '복사할 수 없습니다. 아래 내용을 직접 선택해 복사하세요.' : 'Could not copy. Select the text and copy it by hand.') }
+  }
+
+  const finish = (rows: unknown[][], label: string) => {
+    const read = parseRubricSheet(rows)
+    const r = normalizeExtractedRubric(read.rubric, band)
+    // Shape problems from the sheet itself go first, as things to check.
+    r.issues = [...read.problems.map(message => ({ level: 'check' as const, criterion: null, message })), ...r.issues]
+    setResult(r); setSource(label); setError(null); setStep('review')
+  }
+
+  const readFile = async (file: File) => {
+    try {
+      const data = await file.arrayBuffer()
+      const wb = XLSX.read(data, { type: 'array' })
+      const sheetName = wb.SheetNames.find(n => /rubric|루브릭/i.test(n)) || wb.SheetNames[0]
+      const ws = wb.Sheets[sheetName]
+      if (!ws) throw new Error(ko ? '시트가 없습니다.' : 'The file has no sheet.')
+      const rows: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' })
+      finish(rows, file.name)
+    } catch (e) {
+      setError((ko ? '파일을 읽을 수 없습니다: ' : 'Could not read the file: ') + (e instanceof Error ? e.message : String(e)))
+    }
+  }
+  const onFiles = (files: FileList | null) => { const f = files?.[0]; if (f) readFile(f) }
+  const readPasted = () => {
+    const rows = parseDelimited(pasted)
+    if (rows.length === 0) { setError(ko ? '붙여넣은 내용이 없습니다.' : 'Nothing was pasted.'); return }
+    finish(rows, ko ? '붙여넣은 표' : 'Pasted table')
+  }
 
   const fixes = result?.issues.filter(i => i.level === 'fix') || []
   const checks = result?.issues.filter(i => i.level === 'check') || []
@@ -51,8 +85,10 @@ export default function RubricImportDialog({ grade, englishClass, band, onClose,
   const toBuilder = () => {
     if (!result) return
     const notes = result.issues.map(i => (i.criterion === null ? '' : `${result.criteria[i.criterion]?.label || `Criterion ${i.criterion + 1}`}: `) + i.message)
-    onDraft({ name: result.name, task: null, band: result.band, criteria: result.criteria, english_class: englishClass }, [...notes, ...result.notes.map(n => (ko ? '문서 메모: ' : 'From the paper: ') + n)])
+    onDraft({ name: result.name, task: null, band: result.band, criteria: result.criteria, english_class: englishClass }, notes)
   }
+
+  const btn = 'h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5'
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
@@ -60,37 +96,51 @@ export default function RubricImportDialog({ grade, englishClass, band, onClose,
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-center justify-between">
           <div>
             <h3 className="font-display text-[22px] leading-none text-ink">{ko ? '내 루브릭 가져오기' : 'Import your own rubric'}</h3>
-            <p className="text-[12px] text-ink-3 mt-1">{step === 'review' ? fileName : (ko ? 'PDF 또는 사진을 올리면 앱 형식(기준당 4단계)으로 변환합니다.' : 'Upload a PDF or a photo. It is read into the app’s four-level format, then you check it.')}</p>
+            <p className="text-[12px] text-ink-3 mt-1">{step === 'review' ? source : (ko ? '템플릿에 옮겨 적은 루브릭을 올리면 앱 형식(기준당 4단계)으로 확인합니다.' : 'Put the rubric into the template, bring the sheet back, and the app checks it against its four-level format.')}</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={16} /></button>
         </div>
 
         <div className="overflow-y-auto p-5">
           {step === 'pick' && (
-            <div className="space-y-3">
-              <div
-                onDragOver={e => { e.preventDefault(); setDragging(true) }} onDragLeave={() => setDragging(false)}
-                onDrop={e => { e.preventDefault(); setDragging(false); onFiles(e.dataTransfer.files) }}
-                onClick={() => inputRef.current?.click()}
-                className={`cursor-pointer rounded-lg border-2 border-dashed p-10 text-center transition-colors ${dragging ? 'border-accent bg-accent/5' : 'border-rule-2 hover:border-ink-3'}`}>
-                <Upload size={28} className="mx-auto text-ink-3 mb-3" />
-                <p className="text-[14px] text-ink font-medium">{ko ? '여기에 파일을 놓거나 클릭해서 선택' : 'Drop the rubric here, or click to choose a file'}</p>
-                <p className="text-[12px] text-ink-3 mt-1">{ko ? 'PDF, PNG, JPEG, WebP · 15 MB까지' : 'PDF, PNG, JPEG or WebP · up to 15 MB'}</p>
-                <input ref={inputRef} type="file" accept={ACCEPT} className="hidden" onChange={e => { onFiles(e.target.files); e.target.value = '' }} />
-              </div>
-              {error && <div className="flex gap-2 rounded border border-bad/40 bg-bad-soft px-3 py-2 text-[13px] text-ink"><AlertTriangle size={15} className="shrink-0 text-bad mt-0.5" /><span>{error}</span></div>}
-              <div className="text-[12px] text-ink-3 space-y-1">
-                <p>{ko ? '가장 잘 읽히는 파일: 기준이 행, 단계가 열인 표. 사진은 정면에서 밝게 찍어 주세요.' : 'Reads best: a table with one row per criterion and one column per level. Photos should be straight on and well lit.'}</p>
-                <p>{ko ? '앱은 기준당 1–4 단계를 사용합니다. 3단계나 5단계 루브릭은 맞춰 넣고, 바뀐 부분을 알려 드립니다.' : 'The app uses levels 1–4 per criterion. A 3- or 5-level rubric is fitted to that, and you are told exactly what changed.'}</p>
-              </div>
-            </div>
-          )}
+            <div className="space-y-5">
+              <section className="space-y-2">
+                <p className="eyebrow">{ko ? '1 · 템플릿 받기' : '1 · Get the template'}</p>
+                <p className="text-[13px] text-ink-2">{ko
+                  ? '템플릿을 받아 claude.ai에 루브릭 PDF(또는 사진)와 함께 첨부하고, 아래 메시지를 붙여넣으면 채워진 파일을 돌려줍니다. 직접 옮겨 적어도 됩니다.'
+                  : 'Download the template, attach it to claude.ai with your rubric PDF or photo, paste the message, and you get the sheet back filled in. Or fill it in yourself.'}</p>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={downloadTemplate} className={btn}><Download size={13} />{ko ? '템플릿 받기 (.xlsx)' : 'Download template (.xlsx)'}</button>
+                  <button onClick={() => copy('template')} className={btn}>{copied === 'template' ? <Check size={13} className="text-good" /> : <Copy size={13} />}{ko ? 'Google 시트용 복사' : 'Copy for Google Sheets'}</button>
+                  <button onClick={() => copy('prompt')} className={btn}>{copied === 'prompt' ? <Check size={13} className="text-good" /> : <Copy size={13} />}{ko ? 'Claude에게 보낼 메시지 복사' : 'Copy the message for Claude'}</button>
+                </div>
+                <details className="text-[12px] text-ink-3">
+                  <summary className="cursor-pointer hover:text-ink">{ko ? '메시지 내용 보기' : 'See the message'}</summary>
+                  <pre className="mt-1.5 whitespace-pre-wrap font-sans text-ink-2 bg-paper-2 border border-rule-2 rounded p-3">{CLAUDE_PROMPT}</pre>
+                </details>
+              </section>
 
-          {step === 'reading' && (
-            <div className="py-16 text-center">
-              <Loader2 size={28} className="mx-auto animate-spin text-ink-3 mb-3" />
-              <p className="text-[14px] text-ink">{ko ? `${fileName} 읽는 중…` : `Reading ${fileName}…`}</p>
-              <p className="text-[12px] text-ink-3 mt-1">{ko ? '보통 30초 안팎 걸립니다.' : 'This usually takes under a minute.'}</p>
+              <section className="space-y-2">
+                <p className="eyebrow">{ko ? '2 · 채워진 시트 가져오기' : '2 · Bring the filled sheet back'}</p>
+                <div
+                  onDragOver={e => { e.preventDefault(); setDragging(true) }} onDragLeave={() => setDragging(false)}
+                  onDrop={e => { e.preventDefault(); setDragging(false); onFiles(e.dataTransfer.files) }}
+                  onClick={() => inputRef.current?.click()}
+                  className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${dragging ? 'border-accent bg-accent/5' : 'border-rule-2 hover:border-ink-3'}`}>
+                  <FileSpreadsheet size={24} className="mx-auto text-ink-3 mb-2" />
+                  <p className="text-[14px] text-ink font-medium">{ko ? '여기에 파일을 놓거나 클릭해서 선택' : 'Drop the filled sheet here, or click to choose it'}</p>
+                  <p className="text-[12px] text-ink-3 mt-1">{ko ? '.xlsx, .xls, .csv' : '.xlsx, .xls or .csv'}</p>
+                  <input ref={inputRef} type="file" accept={ACCEPT} className="hidden" onChange={e => { onFiles(e.target.files); e.target.value = '' }} />
+                </div>
+                <div className="grid gap-1.5">
+                  <label htmlFor="rubric-paste" className="text-[12px] text-ink-3">{ko ? '또는 표를 여기에 붙여넣기 (시트, 문서, Claude 답변에서 복사)' : 'Or paste the table here (copied from a sheet, a document, or Claude’s reply)'}</label>
+                  <textarea id="rubric-paste" value={pasted} onChange={e => setPasted(e.target.value)} rows={4} spellCheck={false}
+                    placeholder={'Criterion\tStandard\tLevel 1\tLevel 2\tLevel 3\tLevel 4\nOpinion\tW.3.1\t…'}
+                    className="px-3 py-2 bg-surface border border-rule-2 rounded text-[12px] font-mono leading-snug text-ink resize-y placeholder:text-ink-3" />
+                  <div><button onClick={readPasted} disabled={!pasted.trim()} className={`${btn} disabled:opacity-50`}><Upload size={13} />{ko ? '붙여넣은 표 읽기' : 'Read the pasted table'}</button></div>
+                </div>
+                {error && <div className="flex gap-2 rounded border border-bad/40 bg-bad-soft px-3 py-2 text-[13px] text-ink"><AlertTriangle size={15} className="shrink-0 text-bad mt-0.5" /><span>{error}</span></div>}
+              </section>
             </div>
           )}
 
@@ -107,7 +157,7 @@ export default function RubricImportDialog({ grade, englishClass, band, onClose,
               </div>
 
               <div className="flex items-baseline justify-between gap-3">
-                <h4 className="font-display text-[22px] leading-none text-ink">{result.name || <span className="text-ink-3 font-sans text-[14px]">{ko ? '(제목 없음)' : '(no title found)'}</span>}</h4>
+                <h4 className="font-display text-[22px] leading-none text-ink">{result.name || <span className="text-ink-3 font-sans text-[14px]">{ko ? '(제목 없음)' : '(no name in the sheet)'}</span>}</h4>
                 <span className="eyebrow">{ko ? (result.band === 'k2' ? 'K–2 문구' : '3–5 문구') : (result.band === 'k2' ? 'K–2 wording' : '3–5 wording')} · {result.criteria.length * 4} {ko ? '점' : 'points'}</span>
               </div>
 
@@ -134,7 +184,7 @@ export default function RubricImportDialog({ grade, englishClass, band, onClose,
 
               {result.notes.length > 0 && (
                 <div className="rounded border border-rule-2 bg-paper-2 px-3 py-2 text-[12px] text-ink-2 space-y-1">
-                  <p className="eyebrow flex items-center gap-1"><Info size={12} />{ko ? '문서에서 읽은 메모' : 'Noted from the paper'}</p>
+                  <p className="eyebrow flex items-center gap-1"><Info size={12} />{ko ? '메모' : 'Notes'}</p>
                   {result.notes.map((n, k) => <p key={k}>{n}</p>)}
                 </div>
               )}
@@ -144,7 +194,7 @@ export default function RubricImportDialog({ grade, englishClass, band, onClose,
 
         <div className="px-5 py-3 border-t border-rule-2 flex items-center justify-between gap-3">
           <div>
-            {step === 'review' && <button onClick={() => { setStep('pick'); setResult(null) }} className="h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><ArrowLeft size={13} />{ko ? '다른 파일' : 'Different file'}</button>}
+            {step === 'review' && <button onClick={() => { setStep('pick'); setResult(null) }} className={btn}><ArrowLeft size={13} />{ko ? '다른 파일' : 'Different file'}</button>}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink">{ko ? '취소' : 'Cancel'}</button>

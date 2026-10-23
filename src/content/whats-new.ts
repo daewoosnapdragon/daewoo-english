@@ -21,8 +21,8 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
-    id: 'rubric-import', date: '2026-10-26', title: 'Upload a rubric you already use',
-    body: 'You can now bring your own rubric into the app instead of rebuilding it. In Choose a rubric, “Import from PDF or photo” takes a PDF or a picture of the page, reads the criteria and levels, and fits them to the app’s 1–4 scale. A review shows every change it made (a 3-level rubric placed at 2–4, a 5-level one with its lowest dropped, a scale turned the right way round) and anything you must write before it can be saved. Fix in the builder, save, and score with it like any other rubric.',
+    id: 'rubric-import', date: '2026-10-26', title: 'Bring in a rubric you already use',
+    body: 'You can now import your own rubric instead of rebuilding it. In Choose a rubric, “Import from a spreadsheet” gives you a template and a ready-made message for Claude: attach your rubric PDF (or a photo) and the template, paste the message, and you get the sheet back filled in; or fill it in yourself. Drop the sheet or paste the table into the dialog and the app checks it against its 1–4 scale, listing every change (a 3-level rubric placed at 2–4, a 5-level one with its lowest dropped, a scale turned the right way round) and anything you must write before it can be saved. Fix in the builder, save, and score with it like any other rubric.',
     path: '/grades', guide: 'grades',
   },
   {

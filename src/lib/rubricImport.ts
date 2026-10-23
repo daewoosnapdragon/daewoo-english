@@ -1,15 +1,16 @@
 import type { Band, RubricCriterion } from '@/components/curriculum/rubric-library'
 
 // ─── Rubric import: shape check ──────────────────────────────────
-// A rubric a teacher uploads (PDF, photo) is read by Claude into a loose
-// shape: a name, and criteria with however many levels the paper used.
-// This module turns that loose shape into the app's strict one (every
-// criterion exactly four levels, 1 = needs guidance … 4 = exceeds, unique
-// keys, non-empty text) and reports everything it had to change or could
-// not fix, so the teacher reviews those lines before saving. Pure, no I/O,
-// so the same check runs on the server and in tests.
+// A rubric a teacher brings in (a filled spreadsheet template, read by
+// rubricSheet.ts) arrives as a loose shape: a name, and criteria with
+// however many levels the paper used. This module turns that loose shape
+// into the app's strict one (every criterion exactly four levels,
+// 1 = needs guidance … 4 = exceeds, unique keys, non-empty text) and
+// reports everything it had to change or could not fix, so the teacher
+// reviews those lines before saving. Pure, no I/O, so it runs in the
+// browser and in tests alike.
 
-/** What the model is asked to return. Levels are in the paper's own order, lowest first. */
+/** The loose shape a sheet reads into. Levels are in the paper's own order, lowest first. */
 export interface ExtractedCriterion {
   label: string
   /** Descriptors ordered from the lowest performance to the highest. */
@@ -24,7 +25,7 @@ export interface ExtractedRubric {
   /** The grade band the paper seems written for, if it says. */
   band?: 'k2' | 'g35' | null
   criteria: ExtractedCriterion[]
-  /** Anything the reader could not place: a scoring note, a row it skipped. */
+  /** Anything that did not fit the shape: a scoring note, a row that was skipped. */
   notes?: string[]
 }
 
@@ -110,7 +111,7 @@ export function normalizeExtractedRubric(input: unknown, fallbackBand: Band): Im
   const notes = Array.isArray(src.notes) ? src.notes.map(clean).filter(Boolean) : []
   const rawCriteria = Array.isArray(src.criteria) ? src.criteria : []
 
-  if (!name) issues.push({ level: 'fix', criterion: null, message: 'No title was found. Give the rubric a name.' })
+  if (!name) issues.push({ level: 'fix', criterion: null, message: 'No name was found (cell B1 in the template). Give the rubric a name.' })
 
   const taken = new Set<string>()
   const criteria: RubricCriterion[] = []
@@ -143,9 +144,9 @@ export function normalizeExtractedRubric(input: unknown, fallbackBand: Band): Im
     criteria.push({ key: keyFromLabel(label || `criterion ${i + 1}`, taken), label: label || `Criterion ${i + 1}`, levels, ...(standard ? { standard } : {}) })
   }
 
-  if (criteria.length === 0) issues.push({ level: 'fix', criterion: null, message: 'No criteria were found. The file may not be a rubric, or the table may be an image too blurry to read.' })
+  if (criteria.length === 0) issues.push({ level: 'fix', criterion: null, message: 'No criteria were found. Rows start under the header row (Criterion, Standard, Level 1 …), one criterion per row.' })
 
-  // Same label twice usually means the reader split one row, or the paper repeats a heading.
+  // Same label twice usually means one row was split, or the paper repeats a heading.
   const seen = new Map<string, number>()
   criteria.forEach((c, i) => {
     const k = c.label.toLowerCase()
