@@ -9,7 +9,8 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { withoutAwayDays } from '@/lib/calendarDays'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, KOREAN_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
-import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord, percentToLetter } from '@/lib/utils'
+import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord, percentToLetter, getKSTDateString } from '@/lib/utils'
+import { currentReportDocument, REPORT_DOCUMENT_LABEL, type ReportDocument } from '@/lib/reportDocument'
 import { loadAssessmentWeights } from '@/lib/assessmentWeights'
 import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, ChevronDown, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle, AlertTriangle, FileDown, MessageSquare, Save, Lock } from 'lucide-react'
 
@@ -142,6 +143,17 @@ export default function ReportsView() {
     })
   }, [semesters, activeSemester, canSwitchSemester])
 
+  // Open on the document teachers are writing now: the progress report until
+  // three weeks after the midterm cutoff, the report card after that. Only
+  // the first landing is decided here; after that the tabs are the teacher's.
+  const currentDoc: ReportDocument = currentReportDocument(selectedSemester, getKSTDateString())
+  const modeInit = useRef(false)
+  useEffect(() => {
+    if (modeInit.current || !selectedSemester) return
+    modeInit.current = true
+    if (currentDoc === 'progress_report') setMode('progress')
+  }, [selectedSemester, currentDoc])
+
   // "Class Overview" is a selectable dropdown entry (not a student). Treat an empty
   // selection as overview too, so landing on a mode shows the overview by default.
   const isOverview = !selectedStudentId || selectedStudentId === '__overview__'
@@ -197,7 +209,7 @@ export default function ReportsView() {
       </div>
       <div>
         {mode === 'individual' && !isOverview && selectedSemesterId && selectedSemester && (
-          <IndividualReport key={selectedStudentId} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={allSemesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} />
+          <IndividualReport key={selectedStudentId} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={allSemesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} currentDoc={currentDoc} onGoToProgress={() => setMode('progress')} />
         )}
         {mode === 'individual' && isOverview && selectedSemesterId && selectedSemester && (
           <ClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
@@ -226,7 +238,7 @@ export default function ReportsView() {
           <ReviewApproval students={students} semesterId={selectedSemesterId} selectedClass={selectedClass} selectedGrade={selectedGrade} isOwnClass={isOwnClass} />
         )}
         {mode === 'comments' && selectedSemesterId && (
-          <BulkComments students={students} semesterId={selectedSemesterId} selectedClass={selectedClass} selectedGrade={selectedGrade} canEdit={canEdit} />
+          <BulkComments students={students} semesterId={selectedSemesterId} selectedClass={selectedClass} selectedGrade={selectedGrade} canEdit={canEdit} initialType={currentDoc} lang={lang} />
         )}
         {mode === 'comments' && !selectedSemesterId && (
           <p className="py-10 text-center text-ink-3 text-[13px]">Select a semester to write comments.</p>
@@ -338,8 +350,10 @@ function ComparisonBars({ domainGrades, domainNa, classAverages }: {
   )
 }
 
-function IndividualReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass, canEdit = true }: {
+function IndividualReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass, canEdit = true, currentDoc = 'report_card', onGoToProgress }: {
   studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: string; canEdit?: boolean
+  /** Which document is being written now; when it is the progress report, the comment box says so. */
+  currentDoc?: ReportDocument; onGoToProgress?: () => void
 }) {
   const { showToast, currentTeacher } = useApp()
   const [data, setData] = useState<ReportData | null>(null)
@@ -800,7 +814,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           <div>
               <div className="flex items-center justify-between mb-2.5">
                 <div>
-                  <div className="text-[9px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Teacher's Comment</div>
+                  <div className="text-[9px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Report card comment</div>
                   <div className="text-[14px] font-bold text-[#1e293b] leading-tight mt-0.5">{d.teacherName} Teacher<span className="font-normal text-[#94a3b8] text-[11px]"> &middot; {d.semesterClass || s.english_class} Class</span></div>
                 </div>
                 {/* Student Reference — hidden on print */}
@@ -810,6 +824,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   Reference
                 </button>
               </div>
+              {canEdit && currentDoc === 'progress_report' && (
+                <div className="print:hidden mb-2.5 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11.5px] text-amber-900">
+                  <span>This box is the end-of-semester report card comment. Mid-semester comments belong on the progress report.</span>
+                  {onGoToProgress && <button onClick={onGoToProgress} className="shrink-0 font-semibold underline">Open the progress report</button>}
+                </div>
+              )}
               {canEdit && d.reviewerNote && !d.reviewerNoteAck && (
                 <div className="mb-2.5 rounded-lg border border-orange-200 bg-orange-50 p-2.5 print:hidden">
                   <div className="flex items-center gap-1.5 mb-1">
@@ -827,7 +847,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               )}
               <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={8}
                 disabled={commentSkipped || !canEdit}
-                placeholder={!canEdit ? "Read-only — only this class's teacher can edit the comment." : (commentSkipped ? 'Skipped — uncheck below to write a comment.' : "Write comments about this student's progress...")}
+                placeholder={!canEdit ? "Read-only — only this class's teacher can edit the comment." : (commentSkipped ? 'Skipped — uncheck below to write a comment.' : "Write this student's report card comment…")}
                 className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[15px] outline-none focus:border-navy resize-none leading-relaxed ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
               {canEdit ? (
                 <>
@@ -1849,6 +1869,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                 </div>
               </label>
               <div>
+                <div className="text-[9px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Progress report comment</div>
                 <div className="text-[14px] font-bold text-[#1e293b]">{d.teacherName}</div>
                 <div className="text-[10px] text-[#94a3b8]">{s.english_class} Class</div>
               </div>
@@ -2050,10 +2071,16 @@ function AutoGrowTextarea({ value, onChange, disabled, placeholder, className }:
   )
 }
 
-function BulkComments({ students, semesterId, selectedClass, selectedGrade, canEdit }: {
-  students: any[]; semesterId: string; selectedClass: EnglishClass; selectedGrade: Grade; canEdit: boolean
+function BulkComments({ students, semesterId, selectedClass, selectedGrade, canEdit, initialType = 'report_card', lang = 'en' }: {
+  students: any[]; semesterId: string; selectedClass: EnglishClass; selectedGrade: Grade; canEdit: boolean; initialType?: ReportDocument; lang?: LangKey
 }) {
-  const { showToast, currentTeacher } = useApp()
+  const { showToast, currentTeacher, confirmDialog } = useApp()
+  // Which document these comments belong to. Opens on the one being written
+  // now and follows it until the teacher picks the other one themselves.
+  const [docType, setDocType] = useState<ReportDocument>(initialType)
+  const touched = useRef(false)
+  useEffect(() => { if (!touched.current) setDocType(initialType) }, [initialType])
+  const docLabel = REPORT_DOCUMENT_LABEL[docType][lang === 'ko' ? 'ko' : 'en']
   const [rows, setRows] = useState<Record<string, { text: string; skipped: boolean; dirty: boolean }>>({})
   const [overall, setOverall] = useState<Record<string, { pct: number | null; letter: string }>>({})
   const [loading, setLoading] = useState(true)
@@ -2064,7 +2091,7 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
       setLoading(true)
       const ids = students.map(s => s.id)
       const [comRes, grRes] = await Promise.all([
-        supabase.from('comments').select('student_id, text, is_skipped').eq('semester_id', semesterId).eq('report_type', 'report_card').in('student_id', ids),
+        supabase.from('comments').select('student_id, text, is_skipped').eq('semester_id', semesterId).eq('report_type', docType).in('student_id', ids),
         supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na').eq('semester_id', semesterId).in('student_id', ids),
       ])
       const rmap: Record<string, { text: string; skipped: boolean; dirty: boolean }> = {}
@@ -2088,11 +2115,21 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
       setOverall(omap)
       setLoading(false)
     })()
-  }, [semesterId, students])
+  }, [semesterId, students, docType])
 
   const setText = (id: string, text: string) => setRows(prev => ({ ...prev, [id]: { ...prev[id], text, dirty: true } }))
   const toggleSkip = (id: string) => setRows(prev => ({ ...prev, [id]: { ...prev[id], skipped: !prev[id].skipped, dirty: true } }))
   const dirtyIds = Object.keys(rows).filter(id => rows[id]?.dirty)
+
+  const switchDoc = async (next: ReportDocument) => {
+    if (next === docType) return
+    if (dirtyIds.length) {
+      const ok = await confirmDialog({ title: 'Unsaved comments', message: `${dirtyIds.length} unsaved ${dirtyIds.length === 1 ? 'comment' : 'comments'} will be lost if you switch now.`, danger: true, confirmLabel: 'Switch anyway', cancelLabel: 'Stay' })
+      if (!ok) return
+    }
+    touched.current = true
+    setDocType(next)
+  }
 
   const saveAll = async () => {
     if (!dirtyIds.length) return
@@ -2101,7 +2138,7 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
     for (const id of dirtyIds) {
       const r = rows[id]
       const { error } = await supabase.from('comments').upsert({
-        student_id: id, semester_id: semesterId, report_type: 'report_card',
+        student_id: id, semester_id: semesterId, report_type: docType,
         text: r.text.trim(), is_skipped: r.skipped,
         created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
       }, { onConflict: 'student_id,semester_id,report_type' })
@@ -2119,7 +2156,15 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
       <div className="bg-surface border border-border rounded-xl p-5 flex items-center justify-between">
         <div>
           <h3 className="font-display text-lg font-semibold text-navy">Class Comments</h3>
-          <p className="text-[12px] text-text-secondary">{selectedClass} · Grade {selectedGrade} · {students.length} students · Report Card</p>
+          <p className="text-[12px] text-text-secondary">{selectedClass} · Grade {selectedGrade} · {students.length} students</p>
+          <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+            <div className="flex gap-1">
+              {(['progress_report', 'report_card'] as ReportDocument[]).map(d => (
+                <button key={d} onClick={() => switchDoc(d)} className={`px-2.5 h-7 rounded-full border text-[12px] font-medium ${docType === d ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{REPORT_DOCUMENT_LABEL[d][lang === 'ko' ? 'ko' : 'en']}</button>
+              ))}
+            </div>
+            <span className="text-[11.5px] text-ink-3">{lang === 'ko' ? `여기에 쓴 코멘트는 ${docLabel}에 실립니다. 학생마다 문서별로 코멘트가 따로 있습니다.` : `Comments written here go on the ${docLabel.toLowerCase()}. Each student has one comment per document.`}</span>
+          </div>
         </div>
         {canEdit ? (
           <div className="flex items-center gap-3">
@@ -2156,7 +2201,7 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
               </div>
               <AutoGrowTextarea value={r.text} onChange={(v) => setText(student.id, v)}
                 disabled={!canEdit || r.skipped}
-                placeholder={r.skipped ? 'Skipped — unskip to write a comment.' : "Write this student's report card comment…"}
+                placeholder={r.skipped ? 'Skipped — unskip to write a comment.' : `Write this student's ${docLabel.toLowerCase()} comment…`}
                 className={`w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${(!canEdit || r.skipped) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-white'}`} />
             </div>
           )

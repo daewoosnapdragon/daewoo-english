@@ -162,10 +162,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     watchOut: ['Targets are per class and grade; check you are on the right one before editing.'],
   },
   {
-    id: 'reports', title: 'Reports', updated: '2026-09-25',
+    id: 'reports', title: 'Reports', updated: '2026-10-27',
     purpose: 'Report cards and progress reports from the grades already entered, reviewed and approved before printing.',
     screen: [
-      'Tabs: Report card, Progress report, Class summary, Review & approve.',
+      'Tabs: Report card, Progress report, Comments, Class summary, Review & approve, Print. The page opens on the document being written now: the progress report until three weeks after the midterm cutoff, the report card after that.',
+      'Comments is the whole class on one page. The switch at its top says which document the comments go on; check it before you type.',
       'A picker for the whole class or one student.',
       'Each report shows the composite per domain, the letter, attendance, and the comment box.',
       'Print produces the parent copy.',
@@ -173,8 +174,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     tasks: [
       { title: 'Write report cards', steps: ['Enter every grade first; the composite is computed, not typed.', 'Report card, pick a student, write the comment. The WIDA level and behavior notes are there to draw on.', 'Repeat. Class summary shows who is still missing a comment.', 'Admin reviews and approves under Review & approve, then prints.'] },
     ],
-    rules: ['The composite weights formative, summative, and performance task by the weights in Settings.', 'Only the class’s own teacher, or an admin, can edit its comments and grades.'],
-    watchOut: ['Grades due on the dashboard is the report card cutoff. After it, entries still count but the review may already be under way.'],
+    rules: ['The composite weights formative, summative, and performance task by the weights in Settings.', 'Only the class’s own teacher, or an admin, can edit its comments and grades.', 'A student has one comment per document: one for the progress report, one for the report card. Each comment box is labelled with its document.'],
+    watchOut: ['Grades due on the dashboard is the report card cutoff. After it, entries still count but the review may already be under way.', 'A comment typed under Report card does not appear on the progress report, or the other way round. If the box says Report card comment mid-semester, use the link above it to go to the progress report.'],
   },
   {
     id: 'leveltests', title: 'Level tests', updated: '2026-09-25',

@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'comments-by-document', date: '2026-10-27', title: 'Reports opens on the document you are writing now',
+    body: 'You can now see which comment you are writing. Reports opens on the progress report until three weeks after the midterm cutoff and on the report card after that; the Comments tab has a Progress report / Report card switch at the top; and each comment box is labelled with its document. Progress-report comments that were saved under Report card this semester have been moved across by the admin.',
+    path: '/reports', guide: 'reports',
+  },
+  {
     id: 'behavior-ladder', date: '2026-10-06', title: 'Three behavior notes open a case for admin',
     body: 'You can now rely on the behavior ladder: when a student reaches three concern or negative notes (or you flag one), a case opens with the notes in one place. Admin sees it at the top of the dashboard with no dismiss, marks it read, and records “Parents contacted”, which writes the contact on the student’s log and closes the case. You see on your dashboard and the student page whether admin has read it and how long it has waited, and can add a one-line ask. The behavior tracker shows how close a student is to the next step. Thresholds and steps are in Settings.',
     path: '/dashboard', guide: 'students',

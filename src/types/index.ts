@@ -106,6 +106,9 @@ export interface Semester {
   end_date: string | null;
   grades_due_date: string | null;
   comments_due_date: string | null;
+  /** Set by supabase/migration-benchmarks-cutoffs.sql; the dashboard counts down to them. */
+  midterm_cutoff_date?: string | null;
+  report_card_cutoff_date?: string | null;
   is_active: boolean;
   /** Visibility flag only -- hides the semester from pickers, keeps all data. */
   is_archived: boolean;
