@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'standards-by-code', date: '2026-10-27', title: 'The standards picker in code order',
+    body: 'You can now switch the standards picker to By code: every standard for the grade in code order with the official wording, grouped by strand, for when you already know which one you want. Type RL.3.1 or rl31 to jump to it. By skill, the plain-name view, is still there, and the picker remembers which you used last.',
+    path: '/grades', guide: 'grades',
+  },
+  {
     id: 'office-jobs', date: '2026-10-27', title: 'Office jobs on the dashboard',
     body: 'You can now see this week’s cleaning day beside the weekly schedule, with your job in large type, everyone else’s underneath, and your job next week. The day is Friday, or the day before when the calendar has the school off that Friday; on the day itself the band under the header names your job on every page. Admin sets the rotation once in Settings: the people in order, the jobs, the first cleaning day, and any weeks skipped.',
     path: '/dashboard', guide: 'dashboard',
