@@ -21,6 +21,16 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'progress-graph', date: '2026-10-27', title: 'A graph parents can read on the progress report, per student',
+    body: 'You can now tick “Include the domain graph on this report”, next to Skip comment on a progress report, and the printed page gets one chart: a bar for each area drawn over the letter bands, A to E, with the class average marked as a line. The class overview turns it on for everyone or no one. Admin runs sql/add_include_graph_to_comments.sql once first.',
+    path: '/reports', guide: 'reports',
+  },
+  {
+    id: 'domain-trends', date: '2026-10-27', title: 'Five small charts replace the semester timeline in the student view',
+    body: 'You can now read each domain tile in Grades → Student view as a small chart: the student’s running average as a solid line and the class’s as a dashed one, on one scale across the five tiles so they compare. Hover a point for the assessment and the numbers. The single timeline that joined every assessment regardless of domain is gone.',
+    path: '/grades', guide: 'grades',
+  },
+  {
     id: 'grades-sheets', date: '2026-10-27', title: 'Every assessment opens on its own sheet, and Edit uses the set-up flow',
     body: 'You can now click from one assessment to the next without the view changing under you: a keyed assessment opens on its answer sheet, a rubric on its rubric sheet, and a points-only assessment on a new points sheet laid out like the others, where Enter moves down and saves, 7/10 enters a fraction, and the rail shows the class as the numbers go in. Switching domain tabs is instant. Edit, next to the assessment name, reopens the flow you created it with, filled in, so the key, rubric and standards are changed the way they were made; a changed key re-scores the marked papers.',
     path: '/grades', guide: 'grades',

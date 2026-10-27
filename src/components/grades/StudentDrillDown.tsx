@@ -7,8 +7,7 @@ import { DOMAINS, DOMAIN_LABELS, type QuestionMapItem } from '@/types'
 import { calculateWeightedAverage, domainLabel, percentToLetter, type AssessmentType } from '@/lib/utils'
 import { useAssessmentWeights, weightsFor } from '@/lib/assessmentWeights'
 import { itemsForDomain, touchesDomain, domainForStandard } from '@/lib/domainSplit'
-import { DOMAIN_COLOR, domainColor, domainShort, domainTint } from '@/lib/domainTone'
-import { Sparkline } from '@/components/charts'
+import { DOMAIN_COLOR, domainColor, domainTint } from '@/lib/domainTone'
 import { plainName } from '@/components/curriculum/standards-plain'
 import WIDABadge from '@/components/shared/WIDABadge'
 import { ChevronDown, ChevronRight, ChevronLeft, ExternalLink, Loader2, Printer, Search } from 'lucide-react'
@@ -16,8 +15,8 @@ import { ChevronDown, ChevronRight, ChevronLeft, ExternalLink, Loader2, Printer,
 // ─── Student drill-down ──────────────────────────────────────────
 // One student's grades for the semester, read the way a teacher reads them:
 // a roster rail to move between students, a header that says how the
-// student is doing in each domain, a timeline of every score against the
-// class, notes worth a look, what is still unmarked, one aligned table with
+// student is doing in each domain with a small running-average chart per
+// domain against the class, notes worth a look, what is still unmarked, one aligned table with
 // the weighting behind each domain average, the standards the student has
 // met or missed from their answer sheets, and what the report card will say.
 // Every number comes from the same split and weighting the report card uses.
@@ -51,6 +50,8 @@ type Row = {
   flag: 'absent' | 'exempt' | null
   whole?: { score: number | null; max: number; pct: number | null; classPct: number | null } | null
 }
+
+type TrendPoint = { x: number; date: string | null; label: string; mine: number; cls: number | null }
 
 export const fmtPts = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, '')
 const pct1 = (v: number | null | undefined) => v == null ? '—' : `${v.toFixed(1)}%`
@@ -144,7 +145,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
 
   // ── Rows per domain, with class averages and the class spread ──
   const byDomain = useMemo(() => {
-    const out: Record<string, { rows: Row[]; avg: number | null; classAvg: number | null; items: { type: AssessmentType; pct: number; name: string }[] }> = {}
+    const out: Record<string, { rows: Row[]; avg: number | null; classAvg: number | null; items: { type: AssessmentType; pct: number; name: string }[]; trend: TrendPoint[] }> = {}
     const ordered = [...allAssessments].sort((x, y) => sortKey(x).localeCompare(sortKey(y)))
     for (const domain of DOMAINS) {
       const da = ordered.filter(a => touchesDomain(a, domain))
@@ -172,7 +173,21 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
       const items = da.flatMap(a => mine[a.id] ? itemsForDomain(domain, [a], () => mine[a.id]).map(it => ({ type: it.assessmentType, pct: it.maxScore > 0 ? (it.score / it.maxScore) * 100 : 0, name: a.name })) : [])
       const weighted = da.flatMap(a => mine[a.id] ? itemsForDomain(domain, [a], () => mine[a.id]) : [])
       const classItems = classGrades.flatMap(x => { const a = da.find(y => y.id === x.assessment_id); return a ? itemsForDomain(domain, [a], () => x) : [] })
-      out[domain] = { rows, avg: calculateWeightedAverage(weighted, grade, null, selectedClass, weightTable), classAvg: calculateWeightedAverage(classItems, grade, null, selectedClass, weightTable), items }
+      // Running averages: after each of this student's scored assessments,
+      // their weighted average so far and the class's over the same assessments.
+      const trend: TrendPoint[] = []
+      const soFar: ReturnType<typeof itemsForDomain> = [], classSoFar: ReturnType<typeof itemsForDomain> = []
+      for (const a of da) {
+        const g = mine[a.id]
+        const own = g ? itemsForDomain(domain, [a], () => g) : []
+        classSoFar.push(...classGrades.filter(x => x.assessment_id === a.id).flatMap(x => itemsForDomain(domain, [a], () => x)))
+        if (!own.length) continue
+        soFar.push(...own)
+        const m = calculateWeightedAverage(soFar, grade, null, selectedClass, weightTable)
+        if (m == null) continue
+        trend.push({ x: trend.length, date: a.date, label: a.name, mine: m, cls: calculateWeightedAverage(classSoFar, grade, null, selectedClass, weightTable) })
+      }
+      out[domain] = { rows, avg: calculateWeightedAverage(weighted, grade, null, selectedClass, weightTable), classAvg: calculateWeightedAverage(classItems, grade, null, selectedClass, weightTable), items, trend }
     }
     return out
   }, [allAssessments, mine, classGrades, grade, selectedClass, weightTable])
@@ -185,12 +200,11 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
   // ── Not yet scored: the class has it, this student has no mark and is not absent or exempt ──
   const unscored = useMemo(() => [...allAssessments].sort((x, y) => sortKey(x).localeCompare(sortKey(y))).filter(a => { const g = mine[a.id]; return !(g && (g.score != null || g.is_absent || g.is_exempt)) }), [allAssessments, mine])
 
-  // ── Timeline: every scored part in date order, with the class average for each ──
-  const timeline = useMemo(() => {
-    const pts: { x: number; y: number; cls: number | null; domain: string; label: string; date: string | null }[] = []
-    const all = DOMAINS.flatMap(d => byDomain[d]?.rows || []).filter(r => r.pct != null).sort((x, y) => sortKey(x.a).localeCompare(sortKey(y.a)))
-    all.forEach((r, i) => pts.push({ x: i, y: r.pct!, cls: r.classPct, domain: r.domain, label: r.name, date: r.date }))
-    return pts
+  // ── One scale for the five small charts, so the tiles compare: 50 to 100, lower only if someone is lower ──
+  const trendMin = useMemo(() => {
+    const vals = DOMAINS.flatMap(d => (byDomain[d]?.trend || []).flatMap(p => [p.mine, p.cls ?? 100]))
+    const lo = vals.length ? Math.min(...vals) : 100
+    return Math.max(0, Math.min(50, Math.floor(lo / 10) * 10))
   }, [byDomain])
 
   // ── Standards the student has met, is approaching, or missed, from their answer sheets ──
@@ -359,7 +373,6 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                 const prev = prevFor(d)
                 const diff = prev != null && b?.avg != null ? b.avg - prev : null
                 const drop = seq.length >= 3 ? ((seq[seq.length - 3] + seq[seq.length - 2]) / 2) - seq[seq.length - 1] : 0
-                const tone = b?.avg != null && b.avg < 70 ? 'bad' : drop >= 15 ? 'warn' : undefined
                 return (
                   <div key={d} className="px-4 py-3 min-w-0" style={{ backgroundColor: b ? domainTint(d, '0A') : undefined }}>
                     <p className="text-[10px] uppercase tracking-wider font-semibold truncate" style={{ color: DOMAIN_COLOR[d] }} title={DOMAIN_LABELS[d][lang]}>{DOMAIN_LABELS[d][lang]}</p>
@@ -372,7 +385,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                           {b.avg != null && <span className="text-[11px] text-text-tertiary">%</span>}
                           {diff != null && <span className={`text-[10.5px] tabular-nums font-semibold ${diff >= 0 ? 'text-success' : 'text-danger'}`} title={`${prevSemester?.name || (ko ? '지난 학기' : 'last semester')}: ${Math.round(prev!)}%`}>{diff >= 0 ? '▲' : '▼'} {Math.abs(Math.round(diff))}</span>}
                         </div>
-                        <div className="mt-1.5"><Sparkline values={seq} tone={tone} width={110} height={22} /></div>
+                        <div className="mt-1.5"><DomainTrend points={b.trend} color={DOMAIN_COLOR[d]} yMin={trendMin} ko={ko} /></div>
                         <p className="text-[10.5px] text-text-tertiary mt-0.5 tabular-nums truncate">{ko ? '반' : 'class'} {b.classAvg != null ? `${Math.round(b.classAvg)}%` : '—'} · {seq.length}/{b.rows.length}{drop >= 15 ? ` · ${ko ? '최근 하락' : 'recent drop'}` : ''}</p>
                       </>
                     )}
@@ -380,6 +393,11 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                 )
               })}
             </div>
+            <p className="px-4 py-1.5 border-t border-border text-[10px] text-text-tertiary flex items-center gap-3 flex-wrap">
+              <span className="inline-flex items-center gap-1.5"><span className="w-4 h-[2px] bg-navy inline-block rounded" />{ko ? '학생의 누적 평균' : "this student's running average"}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="w-4 border-t border-dashed border-text-tertiary inline-block" />{ko ? '반의 누적 평균' : "the class's"}</span>
+              <span>{ko ? `다섯 칸 모두 ${trendMin}–100% 눈금` : `one scale across the five tiles, ${trendMin} to 100%`}{trendMin < 70 ? (ko ? ' · 70% 선' : ' · the faint line is 70%') : ''}</span>
+            </p>
           </div>
 
           {/* Notes + unscored */}
@@ -408,20 +426,6 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                   </ul>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Timeline */}
-          {timeline.length >= 2 && (
-            <div className="bg-surface border border-border rounded-xl p-4">
-              <div className="flex items-baseline justify-between mb-2 flex-wrap gap-2">
-                <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">{ko ? '시간순' : 'Over the semester'}</p>
-                <span className="flex items-center gap-3 text-[10.5px] text-text-tertiary">
-                  {DOMAINS.filter(d => timeline.some(p => p.domain === d)).map(d => <span key={d} className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: DOMAIN_COLOR[d] }} />{domainShort(d)}</span>)}
-                  <span className="inline-flex items-center gap-1"><span className="w-4 border-t border-dashed border-text-tertiary" />{ko ? '반 평균' : 'class avg'}</span>
-                </span>
-              </div>
-              <Timeline points={timeline} />
             </div>
           )}
 
@@ -546,37 +550,35 @@ function PositionStrip({ vals, me, color }: { vals: { id: string; v: number }[];
 }
 
 // ── Every scored part in date order, dots by domain, class average dashed ──
-function Timeline({ points }: { points: { x: number; y: number; cls: number | null; domain: string; label: string; date: string | null }[] }) {
-  const [hover, setHover] = useState<number | null>(null)
-  const W = 640, H = 170, P = { top: 14, right: 16, bottom: 26, left: 34 }
-  const cw = W - P.left - P.right, ch = H - P.top - P.bottom
+
+// ─── One domain's running average against the class's ────────────
+// A small line per tile: the student's weighted average after each of
+// their scored assessments (solid, in the domain colour) and the class's
+// over the same assessments (dashed). The five tiles share one scale, and
+// hovering a point names the assessment and the two numbers.
+function DomainTrend({ points, color, yMin, ko }: { points: TrendPoint[]; color: string; yMin: number; ko: boolean }) {
+  const W = 120, H = 40, P = { top: 4, right: 5, bottom: 4, left: 3 }
   const n = points.length
+  if (n === 0) return <div className="h-10" />
+  const cw = W - P.left - P.right, ch = H - P.top - P.bottom
   const xs = (i: number) => P.left + (n > 1 ? (i / (n - 1)) * cw : cw / 2)
-  const ys = (v: number) => P.top + ch - (Math.max(0, Math.min(100, v)) / 100) * ch
-  const line = points.map((p, i) => `${i ? 'L' : 'M'} ${xs(i)} ${ys(p.y)}`).join(' ')
+  const ys = (v: number) => P.top + ch - ((Math.max(yMin, Math.min(100, v)) - yMin) / (100 - yMin)) * ch
+  const mineD = points.map((p, i) => `${i ? 'L' : 'M'} ${xs(i).toFixed(1)} ${ys(p.mine).toFixed(1)}`).join(' ')
   const cls = points.filter(p => p.cls != null)
-  const clsLine = cls.map((p, i) => `${i ? 'L' : 'M'} ${xs(p.x)} ${ys(p.cls!)}`).join(' ')
-  const h = hover != null ? points[hover] : null
+  const clsD = cls.map((p, i) => `${i ? 'L' : 'M'} ${xs(p.x).toFixed(1)} ${ys(p.cls!).toFixed(1)}`).join(' ')
+  const last = points[n - 1]
+  const fmt = (d: string | null) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''
   return (
-    <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block" onMouseLeave={() => setHover(null)}>
-        {[0, 25, 50, 75, 100].map(t => <g key={t}><line x1={P.left} x2={W - P.right} y1={ys(t)} y2={ys(t)} stroke="currentColor" strokeOpacity={t === 0 ? 0.3 : 0.08} /><text x={P.left - 6} y={ys(t) + 3.5} textAnchor="end" fontSize="10" fill="currentColor" fillOpacity="0.5">{t}</text></g>)}
-        <rect x={P.left} y={ys(70)} width={cw} height={ys(0) - ys(70)} fill="#dc2626" fillOpacity="0.04" />
-        {cls.length >= 2 && <path d={clsLine} fill="none" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.2" strokeDasharray="4 3" />}
-        <path d={line} fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.5" />
-        {points.map((p, i) => (
-          <g key={i} onMouseEnter={() => setHover(i)}>
-            <rect x={xs(i) - (n > 1 ? cw / (n - 1) / 2 : cw / 2)} y={P.top} width={n > 1 ? cw / (n - 1) : cw} height={ch} fill="transparent" />
-            <circle cx={xs(i)} cy={ys(p.y)} r={hover === i ? 6 : 4.5} fill={domainColor(p.domain)} stroke="white" strokeWidth="1.5" />
-          </g>
-        ))}
-        {points.map((p, i) => (n <= 12 || i % Math.ceil(n / 12) === 0) && p.date ? <text key={`d${i}`} x={xs(i)} y={H - 8} textAnchor="middle" fontSize="9.5" fill="currentColor" fillOpacity="0.5">{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</text> : null)}
-      </svg>
-      {h && (
-        <div className="absolute pointer-events-none bg-surface border border-border rounded shadow-lg px-2.5 py-1.5 text-[11.5px] text-text-primary whitespace-nowrap" style={{ left: `${(xs(hover!) / W) * 100}%`, top: `${(ys(h.y) / H) * 100}%`, transform: 'translate(-50%, calc(-100% - 10px))' }}>
-          <span className="font-medium" style={{ color: domainColor(h.domain) }}>{h.label}</span> · <span className="font-semibold tabular-nums">{Math.round(h.y)}%</span>{h.cls != null && <span className="text-text-tertiary"> · class {Math.round(h.cls)}%</span>}
-        </div>
-      )}
-    </div>
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-10 block" role="img" aria-label={ko ? '학기 중 누적 평균' : 'Running average over the semester'}>
+      {yMin < 70 && <line x1={P.left} x2={W - P.right} y1={ys(70)} y2={ys(70)} stroke="currentColor" strokeOpacity="0.12" />}
+      {cls.length >= 2 && <path d={clsD} fill="none" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.2" strokeDasharray="3 2.5" />}
+      {n >= 2 && <path d={mineD} fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />}
+      <circle cx={xs(n - 1)} cy={ys(last.mine)} r="2.6" fill={color} stroke="white" strokeWidth="1" />
+      {points.map((p, i) => (
+        <rect key={i} x={xs(i) - (n > 1 ? cw / (n - 1) / 2 : cw / 2)} y={0} width={n > 1 ? cw / (n - 1) : cw} height={H} fill="transparent">
+          <title>{`${p.label}${p.date ? ` · ${fmt(p.date)}` : ''}\n${ko ? '학생' : 'student'} ${Math.round(p.mine)}%${p.cls != null ? ` · ${ko ? '반' : 'class'} ${Math.round(p.cls)}%` : ''}`}</title>
+        </rect>
+      ))}
+    </svg>
   )
 }

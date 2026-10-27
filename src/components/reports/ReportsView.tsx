@@ -11,6 +11,7 @@ import { withoutAwayDays } from '@/lib/calendarDays'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, KOREAN_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord, percentToLetter, getKSTDateString } from '@/lib/utils'
 import { currentReportDocument, REPORT_DOCUMENT_LABEL, type ReportDocument } from '@/lib/reportDocument'
+import { domainBarsSvg } from '@/lib/domainBars'
 import { loadAssessmentWeights } from '@/lib/assessmentWeights'
 import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, ChevronDown, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle, AlertTriangle, FileDown, MessageSquare, Save, Lock } from 'lucide-react'
 
@@ -40,6 +41,29 @@ const REPORT_CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camell
 
 // One letter scale for the whole app (see percentToLetter).
 function getLetterGrade(score: number): string { return percentToLetter(score) }
+
+// ─── Comment rows, with the graph switch when the column exists ──
+// comments.include_graph needs sql/add_include_graph_to_comments.sql. Until
+// it is run, reads fall back to the older columns and the checkbox says so.
+const GRAPH_COL = /include_graph/
+async function loadReportComment(studentId: string, semesterId: string, reportType: ReportDocument): Promise<{ row: any; graphReady: boolean }> {
+  const q = (cols: string) => supabase.from('comments').select(cols).eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', reportType).limit(1).single()
+  const first = await q('text, is_skipped, hide_comparison, include_graph')
+  if (!first.error || !GRAPH_COL.test(first.error.message || '')) return { row: first.data, graphReady: true }
+  const second = await q('text, is_skipped, hide_comparison')
+  return { row: second.data, graphReady: false }
+}
+async function loadClassComments(semesterId: string, reportType: ReportDocument, studentIds: string[]): Promise<{ rows: any[]; graphReady: boolean }> {
+  const q = (cols: string) => supabase.from('comments').select(cols).eq('semester_id', semesterId).eq('report_type', reportType).in('student_id', studentIds)
+  const first = await q('student_id, text, is_skipped, include_graph')
+  if (!first.error) return { rows: (first.data as any[]) || [], graphReady: true }
+  const second = await q('student_id, text, is_skipped')
+  return { rows: (second.data as any[]) || [], graphReady: false }
+}
+/** Areas at a glance, for parents: a bar per domain over the letter bands, the class average as a tick. */
+function progressBarsSvg(d: any): string {
+  return domainBarsSvg(DOMAINS.map(dom => ({ key: dom, label: DOMAIN_SHORT[dom], value: d.domainNa?.[dom] ? null : (d.domainGrades?.[dom] ?? null), na: !!d.domainNa?.[dom], classAvg: d.domainNa?.[dom] ? null : (d.classAverages?.[dom] ?? null) })), { letterOf: getLetterGrade })
+}
 
 function letterColor(l: string): string {
   if (l.startsWith('A')) return '#16a34a'; if (l.startsWith('B')) return '#2563eb'
@@ -1232,6 +1256,11 @@ function progressCardHtml(s: any, d: any, comment: string): string {
     <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Domain Performance</div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
   </div>
+  ${d.includeGraph ? `<!-- Areas at a glance -->
+  <div style="background:#fdfcfa;padding:16px 28px 12px;border-bottom:1px solid #C8CED8">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:10px">Areas at a glance</div>
+    ${progressBarsSvg(d)}
+  </div>` : ''}
   ${d.commentSkipped ? '' : `<!-- Comment -->
   <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
@@ -1386,11 +1415,11 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
       DOMAINS.forEach(dd => { domainClassNa[dd] = false })
       ;(classSettings || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) domainClassNa[r.domain] = !!r.is_na })
 
-      // Report cards additionally need class averages + previous-semester deltas
+      // Class averages: the report card's comparison band and the progress report's graph
       const classAverages: Record<string, number | null> = {}
       const prevByStudent: Record<string, Record<string, number | null>> = {}
       let prevSemesterName: string | null = null
-      if (isCard) {
+      {
         const { data: classSemGrades } = await supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na')
           .eq('semester_id', semesterId).eq('english_class', cls).eq('grade', grade)
         DOMAINS.forEach(domain => {
@@ -1398,6 +1427,9 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
           const vals = (classSemGrades || []).filter((sg: any) => sg.domain === domain && !sg.is_na).map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
           classAverages[domain] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null
         })
+      }
+      // Report cards additionally need previous-semester deltas
+      if (isCard) {
         const typeOrder: Record<string, number> = { archive: 0, fall_mid: 1, fall_final: 2, fall: 2, spring_mid: 3, spring_final: 4, spring: 4 }
         const getYear = (s: any) => { const m = s.name?.match(/\d{4}/); return m ? parseInt(m[0]) : 2025 }
         const sorted = [...allSemesters].sort((a: any, b: any) => { const yd = getYear(a) - getYear(b); return yd !== 0 ? yd : (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0) })
@@ -1445,11 +1477,12 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
         const overallGrade = scored.length > 0 ? Math.round(scored.reduce((acc: number, dd) => acc + (domainGrades[dd] as number), 0) / scored.length * 10) / 10 : null
         const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
 
-        const { data: commentData } = await supabase.from('comments').select('text, is_skipped, hide_comparison').eq('student_id', student.id).eq('semester_id', semesterId).eq('report_type', 'report_card').limit(1).single()
+        // Each document has its own comment row: a progress report must not print the report card's.
+        const { row: commentData } = await loadReportComment(student.id, semesterId, isCard ? 'report_card' : 'progress_report')
         const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
         const baseData = {
-          domainGrades, domainNa, overallGrade, overallLetter, semesterName,
+          domainGrades, domainNa, overallGrade, overallLetter, semesterName, classAverages, includeGraph: !!commentData?.include_graph,
           commentSkipped: !!commentData?.is_skipped,
           teacherName: teacher?.name || currentTeacher?.name || '',
           teacherPhotoUrl: teacher?.photo_url || null,
@@ -1558,6 +1591,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
   const [loading, setLoading] = useState(true)
   const [comment, setComment] = useState('')
   const [commentSkipped, setCommentSkipped] = useState(false)
+  const [includeGraph, setIncludeGraph] = useState(false)
   const [savingComment, setSavingComment] = useState(false)
   const [showRefPanel, setShowRefPanel] = useState(false)
   const [editingGrades, setEditingGrades] = useState(false)
@@ -1605,7 +1639,15 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
 
     // Comment, teacher, plus extras for Student Reference panel
-    const { data: commentData } = await supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', 'progress_report').limit(1).single()
+    const { row: commentData, graphReady } = await loadReportComment(studentId, semesterId, 'progress_report')
+    // Class averages per domain, for the graph's class marker.
+    const { data: classSemGrades } = await supabase.from('semester_grades').select('domain, final_grade, calculated_grade, is_na').eq('semester_id', semesterId).in('student_id', students.map((x: any) => x.id))
+    const classAverages: Record<string, number | null> = {}
+    DOMAINS.forEach(dd => {
+      if (domainClassNa[dd]) { classAverages[dd] = null; return }
+      const vals = (classSemGrades || []).filter((sg: any) => sg.domain === dd && !sg.is_na).map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
+      classAverages[dd] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null
+    })
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
     const [readingRes, ltScoreRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1),
@@ -1637,6 +1679,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       student, domainGrades, domainNa, domainStudentNa, domainClassNa, overallGrade, overallLetter,
       comment: commentData?.text || '',
       commentSkipped: !!commentData?.is_skipped,
+      includeGraph: !!commentData?.include_graph, graphReady, classAverages,
       teacherName: teacher?.name || currentTeacher?.name || '',
       teacherPhotoUrl: teacher?.photo_url || null,
       semesterName: sem.name,
@@ -1652,6 +1695,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     })
     setComment(commentData?.text || '')
     setCommentSkipped(!!commentData?.is_skipped)
+    setIncludeGraph(!!commentData?.include_graph)
     setLoading(false)
   }, [studentId, semesterId, students, allSemesters, selectedClass, currentTeacher])
 
@@ -1661,12 +1705,24 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     setSavingComment(true)
     const { error } = await supabase.from('comments').upsert({
       student_id: studentId, semester_id: semesterId, report_type: 'progress_report', text: comment.trim(),
-      is_skipped: commentSkipped,
+      is_skipped: commentSkipped, ...(data?.graphReady ? { include_graph: includeGraph } : {}),
       created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
     }, { onConflict: 'student_id,semester_id,report_type' })
     setSavingComment(false)
     if (error) showToast(`Error: ${error.message}`)
     else { showToast(commentSkipped ? 'Comment skipped' : 'Comment saved'); setData((prev: any) => ({ ...prev, comment: comment.trim(), commentSkipped })) }
+  }
+
+  // The graph on this student's report. Saved on its own, like the report card's comparison switch.
+  const toggleIncludeGraph = async () => {
+    const next = !includeGraph
+    setIncludeGraph(next)
+    const { error } = await supabase.from('comments').upsert({
+      student_id: studentId, semester_id: semesterId, report_type: 'progress_report', include_graph: next,
+      text: comment.trim(), is_skipped: commentSkipped, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
+    }, { onConflict: 'student_id,semester_id,report_type' })
+    if (error) { setIncludeGraph(!next); showToast(GRAPH_COL.test(error.message || '') ? 'Run sql/add_include_graph_to_comments.sql first.' : `Error: ${error.message}`); return }
+    setData((prev: any) => ({ ...prev, includeGraph: next }))
   }
 
   const handleTeacherPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1851,6 +1907,14 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
           )}
         </div>
 
+        {/* ─── Areas at a glance (optional) ─── */}
+        {d.includeGraph && (
+          <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
+            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3">Areas at a glance</div>
+            <div dangerouslySetInnerHTML={{ __html: progressBarsSvg(d) }} />
+          </div>
+        )}
+
         {/* ─── Teacher Comment ─── */}
         <div className="bg-white px-7 py-6" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
@@ -1988,11 +2052,17 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
           <div className="flex items-center justify-between mb-2">
             {canEdit ? (
-              <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
-                <input type="checkbox" checked={commentSkipped}
-                  onChange={(e: any) => setCommentSkipped(e.target.checked)} />
-                Skip comment for this student
-              </label>
+              <div className="flex items-center gap-4 flex-wrap">
+                <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
+                  <input type="checkbox" checked={commentSkipped}
+                    onChange={(e: any) => setCommentSkipped(e.target.checked)} />
+                  Skip comment for this student
+                </label>
+                <label className={`print:hidden flex items-center gap-2 text-[11px] text-text-secondary select-none ${d.graphReady ? 'cursor-pointer' : 'opacity-60'}`} title={d.graphReady ? 'A bar for each area over the letter bands, with the class average marked' : 'Run sql/add_include_graph_to_comments.sql first'}>
+                  <input type="checkbox" checked={includeGraph} disabled={!d.graphReady} onChange={toggleIncludeGraph} />
+                  Include the domain graph on this report
+                </label>
+              </div>
             ) : (
               <span className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] italic"><Lock size={11} /> Read-only — only {selectedClass}&apos;s teacher can edit this comment.</span>
             )}
@@ -2834,9 +2904,10 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
   const { showToast, currentTeacher } = useApp()
   const [loading, setLoading] = useState(true)
   const [classNa, setClassNa] = useState<Record<string, boolean>>({})
-  const [studentRows, setStudentRows] = useState<Array<{ student: any; status: Record<string, 'graded' | 'na' | 'empty'>; isComplete: boolean; hasComment: boolean; commentSkipped: boolean }>>([])
+  const [studentRows, setStudentRows] = useState<Array<{ student: any; status: Record<string, 'graded' | 'na' | 'empty'>; isComplete: boolean; hasComment: boolean; commentSkipped: boolean; includeGraph: boolean }>>([])
   const [domainAvgs, setDomainAvgs] = useState<Record<string, number | null>>({})
   const [savingNa, setSavingNa] = useState<string | null>(null)
+  const [graphReady, setGraphReady] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -2857,15 +2928,15 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
     ;(cls || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) cna[r.domain] = !!r.is_na })
 
     // Bulk load all student grades + comments for this class+semester
-    const [allGradesRes, allCommentsRes] = await Promise.all([
+    const [allGradesRes, allComments] = await Promise.all([
       supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na')
         .eq('semester_id', semesterId).in('student_id', studentIds),
-      supabase.from('comments').select('student_id, text, is_skipped')
-        .eq('semester_id', semesterId).eq('report_type', reportType).in('student_id', studentIds),
+      loadClassComments(semesterId, reportType, studentIds),
     ])
     const allGrades = allGradesRes.data || []
-    const commentsByStudent: Record<string, { text: string; skipped: boolean }> = {}
-    ;(allCommentsRes.data || []).forEach((c: any) => { commentsByStudent[c.student_id] = { text: (c.text || '').trim(), skipped: !!c.is_skipped } })
+    const commentsByStudent: Record<string, { text: string; skipped: boolean; graph: boolean }> = {}
+    allComments.rows.forEach((c: any) => { commentsByStudent[c.student_id] = { text: (c.text || '').trim(), skipped: !!c.is_skipped, graph: !!c.include_graph } })
+    setGraphReady(allComments.graphReady)
 
     const rows = students.map(student => {
       const myGrades = allGrades.filter((g: any) => g.student_id === student.id)
@@ -2884,7 +2955,7 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
       const c = commentsByStudent[student.id]
       const hasComment = !!(c && (c.text || c.skipped))
       const commentSkipped = !!c?.skipped
-      return { student, status, isComplete, hasComment, commentSkipped }
+      return { student, status, isComplete, hasComment, commentSkipped, includeGraph: !!c?.graph }
     })
 
     // Class domain averages — exclude student-level is_na; class-N/A → null
@@ -2929,6 +3000,17 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
 
   const completeCount = studentRows.filter(r => r.isComplete).length
   const commentCount = studentRows.filter(r => r.hasComment).length
+  const graphCount = studentRows.filter(r => r.includeGraph).length
+
+  // The graph for everyone, or for no one; each student's own switch still overrides.
+  const setGraphForAll = async (on: boolean) => {
+    const { error } = await supabase.from('comments').upsert(
+      students.map(s => ({ student_id: s.id, semester_id: semesterId, report_type: 'progress_report', include_graph: on, updated_at: new Date().toISOString() })),
+      { onConflict: 'student_id,semester_id,report_type' })
+    if (error) { showToast(GRAPH_COL.test(error.message || '') ? 'Run sql/add_include_graph_to_comments.sql first.' : `Error: ${error.message}`); return }
+    showToast(on ? 'The graph is on every progress report' : 'The graph is off every progress report')
+    load()
+  }
 
   return (
     <div className="space-y-8">
@@ -2972,9 +3054,20 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
       </div>
 
       <div>
-        <div className="flex items-baseline justify-between mb-1">
+        <div className="flex items-baseline justify-between mb-1 gap-3 flex-wrap">
           <p className="eyebrow">Students</p>
-          <p className="text-[11.5px] text-ink-3">Click a student to open their {isCard ? 'report card' : 'progress report'}</p>
+          <div className="flex items-baseline gap-3 flex-wrap">
+            {!isCard && canEdit && (graphReady ? (
+              <span className="text-[11.5px] text-ink-2 inline-flex items-baseline gap-2" title="Areas at a glance: a bar for each area over the letter bands, with the class average marked">
+                {graphCount} / {students.length} with the graph
+                <button onClick={() => setGraphForAll(true)} className="text-accent hover:underline">All</button>
+                <button onClick={() => setGraphForAll(false)} className="text-accent hover:underline">None</button>
+              </span>
+            ) : (
+              <span className="text-[11.5px] text-warn">Run sql/add_include_graph_to_comments.sql to enable the graph.</span>
+            ))}
+            <p className="text-[11.5px] text-ink-3">Click a student to open their {isCard ? 'report card' : 'progress report'}</p>
+          </div>
         </div>
         <table className="w-full text-[13px] border-t border-rule-2">
           <thead>
