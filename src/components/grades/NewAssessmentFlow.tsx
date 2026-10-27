@@ -5,6 +5,8 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ALL_ENGLISH_CLASSES, DOMAINS, DOMAIN_LABELS, type Domain, type EnglishClass, type QuestionMapItem } from '@/types'
 import { parseAnswerKey, keyTotal, parseRange, rangeLabel } from '@/lib/answerKey'
+import { type Section, type SectionType, isChoiceType, lettersOf, countOf, defaultPoints, mapFromSections, sectionsFromMap } from '@/lib/sections'
+import { rescoreAfterKeyChange } from '@/lib/rescore'
 import { splitPossible, isMultiDomain, routingFor } from '@/lib/domainSplit'
 import { isRoutingColumnError } from '@/lib/domainRouting'
 import { DOMAIN_LABELS as DL } from '@/types'
@@ -20,9 +22,11 @@ import { ArrowRight, Check, ChevronDown, ChevronUp, X } from 'lucide-react'
 // worth 5, writing with a rubric). Letters are typed only where letters
 // belong, so nothing is ever silently dropped. The question map is derived
 // from the sections; per-question overrides sit on top for the rare case.
-
-type SectionType = 'mc' | 'true_false' | 'short_answer' | 'open_ended' | 'rubric'
-interface Section { id: number; type: SectionType; count: number; points: number; key: string; standard?: string; rubric?: { name: string; criteria: RubricCriterion[] } | null }
+//
+// The same flow edits an existing assessment: everything is pre-filled, the
+// saved key is folded back into sections, and saving updates the row. Once
+// papers are scored the scoring method is fixed, and a changed key re-scores
+// the marked papers against it.
 
 const CATEGORIES = [
   { value: 'formative', label: 'Formative', ko: '형성평가', hint: 'quizzes, exit tickets, classwork' },
@@ -37,10 +41,6 @@ const SECTION_TYPES: { value: SectionType; en: string; ko: string; hintEn: strin
   { value: 'open_ended', en: 'Extended writing', ko: '서술형', hintEn: 'A longer written response with a points score. Choose “Rubric-scored” instead if you want criteria.', hintKo: '점수로 채점하는 긴 서술형. 기준별 채점이 필요하면 “루브릭 채점”을 고르세요.' },
   { value: 'rubric', en: 'Rubric-scored', ko: '루브릭 채점', hintEn: 'Pick a rubric. Each criterion is marked 0–4 while grading, and the points add up on their own.', hintKo: '루브릭을 고르세요. 채점할 때 기준마다 0–4로 표시하면 점수가 자동으로 합산됩니다.' },
 ]
-const isChoiceType = (t: SectionType) => t === 'mc' || t === 'true_false'
-const lettersOf = (sec: Section) => isChoiceType(sec.type) ? sec.key.toUpperCase().replace(/[^A-E TF]/g, '').replace(/\s/g, '') : ''
-const countOf = (sec: Section) => isChoiceType(sec.type) ? lettersOf(sec).length : Math.max(0, Math.floor(sec.count))
-const defaultPoints = (t: SectionType) => t === 'short_answer' ? 5 : t === 'open_ended' ? 10 : 1
 
 // A number box that lets you clear it. Typing keeps a text draft, so
 // backspacing a 0 works; the parsed value flows out as you type.
@@ -56,47 +56,59 @@ function NumField({ value, onChange, className }: { value: number; onChange: (n:
   )
 }
 
+/** An existing assessment opened for editing: the same flow, pre-filled. */
+export interface EditingAssessment {
+  id: string; name: string; domain: Domain; type: string; date: string | null; description: string; max_score: number
+  standards?: { code: string }[] | null; question_map?: QuestionMapItem[] | null
+  rubric?: { name: string; band?: string; criteria: RubricCriterion[] } | null; rubric_id?: string | null
+  sections?: any[] | null
+}
+
 interface Props {
   grade: number; englishClass: EnglishClass; domain: Domain; semesterId: string | null
   onClose: () => void
   onCreated: (assessment: any, scoring: 'key' | 'rubric' | 'points') => void
+  /** Edit mode: the assessment to change. Saving calls onSaved instead of onCreated. */
+  editing?: EditingAssessment | null
+  onSaved?: (assessment: any) => void
 }
 
-export default function NewAssessmentFlow({ grade, englishClass, domain, semesterId, onClose, onCreated }: Props) {
+const scoringOf = (a: EditingAssessment | null | undefined): 'key' | 'rubric' | 'points' => a?.rubric ? 'rubric' : a?.question_map?.length ? 'key' : 'points'
+
+export default function NewAssessmentFlow({ grade, englishClass, domain, semesterId, onClose, onCreated, editing = null, onSaved }: Props) {
   const { currentTeacher, language: lang, showToast } = useApp()
   const ko = lang === 'ko'
   const [step, setStep] = useState<1 | 2>(1)
   // How it will be scored decides what step 2 is.
-  const [scoring, setScoring] = useState<'key' | 'rubric' | 'points'>('key')
-  const [name, setName] = useState('')
-  const [dom, setDom] = useState<Domain>(domain)
-  const [category, setCategory] = useState<string>('formative')
-  const [date, setDate] = useState('')
-  const [notes, setNotes] = useState('')
-  const [points, setPoints] = useState<string>('10')
+  const [scoring, setScoring] = useState<'key' | 'rubric' | 'points'>(scoringOf(editing))
+  const [name, setName] = useState(editing?.name || '')
+  const [dom, setDom] = useState<Domain>(editing?.domain || domain)
+  const [category, setCategory] = useState<string>(editing?.type || 'formative')
+  const [date, setDate] = useState(editing?.date || '')
+  const [notes, setNotes] = useState(editing?.description || '')
+  const [points, setPoints] = useState<string>(editing ? String(editing.max_score) : '10')
   const [share, setShare] = useState<Set<string>>(new Set())
-  const [sections, setSections] = useState<Section[]>([{ id: 1, type: 'mc', count: 0, points: 1, key: '' }])
-  const [overrides, setOverrides] = useState<Record<number, Partial<QuestionMapItem>>>({})
+  // Standards tagged on the assessment itself: only for points-only scoring,
+  // where there are no questions or criteria to carry them.
+  const [tagged, setTagged] = useState<string[]>(() => editing && scoringOf(editing) === 'points' ? (editing.standards || []).map(s => s.code).filter(Boolean) : [])
+  const [pickingTag, setPickingTag] = useState(false)
+  const initial = useMemo(() => editing?.question_map?.length ? sectionsFromMap(editing.question_map) : null, [editing])
+  const [sections, setSections] = useState<Section[]>(initial?.sections || [{ id: 1, type: 'mc', count: 0, points: 1, key: '' }])
+  const [overrides, setOverrides] = useState<Record<number, Partial<QuestionMapItem>>>(initial?.overrides || {})
+  // Scored papers pin the scoring method: changing it would orphan the marks.
+  const [hasGrades, setHasGrades] = useState(false)
+  useEffect(() => {
+    if (!editing) return
+    let cancelled = false
+    supabase.from('grades').select('student_id', { count: 'exact', head: true }).eq('assessment_id', editing.id).then(({ count }) => { if (!cancelled) setHasGrades((count || 0) > 0) })
+    return () => { cancelled = true }
+  }, [editing])
+  // An older assessment scored by sections keeps them; only its details change here.
+  const legacySections = !!editing?.sections?.length && scoring === 'points'
   const [textMode, setTextMode] = useState(false)
   const [keyText, setKeyText] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const map = useMemo<QuestionMapItem[]>(() => {
-    if (textMode) return parseAnswerKey(keyText)
-    const out: QuestionMapItem[] = []
-    for (const sec of sections) {
-      const isChoice = isChoiceType(sec.type)
-      const letters = lettersOf(sec)
-      const n = countOf(sec)
-      for (let i = 0; i < n; i++) {
-        const num = out.length + 1
-        const base: QuestionMapItem = sec.type === 'rubric' && sec.rubric
-          ? { num, type: 'rubric', max_points: sec.rubric.criteria.length * 4, standard: sec.standard, rubric: sec.rubric }
-          : { num, type: sec.type, max_points: sec.points, standard: sec.standard, ...(isChoice ? { answer_key: letters[i] } : {}) }
-        out.push({ ...base, ...(overrides[num] || {}) })
-      }
-    }
-    return out
-  }, [sections, overrides, textMode, keyText])
+  const map = useMemo<QuestionMapItem[]>(() => textMode ? parseAnswerKey(keyText) : mapFromSections(sections, overrides), [sections, overrides, textMode, keyText])
   const setSection = (id: number, patch: Partial<Section>) => setSections(prev => prev.map(x => x.id === id ? { ...x, ...patch } : x))
   const addSection = (type: SectionType) => setSections(prev => [...prev, { id: Date.now(), type, count: 1, points: defaultPoints(type), key: '' }])
   // Moving a section renumbers its questions, so any per-question overrides
@@ -149,16 +161,39 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
   const create = async (withKey: boolean, rubric?: { rubric_id: string | null; name: string; band: Band; criteria: any[] }) => {
     if (!name.trim()) { showToast(ko ? '이름을 입력하세요' : 'Give the assessment a name'); setStep(1); return }
     const finalMap = withKey && map.length ? map : null
-    const maxScore = rubric ? rubric.criteria.length * 4 : finalMap ? keyTotal(finalMap) : Number(points)
+    // Editing a rubric assessment without picking a new rubric keeps the old one.
+    const kept = !rubric && editing?.rubric && scoring === 'rubric' ? { rubric_id: editing.rubric_id ?? null, name: editing.rubric.name, band: (editing.rubric.band || 'g35') as Band, criteria: editing.rubric.criteria as any[] } : null
+    const useRubric = rubric || kept
+    const maxScore = useRubric ? useRubric.criteria.length * 4 : finalMap ? keyTotal(finalMap) : legacySections ? Number(editing!.max_score) : Number(points)
     if (!maxScore || maxScore <= 0) { showToast(ko ? '총점을 입력하세요' : 'Set the total points'); return }
     setSaving(true)
-    const codes = Array.from(new Set([...(finalMap || []).map(q => q.standard), ...(rubric?.criteria || []).map((c: any) => c.standard)].filter(Boolean))) as string[]
+    const codes = finalMap || useRubric
+      ? Array.from(new Set([...(finalMap || []).map(q => q.standard), ...(useRubric?.criteria || []).map((c: any) => c.standard)].filter(Boolean))) as string[]
+      : tagged
     const standards = codes.map(code => ({ code, dok: 0, description: stdText(code) }))
     const base = {
       name: name.trim(), domain: dom, max_score: maxScore, grade, type: category, date: date || null, description: notes.trim(),
       created_by: currentTeacher?.id || null, semester_id: semesterId, standards, sections: null, question_map: finalMap,
       ...routingFor(finalMap, dom),
-      ...(rubric ? { rubric: { name: rubric.name, band: rubric.band, criteria: rubric.criteria }, rubric_id: rubric.rubric_id } : {}),
+      ...(useRubric ? { rubric: { name: useRubric.name, band: useRubric.band, criteria: useRubric.criteria }, rubric_id: useRubric.rubric_id } : {}),
+    }
+    if (editing) {
+      // Only what the form owns changes; who made it, when, and for which class stay.
+      const { created_by: _c, semester_id: _s, grade: _g, ...changes } = base
+      const payload: Record<string, any> = { ...changes, rubric: useRubric ? base.rubric : null, rubric_id: useRubric ? base.rubric_id : null }
+      if (legacySections) delete payload.sections
+      let { data, error } = await supabase.from('assessments').update(payload).eq('id', editing.id).select().single()
+      if (error && isRoutingColumnError(error.message)) {
+        const { mixed: _m, domain_split: _d, ...plain } = payload
+        ;({ data, error } = await supabase.from('assessments').update(plain).eq('id', editing.id).select().single())
+      }
+      if (error) { setSaving(false); showToast(`Error: ${error.message}`); return }
+      let remarked = 0
+      if (finalMap && hasGrades) remarked = await rescoreAfterKeyChange({ id: editing.id, domain: dom, mixed: data?.mixed, question_map: data?.question_map || finalMap })
+      setSaving(false)
+      showToast(ko ? `"${name}" 수정 완료${remarked ? ` · ${remarked}명 재채점` : ''}` : `Updated "${name}"${remarked ? ` · re-scored ${remarked} ${remarked === 1 ? 'paper' : 'papers'}` : ''}`)
+      onSaved?.(data)
+      return
     }
     let { data, error } = await supabase.from('assessments').insert({ ...base, english_class: englishClass }).select().single()
     // The routing columns need supabase/migration-mixed-assessments.sql. If
@@ -173,7 +208,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
     if (share.size) await supabase.from('assessments').insert(Array.from(share).map(cls => ({ ...base, english_class: cls })))
     setSaving(false)
     showToast(ko ? `"${name}" 생성됨` : `Created "${name}"${share.size ? ` · shared with ${share.size} more` : ''}`)
-    onCreated(data, rubric ? 'rubric' : finalMap ? 'key' : 'points')
+    onCreated(data, useRubric ? 'rubric' : finalMap ? 'key' : 'points')
   }
 
   const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[12px] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
@@ -194,12 +229,13 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
       {/* Steps */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-rule-2">
         <div className="flex items-center gap-6 text-[13px]">
+          {editing && <span className="eyebrow eyebrow-accent">{ko ? '수정' : 'Editing'}</span>}
           {[[1, ko ? '설정' : 'Set up'], [2, scoring === 'rubric' ? (ko ? '루브릭' : 'Rubric') : scoring === 'points' ? (ko ? '총점' : 'Points') : (ko ? '정답 키' : 'Answer key')]].map(([n, l]) => (
             <button key={n} onClick={() => setStep(n as 1 | 2)} className={`flex items-center gap-2 ${step === n ? 'text-ink font-semibold' : 'text-ink-3'}`}>
               <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center ${step === n ? 'bg-accent text-white' : step > (n as number) ? 'bg-good text-white' : 'border border-rule-2'}`}>{step > (n as number) ? <Check size={11} /> : n}</span>{l}
             </button>
           ))}
-          <span className="flex items-center gap-2 text-ink-3"><span className="w-5 h-5 rounded-full border border-rule-2 text-[11px] flex items-center justify-center">3</span>{ko ? '채점' : 'Score'}</span>
+          {!editing && <span className="flex items-center gap-2 text-ink-3"><span className="w-5 h-5 rounded-full border border-rule-2 text-[11px] flex items-center justify-center">3</span>{ko ? '채점' : 'Score'}</span>}
         </div>
         <button onClick={onClose} aria-label="Close" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={15} /></button>
       </div>
@@ -221,36 +257,60 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
           <div>
             <span className={label}>{ko ? '채점 방식' : 'How will you score it?'}</span>
             <div data-guide="grades.scoring" className="flex flex-wrap gap-1.5">
-              <button onClick={() => setScoring('key')} className={chip(scoring === 'key')} title={ko ? '정답 키를 입력하고 답안지로 채점' : 'Type the key, then bubble in answers'}>{ko ? '정답 키' : 'Answer key'}</button>
-              <button onClick={() => setScoring('rubric')} className={chip(scoring === 'rubric')} title={ko ? '기준별 0–4 척도' : 'Criteria on a 0–4 scale'}>{ko ? '루브릭' : 'Rubric'}</button>
-              <button onClick={() => setScoring('points')} className={chip(scoring === 'points')} title={ko ? '학생별 점수 하나' : 'One score per student'}>{ko ? '점수만' : 'Points only'}</button>
+              {([['key', ko ? '정답 키' : 'Answer key', ko ? '정답 키를 입력하고 답안지로 채점' : 'Type the key, then bubble in answers'], ['rubric', ko ? '루브릭' : 'Rubric', ko ? '기준별 0–4 척도' : 'Criteria on a 0–4 scale'], ['points', ko ? '점수만' : 'Points only', ko ? '학생별 점수 하나' : 'One score per student']] as const).map(([v, l, tip]) => (
+                <button key={v} onClick={() => setScoring(v)} disabled={hasGrades && scoring !== v} className={`${chip(scoring === v)} disabled:opacity-40 disabled:cursor-not-allowed`} title={tip}>{l}</button>
+              ))}
             </div>
+            {hasGrades && <p className="text-[12px] text-warn mt-1.5">{ko ? '채점된 답안이 있어 채점 방식은 바꿀 수 없습니다. 바꾸려면 먼저 점수를 모두 지우세요.' : 'Papers are already scored, so the scoring method is fixed. Clear all scores first to change it.'}</p>}
+            {legacySections && <p className="text-[12px] text-ink-3 mt-1.5">{ko ? '섹션별로 채점하는 이전 방식의 평가입니다. 여기서는 세부 정보만 바뀝니다.' : 'An older assessment scored by sections. Only the details here change; the sections stay as they are.'}</p>}
             <p className="text-[12px] text-ink-3 mt-1.5">{scoring === 'key' ? (ko ? '문항별로 채점합니다: 객관식은 정답 키로, 서술형은 점수로, 쓰기는 루브릭으로. 섹션을 섞을 수 있습니다.' : 'Grade question by question: multiple choice against a key, written answers by points, writing with a rubric. Mix them on one paper.') : scoring === 'rubric' ? (ko ? '시험지 전체를 루브릭 하나로 채점합니다.' : 'The whole assessment is one rubric, marked criterion by criterion.') : (ko ? '학생마다 총점 하나만 입력합니다.' : 'Just one total per student.')}</p>
           </div>
           <div className="grid grid-cols-[160px_140px_1fr] gap-4">
             <div><label htmlFor="na-date" className={label}>{ko ? '날짜' : 'Date'}</label><input id="na-date" type="date" value={date} onChange={e => setDate(e.target.value)} className={field} /></div>
-            <div><label htmlFor="na-points" className={label}>{ko ? '총점' : 'Total points'}</label><input id="na-points" type="number" min={1} value={scoring === 'key' && map.length ? String(keyTotal(map)) : points} disabled={scoring !== 'points'} onChange={e => setPoints(e.target.value)} className={`${field} tabular-nums disabled:text-ink-3`} />{scoring !== 'points' && <p className="text-[11px] text-ink-3 mt-1">{scoring === 'rubric' ? (ko ? '기준당 4점' : '4 per criterion') : (ko ? '정답 키에서 계산됨' : 'Adds up from the key')}</p>}</div>
+            <div><label htmlFor="na-points" className={label}>{ko ? '총점' : 'Total points'}</label><input id="na-points" type="number" min={1} value={scoring === 'key' && map.length ? String(keyTotal(map)) : points} disabled={scoring !== 'points' || legacySections} onChange={e => setPoints(e.target.value)} className={`${field} tabular-nums disabled:text-ink-3`} />{scoring !== 'points' && <p className="text-[11px] text-ink-3 mt-1">{scoring === 'rubric' ? (ko ? '기준당 4점' : '4 per criterion') : (ko ? '정답 키에서 계산됨' : 'Adds up from the key')}</p>}</div>
             <div><label htmlFor="na-notes" className={label}>{ko ? '메모' : 'Notes'}</label><input id="na-notes" value={notes} onChange={e => setNotes(e.target.value)} className={field} placeholder={ko ? '선택' : 'optional'} /></div>
           </div>
-          <div>
-            <span className={label}>{ko ? '다른 반과 공유' : 'Also create for'}</span>
-            <div className="flex flex-wrap gap-1.5">
-              {ALL_ENGLISH_CLASSES.filter(c => c !== 'Unplaced' && c !== englishClass).map(c => (
-                <button key={c} onClick={() => setShare(prev => { const n = new Set(prev); n.has(c) ? n.delete(c) : n.add(c); return n })} className={chip(share.has(c))}>{c}</button>
-              ))}
+          {scoring === 'points' && !legacySections && (
+            <div>
+              <span className={label}>{ko ? '기준 (선택)' : 'Standards (optional)'}</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {tagged.map(code => (
+                  <span key={code} className="inline-flex items-center gap-1.5 h-7 pl-2.5 pr-1 rounded-full border border-rule-2 bg-surface text-[12.5px]"><span className="font-mono text-[11px] text-info">{code}</span><span className="text-ink-2 truncate max-w-[260px]">{plainNameOf(code)}</span><button onClick={() => setTagged(prev => prev.filter(c => c !== code))} title={ko ? '기준 제거' : 'Remove standard'} className="w-5 h-5 rounded-full hover:bg-paper-2 text-ink-3 hover:text-bad flex items-center justify-center"><X size={11} /></button></span>
+                ))}
+                <button onClick={() => setPickingTag(true)} className="h-7 px-2.5 rounded-full border border-dashed border-rule-2 text-[12.5px] text-ink-2 hover:text-ink hover:border-ink-3">{ko ? '기준 선택…' : 'Tag a standard…'}</button>
+              </div>
+              <p className="text-[11px] text-ink-3 mt-1">{ko ? '총점 하나만 입력하므로 기준은 평가 전체에 붙습니다. 점수가 다른 영역으로 옮겨가지는 않습니다.' : 'With one total per student the standards sit on the whole assessment. They do not move points between domains.'}</p>
             </div>
-          </div>
+          )}
+          {!editing && (
+            <div>
+              <span className={label}>{ko ? '다른 반과 공유' : 'Also create for'}</span>
+              <div className="flex flex-wrap gap-1.5">
+                {ALL_ENGLISH_CLASSES.filter(c => c !== 'Unplaced' && c !== englishClass).map(c => (
+                  <button key={c} onClick={() => setShare(prev => { const n = new Set(prev); n.has(c) ? n.delete(c) : n.add(c); return n })} className={chip(share.has(c))}>{c}</button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-2 pt-1">
             {scoring === 'points'
-              ? <button onClick={() => create(false)} disabled={saving} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5 disabled:opacity-60">{ko ? '생성 후 점수 입력' : 'Create and enter scores'} <ArrowRight size={13} /></button>
-              : <button onClick={() => setStep(2)} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5">{scoring === 'rubric' ? (ko ? '루브릭 선택' : 'Next: choose a rubric') : (ko ? '정답 키 입력' : 'Next: answer key')} <ArrowRight size={13} /></button>}
+              ? <button onClick={() => create(false)} disabled={saving} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5 disabled:opacity-60">{editing ? (ko ? '변경 저장' : 'Save changes') : <>{ko ? '생성 후 점수 입력' : 'Create and enter scores'} <ArrowRight size={13} /></>}</button>
+              : <button onClick={() => setStep(2)} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5">{scoring === 'rubric' ? (editing?.rubric ? (ko ? '다음: 루브릭' : 'Next: rubric') : (ko ? '루브릭 선택' : 'Next: choose a rubric')) : (ko ? '정답 키 입력' : 'Next: answer key')} <ArrowRight size={13} /></button>}
+            {editing && <button onClick={onClose} className="h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink">{ko ? '취소' : 'Cancel'}</button>}
           </div>
         </div>
       )}
 
       {step === 2 && scoring === 'rubric' && (
         <div className="p-5">
-          <p className="text-[13px] text-ink-2 mb-3">{ko ? '템플릿이나 저장된 루브릭을 고르면 평가가 만들어지고 바로 채점할 수 있습니다.' : 'Pick a template or a saved rubric. The assessment is created with it and scoring opens right away.'}</p>
+          {editing?.rubric ? (
+            <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <p className="text-[13px] text-ink-2">{ko ? `현재 루브릭: ${editing.rubric.name} · 기준 ${editing.rubric.criteria.length}개. 아래에서 다른 루브릭을 고르면 교체됩니다.` : `Current rubric: ${editing.rubric.name} · ${editing.rubric.criteria.length} criteria. Pick another below to replace it; scored papers keep their levels where the criteria match.`}</p>
+              <button onClick={() => create(false)} disabled={saving} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-60 whitespace-nowrap">{ko ? '이 루브릭 유지하고 저장' : 'Keep this rubric and save'}</button>
+            </div>
+          ) : (
+            <p className="text-[13px] text-ink-2 mb-3">{editing ? (ko ? '루브릭을 고르면 이 평가가 루브릭으로 채점됩니다.' : 'Pick a template or a saved rubric and this assessment is scored with it.') : (ko ? '템플릿이나 저장된 루브릭을 고르면 평가가 만들어지고 바로 채점할 수 있습니다.' : 'Pick a template or a saved rubric. The assessment is created with it and scoring opens right away.')}</p>
+          )}
           <RubricPicker grade={grade} englishClass={englishClass} onClose={() => setStep(1)} onUse={r => create(false, r)} />
         </div>
       )}
@@ -439,9 +499,9 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
                 : <span className="text-ink-3">{ko ? '위에 문항을 추가하면 여기에 합계가 표시됩니다.' : 'Add questions above and the total shows here.'}</span>}
             </p>
             <div className="flex items-center gap-3">
-              {!map.length && <button onClick={() => create(false)} disabled={saving} className="text-[12px] text-ink-3 hover:text-ink underline-offset-2 hover:underline">{ko ? '키 없이 만들기 (학생별 총점만 입력)' : 'Skip the key: one total per student'}</button>}
+              {!map.length && !editing && <button onClick={() => create(false)} disabled={saving} className="text-[12px] text-ink-3 hover:text-ink underline-offset-2 hover:underline">{ko ? '키 없이 만들기 (학생별 총점만 입력)' : 'Skip the key: one total per student'}</button>}
               <button onClick={() => setStep(1)} className="h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink">{ko ? '뒤로' : 'Back'}</button>
-              <button onClick={() => create(true)} disabled={saving || !map.length} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5 disabled:opacity-50">{ko ? '저장 후 채점 시작' : 'Save and start scoring'} <ArrowRight size={13} /></button>
+              <button onClick={() => create(true)} disabled={saving || !map.length} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5 disabled:opacity-50">{editing ? (hasGrades ? (ko ? '저장 후 재채점' : 'Save and re-score marked papers') : (ko ? '변경 저장' : 'Save changes')) : <>{ko ? '저장 후 채점 시작' : 'Save and start scoring'} <ArrowRight size={13} /></>}</button>
             </div>
           </div>
         </div>
@@ -453,6 +513,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
       {pickingRubricFor != null && <RubricPicker grade={grade} englishClass={englishClass} onClose={() => setPickingRubricFor(null)}
         onUse={r => { setQ(pickingRubricFor, { rubric: { name: r.name, criteria: r.criteria }, max_points: r.criteria.length * 4 }); setPickingRubricFor(null) }} />}
       {picking && <StandardPicker grade={grade} domain={dom} englishClass={englishClass} onClose={() => setPicking(null)} onPick={s => { tagRange(picking.nums, s.code); setPicking(null); setRangeText('') }} />}
+      {pickingTag && <StandardPicker grade={grade} domain={dom} englishClass={englishClass} onClose={() => setPickingTag(false)} onPick={s => { setTagged(prev => prev.includes(s.code) ? prev : [...prev, s.code]); setPickingTag(false) }} />}
     </div>
   )
 }

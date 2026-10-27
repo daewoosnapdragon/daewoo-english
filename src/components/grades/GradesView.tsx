@@ -4,37 +4,23 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
-import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, Semester, QuestionMapItem, ItemResponse } from '@/types'
+import { ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, Semester, QuestionMapItem } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, domainLabel } from '@/lib/utils'
-import { Plus, X, Loader2, Check, Pencil, Trash2, ChevronDown, ChevronUp, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Zap, Filter, Search, Eraser, Printer } from 'lucide-react'
+import { Plus, Loader2, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Printer } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
 import StudentPopover from '@/components/shared/StudentPopover'
 import NewAssessmentFlow from './NewAssessmentFlow'
 import KeyScoreSheet from './KeyScoreSheet'
+import PointsScoreSheet from './PointsScoreSheet'
 import StudentDrillDown from './StudentDrillDown'
 import { Bars } from '@/components/charts'
-import { itemsForDomain, touchesDomain, routingFor, splitPossible, isMultiDomain } from '@/lib/domainSplit'
-import { syncDomainScores, isRoutingColumnError } from '@/lib/domainRouting'
+import { itemsForDomain, touchesDomain } from '@/lib/domainSplit'
 import { DOMAIN_COLOR, domainColor, domainShort } from '@/lib/domainTone'
 import { loadAssessmentWeights, useAssessmentWeights } from '@/lib/assessmentWeights'
 import RubricPicker from './RubricPicker'
 import RubricScoreSheet from './RubricScoreSheet'
 import RubricPrintDialog from './RubricPrintDialog'
-
-// Normalize CCSS input: "rl21" -> "RL.2.1", "rf13a" -> "RF.1.3a", "sl42" -> "SL.4.2"
-function normalizeCCSS(input: string): string {
-  const s = input.trim().toUpperCase()
-  // Already has dots? return as-is
-  if (s.includes('.')) return s
-  // Match patterns like RL21, RF13A, SL42, W31, L52A
-  const match = s.match(/^(RL|RI|RF|W|SL|L)(\d)(\d+)([A-Z]?)$/i)
-  if (match) {
-    const [, domain, grade, standard, sub] = match
-    return `${domain.toUpperCase()}.${grade}.${standard}${sub ? sub.toLowerCase() : ''}`
-  }
-  return input
-}
 
 const ASSESSMENT_CATEGORIES = [
   // === WEIGHTED CATEGORIES (these determine final grades) ===
@@ -62,6 +48,8 @@ interface Assessment {
   rubric_id?: string | null
   mixed?: boolean
   domain_split?: Record<string, number> | null
+  /** Listed in a tab that is not its own domain (a mixed or section-based paper). */
+  _isMultiDomain?: boolean
 }
 
 interface StudentRow { id: string; english_name: string; korean_name: string; photo_url?: string }
@@ -87,32 +75,14 @@ export default function GradesView() {
     return (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
   })
   const [selectedDomain, setSelectedDomain] = useState<Domain>('reading')
-  const [assessments, setAssessments] = useState<Assessment[]>([])
   const [allAssessments, setAllAssessments] = useState<Assessment[]>([])
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null)
-  const [scores, setScores] = useState<Record<string, number | null>>({})
-  const [rawInputs, setRawInputs] = useState<Record<string, string>>({})
-  const [absentMap, setAbsentMap] = useState<Record<string, boolean>>({})
-  const [exemptMap, setExemptMap] = useState<Record<string, boolean>>({})
-  const [saving, setSaving] = useState(false)
-  const [loadingAssessments, setLoadingAssessments] = useState(false)
   const [showCreateFlow, setShowCreateFlow] = useState(false)
   const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null)
-  // Per-domain earned points on each saved grade row, for the part columns of a mixed paper.
-  const [parts, setParts] = useState<Record<string, Record<string, number> | null>>({})
-  // Assessments with an answer key open on the answer sheet; the plain score
-  // list is one click away for either kind.
-  const [sheetMode, setSheetMode] = useState(true)
-  const [scoresTick, setScoresTick] = useState(0)
-  const [hasChanges, setHasChanges] = useState(false)
-
-  // Warn on page leave with unsaved changes
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => { if (hasChanges) { e.preventDefault(); e.returnValue = '' } }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [hasChanges])
-
+  // An answer-key or rubric assessment the teacher chose to score as plain
+  // totals. It belongs to that one assessment and is forgotten when another
+  // is picked, so every assessment opens on the sheet that fits it.
+  const [totalsOnly, setTotalsOnly] = useState<string | null>(null)
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
 
   // Only semester managers get a picker; everyone else follows the active one.
@@ -146,83 +116,28 @@ export default function GradesView() {
 
   const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
 
-  // Every load below is keyed to the grade/class/domain/semester that started
-  // it. Switching any of them fires a new request while the old one is still in
-  // flight, and the old one can come back last -- these counters make sure only
-  // the newest response is allowed to write to state.
-  const assessmentsReq = useRef(0)
+  // ── One load for the class, every domain at once ──
+  // The list for the open domain tab is derived from it, so switching tabs
+  // never fetches. `loadedKey` names the grade, class and semester the list
+  // belongs to; until it matches, the panel shows a spinner rather than the
+  // previous class's assessments under the new class's students.
+  const listKey = `${selectedGrade}|${selectedClass}|${selectedSemester || ''}`
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
   const allAssessmentsReq = useRef(0)
-  const scoresReq = useRef(0)
-  const selectedAssessmentRef = useRef<Assessment | null>(null)
-  selectedAssessmentRef.current = selectedAssessment
-
-  // Nothing is scoped correctly until we know which semester to filter on, and
-  // an unfiltered query returns every semester's assessments at once.
   const semesterUnresolved = !selectedSemester && semesters.length > 0
-
-  const loadAssessments = useCallback(async () => {
-    const req = ++assessmentsReq.current
-    if (semesterUnresolved) { setLoadingAssessments(true); return }
-    setLoadingAssessments(true)
-    // Load assessments for the selected domain
-    let query = supabase.from('assessments').select('*')
-      .eq('grade', selectedGrade).eq('english_class', selectedClass).eq('domain', selectedDomain)
-    if (selectedSemester) query = query.eq('semester_id', selectedSemester)
-    const { data, error } = await query
-      .order('date', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true })
-
-    // Also load multi-domain assessments that have sections targeting this domain
-    let crossQuery = supabase.from('assessments').select('*')
-      .eq('grade', selectedGrade).eq('english_class', selectedClass).neq('domain', selectedDomain)
-      .not('sections', 'is', null)
-    if (selectedSemester) crossQuery = crossQuery.eq('semester_id', selectedSemester)
-    const { data: crossData } = await crossQuery
-
-    // Filter cross-domain assessments to only those with sections matching selectedDomain
-    const crossDomainAssessments = (crossData || []).filter((a: any) => {
-      const secs = Array.isArray(a.sections) ? a.sections : []
-      return secs.some((s: any) => s.domain === selectedDomain)
-    }).map((a: any) => ({ ...a, _isMultiDomain: true }))
-    // Mixed assessments (points routed by standard) that put points in this domain
-    let mixedQuery = supabase.from('assessments').select('*').eq('grade', selectedGrade).eq('english_class', selectedClass).neq('domain', selectedDomain).eq('mixed', true)
-    if (selectedSemester) mixedQuery = mixedQuery.eq('semester_id', selectedSemester)
-    const { data: mixedData } = await mixedQuery
-    const mixedHere = (mixedData || []).filter((a: any) => touchesDomain(a, selectedDomain)).map((a: any) => ({ ...a, _isMultiDomain: true }))
-    crossDomainAssessments.push(...mixedHere.filter((m: any) => !crossDomainAssessments.some((c: any) => c.id === m.id)))
-
-    const allAssessments = [...(data || []), ...crossDomainAssessments]
-      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
-
-    // A newer switch already fired while this was in flight -- drop the answer
-    // rather than painting the previous grade/class/semester over it.
-    if (req !== assessmentsReq.current) return
-
-    if (!error) {
-      // Read through a ref: this callback is only rebuilt when the filters
-      // change, so a captured `selectedAssessment` goes stale as soon as the
-      // teacher picks a different assessment.
-      const current = selectedAssessmentRef.current
-      setAssessments(allAssessments)
-      if (allAssessments.length === 0) setSelectedAssessment(null)
-      else if (!current || !allAssessments.find(a => a.id === current.id)) {
-        setSelectedAssessment(allAssessments[allAssessments.length - 1])
-      }
-    }
-    setLoadingAssessments(false)
-  }, [selectedGrade, selectedClass, selectedDomain, selectedSemester, semesterUnresolved])
-
   const loadAllAssessments = useCallback(async () => {
     const req = ++allAssessmentsReq.current
     if (semesterUnresolved) return
-    let query = supabase.from('assessments').select('*')
-      .eq('grade', selectedGrade).eq('english_class', selectedClass)
+    let query = supabase.from('assessments').select('*').eq('grade', selectedGrade).eq('english_class', selectedClass)
     if (selectedSemester) query = query.eq('semester_id', selectedSemester)
-    const { data } = await query.order('domain').order('created_at', { ascending: true })
+    const { data } = await query.order('date', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true })
+    // A newer load already fired while this was in flight -- drop the answer.
     if (req !== allAssessmentsReq.current) return
-    if (data) setAllAssessments(data)
-  }, [selectedGrade, selectedClass, selectedSemester, semesterUnresolved])
-
-  useEffect(() => { loadAssessments() }, [loadAssessments])
+    setAllAssessments((data || []) as Assessment[])
+    setLoadedKey(listKey)
+  }, [selectedGrade, selectedClass, selectedSemester, semesterUnresolved, listKey])
+  useEffect(() => { loadAllAssessments() }, [loadAllAssessments])
+  const listReady = loadedKey === listKey
 
   // /grades?assessment=<id> (from the dashboard's grading queue) opens that
   // assessment directly. Read from the URL in an effect rather than through
@@ -245,157 +160,54 @@ export default function GradesView() {
       window.history.replaceState(null, '', '/grades')
     })()
   }, [])
-  useEffect(() => { loadAllAssessments() }, [loadAllAssessments])
 
-  const selectedAssessmentId = selectedAssessment?.id
+  // The open tab's assessments: its own, plus mixed papers and older
+  // section-based papers that put points in it.
+  const assessments = useMemo(() => {
+    if (!listReady) return []
+    const inTab = (a: Assessment) => a.domain === selectedDomain || touchesDomain(a, selectedDomain) || (Array.isArray(a.sections) && a.sections.some((s: any) => s.domain === selectedDomain))
+    return allAssessments.filter(inTab).map(a => a.domain === selectedDomain ? a : { ...a, _isMultiDomain: true })
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
+  }, [allAssessments, selectedDomain, listReady])
+
+  // Keep the selection when it is still in the list (a mixed paper is in
+  // more than one tab); otherwise open the newest. Read through a ref so a
+  // list refresh never captures a stale selection.
+  const selectedAssessmentRef = useRef<Assessment | null>(null)
+  selectedAssessmentRef.current = selectedAssessment
   useEffect(() => {
-    const req = ++scoresReq.current
-    void scoresTick
-    if (!selectedAssessmentId) { setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); setParts({}); return }
-    const aid = selectedAssessmentId
-    // Blank the table first so the previous assessment's numbers are never on
-    // screen underneath the new assessment's header.
-    setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); setParts({})
-    async function loadScores() {
-      const { data } = await supabase.from('grades').select('student_id, score, is_absent, is_exempt, domain_scores').eq('assessment_id', aid)
-      // Another assessment was selected while this was loading -- these numbers
-      // belong to the old one and must not land in the visible table.
-      if (req !== scoresReq.current) return
-      const map: Record<string, number | null> = {}
-      const abs: Record<string, boolean> = {}
-      const exm: Record<string, boolean> = {}
-      const pm: Record<string, Record<string, number> | null> = {}
-      if (data) data.forEach((g: any) => { map[g.student_id] = g.score; pm[g.student_id] = g.domain_scores || null; if (g.is_absent) abs[g.student_id] = true; if (g.is_exempt) exm[g.student_id] = true })
-      setScores(map); setAbsentMap(abs); setExemptMap(exm); setParts(pm); setRawInputs({}); setHasChanges(false)
-    }
-    loadScores()
-  }, [selectedAssessmentId, scoresTick])
+    if (!listReady) return
+    const cur = selectedAssessmentRef.current
+    if (assessments.length === 0) { if (cur) setSelectedAssessment(null); return }
+    const fresh = cur ? assessments.find(a => a.id === cur.id) : undefined
+    if (!fresh) setSelectedAssessment(assessments[assessments.length - 1])
+    else if (fresh !== cur) setSelectedAssessment(fresh)
+  }, [assessments, listReady])
+  useEffect(() => { setTotalsOnly(null) }, [selectedAssessment?.id])
 
   useEffect(() => {
     if (currentTeacher?.role === 'teacher' && currentTeacher.english_class !== 'Admin')
       setSelectedClass(currentTeacher.english_class as EnglishClass)
   }, [currentTeacher])
 
-  const handleScoreChange = (studentId: string, value: string) => {
-    if (!selectedAssessment) return
-    // Store raw text for display -- allows typing decimals like "9."
-    setRawInputs(prev => ({ ...prev, [studentId]: value }))
-    setHasChanges(true)
-  }
-
-  // When an input gets focus, ensure the committed score is in rawInputs
-  // so backspace/delete works properly on existing values
-  const handleScoreFocus = (studentId: string) => {
-    if (rawInputs[studentId] === undefined && scores[studentId] != null) {
-      setRawInputs(prev => ({ ...prev, [studentId]: String(scores[studentId]) }))
-    }
-  }
-
-  const commitScore = (studentId: string) => {
-    if (!selectedAssessment) return
-    const value = rawInputs[studentId]
-    if (value === undefined) return
-    let score: number | null = null
-    if (value === '') { score = null }
-    else if (value.startsWith('=') && value.includes('/')) {
-      const parts = value.substring(1).split('/')
-      const n = parseFloat(parts[0]), d = parseFloat(parts[1])
-      if (!isNaN(n) && !isNaN(d) && d > 0) score = Math.round((n / d) * selectedAssessment.max_score * 100) / 100
-    } else if (value.includes('/')) {
-      const parts = value.split('/')
-      const n = parseFloat(parts[0]), d = parseFloat(parts[1])
-      if (!isNaN(n) && !isNaN(d) && d > 0) score = Math.round((n / d) * selectedAssessment.max_score * 100) / 100
-    } else { const n = parseFloat(value); if (!isNaN(n)) score = Math.round(n * 100) / 100 }
-    setScores(prev => ({ ...prev, [studentId]: score }))
-    setRawInputs(prev => { const next = { ...prev }; delete next[studentId]; return next })
-  }
-
-  const handleSaveAll = async () => {
-    if (!selectedAssessment) return
-    // Commit any pending raw inputs first
-    const pending = { ...rawInputs }
-    const finalScores = { ...scores }
-    for (const [sid, value] of Object.entries(pending)) {
-      if (value === '') { finalScores[sid] = null; continue }
-      let s: number | null = null
-      if (value.includes('/')) {
-        const isEq = value.startsWith('=')
-        const parts = (isEq ? value.substring(1) : value).split('/')
-        const n = parseFloat(parts[0]), d = parseFloat(parts[1])
-        if (!isNaN(n) && !isNaN(d) && d > 0) s = Math.round((n / d) * selectedAssessment.max_score * 100) / 100
-      } else { const n = parseFloat(value); if (!isNaN(n)) s = Math.round(n * 100) / 100 }
-      finalScores[sid] = s
-    }
-    setScores(finalScores); setRawInputs({})
-    setSaving(true)
-    // Save scores (including absent/exempt students with null scores)
-    const allStudentIds = new Set([
-      ...Object.keys(finalScores).filter(sid => finalScores[sid] !== null && finalScores[sid] !== undefined),
-      ...Object.keys(absentMap).filter(sid => absentMap[sid]),
-      ...Object.keys(exemptMap).filter(sid => exemptMap[sid]),
-    ])
-    for (const sid of allStudentIds) {
-      const isAbsent = absentMap[sid] || false
-      const isExempt = exemptMap[sid] || false
-      const score = isAbsent ? null : (finalScores[sid] ?? null)
-      const { error } = await supabase.from('grades').upsert(
-        { assessment_id: selectedAssessment.id, student_id: sid, score, is_absent: isAbsent, is_exempt: isExempt, entered_by: currentTeacher?.id || null },
-        { onConflict: 'student_id,assessment_id' })
-      if (error) { showToast(`Error saving: ${error.message}`); setSaving(false); return }
-    }
-    // A score the teacher emptied (or cleared with ×) is removed, not left as
-    // the old number: the grade row goes so the averages forget it too.
-    const cleared = students.map(s => s.id).filter(sid => !allStudentIds.has(sid))
-    if (cleared.length > 0) {
-      const { error } = await supabase.from('grades').delete().eq('assessment_id', selectedAssessment.id).in('student_id', cleared)
-      if (error) { showToast(`Error clearing: ${error.message}`); setSaving(false); return }
-    }
-    setHasChanges(false); setSaving(false)
-    showToast(lang === 'ko' ? '저장 완료!' : `Saved ${allStudentIds.size} entries`)
-    loadAllAssessments() // Refresh so domain overview picks up new grades
-  }
-
-  // Clear one student's score in the list (saved with the next Save), or every
-  // score for the assessment at once (deleted right away, after a confirm).
-  const handleClearStudent = (sid: string) => {
-    setScores(prev => ({ ...prev, [sid]: null }))
-    setRawInputs(prev => { const n = { ...prev }; delete n[sid]; return n })
-    setAbsentMap(prev => { const n = { ...prev }; delete n[sid]; return n })
-    setExemptMap(prev => { const n = { ...prev }; delete n[sid]; return n })
-    setHasChanges(true)
-  }
-  const handleClearAll = async () => {
-    if (!selectedAssessment) return
-    const n = students.filter(s => scores[s.id] != null || rawInputs[s.id] || absentMap[s.id] || exemptMap[s.id]).length
-    if (n === 0) return
-    const ok = await confirmDialog({ title: lang === 'ko' ? '모든 점수 지우기' : `Clear all ${n} scores?`, message: lang === 'ko' ? `"${selectedAssessment.name}"의 모든 점수가 삭제됩니다. 되돌릴 수 없습니다.` : `Every score, absence and exemption for "${selectedAssessment.name}" is removed for the whole class. This cannot be undone.`, danger: true, confirmLabel: lang === 'ko' ? '모두 지우기' : 'Clear all', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })
-    if (!ok) return
-    setSaving(true)
-    const { error } = await supabase.from('grades').delete().eq('assessment_id', selectedAssessment.id)
-    setSaving(false)
-    if (error) { showToast(`Error: ${error.message}`); return }
-    setScores({}); setRawInputs({}); setAbsentMap({}); setExemptMap({}); setHasChanges(false)
-    showToast(lang === 'ko' ? '모든 점수를 지웠습니다' : `Cleared ${n} scores`)
-    loadAllAssessments()
-  }
+  // Grade, class or semester changed: the selection belonged to the old list.
+  const leaveList = () => { setSelectedAssessment(null); setEditingAssessment(null) }
 
   const handleDeleteAssessment = async (a: Assessment) => {
-    const msg = lang === 'ko' ? `"${a.name}" 평가와 모든 점수를 삭제하시겠습니까?` : `Delete "${a.name}" and all its scores? This cannot be undone.`
     if (!await confirmDialog({ title: lang === 'ko' ? `"${a.name}" 삭제` : `Delete "${a.name}"?`, message: lang === 'ko' ? '모든 점수가 함께 삭제됩니다.' : 'All its scores will be deleted. This cannot be undone.', danger: true, confirmLabel: lang === 'ko' ? '삭제' : 'Delete', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })) return
     await supabase.from('grades').delete().eq('assessment_id', a.id)
     const { error } = await supabase.from('assessments').delete().eq('id', a.id)
-    if (error) { showToast(`Error: ${error.message}`) }
-    else { showToast(lang === 'ko' ? '삭제되었습니다' : `Deleted "${a.name}"`); if (selectedAssessment?.id === a.id) setSelectedAssessment(null); loadAssessments(); loadAllAssessments() }
+    if (error) { showToast(`Error: ${error.message}`); return }
+    showToast(lang === 'ko' ? '삭제되었습니다' : `Deleted "${a.name}"`)
+    setAllAssessments(prev => prev.filter(x => x.id !== a.id))
+    if (editingAssessment?.id === a.id) setEditingAssessment(null)
+  }
+  // A change made from the sheet (a rubric swapped in, a total changed) lands in the list without a refetch.
+  const patchAssessment = (a: Assessment) => {
+    setAllAssessments(prev => prev.map(x => x.id === a.id ? { ...x, ...a } : x))
+    setSelectedAssessment(prev => prev && prev.id === a.id ? { ...prev, ...a } : prev)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, i: number, studentId: string) => {
-    if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown') {
-      e.preventDefault(); commitScore(studentId); const inputs = document.querySelectorAll('.score-input') as NodeListOf<HTMLInputElement>; inputs[i + 1]?.focus()
-    }
-    if (e.key === 'ArrowUp') { e.preventDefault(); commitScore(studentId); const inputs = document.querySelectorAll('.score-input') as NodeListOf<HTMLInputElement>; inputs[i - 1]?.focus() }
-  }
-
-  const enteredCount = Object.values(scores).filter(s => s !== null && s !== undefined).length + Object.keys(absentMap).filter(sid => absentMap[sid]).length + Object.keys(exemptMap).filter(sid => exemptMap[sid]).length
   const catLabel = (type: string) => { const c = ASSESSMENT_CATEGORIES.find(x => x.value === type); return c ? (lang === 'ko' ? c.labelKo : c.label) : type }
 
   return (
@@ -410,13 +222,7 @@ export default function GradesView() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {hasChanges && subView === 'entry' && (
-              <button onClick={handleSaveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[13px] font-medium bg-gold text-navy-dark hover:bg-gold-light transition-all shadow-sm">
-                {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
-                {lang === 'ko' ? '저장' : 'Save All'}
-              </button>
-            )}
-            {subView === 'entry' && !showCreateFlow && (
+            {subView === 'entry' && !showCreateFlow && !editingAssessment && (
               <button data-guide="grades.new" onClick={() => setShowCreateFlow(true)} className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover">
                 <Plus size={15} /> {lang === 'ko' ? '새 평가' : 'New assessment'}
               </button>
@@ -443,7 +249,7 @@ export default function GradesView() {
         <div className="flex items-center gap-3 mb-5">
           {/* Semester — a picker for admin/Snapdragon, a fixed label for everyone else */}
           {semesters.length > 0 && (canSwitchSemester ? (
-            <select value={selectedSemester || ''} onChange={e => { setSelectedSemester(e.target.value || null); setSelectedAssessment(null) }}
+            <select value={selectedSemester || ''} onChange={e => { leaveList(); setSelectedSemester(e.target.value || null) }}
               className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
               {semesters.map(sem => (
                 <option key={sem.id} value={sem.id}>
@@ -457,14 +263,14 @@ export default function GradesView() {
             </span>
           ))}
           <div className="w-px h-6 bg-border" />
-          <select value={selectedGrade} onChange={e => { const g = Number(e.target.value) as Grade; setSelectedGrade(g); setSelectedAssessment(null); localStorage.setItem('daewoo_grade_tab_grade', String(g)) }}
+          <select value={selectedGrade} onChange={e => { const g = Number(e.target.value) as Grade; leaveList(); setSelectedGrade(g); localStorage.setItem('daewoo_grade_tab_grade', String(g)) }}
             className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy">
             {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
           </select>
           {availableClasses.length > 1 ? (
             <div className="flex gap-1">
               {availableClasses.map(cls => (
-                <button key={cls} onClick={() => { setSelectedClass(cls); setSelectedAssessment(null); localStorage.setItem('daewoo_grade_tab_class', cls) }}
+                <button key={cls} onClick={() => { leaveList(); setSelectedClass(cls); localStorage.setItem('daewoo_grade_tab_class', cls) }}
                   className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
                   style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>
                   {cls}
@@ -476,227 +282,146 @@ export default function GradesView() {
           )}
         </div>
 
-        {subView === 'entry' && showCreateFlow && (
+        {subView === 'entry' && (showCreateFlow || editingAssessment) && (
           <div className="mb-6">
-            <NewAssessmentFlow grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} semesterId={selectedSemester}
-              onClose={() => setShowCreateFlow(false)}
-              onCreated={(a, scoring) => { setShowCreateFlow(false); setSelectedDomain(a.domain); setSheetMode(scoring !== 'points'); setSelectedAssessment(a); loadAssessments(); loadAllAssessments() }} />
+            <NewAssessmentFlow key={editingAssessment?.id || 'new'} grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} semesterId={selectedSemester}
+              editing={editingAssessment}
+              onClose={() => { setShowCreateFlow(false); setEditingAssessment(null) }}
+              onCreated={a => { setShowCreateFlow(false); setSelectedDomain(a.domain); setAllAssessments(prev => [...prev, a]); setSelectedAssessment(a); loadAllAssessments() }}
+              onSaved={a => { setEditingAssessment(null); setSelectedDomain(a.domain); patchAssessment(a); loadAllAssessments() }} />
           </div>
         )}
-        {subView === 'entry' && <ScoreEntryView {...{ selectedDomain, assessments, allAssessments, parts, selectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester }} setSelectedDomain={(d: Domain) => { setSelectedDomain(d); setSelectedAssessment(null) }} setSelectedAssessment={setSelectedAssessment} handleScoreChange={handleScoreChange} handleKeyDown={handleKeyDown} commitScore={commitScore} handleSaveAll={handleSaveAll} onClearStudent={handleClearStudent} onClearAll={handleClearAll} handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={setEditingAssessment} onCreateAssessment={() => setShowCreateFlow(true)} createLabel={lang === 'ko' ? '새 평가' : 'New assessment'} sheetMode={sheetMode} setSheetMode={setSheetMode} onSheetSaved={() => { setScoresTick(t => t + 1); loadAllAssessments() }} onToggleAbsent={(sid: string) => { setAbsentMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setExemptMap(p => { const e = { ...p }; delete e[sid]; return e }) }; return n }); setHasChanges(true) }} onToggleExempt={(sid: string) => { setExemptMap(prev => { const n = { ...prev }; if (n[sid]) delete n[sid]; else { n[sid] = true; setAbsentMap(p => { const a = { ...p }; delete a[sid]; return a }) }; return n }); setHasChanges(true) }} onRubricApply={(newScores: Record<string, number>, rubricMax?: number) => { if (rubricMax && selectedAssessment && rubricMax !== selectedAssessment.max_score) { supabase.from('assessments').update({ max_score: rubricMax }).eq('id', selectedAssessment.id).then(() => { setSelectedAssessment({ ...selectedAssessment, max_score: rubricMax }); setAllAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)); setAssessments(prev => prev.map(a => a.id === selectedAssessment.id ? { ...a, max_score: rubricMax } : a)) }) } setScores(prev => ({ ...prev, ...newScores })); setHasChanges(true) }} />}
+        {subView === 'entry' && !editingAssessment && (
+          <ScoreEntryView selectedDomain={selectedDomain} setSelectedDomain={setSelectedDomain} assessments={assessments} allAssessments={allAssessments} selectedAssessment={selectedAssessment} setSelectedAssessment={setSelectedAssessment}
+            students={students} loadingStudents={loadingStudents} listReady={listReady} lang={lang} catLabel={catLabel} selectedClass={selectedClass} selectedGrade={selectedGrade} selectedSemester={selectedSemester}
+            handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={a => { setShowCreateFlow(false); setEditingAssessment(a) }} onCreateAssessment={() => setShowCreateFlow(true)} createLabel={lang === 'ko' ? '새 평가' : 'New assessment'}
+            onSheetSaved={() => loadAllAssessments()} totalsOnly={totalsOnly} setTotalsOnly={setTotalsOnly} onPatched={patchAssessment} />
+        )}
         {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
         {subView === 'overview' && <DomainOverview allAssessments={allAssessments} selectedGrade={selectedGrade} selectedClass={selectedClass} lang={lang} />}
         {subView === 'student' && <StudentDrillDown allAssessments={allAssessments as any} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} selectedGrade={selectedGrade} selectedClass={selectedClass} selectedSemester={selectedSemester} lang={lang}
-          onOpenAssessment={(a: any) => { setSubView('entry'); setSelectedDomain(a.domain); setSheetMode(!!(a.question_map?.length || a.rubric)); setSelectedAssessment(a) }} />}
+          onOpenAssessment={(a: any) => { setSubView('entry'); setSelectedDomain(a.domain); setSelectedAssessment(a) }} />}
         {subView === 'calendar' && <AssessmentCalendarView allAssessments={allAssessments} lang={lang} />}
       </div>
-
-      {editingAssessment && <AssessmentModal grade={selectedGrade} englishClass={selectedClass} domain={selectedDomain} editing={editingAssessment} semesterId={selectedSemester} onClose={() => setEditingAssessment(null)} onSaved={(a: Assessment) => { setEditingAssessment(null); loadAssessments().then(() => setSelectedAssessment(a)); loadAllAssessments() }} />}
     </div>
   )
 }
 
 // ─── Score Entry ─────────────────────────────────────────────────────
+// The domain tabs, the assessments in the open tab, and the sheet for the
+// one that is selected. Each assessment opens on the sheet that fits how it
+// is scored: the rubric sheet, the answer sheet, the older section entry,
+// or the points sheet. "Totals only" puts an answer-key or rubric
+// assessment on the points sheet for that assessment alone.
 
-function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAssessments, parts, selectedAssessment, setSelectedAssessment, scores, rawInputs, absentMap, exemptMap, students, loadingStudents, loadingAssessments, enteredCount, hasChanges, saving, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleScoreChange, handleKeyDown, commitScore, handleSaveAll, onClearStudent, onClearAll, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onToggleAbsent, onToggleExempt, onRubricApply, sheetMode, setSheetMode, onSheetSaved }: {
-  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; allAssessments: Assessment[]; parts: Record<string, Record<string, number> | null>; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void; scores: Record<string, number | null>; rawInputs: Record<string, string>; absentMap: Record<string, boolean>; exemptMap: Record<string, boolean>; students: StudentRow[]; loadingStudents: boolean; loadingAssessments: boolean; enteredCount: number; hasChanges: boolean; saving: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null; handleScoreChange: (sid: string, v: string) => void; handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, i: number, sid: string) => void; commitScore: (sid: string) => void; handleSaveAll: () => void; onClearStudent: (sid: string) => void; onClearAll: () => void; handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onToggleAbsent: (sid: string) => void; onToggleExempt: (sid: string) => void; onRubricApply: (scores: Record<string, number>, rubricMax?: number) => void
-  sheetMode: boolean; setSheetMode: (v: boolean) => void; onSheetSaved: () => void
+function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAssessments, selectedAssessment, setSelectedAssessment, students, loadingStudents, listReady, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onSheetSaved, totalsOnly, setTotalsOnly, onPatched }: {
+  selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; allAssessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void
+  students: StudentRow[]; loadingStudents: boolean; listReady: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null
+  handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onSheetSaved: () => void
+  totalsOnly: string | null; setTotalsOnly: (id: string | null) => void; onPatched: (a: Assessment) => void
 }) {
   const { showToast } = useApp()
-  const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const ko = lang === 'ko'
   const [rubricOpen, setRubricOpen] = useState(false)
   const [rubricPrintOpen, setRubricPrintOpen] = useState(false)
-  const hasQuestionMap = selectedAssessment?.question_map && selectedAssessment.question_map.length > 0
-  // A mixed paper's domains, the current tab first, for the part columns of the score list.
-  const partDomains = selectedAssessment?.mixed && selectedAssessment.domain_split
-    ? Object.entries(selectedAssessment.domain_split).filter(([, v]) => Number(v) > 0).map(([d]) => d).sort((a, b) => (a === selectedDomain ? -1 : b === selectedDomain ? 1 : 0))
-    : []
+  const a = selectedAssessment
+  const hasMap = !!(a?.question_map && a.question_map.length > 0)
+  const kind: 'rubric' | 'key' | 'sections' | 'points' = !a ? 'points' : a.rubric ? 'rubric' : hasMap ? 'key' : a.sections && a.sections.length > 0 ? 'sections' : 'points'
+  const view = a && (kind === 'rubric' || kind === 'key') && totalsOnly === a.id ? 'points' : kind
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const btn = 'inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[12.5px] font-medium text-ink-2 hover:text-ink'
+  const SHORT: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
+  const kindLabel = !a ? '' : kind === 'rubric' ? (ko ? '루브릭' : 'rubric') : kind === 'key' ? `${a.question_map!.length} ${ko ? '문항' : a.question_map!.length === 1 ? 'question' : 'questions'}` : kind === 'sections' ? (ko ? '섹션' : 'sections') : (ko ? '총점만' : 'points only')
   return (
     <>
-      {rubricPrintOpen && selectedAssessment?.rubric && (
-        <RubricPrintDialog rubric={selectedAssessment.rubric} title={selectedAssessment.name} subtitle={`${selectedClass} · ${lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}`} students={students.map(s => ({ id: s.id, name: s.english_name }))} maxScore={selectedAssessment.max_score} onClose={() => setRubricPrintOpen(false)} />
+      {rubricPrintOpen && a?.rubric && (
+        <RubricPrintDialog rubric={a.rubric} title={a.name} subtitle={`${selectedClass} · ${ko ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}`} students={students.map(s => ({ id: s.id, name: s.english_name }))} maxScore={a.max_score} onClose={() => setRubricPrintOpen(false)} />
       )}
-      {rubricOpen && selectedAssessment && (
+      {rubricOpen && a && (
         <RubricPicker grade={selectedGrade} englishClass={selectedClass} onClose={() => setRubricOpen(false)}
           onUse={async r => {
             // Snapshot the rubric onto the assessment; the total becomes 4 per criterion.
             const snapshot = { name: r.name, band: r.band, criteria: r.criteria }
             const maxScore = r.criteria.length * 4
-            const { error } = await supabase.from('assessments').update({ rubric: snapshot, rubric_id: r.rubric_id, max_score: maxScore }).eq('id', selectedAssessment.id)
+            const { error } = await supabase.from('assessments').update({ rubric: snapshot, rubric_id: r.rubric_id, max_score: maxScore }).eq('id', a.id)
             if (error) { showToast(`Error: ${error.message}${error.message.includes('rubric') ? ' · run supabase/migration-rubrics.sql first' : ''}`); return }
             setRubricOpen(false)
-            setSelectedAssessment({ ...selectedAssessment, rubric: snapshot, rubric_id: r.rubric_id, max_score: maxScore })
-            setSheetMode(true)
+            onPatched({ ...a, rubric: snapshot, rubric_id: r.rubric_id, max_score: maxScore })
+            setTotalsOnly(null)
           }} />
       )}
       <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
-        {DOMAINS.map(d => {
-          const SHORT: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
-          return (
+        {DOMAINS.map(d => (
           <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[12px] font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
             {SHORT[d] || DOMAIN_LABELS[d][lang]}
-            {(() => { const n = allAssessments.filter((a: any) => touchesDomain(a, d)).length; return n > 0 && <span className="ml-1.5 text-[10px] bg-accent-light text-navy px-1.5 py-0.5 rounded-full font-bold">{n}</span> })()}
+            {(() => { const n = allAssessments.filter(a => a.domain === d || touchesDomain(a, d)).length; return n > 0 ? <span className="ml-1.5 text-[10px] bg-accent-light text-navy px-1.5 py-0.5 rounded-full font-bold">{n}</span> : null })()}
           </button>
-        )})}
+        ))}
       </div>
 
       {assessments.length > 0 && (
         <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <span className="text-[11px] text-text-tertiary uppercase tracking-wider font-semibold">{lang === 'ko' ? '평가:' : 'Assessment:'}</span>
-          {assessments.map(a => (
-            <div key={a.id} className="relative">
-              <button onClick={() => setSelectedAssessment(a)} className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all border ${selectedAssessment?.id === a.id ? 'border-navy bg-navy text-white' : 'border-border bg-surface text-text-secondary hover:border-navy/30'}`}>
-                <span>{a.name}</span>
-                {a.mixed && a.domain_split && Number(a.domain_split[selectedDomain] || 0) > 0 && a.domain !== selectedDomain
-                  ? <span className="opacity-60 ml-1" title={lang === 'ko' ? `이 탭에는 ${a.max_score}점 중 ${a.domain_split[selectedDomain]}점이 반영됩니다` : `${a.domain_split[selectedDomain]} of the ${a.max_score} points count in this tab`}>/{a.domain_split[selectedDomain]} of {a.max_score}</span>
-                  : <span className="opacity-60 ml-1">/{a.max_score}</span>}
-                {a.mixed && a.domain_split
-                  ? <span className={`ml-1.5 inline-flex items-center gap-1 text-[9px] px-1 py-0.5 rounded font-bold ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-surface-alt'}`} title={Object.entries(a.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => `${domainLabel(d)} ${v}`).join(' · ')}>
-                      {Object.entries(a.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => <span key={d} style={{ color: selectedAssessment?.id === a.id ? undefined : domainColor(d) }}>{domainShort(d)} {v}</span>)}
+          <span className="eyebrow mr-1">{ko ? '평가' : 'Assessment'}</span>
+          {assessments.map(x => {
+            const on = a?.id === x.id
+            const partHere = x.mixed && x.domain_split && Number(x.domain_split[selectedDomain] || 0) > 0 && x.domain !== selectedDomain
+            return (
+              <button key={x.id} onClick={() => setSelectedAssessment(x)} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[12.5px] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
+                <span>{x.name}</span>
+                <span className={on ? 'opacity-70' : 'text-ink-3'} title={partHere ? (ko ? `이 탭에는 ${x.max_score}점 중 ${x.domain_split![selectedDomain]}점이 반영됩니다` : `${x.domain_split![selectedDomain]} of the ${x.max_score} points count in this tab`) : undefined}>{partHere ? `/${x.domain_split![selectedDomain]} of ${x.max_score}` : `/${x.max_score}`}</span>
+                {x.mixed && x.domain_split
+                  ? <span className={`inline-flex items-center gap-1 text-[9.5px] px-1 py-0.5 rounded font-bold ${on ? 'bg-paper/20' : 'bg-paper-2'}`} title={Object.entries(x.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => `${domainLabel(d)} ${v}`).join(' · ')}>
+                      {Object.entries(x.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => <span key={d} style={{ color: on ? undefined : domainColor(d) }}>{domainShort(d)} {v}</span>)}
                     </span>
-                  : (a as any)._isMultiDomain && <span className={`ml-1.5 text-[8px] px-1 py-0.5 rounded font-bold ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-purple-100 text-purple-700'}`}>Multi</span>}
-                {a.type !== 'formative' && <span className={`ml-1.5 text-[9px] px-1 py-0.5 rounded ${selectedAssessment?.id === a.id ? 'bg-white/20' : 'bg-surface-alt'}`}>{catLabel(a.type)}</span>}
-                {a.date && <span className={`ml-1 text-[10px] ${selectedAssessment?.id === a.id ? 'opacity-60' : 'text-text-tertiary'}`}>{new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                  : x._isMultiDomain && <span className={`text-[9.5px] px-1 py-0.5 rounded font-bold ${on ? 'bg-paper/20' : 'bg-paper-2 text-ink-2'}`}>Multi</span>}
+                {x.type !== 'formative' && <span className={`text-[10px] px-1 py-0.5 rounded ${on ? 'bg-paper/20' : 'bg-paper-2 text-ink-2'}`}>{catLabel(x.type)}</span>}
+                {x.date && <span className={`text-[10.5px] ${on ? 'opacity-60' : 'text-ink-3'}`}>{fmtDate(x.date)}</span>}
               </button>
-              {selectedAssessment?.id === a.id && (
-                <div className="absolute -top-1 -right-1 z-10">
-                  <button onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === a.id ? null : a.id) }} className="w-5 h-5 rounded-full bg-navy-dark text-white flex items-center justify-center hover:bg-navy transition-colors"><ChevronDown size={10} /></button>
-                  {menuOpen === a.id && (
-                    <div className="absolute right-0 top-6 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-[140px] z-20" onClick={() => setMenuOpen(null)}>
-                      <button onClick={() => onEditAssessment(a)} className="w-full text-left px-3 py-2 text-[12px] hover:bg-surface-alt flex items-center gap-2"><Pencil size={12} /> {lang === 'ko' ? '수정' : 'Edit'}</button>
-                      <button onClick={() => handleDeleteAssessment(a)} className="w-full text-left px-3 py-2 text-[12px] hover:bg-danger-light text-danger flex items-center gap-2"><Trash2 size={12} /> {lang === 'ko' ? '삭제' : 'Delete'}</button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
-      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-        {loadingStudents || loadingAssessments ? (
+      <div className="bg-surface border border-rule-2 rounded-lg overflow-hidden">
+        {loadingStudents || !listReady ? (
           <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-sm">Loading...</p></div>
-        ) : !selectedAssessment ? (
+        ) : !a ? (
           <div className="p-12 text-center">
-            <div className="text-4xl mb-3"></div>
-            <h3 className="font-display text-lg font-semibold text-navy mb-1">{assessments.length === 0 ? (lang === 'ko' ? '평가를 먼저 생성하세요' : 'Create your first assessment') : (lang === 'ko' ? '평가를 선택하세요' : 'Select an assessment above')}</h3>
-            <p className="text-text-tertiary text-sm max-w-md mx-auto">{assessments.length === 0 ? (lang === 'ko' ? '"평가 생성" 버튼을 클릭하여 시작하세요.' : 'Click "Create Assessment" to get started. Name it, pick the domain and category, set the total points, then enter scores.') : ''}</p>
+            <h3 className="font-display text-lg font-semibold text-navy mb-1">{assessments.length === 0 ? (ko ? '평가를 먼저 생성하세요' : 'Create your first assessment') : (ko ? '평가를 선택하세요' : 'Select an assessment above')}</h3>
+            <p className="text-text-tertiary text-sm max-w-md mx-auto">{assessments.length === 0 ? (ko ? '"새 평가" 버튼을 클릭하여 시작하세요.' : 'Click "New assessment" to get started. Name it, pick how it is scored, then score it on the sheet.') : ''}</p>
             {assessments.length === 0 && <button onClick={onCreateAssessment} className="mt-4 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark transition-all"><Plus size={15} /> {createLabel}</button>}
           </div>
-        ) : selectedAssessment.rubric && sheetMode ? (
-          <div className="p-4">
-            <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-              <div className="flex items-baseline gap-3 min-w-0">
-                <span className="font-display text-[20px] leading-none text-ink truncate">{selectedAssessment.name}</span>
-                <span className="text-[12px] text-ink-3">/{selectedAssessment.max_score} · {catLabel(selectedAssessment.type)} · {lang === 'ko' ? '루브릭' : 'rubric'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setRubricOpen(true)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '루브릭 변경' : 'Change rubric'}</button>
-                <button onClick={() => setSheetMode(false)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '점수 목록으로' : 'Score list'}</button>
-              </div>
-            </div>
-            <RubricScoreSheet key={selectedAssessment.id + ':' + (selectedAssessment.rubric.criteria.length)} assessment={selectedAssessment as any} students={students} onSaved={onSheetSaved} onExit={() => setSheetMode(false)} />
-          </div>
-        ) : hasQuestionMap && sheetMode ? (
-          <div className="p-4">
-            <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-              <div className="flex items-baseline gap-3 min-w-0">
-                <span className="font-display text-[20px] leading-none text-ink truncate">{selectedAssessment.name}</span>
-                <span className="text-[12px] text-ink-3">/{selectedAssessment.max_score} · {catLabel(selectedAssessment.type)}{selectedAssessment.date ? ` · ${new Date(selectedAssessment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
-              </div>
-              <button onClick={() => setSheetMode(false)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '점수 목록으로' : 'Score list'}</button>
-            </div>
-            <KeyScoreSheet key={selectedAssessment.id} assessment={selectedAssessment as any} students={students} currentDomain={selectedDomain} onSaved={onSheetSaved} />
-          </div>
-        ) : selectedAssessment.sections && selectedAssessment.sections.length > 0 ? (
-          /* Section-based score entry */
-          <SectionScoreEntry assessment={selectedAssessment} students={students} lang={lang} selectedClass={selectedClass} selectedGrade={selectedGrade} selectedSemester={selectedSemester || ''} catLabel={catLabel} />
         ) : (
           <>
-            <div className="px-5 py-3 bg-accent-light border-b border-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-[13px] font-semibold text-navy">{selectedAssessment.name}</span>
-                  <span className="text-[12px] text-text-secondary">out of {selectedAssessment.max_score}</span>
-                  <span className="text-[10px] bg-navy/10 text-navy px-2 py-0.5 rounded-full font-medium">{catLabel(selectedAssessment.type)}</span>
-                  {selectedAssessment.date && <span className="text-[11px] text-text-tertiary flex items-center gap-1"><Calendar size={11} />{new Date(selectedAssessment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
-                  {selectedAssessment.description && <span className="text-[11px] text-text-tertiary" title={selectedAssessment.description}> {selectedAssessment.description.length > 40 ? selectedAssessment.description.slice(0, 40) + '...' : selectedAssessment.description}</span>}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] text-text-secondary">{enteredCount}/{students.length} entered</span>
-                  <div className="w-24 h-1.5 bg-navy/10 rounded-full overflow-hidden"><div className="h-full bg-navy rounded-full transition-all" style={{ width: `${students.length > 0 ? (enteredCount / students.length) * 100 : 0}%` }} /></div>
-                  {selectedAssessment.rubric && <button onClick={() => setSheetMode(true)} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink">{lang === 'ko' ? '루브릭으로 채점' : 'Rubric sheet'}</button>}
-                  {selectedAssessment.rubric && <button onClick={() => setRubricPrintOpen(true)} title={lang === 'ko' ? '루브릭 인쇄 (전체 · 반 · 1/4 페이지)' : 'Print the rubric: full, half or quarter page'} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink"><Printer size={12} />{lang === 'ko' ? '인쇄' : 'Print'}</button>}
-                  {!selectedAssessment.rubric && <button onClick={() => setRubricOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-all"><ClipboardEdit size={13} />Score with Rubric</button>}
-                                    {hasQuestionMap && <button onClick={() => setSheetMode(true)} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink"><Zap size={12} /> {lang === 'ko' ? '답안지로 채점' : 'Answer sheet'}</button>}
-                  <CrossClassCompare assessmentName={selectedAssessment.name} domain={selectedAssessment.domain} maxScore={selectedAssessment.max_score} currentClass={selectedClass} grade={selectedGrade} semesterId={selectedSemester || ''} />
-                  <button onClick={onClearAll} disabled={saving || enteredCount === 0} title={lang === 'ko' ? '반 전체의 점수를 지웁니다' : 'Remove every score for the whole class'} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2"><Eraser size={12} /> {lang === 'ko' ? '모두 지우기' : 'Clear all'}</button>
-                </div>
+            <div className="px-4 py-3 border-b border-rule-2 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-baseline gap-3 min-w-0">
+                <span className="font-display text-[20px] leading-none text-ink truncate">{a.name}</span>
+                <span className="text-[12px] text-ink-3 whitespace-nowrap">/{a.max_score} · {catLabel(a.type)}{a.date ? ` · ${fmtDate(a.date)}` : ''} · {kindLabel}</span>
+                {a.description && <span className="text-[11.5px] text-ink-3 truncate max-w-[280px]" title={a.description}>{a.description}</span>}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {kind === 'rubric' && view === 'rubric' && (
+                  <>
+                    <button onClick={() => setRubricOpen(true)} className={btn}>{ko ? '루브릭 변경' : 'Change rubric'}</button>
+                    <button onClick={() => setRubricPrintOpen(true)} title={ko ? '루브릭 인쇄 (전체 · 반 · 1/4 페이지)' : 'Print the rubric: full, half or quarter page'} className={btn}><Printer size={12} />{ko ? '인쇄' : 'Print'}</button>
+                  </>
+                )}
+                {(kind === 'rubric' || kind === 'key') && (view === 'points'
+                  ? <button onClick={() => setTotalsOnly(null)} className={btn}>{kind === 'rubric' ? (ko ? '루브릭으로 채점' : 'Rubric sheet') : (ko ? '답안지로 채점' : 'Answer sheet')}</button>
+                  : <button onClick={() => setTotalsOnly(a.id)} title={ko ? '문항별 채점 대신 학생별 총점만 입력' : 'Type one total per student instead of marking the paper'} className={btn}>{ko ? '총점만 입력' : 'Totals only'}</button>)}
+                <CrossClassCompare assessmentName={a.name} domain={a.domain} maxScore={a.max_score} currentClass={selectedClass} grade={selectedGrade} semesterId={selectedSemester || ''} />
+                <button onClick={() => onEditAssessment(a)} title={ko ? '이름, 날짜, 정답 키, 루브릭, 기준 수정' : 'Change the name, date, key, rubric or standards'} className={btn}><Pencil size={12} />{ko ? '수정' : 'Edit'}</button>
+                <button onClick={() => handleDeleteAssessment(a)} title={ko ? '평가와 모든 점수 삭제' : 'Delete the assessment and every score'} className={`${btn} hover:text-bad hover:border-bad`}><Trash2 size={12} /></button>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead><tr className="bg-surface-alt">
-                  <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
-                  <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-10"></th>
-                  <th className="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Student</th>
-                  <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-24">Score /{selectedAssessment.max_score}</th>
-                  <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">%</th>
-                  {partDomains.map(d => (
-                    <th key={d} className={`text-center px-3 py-2.5 text-[11px] uppercase tracking-wider font-semibold w-20 whitespace-nowrap ${d === selectedDomain ? '' : 'opacity-80'}`} style={{ color: domainColor(d) }} title={`${domainLabel(d)}: ${lang === 'ko' ? '이 영역 성적부에 반영되는 점수' : 'the points that count in this domain'}`}>{domainShort(d)} /{selectedAssessment.domain_split![d]}</th>
-                  ))}
-                  <th className="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider text-text-secondary font-semibold w-20">Status</th>
-                </tr></thead>
-                <tbody>
-                  {students.map((s, i) => {
-                    const isAbsent = absentMap[s.id] || false
-                    const isExempt = exemptMap[s.id] || false
-                    const score = isAbsent ? null : scores[s.id]
-                    const pct = score != null && selectedAssessment.max_score > 0 ? ((score / selectedAssessment.max_score) * 100).toFixed(1) : null
-                    const isLow = pct !== null && parseFloat(pct) < 60
-                    return (
-                      <tr key={s.id} className={`border-t border-border table-row-hover ${isAbsent ? 'opacity-50' : ''} ${isExempt ? 'bg-amber-50/30' : ''}`}>
-                        <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
-                        <td className="px-4 py-2">
-                          {s.photo_url ? (
-                            <img src={s.photo_url} alt="" className="w-7 h-7 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-7 h-7 rounded-full bg-surface-alt flex items-center justify-center"><User size={12} className="text-text-tertiary" /></div>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
-                        <td className="px-4 py-2.5 text-center">{isAbsent ? <span className="text-[11px] text-text-tertiary italic">Absent</span> : isExempt ? <span className="text-[11px] text-amber-600 italic">Exempt</span> : <input type="text" className={`score-input ${score != null ? 'has-value' : ''} ${isLow ? 'error' : ''}`} value={rawInputs[s.id] !== undefined ? rawInputs[s.id] : (score != null ? String(score) : '')} onChange={e => handleScoreChange(s.id, e.target.value)} onFocus={e => { if (rawInputs[s.id] === undefined && score != null) { handleScoreChange(s.id, String(score)); } e.target.select() }} onBlur={() => commitScore(s.id)} onKeyDown={e => handleKeyDown(e, i, s.id)} placeholder="" />}</td>
-                        <td className={`px-4 py-2.5 text-center text-[12px] font-medium ${isLow ? 'text-danger' : pct ? 'text-navy' : 'text-text-tertiary'}`}>{isAbsent || isExempt ? '—' : pct ? `${pct}%` : '—'}</td>
-                        {partDomains.map(d => {
-                          // Saved per-domain points when the paper was marked item by item; otherwise a proportional estimate, marked ~.
-                          const saved = parts[s.id]?.[d]
-                          const possible = Number(selectedAssessment.domain_split![d] || 0)
-                          const est = saved == null && score != null && selectedAssessment.max_score > 0 ? Math.round(score * (possible / selectedAssessment.max_score) * 10) / 10 : null
-                          const v = saved != null ? Number(saved) : est
-                          return <td key={d} className={`px-3 py-2.5 text-center text-[12px] tabular-nums ${d === selectedDomain ? 'font-semibold' : ''}`} style={{ color: domainColor(d) }} title={saved == null && est != null ? (lang === 'ko' ? '문항별 채점이 없어 비례 추정' : 'Estimated in proportion: no item-by-item marks saved') : undefined}>{isAbsent || isExempt || v == null ? '—' : `${saved == null ? '~' : ''}${v}/${possible}`}</td>
-                        })}
-                        <td className="px-4 py-2.5 text-center">
-                          <div className="inline-flex gap-1">
-                            <button onClick={() => onToggleAbsent(s.id)} title="Mark absent" className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${isAbsent ? 'bg-red-100 text-red-600 ring-1 ring-red-300' : 'bg-surface-alt text-text-tertiary hover:bg-red-50 hover:text-red-500'}`}>ABS</button>
-                            <button onClick={() => onToggleExempt(s.id)} title="Mark exempt" className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${isExempt ? 'bg-amber-100 text-amber-600 ring-1 ring-amber-300' : 'bg-surface-alt text-text-tertiary hover:bg-amber-50 hover:text-amber-500'}`}>EXM</button>
-                            <button onClick={() => onClearStudent(s.id)} disabled={score == null && rawInputs[s.id] === undefined && !isAbsent && !isExempt} title={lang === 'ko' ? '이 학생의 점수 지우기 (저장 시 반영)' : 'Clear this score (removed when you save)'} className="px-1.5 py-0.5 rounded text-[9px] font-bold transition-all bg-surface-alt text-text-tertiary hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-surface-alt disabled:hover:text-text-tertiary"><X size={10} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <StatsBar scores={scores} maxScore={selectedAssessment.max_score} lang={lang} />
-            {hasChanges && (
-              <div className="px-5 py-3 bg-warm-light border-t border-gold/20 flex items-center justify-between">
-                <p className="text-[12px] text-amber-700">{lang === 'ko' ? '저장되지 않은 변경사항이 있습니다' : 'You have unsaved changes'}</p>
-                <button onClick={handleSaveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-gold text-navy-dark hover:bg-gold-light transition-all">
-                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} {lang === 'ko' ? '저장' : 'Save'}
-                </button>
-              </div>
+            {view === 'rubric' ? (
+              <div className="p-4"><RubricScoreSheet key={a.id + ':' + a.rubric!.criteria.length} assessment={a as any} students={students} onSaved={onSheetSaved} onExit={() => setTotalsOnly(a.id)} /></div>
+            ) : view === 'key' ? (
+              <div className="p-4"><KeyScoreSheet key={a.id} assessment={a as any} students={students} currentDomain={selectedDomain} onSaved={onSheetSaved} /></div>
+            ) : view === 'sections' ? (
+              <SectionScoreEntry assessment={a} students={students} lang={lang} selectedClass={selectedClass} selectedGrade={selectedGrade} selectedSemester={selectedSemester || ''} catLabel={catLabel} />
+            ) : (
+              <PointsScoreSheet key={a.id} assessment={a} students={students} currentDomain={selectedDomain} onSaved={onSheetSaved} />
             )}
           </>
         )}
@@ -923,49 +648,6 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
         </div>
       )}
     </>
-  )
-}
-
-function StatsBar({ scores, maxScore, lang }: { scores: Record<string, number | null>; maxScore: number; lang: LangKey }) {
-  const valid = Object.values(scores).filter((s): s is number => s != null)
-  if (valid.length === 0) return null
-  const avg = valid.reduce((a, b) => a + b, 0) / valid.length
-  const hi = Math.max(...valid), lo = Math.min(...valid)
-  const pA = maxScore > 0 ? (avg / maxScore) * 100 : 0
-  const pH = maxScore > 0 ? (hi / maxScore) * 100 : 0
-  const pL = maxScore > 0 ? (lo / maxScore) * 100 : 0
-
-  // Decile histogram
-  const deciles = Array(10).fill(0)
-  valid.forEach(s => {
-    const pct = maxScore > 0 ? (s / maxScore) * 100 : 0
-    const bin = Math.min(9, Math.floor(pct / 10))
-    deciles[bin]++
-  })
-  const maxBin = Math.max(...deciles, 1)
-  const nBelow60 = valid.filter(s => maxScore > 0 && (s / maxScore) * 100 < 60).length
-
-  return (
-    <div className="px-5 py-2.5 bg-surface-alt border-t border-border flex items-center gap-6 text-[12px]">
-      <span className="text-text-tertiary font-medium">{lang === 'ko' ? '통계' : 'Stats'}:</span>
-      <span><span className="text-text-tertiary">Avg:</span> <span className="font-semibold text-navy">{avg.toFixed(1)} ({pA.toFixed(1)}%)</span></span>
-      <span><span className="text-text-tertiary">High:</span> <span className="font-semibold text-success">{hi} ({pH.toFixed(1)}%)</span></span>
-      <span><span className="text-text-tertiary">Low:</span> <span className={`font-semibold ${pL < 60 ? 'text-danger' : 'text-navy'}`}>{lo} ({pL.toFixed(1)}%)</span></span>
-      <span><span className="text-text-tertiary">n:</span> <span className="font-medium">{valid.length}</span></span>
-      {/* Mini decile histogram */}
-      <div className="flex items-end gap-px h-5 ml-2" title="Score distribution by decile (0-10% through 90-100%)">
-        {deciles.map((count, i) => {
-          const h = count > 0 ? Math.max(4, Math.round((count / maxBin) * 20)) : 2
-          const color = i < 6 ? 'bg-red-400' : i < 8 ? 'bg-amber-400' : 'bg-green-400'
-          return <div key={i} className={`w-[5px] rounded-sm ${count > 0 ? color : 'bg-gray-200'}`} style={{ height: `${h}px` }} />
-        })}
-      </div>
-      {nBelow60 > 0 && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-semibold">
-          {nBelow60} below 60%
-        </span>
-      )}
-    </div>
   )
 }
 
@@ -1323,586 +1005,6 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
           <p className="text-text-tertiary text-sm">{lang === 'ko' ? '아직 평가가 없습니다.' : 'No assessments yet. Create your first assessment in Score Entry.'}</p>
         </div>
       )}
-    </div>
-  )
-}
-
-// ─── Assessment Modal ───────────────────────────────────────────────
-
-function AssessmentModal({ grade, englishClass, domain, editing, semesterId, onClose, onSaved }: { grade: Grade; englishClass: EnglishClass; domain: Domain; editing: Assessment | null; semesterId: string | null; onClose: () => void; onSaved: (a: Assessment) => void }) {
-  const { language, currentTeacher, showToast, promptDialog } = useApp()
-  const lang = language as LangKey
-  const [name, setName] = useState(editing?.name || '')
-  const [maxScore, setMaxScore] = useState(editing?.max_score || 10)
-  const [selDomain, setSelDomain] = useState<Domain>(editing?.domain || domain)
-  const [category, setCategory] = useState(editing?.type || 'formative')
-  const [date, setDate] = useState(editing?.date || '')
-  const [notes, setNotes] = useState(editing?.description || '')
-  const [saving, setSaving] = useState(false)
-  const [shareClasses, setShareClasses] = useState<string[]>([])
-  const [standards, setStandards] = useState<string[]>(editing?.standards?.map(s => s.code) || [])
-  const [stdSearch, setStdSearch] = useState('')
-  const [useSections, setUseSections] = useState(!!editing?.sections?.length)
-  const [sections, setSections] = useState<{ label: string; standard: string; max_points: number }[]>(
-    editing?.sections || []
-  )
-  const [focusedSection, setFocusedSection] = useState<number | null>(null)
-  const [useQuestionMap, setUseQuestionMap] = useState(!!editing?.question_map?.length)
-  // A rubric item keeps its criteria through an edit, so re-saving the map never strips them.
-  type MapRow = { num: number; type: string; max_points: number; standard: string; answer_key: string; rubric?: QuestionMapItem['rubric'] }
-  const [questionMap, setQuestionMap] = useState<MapRow[]>(
-    editing?.question_map?.map(q => ({ num: q.num, type: q.type, max_points: q.max_points, standard: q.standard || '', answer_key: q.answer_key || '', ...(q.rubric ? { rubric: q.rubric } : {}) })) || []
-  )
-  // Where the points will land once a question is tagged with another domain's standard.
-  const mapSplit = useMemo(() => useQuestionMap && questionMap.length ? splitPossible(questionMap.map((q, i) => ({ num: i + 1, type: q.type as QuestionMapItem['type'], max_points: q.max_points, standard: q.standard || undefined, rubric: q.rubric })), selDomain) : null, [useQuestionMap, questionMap, selDomain])
-  const mapCrosses = !!mapSplit && isMultiDomain(mapSplit)
-  const nameRef = useRef<HTMLInputElement>(null)
-  useEffect(() => { nameRef.current?.focus() }, [])
-
-  // Inline score entry state
-  const [scorePhase, setScorePhase] = useState(false)
-  const [createdAssessment, setCreatedAssessment] = useState<Assessment | null>(null)
-  const [scoreStudents, setScoreStudents] = useState<any[]>([])
-  const [inlineScores, setInlineScores] = useState<Record<string, string>>({})
-  const [savingScores, setSavingScores] = useState(false)
-
-  // Load CCSS standards for suggestions
-  const [ccssStandards, setCcssStandards] = useState<any[]>([])
-  const [stdGradeFilter, setStdGradeFilter] = useState<number | null>(null)
-  const [stdDomainFilter, setStdDomainFilter] = useState<string>('all')
-  useEffect(() => {
-    import('../curriculum/ccss-standards').then(m => { if (m.CCSS_STANDARDS) setCcssStandards(m.CCSS_STANDARDS) }).catch(() => {})
-  }, [])
-
-  // Auto-set grade filter based on class ability level
-  const adjustedCcssGrade = (() => {
-    if (['Lily', 'Camellia'].includes(englishClass)) return Math.max(0, grade - 2)
-    if (['Daisy', 'Sunflower'].includes(englishClass)) return Math.max(0, grade - 1)
-    return grade
-  })()
-  useEffect(() => { if (stdGradeFilter === null) setStdGradeFilter(adjustedCcssGrade) }, [adjustedCcssGrade])
-
-  // Map our app domains to CCSS domain codes
-  const DOMAIN_TO_CCSS: Record<string, string[]> = {
-    reading: ['RL', 'RI'], phonics: ['RF'], writing: ['W'],
-    speaking: ['SL'], language: ['L'], all: [],
-  }
-
-  const filteredStds = stdSearch.length >= 2 ? ccssStandards.filter(s => {
-    if (standards.includes(s.code)) return false
-    if (stdGradeFilter !== null && s.grade !== stdGradeFilter) return false
-    if (stdDomainFilter !== 'all' && DOMAIN_TO_CCSS[stdDomainFilter] && !DOMAIN_TO_CCSS[stdDomainFilter].includes(s.domain)) return false
-    return s.code.toLowerCase().includes(stdSearch.toLowerCase()) || s.text?.toLowerCase().includes(stdSearch.toLowerCase())
-  }).slice(0, 8) : []
-
-  const otherClasses = ENGLISH_CLASSES.filter((c: any) => c !== englishClass)
-
-  const handleSave = async (enterScores = false) => {
-    if (!name.trim()) return; setSaving(true)
-    const stdTags = standards.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.text || '' } })
-    // If using sections, merge section standards into stdTags and auto-calc max_score
-    const finalSections = useSections && sections.length > 0 ? sections : null
-    const finalQuestionMap = useQuestionMap && questionMap.length > 0 ? questionMap : null
-    const finalMaxScore = finalQuestionMap ? finalQuestionMap.reduce((s, q) => s + q.max_points, 0) : finalSections ? finalSections.reduce((s, sec) => s + sec.max_points, 0) : maxScore
-    // Merge section standards into the assessment-level standards
-    const sectionStds = (finalSections || []).map(s => s.standard).filter(s => s && !standards.includes(s))
-    const allStdTags = [...stdTags, ...sectionStds.map(code => { const s = ccssStandards.find(x => x.code === code); return { code, dok: s?.dok || 0, description: s?.text || '' } })]
-    const savedMap: QuestionMapItem[] | null = useQuestionMap && questionMap.length > 0 ? questionMap.map((q, i) => ({ num: i + 1, type: q.type as QuestionMapItem['type'], max_points: q.max_points, standard: q.standard || undefined, answer_key: q.answer_key || undefined, ...(q.rubric ? { rubric: q.rubric } : {}) })) : null
-    // Routing is automatic: the map decides whether points split across domains.
-    const routing = routingFor(savedMap, selDomain)
-    const basePayload = { name: name.trim(), domain: selDomain, max_score: finalMaxScore, grade, type: category, date: date || null, description: notes.trim(), created_by: currentTeacher?.id || null, semester_id: semesterId || null, standards: allStdTags, sections: finalSections, question_map: savedMap, ...routing }
-    // The routing columns need supabase/migration-mixed-assessments.sql; without them, still save the rest.
-    const write = async (payload: Record<string, any>, run: (p: Record<string, any>) => any) => {
-      let res = await run(payload)
-      if (res.error && isRoutingColumnError(res.error.message)) {
-        const { mixed: _m, domain_split: _d, ...plain } = payload
-        res = await run(plain)
-        if (!res.error && routing.mixed) showToast(lang === 'ko' ? '영역별 배분 없이 저장됨: supabase/migration-mixed-assessments.sql을 실행하세요' : 'Saved without domain routing: run supabase/migration-mixed-assessments.sql, then NOTIFY pgrst, \'reload schema\'')
-      }
-      return res
-    }
-    if (editing) {
-      const { data, error } = await write({ ...basePayload, english_class: englishClass }, p => supabase.from('assessments').update(p).eq('id', editing.id).select().single())
-      if (!error && data) {
-        // Papers already marked get their per-domain points recomputed for the new map.
-        const n = await syncDomainScores({ id: editing.id, domain: selDomain, mixed: data.mixed, question_map: data.question_map })
-        if (n > 0) showToast(lang === 'ko' ? `${n}명의 영역별 점수를 다시 계산했습니다` : `Recomputed domain points for ${n} ${n === 1 ? 'student' : 'students'}`)
-      }
-      setSaving(false)
-      if (error) showToast(`Error: ${error.message}`); else { showToast(lang === 'ko' ? `"${name}" 수정 완료` : `Updated "${name}"`); onSaved(data) }
-    } else {
-      const { data, error } = await write({ ...basePayload, english_class: englishClass }, p => supabase.from('assessments').insert(p).select().single())
-      if (error) { setSaving(false); showToast(`Error: ${error.message}`); return }
-      if (shareClasses.length > 0) {
-        const hasRouting = data && 'mixed' in data
-        const { mixed: _m, domain_split: _d, ...plain } = basePayload
-        const copies = shareClasses.map((cls: string) => ({ ...(hasRouting ? basePayload : plain), english_class: cls }))
-        await supabase.from('assessments').insert(copies)
-      }
-      setSaving(false)
-      if (enterScores && data) {
-        setCreatedAssessment(data)
-        // Load students for score entry
-        const { data: studs } = await supabase.from('students').select('*').eq('english_class', englishClass).eq('grade', grade).eq('is_active', true).order('english_name')
-        setScoreStudents(studs || [])
-        setScorePhase(true)
-        showToast(lang === 'ko' ? `"${name}" 생성됨 — 점수 입력` : `Created "${name}" — enter scores below`)
-      } else {
-        showToast(lang === 'ko' ? `"${name}" 평가가 생성되었습니다` : `Created "${name}"${shareClasses.length > 0 ? ` (+ ${shareClasses.length} shared)` : ''}`)
-        onSaved(data)
-      }
-    }
-  }
-
-  const handleSaveScores = async () => {
-    if (!createdAssessment) return
-    setSavingScores(true)
-
-    if (createdAssessment.sections && createdAssessment.sections.length > 0) {
-      // Section-based: compute total from section scores, store both
-      const rows = scoreStudents
-        .filter(s => createdAssessment.sections!.some((_: any, si: number) => inlineScores[`${s.id}:${si}`] && inlineScores[`${s.id}:${si}`] !== ''))
-        .map(s => {
-          const sectionScores: Record<string, number> = {}
-          let total = 0
-          createdAssessment.sections!.forEach((_: any, si: number) => {
-            const v = parseFloat(inlineScores[`${s.id}:${si}`] || '0') || 0
-            sectionScores[String(si)] = v
-            total += v
-          })
-          return { student_id: s.id, assessment_id: createdAssessment.id, score: total, section_scores: sectionScores, is_exempt: false }
-        })
-      if (rows.length > 0) {
-        const { error } = await supabase.from('grades').insert(rows)
-        if (error) { showToast(`Error: ${error.message}`); setSavingScores(false); return }
-      }
-      setSavingScores(false)
-      showToast(`Saved ${rows.length} section scores`)
-    } else {
-      // Simple score
-      const rows = Object.entries(inlineScores)
-        .filter(([, v]) => v !== '')
-        .map(([sid, v]) => ({ student_id: sid, assessment_id: createdAssessment.id, score: parseFloat(v), is_exempt: false }))
-      if (rows.length > 0) {
-        const { error } = await supabase.from('grades').insert(rows)
-        if (error) { showToast(`Error: ${error.message}`); setSavingScores(false); return }
-      }
-      setSavingScores(false)
-      showToast(`Saved ${rows.length} scores`)
-    }
-    onSaved(createdAssessment)
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center">
-      <div className={"bg-surface rounded-xl shadow-lg w-full " + (scorePhase ? "max-w-2xl" : "max-w-lg") + " max-h-[90vh] overflow-y-auto"} onClick={e => e.stopPropagation()}>
-        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-display text-lg font-semibold text-navy">{scorePhase ? `Enter Scores: ${createdAssessment?.name}` : editing ? (lang === 'ko' ? '평가 수정' : 'Edit Assessment') : (lang === 'ko' ? '평가 생성' : 'Create Assessment')}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
-        </div>
-
-        {scorePhase ? (
-          <div>
-            <div className="px-6 py-2 bg-accent-light border-b border-border">
-              <p className="text-[11px] text-navy">{selDomain} · {category} · max {createdAssessment?.max_score || maxScore} pts · {scoreStudents.length} students
-                {createdAssessment?.sections && ` · ${createdAssessment.sections.length} sections`}
-                {createdAssessment?.question_map && ` · ${createdAssessment.question_map.length} questions`}
-              </p>
-            </div>
-
-            {/* Question-map based entry: student sidebar + question grid */}
-            {createdAssessment?.question_map && createdAssessment.question_map.length > 0 ? (
-              <div>
-                <KeyScoreSheet assessment={createdAssessment as any} students={scoreStudents} />
-                <div className="flex justify-end mt-3"><button onClick={() => onSaved(createdAssessment!)} className="h-8 px-3.5 rounded bg-ink text-paper text-[12.5px] font-semibold">Done</button></div>
-              </div>
-            ) : (
-              <>
-              <div className="p-6 max-h-[60vh] overflow-y-auto">
-              {createdAssessment?.sections && createdAssessment.sections.length > 0 ? (
-                <table className="w-full text-[12px]">
-                  <thead><tr className="border-b border-border">
-                    <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-                    {createdAssessment.sections.map((sec: any, si: number) => (
-                      <th key={si} className="text-center py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold min-w-[60px]">
-                        <div>{sec.label}</div>
-                        <div className="text-[8px] text-text-tertiary font-normal">/{sec.max_points}{sec.standard ? ` ${sec.standard}` : ''}</div>
-                      </th>
-                    ))}
-                    <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Total</th>
-                    <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-12">%</th>
-                  </tr></thead>
-                  <tbody>
-                    {scoreStudents.map((s: any, i: number) => {
-                      const sectionVals = createdAssessment.sections!.map((_: any, si: number) => parseFloat(inlineScores[`${s.id}:${si}`] || '') || 0)
-                      const total = sectionVals.reduce((a: number, b: number) => a + b, 0)
-                      const hasAny = createdAssessment.sections!.some((_: any, si: number) => inlineScores[`${s.id}:${si}`] !== '' && inlineScores[`${s.id}:${si}`] !== undefined)
-                      const pct = hasAny ? (total / createdAssessment.max_score) * 100 : null
-                      return (
-                        <tr key={s.id} className="border-b border-border/50">
-                          <td className="py-1.5"><span className="font-medium text-[11px]">{s.english_name}</span></td>
-                          {createdAssessment.sections!.map((_: any, si: number) => (
-                            <td key={si} className="py-1 text-center">
-                              <input type="number" min={0} max={createdAssessment.sections![si].max_points} step="any"
-                                value={inlineScores[`${s.id}:${si}`] || ''}
-                                onChange={e => setInlineScores(prev => ({ ...prev, [`${s.id}:${si}`]: e.target.value }))}
-                                data-col={si} data-row={i}
-                                onKeyDown={e => {
-                                  if (e.key === 'Tab' || e.key === 'Enter') {
-                                    e.preventDefault()
-                                    const tbl = (e.target as HTMLElement).closest('table')
-                                    let next = tbl?.querySelector(`input[data-col="${si + 1}"][data-row="${i}"]`) as HTMLInputElement
-                                    if (!next) next = tbl?.querySelector(`input[data-col="0"][data-row="${i + 1}"]`) as HTMLInputElement
-                                    next?.focus()
-                                  }
-                                }}
-                                className="w-12 px-1 py-1 text-center border border-border rounded text-[11px] outline-none focus:border-navy"
-                              />
-                            </td>
-                          ))}
-                          <td className="py-1.5 text-center text-[12px] font-bold text-navy">{hasAny ? total : ''}</td>
-                          <td className="py-1.5 text-center text-[11px]">
-                            {pct !== null ? <span className={`font-semibold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{pct.toFixed(0)}%</span> : ''}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                <table className="w-full text-[13px]">
-                  <thead><tr className="border-b border-border">
-                    <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
-                    <th className="text-left py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-                    <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-24">Score / {createdAssessment?.max_score || maxScore}</th>
-                    <th className="text-center py-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">%</th>
-                  </tr></thead>
-                  <tbody>
-                    {scoreStudents.map((s: any, i: number) => {
-                      const val = inlineScores[s.id] || ''
-                      const pct = val !== '' ? ((parseFloat(val) / (createdAssessment?.max_score || maxScore)) * 100) : null
-                      return (
-                        <tr key={s.id} className="border-b border-border/50">
-                          <td className="py-1.5 text-text-tertiary text-[11px]">{i + 1}</td>
-                          <td className="py-1.5"><span className="font-medium">{s.english_name}</span> <span className="text-text-tertiary text-[11px] ml-1">{s.korean_name}</span></td>
-                          <td className="py-1.5 text-center">
-                            <input type="number" min={0} max={createdAssessment?.max_score || maxScore} step="any" value={val}
-                              onChange={e => setInlineScores(prev => ({ ...prev, [s.id]: e.target.value }))}
-                              onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Tab') { const inputs = document.querySelectorAll<HTMLInputElement>('.inline-score-input'); const idx = Array.from(inputs).indexOf(e.target as HTMLInputElement); if (idx >= 0 && idx < inputs.length - 1) { e.preventDefault(); inputs[idx + 1].focus() } } }}
-                              className="inline-score-input w-16 px-2 py-1 text-center border border-border rounded text-[13px] outline-none focus:border-navy"
-                            />
-                          </td>
-                          <td className="py-1.5 text-center text-[11px]">
-                            {pct !== null ? <span className={`font-semibold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{pct.toFixed(0)}%</span> : ''}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              )}
-              </div>
-              <div className="px-6 py-4 border-t border-border flex items-center justify-between">
-                <span className="text-[11px] text-text-tertiary">{Object.values(inlineScores).filter(v => v !== '').length} of {scoreStudents.length} entered</span>
-                <div className="flex gap-2">
-                  <button onClick={() => { onSaved(createdAssessment!); }} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">Skip Scores</button>
-                  <button onClick={handleSaveScores} disabled={savingScores || Object.values(inlineScores).filter(v => v !== '').length === 0}
-                    className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
-                    {savingScores && <Loader2 size={14} className="animate-spin" />} Save Scores
-                  </button>
-                </div>
-              </div>
-              </>
-            )}
-          </div>
-        ) : (
-        <div>
-        <div className="p-6 space-y-4">
-          <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '평가 이름' : 'Assessment Name'}</label>
-            <input ref={nameRef} value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSave() }} placeholder={lang === 'ko' ? '예: Reading Quiz 1' : 'e.g. Reading Quiz 1'} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Domain</label>
-              <select value={selDomain} onChange={e => setSelDomain(e.target.value as Domain)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">{DOMAINS.map(d => <option key={d} value={d}>{DOMAIN_LABELS[d][lang]}</option>)}</select></div>
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '유형' : 'Category'}</label>
-              <select value={category} onChange={e => setCategory(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">{ASSESSMENT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{lang === 'ko' ? c.labelKo : c.label}</option>)}</select>
-              <p className="text-[9px] text-text-tertiary mt-1">{ASSESSMENT_CATEGORIES.find(c => c.value === category)?.desc || ''}</p></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '만점' : 'Total Points'}</label>
-              <input type="text" inputMode="decimal" value={maxScore || ''} onChange={e => { const v = e.target.value; if (v === '') setMaxScore(0 as any); else { const n = parseFloat(v); if (!isNaN(n)) setMaxScore(n) } }} onBlur={() => { if (!maxScore || maxScore < 1) setMaxScore(10) }} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '날짜' : 'Date'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-          </div>
-          <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '메모' : 'Notes'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
-            <textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder={lang === 'ko' ? '평가에 대한 메모...' : 'Notes about this assessment...'} rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
-          <div>
-            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">{lang === 'ko' ? '표준 (CCSS)' : 'Standards (CCSS)'} <span className="text-text-tertiary font-normal normal-case">(optional)</span></label>
-            {standards.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-2">
-                {standards.map(code => {
-                  const stdInfo = ccssStandards.find(x => x.code === code)
-                  return (
-                  <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-navy/10 text-navy text-[10px] font-medium cursor-help" title={stdInfo?.text || code}>
-                    {code}
-                    <button onClick={() => setStandards(prev => prev.filter(c => c !== code))} className="text-navy/50 hover:text-red-500"><X size={10} /></button>
-                  </span>
-                  )
-                })}
-              </div>
-            )}
-            <div className="flex gap-2 mb-1.5">
-              <select value={stdGradeFilter ?? adjustedCcssGrade} onChange={e => setStdGradeFilter(e.target.value === '' ? null : Number(e.target.value))}
-                className="px-2 py-1 border border-border rounded text-[10px] bg-surface outline-none">
-                <option value="">All Grades</option>
-                {[0, 1, 2, 3, 4, 5].map(g => <option key={g} value={g}>{g === 0 ? 'K' : `Grade ${g}`}</option>)}
-              </select>
-              <select value={stdDomainFilter} onChange={e => setStdDomainFilter(e.target.value)}
-                className="px-2 py-1 border border-border rounded text-[10px] bg-surface outline-none">
-                <option value="all">All Domains</option>
-                <option value="reading">Reading (RL + RI)</option>
-                <option value="phonics">Phonics & Foundational Skills (RF)</option>
-                <option value="speaking">Speaking & Listening (SL)</option>
-                <option value="writing">Writing (W)</option>
-                <option value="language">Language Standards (L)</option>
-              </select>
-              <span className="text-[9px] text-text-tertiary self-center">Auto: {adjustedCcssGrade === 0 ? 'K' : `Gr ${adjustedCcssGrade}`} for {englishClass}</span>
-            </div>
-            <div className="relative">
-              <input value={stdSearch} onChange={e => setStdSearch(e.target.value)} placeholder={lang === 'ko' ? 'CCSS 코드 검색...' : 'Search CCSS code (e.g. RL.3.1)'}
-                className="w-full px-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
-              {filteredStds.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-border rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
-                  {filteredStds.map(s => (
-                    <button key={s.code} onClick={() => { setStandards(prev => [...prev, s.code]); setStdSearch('') }}
-                      className="w-full text-left px-3 py-2 hover:bg-surface-alt border-b border-border/50 last:border-0">
-                      <span className="text-[11px] font-bold text-navy">{s.code}</span>
-                      <span className="text-[9px] text-text-tertiary ml-1.5">{s.cluster}</span>
-                      <p className="text-[10px] text-text-secondary mt-0.5 line-clamp-2">{s.text}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Assessment Sections Builder */}
-          <div className="border border-border rounded-lg overflow-hidden">
-            <button onClick={() => { setUseSections(!useSections); if (!useSections && sections.length === 0) setSections([{ label: 'Section 1', standard: '', max_points: 5 }]) }}
-              className="w-full flex items-center justify-between px-4 py-2.5 bg-surface-alt hover:bg-surface-alt/80 transition-all">
-              <span className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold">
-                Assessment Sections <span className="text-text-tertiary font-normal normal-case">(split into parts with standards)</span>
-              </span>
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${useSections ? 'bg-navy text-white' : 'bg-surface text-text-tertiary border border-border'}`}>
-                {useSections ? 'ON' : 'OFF'}
-              </span>
-            </button>
-            {useSections && (
-              <div className="p-4 space-y-2">
-                {sections.map((sec, si) => (
-                  <div key={si} className="flex items-center gap-2">
-                    <input value={sec.label} onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], label: e.target.value }; setSections(ns) }}
-                      placeholder="e.g. Q1-3" className="w-24 px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy" />
-                    <select value={sec.domain || ''} onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], domain: e.target.value || undefined }; setSections(ns) }}
-                      className="w-28 px-1.5 py-1.5 border border-border rounded-lg text-[10px] outline-none focus:border-navy" title="Section domain (for multi-domain assessments)">
-                      <option value="">Same domain</option>
-                      {DOMAINS.map(d => <option key={d} value={d}>{DOMAIN_LABELS[d].en}</option>)}
-                    </select>
-                    <div className="relative flex-1">
-                      <input value={sec.standard}
-                        onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], standard: e.target.value }; setSections(ns); setFocusedSection(si) }}
-                        onFocus={() => setFocusedSection(si)}
-                        onBlur={() => { const ns = [...sections]; ns[si] = { ...ns[si], standard: normalizeCCSS(ns[si].standard) }; setSections(ns); setTimeout(() => setFocusedSection(null), 150) }}
-                        placeholder="Standard (e.g. RL.2.1 or rl21)" className="w-full px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none focus:border-navy" />
-                      {/* Quick-pick from assessment-level standards */}
-                      {!sec.standard && standards.length > 0 && focusedSection !== si && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {standards.filter(code => !sections.some((s, idx) => idx !== si && s.standard === code)).map(code => (
-                            <button key={code} onClick={() => { const ns = [...sections]; ns[si] = { ...ns[si], standard: code }; setSections(ns) }}
-                              className="px-1.5 py-0.5 rounded bg-navy/8 text-navy text-[9px] font-medium hover:bg-navy/15 transition-colors">{code}</button>
-                          ))}
-                        </div>
-                      )}
-                      {focusedSection === si && sec.standard.length >= 2 && (() => {
-                        const normalized = normalizeCCSS(sec.standard)
-                        const matches = ccssStandards.filter(s => s.code.toLowerCase().includes(normalized.toLowerCase()) || s.code.toLowerCase().includes(sec.standard.toLowerCase())).filter(s => s.code !== sec.standard).slice(0, 4)
-                        if (matches.length === 0) return null
-                        return (
-                          <div className="absolute left-0 right-0 top-full mt-0.5 bg-surface border border-border rounded-lg shadow-lg z-50 max-h-32 overflow-y-auto">
-                            {matches.map(s => (
-                              <button key={s.code} onMouseDown={e => e.preventDefault()} onClick={() => { const ns = [...sections]; ns[si] = { ...ns[si], standard: s.code }; setSections(ns); setFocusedSection(null) }}
-                                className="w-full text-left px-2 py-1.5 hover:bg-surface-alt text-[10px] border-b border-border/50 last:border-0">
-                                <span className="font-bold text-navy">{s.code}</span>
-                                <span className="text-text-tertiary ml-1.5 line-clamp-1">{s.description}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )
-                      })()}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <input type="number" min={1} value={sec.max_points} onChange={e => { const ns = [...sections]; ns[si] = { ...ns[si], max_points: parseInt(e.target.value) || 1 }; setSections(ns) }}
-                        className="w-12 px-1.5 py-1.5 border border-border rounded-lg text-[11px] text-center outline-none focus:border-navy" />
-                      <span className="text-[9px] text-text-tertiary">pts</span>
-                    </div>
-                    <button onClick={() => setSections(sections.filter((_, i) => i !== si))} className="p-1 text-text-tertiary hover:text-red-500"><X size={12} /></button>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between pt-1">
-                  <button onClick={() => setSections([...sections, { label: `Section ${sections.length + 1}`, standard: '', max_points: 5, domain: undefined }])}
-                    className="inline-flex items-center gap-1 text-[10px] text-navy font-medium hover:text-navy-dark"><Plus size={11} /> Add Section</button>
-                  <span className="text-[10px] text-text-tertiary font-semibold">
-                    Total: {sections.reduce((s, sec) => s + sec.max_points, 0)} pts
-                  </span>
-                </div>
-                <p className="text-[9px] text-text-tertiary">Each section's score is tracked separately. Total points auto-calculated from sections. Set a section's domain to create multi-domain assessments — section scores automatically roll into each domain's gradebook.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Question Map Builder (for Item Analysis) */}
-          <div className="border border-border rounded-lg overflow-hidden">
-            <button onClick={() => {
-              setUseQuestionMap(!useQuestionMap)
-              if (!useQuestionMap && questionMap.length === 0) {
-                setQuestionMap([{ num: 1, type: 'mc', max_points: 1, standard: '', answer_key: '' }])
-              }
-            }}
-              className="w-full flex items-center justify-between px-4 py-2.5 bg-surface-alt hover:bg-surface-alt/80 transition-all">
-              <span className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold">
-                Question Map <span className="text-text-tertiary font-normal normal-case">(for item-by-item analysis)</span>
-              </span>
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${useQuestionMap ? 'bg-navy text-white' : 'bg-surface text-text-tertiary border border-border'}`}>
-                {useQuestionMap ? 'ON' : 'OFF'}
-              </span>
-            </button>
-            {useQuestionMap && (
-              <div className="p-4 space-y-2">
-                <div className="grid grid-cols-[32px_90px_50px_1fr_70px_24px] gap-1.5 text-[9px] uppercase tracking-wider text-text-tertiary font-semibold mb-1 px-0.5">
-                  <span>#</span><span>Type</span><span>Pts</span><span>Standard</span><span>Key</span><span></span>
-                </div>
-                {questionMap.map((q, qi) => (
-                  <div key={qi} className="grid grid-cols-[24px_32px_90px_50px_1fr_70px_24px] gap-1.5 items-center">
-                    <div className="flex flex-col">
-                      <button disabled={qi === 0} onClick={() => { const nm = [...questionMap]; [nm[qi - 1], nm[qi]] = [nm[qi], nm[qi - 1]]; setQuestionMap(nm) }}
-                        className="text-text-tertiary hover:text-navy disabled:opacity-20 p-0"><ChevronUp size={10} /></button>
-                      <button disabled={qi === questionMap.length - 1} onClick={() => { const nm = [...questionMap]; [nm[qi], nm[qi + 1]] = [nm[qi + 1], nm[qi]]; setQuestionMap(nm) }}
-                        className="text-text-tertiary hover:text-navy disabled:opacity-20 p-0"><ChevronDown size={10} /></button>
-                    </div>
-                    <span className="text-[11px] text-text-secondary font-semibold text-center">{qi + 1}</span>
-                    <select value={q.type} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], type: e.target.value }; setQuestionMap(nm) }}
-                      className="px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy bg-surface">
-                      <option value="mc">MC</option>
-                      <option value="true_false">T/F</option>
-                      <option value="short_answer">Short Ans</option>
-                      <option value="open_ended">Open End</option>
-                      <option value="matching">Matching</option>
-                      <option value="fill_blank">Fill Blank</option>
-                      <option value="listening">Listening</option>
-                      <option value="oral">Oral</option>
-                      <option value="rubric">Rubric</option>
-                    </select>
-                    <input type="number" min={1} value={q.max_points} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], max_points: parseInt(e.target.value) || 1 }; setQuestionMap(nm) }}
-                      className="w-full px-1.5 py-1.5 border border-border rounded text-[10px] text-center outline-none focus:border-navy" />
-                    {standards.length > 0 ? (
-                      <select value={q.standard} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], standard: e.target.value }; setQuestionMap(nm) }}
-                        className="w-full px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy bg-surface">
-                        <option value="">-- standard --</option>
-                        {standards.map(code => <option key={code} value={code}>{code}</option>)}
-                      </select>
-                    ) : (
-                      <input value={q.standard} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], standard: e.target.value }; setQuestionMap(nm) }}
-                        onBlur={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], standard: normalizeCCSS(e.target.value) }; setQuestionMap(nm) }}
-                        placeholder="e.g. RL.3.1" className="w-full px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy" />
-                    )}
-                    {(q.type === 'mc' || q.type === 'true_false') ? (
-                      <select value={q.answer_key} onChange={e => { const nm = [...questionMap]; nm[qi] = { ...nm[qi], answer_key: e.target.value }; setQuestionMap(nm) }}
-                        className="px-1.5 py-1.5 border border-border rounded text-[10px] outline-none focus:border-navy bg-surface">
-                        <option value="">--</option>
-                        {q.type === 'mc' ? ['A', 'B', 'C', 'D'].map(o => <option key={o} value={o}>{o}</option>) : ['T', 'F'].map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    ) : <span className="text-[9px] text-text-tertiary text-center">n/a</span>}
-                    <button onClick={() => setQuestionMap(questionMap.filter((_, i) => i !== qi))} className="p-0.5 text-text-tertiary hover:text-red-500"><X size={12} /></button>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between pt-1">
-                  <div className="flex gap-2 flex-wrap">
-                    <button onClick={() => setQuestionMap([...questionMap, { num: questionMap.length + 1, type: 'mc', max_points: 1, standard: '', answer_key: '' }])}
-                      className="inline-flex items-center gap-1 text-[10px] text-navy font-medium hover:text-navy-dark"><Plus size={11} /> Add Question</button>
-                    <button onClick={async () => {
-                      const count = parseInt(await promptDialog({ title: 'Bulk add multiple-choice questions', message: 'Up to 50 at a time.', placeholder: 'How many?', confirmLabel: 'Add' }) || '0')
-                      if (count > 0 && count <= 50) {
-                        const newQs = Array.from({ length: count }, (_, i) => ({ num: questionMap.length + i + 1, type: 'mc', max_points: 1, standard: '', answer_key: '' }))
-                        setQuestionMap([...questionMap, ...newQs])
-                      }
-                    }} className="inline-flex items-center gap-1 text-[10px] text-text-tertiary font-medium hover:text-navy"><Plus size={11} /> Bulk Add</button>
-                    {standards.length > 0 && (
-                      <button onClick={async () => {
-                        const rangeStr = await promptDialog({ title: 'Apply a standard to a range', message: 'Which questions? Enter a range like 1-5, or "all".', placeholder: 'e.g. 1-5', confirmLabel: 'Next' })
-                        if (!rangeStr) return
-                        const stdCode = await promptDialog({ title: 'Which standard?', message: `Available: ${standards.join(', ')}`, placeholder: 'e.g. RL.3.1', confirmLabel: 'Apply' })
-                        if (!stdCode || !standards.includes(stdCode)) return
-                        const nm = [...questionMap]
-                        if (rangeStr.toLowerCase() === 'all') {
-                          nm.forEach(q => { q.standard = stdCode })
-                        } else {
-                          const [start, end] = rangeStr.split('-').map(Number)
-                          if (start && end) nm.forEach(q => { if (q.num >= start && q.num <= end) q.standard = stdCode })
-                          else if (start) nm.forEach(q => { if (q.num === start) q.standard = stdCode })
-                        }
-                        setQuestionMap(nm)
-                      }} className="inline-flex items-center gap-1 text-[10px] text-text-tertiary font-medium hover:text-navy">⚡ Set Standard (range)</button>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-text-tertiary font-semibold">
-                    {questionMap.length} Q · {questionMap.reduce((s, q) => s + q.max_points, 0)} pts total
-                  </span>
-                </div>
-                {mapCrosses && mapSplit ? (
-                  <div className="rounded-md border border-info/40 bg-info-soft/40 px-3 py-2 text-[11px] text-navy">
-                    <span className="font-semibold">{lang === 'ko' ? '점수가 기준에 따라 영역별로 나뉩니다' : 'Points go to each standard’s domain'}</span>
-                    <span className="block text-text-secondary mt-0.5">{Object.entries(mapSplit).filter(([, v]) => v > 0).map(([d, v]) => `${domainLabel(d)} ${v}`).join(' · ')}. {lang === 'ko' ? `태그 없는 문항은 ${DOMAIN_LABELS[selDomain].ko}로 갑니다. 전체 점수도 함께 표시됩니다.` : `Untagged questions count toward ${DOMAIN_LABELS[selDomain].en}. Each part counts in its own gradebook and the whole paper stays visible too.`}</span>
-                  </div>
-                ) : (
-                  <p className="text-[9px] text-text-tertiary">Question map enables item-by-item entry and analysis. For MC/T-F, set answer keys for auto-scoring. Tag each question with a standard for mastery rollups; a standard from another domain (RL/RI Reading, RF Phonics, W Writing, SL Speaking, L Language) sends that question’s points to that domain.</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {!editing && (
-            <div>
-              <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-2">Share with Other Classes</label>
-              <div className="flex flex-wrap gap-2">
-                {otherClasses.map((cls: any) => (
-                  <label key={cls} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium cursor-pointer border transition-all ${shareClasses.includes(cls) ? 'border-navy bg-navy/10 text-navy' : 'border-border text-text-tertiary hover:bg-surface-alt'}`}>
-                    <input type="checkbox" checked={shareClasses.includes(cls)} onChange={() => setShareClasses((prev: string[]) => prev.includes(cls) ? prev.filter((c: string) => c !== cls) : [...prev, cls])} className="sr-only" />
-                    <span className="w-3 h-3 rounded-sm border flex items-center justify-center" style={{ borderColor: shareClasses.includes(cls) ? classToTextColor(cls as EnglishClass) : '#d1d5db', backgroundColor: shareClasses.includes(cls) ? classToTextColor(cls as EnglishClass) : 'transparent' }}>
-                      {shareClasses.includes(cls) && <span className="text-white text-[8px]">✓</span>}
-                    </span>
-                    {cls}
-                  </label>
-                ))}
-              </div>
-              <p className="text-[10px] text-text-tertiary mt-1">Same assessment will be created in checked classes (each enters scores separately).</p>
-            </div>
-          )}
-          <div className="bg-accent-light rounded-lg px-4 py-3"><p className="text-[12px] text-navy"><strong>Grade {grade} · {englishClass}{shareClasses.length > 0 ? ` + ${shareClasses.join(', ')}` : ''}</strong></p></div>
-
-        </div>
-        <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">{lang === 'ko' ? '취소' : 'Cancel'}</button>
-          {!editing && (
-            <button onClick={() => handleSave(true)} disabled={saving || !name.trim()} className="px-4 py-2 rounded-lg text-[13px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-40 flex items-center gap-1.5">
-              {saving && <Loader2 size={14} className="animate-spin" />} Create & Enter Scores
-            </button>
-          )}
-          <button onClick={() => handleSave(false)} disabled={saving || !name.trim()} className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
-            {saving && <Loader2 size={14} className="animate-spin" />} {editing ? (lang === 'ko' ? '수정' : 'Update') : (lang === 'ko' ? '생성' : 'Create')}
-          </button>
-        </div>
-        </div>
-        )}
-      </div>
     </div>
   )
 }

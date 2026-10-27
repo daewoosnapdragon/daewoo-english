@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'grades-sheets', date: '2026-10-27', title: 'Every assessment opens on its own sheet, and Edit uses the set-up flow',
+    body: 'You can now click from one assessment to the next without the view changing under you: a keyed assessment opens on its answer sheet, a rubric on its rubric sheet, and a points-only assessment on a new points sheet laid out like the others, where Enter moves down and saves, 7/10 enters a fraction, and the rail shows the class as the numbers go in. Switching domain tabs is instant. Edit, next to the assessment name, reopens the flow you created it with, filled in, so the key, rubric and standards are changed the way they were made; a changed key re-scores the marked papers.',
+    path: '/grades', guide: 'grades',
+  },
+  {
     id: 'comments-by-document', date: '2026-10-27', title: 'Reports opens on the document you are writing now',
     body: 'You can now see which comment you are writing. Reports opens on the progress report until three weeks after the midterm cutoff and on the report card after that; the Comments tab has a Progress report / Report card switch at the top; and each comment box is labelled with its document. Progress-report comments that were saved under Report card this semester have been moved across by the admin.',
     path: '/reports', guide: 'reports',
