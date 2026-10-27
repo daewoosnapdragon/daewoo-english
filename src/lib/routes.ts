@@ -18,6 +18,7 @@ export const VIEW_PATHS: Record<string, string> = {
   activity: '/activity',
   behavior: '/behavior',
   supplies: '/supplies',
+  budget: '/budget',
 }
 
 /** The order links appear in the masthead. Settings lives in the user menu. */
@@ -42,5 +43,5 @@ export const PAGE_TITLES: Record<string, string> = {
   dashboard: 'Dashboard', students: 'Students', grades: 'Grades',
   reports: 'Reports', leveling: 'Level Tests', attendance: 'Attendance',
   readingLevels: 'Reading', lessonPlans: 'Lesson Plans',
-  curriculum: 'Standards', wida: 'WIDA', settings: 'Settings', guide: 'How to use this app', whatsNew: 'What’s new', activity: 'Activity', behavior: 'Behavior', supplies: 'Supplies',
+  curriculum: 'Standards', wida: 'WIDA', settings: 'Settings', guide: 'How to use this app', whatsNew: 'What’s new', activity: 'Activity', behavior: 'Behavior', supplies: 'Supplies', budget: 'Budget',
 }

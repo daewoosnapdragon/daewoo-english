@@ -310,22 +310,39 @@ export const ADMIN_SECTIONS: GuideSection[] = [
   },
   {
     id: 'supplies', title: 'Supplies', updated: '2026-10-27',
-    purpose: 'The office stock, what people need, and the receipts and counts that keep the numbers right. Opened from the user menu; a card on the dashboard shows what is low.',
+    purpose: 'The office stock, what people need, and the receipts and counts that keep the numbers right. Opened from the user menu; a card on the dashboard shows what is low. Every receipt also feeds the Budget page.',
     screen: [
-      'Stock: the staples by category, each with the number on hand, the least to keep, and a status. Under the least to keep, or flagged by someone, it shows as low. Add an item, edit one (name, unit, category, keep-at-least, whether it is in the quick count, a link to buy it, the other names receipts use for it), or open its history.',
-      'Requests: what someone needs, how many, what for, a link, and everyone who needs it. Needed, then Ordered, then Arrived. Arrived and dropped requests fold away under the list.',
-      'Receipts: the prompt to give Claude with a scanned receipt, a box to paste the lines it writes, and a check of each line against the stock before it is added. Every receipt entered is listed under that.',
-      'Count: whose quick count it is this week and whether it is done, when the last full count was, and the count itself: a column of the recorded numbers and a column to type the real ones.',
+      'Stock: the staples by category (or by cabinet and shelf, once those are filled in), each with what is on hand as packs and loose, the least to keep, and a status. Under the least to keep, or flagged by someone, it shows as low. Add an item, edit one (what it is counted in, whether it comes in packs and of how many, keep-at-least, whether it is in the quick count, a link to buy it, the other names receipts use for it, where it lives), or open its history. The last price paid shows under the name.',
+      'Requests: what someone needs, how many, what for, a link, and everyone who needs it. Needed, then Ordered, then Arrived. A receipt line that answers a request marks it arrived and shows what it cost.',
+      'Receipts: the prompt to give Claude with a scanned receipt, a box to paste the lines it writes (name, quantity, price), and a check of each line before it is saved: which stock item it adds to, or that it is a one-off for a teacher or an event, and which request it answers. Every receipt entered is listed under that with its total.',
+      'Count: whose quick count it is this week and whether it is done, when the last full count was, a button to print the sheet for the clipboard, and the count itself: packs and loose for each item.',
     ],
     tasks: [
       { title: 'Say something is running low', steps: ['Stock → the item → Low.', 'It shows as low for everyone, with your name and the day, until the next count.'] },
-      { title: 'Ask for something', steps: ['Requests → type what, how many, what for, and a link if there is one → Add request.', 'If it is a stock item the request links to it and shows the number on hand.', 'Someone else who needs the same thing presses Me too instead of adding it again.'] },
-      { title: 'Enter a receipt', steps: ['Receipts → Copy the prompt. Put the scanned receipt into Claude with that prompt; it writes one line per item as name | quantity, using the stock names.', 'Paste the lines in, set the date, Read the lines.', 'Check each line: the stock item it matched, or pick one, or make it a new item, or leave it as not stock. Fix a quantity if Claude misread it. Add to stock.'] },
-      { title: 'Do the quick count', steps: ['Whoever has the chosen office job that week (Reading Garden to start) does it on the cleaning day; the dashboard card has the button.', 'Count → Quick count: only the staples are listed. Type the real number where it differs. Save.', 'Saving records that you counted even if nothing changed, and clears the Low flags.'] },
-      { title: 'Do the full count', steps: ['Admin, once a month: Count → Full count. Every item is listed. Type the real numbers. Save.', 'The dashboard and the Count tab say when it is due.'] },
+      { title: 'Ask for something', steps: ['Requests → type what, how many, what for, and a link if there is one → Add request.', 'If it is a stock item the request links to it and shows what is on hand.', 'Someone else who needs the same thing presses Me too instead of adding it again.'] },
+      { title: 'Enter a receipt', steps: ['Receipts → Copy the prompt. Put the scanned receipt into Claude with that prompt; it writes one line per item as name | quantity | price, using the stock names.', 'Paste the lines in, set the date and the shop, Read the lines.', 'Check each line. A stock line shows the item it adds to and whether the quantity is packs or singles; fix either. A one-off line (anything that is not stock) gets the teacher it is for, or Office or event with what it was for. A line that answers a request is matched; pick one if not.', 'Save the receipt. Stock goes up, the purchases land on the Budget page, and matched requests are marked arrived.'] },
+      { title: 'Do the quick count', steps: ['Whoever has the chosen office job that week (Reading Garden to start) does it on the cleaning day; the dashboard card has the button.', 'Count → Print the sheet if you want paper on the clipboard: the items with boxes for packs and loose.', 'Count → Quick count: only the staples are listed. Type the packs and loose where they differ. Save.', 'Saving records that you counted even if nothing changed, and clears the Low flags.'] },
+      { title: 'Do the full count', steps: ['Admin, once a month: Count → Full count. Every item is listed. Print the sheet, count, type the numbers. Save.', 'The dashboard and the Count tab say when it is due.'] },
+      { title: 'Get ready for cabinets and shelves', steps: ['Nothing to do until the materials are organised. Then edit each item and fill in Where it lives: the cabinet and the shelf.', 'Once any item has a place, the Stock tab can list by place, and the count sheet and the count go cabinet by cabinet.'] },
     ],
-    rules: ['Nobody records what they take. Receipts put stock up; counts put it right. A request marked Arrived does not change the stock by itself; the receipt does, so nothing is counted twice.', 'A Low flag is cleared by the next count of that item, quick or full.', 'Every change to a number is kept with who and when; open an item’s history to see it. Counts, receipts, requests and edits are also in the activity log.', 'Which office job carries the quick count, and how often the full count is due, are set at the bottom of the Count tab by admin, the head teacher or the Snapdragon teacher.'],
-    watchOut: ['Admin runs supabase/migration-supplies.sql once; until then the page says so. It starts the stock with a short list of staples to edit.', 'The quick-count person comes from the office jobs rotation, so that has to be set up in Settings first.', 'The receipt prompt lists the stock names and their other names, so keep an item’s “also called” names current and Claude’s lines will match without fixing.'],
+    rules: ['Nobody records what they take. Receipts put stock up; counts put it right. A request marked Arrived does not change the stock by itself; the receipt does, so nothing is counted twice.', 'Stock is kept in single units (reams, markers, rolls) and shown as packs and loose: 1 box + 2 reams. A receipt line in boxes is multiplied out.', 'A Low flag is cleared by the next count of that item, quick or full.', 'Every change to a number is kept with who and when; open an item’s history to see it. Counts, receipts, requests and edits are also in the activity log.', 'Which office job carries the quick count, and how often the full count is due, are set at the bottom of the Count tab by admin, the head teacher or the Snapdragon teacher.'],
+    watchOut: ['Admin runs supabase/migration-supplies.sql once (and again after an update; it only adds). It starts the stock with a short list of staples to edit.', 'The quick-count person comes from the office jobs rotation, so that has to be set up in Settings first.', 'The receipt prompt lists the stock names, their other names and what they come in, so keep an item’s “also called” names current and Claude’s lines will match without fixing.'],
+  },
+  {
+    id: 'budget', title: 'Budget', updated: '2026-10-27',
+    purpose: 'What the office has spent this semester, from the receipts entered on the Supplies page: each teacher’s one-off purchases against their allowance, the office’s stock and event spending, and the totals by month. Opened from the user menu.',
+    screen: [
+      'By teacher: allowance, spent, left, and a bar. Admin, the head teacher and the Snapdragon teacher see every teacher and the office line; a teacher sees their own.',
+      'By month: stock, one-off and total for each month of the semester, with the semester total.',
+      'Purchases: every receipt line, with the date, what, who or what it was for, and the price. Filter by teacher or the office.',
+    ],
+    tasks: [
+      { title: 'Set the allowances', steps: ['Pick the semester at the top.', 'Click an allowance, type the amount in won, Enter. The office line is the budget for stock and events.'] },
+      { title: 'Move a purchase to the right person', steps: ['Purchases → Edit on the line.', 'Change the kind, the teacher (or Office or event), what it was for, or the price. The receipt’s total follows.'] },
+      { title: 'See what I have left', steps: ['Open Budget from the user menu. Your line shows the allowance, what has been charged to you, and what is left.'] },
+    ],
+    rules: ['A purchase is charged to a teacher only when the receipt line was entered as a one-off for them. Stock purchases are the office’s.', 'The semester’s dates (from Settings) decide which receipts count.'],
+    watchOut: ['Prices come from the receipt lines; a line entered without a price counts as zero until it is edited.'],
   },
   {
     id: 'activity', title: 'Activity', updated: '2026-10-27',
@@ -356,5 +373,5 @@ export const ALL_SECTIONS = () => [...GUIDE_SECTIONS, ...ADMIN_SECTIONS]
 /** The guide section for a view id, for “How this page works”. */
 export const SECTION_FOR_VIEW: Record<string, string> = {
   dashboard: 'dashboard', grades: 'grades', attendance: 'attendance', lessonPlans: 'lessons', students: 'students',
-  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', behavior: 'behavior', supplies: 'supplies',
+  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', behavior: 'behavior', supplies: 'supplies', budget: 'budget',
 }

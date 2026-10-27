@@ -4,10 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useOfficeJobs } from '@/components/dashboard/useOfficeJobs'
 import { fetchSupplies } from '@/lib/suppliesData'
 import { loadSuppliesSettings } from '@/lib/supplies'
-import { DEFAULT_SUPPLIES_SETTINGS, fullCountStatus, isLow, isSuppliesMissing, type SuppliesSettings, type SupplyItem, type SupplyReceipt, type SupplyRequest } from '@/lib/suppliesCore'
+import { DEFAULT_SUPPLIES_SETTINGS, fullCountStatus, isLow, isSuppliesMissing, type SuppliesSettings, type SupplyItem, type SupplyPurchase, type SupplyReceipt, type SupplyRequest } from '@/lib/suppliesCore'
 
 // ─── Supplies, as the app sees them today ────────────────────────
-// The stock, the requests, the receipts, the settings, and what follows
+// The stock, the requests, the receipts and their purchases, the settings, and what follows
 // from them: which items are low, whose quick count it is this week and
 // whether it is done, and whether the full count is due. The page and the
 // dashboard card both read this.
@@ -16,6 +16,7 @@ export function useSupplies() {
   const [items, setItems] = useState<SupplyItem[]>([])
   const [requests, setRequests] = useState<SupplyRequest[]>([])
   const [receipts, setReceipts] = useState<SupplyReceipt[]>([])
+  const [purchases, setPurchases] = useState<SupplyPurchase[]>([])
   const [settings, setSettings] = useState<SuppliesSettings>(DEFAULT_SUPPLIES_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [missing, setMissing] = useState(false)
@@ -24,7 +25,7 @@ export function useSupplies() {
   const reload = useCallback(async () => {
     const [d, s] = await Promise.all([fetchSupplies(), loadSuppliesSettings()])
     if (d.error) { setMissing(isSuppliesMissing(d.error)); setLoading(false); return }
-    setItems(d.items); setRequests(d.requests); setReceipts(d.receipts); setSettings(s); setMissing(false); setLoading(false)
+    setItems(d.items); setRequests(d.requests); setReceipts(d.receipts); setPurchases(d.purchases); setSettings(s); setMissing(false); setLoading(false)
   }, [])
   useEffect(() => { reload() }, [reload])
 
@@ -48,5 +49,5 @@ export function useSupplies() {
     return { date: day.date, isToday: !!jobs.todays, personId: a.personId, job: a.job, done: done.length > 0, doneAt: latest, doneBy: latest ? done.find(i => i.last_counted_at === latest)?.last_counted_by || null : null }
   }, [jobs.todays, jobs.next, jobs.days, settings.countJobKey, active])
 
-  return { items, active, requests, receipts, settings, setSettings, loading: loading || jobs.loading, missing, reload, low, needed, ordered, full, week, jobs }
+  return { items, active, requests, receipts, purchases, settings, setSettings, loading: loading || jobs.loading, missing, reload, low, needed, ordered, full, week, jobs }
 }

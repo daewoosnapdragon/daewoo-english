@@ -22,8 +22,13 @@ export interface WhatsNewEntry {
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'supplies', date: '2026-10-27', title: 'Supplies: stock, requests, receipts and counts',
-    body: 'You can now open Supplies from the user menu. Stock lists the office staples with the number on hand; press Low when something is running out and everyone sees it. Requests is where you put what you need, with how many and what for, and others press Me too. Receipts turn a scanned receipt into stock: give Claude the prompt on that tab with the scan, paste the lines it writes, check them, add. Whoever has the Reading Garden job that week does a two-minute quick count on the cleaning day; admin does the full count once a month. The dashboard card shows what is low and whose count it is.',
+    body: 'You can now open Supplies from the user menu. Stock lists the office staples as packs and loose (1 box + 2 reams); press Low when something is running out and everyone sees it. Requests is where you put what you need, with how many and what for, and others press Me too. Receipts turn a scanned receipt into stock and spending: give Claude the prompt on that tab with the scan, paste the lines it writes with their prices, check them, save. Whoever has the Reading Garden job that week does a two-minute quick count on the cleaning day, with a sheet to print for the clipboard; admin does the full count once a month. The dashboard card shows what is low and whose count it is.',
     path: '/supplies', guide: 'supplies',
+  },
+  {
+    id: 'budget', date: '2026-10-27', title: 'Budget: what each teacher and the office have spent',
+    body: 'You can now open Budget from the user menu and see your allowance for the semester, what has been charged to you from receipts, and what is left. Admin sees every teacher and the office line and sets the allowances. Totals by month are under that, and every purchase is listed.',
+    path: '/budget', guide: 'budget',
   },
   {
     id: 'behavior-page', date: '2026-10-27', title: 'A Behavior page: every case’s story, and every note',
