@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'supplies', date: '2026-10-27', title: 'Supplies: stock, requests, receipts and counts',
+    body: 'You can now open Supplies from the user menu. Stock lists the office staples with the number on hand; press Low when something is running out and everyone sees it. Requests is where you put what you need, with how many and what for, and others press Me too. Receipts turn a scanned receipt into stock: give Claude the prompt on that tab with the scan, paste the lines it writes, check them, add. Whoever has the Reading Garden job that week does a two-minute quick count on the cleaning day; admin does the full count once a month. The dashboard card shows what is low and whose count it is.',
+    path: '/supplies', guide: 'supplies',
+  },
+  {
     id: 'behavior-page', date: '2026-10-27', title: 'A Behavior page: every case’s story, and every note',
     body: 'You can now open Behavior from the user menu and see each ladder case for your class as one line: opened and how many notes, your ask, read by admin and when, the action recorded, or what has not happened yet and for how many school days. Every behavior note for your class is listed under it, with filters. Admin and the Snapdragon teacher see every class.',
     path: '/behavior', guide: 'behavior',

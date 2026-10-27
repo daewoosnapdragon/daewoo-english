@@ -12,6 +12,7 @@ import { getKSTDateString, domainLabel } from '@/lib/utils'
 import { Plus, X, ChevronLeft, ChevronRight, Trash2, Pencil, PanelLeftClose, UserX, UserMinus, ArrowRight, Bell, Loader2 } from 'lucide-react'
 import WeeklySchedule from './WeeklySchedule'
 import OfficeJobs from './OfficeJobs'
+import SuppliesCard from './SuppliesCard'
 import AttendanceDrawer, { ATTENDANCE_SAVED_EVENT } from '@/components/attendance/AttendanceDrawer'
 import { loadDayStatus, withoutAwayDays } from '@/lib/calendarDays'
 
@@ -259,6 +260,7 @@ export default function DashboardView() {
               <PanelLeftClose size={13} />{lang === 'ko' ? '주간 시간표 보기' : 'Show weekly schedule'}
             </button>}
         <OfficeJobs />
+        <SuppliesCard />
       </>} />
 
       {/* ─── Attention + grading ─── */}

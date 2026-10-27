@@ -309,6 +309,25 @@ export const ADMIN_SECTIONS: GuideSection[] = [
     watchOut: ['Admin runs supabase/migration-behavior-reminders.sql once; until then the reminder button reports that.', 'School days count weekdays only; a holiday week still counts as five.'],
   },
   {
+    id: 'supplies', title: 'Supplies', updated: '2026-10-27',
+    purpose: 'The office stock, what people need, and the receipts and counts that keep the numbers right. Opened from the user menu; a card on the dashboard shows what is low.',
+    screen: [
+      'Stock: the staples by category, each with the number on hand, the least to keep, and a status. Under the least to keep, or flagged by someone, it shows as low. Add an item, edit one (name, unit, category, keep-at-least, whether it is in the quick count, a link to buy it, the other names receipts use for it), or open its history.',
+      'Requests: what someone needs, how many, what for, a link, and everyone who needs it. Needed, then Ordered, then Arrived. Arrived and dropped requests fold away under the list.',
+      'Receipts: the prompt to give Claude with a scanned receipt, a box to paste the lines it writes, and a check of each line against the stock before it is added. Every receipt entered is listed under that.',
+      'Count: whose quick count it is this week and whether it is done, when the last full count was, and the count itself: a column of the recorded numbers and a column to type the real ones.',
+    ],
+    tasks: [
+      { title: 'Say something is running low', steps: ['Stock → the item → Low.', 'It shows as low for everyone, with your name and the day, until the next count.'] },
+      { title: 'Ask for something', steps: ['Requests → type what, how many, what for, and a link if there is one → Add request.', 'If it is a stock item the request links to it and shows the number on hand.', 'Someone else who needs the same thing presses Me too instead of adding it again.'] },
+      { title: 'Enter a receipt', steps: ['Receipts → Copy the prompt. Put the scanned receipt into Claude with that prompt; it writes one line per item as name | quantity, using the stock names.', 'Paste the lines in, set the date, Read the lines.', 'Check each line: the stock item it matched, or pick one, or make it a new item, or leave it as not stock. Fix a quantity if Claude misread it. Add to stock.'] },
+      { title: 'Do the quick count', steps: ['Whoever has the chosen office job that week (Reading Garden to start) does it on the cleaning day; the dashboard card has the button.', 'Count → Quick count: only the staples are listed. Type the real number where it differs. Save.', 'Saving records that you counted even if nothing changed, and clears the Low flags.'] },
+      { title: 'Do the full count', steps: ['Admin, once a month: Count → Full count. Every item is listed. Type the real numbers. Save.', 'The dashboard and the Count tab say when it is due.'] },
+    ],
+    rules: ['Nobody records what they take. Receipts put stock up; counts put it right. A request marked Arrived does not change the stock by itself; the receipt does, so nothing is counted twice.', 'A Low flag is cleared by the next count of that item, quick or full.', 'Every change to a number is kept with who and when; open an item’s history to see it. Counts, receipts, requests and edits are also in the activity log.', 'Which office job carries the quick count, and how often the full count is due, are set at the bottom of the Count tab by admin, the head teacher or the Snapdragon teacher.'],
+    watchOut: ['Admin runs supabase/migration-supplies.sql once; until then the page says so. It starts the stock with a short list of staples to edit.', 'The quick-count person comes from the office jobs rotation, so that has to be set up in Settings first.', 'The receipt prompt lists the stock names and their other names, so keep an item’s “also called” names current and Claude’s lines will match without fixing.'],
+  },
+  {
     id: 'activity', title: 'Activity', updated: '2026-10-27',
     purpose: 'Who signed in and what they did, for admin, the head teacher and the Snapdragon teacher. Opened from the user menu.',
     screen: [
@@ -337,5 +356,5 @@ export const ALL_SECTIONS = () => [...GUIDE_SECTIONS, ...ADMIN_SECTIONS]
 /** The guide section for a view id, for “How this page works”. */
 export const SECTION_FOR_VIEW: Record<string, string> = {
   dashboard: 'dashboard', grades: 'grades', attendance: 'attendance', lessonPlans: 'lessons', students: 'students',
-  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', behavior: 'behavior',
+  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', behavior: 'behavior', supplies: 'supplies',
 }
