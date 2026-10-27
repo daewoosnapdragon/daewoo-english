@@ -10,6 +10,7 @@ import { NAV_ORDER, VIEW_PATHS, viewForPath } from '@/lib/routes'
 import { isSchoolDayOff } from '@/lib/calendarDays'
 import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle } from 'lucide-react'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
+import { OfficeJobsBand } from '@/components/dashboard/OfficeJobs'
 
 // ─── Masthead ────────────────────────────────────────────────────────
 // Brand on its own line, links centered beneath it, a thin context bar under
@@ -206,6 +207,7 @@ export default function Masthead() {
           </div>
         </Link>
       )}
+      <OfficeJobsBand />
     </>
   )
 

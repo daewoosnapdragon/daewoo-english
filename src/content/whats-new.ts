@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'office-jobs', date: '2026-10-27', title: 'Office jobs on the dashboard',
+    body: 'You can now see this week’s cleaning day beside the weekly schedule, with your job in large type, everyone else’s underneath, and your job next week. The day is Friday, or the day before when the calendar has the school off that Friday; on the day itself the band under the header names your job on every page. Admin sets the rotation once in Settings: the people in order, the jobs, the first cleaning day, and any weeks skipped.',
+    path: '/dashboard', guide: 'dashboard',
+  },
+  {
     id: 'progress-graph', date: '2026-10-27', title: 'A graph parents can read on the progress report, per student',
     body: 'You can now tick “Include the domain graph on this report”, next to Skip comment on a progress report, and the printed page gets one chart: a bar for each area drawn over the letter bands, A to E, with the class average marked as a line. The class overview turns it on for everyone or no one. Admin runs sql/add_include_graph_to_comments.sql once first.',
     path: '/reports', guide: 'reports',
@@ -32,7 +37,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   },
   {
     id: 'grades-sheets', date: '2026-10-27', title: 'Every assessment opens on its own sheet, and Edit uses the set-up flow',
-    body: 'You can now click from one assessment to the next without the view changing under you: a keyed assessment opens on its answer sheet, a rubric on its rubric sheet, and a points-only assessment on a new points sheet laid out like the others, where Enter moves down and saves, 7/10 enters a fraction, and the rail shows the class as the numbers go in. Switching domain tabs is instant. Edit, next to the assessment name, reopens the flow you created it with, filled in, so the key, rubric and standards are changed the way they were made; a changed key re-scores the marked papers.',
+    body: 'You can now click from one assessment to the next without the view changing under you: a keyed assessment opens on its answer sheet, a rubric on its class grid (Score with the rubric opens the full-screen sheet when you want it), and a points-only assessment on a new points sheet laid out like the others, where Enter moves down and saves, 7/10 enters a fraction, and the rail shows the class as the numbers go in. Switching domain tabs is instant. Edit, next to the assessment name, reopens the flow you created it with, filled in, so the key, rubric and standards are changed the way they were made; a changed key re-scores the marked papers.',
     path: '/grades', guide: 'grades',
   },
   {

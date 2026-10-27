@@ -62,7 +62,7 @@ async function loadClassComments(semesterId: string, reportType: ReportDocument,
 }
 /** Areas at a glance, for parents: a bar per domain over the letter bands, the class average as a tick. */
 function progressBarsSvg(d: any): string {
-  return domainBarsSvg(DOMAINS.map(dom => ({ key: dom, label: DOMAIN_SHORT[dom], value: d.domainNa?.[dom] ? null : (d.domainGrades?.[dom] ?? null), na: !!d.domainNa?.[dom], classAvg: d.domainNa?.[dom] ? null : (d.classAverages?.[dom] ?? null) })), { letterOf: getLetterGrade })
+  return domainBarsSvg(DOMAINS.map(dom => ({ key: dom, label: DOMAIN_SHORT[dom], value: d.domainNa?.[dom] ? null : (d.domainGrades?.[dom] ?? null), na: !!d.domainNa?.[dom], classAvg: d.domainNa?.[dom] ? null : (d.classAverages?.[dom] ?? null) })), { letterOf: getLetterGrade, letterColorOf: letterColor })
 }
 
 function letterColor(l: string): string {
@@ -1258,8 +1258,8 @@ function progressCardHtml(s: any, d: any, comment: string): string {
   </div>
   ${d.includeGraph ? `<!-- Areas at a glance -->
   <div style="background:#fdfcfa;padding:16px 28px 12px;border-bottom:1px solid #C8CED8">
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:10px">Areas at a glance</div>
-    ${progressBarsSvg(d)}
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Areas at a glance</div>
+    <div style="max-width:640px">${progressBarsSvg(d)}</div>
   </div>` : ''}
   ${d.commentSkipped ? '' : `<!-- Comment -->
   <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
@@ -1910,8 +1910,8 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
         {/* ─── Areas at a glance (optional) ─── */}
         {d.includeGraph && (
           <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
-            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-3">Areas at a glance</div>
-            <div dangerouslySetInnerHTML={{ __html: progressBarsSvg(d) }} />
+            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2">Areas at a glance</div>
+            <div className="max-w-[640px]" dangerouslySetInnerHTML={{ __html: progressBarsSvg(d) }} />
           </div>
         )}
 

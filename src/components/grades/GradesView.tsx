@@ -20,6 +20,7 @@ import { DOMAIN_COLOR, domainColor, domainShort } from '@/lib/domainTone'
 import { loadAssessmentWeights, useAssessmentWeights } from '@/lib/assessmentWeights'
 import RubricPicker from './RubricPicker'
 import RubricScoreSheet from './RubricScoreSheet'
+import RubricGrid from './RubricGrid'
 import RubricPrintDialog from './RubricPrintDialog'
 
 const ASSESSMENT_CATEGORIES = [
@@ -310,9 +311,10 @@ export default function GradesView() {
 // ─── Score Entry ─────────────────────────────────────────────────────
 // The domain tabs, the assessments in the open tab, and the sheet for the
 // one that is selected. Each assessment opens on the sheet that fits how it
-// is scored: the rubric sheet, the answer sheet, the older section entry,
-// or the points sheet. "Totals only" puts an answer-key or rubric
-// assessment on the points sheet for that assessment alone.
+// is scored: the rubric class grid (the full-screen rubric sheet opens from
+// it, never just from selecting the assessment), the answer sheet, the older
+// section entry, or the points sheet. "Totals only" puts an answer-key or
+// rubric assessment on the points sheet for that assessment alone.
 
 function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAssessments, selectedAssessment, setSelectedAssessment, students, loadingStudents, listReady, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onSheetSaved, totalsOnly, setTotalsOnly, onPatched }: {
   selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; allAssessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void
@@ -324,7 +326,11 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
   const ko = lang === 'ko'
   const [rubricOpen, setRubricOpen] = useState(false)
   const [rubricPrintOpen, setRubricPrintOpen] = useState(false)
+  // The full-screen rubric sheet: which student it opened on, or closed.
+  const [sheetIdx, setSheetIdx] = useState<number | null>(null)
+  const [gridTick, setGridTick] = useState(0)
   const a = selectedAssessment
+  useEffect(() => { setSheetIdx(null) }, [a?.id])
   const hasMap = !!(a?.question_map && a.question_map.length > 0)
   const kind: 'rubric' | 'key' | 'sections' | 'points' = !a ? 'points' : a.rubric ? 'rubric' : hasMap ? 'key' : a.sections && a.sections.length > 0 ? 'sections' : 'points'
   const view = a && (kind === 'rubric' || kind === 'key') && totalsOnly === a.id ? 'points' : kind
@@ -402,6 +408,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
               <div className="flex items-center gap-2 flex-wrap">
                 {kind === 'rubric' && view === 'rubric' && (
                   <>
+                    <button onClick={() => setSheetIdx(0)} className={btn}>{ko ? '루브릭 시트' : 'Rubric sheet'}</button>
                     <button onClick={() => setRubricOpen(true)} className={btn}>{ko ? '루브릭 변경' : 'Change rubric'}</button>
                     <button onClick={() => setRubricPrintOpen(true)} title={ko ? '루브릭 인쇄 (전체 · 반 · 1/4 페이지)' : 'Print the rubric: full, half or quarter page'} className={btn}><Printer size={12} />{ko ? '인쇄' : 'Print'}</button>
                   </>
@@ -415,7 +422,10 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
               </div>
             </div>
             {view === 'rubric' ? (
-              <div className="p-4"><RubricScoreSheet key={a.id + ':' + a.rubric!.criteria.length} assessment={a as any} students={students} onSaved={onSheetSaved} onExit={() => setTotalsOnly(a.id)} /></div>
+              <>
+                <RubricGrid key={a.id} assessment={a as any} students={students} refreshKey={gridTick} onOpen={idx => setSheetIdx(idx)} />
+                {sheetIdx != null && <RubricScoreSheet key={a.id + ':' + a.rubric!.criteria.length} assessment={a as any} students={students} initialIdx={sheetIdx} onSaved={onSheetSaved} onExit={() => { setSheetIdx(null); setGridTick(t => t + 1) }} />}
+              </>
             ) : view === 'key' ? (
               <div className="p-4"><KeyScoreSheet key={a.id} assessment={a as any} students={students} currentDomain={selectedDomain} onSaved={onSheetSaved} /></div>
             ) : view === 'sections' ? (

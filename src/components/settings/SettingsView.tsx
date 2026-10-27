@@ -7,6 +7,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { invalidateAssessmentWeights } from '@/lib/assessmentWeights'
 import { DEFAULT_LADDER, loadLadderSettings, saveLadderSettings, type LadderSettings } from '@/lib/behaviorLadder'
+import OfficeJobsSection from './OfficeJobsSection'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, canManageSemesters, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
 import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown, Archive, ArchiveRestore, X } from 'lucide-react'
@@ -16,7 +17,7 @@ export default function SettingsView() {
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
 
   const sections: [string, string][] = [
-    ['teachers', language === 'ko' ? '교사' : 'Teachers'], ['semesters', language === 'ko' ? '학기' : 'Semesters'], ['schedule', language === 'ko' ? '수업 없는 요일' : 'Days with no class'],
+    ['teachers', language === 'ko' ? '교사' : 'Teachers'], ['semesters', language === 'ko' ? '학기' : 'Semesters'], ['schedule', language === 'ko' ? '수업 없는 요일' : 'Days with no class'], ['office', language === 'ko' ? '사무실 청소' : 'Office jobs'],
     ['benchmarks', language === 'ko' ? '프로그램 기준' : 'Program benchmarks'], ['weights', language === 'ko' ? '평가 가중치' : 'Assessment weights'],
     ['ladder', language === 'ko' ? '행동 단계' : 'Behavior ladder'],
     ...(isAdmin ? [['classes', language === 'ko' ? '반 관리' : 'Classes'] as [string, string]] : []), ['school', language === 'ko' ? '학교 정보' : 'School information'],
@@ -35,6 +36,7 @@ export default function SettingsView() {
           <TeacherSection />
           <SemesterSection />
           <ScheduleRulesSection />
+          <OfficeJobsSection />
           <ProgramBenchmarksSection />
           <AssessmentWeightsSection />
           <BehaviorLadderSection />

@@ -11,6 +11,7 @@ import { ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { getKSTDateString, domainLabel } from '@/lib/utils'
 import { Plus, X, ChevronLeft, ChevronRight, Trash2, Pencil, PanelLeftClose, UserX, UserMinus, ArrowRight, Bell, Loader2 } from 'lucide-react'
 import WeeklySchedule from './WeeklySchedule'
+import OfficeJobs from './OfficeJobs'
 import AttendanceDrawer, { ATTENDANCE_SAVED_EVENT } from '@/components/attendance/AttendanceDrawer'
 import { loadDayStatus, withoutAwayDays } from '@/lib/calendarDays'
 
@@ -251,13 +252,14 @@ export default function DashboardView() {
       )}
 
       {/* ─── Month + agenda + schedule ─── */}
-      <SharedCalendar aside={
-        scheduleOpen
+      <SharedCalendar aside={<>
+        {scheduleOpen
           ? <div id="schedule"><WeeklySchedule onCollapse={() => toggleSchedule(false)} onPickPeriod={g => setAttendanceGrade(g)} /></div>
           : <button onClick={() => toggleSchedule(true)} className="w-full h-9 border border-rule rounded flex items-center justify-center gap-2 text-[12px] text-ink-3 hover:text-ink hover:bg-paper-2">
               <PanelLeftClose size={13} />{lang === 'ko' ? '주간 시간표 보기' : 'Show weekly schedule'}
-            </button>
-      } />
+            </button>}
+        <OfficeJobs />
+      </>} />
 
       {/* ─── Attention + grading ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">

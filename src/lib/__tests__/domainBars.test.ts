@@ -27,16 +27,21 @@ describe('layoutDomainBars', () => {
 describe('domainBarsSvg', () => {
   it('draws a bar and letter for a graded area, and words for the rest', () => {
     const svg = domainBarsSvg(rows, { letterOf })
-    expect(svg).toContain('92.4% · A')
-    expect(svg).toContain('50.0% · E')
+    expect(svg).toContain('92.4%</text>')
+    expect(svg).toContain('>A</text>')
+    expect(svg).toContain('50.0%</text>')
+    expect(svg).toContain('>E</text>')
     expect(svg).toContain('Not assessed')
     expect(svg).toContain('No grade yet')
     expect(svg).toContain('Speaking &amp; Listening')
   })
   it('marks the class average only where there is one, and not when hidden', () => {
-    const ticks = (s: string) => (s.match(/stroke-width="2"/g) || []).length
-    expect(ticks(domainBarsSvg(rows, { letterOf }))).toBe(2) // Reading's tick plus the legend sample
+    const ticks = (s: string) => (s.match(/data-tick="1"/g) || []).length
+    expect(ticks(domainBarsSvg(rows, { letterOf }))).toBe(1)
     expect(ticks(domainBarsSvg(rows, { letterOf, showClass: false }))).toBe(0)
     expect(domainBarsSvg(rows, { letterOf, showClass: false })).not.toContain('Class average')
+  })
+  it('colours the letter the way the caller asks', () => {
+    expect(domainBarsSvg(rows, { letterOf, letterColorOf: l => l === 'A' ? '#16a34a' : '#000' })).toContain('fill="#16a34a">A<')
   })
 })

@@ -22,15 +22,17 @@ interface Props {
   students: StudentRow[]
   onSaved?: () => void
   onExit?: () => void
+  /** The student to open on (from the class grid). */
+  initialIdx?: number
 }
 
-export default function RubricScoreSheet({ assessment, students, onSaved, onExit }: Props) {
+export default function RubricScoreSheet({ assessment, students, onSaved, onExit, initialIdx = 0 }: Props) {
   const { currentTeacher, language: lang, showToast, confirmDialog } = useApp()
   const criteria = assessment.rubric.criteria
   const [levels, setLevels] = useState<Record<string, Record<string, number>>>({})
   const [flags, setFlags] = useState<Record<string, Flags>>({})
   const [dirty, setDirty] = useState<Set<string>>(new Set())
-  const [activeIdx, setActiveIdx] = useState(0)
+  const [activeIdx, setActiveIdx] = useState(Math.max(0, Math.min(initialIdx, students.length - 1)))
   const [row, setRow] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

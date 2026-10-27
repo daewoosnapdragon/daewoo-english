@@ -34,7 +34,7 @@ export const QUICK_START: { title: string; steps: string[] } = {
 
 export const GUIDE_SECTIONS: GuideSection[] = [
   {
-    id: 'dashboard', title: 'Dashboard', updated: '2026-09-29',
+    id: 'dashboard', title: 'Dashboard', updated: '2026-10-27',
     purpose: 'The page that opens to “now”: what is due, what is unmarked, and what needs a look, with the month and the week’s agenda beside it.',
     screen: [
       'The header greets you with today’s date and the active semester. Two buttons jump to marking attendance and entering grades.',
@@ -44,6 +44,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'The grading queue: every assessment with students still unmarked. Continue opens its sheet; ABS and EXM clear a student without leaving.',
       'Needs attention: students whose grades have dropped or whose attendance has slipped, with the reason.',
       'The weekly schedule strip. Click a period to mark that class’s attendance in a drawer.',
+      'Office jobs, under the schedule: this week’s cleaning day, your job in large type, everyone else’s underneath (click a job for what it involves), and your job next week. The day is Friday, or the day before when the calendar has a whole-school day off on that Friday. On the day itself the band under the header names your job on every page. Admin sets the rotation in Settings.',
       'What’s new: a card that appears when something has changed since you were last here. Got it hides that batch.',
     ],
     tasks: [
@@ -65,7 +66,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Chips under the title pick grade, class, and domain. The domain chip filters the assessment list.',
       'Tabs: Score Entry (the scoring sheet), Batch Grid (one total per student for several assessments), Domain Overview (charts), Student View, Calendar.',
       'New assessment opens a three-step flow: Set up, Answer key or Rubric, Score.',
-      'Each assessment opens on the sheet that fits it: the answer sheet for a key, the rubric sheet for a rubric, the points sheet for one total per student. Totals only, in the bar above the sheet, puts a keyed or rubric assessment on the points sheet for that assessment alone. Switching domain tabs is instant.',
+      'Each assessment opens on the view that fits it: the answer sheet for a key, the class grid for a rubric, the points sheet for one total per student. On a rubric assessment, Score with the rubric (or clicking a student) opens the full-screen rubric sheet; it never opens just from selecting the assessment. Totals only, in the bar above, puts a keyed or rubric assessment on the points sheet for that assessment alone. Switching domain tabs is instant.',
       'On a keyed assessment, three views: Answer sheet, Class grid, Analysis. Save all and an autosave every 30 seconds.',
       'A question the student left blank is wrong. Mark it with the — bubble or the minus key; a question you skip is shaded amber, and when you move to the next student anything still unmarked on that paper becomes a blank worth 0. A paper you have not started stays untouched.',
       'Edit, in the bar above the sheet, reopens the set-up flow with everything filled in: name, date, category, the key or rubric, and standards. Delete is next to it.',
@@ -256,7 +257,7 @@ export const DEFINITIONS: { term: string; text: string }[] = [
 
 export const ADMIN_SECTIONS: GuideSection[] = [
   {
-    id: 'admin-settings', title: 'Settings', updated: '2026-09-25',
+    id: 'admin-settings', title: 'Settings', updated: '2026-10-27',
     purpose: 'The dates, weights, and thresholds the rest of the app computes with. Admin only.',
     screen: [
       'A rail of sections on the left: semesters, assessment weights, mastery thresholds, reading targets, schedule rules, teachers, and the rest.',
@@ -264,6 +265,7 @@ export const ADMIN_SECTIONS: GuideSection[] = [
       'Assessment weights: formative, summative, performance task per grade. They should add to 1.',
       'Mastery thresholds: above, on, approaching, per class. These color the heat map and the Analysis bands.',
       'Schedule rules: which grades have no class on which weekday (“No Grade 5 on Mondays”).',
+      'Office jobs: the people in rotation order, the jobs with what each involves, the first cleaning day, weeks with no cleaning, and days everyone cleans together, with a preview of the next six cleaning days as the dashboard will show them. Whole-school days off on the calendar move a Friday’s jobs to the day before on their own.',
     ],
     tasks: [
       { title: 'Open a new semester', steps: ['Add the semester with its dates and make it active.', 'Check weights and thresholds still fit.', 'Tell teachers to Save snapshot on WIDA.'] },
