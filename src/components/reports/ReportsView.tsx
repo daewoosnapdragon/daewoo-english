@@ -11,7 +11,7 @@ import { withoutAwayDays } from '@/lib/calendarDays'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, KOREAN_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, levelTestToReadingRecord, percentToLetter, getKSTDateString } from '@/lib/utils'
 import { currentReportDocument, REPORT_DOCUMENT_LABEL, type ReportDocument } from '@/lib/reportDocument'
-import { domainBarsSvg } from '@/lib/domainBars'
+import { progressSizeFor, packSheets, sheetSummary, HALF_COMMENT_MAX, type ProgressSize } from '@/lib/progressReport'
 import { loadAssessmentWeights } from '@/lib/assessmentWeights'
 import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, ChevronDown, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle, AlertTriangle, FileDown, MessageSquare, Save, Lock } from 'lucide-react'
 
@@ -42,27 +42,14 @@ const REPORT_CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camell
 // One letter scale for the whole app (see percentToLetter).
 function getLetterGrade(score: number): string { return percentToLetter(score) }
 
-// ─── Comment rows, with the graph switch when the column exists ──
-// comments.include_graph needs sql/add_include_graph_to_comments.sql. Until
-// it is run, reads fall back to the older columns and the checkbox says so.
-const GRAPH_COL = /include_graph/
-async function loadReportComment(studentId: string, semesterId: string, reportType: ReportDocument): Promise<{ row: any; graphReady: boolean }> {
-  const q = (cols: string) => supabase.from('comments').select(cols).eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', reportType).limit(1).single()
-  const first = await q('text, is_skipped, hide_comparison, include_graph')
-  if (!first.error || !GRAPH_COL.test(first.error.message || '')) return { row: first.data, graphReady: true }
-  const second = await q('text, is_skipped, hide_comparison')
-  return { row: second.data, graphReady: false }
+// ─── Comment rows ────────────────────────────────────────────────
+async function loadReportComment(studentId: string, semesterId: string, reportType: ReportDocument): Promise<{ row: any }> {
+  const { data } = await supabase.from('comments').select('text, is_skipped, hide_comparison').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', reportType).limit(1).single()
+  return { row: data }
 }
-async function loadClassComments(semesterId: string, reportType: ReportDocument, studentIds: string[]): Promise<{ rows: any[]; graphReady: boolean }> {
-  const q = (cols: string) => supabase.from('comments').select(cols).eq('semester_id', semesterId).eq('report_type', reportType).in('student_id', studentIds)
-  const first = await q('student_id, text, is_skipped, include_graph')
-  if (!first.error) return { rows: (first.data as any[]) || [], graphReady: true }
-  const second = await q('student_id, text, is_skipped')
-  return { rows: (second.data as any[]) || [], graphReady: false }
-}
-/** Areas at a glance, for parents: a bar per domain over the letter bands, the class average as a tick. */
-function progressBarsSvg(d: any): string {
-  return domainBarsSvg(DOMAINS.map(dom => ({ key: dom, label: DOMAIN_SHORT[dom], value: d.domainNa?.[dom] ? null : (d.domainGrades?.[dom] ?? null), na: !!d.domainNa?.[dom], classAvg: d.domainNa?.[dom] ? null : (d.classAverages?.[dom] ?? null) })), { letterOf: getLetterGrade, letterColorOf: letterColor })
+async function loadClassComments(semesterId: string, reportType: ReportDocument, studentIds: string[]): Promise<{ rows: any[] }> {
+  const { data } = await supabase.from('comments').select('student_id, text, is_skipped').eq('semester_id', semesterId).eq('report_type', reportType).in('student_id', studentIds)
+  return { rows: (data as any[]) || [] }
 }
 
 function letterColor(l: string): string {
@@ -1159,7 +1146,7 @@ function reportCardCss(batch: boolean): string {
 // Runs after fonts + layout have settled and leaves a safety margin, because the
 // print raster can render a hair taller than the on-screen measurement — without
 // the margin an off-by-one-line overflow gets clipped by the fixed-height card.
-function reportCardShrinkScript(autoPrint: boolean): string {
+function reportCardShrinkScript(autoPrint: boolean, maxFs = 24): string {
   return `<script>
   function fitComments(){
     document.querySelectorAll('.cmt').forEach(function(box){
@@ -1172,7 +1159,7 @@ function reportCardShrinkScript(autoPrint: boolean): string {
       var target = box.clientHeight - 32 - SAFE;
       var fs = parseFloat(getComputedStyle(body).fontSize) || 16, g = 0;
       // Grow the text to fill the box (kills dead space under short comments)
-      while (body.scrollHeight <= target && fs < 24 && g < 80) { fs += 0.5; body.style.fontSize = fs + 'px'; g++; }
+      while (body.scrollHeight <= target && fs < ${maxFs} && g < 80) { fs += 0.5; body.style.fontSize = fs + 'px'; g++; }
       // Shrink until the text fits within target — down to a small floor rather than overflow
       g = 0;
       while (body.scrollHeight > target && fs > 8 && g < 200) { fs -= 0.5; body.style.fontSize = fs + 'px'; body.style.lineHeight = (fs > 12 ? 1.5 : 1.4).toString(); g++; }
@@ -1186,108 +1173,98 @@ function reportCardShrinkScript(autoPrint: boolean): string {
   </script>`
 }
 
-// ─── Progress Report Card HTML (shared by single + batch print) ──────
-function progressCardHtml(s: any, d: any, comment: string): string {
+// ─── Progress report: one table, two sizes ────────────────────────
+// Design B: a navy band, the student's details, one table with each area's
+// grade, score and a bar against the class, the comment when there is one,
+// and the signatures. One builder makes both sizes: the half page (two to
+// an A4 sheet, cut across the middle) whenever the comment fits in a few
+// lines or there is none, and the full page when it is longer. Nothing is
+// shrunk to make a half page fit; the comment's length picks the size. The
+// same HTML is the on-screen preview, so what the teacher sees is what
+// prints.
+
+type ProgressEntry = { name: string; size: ProgressSize; full: string; half: string }
+const PR = { navy: '#2f4a7a', ink: '#1e293b', muted: '#5b6472', rule: '#cfd6e2', track: '#e9edf3', shade: '#f4f6fa' }
+const prEsc = (v: any) => String(v ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string))
+
+function progressCardHtml(s: any, d: any, comment: string, size: ProgressSize = 'full'): string {
+  const half = size === 'half'
+  const f = (n: number) => `${Math.round(n * (half ? 0.86 : 1) * 10) / 10}px`
   const naMap: Record<string, boolean> = d.domainNa || {}
-  const tiles = DOMAINS.map((dom) => {
-    if (naMap[dom]) return `<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f5f5f5">
-      <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
-      <div style="font-size:20px;font-weight:800;color:#94a3b8;margin-top:6px">N/A</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:3px">Not assessed</div>
-    </div>`
-    const v = d.domainGrades[dom]
-    if (v == null) return `<div style="text-align:center;padding:14px 8px;border:1.5px solid #e2e8f0;border-radius:12px;background:white">
-      <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
-      <div style="font-size:22px;font-weight:800;color:#94a3b8;margin-top:8px">—</div>
-    </div>`
-    const g = getLetterGrade(v); const t = tileBgPrint(v)
-    return `<div style="text-align:center;padding:14px 8px;background:${t.bg};border:1.5px solid ${t.border};border-radius:12px">
-      <div style="font-size:11px;color:#64748b;font-weight:600">${DOMAIN_SHORT[dom]}</div>
-      <div style="font-size:26px;font-weight:800;color:#1e293b;margin-top:6px">${v.toFixed(1)}%</div>
-      <div style="font-size:14px;font-weight:700;color:${letterColor(g)};margin-top:3px">${g}</div>
-    </div>`
+  const hide = !!d.hideComparison
+  const text = d.commentSkipped ? '' : (comment || '').trim()
+  const cols = hide ? '156px 60px 72px minmax(0,1fr)' : '156px 60px 72px minmax(0,1fr) 90px'
+  const eyebrow = `font-size:${f(10)};letter-spacing:1.4px;text-transform:uppercase;color:${PR.muted};font-weight:600`
+  const cell = (label: string, value: string) => `<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="${eyebrow}">${label}</span><span style="font-size:${f(14)};font-weight:600;color:${PR.ink};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${value}</span></div>`
+  const grade = d.semesterGrade || s.grade, cls = d.semesterClass || s.english_class
+
+  const header = `<div style="background:${PR.navy};color:#fff;padding:${half ? '12px 28px' : '28px 40px 24px'};display:flex;justify-content:space-between;align-items:center;flex:none"><div style="display:flex;flex-direction:column;gap:${half ? 2 : 5}px"><span style="font-size:${f(10)};letter-spacing:2px;text-transform:uppercase;opacity:.8">Daewoo Elementary School · English Program</span><span style="font-size:${f(28)};font-weight:700;line-height:1;letter-spacing:-.3px">Progress Report</span><span style="font-size:${f(12.5)};opacity:.85">${prEsc(d.semesterName)} · Mid-semester</span></div><div style="width:${half ? 40 : 56}px;height:${half ? 40 : 56}px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><img src="/logo.png" alt="" style="width:${half ? 28 : 40}px;height:${half ? 28 : 40}px;object-fit:contain" onerror="this.style.display='none'"></div></div>`
+
+  const identity = `<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:${f(10)} 20px;padding:${half ? '10px 0' : '20px 0 18px'};border-bottom:1px solid ${PR.rule}">${cell('Name', `${prEsc(s.english_name)} <span style="font-weight:500;color:${PR.muted}">${prEsc(s.korean_name)}</span>`)}${cell('Grade', prEsc(grade))}${cell('Korean class', `${prEsc(s.korean_class)}반 · ${prEsc(s.class_number)}번`)}${cell('English class', prEsc(cls))}${cell('Teacher', prEsc(d.teacherName))}${cell('Team manager', 'Victoria Park')}${cell('Principal', 'Kwak Cheol Ok')}${cell('Overall', d.overallGrade != null ? `<span style="color:${PR.navy};font-weight:700">${prEsc(d.overallLetter)}</span> · ${d.overallGrade.toFixed(1)}%` : '—')}</div>`
+
+  const rowStyle = `display:grid;grid-template-columns:${cols};gap:${f(14)};align-items:center;height:${half ? 26 : 40}px;border-bottom:1px solid #e2e8f0`
+  const head = `<div style="display:grid;grid-template-columns:${cols};gap:${f(14)};align-items:baseline;padding-bottom:${f(6)};border-bottom:2px solid ${PR.ink};${eyebrow}"><span>Area</span><span>Grade</span><span style="text-align:right">Score</span>${hide ? '' : '<span>Compared with the class</span><span style="text-align:right">Class average</span>'}</div>`
+  const rows = DOMAINS.map(dom => {
+    const name = `<span style="font-size:${f(13.5)};font-weight:600">${prEsc(DOMAIN_SHORT[dom])}</span>`
+    const dash = `<span style="font-size:${f(18)};font-weight:800;color:#94a3b8">—</span>`
+    const note = (t: string) => `<span style="grid-column:span ${hide ? 2 : 3};font-size:${f(12)};color:${PR.muted};font-style:italic">${t}</span>`
+    if (naMap[dom]) return `<div style="${rowStyle}">${name}${dash}${note('Not assessed this semester')}</div>`
+    const v = d.domainGrades?.[dom]
+    if (v == null) return `<div style="${rowStyle}">${name}${dash}${note('Not graded yet this semester')}</div>`
+    const cv = d.classAverages?.[dom]
+    const bar = `<div style="position:relative;height:${half ? 8 : 10}px;background:${PR.track};border-radius:2px"><div style="position:absolute;left:0;top:0;bottom:0;width:${Math.max(1, Math.min(100, v))}%;background:${PR.navy};border-radius:2px"></div>${cv != null ? `<div style="position:absolute;left:${Math.min(100, cv)}%;top:-4px;bottom:-4px;width:2px;background:${PR.ink}"></div>` : ''}</div>`
+    const avg = `<span style="font-size:${f(12)};text-align:right;color:${PR.muted};font-variant-numeric:tabular-nums">${cv != null ? `${cv.toFixed(1)}%` : '—'}</span>`
+    return `<div style="${rowStyle}">${name}<span style="font-size:${f(19)};font-weight:800;color:${PR.navy}">${prEsc(getLetterGrade(v))}</span><span style="font-size:${f(13.5)};text-align:right;font-variant-numeric:tabular-nums">${v.toFixed(1)}%</span>${hide ? '' : bar + avg}</div>`
   }).join('')
+  const graded = DOMAINS.filter(dom => !naMap[dom] && d.domainGrades?.[dom] != null).length
+  const overall = d.overallGrade != null
+    ? `<span style="font-size:${f(20)};font-weight:800;color:${PR.navy}">${prEsc(d.overallLetter)}</span><span style="font-size:${f(13.5)};font-weight:700;text-align:right;font-variant-numeric:tabular-nums">${d.overallGrade.toFixed(1)}%</span><span style="grid-column:span ${hide ? 1 : 2};font-size:${f(11.5)};color:${PR.muted}">The average of the ${graded === 1 ? 'one area' : `${graded} areas`} graded so far.</span>`
+    : `<span style="font-size:${f(20)};font-weight:800;color:#94a3b8">—</span><span style="grid-column:span ${hide ? 2 : 3};font-size:${f(11.5)};color:${PR.muted}">No areas graded yet.</span>`
+  const overallRow = `<div style="display:grid;grid-template-columns:${cols};gap:${f(14)};align-items:center;height:${half ? 30 : 46}px;border-bottom:2px solid ${PR.ink};background:${PR.shade}"><span style="font-size:${f(13.5)};font-weight:700;padding-left:8px">Overall</span>${overall}</div>`
+  const scale = `<div style="display:flex;gap:16px;align-items:center;padding-top:${f(8)};font-size:${f(10.5)};color:${PR.muted}">${hide ? '' : `<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:8px;background:${PR.navy};border-radius:2px"></span>${prEsc(s.english_name)}</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:2px;height:12px;background:${PR.ink}"></span>Class average</span>`}<span style="margin-left:auto">A 90–100 · B 80–89 · C 70–79 · D 60–69 · E below 60</span></div>`
 
-  const scaleHtml = SCALE_DISPLAY.map((r: any) => `<span style="padding:2px 7px;border-radius:4px;background:#EDF1F8;border:1px solid #C8CED8;font-size:9px;display:inline-flex;gap:4px;margin:1px"><strong style="color:${letterColor(r.letter)}">${r.letter}</strong><span style="color:#94a3b8">${r.range}</span></span>`).join(' ')
+  const who = `<span style="font-size:${f(11)};color:${PR.muted}">${prEsc(d.teacherName)} · ${prEsc(cls)} class</span>`
+  const commentBlock = !text ? '' : half
+    ? `<div style="display:flex;flex-direction:column;gap:4px;padding-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="${eyebrow}">Teacher's comment</span>${who}</div><div style="font-size:12px;line-height:1.45;color:${PR.ink};white-space:pre-wrap">${prEsc(text)}</div></div>`
+    : `<div class="cmt" style="display:flex;flex-direction:column;gap:6px;flex:1 1 auto;min-height:120px;padding:16px 0"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="${eyebrow}">Teacher's comment</span>${who}</div><div class="cmt-body" style="font-size:13.5px;line-height:1.6;color:${PR.ink};white-space:pre-wrap">${prEsc(text)}</div></div>`
 
-  const avatarHtml = d.teacherPhotoUrl
-    ? `<img src="${d.teacherPhotoUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #DFE4EB" />`
-    : `<div style="width:32px;height:32px;border-radius:50%;background:#C8CED8;color:#64748b;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${(d.teacherName || '')[0] || ''}</div>`
+  const sig = (label: string) => `<div style="display:flex;flex-direction:column;gap:${half ? 10 : 20}px;min-width:0"><span style="border-top:1px solid ${PR.ink}"></span><span style="font-size:${f(9.5)};letter-spacing:1px;text-transform:uppercase;color:${PR.muted};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span></div>`
+  const signatures = `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:auto;padding-top:${f(12)}">${sig(`Teacher · ${prEsc(d.teacherName)}`)}${sig('Team manager · Victoria Park')}${sig('Principal · Kwak Cheol Ok')}</div>`
 
-  const gc = d.overallGrade != null ? letterColor(d.overallLetter) : '#94a3b8'
-  const pct = (d.overallGrade || 0) / 100
-  const radius = 50, stroke = 8, circ = 2 * Math.PI * radius
-  const displayGrade = d.semesterGrade || s.grade
-  const displayClass = d.semesterClass || s.english_class
-
-  return `<div class="card">
-  <!-- Header -->
-  <div style="background:#647FBC;padding:18px 28px;color:white;display:flex;justify-content:space-between;align-items:center">
-    <div><div style="font-size:10px;opacity:0.5;letter-spacing:2.5px;text-transform:uppercase">Daewoo Elementary School</div>
-    <div style="font-size:22px;font-weight:700;margin-top:4px;font-family:Georgia,serif">${d.semesterName} Progress Report</div>
-    <div style="font-size:11px;opacity:0.6;margin-top:2px;font-style:italic">English Program — Mid-semester progress.</div></div>
-    <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2)"><img src="/logo.png" style="width:36px;height:36px;object-fit:contain" onerror="this.style.display=\'none\'" /></div>
-  </div>
-  <!-- Student Info -->
-  <div style="background:#fdfcfa;padding:14px 28px;border-bottom:1px solid #C8CED8">
-    <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr auto;gap:0 14px">
-      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Name</div><div style="font-size:13px;font-weight:700;margin-top:1px">${s.korean_name}  ${s.english_name}</div></div>
-      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Grade</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayGrade}</div></div>
-      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Korean Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.korean_class}반</div></div>
-      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Class Number</div><div style="font-size:13px;font-weight:600;margin-top:1px">${s.class_number}번</div></div>
-      <div style="grid-row:1/3;display:flex;align-items:center;justify-content:center;padding-left:8px">
-        <div style="position:relative;width:76px;height:76px">
-          <svg width="76" height="76" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${radius}" fill="none" stroke="#C8CED8" stroke-width="${stroke}"/>
-          <circle cx="60" cy="60" r="${radius}" fill="none" stroke="${gc}" stroke-width="${stroke}" stroke-dasharray="${pct * circ} ${circ}" stroke-linecap="round" transform="rotate(-90 60 60)"/></svg>
-          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-            <div style="font-size:20px;font-weight:800;color:#647FBC">${d.overallLetter}</div>
-            <div style="font-size:10px;color:#64748b">${d.overallGrade != null ? d.overallGrade.toFixed(1) + '%' : ''}</div>
-          </div>
-        </div>
-      </div>
-      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">English Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayClass}</div></div>
-      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Teacher</div><div style="font-size:13px;font-weight:600;margin-top:1px">${d.teacherName}</div></div>
-      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Team Manager</div><div style="font-size:13px;font-weight:600;margin-top:1px">Victoria Park</div></div>
-      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Principal</div><div style="font-size:13px;font-weight:600;margin-top:1px">Kwak Cheol Ok</div></div>
-    </div>
-  </div>
-  <!-- Score Tiles -->
-  <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #C8CED8">
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:12px">Domain Performance</div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${tiles}</div>
-  </div>
-  ${d.includeGraph ? `<!-- Areas at a glance -->
-  <div style="background:#fdfcfa;padding:16px 28px 12px;border-bottom:1px solid #C8CED8">
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Areas at a glance</div>
-    <div style="max-width:640px">${progressBarsSvg(d)}</div>
-  </div>` : ''}
-  ${d.commentSkipped ? '' : `<!-- Comment -->
-  <div style="background:#fdfcfa;padding:20px 28px;border-bottom:1px solid #C8CED8">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${avatarHtml}<div><div style="font-size:13px;font-weight:700;color:#1e293b">${d.teacherName}</div><div style="font-size:10px;color:#94a3b8">${displayClass} Class</div></div></div>
-    <div style="font-size:12px;line-height:1.8;color:#374151;white-space:pre-wrap;background:#fafaf8;border-radius:10px;padding:14px 18px;border:1px solid #C8CED8">${comment || '<em style="color:#94a3b8">No comment entered.</em>'}</div>
-  </div>`}
-  <!-- Scale + Footer -->
-  <div style="background:#fdfcfa;padding:14px 28px">
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:8px">Grading Scale</div>
-    <div style="display:flex;gap:3px;flex-wrap:wrap">${scaleHtml}</div>
-    <div style="text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid #C8CED8;font-size:10px;color:#b8b0a6;letter-spacing:1px">Daewoo Elementary School · English Program · ${d.semesterName}</div>
-  </div>
-  </div>`
+  return `<div class="pr" style="display:flex;flex-direction:column;height:100%;background:#fff;color:${PR.ink};font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box">${header}<div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:${half ? '0 28px 12px' : '0 40px 28px'}">${identity}<div style="display:flex;flex-direction:column;padding-top:${f(12)}">${head}${rows}${overallRow}${scale}</div>${commentBlock}${signatures}</div></div>`
 }
 
-// ─── Print Single Progress Report ────────────────────
+/** The print page: A4 sheets, each a full page or two half pages with a dashed cut line between them. */
+function progressPrintCss(): string {
+  return `*{box-sizing:border-box}body{margin:0;background:#e9e8e3;font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet{width:194mm;height:280mm;margin:16px auto;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;page-break-after:always;break-after:page}
+.sheet:last-child{page-break-after:auto;break-after:auto}
+.full{height:280mm;overflow:hidden}
+.half{height:140mm;overflow:hidden;position:relative}
+.half:first-child::after{content:'';position:absolute;left:0;right:0;bottom:0;border-top:1px dashed #94a3b8}
+.cut{position:absolute;right:8px;top:4px;font-size:9px;color:#94a3b8;letter-spacing:1px;text-transform:uppercase}
+@page{size:A4;margin:8mm}
+@media print{body{background:#fff}.sheet{margin:0;box-shadow:none}}`
+}
+
+function progressSheetsHtml(entries: ProgressEntry[], fullForAll: boolean): string {
+  const sheets = packSheets(entries.map(e => ({ size: fullForAll ? 'full' as ProgressSize : e.size, item: e })))
+  return sheets.map(sh => sh.kind === 'full'
+    ? `<div class="sheet"><div class="full">${sh.item.full}</div></div>`
+    : `<div class="sheet"><div class="half">${sh.top.half}</div><div class="half">${sh.bottom ? sh.bottom.half : '<span class="cut">cut along the dashed line</span>'}</div></div>`).join('')
+}
+
+// ─── Print one progress report ──────────────────────────────────
 function printProgressReport(s: any, d: any, comment: string) {
   const pw = window.open('', '_blank')
   if (!pw) return
-  pw.document.write(`<!DOCTYPE html><html><head><title>Progress Report — ${s.english_name}</title>
-  <style>
-    body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb}
-    @media print{@page{size:A4;margin:8mm}body{padding:0}.card{margin:0;box-shadow:none;border-radius:0;max-height:277mm;overflow:hidden}}
-  </style></head>
-  <body>${progressCardHtml(s, d, comment)}</body></html>`)
+  const text = d.commentSkipped ? '' : comment
+  const size = progressSizeFor(text, !!d.commentSkipped)
+  const body = size === 'half'
+    ? `<div class="sheet"><div class="half">${progressCardHtml(s, d, text, 'half')}</div><div class="half"><span class="cut">cut along the dashed line</span></div></div>`
+    : `<div class="sheet"><div class="full">${progressCardHtml(s, d, text, 'full')}</div></div>`
+  pw.document.write(`<!DOCTYPE html><html><head><title>Progress Report — ${prEsc(s.english_name)}</title><style>${progressPrintCss()}</style></head><body>${body}${reportCardShrinkScript(true, 15)}</body></html>`)
   pw.document.close()
-  setTimeout(() => pw.print(), 300)
 }
 
 // ─── Batch Print All Progress Reports ────────────────────────────────
@@ -1297,6 +1274,13 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const { currentTeacher, showToast } = useApp()
+  // Progress reports keep every student's card in both sizes, so the preview
+  // can switch between half pages where they fit and full pages for everyone.
+  const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([])
+  const [progressHead, setProgressHead] = useState('')
+  const [fullForAll, setFullForAll] = useState(false)
+  const assembleProgress = (entries: ProgressEntry[], head: string, all: boolean) => head + progressSheetsHtml(entries, all) + reportCardShrinkScript(false, 15) + '</body></html>'
+  const summary = sheetSummary(packSheets(progressEntries.map(e => ({ size: fullForAll ? 'full' as ProgressSize : e.size, item: e }))))
 
   const handleStart = async () => {
     if (scope !== 'grade' && students.length === 0) return
@@ -1450,15 +1434,9 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
       const title = isCard ? 'Report Cards' : 'Progress Reports'
       const head = isCard
         ? `<!DOCTYPE html><html><head><title>${title} — ${cls} Grade ${grade}</title><style>${reportCardCss(true)}</style></head><body>`
-        : `<!DOCTYPE html><html><head><title>${title} — ${cls} Grade ${grade}</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',Arial,sans-serif;color:#222;font-size:12px;background:#f5f0eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .card{max-width:760px;margin:24px auto;overflow:hidden;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.08);background:#f5f0eb;page-break-after:always;page-break-inside:avoid;break-after:page;break-inside:avoid}
-  .card:last-child{page-break-after:auto;break-after:auto}
-  @media print{@page{size:A4;margin:8mm}.card{margin:0;box-shadow:none;border-radius:0}}
-</style></head><body>`
+        : `<!DOCTYPE html><html><head><title>${title} — ${cls} Grade ${grade}</title><style>${progressPrintCss()}</style></head><body>`
       let body = ''
+      const entries: ProgressEntry[] = []
 
       for (let i = 0; i < students.length; i++) {
         const student = students[i]
@@ -1482,7 +1460,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
         const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
         const baseData = {
-          domainGrades, domainNa, overallGrade, overallLetter, semesterName, classAverages, includeGraph: !!commentData?.include_graph,
+          domainGrades, domainNa, overallGrade, overallLetter, semesterName, classAverages, hideComparison: !!commentData?.hide_comparison,
           commentSkipped: !!commentData?.is_skipped,
           teacherName: teacher?.name || currentTeacher?.name || '',
           teacherPhotoUrl: teacher?.photo_url || null,
@@ -1500,13 +1478,14 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
           const data = { ...baseData, classAverages, prevDomainGrades, prevOverall, prevSemesterName }
           body += reportCardHtml(student, data, commentData?.text || '', !!commentData?.is_skipped, !!commentData?.hide_comparison)
         } else {
-          body += progressCardHtml(student, baseData, commentData?.text || '')
+          const text = baseData.commentSkipped ? '' : (commentData?.text || '')
+          entries.push({ name: student.english_name, size: progressSizeFor(text, baseData.commentSkipped), full: progressCardHtml(student, baseData, text, 'full'), half: progressCardHtml(student, baseData, text, 'half') })
         }
         setProgress({ current: i + 1, total: students.length })
       }
 
-      const tail = isCard ? reportCardShrinkScript(false) + '</body></html>' : '</body></html>'
-      setPreviewHtml(head + body + tail)
+      if (isCard) setPreviewHtml(head + body + reportCardShrinkScript(false) + '</body></html>')
+      else { setProgressEntries(entries); setProgressHead(head); setPreviewHtml(assembleProgress(entries, head, fullForAll)) }
       }
     } catch (err: any) {
       showToast(`Failed to generate reports: ${err?.message || 'unknown error'}`)
@@ -1559,8 +1538,16 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
         <div className="fixed inset-0 bg-black/50 z-50 flex flex-col">
           <div className="bg-white border-b border-border px-6 py-3 flex items-center justify-between flex-shrink-0">
             <div>
-              <div className="text-[14px] font-semibold text-navy">Preview &middot; {isGrade ? `${progress.total} report cards · Grade ${grade}` : `${students.length} ${kind === 'report_card' ? 'report cards' : 'progress reports'}`}</div>
-              <div className="text-[11px] text-text-secondary mt-0.5">Choose <strong>Save as PDF</strong> as the destination in the print dialog to download the whole class as one file.</div>
+              <div className="text-[14px] font-semibold text-navy">Preview &middot; {isGrade ? `${progress.total} report cards · Grade ${grade}` : kind === 'report_card' ? `${students.length} report cards` : `${students.length} progress reports · ${summary.sheets} ${summary.sheets === 1 ? 'sheet' : 'sheets'} of A4`}</div>
+              <div className="text-[11px] text-text-secondary mt-0.5 flex items-center gap-3 flex-wrap">
+                <span>Choose <strong>Save as PDF</strong> as the destination in the print dialog to download the whole class as one file.</span>
+                {!isGrade && kind !== 'report_card' && (
+                  <>
+                    <span>{summary.halfPages} half {summary.halfPages === 1 ? 'page' : 'pages'} · {summary.fullPages} full {summary.fullPages === 1 ? 'page' : 'pages'} · cut the half-page sheets along the dashed line</span>
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none"><input type="checkbox" checked={fullForAll} onChange={e => { const v = e.target.checked; setFullForAll(v); setPreviewHtml(assembleProgress(progressEntries, progressHead, v)) }} /> Full pages for everyone</label>
+                  </>
+                )}
+              </div>
             </div>
             <div className="flex gap-2">
               <button onClick={handleClose}
@@ -1591,13 +1578,12 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
   const [loading, setLoading] = useState(true)
   const [comment, setComment] = useState('')
   const [commentSkipped, setCommentSkipped] = useState(false)
-  const [includeGraph, setIncludeGraph] = useState(false)
+  const [hideComparison, setHideComparison] = useState(false)
   const [savingComment, setSavingComment] = useState(false)
   const [showRefPanel, setShowRefPanel] = useState(false)
   const [editingGrades, setEditingGrades] = useState(false)
   const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
   const [editNaValues, setEditNaValues] = useState<Record<string, boolean>>({})
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const loadReport = useCallback(async () => {
     setLoading(true)
@@ -1639,7 +1625,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     const overallLetter = overallGrade != null ? getLetterGrade(overallGrade) : '—'
 
     // Comment, teacher, plus extras for Student Reference panel
-    const { row: commentData, graphReady } = await loadReportComment(studentId, semesterId, 'progress_report')
+    const { row: commentData } = await loadReportComment(studentId, semesterId, 'progress_report')
     // Class averages per domain, for the graph's class marker.
     const { data: classSemGrades } = await supabase.from('semester_grades').select('domain, final_grade, calculated_grade, is_na').eq('semester_id', semesterId).in('student_id', students.map((x: any) => x.id))
     const classAverages: Record<string, number | null> = {}
@@ -1679,7 +1665,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       student, domainGrades, domainNa, domainStudentNa, domainClassNa, overallGrade, overallLetter,
       comment: commentData?.text || '',
       commentSkipped: !!commentData?.is_skipped,
-      includeGraph: !!commentData?.include_graph, graphReady, classAverages,
+      hideComparison: !!commentData?.hide_comparison, classAverages,
       teacherName: teacher?.name || currentTeacher?.name || '',
       teacherPhotoUrl: teacher?.photo_url || null,
       semesterName: sem.name,
@@ -1695,7 +1681,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     })
     setComment(commentData?.text || '')
     setCommentSkipped(!!commentData?.is_skipped)
-    setIncludeGraph(!!commentData?.include_graph)
+    setHideComparison(!!commentData?.hide_comparison)
     setLoading(false)
   }, [studentId, semesterId, students, allSemesters, selectedClass, currentTeacher])
 
@@ -1705,7 +1691,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     setSavingComment(true)
     const { error } = await supabase.from('comments').upsert({
       student_id: studentId, semester_id: semesterId, report_type: 'progress_report', text: comment.trim(),
-      is_skipped: commentSkipped, ...(data?.graphReady ? { include_graph: includeGraph } : {}),
+      is_skipped: commentSkipped, hide_comparison: hideComparison,
       created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
     }, { onConflict: 'student_id,semester_id,report_type' })
     setSavingComment(false)
@@ -1713,92 +1699,53 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     else { showToast(commentSkipped ? 'Comment skipped' : 'Comment saved'); setData((prev: any) => ({ ...prev, comment: comment.trim(), commentSkipped })) }
   }
 
-  // The graph on this student's report. Saved on its own, like the report card's comparison switch.
-  const toggleIncludeGraph = async () => {
-    const next = !includeGraph
-    setIncludeGraph(next)
+  // The class comparison on this student's report. Saved on its own, like the report card's switch.
+  const toggleHideComparison = async () => {
+    const next = !hideComparison
+    setHideComparison(next)
     const { error } = await supabase.from('comments').upsert({
-      student_id: studentId, semester_id: semesterId, report_type: 'progress_report', include_graph: next,
+      student_id: studentId, semester_id: semesterId, report_type: 'progress_report', hide_comparison: next,
       text: comment.trim(), is_skipped: commentSkipped, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
     }, { onConflict: 'student_id,semester_id,report_type' })
-    if (error) { setIncludeGraph(!next); showToast(GRAPH_COL.test(error.message || '') ? 'Run sql/add_include_graph_to_comments.sql first.' : `Error: ${error.message}`); return }
-    setData((prev: any) => ({ ...prev, includeGraph: next }))
-  }
-
-  const handleTeacherPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !currentTeacher) return
-    const ext = file.name.split('.').pop()
-    const path = `teacher-photos/${currentTeacher.id}.${ext}`
-    const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
-    if (error) { showToast('Upload failed'); return }
-    const { data: urlData } = supabase.storage.from('uploads').getPublicUrl(path)
-    await supabase.from('teachers').update({ photo_url: urlData.publicUrl }).eq('id', currentTeacher.id)
-    showToast('Photo updated')
-    loadReport()
+    if (error) { setHideComparison(!next); showToast(`Error: ${error.message}`); return }
+    setData((prev: any) => ({ ...prev, hideComparison: next }))
   }
 
   if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
   if (!data) return <div className="py-12 text-center text-text-tertiary">Could not load report data.</div>
 
   const d = data, s = d.student
-  const gc = d.overallGrade != null ? letterColor(d.overallLetter) : '#94a3b8'
-  const pct = (d.overallGrade || 0) / 100
-  const radius = 50, stroke = 8, circ = 2 * Math.PI * radius
+  const ko = lang === 'ko'
+  const commentText = commentSkipped ? '' : comment
+  const size = progressSizeFor(commentText, commentSkipped)
+  const printable = { ...d, hideComparison, commentSkipped }
+  const cardHtml = progressCardHtml(s, printable, commentText, size)
+  const chars = commentText.trim().length
+  const startEditGrades = () => {
+    const eg: Record<string, string> = {}
+    const en: Record<string, boolean> = {}
+    DOMAINS.forEach(dom => { eg[dom] = d.domainGrades[dom] != null ? String(d.domainGrades[dom]) : ''; en[dom] = !!d.domainStudentNa[dom] })
+    setEditGradeValues(eg); setEditNaValues(en); setEditingGrades(true)
+  }
+  const tb = 'inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[12.5px] font-medium text-ink-2 hover:text-ink'
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-end">
-        <button onClick={() => printProgressReport(s, d, comment)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt">
-          <Printer size={15} /> Print Progress Report
-        </button>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-[12.5px] text-ink-2">
+          {size === 'half'
+            ? <>{ko ? '반 페이지로 인쇄됩니다 (A4 한 장에 두 명).' : 'Prints as a half page, two to an A4 sheet.'} <span className="text-ink-3">{commentSkipped ? (ko ? '코멘트 없음' : 'no comment') : chars ? `${chars} / ${HALF_COMMENT_MAX} ${ko ? '자' : 'characters'}` : (ko ? '아직 코멘트 없음' : 'no comment yet')}</span></>
+            : <>{ko ? '전체 페이지로 인쇄됩니다: 코멘트가 반 페이지보다 깁니다.' : 'Prints as a full page: the comment is longer than a half page holds.'} <span className="text-ink-3">{chars} {ko ? '자' : 'characters'}</span></>}
+        </p>
+        <div className="flex items-center gap-2">
+          {canEdit && !editingGrades && <button onClick={startEditGrades} className={tb}>{ko ? '성적 수정' : 'Edit grades'}</button>}
+          <button onClick={() => setShowRefPanel(!showRefPanel)} className={`${tb} ${showRefPanel ? 'bg-ink text-paper border-ink hover:text-paper' : ''}`}><BarChart3 size={13} /> {ko ? '학생 참고 자료' : 'Student reference'}</button>
+          <button onClick={() => printProgressReport(s, printable, commentText)} className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded bg-navy text-white text-[12.5px] font-medium hover:bg-navy-dark"><Printer size={13} /> {ko ? '인쇄' : 'Print'}</button>
+        </div>
       </div>
 
-      {/* Card container — warm paper bg */}
-      <div className="rounded-xl overflow-hidden shadow-sm" style={{ background: '#f5f0eb' }}>
-
-        {/* ─── Header ─── */}
-        <div className="bg-navy px-7 py-5 text-white flex justify-between items-center">
-          <div>
-            <div className="text-[10px] opacity-50 tracking-[2.5px] uppercase font-medium">Daewoo Elementary School</div>
-            <div className="text-[22px] font-bold mt-1 font-display">{d.semesterName} Progress Report</div>
-            <div className="text-[11px] opacity-60 mt-0.5 italic">English Program &mdash; Mid-semester progress.</div>
-          </div>
-          <div className="w-[52px] h-[52px] rounded-full bg-white/95 flex items-center justify-center shadow-lg flex-shrink-0">
-            <img src="/logo.png" alt="" className="w-9 h-9 object-contain" onError={(e: any) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-          </div>
-        </div>
-
-        {/* ─── Student Info — 4 columns + donut ─── */}
-        <div className="bg-white px-7 py-3.5" style={{ borderBottom: '1px solid #C8CED8' }}>
-          <div className="grid gap-x-4" style={{ gridTemplateColumns: '1.2fr 0.8fr 0.8fr 0.8fr auto' }}>
-            <InfoCell label="이름 / Name" value={`${s.korean_name}  ${s.english_name}`} bold />
-            <InfoCell label="학년 / Grade" value={d.semesterGrade || s.grade} />
-            <InfoCell label="반 / Korean Class" value={`${s.korean_class}반`} />
-            <InfoCell label="번호 / Class Number" value={`${s.class_number}번`} />
-            <div className="flex items-center justify-center pl-2" style={{ gridRow: '1 / 3' }}>
-              <div className="relative" style={{ width: 80, height: 80 }}>
-                <svg width="80" height="80" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r={radius} fill="none" stroke="#C8CED8" strokeWidth={stroke} />
-                  <circle cx="60" cy="60" r={radius} fill="none" stroke={gc} strokeWidth={stroke}
-                    strokeDasharray={`${pct * circ} ${circ}`} strokeLinecap="round"
-                    style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-[20px] font-extrabold text-navy leading-none">{d.overallLetter}</div>
-                  <div className="text-[10px] text-text-tertiary mt-0.5">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}%` : ''}</div>
-                </div>
-              </div>
-            </div>
-            <InfoCell label="영어반 / English Class" value={d.semesterClass || s.english_class} />
-            <InfoCell label="담당 / Teacher" value={d.teacherName} />
-            <InfoCell label="Team Manager" value="Victoria Park" />
-            <InfoCell label="교장 / Principal" value="Kwak Cheol Ok" />
-          </div>
-        </div>
-
-        {/* ─── Score Tiles ─── */}
+      {editingGrades && (
+        <div className="rounded-xl border border-border overflow-hidden">
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
             <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Domain Performance</div>
@@ -1907,45 +1854,9 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
           )}
         </div>
 
-        {/* ─── Areas at a glance (optional) ─── */}
-        {d.includeGraph && (
-          <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
-            <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2">Areas at a glance</div>
-            <div className="max-w-[640px]" dangerouslySetInnerHTML={{ __html: progressBarsSvg(d) }} />
-          </div>
-        )}
+        </div>
+      )}
 
-        {/* ─── Teacher Comment ─── */}
-        <div className="bg-white px-7 py-6" style={{ borderBottom: '1px solid #C8CED8' }}>
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="flex items-center gap-2.5">
-              <label className="cursor-pointer relative group">
-                <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleTeacherPhotoUpload} />
-                {d.teacherPhotoUrl ? (
-                  <img src={d.teacherPhotoUrl} className="w-9 h-9 rounded-full object-cover border-2 border-[#DFE4EB]" />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-[#C8CED8] text-[#64748b] flex items-center justify-center text-[14px] font-bold border-2 border-[#DFE4EB]">
-                    {d.teacherName[0] || ''}
-                  </div>
-                )}
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-navy flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-                  <Camera size={9} className="text-white" />
-                </div>
-              </label>
-              <div>
-                <div className="text-[9px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Progress report comment</div>
-                <div className="text-[14px] font-bold text-[#1e293b]">{d.teacherName}</div>
-                <div className="text-[10px] text-[#94a3b8]">{s.english_class} Class</div>
-              </div>
-            </div>
-            <button onClick={() => setShowRefPanel(!showRefPanel)}
-              className={`print:hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${showRefPanel ? 'bg-navy text-white border-navy' : 'bg-[#EDF1F8] text-[#475569] border-[#d1d5db] hover:bg-[#DFE4EB]'}`}>
-              <BarChart3 size={14} />
-              Student Reference
-            </button>
-          </div>
-
-          {/* Student Reference Panel */}
           {showRefPanel && (
             <div className="print:hidden bg-[#f8f9fb] border border-[#d1d5db] rounded-xl p-4 mb-3.5">
               <div className="flex items-center justify-between mb-3">
@@ -2050,54 +1961,41 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-2">
-            {canEdit ? (
-              <div className="flex items-center gap-4 flex-wrap">
-                <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
-                  <input type="checkbox" checked={commentSkipped}
-                    onChange={(e: any) => setCommentSkipped(e.target.checked)} />
-                  Skip comment for this student
-                </label>
-                <label className={`print:hidden flex items-center gap-2 text-[11px] text-text-secondary select-none ${d.graphReady ? 'cursor-pointer' : 'opacity-60'}`} title={d.graphReady ? 'A bar for each area over the letter bands, with the class average marked' : 'Run sql/add_include_graph_to_comments.sql first'}>
-                  <input type="checkbox" checked={includeGraph} disabled={!d.graphReady} onChange={toggleIncludeGraph} />
-                  Include the domain graph on this report
-                </label>
-              </div>
-            ) : (
-              <span className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] italic"><Lock size={11} /> Read-only — only {selectedClass}&apos;s teacher can edit this comment.</span>
-            )}
-            {commentSkipped && canEdit && <span className="text-[10px] text-[#94a3b8] italic">Comment section will be hidden on the printed report.</span>}
+
+      {/* The page as it prints: the same HTML the print window gets, at print size. */}
+      <div className="mx-auto overflow-hidden bg-white border border-rule-2 shadow-sm" style={{ width: 733, height: size === 'half' ? 529 : 1058 }} dangerouslySetInnerHTML={{ __html: cardHtml }} />
+
+      <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-[9px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Progress report comment</p>
+            <p className="text-[13.5px] font-semibold text-ink">{d.teacherName} <span className="font-normal text-ink-3">· {s.english_class} class</span></p>
           </div>
-          <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={6}
-            disabled={commentSkipped || !canEdit}
-            placeholder={!canEdit ? "Read-only — only this class's teacher can edit the comment." : (commentSkipped ? 'Skipped — uncheck above to write a comment.' : "Write comments about this student's progress...")}
-            className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[13px] outline-none focus:border-navy resize-none leading-relaxed ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
-          {canEdit && (
-            <div className="flex justify-end mt-2">
-              <button onClick={saveComment} disabled={savingComment}
-                className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-                {savingComment ? 'Saving...' : 'Save Comment'}
-              </button>
+          {canEdit ? (
+            <div className="flex items-center gap-4 flex-wrap">
+              <label className="flex items-center gap-2 text-[11.5px] text-text-secondary cursor-pointer select-none">
+                <input type="checkbox" checked={commentSkipped} onChange={(e: any) => setCommentSkipped(e.target.checked)} />
+                {ko ? '이 학생은 코멘트 없음' : 'Skip comment for this student'}
+              </label>
+              <label className="flex items-center gap-2 text-[11.5px] text-text-secondary cursor-pointer select-none" title={ko ? '이 학생의 표에서 막대와 반 평균을 뺍니다' : 'Drop the bars and class averages from this student\'s table'}>
+                <input type="checkbox" checked={hideComparison} onChange={toggleHideComparison} />
+                {ko ? '이 학생은 반 비교 숨기기' : 'Hide the class comparison for this student'}
+              </label>
             </div>
+          ) : (
+            <span className="flex items-center gap-1.5 text-[11px] text-ink-3 italic"><Lock size={11} /> {ko ? `읽기 전용: ${selectedClass} 반 교사만 수정할 수 있습니다.` : `Read-only: only ${selectedClass}'s teacher can edit this comment.`}</span>
           )}
         </div>
-
-        {/* ─── Grading Scale + Footer ─── */}
-        <div className="bg-white px-7 py-4">
-          <div className="text-[10px] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2.5">Grading Scale</div>
-          <div className="flex gap-1 flex-wrap">
-            {SCALE_DISPLAY.map((r: any) => (
-              <span key={r.letter + r.range} className="px-2 py-0.5 rounded bg-[#EDF1F8] border border-[#C8CED8] text-[10px] inline-flex gap-1">
-                <strong style={{ color: letterColor(r.letter) }}>{r.letter}</strong>
-                <span className="text-[#94a3b8]">{r.range}</span>
-              </span>
-            ))}
+        <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={6}
+          disabled={commentSkipped || !canEdit}
+          placeholder={!canEdit ? (ko ? '읽기 전용' : "Read-only — only this class's teacher can edit the comment.") : (commentSkipped ? (ko ? '건너뜀: 위 체크를 해제하면 쓸 수 있습니다.' : 'Skipped. Untick above to write one.') : (ko ? '이 학생의 중간 보고서 코멘트…' : "This student's progress report comment…"))}
+          className={`w-full px-4 py-3 border border-rule-2 rounded-lg text-[13.5px] outline-none focus:border-navy resize-y leading-relaxed ${(commentSkipped || !canEdit) ? 'bg-paper-2 text-ink-3 cursor-not-allowed' : 'bg-white'}`} />
+        {canEdit && (
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-[11.5px] text-ink-3">{commentSkipped ? (ko ? '인쇄본에 코멘트 칸이 없습니다.' : 'No comment on the printed report.') : chars > HALF_COMMENT_MAX ? (ko ? '반 페이지보다 깁니다: 이 학생은 전체 페이지로 인쇄됩니다.' : 'Longer than a half page holds, so this student prints on a full page.') : (ko ? `${HALF_COMMENT_MAX}자까지 반 페이지에 들어갑니다.` : `Up to ${HALF_COMMENT_MAX} characters fit on a half page.`)}</span>
+            <button onClick={saveComment} disabled={savingComment} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">{savingComment ? (ko ? '저장 중…' : 'Saving…') : (ko ? '코멘트 저장' : 'Save comment')}</button>
           </div>
-          <div className="text-center mt-4 pt-3 text-[10px] text-[#b8b0a6] tracking-wider" style={{ borderTop: '1px solid #C8CED8' }}>
-            Daewoo Elementary School &middot; English Program &middot; {d.semesterName}
-          </div>
-        </div>
-
+        )}
       </div>
     </div>
   )
@@ -2904,10 +2802,9 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
   const { showToast, currentTeacher } = useApp()
   const [loading, setLoading] = useState(true)
   const [classNa, setClassNa] = useState<Record<string, boolean>>({})
-  const [studentRows, setStudentRows] = useState<Array<{ student: any; status: Record<string, 'graded' | 'na' | 'empty'>; isComplete: boolean; hasComment: boolean; commentSkipped: boolean; includeGraph: boolean }>>([])
+  const [studentRows, setStudentRows] = useState<Array<{ student: any; status: Record<string, 'graded' | 'na' | 'empty'>; isComplete: boolean; hasComment: boolean; commentSkipped: boolean }>>([])
   const [domainAvgs, setDomainAvgs] = useState<Record<string, number | null>>({})
   const [savingNa, setSavingNa] = useState<string | null>(null)
-  const [graphReady, setGraphReady] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -2934,9 +2831,8 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
       loadClassComments(semesterId, reportType, studentIds),
     ])
     const allGrades = allGradesRes.data || []
-    const commentsByStudent: Record<string, { text: string; skipped: boolean; graph: boolean }> = {}
-    allComments.rows.forEach((c: any) => { commentsByStudent[c.student_id] = { text: (c.text || '').trim(), skipped: !!c.is_skipped, graph: !!c.include_graph } })
-    setGraphReady(allComments.graphReady)
+    const commentsByStudent: Record<string, { text: string; skipped: boolean }> = {}
+    allComments.rows.forEach((c: any) => { commentsByStudent[c.student_id] = { text: (c.text || '').trim(), skipped: !!c.is_skipped } })
 
     const rows = students.map(student => {
       const myGrades = allGrades.filter((g: any) => g.student_id === student.id)
@@ -2955,7 +2851,7 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
       const c = commentsByStudent[student.id]
       const hasComment = !!(c && (c.text || c.skipped))
       const commentSkipped = !!c?.skipped
-      return { student, status, isComplete, hasComment, commentSkipped, includeGraph: !!c?.graph }
+      return { student, status, isComplete, hasComment, commentSkipped }
     })
 
     // Class domain averages — exclude student-level is_na; class-N/A → null
@@ -3000,18 +2896,6 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
 
   const completeCount = studentRows.filter(r => r.isComplete).length
   const commentCount = studentRows.filter(r => r.hasComment).length
-  const graphCount = studentRows.filter(r => r.includeGraph).length
-
-  // The graph for everyone, or for no one; each student's own switch still overrides.
-  const setGraphForAll = async (on: boolean) => {
-    const { error } = await supabase.from('comments').upsert(
-      students.map(s => ({ student_id: s.id, semester_id: semesterId, report_type: 'progress_report', include_graph: on, updated_at: new Date().toISOString() })),
-      { onConflict: 'student_id,semester_id,report_type' })
-    if (error) { showToast(GRAPH_COL.test(error.message || '') ? 'Run sql/add_include_graph_to_comments.sql first.' : `Error: ${error.message}`); return }
-    showToast(on ? 'The graph is on every progress report' : 'The graph is off every progress report')
-    load()
-  }
-
   return (
     <div className="space-y-8">
       <div className="flex items-baseline justify-between gap-3 border-b border-rule-2 pb-2">
@@ -3054,20 +2938,9 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
       </div>
 
       <div>
-        <div className="flex items-baseline justify-between mb-1 gap-3 flex-wrap">
+        <div className="flex items-baseline justify-between mb-1">
           <p className="eyebrow">Students</p>
-          <div className="flex items-baseline gap-3 flex-wrap">
-            {!isCard && canEdit && (graphReady ? (
-              <span className="text-[11.5px] text-ink-2 inline-flex items-baseline gap-2" title="Areas at a glance: a bar for each area over the letter bands, with the class average marked">
-                {graphCount} / {students.length} with the graph
-                <button onClick={() => setGraphForAll(true)} className="text-accent hover:underline">All</button>
-                <button onClick={() => setGraphForAll(false)} className="text-accent hover:underline">None</button>
-              </span>
-            ) : (
-              <span className="text-[11.5px] text-warn">Run sql/add_include_graph_to_comments.sql to enable the graph.</span>
-            ))}
-            <p className="text-[11.5px] text-ink-3">Click a student to open their {isCard ? 'report card' : 'progress report'}</p>
-          </div>
+          <p className="text-[11.5px] text-ink-3">Click a student to open their {isCard ? 'report card' : 'progress report'}</p>
         </div>
         <table className="w-full text-[13px] border-t border-rule-2">
           <thead>

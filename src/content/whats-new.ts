@@ -31,8 +31,8 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     path: '/dashboard', guide: 'dashboard',
   },
   {
-    id: 'progress-graph', date: '2026-10-27', title: 'A graph parents can read on the progress report, per student',
-    body: 'You can now tick “Include the domain graph on this report”, next to Skip comment on a progress report, and the printed page gets one chart: a bar for each area drawn over the letter bands, A to E, with the class average marked as a line. The class overview turns it on for everyone or no one. Admin runs sql/add_include_graph_to_comments.sql once first.',
+    id: 'progress-report-redesign', date: '2026-10-27', title: 'The progress report is one table, and prints on half pages',
+    body: 'You can now read a progress report as one table: each area’s grade, score and a bar against the class average, with the comment under it when there is one. On screen you see the printed page at print size. A report prints as a half page, two to an A4 sheet with a dashed cut line, whenever the comment fits in about five lines or there is none; a longer comment gets a full page, never squeezed. The class print says how many sheets it will take and can print full pages for everyone. “Hide the class comparison for this student” drops the bars for one student.',
     path: '/reports', guide: 'reports',
   },
   {
