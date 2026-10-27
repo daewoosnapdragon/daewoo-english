@@ -140,13 +140,13 @@ export default function NoticeBoard() {
         {visible.map(n => {
           const canEdit = n.author_id === me || isAdmin
           const author = authorOf(n)
-          const initial = (author?.name || '?').charAt(0)
+          const initial = author ? author.name.charAt(0) : '!'
           return (
             <div key={n.id} className={`grid grid-cols-[34px_1fr_auto] gap-3 items-center px-6 py-2 border-b border-rule text-[13.5px] ${n.style === 'urgent' ? 'bg-bad-soft shadow-[inset_4px_0_0_rgb(var(--bad))]' : ''}`}>
               <span className={`w-6 h-6 rounded-full text-white text-[11px] font-bold flex items-center justify-center ${CLASS_BG[author?.english_class || ''] || 'bg-ink'}`}>{initial}</span>
               <span className="text-ink min-w-0 whitespace-pre-wrap break-words">{n.body}</span>
               <span className="flex items-center gap-3 text-[11.5px] text-ink-3 whitespace-nowrap">
-                <span>{author?.name || (lang === 'ko' ? '알 수 없음' : 'Unknown')} · {whenLabel(n.created_at, lang)} · {audienceLabel(n)}{n.author_id === me ? ` · ${seenLabel(n)}` : ''}</span>
+                <span>{author?.name || (n.author_id ? (lang === 'ko' ? '알 수 없음' : 'Unknown') : (lang === 'ko' ? '자동 알림' : 'Automatic'))} · {whenLabel(n.created_at, lang)} · {audienceLabel(n)}{n.author_id === me ? ` · ${seenLabel(n)}` : ''}</span>
                 {canEdit && <button onClick={() => setEditing(n)} title={lang === 'ko' ? '수정' : 'Edit'} className="text-ink-3 hover:text-ink"><Pencil size={13} /></button>}
                 {canEdit && <button onClick={() => remove(n)} title={lang === 'ko' ? '모두에게서 삭제' : 'Remove for everyone'} className="text-ink-3 hover:text-bad"><Trash2 size={13} /></button>}
                 {n.author_id !== me && <button onClick={() => dismiss(n)} title={lang === 'ko' ? '닫기' : 'Dismiss'} className="text-ink-3 hover:text-ink text-[18px] leading-none">×</button>}

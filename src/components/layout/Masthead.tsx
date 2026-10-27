@@ -137,6 +137,9 @@ function UserMenu() {
             <button className={item} onClick={() => setLanguage(language === 'en' ? 'ko' : 'en')}>
               <Globe size={14} />{language === 'en' ? '한국어' : 'English'}
             </button>
+            <Link href="/behavior" className={item} onClick={() => setOpen(false)}>
+              <AlertTriangle size={14} />{language === 'ko' ? '행동' : 'Behavior'}
+            </Link>
             <Link href="/settings" className={item} onClick={() => setOpen(false)}>
               <Settings size={14} />{language === 'ko' ? '설정' : 'Settings'}
             </Link>

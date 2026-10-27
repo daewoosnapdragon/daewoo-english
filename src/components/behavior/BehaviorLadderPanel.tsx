@@ -16,7 +16,7 @@ import { AlertTriangle, Check, ChevronDown, ChevronRight, Eye, EyeOff, Loader2, 
 
 interface Props { mode: 'admin' | 'teacher'; studentId?: string; onChanged?: () => void }
 interface LogRow { id: string; date: string; type: string; note: string; is_flagged: boolean; time?: string | null; activity?: string | null; antecedents?: string[]; behaviors?: string[]; consequences?: string[]; intensity?: number; frequency?: number; teachers?: { name: string } | null }
-interface TeacherRow { id: string; name: string; role: string; english_class: string }
+export interface TeacherRow { id: string; name: string; role: string; english_class: string }
 
 const TYPE_LABEL: Record<string, { en: string; ko: string; cls: string }> = {
   positive: { en: 'Positive', ko: '긍정', cls: 'bg-green-100 text-green-700' },
@@ -120,7 +120,7 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
         {studentId && closed.length > 0 && <button onClick={() => setShowHistory(h => !h)} className="ml-auto text-[11.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1">{showHistory ? <ChevronDown size={12} /> : <ChevronRight size={12} />}{ko ? `지난 사례 ${closed.length}건` : `${closed.length} closed ${closed.length === 1 ? 'case' : 'cases'}`}</button>}
       </div>
       <div className="divide-y divide-rule">
-        {open.map(c => {
+        {[...open].sort((a, b) => Number(!!b.reminder_at) - Number(!!a.reminder_at)).map(c => {
           const overdue = isOverdue(c, settings.overdue_days)
           const waiting = schoolDaysSince(c.created_at)
           const s = seenByAdmin(c)
@@ -134,6 +134,7 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-info-soft text-info font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
                     {c.opened_reason === 'flag' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '교사 표시' : 'flagged by teacher'}</span>}
                     {overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-bad text-white font-bold">{ko ? `${waiting}일 대기` : `waiting ${waiting} school days`}</span>}
+                    {c.reminder_at && <span className="text-[10px] px-1.5 py-0.5 rounded bg-warn text-white font-bold">{ko ? '자동 알림' : 'reminder sent'}</span>}
                   </div>
                   <p className="text-[12.5px] text-ink mt-0.5">{c.step_label}{c.step_label ? ' · ' : ''}{ko ? `기록 ${c.log_ids.length}건` : `${c.log_ids.length} ${c.log_ids.length === 1 ? 'note' : 'notes'}`} · {ko ? '열림' : 'opened'} {fmtDate(c.created_at, ko)}{!overdue && waiting > 0 ? ` · ${waiting} ${ko ? '일 전' : waiting === 1 ? 'school day ago' : 'school days ago'}` : ''}</p>
                   {c.ask && <p className="text-[12.5px] text-ink-2 mt-1"><span className="font-semibold text-ink">{ko ? '교사 요청:' : 'Teacher asks:'}</span> {c.ask}</p>}
@@ -163,7 +164,7 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
 }
 
 // ── One case: the notes in order, the ask, the action ──
-function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: BehaviorCase; teachers: TeacherRow[]; seenLabel: string; onClose: () => void; onChanged: () => void }) {
+export function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: BehaviorCase; teachers: TeacherRow[]; seenLabel: string; onClose: () => void; onChanged: () => void }) {
   const { currentTeacher, language, showToast } = useApp()
   const ko = language === 'ko'
   const isAdmin = currentTeacher?.role === 'admin'

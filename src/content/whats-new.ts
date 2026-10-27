@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'behavior-page', date: '2026-10-27', title: 'A Behavior page: every case’s story, and every note',
+    body: 'You can now open Behavior from the user menu and see each ladder case for your class as one line: opened and how many notes, your ask, read by admin and when, the action recorded, or what has not happened yet and for how many school days. Every behavior note for your class is listed under it, with filters. Admin and the Snapdragon teacher see every class.',
+    path: '/behavior', guide: 'behavior',
+  },
+  {
     id: 'office-jobs', date: '2026-10-27', title: 'Office jobs on the dashboard',
     body: 'You can now see this week’s cleaning day beside the weekly schedule: your job in large type, everyone else’s underneath, and your job next week. If Friday is a day off on the calendar, the jobs move to the day before. On the day itself, the band under the header names your job on every page.',
     path: '/dashboard', guide: 'dashboard',

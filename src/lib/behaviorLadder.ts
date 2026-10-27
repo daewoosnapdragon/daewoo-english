@@ -29,6 +29,8 @@ export interface BehaviorCase {
   acknowledged_by: string | null; acknowledged_at: string | null
   action_date: string | null; action_note: string
   closed_by: string | null; closed_at: string | null
+  /** The automatic-looking reminder: when it last went out, how often, and its notice. Who sent it is not stored. */
+  reminder_at?: string | null; reminder_count?: number | null; reminder_notice_id?: string | null
   created_at: string; updated_at: string
   students?: { english_name: string; korean_name: string; english_class: string; grade: number } | null
 }
@@ -88,7 +90,38 @@ export async function acknowledgeCase(c: BehaviorCase, teacherId: string): Promi
   const now = new Date().toISOString()
   const { error } = await supabase.from('behavior_cases').update({ status: 'acknowledged', acknowledged_by: teacherId, acknowledged_at: now, updated_at: now }).eq('id', c.id).eq('status', 'open')
   if (error) return error.message
-  if (c.notice_id) await supabase.from('notice_receipts').upsert({ notice_id: c.notice_id, teacher_id: teacherId }, { onConflict: 'notice_id,teacher_id', ignoreDuplicates: true })
+  for (const nid of [c.notice_id, c.reminder_notice_id]) {
+    if (nid) await supabase.from('notice_receipts').upsert({ notice_id: nid, teacher_id: teacherId }, { onConflict: 'notice_id,teacher_id', ignoreDuplicates: true })
+  }
+  return null
+}
+
+const yesterdayKST = () => { const y = new Date(getKSTDateString() + 'T00:00:00Z'); y.setUTCDate(y.getUTCDate() - 1); return y.toISOString().slice(0, 10) }
+
+/** True when a reminder already went out today (Seoul), so one a day is the most a case gets. */
+export const reminderSentToday = (c: BehaviorCase, today: string = getKSTDateString()) => !!c.reminder_at && toKSTDateString(c.reminder_at) === today
+
+/**
+ * Remind admin about a case that is waiting: an urgent notice to every
+ * admin with no author on it, so it reads as the app's own follow-up, and a
+ * mark on the case. The previous reminder's notice is retired first. Who
+ * asked for it is deliberately not recorded anywhere.
+ */
+export async function sendReminder(c: BehaviorCase, adminIds: string[]): Promise<string | null> {
+  if (!adminIds.length) return 'No admin account to remind'
+  if (reminderSentToday(c)) return 'A reminder already went out today'
+  const now = new Date().toISOString()
+  const waiting = schoolDaysSince(c.created_at)
+  const who = `${c.students?.english_name || 'a student'} (${c.students?.english_class || ''})`
+  const body = c.status === 'open'
+    ? `Reminder: the behavior case for ${who} opened ${waiting} school ${waiting === 1 ? 'day' : 'days'} ago and has not been marked read. Open the dashboard, read the notes, and record the action.`
+    : `Reminder: the behavior case for ${who} was marked read but no action has been recorded. Open the dashboard and record ${c.action_label ? `"${c.action_label}"` : 'the action'}.`
+  if (c.reminder_notice_id) await supabase.from('notices').update({ expires_on: yesterdayKST(), updated_at: now }).eq('id', c.reminder_notice_id)
+  const expires = new Date(getKSTDateString() + 'T00:00:00Z'); expires.setUTCDate(expires.getUTCDate() + 7)
+  const { data: notice, error: nErr } = await supabase.from('notices').insert({ body, style: 'urgent', author_id: null, audience: adminIds, expires_on: expires.toISOString().slice(0, 10) }).select('id').single()
+  if (nErr) return nErr.message
+  const { error } = await supabase.from('behavior_cases').update({ reminder_at: now, reminder_count: (c.reminder_count || 0) + 1, reminder_notice_id: notice?.id || null, updated_at: now }).eq('id', c.id)
+  if (error) return /reminder_/.test(error.message || '') ? 'Run supabase/migration-behavior-reminders.sql first' : error.message
   return null
 }
 
@@ -105,10 +138,9 @@ export async function closeCase(c: BehaviorCase, teacherId: string, actionDate: 
     note: `${c.action_label} (behavior ladder, step ${c.step})${note.trim() ? `: ${note.trim()}` : ''}`,
   })
   if (logErr) return logErr.message
-  if (c.notice_id) {
-    // Expire the notice as of yesterday (Seoul), so it leaves every board at once.
-    const y = new Date(getKSTDateString() + 'T00:00:00Z'); y.setUTCDate(y.getUTCDate() - 1)
-    await supabase.from('notices').update({ expires_on: y.toISOString().slice(0, 10), updated_at: now }).eq('id', c.notice_id)
+  // Expire the case's notices as of yesterday (Seoul), so they leave every board at once.
+  for (const nid of [c.notice_id, c.reminder_notice_id]) {
+    if (nid) await supabase.from('notices').update({ expires_on: yesterdayKST(), updated_at: now }).eq('id', nid)
   }
   return null
 }

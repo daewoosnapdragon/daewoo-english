@@ -293,6 +293,22 @@ export const ADMIN_SECTIONS: GuideSection[] = [
     watchOut: ['Deactivating a teacher keeps everything they entered.'],
   },
   {
+    id: 'behavior', title: 'Behavior', updated: '2026-10-27',
+    purpose: 'Every ladder case with its story so far, and every behavior note, in one place. Opened from the user menu.',
+    screen: [
+      'Ladder cases first: each with the student, the step, and the story as one line of steps: opened and how many notes, the teacher’s ask, read by admin and when, the action recorded, or what has not happened yet and for how many school days. Needs action, Closed and All.',
+      'Behavior notes under that, newest first, with the window (30, 60 or 180 days), the kind, flagged only, and a student search.',
+      'Teachers see their own class. Admin, the head teacher and the Snapdragon teacher see every class, with a class filter that applies to both lists.',
+      'Open the notes shows the case the way the dashboard does: the notes in order, the ask, and the action.',
+    ],
+    tasks: [
+      { title: 'See whether admin has followed up', steps: ['Open Behavior from the user menu.', 'Read the case’s line: Read by … and when, then the action, or Not read yet with the wait.'] },
+      { title: 'Send a reminder', steps: ['On a case that is waiting, click Send a reminder.', 'Admin gets an urgent notice with no name on it, and the case shows when it went out and whether admin has seen it.', 'One reminder a day per case; the button says Reminded today after that.'] },
+    ],
+    rules: ['A reminder is written as the app’s own follow-up. Who sent it is not stored anywhere, not in the case and not in the activity log.', 'Reading the case or recording the action retires the reminder notice, so nothing lingers once it is dealt with.'],
+    watchOut: ['Admin runs supabase/migration-behavior-reminders.sql once; until then the reminder button reports that.', 'School days count weekdays only; a holiday week still counts as five.'],
+  },
+  {
     id: 'activity', title: 'Activity', updated: '2026-10-27',
     purpose: 'Who signed in and what they did, for admin, the head teacher and the Snapdragon teacher. Opened from the user menu.',
     screen: [
@@ -321,5 +337,5 @@ export const ALL_SECTIONS = () => [...GUIDE_SECTIONS, ...ADMIN_SECTIONS]
 /** The guide section for a view id, for “How this page works”. */
 export const SECTION_FOR_VIEW: Record<string, string> = {
   dashboard: 'dashboard', grades: 'grades', attendance: 'attendance', lessonPlans: 'lessons', students: 'students',
-  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity',
+  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', behavior: 'behavior',
 }
