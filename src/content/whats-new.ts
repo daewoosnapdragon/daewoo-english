@@ -21,39 +21,22 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
-    id: 'activity-log', date: '2026-10-27', title: 'An activity log of who signed in and what they did',
-    body: 'Admin, the head teacher and the Snapdragon teacher can now open Activity from the user menu: every teacher’s last sign-in and when they were last seen, and a list by day of pages opened, scoring, attendance, comments, prints, notices and settings changes, with filters by teacher, kind of action and window. The same action repeated within ten minutes folds into one line with a count. Admin runs supabase/migration-activity-log.sql once first.',
-    path: '/activity', guide: 'activity',
-  },
-  {
-    id: 'standards-by-code', date: '2026-10-27', title: 'The standards picker in code order',
-    body: 'You can now switch the standards picker to By code: every standard for the grade in code order with the official wording, grouped by strand, for when you already know which one you want. Type RL.3.1 or rl31 to jump to it. By skill, the plain-name view, is still there, and the picker remembers which you used last.',
-    path: '/grades', guide: 'grades',
-  },
-  {
     id: 'office-jobs', date: '2026-10-27', title: 'Office jobs on the dashboard',
-    body: 'You can now see this week’s cleaning day beside the weekly schedule, with your job in large type, everyone else’s underneath, and your job next week. The day is Friday, or the day before when the calendar has the school off that Friday; on the day itself the band under the header names your job on every page. Admin sets the rotation once in Settings: the people in order, the jobs, the first cleaning day, and any weeks skipped.',
+    body: 'You can now see this week’s cleaning day beside the weekly schedule: your job in large type, everyone else’s underneath, and your job next week. If Friday is a day off on the calendar, the jobs move to the day before. On the day itself, the band under the header names your job on every page.',
     path: '/dashboard', guide: 'dashboard',
+    highlight: { image: '/whats-new/office-jobs.png', how: 'Dashboard → under the weekly schedule. Click a job to read what it involves.' },
   },
   {
     id: 'progress-report-redesign', date: '2026-10-27', title: 'The progress report is one table, and prints on half pages',
-    body: 'You can now read a progress report as one table: each area’s grade, score and a bar against the class average, with the comment under it when there is one. On screen you see the printed page at print size. A report prints as a half page, two to an A4 sheet with a dashed cut line, whenever the comment fits in about five lines or there is none; a longer comment gets a full page, never squeezed. The Print tab prints progress reports and report cards with options: who, full pages for everyone, and hiding the class comparison on every page; the preview says how many sheets. “Hide the class comparison for this student” drops the bars for one student. The full grading scale, plus and minus included, is printed under the table.',
+    body: 'You can now read a progress report as one table: each area’s grade, score and a bar against the class average, with your comment underneath when there is one. What you see on screen is the printed page. A report prints as a half page, two to a sheet, whenever the comment is short or there is none; a longer comment gets a full page.',
     path: '/reports', guide: 'reports',
+    highlight: { image: '/whats-new/progress-reports.png', how: 'Reports → Progress report. Tick “Hide the class comparison for this student” to drop the bars for one student. Print from the Print tab.' },
   },
   {
-    id: 'domain-trends', date: '2026-10-27', title: 'Five small charts replace the semester timeline in the student view',
-    body: 'You can now read each domain tile in Grades → Student view as a small chart: the student’s running average as a solid line and the class’s as a dashed one, on one scale across the five tiles so they compare. Hover a point for the assessment and the numbers. The single timeline that joined every assessment regardless of domain is gone.',
+    id: 'domain-trends', date: '2026-10-27', title: 'Each area as a small chart in the student view',
+    body: 'You can now see, on each domain tile in the Grades student view, the student’s running average as a solid line and the class’s as a dashed one, all five on the same scale. Hover a point for the assessment and the numbers.',
     path: '/grades', guide: 'grades',
-  },
-  {
-    id: 'grades-sheets', date: '2026-10-27', title: 'Every assessment opens on its own sheet, and Edit uses the set-up flow',
-    body: 'You can now click from one assessment to the next without the view changing under you: a keyed assessment opens on its answer sheet, a rubric on its class grid (Score with the rubric opens the full-screen sheet when you want it), and a points-only assessment on a new points sheet laid out like the others, where Enter moves down and saves, 7/10 enters a fraction, and the rail shows the class as the numbers go in. Switching domain tabs is instant. Edit, next to the assessment name, reopens the flow you created it with, filled in, so the key, rubric and standards are changed the way they were made; a changed key re-scores the marked papers.',
-    path: '/grades', guide: 'grades',
-  },
-  {
-    id: 'comments-by-document', date: '2026-10-27', title: 'Reports opens on the document you are writing now',
-    body: 'You can now see which comment you are writing. Reports opens on the progress report until three weeks after the midterm cutoff and on the report card after that; the Comments tab has a Progress report / Report card switch at the top; and each comment box is labelled with its document. Progress-report comments that were saved under Report card this semester have been moved across by the admin.',
-    path: '/reports', guide: 'reports',
+    highlight: { image: '/whats-new/grades.png', how: 'Grades → Student view. Pick a student from the roster on the left.' },
   },
   {
     id: 'behavior-ladder', date: '2026-10-06', title: 'Three behavior notes open a case for admin',
