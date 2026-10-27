@@ -171,7 +171,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     screen: [
       'Tabs: Report card, Progress report, Comments, Class summary, Review & approve, Print. The page opens on the document being written now: the progress report until three weeks after the midterm cutoff, the report card after that.',
       'Comments is the whole class on one page. The switch at its top says which document the comments go on; check it before you type.',
-      'The progress report is one page: a navy band, the student’s details, one table with each area’s grade, score and a bar against the class average, the comment when there is one, and signature lines. What you see on screen is the printed page at print size.',
+      'The progress report is one page: a navy band, the student’s details, one table with each area’s grade, score and a bar against the class average, and the comment when there is one. What you see on screen is the printed page at print size.',
       'A progress report prints as a half page, two to an A4 sheet with a dashed line to cut along, whenever the comment fits in about five lines or there is none. A longer comment gets a full page of its own; nothing is shrunk to fit. The line above the preview says which size, and the class print says how many sheets and offers full pages for everyone.',
       '“Hide the class comparison for this student”, next to Skip comment on a progress report, drops the bars and class averages from that student’s table.',
       'A picker for the whole class or one student.',

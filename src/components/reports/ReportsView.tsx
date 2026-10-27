@@ -1175,8 +1175,8 @@ function reportCardShrinkScript(autoPrint: boolean, maxFs = 24): string {
 
 // ─── Progress report: one table, two sizes ────────────────────────
 // Design B: a navy band, the student's details, one table with each area's
-// grade, score and a bar against the class, the comment when there is one,
-// and the signatures. One builder makes both sizes: the half page (two to
+// grade, score and a bar against the class, and the comment when there is
+// one. One builder makes both sizes: the half page (two to
 // an A4 sheet, cut across the middle) whenever the comment fits in a few
 // lines or there is none, and the full page when it is longer. Nothing is
 // shrunk to make a half page fit; the comment's length picks the size. The
@@ -1228,10 +1228,8 @@ function progressCardHtml(s: any, d: any, comment: string, size: ProgressSize = 
     ? `<div style="display:flex;flex-direction:column;gap:4px;padding-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="${eyebrow}">Teacher's comment</span>${who}</div><div style="font-size:12px;line-height:1.45;color:${PR.ink};white-space:pre-wrap">${prEsc(text)}</div></div>`
     : `<div class="cmt" style="display:flex;flex-direction:column;gap:6px;flex:1 1 auto;min-height:120px;padding:16px 0"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="${eyebrow}">Teacher's comment</span>${who}</div><div class="cmt-body" style="font-size:13.5px;line-height:1.6;color:${PR.ink};white-space:pre-wrap">${prEsc(text)}</div></div>`
 
-  const sig = (label: string) => `<div style="display:flex;flex-direction:column;gap:${half ? 10 : 20}px;min-width:0"><span style="border-top:1px solid ${PR.ink}"></span><span style="font-size:${f(9.5)};letter-spacing:1px;text-transform:uppercase;color:${PR.muted};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span></div>`
-  const signatures = `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:auto;padding-top:${f(12)}">${sig(`Teacher · ${prEsc(d.teacherName)}`)}${sig('Team manager · Victoria Park')}${sig('Principal · Kwak Cheol Ok')}</div>`
 
-  return `<div class="pr" style="display:flex;flex-direction:column;height:100%;background:#fff;color:${PR.ink};font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box">${header}<div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:${half ? '0 28px 12px' : '0 40px 28px'}">${identity}<div style="display:flex;flex-direction:column;padding-top:${f(12)}">${head}${rows}${overallRow}${scale}</div>${commentBlock}${signatures}</div></div>`
+  return `<div class="pr" style="display:flex;flex-direction:column;height:100%;background:#fff;color:${PR.ink};font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box">${header}<div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:${half ? '0 28px 12px' : '0 40px 28px'}">${identity}<div style="display:flex;flex-direction:column;padding-top:${f(12)}">${head}${rows}${overallRow}${scale}</div>${commentBlock}</div></div>`
 }
 
 /** The print page: A4 sheets, each a full page or two half pages with a dashed cut line between them. */
