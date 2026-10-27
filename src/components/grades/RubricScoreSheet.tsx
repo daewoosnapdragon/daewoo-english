@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -91,6 +92,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}${error.message.includes('rubric_scores') ? ' · run supabase/migration-rubrics.sql' : ''}`); return false }
     setDirty(prev => { const n = new Set(prev); ids.forEach(id => n.delete(id)); return n })
+    logActivity('scored', assessment.name, { key: assessment.id })
     onSaved?.()
     return true
   }, [assessment.id, assessment.max_score, criteria.length, currentTeacher?.id, showToast, onSaved])

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity, setActivityActor } from '@/lib/activity'
 import { Teacher } from '@/types'
 import { Lock, Globe, ArrowRight } from 'lucide-react'
 
@@ -27,6 +28,8 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
       setLoginError(language === 'ko' ? '비밀번호가 틀렸습니다' : 'Incorrect password')
       return
     }
+    setActivityActor({ id: teacher.id, name: teacher.name })
+    logActivity('login', `${teacher.name} · ${teacher.role === 'admin' ? 'admin' : teacher.english_class}`)
     setCurrentTeacher(teacher)
     sessionStorage.setItem('daewoo_teacher_id', teacher.id)
     setPassword('')

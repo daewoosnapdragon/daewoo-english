@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useScheduleRules, saveScheduleRules, WEEKDAY_LABELS } from '@/lib/scheduleRules'
 
 import { useState, useEffect } from 'react'
@@ -85,6 +86,7 @@ function TeacherSection() {
     } else {
       setTeachers((prev: any[]) => prev.map((t: any) => t.id === teacher.id ? { ...t, name: newName } : t))
       showToast(language === 'ko' ? `${newName}(으)로 변경됨` : `Updated to ${newName}`)
+      logActivity('settings', `Teacher renamed to ${newName}`)
     }
     setSaving(null)
   }
@@ -294,7 +296,7 @@ function SemesterSection() {
     }).eq('id', sem.id)
     setSaving(null)
     if (error) showToast(`Error: ${error.message}`)
-    else showToast('Saved')
+    else { showToast('Saved'); logActivity('settings', 'Semesters') }
   }
 
   // Exactly one semester may be active. Clearing the others has to compare
@@ -383,6 +385,7 @@ function SemesterSection() {
       setSemesters((prev: any) => prev.filter((s: any) => s.id !== id))
       await refreshSemesters()
       showToast('Deleted')
+      logActivity('settings', 'Semester deleted')
     }
   }
 
@@ -664,7 +667,7 @@ function ProgramBenchmarksSection() {
     const { error } = await supabase.from('class_benchmarks').insert(toInsert)
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
-    else showToast('Benchmarks saved')
+    else { showToast('Benchmarks saved'); logActivity('settings', 'Program benchmarks') }
     const { data } = await supabase.from('class_benchmarks').select('*').order('display_order')
     if (data) setBenchmarks(data)
   }
@@ -894,6 +897,7 @@ function AssessmentWeightsSection() {
     invalidateAssessmentWeights()
     setSaving(false)
     showToast('Assessment weights saved')
+    logActivity('settings', 'Assessment weights')
   }
 
   const getWeight = (key: string): Record<AssessmentType, number> => {
@@ -1078,7 +1082,7 @@ function SchoolInfoSection() {
       .eq('id', settings.id)
 
     if (error) showToast(`Error: ${error.message}`)
-    else showToast(language === 'ko' ? '설정이 저장되었습니다' : 'Settings saved')
+    else { showToast(language === 'ko' ? '설정이 저장되었습니다' : 'Settings saved'); logActivity('settings', 'School information') }
     setSaving(false)
   }
 
@@ -1159,7 +1163,7 @@ function ScheduleRulesSection() {
     setSaving(true)
     const err = await saveScheduleRules(rules)
     setSaving(false)
-    if (err) showToast(`Error: ${err}`); else { showToast(language === 'ko' ? '시간표 규칙 저장됨' : 'Schedule rules saved'); setDirty(false) }
+    if (err) showToast(`Error: ${err}`); else { showToast(language === 'ko' ? '시간표 규칙 저장됨' : 'Schedule rules saved'); setDirty(false); logActivity('settings', 'Schedule rules') }
   }
   return (
     <div id="set-schedule" className="mb-10 scroll-mt-[140px]">
@@ -1211,7 +1215,7 @@ function BehaviorLadderSection() {
     setSaving(true)
     const err = await saveLadderSettings({ steps: steps.map(st => ({ threshold: Math.max(1, Math.round(Number(st.threshold))), label: st.label.trim(), action: st.action.trim() || 'Done' })), overdue_days: Math.max(0, Math.round(Number(s.overdue_days))) })
     setSaving(false)
-    if (err) showToast(`Error: ${err}`); else showToast(ko ? '행동 단계 저장됨' : 'Behavior ladder saved')
+    if (err) showToast(`Error: ${err}`); else { showToast(ko ? '행동 단계 저장됨' : 'Behavior ladder saved'); logActivity('settings', 'Behavior ladder') }
   }
   const field = 'h-8 px-2.5 bg-surface border border-rule-2 rounded text-[12.5px] text-ink disabled:opacity-60'
   return (

@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'activity-log', date: '2026-10-27', title: 'An activity log of who signed in and what they did',
+    body: 'Admin, the head teacher and the Snapdragon teacher can now open Activity from the user menu: every teacher’s last sign-in and when they were last seen, and a list by day of pages opened, scoring, attendance, comments, prints, notices and settings changes, with filters by teacher, kind of action and window. The same action repeated within ten minutes folds into one line with a count. Admin runs supabase/migration-activity-log.sql once first.',
+    path: '/activity', guide: 'activity',
+  },
+  {
     id: 'standards-by-code', date: '2026-10-27', title: 'The standards picker in code order',
     body: 'You can now switch the standards picker to By code: every standard for the grade in code order with the official wording, grouped by strand, for when you already know which one you want. Type RL.3.1 or rl31 to jump to it. By skill, the plain-name view, is still there, and the picker remembers which you used last.',
     path: '/grades', guide: 'grades',

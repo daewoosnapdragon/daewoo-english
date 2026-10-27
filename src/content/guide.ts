@@ -293,6 +293,21 @@ export const ADMIN_SECTIONS: GuideSection[] = [
     watchOut: ['Deactivating a teacher keeps everything they entered.'],
   },
   {
+    id: 'activity', title: 'Activity', updated: '2026-10-27',
+    purpose: 'Who signed in and what they did, for admin, the head teacher and the Snapdragon teacher. Opened from the user menu.',
+    screen: [
+      'A strip of every teacher with their last sign-in and when they were last seen, in the chosen window. Click one to filter the list to them.',
+      'Filters: Today, 7 days or 30 days; one teacher or everyone; one kind of action or everything.',
+      'The list, newest first, by day: the time, who, what kind of action, and what it was. ×N means the same action was repeated that many times within ten minutes and folded into one line.',
+    ],
+    tasks: [
+      { title: 'See when someone last signed in', steps: ['Open Activity from the user menu.', 'Read their card in the strip at the top, or pick Sign-ins and sign-outs in the action filter.'] },
+      { title: 'See what was done on a day', steps: ['Set the window and, if you like, the teacher.', 'Scroll to the day. Scoring shows the assessment and how many saves; prints show what was printed and for whom.'] },
+    ],
+    rules: ['Recorded: sign-ins and sign-outs, pages opened, scoring on any sheet, attendance, lesson plans, comments, student details and notes, behavior notes, assessments created, edited and deleted, prints, notices, and every Settings section.', 'The app writes the log, so only actions taken in the app appear; a change made directly in the database does not.'],
+    watchOut: ['A sign-in is recorded when a teacher picks their name and signs in, not when a page is reloaded in a tab that was already signed in.', 'Admin runs supabase/migration-activity-log.sql once; until then the page says so and nothing is recorded.'],
+  },
+  {
     id: 'admin-release', title: 'What’s new and this guide', updated: '2026-09-25',
     purpose: 'How changes reach teachers.',
     screen: ['Entries live in the code with a release date. An entry dated in the future is held; admins see it marked scheduled on the What’s new page.', 'Each teacher’s “Got it” is remembered, so the card only shows what they have not seen.', 'Every guide section shows when its text last changed; the Guide page lists the stalest first in the rail.'],
@@ -306,5 +321,5 @@ export const ALL_SECTIONS = () => [...GUIDE_SECTIONS, ...ADMIN_SECTIONS]
 /** The guide section for a view id, for “How this page works”. */
 export const SECTION_FOR_VIEW: Record<string, string> = {
   dashboard: 'dashboard', grades: 'grades', attendance: 'attendance', lessonPlans: 'lessons', students: 'students',
-  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings',
+  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity',
 }

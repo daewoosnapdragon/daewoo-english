@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
@@ -197,6 +198,7 @@ function Composer({ teachers, existing, onClose, onSaved }: { teachers: { id: st
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return }
     showToast(existing ? (lang === 'ko' ? '수정되었습니다' : 'Notice updated') : (lang === 'ko' ? '게시되었습니다' : 'Posted'))
+    logActivity('posted', `${existing ? 'Notice updated' : 'Notice'} · ${text.slice(0, 80)}`)
     onSaved()
   }
 

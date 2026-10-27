@@ -1,5 +1,6 @@
 'use client'
 
+import { setActivityActor } from '@/lib/activity'
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { pathForView } from '@/lib/routes'
@@ -53,6 +54,8 @@ const AppContext = createContext<AppContextType | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null)
+  // The activity log records who did what; it needs the signed-in teacher (src/lib/activity.ts).
+  useEffect(() => { setActivityActor(currentTeacher ? { id: currentTeacher.id, name: currentTeacher.name } : null) }, [currentTeacher])
   const [language, setLanguageState] = useState<Language>('en')
   // Remembered, so 한국어 mode survives a reload.
   const setLanguage = useCallback((l: Language) => {

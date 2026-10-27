@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useScheduleRules } from '@/lib/scheduleRules'
 import { loadDayStatus, fillAwayDays, type DayStatus } from '@/lib/calendarDays'
 
@@ -227,6 +228,7 @@ export default function AttendanceView() {
     setSaveSuccess(true)
     setTimeout(() => setSaveSuccess(false), 1500)
     showToast(lang === 'ko' ? '출석이 저장되었습니다' : entries.length > 0 ? `Saved attendance for ${entries.length} students` : 'Attendance cleared')
+    logActivity('saved', `Attendance · ${selectedClass} · Grade ${selectedGrade} · ${selectedDate} · ${entries.length} students`, { key: `attendance|${selectedClass}|${selectedGrade}|${selectedDate}` })
   }
 
   // Skip weekends (and Monday for Grade 5) in date navigation

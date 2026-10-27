@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -230,6 +231,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return false }
     setDirty(prev => { const n = new Set(prev); ids.forEach(id => n.delete(id)); return n })
+    logActivity('scored', `${assessment.name}${assessment.english_class ? ` · ${assessment.english_class}` : ''}`, { key: assessment.id })
     onSaved?.()
     return true
   }, [assessment.id, map, routed, currentTeacher?.id, showToast, onSaved, lang])

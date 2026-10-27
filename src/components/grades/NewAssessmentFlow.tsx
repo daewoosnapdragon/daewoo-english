@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -192,6 +193,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
       if (finalMap && hasGrades) remarked = await rescoreAfterKeyChange({ id: editing.id, domain: dom, mixed: data?.mixed, question_map: data?.question_map || finalMap })
       setSaving(false)
       showToast(ko ? `"${name}" 수정 완료${remarked ? ` · ${remarked}명 재채점` : ''}` : `Updated "${name}"${remarked ? ` · re-scored ${remarked} ${remarked === 1 ? 'paper' : 'papers'}` : ''}`)
+      logActivity('edited', `${name.trim()} · ${englishClass} · Grade ${grade}`)
       onSaved?.(data)
       return
     }
@@ -208,6 +210,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
     if (share.size) await supabase.from('assessments').insert(Array.from(share).map(cls => ({ ...base, english_class: cls })))
     setSaving(false)
     showToast(ko ? `"${name}" 생성됨` : `Created "${name}"${share.size ? ` · shared with ${share.size} more` : ''}`)
+    logActivity('created', `${name.trim()} · ${englishClass} · Grade ${grade}`)
     onCreated(data, useRubric ? 'rubric' : finalMap ? 'key' : 'points')
   }
 

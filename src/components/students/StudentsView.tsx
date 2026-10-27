@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
@@ -199,6 +200,7 @@ export default function StudentsView() {
                     if (!error) saved++
                   }
                   showToast(`Saved ${saved} student${saved !== 1 ? 's' : ''}`)
+                  logActivity('saved', `Student details · ${saved} students`)
                   setBulkEdits({})
                   refetch()
                 })()
@@ -778,7 +780,7 @@ export function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 
     const { error } = await supabase.from('students').update({ notes }).eq('id', studentId)
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast(lang === 'ko' ? '저장되었습니다' : 'Notes saved'); setDirty(false) }
+    else { showToast(lang === 'ko' ? '저장되었습니다' : 'Notes saved'); setDirty(false); logActivity('saved', 'Student notes') }
   }
 
   return (

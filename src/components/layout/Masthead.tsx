@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { loadLadderSettings, isOverdue } from '@/lib/behaviorLadder'
-import { NAV_ORDER, VIEW_PATHS, viewForPath } from '@/lib/routes'
+import { NAV_ORDER, VIEW_PATHS, PAGE_TITLES, viewForPath } from '@/lib/routes'
+import { logActivity, canViewActivity } from '@/lib/activity'
 import { isSchoolDayOff } from '@/lib/calendarDays'
-import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle } from 'lucide-react'
+import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle, Activity } from 'lucide-react'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
 import { OfficeJobsBand } from '@/components/dashboard/OfficeJobs'
 
@@ -111,7 +112,7 @@ function UserMenu() {
   const router = useRouter()
   const { unseen } = useWhatsNew()
   if (!currentTeacher) return null
-  const signOut = () => { setCurrentTeacher(null); sessionStorage.removeItem('daewoo_teacher_id'); router.push('/dashboard') }
+  const signOut = () => { logActivity('logout'); setCurrentTeacher(null); sessionStorage.removeItem('daewoo_teacher_id'); router.push('/dashboard') }
   const item = 'w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-ink-2 hover:bg-paper-2 hover:text-ink text-left'
   return (
     <div className="relative">
@@ -139,6 +140,11 @@ function UserMenu() {
             <Link href="/settings" className={item} onClick={() => setOpen(false)}>
               <Settings size={14} />{language === 'ko' ? '설정' : 'Settings'}
             </Link>
+            {canViewActivity(currentTeacher) && (
+              <Link href="/activity" className={item} onClick={() => setOpen(false)}>
+                <Activity size={14} />{language === 'ko' ? '활동 기록' : 'Activity'}
+              </Link>
+            )}
             <div className="border-t border-rule my-1" />
             <Link href="/whats-new" className={item} onClick={() => setOpen(false)}>
               <Sparkles size={14} />{language === 'ko' ? '새로운 기능' : 'What’s new'}{unseen.length > 0 && <span className="ml-auto text-[10.5px] font-semibold text-white bg-accent rounded-full px-1.5">{unseen.length}</span>}
@@ -168,6 +174,14 @@ export default function Masthead() {
   const [collapsed, setCollapsed] = useState(false)
   useEffect(() => { try { setCollapsed(localStorage.getItem('daewoo_masthead') === 'collapsed') } catch {} }, [])
   const toggleCollapsed = () => setCollapsed(c => { try { localStorage.setItem('daewoo_masthead', c ? 'open' : 'collapsed') } catch {}; return !c })
+  // Every page opened goes to the activity log, once per page per visit.
+  const lastVisit = useRef<string | null>(null)
+  useEffect(() => {
+    if (!currentTeacher || !pathname || lastVisit.current === pathname) return
+    lastVisit.current = pathname
+    const view = viewForPath(pathname)
+    logActivity('visit', `${PAGE_TITLES[view] || pathname}${pathname !== (VIEW_PATHS[view] || '') ? ` · ${pathname}` : ''}`, { key: pathname, path: pathname })
+  }, [pathname, currentTeacher])
   if (!currentTeacher) return null
 
   const label = (id: string) => language === 'ko' ? ((t.nav as any)[id] || id) : (EN_LABELS[id] || id)

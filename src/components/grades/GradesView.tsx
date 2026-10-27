@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { useStudents } from '@/hooks/useData'
@@ -200,6 +201,7 @@ export default function GradesView() {
     const { error } = await supabase.from('assessments').delete().eq('id', a.id)
     if (error) { showToast(`Error: ${error.message}`); return }
     showToast(lang === 'ko' ? '삭제되었습니다' : `Deleted "${a.name}"`)
+    logActivity('deleted', `${a.name} · ${selectedClass} · Grade ${selectedGrade}`)
     setAllAssessments(prev => prev.filter(x => x.id !== a.id))
     if (editingAssessment?.id === a.id) setEditingAssessment(null)
   }

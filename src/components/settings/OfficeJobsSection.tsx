@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -39,7 +40,7 @@ export default function OfficeJobsSection() {
     const clean = { ...draft, jobs: draft.jobs.filter(j => j.name.trim()).map(j => ({ ...j, name: j.name.trim(), description: j.description.trim() })) }
     const { error } = await supabase.from('app_settings').upsert({ key: OFFICE_JOBS_KEY, value: JSON.stringify(clean), updated_at: new Date().toISOString() }, { onConflict: 'key' })
     setSaving(false)
-    if (error) showToast(`Error: ${error.message}`); else { showToast(ko ? '사무실 청소 순번 저장됨' : 'Office jobs saved'); setDirty(false) }
+    if (error) showToast(`Error: ${error.message}`); else { showToast(ko ? '사무실 청소 순번 저장됨' : 'Office jobs saved'); setDirty(false); logActivity('settings', 'Office jobs') }
   }
 
   const field = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink disabled:text-ink-3'

@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -88,6 +89,7 @@ export default function PointsScoreSheet({ assessment, students, currentDomain, 
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return false }
     setDirty(prev => { const n = new Set(prev); ids.forEach(id => n.delete(id)); return n })
+    logActivity('scored', assessment.name, { key: assessment.id })
     onSaved?.()
     return true
   }, [assessment.id, currentTeacher?.id, showToast, onSaved])

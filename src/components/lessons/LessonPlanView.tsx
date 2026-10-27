@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useScheduleRules, WEEKDAY_LABELS } from '@/lib/scheduleRules'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
@@ -471,6 +472,7 @@ function ParentCalendarView() {
     }
     setSaving(false)
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : 'Month saved')
+    logActivity('saved', `Lesson plans · ${selectedClass} · Grade ${selectedGrade}`, { key: `lessons|${selectedClass}|${selectedGrade}` })
   }
 
   // ─── Autosave ──────────────────────────────────────────────────────────

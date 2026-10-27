@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { itemsForDomain } from '@/lib/domainSplit'
 import { syncSemesterGrades } from '@/lib/semesterGrades'
 
@@ -564,6 +565,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, report_type: 'report_card', text: comment.trim(), is_skipped: commentSkipped, hide_comparison: hideComparison, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id,report_type' })
     setSavingComment(false)
     showToast(commentSkipped ? 'Comment skipped' : 'Comment saved')
+    logActivity('saved', `Report card comment · ${data?.student?.english_name || ''}`)
   }
 
   // Auto-saves immediately so the chart toggle persists without a comment save
@@ -589,6 +591,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const handlePrint = () => {
     if (!data) return
     const d = data, s = d.student
+    logActivity('printed', `Report card · ${s.english_name}`)
     const pw = window.open('', '_blank')
     if (!pw) return
     pw.document.write(`<!DOCTYPE html><html><head><title>Report Card — ${s.english_name}</title><style>${reportCardCss(false)}</style></head><body>${reportCardHtml(s, d, comment, commentSkipped, hideComparison)}${reportCardShrinkScript(true)}</body></html>`)
@@ -1258,6 +1261,7 @@ function progressSheetsHtml(entries: ProgressEntry[], fullForAll: boolean): stri
 function printProgressReport(s: any, d: any, comment: string) {
   const pw = window.open('', '_blank')
   if (!pw) return
+  logActivity('printed', `Progress report · ${s.english_name}`)
   const text = d.commentSkipped ? '' : comment
   const size = progressSizeFor(text, !!d.commentSkipped)
   const body = size === 'half'
@@ -1497,6 +1501,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
   const handlePrint = () => {
     const iframe = iframeRef.current
     if (!iframe || !iframe.contentWindow) return
+    logActivity('printed', `${scope === 'grade' ? progress.total : students.length} ${kind === 'report_card' ? 'report cards' : 'progress reports'} · ${scope === 'grade' ? `whole Grade ${grade}` : cls}`)
     iframe.contentWindow.focus()
     iframe.contentWindow.print()
   }
@@ -1696,7 +1701,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     }, { onConflict: 'student_id,semester_id,report_type' })
     setSavingComment(false)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast(commentSkipped ? 'Comment skipped' : 'Comment saved'); setData((prev: any) => ({ ...prev, comment: comment.trim(), commentSkipped })) }
+    else { showToast(commentSkipped ? 'Comment skipped' : 'Comment saved'); logActivity('saved', `Progress report comment · ${data?.student?.english_name || ''}`); setData((prev: any) => ({ ...prev, comment: comment.trim(), commentSkipped })) }
   }
 
   // The class comparison on this student's report. Saved on its own, like the report card's switch.
@@ -2718,6 +2723,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
   }, [students, semesterId, selectedGrade, selectedClass])
 
   const handlePrint = () => {
+    logActivity('printed', `Class summary · ${selectedClass} · Grade ${selectedGrade}`)
     const rows = summaries.map((s: any, i: number) =>
       `<tr><td style="padding:6px 10px;color:#94a3b8">${i + 1}</td>
        <td style="padding:6px 10px;font-weight:500;color:#647FBC">${s.student.english_name} <span style="color:#94a3b8;font-size:10px">${s.student.korean_name}</span></td>

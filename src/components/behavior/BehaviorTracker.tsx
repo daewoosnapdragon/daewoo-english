@@ -1,5 +1,6 @@
 'use client'
 
+import { logActivity } from '@/lib/activity'
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -380,7 +381,7 @@ function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: str
     })
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast(lang === 'ko' ? '저장되었습니다' : 'Saved'); onSaved() }
+    else { showToast(lang === 'ko' ? '저장되었습니다' : 'Saved'); onSaved(); logActivity('saved', 'Behavior note') }
   }
 
   return (
