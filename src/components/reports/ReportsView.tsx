@@ -13,7 +13,7 @@ import { classToColor, classToTextColor, calculateWeightedAverage as calcWeighte
 import { currentReportDocument, REPORT_DOCUMENT_LABEL, type ReportDocument } from '@/lib/reportDocument'
 import { progressSizeFor, packSheets, sheetSummary, HALF_COMMENT_MAX, type ProgressSize } from '@/lib/progressReport'
 import { loadAssessmentWeights } from '@/lib/assessmentWeights'
-import { Loader2, Printer, User, Users, ChevronLeft, ChevronRight, ChevronDown, Plus, Camera, BarChart3, ClipboardCheck, CheckCircle2, Circle, XCircle, AlertTriangle, FileDown, MessageSquare, Save, Lock } from 'lucide-react'
+import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
 
@@ -1195,7 +1195,7 @@ function progressCardHtml(s: any, d: any, comment: string, size: ProgressSize = 
   const text = d.commentSkipped ? '' : (comment || '').trim()
   const cols = hide ? '156px 60px 72px minmax(0,1fr)' : '156px 60px 72px minmax(0,1fr) 90px'
   const eyebrow = `font-size:${f(10)};letter-spacing:1.4px;text-transform:uppercase;color:${PR.muted};font-weight:600`
-  const cell = (label: string, value: string) => `<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="${eyebrow}">${label}</span><span style="font-size:${f(14)};font-weight:600;color:${PR.ink};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${value}</span></div>`
+  const cell = (label: string, value: string) => `<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="${eyebrow}">${label}</span><span style="font-size:${f(14)};font-weight:600;color:${PR.ink};overflow-wrap:anywhere;line-height:1.25">${value}</span></div>`
   const grade = d.semesterGrade || s.grade, cls = d.semesterClass || s.english_class
 
   const header = `<div style="background:${PR.navy};color:#fff;padding:${half ? '12px 28px' : '28px 40px 24px'};display:flex;justify-content:space-between;align-items:center;flex:none"><div style="display:flex;flex-direction:column;gap:${half ? 2 : 5}px"><span style="font-size:${f(10)};letter-spacing:2px;text-transform:uppercase;opacity:.8">Daewoo Elementary School · English Program</span><span style="font-size:${f(28)};font-weight:700;line-height:1;letter-spacing:-.3px">Progress Report</span><span style="font-size:${f(12.5)};opacity:.85">${prEsc(d.semesterName)} · Mid-semester</span></div><div style="width:${half ? 40 : 56}px;height:${half ? 40 : 56}px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><img src="/logo.png" alt="" style="width:${half ? 28 : 40}px;height:${half ? 28 : 40}px;object-fit:contain" onerror="this.style.display='none'"></div></div>`
@@ -1221,7 +1221,9 @@ function progressCardHtml(s: any, d: any, comment: string, size: ProgressSize = 
     ? `<span style="font-size:${f(20)};font-weight:800;color:${PR.navy}">${prEsc(d.overallLetter)}</span><span style="font-size:${f(13.5)};font-weight:700;text-align:right;font-variant-numeric:tabular-nums">${d.overallGrade.toFixed(1)}%</span><span style="grid-column:span ${hide ? 1 : 2};font-size:${f(11.5)};color:${PR.muted}">The average of the ${graded === 1 ? 'one area' : `${graded} areas`} graded so far.</span>`
     : `<span style="font-size:${f(20)};font-weight:800;color:#94a3b8">—</span><span style="grid-column:span ${hide ? 2 : 3};font-size:${f(11.5)};color:${PR.muted}">No areas graded yet.</span>`
   const overallRow = `<div style="display:grid;grid-template-columns:${cols};gap:${f(14)};align-items:center;height:${half ? 30 : 46}px;border-bottom:2px solid ${PR.ink};background:${PR.shade}"><span style="font-size:${f(13.5)};font-weight:700;padding-left:8px">Overall</span>${overall}</div>`
-  const scale = `<div style="display:flex;gap:16px;align-items:center;padding-top:${f(8)};font-size:${f(10.5)};color:${PR.muted}">${hide ? '' : `<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:8px;background:${PR.navy};border-radius:2px"></span>${prEsc(s.english_name)}</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:2px;height:12px;background:${PR.ink}"></span>Class average</span>`}<span style="margin-left:auto">A 90–100 · B 80–89 · C 70–79 · D 60–69 · E below 60</span></div>`
+  const scale = `<div style="display:flex;gap:16px;align-items:center;padding-top:${f(8)};font-size:${f(10.5)};color:${PR.muted}">${hide ? '' : `<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:8px;background:${PR.navy};border-radius:2px"></span>${prEsc(s.english_name)}</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:2px;height:12px;background:${PR.ink}"></span>Class average</span>`}</div>`
+  // The whole scale, plus and minus included, so a B+ on the page can be read off it.
+  const scaleRow = `<div style="display:flex;flex-wrap:wrap;gap:3px 10px;padding-top:${f(6)};font-size:${f(10)};color:${PR.muted}">${SCALE_DISPLAY.map(r => `<span style="white-space:nowrap"><b style="color:${PR.ink}">${r.letter}</b> ${r.range.replace('-', '–').replace('%', '')}</span>`).join('')}</div>`
 
   const who = `<span style="font-size:${f(11)};color:${PR.muted}">${prEsc(d.teacherName)} · ${prEsc(cls)} class</span>`
   const commentBlock = !text ? '' : half
@@ -1229,7 +1231,7 @@ function progressCardHtml(s: any, d: any, comment: string, size: ProgressSize = 
     : `<div class="cmt" style="display:flex;flex-direction:column;gap:6px;flex:1 1 auto;min-height:120px;padding:16px 0"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="${eyebrow}">Teacher's comment</span>${who}</div><div class="cmt-body" style="font-size:13.5px;line-height:1.6;color:${PR.ink};white-space:pre-wrap">${prEsc(text)}</div></div>`
 
 
-  return `<div class="pr" style="display:flex;flex-direction:column;height:100%;background:#fff;color:${PR.ink};font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box">${header}<div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:${half ? '0 28px 12px' : '0 40px 28px'}">${identity}<div style="display:flex;flex-direction:column;padding-top:${f(12)}">${head}${rows}${overallRow}${scale}</div>${commentBlock}</div></div>`
+  return `<div class="pr" style="display:flex;flex-direction:column;height:100%;background:#fff;color:${PR.ink};font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box">${header}<div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:${half ? '0 28px 12px' : '0 40px 28px'}">${identity}<div style="display:flex;flex-direction:column;padding-top:${f(12)}">${head}${rows}${overallRow}${scale}${scaleRow}</div>${commentBlock}</div></div>`
 }
 
 /** The print page: A4 sheets, each a full page or two half pages with a dashed cut line between them. */
@@ -1266,7 +1268,7 @@ function printProgressReport(s: any, d: any, comment: string) {
 }
 
 // ─── Batch Print All Progress Reports ────────────────────────────────
-function BatchPrintButton({ students, semesterId, className: cls, kind = 'progress', allSemesters = [], scope = 'class', grade }: { students: any[]; semesterId: string; className: string; kind?: 'progress' | 'report_card'; allSemesters?: any[]; scope?: 'class' | 'grade'; grade?: Grade }) {
+function BatchPrintButton({ students, semesterId, className: cls, kind = 'progress', allSemesters = [], scope = 'class', grade, initialFullForAll = false, hideComparisonAll = false }: { students: any[]; semesterId: string; className: string; kind?: 'progress' | 'report_card'; allSemesters?: any[]; scope?: 'class' | 'grade'; grade?: Grade; initialFullForAll?: boolean; hideComparisonAll?: boolean }) {
   const [generating, setGenerating] = useState(false)
   const [progress, setProgress] = useState({ current: 0, total: 0 })
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
@@ -1276,7 +1278,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
   // can switch between half pages where they fit and full pages for everyone.
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([])
   const [progressHead, setProgressHead] = useState('')
-  const [fullForAll, setFullForAll] = useState(false)
+  const [fullForAll, setFullForAll] = useState(initialFullForAll)
   const assembleProgress = (entries: ProgressEntry[], head: string, all: boolean) => head + progressSheetsHtml(entries, all) + reportCardShrinkScript(false, 15) + '</body></html>'
   const summary = sheetSummary(packSheets(progressEntries.map(e => ({ size: fullForAll ? 'full' as ProgressSize : e.size, item: e }))))
 
@@ -1379,7 +1381,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
             teacherName: teacher?.name || '', teacherPhotoUrl: teacher?.photo_url || null,
             semesterGrade: student.grade, semesterClass: student.english_class,
           }
-          body += reportCardHtml(student, data, c?.text || '', !!c?.is_skipped, !!c?.hide_comparison)
+          body += reportCardHtml(student, data, c?.text || '', !!c?.is_skipped, hideComparisonAll || !!c?.hide_comparison)
           setProgress({ current: i + 1, total: gradeStudents.length })
         }
         setPreviewHtml(head + body + reportCardShrinkScript(false) + '</body></html>')
@@ -1458,7 +1460,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
         const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
 
         const baseData = {
-          domainGrades, domainNa, overallGrade, overallLetter, semesterName, classAverages, hideComparison: !!commentData?.hide_comparison,
+          domainGrades, domainNa, overallGrade, overallLetter, semesterName, classAverages, hideComparison: hideComparisonAll || !!commentData?.hide_comparison,
           commentSkipped: !!commentData?.is_skipped,
           teacherName: teacher?.name || currentTeacher?.name || '',
           teacherPhotoUrl: teacher?.photo_url || null,
@@ -1474,7 +1476,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
             prevOverall = ps.length ? Math.round(ps.reduce((a, dd) => a + (prevDomainGrades[dd] as number), 0) / ps.length * 10) / 10 : null
           }
           const data = { ...baseData, classAverages, prevDomainGrades, prevOverall, prevSemesterName }
-          body += reportCardHtml(student, data, commentData?.text || '', !!commentData?.is_skipped, !!commentData?.hide_comparison)
+          body += reportCardHtml(student, data, commentData?.text || '', !!commentData?.is_skipped, hideComparisonAll || !!commentData?.hide_comparison)
         } else {
           const text = baseData.commentSkipped ? '' : (commentData?.text || '')
           entries.push({ name: student.english_name, size: progressSizeFor(text, baseData.commentSkipped), full: progressCardHtml(student, baseData, text, 'full'), half: progressCardHtml(student, baseData, text, 'half') })
@@ -1509,7 +1511,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
     ? <><Loader2 size={14} className="animate-spin" /> Generating {progress.current}{progress.total ? ` of ${progress.total}` : ''}…</>
     : (isGrade
       ? <><Printer size={14} /> Print Whole Grade {grade} (all classes)</>
-      : <><Printer size={14} /> Print All {students.length} Students</>)
+      : <><Printer size={14} /> Print {students.length} {kind === 'report_card' ? (students.length === 1 ? 'report card' : 'report cards') : (students.length === 1 ? 'progress report' : 'progress reports')}</>)
 
   return (
     <>
@@ -2536,11 +2538,17 @@ function PrintCenter({ students, semesterId, selectedClass, selectedGrade, isAdm
   const [loadingReady, setLoadingReady] = useState(true)
   const [savingReady, setSavingReady] = useState(false)
   const [override, setOverride] = useState(false)
-  const [printStudentId, setPrintStudentId] = useState<string>('')
+  // Progress reports: who, and the options the page builder takes.
+  const [prWho, setPrWho] = useState('')
+  const [prFull, setPrFull] = useState(false)
+  const [prHideCmp, setPrHideCmp] = useState(false)
+  // Report cards: who (the whole grade is admin only), and the same comparison option.
+  const [rcWho, setRcWho] = useState('')
+  const [rcHideCmp, setRcHideCmp] = useState(false)
 
   useEffect(() => {
     ;(async () => {
-      setLoadingReady(true); setOverride(false); setPrintStudentId('')
+      setLoadingReady(true); setOverride(false); setPrWho(''); setRcWho('')
       const { data } = await supabase.from('grade_print_status').select('is_ready')
         .eq('semester_id', semesterId).eq('grade', selectedGrade).maybeSingle()
       setGradeReady(!!data?.is_ready)
@@ -2561,72 +2569,84 @@ function PrintCenter({ students, semesterId, selectedClass, selectedGrade, isAdm
     showToast(next ? `Grade ${selectedGrade} marked ready to print` : `Grade ${selectedGrade} unmarked`)
   }
 
-  const printStudent = students.find((s: any) => s.id === printStudentId)
-  const gated = !gradeReady && !override // batch prints are soft-gated until ready
+  const gated = !gradeReady && !override // batch report cards are soft-gated until the grade is marked ready
+  const prStudents = prWho ? students.filter((x: any) => x.id === prWho) : students
+  const rcStudents = rcWho && rcWho !== 'grade' ? students.filter((x: any) => x.id === rcWho) : students
+  const rcBatch = rcWho === '' || rcWho === 'grade'
+  const opt = 'flex items-center gap-2 text-[12.5px] text-ink-2 cursor-pointer select-none'
+  const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink max-w-full'
+  const n = students.length
 
   return (
-    <div className="space-y-4">
-      {/* Ready-to-print status */}
-      <div className={`rounded-xl border p-5 flex items-center justify-between flex-wrap gap-3 ${gradeReady ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
-        <div className="flex items-center gap-3">
-          {gradeReady ? <CheckCircle2 size={20} className="text-green-600" /> : <AlertTriangle size={20} className="text-amber-500" />}
+    <div className="space-y-6">
+      <section className="bg-surface border border-rule-2 rounded-lg p-5">
+        <div className="border-b border-rule-2 pb-2 mb-4">
+          <h3 className="font-display text-[22px] leading-none text-ink">Progress reports</h3>
+          <p className="text-[12px] text-ink-3 mt-1">{selectedClass} · Grade {selectedGrade} · {n} {n === 1 ? 'student' : 'students'}. A report prints as a half page, two to a sheet, when its comment fits; a longer comment gets a full page. The preview says how many sheets.</p>
+        </div>
+        <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)_auto] items-start">
           <div>
-            <div className="text-[14px] font-semibold text-navy">Grade {selectedGrade} — {gradeReady ? 'ready to print' : 'not marked ready'}</div>
-            <div className="text-[11px] text-text-secondary">{gradeReady ? 'Report cards for this grade are cleared for printing.' : 'Mark ready once grades and comments are finalized, to avoid accidental early prints.'}</div>
+            <p className="eyebrow mb-1.5">Who</p>
+            <select value={prWho} onChange={(e: any) => setPrWho(e.target.value)} className={sel}>
+              <option value="">Whole class · {n}</option>
+              <optgroup label="One student">{students.map((x: any) => <option key={x.id} value={x.id}>{x.english_name} ({x.korean_name})</option>)}</optgroup>
+            </select>
           </div>
-        </div>
-        <button onClick={toggleReady} disabled={loadingReady || savingReady}
-          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold disabled:opacity-50 ${gradeReady ? 'bg-white border border-green-300 text-green-700 hover:bg-green-100' : 'bg-navy text-white hover:bg-navy-dark'}`}>
-          {savingReady ? <Loader2 size={14} className="animate-spin" /> : gradeReady ? <XCircle size={14} /> : <CheckCircle2 size={14} />}
-          {gradeReady ? `Unmark Grade ${selectedGrade}` : `Mark Grade ${selectedGrade} ready`}
-        </button>
-      </div>
-
-      {/* Whole grade — admin only */}
-      {isAdmin && (
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-1"><Users size={15} className="text-navy" /><h3 className="text-[14px] font-semibold text-navy">Whole grade — all English classes</h3></div>
-          <p className="text-[11px] text-text-tertiary mb-3">Every English class in Grade {selectedGrade}, sorted by Korean homeroom (대 → 솔 → 매) then class number.</p>
-          {gated ? (
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[11px] text-amber-700">Grade {selectedGrade} isn&apos;t marked ready.</span>
-              <button onClick={() => setOverride(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"><Printer size={14} /> Print anyway</button>
+          <div>
+            <p className="eyebrow mb-1.5">Options</p>
+            <div className="grid gap-1.5">
+              <label className={opt}><input type="checkbox" checked={prFull} onChange={(e: any) => setPrFull(e.target.checked)} /> Full pages for everyone, even where a half page would do</label>
+              <label className={opt}><input type="checkbox" checked={prHideCmp} onChange={(e: any) => setPrHideCmp(e.target.checked)} /> Hide the class comparison on every report</label>
             </div>
-          ) : (
-            <BatchPrintButton students={students} semesterId={semesterId} className={selectedClass} kind="report_card" scope="grade" grade={selectedGrade} allSemesters={allSemesters} />
-          )}
-        </div>
-      )}
-
-      {/* Single English class */}
-      <div className="bg-surface border border-border rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-1"><User size={15} className="text-navy" /><h3 className="text-[14px] font-semibold text-navy">Single English class</h3></div>
-        <p className="text-[11px] text-text-tertiary mb-3">{selectedClass} · Grade {selectedGrade} · {students.length} student{students.length === 1 ? '' : 's'}. Use the class buttons above to switch class.</p>
-        {gated ? (
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-[11px] text-amber-700">Grade {selectedGrade} isn&apos;t marked ready.</span>
-            <button onClick={() => setOverride(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"><Printer size={14} /> Print anyway</button>
           </div>
-        ) : (
-          <BatchPrintButton students={students} semesterId={semesterId} className={selectedClass} kind="report_card" allSemesters={allSemesters} />
-        )}
-      </div>
-
-      {/* Single student */}
-      <div className="bg-surface border border-border rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-1"><User size={15} className="text-navy" /><h3 className="text-[14px] font-semibold text-navy">Single student</h3></div>
-        <p className="text-[11px] text-text-tertiary mb-3">Print one report card. Not gated by the ready flag.</p>
-        <div className="flex items-center gap-3 flex-wrap">
-          <select value={printStudentId} onChange={(e: any) => setPrintStudentId(e.target.value)}
-            className="px-3 py-2 border border-border rounded-lg text-[13px] bg-surface outline-none focus:border-navy min-w-[220px]">
-            <option value="">Select student…</option>
-            {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name} ({s.korean_name})</option>)}
-          </select>
-          {printStudent && (
-            <BatchPrintButton key={printStudent.id} students={[printStudent]} semesterId={semesterId} className={selectedClass} kind="report_card" allSemesters={allSemesters} />
-          )}
+          <div className="md:pt-5">
+            <BatchPrintButton key={`pr-${prWho}-${prFull}-${prHideCmp}`} students={prStudents} semesterId={semesterId} className={selectedClass} kind="progress" allSemesters={allSemesters} initialFullForAll={prFull} hideComparisonAll={prHideCmp} />
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section className="bg-surface border border-rule-2 rounded-lg p-5">
+        <div className="flex items-start justify-between gap-4 flex-wrap border-b border-rule-2 pb-2 mb-4">
+          <div>
+            <h3 className="font-display text-[22px] leading-none text-ink">Report cards</h3>
+            <p className="text-[12px] text-ink-3 mt-1">{selectedClass} · Grade {selectedGrade} · {n} {n === 1 ? 'student' : 'students'}. Class and whole-grade prints wait for the grade to be marked ready; one student can be printed any time.</p>
+          </div>
+          <div className={`inline-flex items-center gap-3 rounded px-3 py-2 border ${gradeReady ? 'border-good/40 bg-good-soft' : 'border-warn/40 bg-warn-soft'}`}>
+            {gradeReady ? <CheckCircle2 size={16} className="text-good" /> : <AlertTriangle size={16} className="text-warn" />}
+            <span className="text-[12.5px] text-ink">Grade {selectedGrade} {gradeReady ? 'ready to print' : 'not marked ready'}</span>
+            <button onClick={toggleReady} disabled={loadingReady || savingReady} className="h-7 px-2.5 rounded border border-rule-2 bg-surface text-[12px] font-medium text-ink-2 hover:text-ink disabled:opacity-50">
+              {savingReady ? <Loader2 size={12} className="animate-spin" /> : gradeReady ? 'Unmark' : 'Mark ready'}
+            </button>
+          </div>
+        </div>
+        <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)_auto] items-start">
+          <div>
+            <p className="eyebrow mb-1.5">Who</p>
+            <select value={rcWho} onChange={(e: any) => setRcWho(e.target.value)} className={sel}>
+              <option value="">Whole class · {n}</option>
+              {isAdmin && <option value="grade">Whole Grade {selectedGrade} · every English class</option>}
+              <optgroup label="One student">{students.map((x: any) => <option key={x.id} value={x.id}>{x.english_name} ({x.korean_name})</option>)}</optgroup>
+            </select>
+            {rcWho === 'grade' && <p className="text-[11px] text-ink-3 mt-1">Sorted by Korean homeroom (대 → 솔 → 매), then class number.</p>}
+          </div>
+          <div>
+            <p className="eyebrow mb-1.5">Options</p>
+            <div className="grid gap-1.5">
+              <label className={opt}><input type="checkbox" checked={rcHideCmp} onChange={(e: any) => setRcHideCmp(e.target.checked)} /> Hide the class comparison on every card</label>
+            </div>
+          </div>
+          <div className="md:pt-5">
+            {rcBatch && gated ? (
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-[12px] text-warn">Grade {selectedGrade} isn&apos;t marked ready.</span>
+                <button onClick={() => setOverride(true)} className="h-8 px-3 rounded border border-warn/50 bg-warn-soft text-[12.5px] font-medium text-ink hover:border-warn inline-flex items-center gap-1.5"><Printer size={13} /> Print anyway</button>
+              </div>
+            ) : (
+              <BatchPrintButton key={`rc-${rcWho}-${rcHideCmp}`} students={rcStudents} semesterId={semesterId} className={selectedClass} kind="report_card" scope={rcWho === 'grade' ? 'grade' : 'class'} grade={selectedGrade} allSemesters={allSemesters} hideComparisonAll={rcHideCmp} />
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

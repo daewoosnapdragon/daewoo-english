@@ -176,7 +176,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       '“Hide the class comparison for this student”, next to Skip comment on a progress report, drops the bars and class averages from that student’s table.',
       'A picker for the whole class or one student.',
       'Each report shows the composite per domain, the letter, attendance, and the comment box.',
-      'Print produces the parent copy.',
+      'Print: progress reports and report cards, each with who (the whole class, one student, or for admin the whole grade of report cards) and options: full pages for everyone, hide the class comparison on every report. Class and grade prints of report cards wait for the grade to be marked ready; one student prints any time.',
     ],
     tasks: [
       { title: 'Write report cards', steps: ['Enter every grade first; the composite is computed, not typed.', 'Report card, pick a student, write the comment. The WIDA level and behavior notes are there to draw on.', 'Repeat. Class summary shows who is still missing a comment.', 'Admin reviews and approves under Review & approve, then prints.'] },

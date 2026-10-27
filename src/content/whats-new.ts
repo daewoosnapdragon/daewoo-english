@@ -32,7 +32,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   },
   {
     id: 'progress-report-redesign', date: '2026-10-27', title: 'The progress report is one table, and prints on half pages',
-    body: 'You can now read a progress report as one table: each area’s grade, score and a bar against the class average, with the comment under it when there is one. On screen you see the printed page at print size. A report prints as a half page, two to an A4 sheet with a dashed cut line, whenever the comment fits in about five lines or there is none; a longer comment gets a full page, never squeezed. The class print says how many sheets it will take and can print full pages for everyone. “Hide the class comparison for this student” drops the bars for one student.',
+    body: 'You can now read a progress report as one table: each area’s grade, score and a bar against the class average, with the comment under it when there is one. On screen you see the printed page at print size. A report prints as a half page, two to an A4 sheet with a dashed cut line, whenever the comment fits in about five lines or there is none; a longer comment gets a full page, never squeezed. The Print tab prints progress reports and report cards with options: who, full pages for everyone, and hiding the class comparison on every page; the preview says how many sheets. “Hide the class comparison for this student” drops the bars for one student. The full grading scale, plus and minus included, is printed under the table.',
     path: '/reports', guide: 'reports',
   },
   {
