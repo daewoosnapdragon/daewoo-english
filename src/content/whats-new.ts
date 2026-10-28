@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'report-teacher-by-class', date: '2026-10-28', title: 'Reports always name the class’s own teacher',
+    body: 'Progress reports and report cards now take the teacher from the student’s English class, so a student moved to another class no longer prints the previous class’s teacher. Changing a student’s class on the Students page, the student page or Leveling also updates who they belong to.',
+    path: '/reports', guide: 'reports',
+  },
+  {
     id: 'supplies', date: '2026-10-27', title: 'Supplies: stock, requests, receipts and counts',
     body: 'You can now open Supplies from the user menu. Stock lists the office staples as packs and loose (1 box + 2 reams); press Low when something is running out and everyone sees it. Requests is where you put what you need, with how many and what for, and others press Me too. Receipts turn a scanned receipt into stock and spending: give Claude the prompt on that tab with the scan, paste the lines it writes with their prices, check them, save. Whoever has the Reading Garden job that week does a two-minute quick count on the cleaning day, with a sheet to print for the clipboard; admin does the full count once a month. The dashboard card shows what is low and whose count it is.',
     path: '/supplies', guide: 'supplies',
