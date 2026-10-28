@@ -14,6 +14,8 @@ import { classToColor, classToTextColor, calculateWeightedAverage as calcWeighte
 import { currentReportDocument, REPORT_DOCUMENT_LABEL, type ReportDocument } from '@/lib/reportDocument'
 import { progressSizeFor, packSheets, sheetSummary, HALF_COMMENT_MAX, type ProgressSize } from '@/lib/progressReport'
 import { loadAssessmentWeights } from '@/lib/assessmentWeights'
+import { resolveStudentTeacher } from '@/lib/classTeacher'
+import { loadTeachers } from '@/lib/classTeacherData'
 import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
@@ -506,7 +508,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
     // ─── STEP 5: Comment, teacher, reading, attendance, behavior, scaffolds, goals ───
     const { data: commentData } = await supabase.from('comments').select('text, is_skipped, hide_comparison').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', 'report_card').limit(1).single()
-    const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
+    const teacher = resolveStudentTeacher(await loadTeachers(), student)
     const staff = await loadReportStaff()
 
     // Reviewer feedback flagged by partner/admin (graceful if migration not yet run)
@@ -1343,10 +1345,9 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
           supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na').eq('semester_id', semesterId).in('student_id', gIds),
           supabase.from('class_report_settings').select('english_class, domain, is_na').eq('semester_id', semesterId).eq('grade', grade),
           supabase.from('comments').select('student_id, text, is_skipped, hide_comparison').eq('semester_id', semesterId).eq('report_type', 'report_card').in('student_id', gIds),
-          supabase.from('teachers').select('id, name, photo_url'),
+          loadTeachers(),
         ])
-        const teacherMap: Record<string, any> = {}
-        ;(teachersRes.data || []).forEach((t: any) => { teacherMap[t.id] = t })
+        const teachers = teachersRes
         const commentMap: Record<string, any> = {}
         ;(commentsRes.data || []).forEach((c: any) => { commentMap[c.student_id] = c })
         const classNa: Record<string, Record<string, boolean>> = {}
@@ -1407,7 +1408,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
           let prevOverall: number | null = null
           if (prevDomainGrades) { const ps = DOMAINS.filter(dom => prevDomainGrades[dom] != null); prevOverall = ps.length ? Math.round(ps.reduce((a, dom) => a + (prevDomainGrades[dom] as number), 0) / ps.length * 10) / 10 : null }
           const c = commentMap[student.id]
-          const teacher = teacherMap[student.teacher_id]
+          const teacher = resolveStudentTeacher(teachers, student)
           const data = {
             domainGrades, domainNa, classAverages: classAvg[ec] || {}, prevDomainGrades, prevOverall, prevSemesterName,
             overallGrade, overallLetter, semesterName,
@@ -1424,6 +1425,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
       // Load semester name, staff names + class N/A settings once for the whole class
       const { data: semData } = await supabase.from('semesters').select('name').eq('id', semesterId).single()
       const staff = await loadReportStaff()
+      const teachers = await loadTeachers()
       const semesterName = semData?.name || ''
       const grade = students[0]?.grade
       const studentIds = students.map(s => s.id)
@@ -1492,7 +1494,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
 
         // Each document has its own comment row: a progress report must not print the report card's.
         const { row: commentData } = await loadReportComment(student.id, semesterId, isCard ? 'report_card' : 'progress_report')
-        const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
+        const teacher = resolveStudentTeacher(teachers, student)
 
         const baseData = {
           domainGrades, domainNa, overallGrade, overallLetter, semesterName, classAverages, hideComparison: hideComparisonAll || !!commentData?.hide_comparison,
@@ -1671,7 +1673,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       const vals = (classSemGrades || []).filter((sg: any) => sg.domain === dd && !sg.is_na).map((sg: any) => sg.final_grade ?? sg.calculated_grade).filter((v: any) => v != null) as number[]
       classAverages[dd] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null
     })
-    const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
+    const teacher = resolveStudentTeacher(await loadTeachers(), student)
     const staff = await loadReportStaff()
     const [readingRes, ltScoreRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1),

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
+import { loadClassTeacherMap } from '@/lib/classTeacherData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel, compRatioForComposite, capComponent, COMPONENT_CAP,
   compositeWeightsFor, COMPOSITE_TERM_LABELS, DECODING_WEIGHTS, IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, writingTotalFrom, type CompositeTerm, type CompositeWeights } from '@/lib/utils'
@@ -306,7 +307,7 @@ function EmergencyLeveling() {
 
     setSaving(true)
     // Update student class
-    const teacherMap: Record<string, string> = { Lily: '00000000-0000-0000-0000-000000000001', Camellia: '00000000-0000-0000-0000-000000000002', Daisy: '00000000-0000-0000-0000-000000000003', Sunflower: '00000000-0000-0000-0000-000000000004', Marigold: '00000000-0000-0000-0000-000000000005', Snapdragon: '00000000-0000-0000-0000-000000000006' }
+    const teacherMap = await loadClassTeacherMap()
     await supabase.from('students').update({ english_class: newClass, teacher_id: teacherMap[newClass] || null }).eq('id', selectedStudent)
     // Log the change as a behavior note for tracking
     await supabase.from('behavior_logs').insert({
