@@ -43,6 +43,29 @@ const REPORT_CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camell
 // One letter scale for the whole app (see percentToLetter).
 function getLetterGrade(score: number): string { return percentToLetter(score) }
 
+// ─── Staff names on the reports ───────────────────────────────────
+// The principal and team manager are typed in Settings (school_settings) and
+// read fresh for every report build, so a change there shows on the next
+// report opened or printed. A blank setting falls back to the long-standing
+// default so a report never prints an empty cell.
+// The Korean principal name, when given, follows the English one in the same
+// muted style the student's Korean name has.
+type ReportStaff = { principalName: string; principalNameKo: string; teamManager: string }
+const REPORT_STAFF_DEFAULT: ReportStaff = { principalName: 'Kwak Cheol Ok', principalNameKo: '', teamManager: 'Victoria Park' }
+async function loadReportStaff(): Promise<ReportStaff> {
+  try {
+    const { data } = await supabase.from('school_settings').select('principal_name, principal_name_ko, team_manager').limit(1).single()
+    return {
+      principalName: String(data?.principal_name || '').trim() || REPORT_STAFF_DEFAULT.principalName,
+      principalNameKo: String(data?.principal_name_ko || '').trim(),
+      teamManager: String(data?.team_manager || '').trim() || REPORT_STAFF_DEFAULT.teamManager,
+    }
+  } catch {
+    return REPORT_STAFF_DEFAULT
+  }
+}
+const principalHtml = (d: any) => `${prEsc(d.principalName || REPORT_STAFF_DEFAULT.principalName)}${d.principalNameKo ? ` <span style="font-weight:500;color:#94a3b8">${prEsc(d.principalNameKo)}</span>` : ''}`
+
 // ─── Comment rows ────────────────────────────────────────────────
 async function loadReportComment(studentId: string, semesterId: string, reportType: ReportDocument): Promise<{ row: any }> {
   const { data } = await supabase.from('comments').select('text, is_skipped, hide_comparison').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', reportType).limit(1).single()
@@ -101,6 +124,9 @@ interface ReportData {
   comment: string
   teacherName: string
   teacherPhotoUrl: string | null
+  principalName: string
+  principalNameKo: string
+  teamManager: string
   semesterName: string
   latestReading: any | null
   semesterGrade: number | null
@@ -481,6 +507,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     // ─── STEP 5: Comment, teacher, reading, attendance, behavior, scaffolds, goals ───
     const { data: commentData } = await supabase.from('comments').select('text, is_skipped, hide_comparison').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', 'report_card').limit(1).single()
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
+    const staff = await loadReportStaff()
 
     // Reviewer feedback flagged by partner/admin (graceful if migration not yet run)
     let reviewerNote: string | null = null
@@ -536,6 +563,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       commentSkipped: !!commentData?.is_skipped,
       teacherName: teacher?.name || currentTeacher?.name || '',
       teacherPhotoUrl: teacher?.photo_url || null,
+      principalName: staff.principalName, principalNameKo: staff.principalNameKo, teamManager: staff.teamManager,
       semesterName: semester.name,
       // Use grade/class from semester_grades if available (historical accuracy), else current student
       semesterGrade: (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade,
@@ -679,8 +707,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             {/* Row 2 */}
             <InfoCell label="영어반 / English Class" value={d.semesterClass || s.english_class} />
             <InfoCell label="담당 / Teacher" value={d.teacherName} />
-            <InfoCell label="Team Manager" value="Victoria Park" />
-            <InfoCell label="교장 / Principal" value="Kwak Cheol Ok" />
+            <InfoCell label="Team Manager" value={d.teamManager || REPORT_STAFF_DEFAULT.teamManager} />
+            <InfoCell label="교장 / Principal" value={<>{d.principalName || REPORT_STAFF_DEFAULT.principalName}{d.principalNameKo ? <span className="font-medium text-[#94a3b8]"> {d.principalNameKo}</span> : null}</>} />
           </div>
         </div>
 
@@ -1115,8 +1143,8 @@ function reportCardHtml(s: any, d: any, comment: string, commentSkipped: boolean
       </div>
       <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">English Class</div><div style="font-size:13px;font-weight:600;margin-top:1px">${displayClass}</div></div>
       <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Teacher</div><div style="font-size:13px;font-weight:600;margin-top:1px">${d.teacherName}</div></div>
-      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Team Manager</div><div style="font-size:13px;font-weight:600;margin-top:1px">Victoria Park</div></div>
-      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Principal</div><div style="font-size:13px;font-weight:600;margin-top:1px">Kwak Cheol Ok</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Team Manager</div><div style="font-size:13px;font-weight:600;margin-top:1px">${prEsc(d.teamManager || REPORT_STAFF_DEFAULT.teamManager)}</div></div>
+      <div style="padding:5px 0;border-bottom:1px solid #DFE4EB"><div style="font-size:9px;color:#94a3b8;font-weight:600">Principal</div><div style="font-size:13px;font-weight:600;margin-top:1px">${principalHtml(d)}</div></div>
     </div>
   </div>
   <div style="background:#fdfcfa;padding:18px 28px 22px;border-bottom:1px solid #C8CED8">
@@ -1203,7 +1231,7 @@ function progressCardHtml(s: any, d: any, comment: string, size: ProgressSize = 
 
   const header = `<div style="background:${PR.navy};color:#fff;padding:${half ? '12px 28px' : '28px 40px 24px'};display:flex;justify-content:space-between;align-items:center;flex:none"><div style="display:flex;flex-direction:column;gap:${half ? 2 : 5}px"><span style="font-size:${f(10)};letter-spacing:2px;text-transform:uppercase;opacity:.8">Daewoo Elementary School · English Program</span><span style="font-size:${f(28)};font-weight:700;line-height:1;letter-spacing:-.3px">Progress Report</span><span style="font-size:${f(12.5)};opacity:.85">${prEsc(d.semesterName)} · Mid-semester</span></div><div style="width:${half ? 40 : 56}px;height:${half ? 40 : 56}px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><img src="/logo.png" alt="" style="width:${half ? 28 : 40}px;height:${half ? 28 : 40}px;object-fit:contain" onerror="this.style.display='none'"></div></div>`
 
-  const identity = `<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:${f(10)} 20px;padding:${half ? '10px 0' : '20px 0 18px'};border-bottom:1px solid ${PR.rule}">${cell('Name', `${prEsc(s.english_name)} <span style="font-weight:500;color:${PR.muted}">${prEsc(s.korean_name)}</span>`)}${cell('Grade', prEsc(grade))}${cell('Korean class', `${prEsc(s.korean_class)}반 · ${prEsc(s.class_number)}번`)}${cell('English class', prEsc(cls))}${cell('Teacher', prEsc(d.teacherName))}${cell('Team manager', 'Victoria Park')}${cell('Principal', 'Kwak Cheol Ok')}${cell('Overall', d.overallGrade != null ? `<span style="color:${PR.navy};font-weight:700">${prEsc(d.overallLetter)}</span> · ${d.overallGrade.toFixed(1)}%` : '—')}</div>`
+  const identity = `<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:${f(10)} 20px;padding:${half ? '10px 0' : '20px 0 18px'};border-bottom:1px solid ${PR.rule}">${cell('Name', `${prEsc(s.english_name)} <span style="font-weight:500;color:${PR.muted}">${prEsc(s.korean_name)}</span>`)}${cell('Grade', prEsc(grade))}${cell('Korean class', `${prEsc(s.korean_class)}반 · ${prEsc(s.class_number)}번`)}${cell('English class', prEsc(cls))}${cell('Teacher', prEsc(d.teacherName))}${cell('Team manager', prEsc(d.teamManager || REPORT_STAFF_DEFAULT.teamManager))}${cell('Principal', principalHtml(d))}${cell('Overall', d.overallGrade != null ? `<span style="color:${PR.navy};font-weight:700">${prEsc(d.overallLetter)}</span> · ${d.overallGrade.toFixed(1)}%` : '—')}</div>`
 
   const rowStyle = `display:grid;grid-template-columns:${cols};gap:${f(14)};align-items:center;height:${half ? 26 : 40}px;border-bottom:1px solid #e2e8f0`
   const head = `<div style="display:grid;grid-template-columns:${cols};gap:${f(14)};align-items:baseline;padding-bottom:${f(6)};border-bottom:2px solid ${PR.ink};${eyebrow}"><span>Area</span><span>Grade</span><span style="text-align:right">Score</span>${hide ? '' : '<span>Compared with the class</span><span style="text-align:right">Class average</span>'}</div>`
@@ -1296,6 +1324,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
         // ── Whole-grade report cards (admin), sorted by Korean homeroom then number ──
         const { data: semData } = await supabase.from('semesters').select('name').eq('id', semesterId).single()
         const semesterName = semData?.name || ''
+        const staff = await loadReportStaff()
         const { data: studentRows } = await supabase.from('students').select('*')
           .eq('grade', grade).eq('is_active', true).in('english_class', PLACED_ENGLISH_CLASSES as unknown as string[])
         const kOrder = (kc: string) => { const i = (KOREAN_CLASSES as unknown as string[]).indexOf(kc); return i < 0 ? 99 : i }
@@ -1383,6 +1412,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
             domainGrades, domainNa, classAverages: classAvg[ec] || {}, prevDomainGrades, prevOverall, prevSemesterName,
             overallGrade, overallLetter, semesterName,
             teacherName: teacher?.name || '', teacherPhotoUrl: teacher?.photo_url || null,
+            principalName: staff.principalName, principalNameKo: staff.principalNameKo, teamManager: staff.teamManager,
             semesterGrade: student.grade, semesterClass: student.english_class,
           }
           body += reportCardHtml(student, data, c?.text || '', !!c?.is_skipped, hideComparisonAll || !!c?.hide_comparison)
@@ -1391,8 +1421,9 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
         setPreviewHtml(head + body + reportCardShrinkScript(false) + '</body></html>')
       } else {
       const isCard = kind === 'report_card'
-      // Load semester name + class N/A settings once for the whole class
+      // Load semester name, staff names + class N/A settings once for the whole class
       const { data: semData } = await supabase.from('semesters').select('name').eq('id', semesterId).single()
+      const staff = await loadReportStaff()
       const semesterName = semData?.name || ''
       const grade = students[0]?.grade
       const studentIds = students.map(s => s.id)
@@ -1468,6 +1499,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
           commentSkipped: !!commentData?.is_skipped,
           teacherName: teacher?.name || currentTeacher?.name || '',
           teacherPhotoUrl: teacher?.photo_url || null,
+          principalName: staff.principalName, principalNameKo: staff.principalNameKo, teamManager: staff.teamManager,
           semesterGrade: (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade,
           semesterClass: (myGrades || []).find((sg: any) => sg.english_class)?.english_class || student.english_class,
         }
@@ -1640,6 +1672,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       classAverages[dd] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null
     })
     const teacher = student.teacher_id ? (await supabase.from('teachers').select('name, photo_url').eq('id', student.teacher_id).single()).data : null
+    const staff = await loadReportStaff()
     const [readingRes, ltScoreRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(1),
       supabase.from('level_test_scores').select('level_test_id, raw_scores, calculated_metrics').eq('student_id', studentId),
@@ -1673,6 +1706,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       hideComparison: !!commentData?.hide_comparison, classAverages,
       teacherName: teacher?.name || currentTeacher?.name || '',
       teacherPhotoUrl: teacher?.photo_url || null,
+      principalName: staff.principalName, principalNameKo: staff.principalNameKo, teamManager: staff.teamManager,
       semesterName: sem.name,
       semesterGrade: (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade,
       semesterClass: (myGrades || []).find((sg: any) => sg.english_class)?.english_class || student.english_class,
