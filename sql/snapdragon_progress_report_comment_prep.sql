@@ -63,14 +63,6 @@ pivot AS (
   FROM domain_grades
   GROUP BY student_id
 ),
-monthly_behavior AS (
-  SELECT student_id,
-         string_agg(to_char(to_date(month::text, 'MM'), 'Mon') || ': ' || grade,
-                    ', ' ORDER BY month) AS monthly_behavior
-  FROM monthly_behavior_grades
-  WHERE semester_id = (SELECT id FROM active)
-  GROUP BY student_id
-),
 current_draft AS (
   SELECT c.student_id, c.text, c.is_skipped
   FROM comments c
@@ -123,7 +115,6 @@ SELECT
     ELSE 'E'
   END                              AS overall_letter,
   p.behavior_grade,
-  mb.monthly_behavior,
   r.is_transfer,
   nullif(r.notes, '')              AS student_notes,
   cd.is_skipped                    AS current_comment_skipped,
@@ -132,7 +123,6 @@ SELECT
   pc.past_comments
 FROM roster r
 LEFT JOIN pivot            p  ON p.student_id  = r.id
-LEFT JOIN monthly_behavior mb ON mb.student_id = r.id
 LEFT JOIN current_draft    cd ON cd.student_id = r.id
 LEFT JOIN past             pc ON pc.student_id = r.id
 ORDER BY r.grade, r.korean_class, r.class_number;
