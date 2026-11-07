@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'program-map', date: '2026-11-09', title: 'Curriculum: the program map, every class on one page',
+    body: 'You can now open Curriculum → Class boards → Program map and see every class and grade across the term, the books as thin strips in their colours. A dot on a week means two or more classes share something. Click it: lines join the classes on the same unit (dark) or on the same skill in different books (red), the panel names them with their teachers, and Everyone this week lists each class’s units, with a note where another class finished a unit earlier so its files are ready. Arrows open any class’s board.',
+    path: '/curriculum', guide: 'bookshelf',
+  },
+  {
     id: 'reading-lists', date: '2026-11-09', title: 'Curriculum: Into Reading is a reading list, not a timetable',
     body: 'Placing Into Reading now opens the book’s contents as a checklist by module: tick the stories the class will read and place them, no weeks to type. The term shares itself across the stories, which show as open bars on the board. Tick each story Done when you finish it and the line above the board says where you stand, 4 of 9 done · 1 story behind. Every other book works the same way now: tick the units the class will do and the term shares itself; drag or stretch a unit on the board only when one needs more or less. The board also has a Year view, and holiday weeks from the school calendar no longer count as teaching weeks.',
     path: '/curriculum', guide: 'bookshelf',

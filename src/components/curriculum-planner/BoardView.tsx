@@ -54,11 +54,17 @@ export default function BoardView() {
   const ownClass = currentTeacher && (PLACED_ENGLISH_CLASSES as string[]).includes(currentTeacher.english_class) ? currentTeacher.english_class : PLACED_ENGLISH_CLASSES[0]
   const today = getKSTDateString()
   const years = useMemo(() => { const ys = academicYears(semesters); if (activeSemester && !ys.includes(activeSemester.academic_year)) ys.unshift(activeSemester.academic_year); return ys }, [semesters, activeSemester])
-  const [cls, setCls] = useState<string>(ownClass)
-  const [grade, setGrade] = useState<number>(1)
+  // A link from the program map carries the class and grade to open on.
+  const fromLink = (() => { if (typeof window === 'undefined') return null; const q = (window.location.hash || '').split('?')[1]; if (!q) return null; const sp = new URLSearchParams(q); return { cls: sp.get('cls'), grade: Number(sp.get('grade')) } })()
+  const [cls, setCls] = useState<string>(fromLink?.cls && (PLACED_ENGLISH_CLASSES as string[]).includes(fromLink.cls) ? fromLink.cls : ownClass)
+  const [grade, setGrade] = useState<number>(fromLink?.grade && (GRADES as number[]).includes(fromLink.grade) ? fromLink.grade : 1)
   const [year, setYear] = useState<string>(activeSemester?.academic_year || '')
   const theYear = year || activeSemester?.academic_year || years[0] || ''
   const [viewPick, setViewPick] = useState<View | null>(null)
+  useEffect(() => {
+    const onTarget = (e: Event) => { const d = (e as CustomEvent).detail || {}; if (d.cls && (PLACED_ENGLISH_CLASSES as string[]).includes(d.cls)) setCls(d.cls); const g = Number(d.grade); if ((GRADES as number[]).includes(g)) setGrade(g) }
+    window.addEventListener('daewoo:board-target', onTarget); return () => window.removeEventListener('daewoo:board-target', onTarget)
+  }, [])
   const view: View = viewPick || halfOf(semesters, theYear, today)
   const half = view === 'year' ? 'spring' : view
   const yw = useMemo(() => yearWeeks(semesters, theYear), [semesters, theYear])

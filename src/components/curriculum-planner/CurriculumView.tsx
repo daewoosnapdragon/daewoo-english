@@ -2,24 +2,26 @@
 
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
-import { BookOpen, CalendarRange, ClipboardCheck, Map, Rows3 } from 'lucide-react'
+import { BookOpen, CalendarRange, ClipboardCheck, Map, Rows3, TrainFront } from 'lucide-react'
 import BookshelfView from './BookshelfView'
 import MapView from './PlacementsView'
 import BoardView from './BoardView'
 import LadderView from './LadderView'
 import ReviewView from './ReviewView'
+import ProgramMapView from './ProgramMapView'
 
 // ─── Curriculum ──────────────────────────────────────────────────
 // Two tabs. Class boards, for everyone: any class and grade's term week by
-// week, and the ladder of one level across the grades. Curriculum map, for
+// week, the program map of every class across the term with what they
+// share, and the ladder of one level across the grades. Curriculum map, for
 // admin: the grid of which book each class and grade uses for which term,
 // with the pacing of each, the review queue of teachers' plans that differ
 // from the master, and the Bookshelf behind it. See
 // docs/curriculum-planner-plan.md.
 
 type Tab = 'boards' | 'map'
-type Sub = 'board' | 'ladder' | 'map' | 'review' | 'bookshelf'
-const SUBS: Record<Tab, Sub[]> = { boards: ['board', 'ladder'], map: ['map', 'review', 'bookshelf'] }
+type Sub = 'board' | 'program' | 'ladder' | 'map' | 'review' | 'bookshelf'
+const SUBS: Record<Tab, Sub[]> = { boards: ['board', 'program', 'ladder'], map: ['map', 'review', 'bookshelf'] }
 
 export default function CurriculumView() {
   const { currentTeacher, language } = useApp()
@@ -29,13 +31,18 @@ export default function CurriculumView() {
   const [sub, setSub] = useState<Sub>('board')
   useEffect(() => {
     const fromHash = () => {
-      const [t, s] = (window.location.hash || '').slice(1).split('/')
+      const [t, s] = (window.location.hash || '').slice(1).split('?')[0].split('/')
       if (t === 'boards' || t === 'map') { setTab(t); setSub(s && (SUBS[t] as string[]).includes(s) ? s as Sub : SUBS[t][0]) }
       else if (t === 'bookshelf') { setTab('map'); setSub('bookshelf') }
     }
     fromHash(); window.addEventListener('hashchange', fromHash); return () => window.removeEventListener('hashchange', fromHash)
   }, [])
   const go = (t: Tab, s?: Sub) => { const next = s || SUBS[t][0]; setTab(t); setSub(next); history.replaceState(null, '', `#${t}/${next}`) }
+  // A link from the program map (#boards/board?cls=Daisy&grade=2) opens the board on that class and grade.
+  useEffect(() => {
+    const onHash = () => { const [, q] = (window.location.hash || '').split('?'); if (q) window.dispatchEvent(new CustomEvent('daewoo:board-target', { detail: Object.fromEntries(new URLSearchParams(q)) })) }
+    window.addEventListener('hashchange', onHash); onHash(); return () => window.removeEventListener('hashchange', onHash)
+  }, [])
   const showTab: Tab = tab === 'map' && !canManage ? 'boards' : tab
 
   const tabs: { id: Tab; label: string; hint: string; icon: React.ReactNode; hidden?: boolean }[] = [
@@ -44,6 +51,7 @@ export default function CurriculumView() {
   ]
   const subs: Record<Sub, { label: string; icon: React.ReactNode }> = {
     board: { label: ko ? '학기 보드' : 'Board', icon: <CalendarRange size={12} /> },
+    program: { label: ko ? '프로그램 지도' : 'Program map', icon: <TrainFront size={12} /> },
     ladder: { label: ko ? '학년 사다리' : 'Ladder', icon: <Rows3 size={12} /> },
     map: { label: ko ? '배치와 진도' : 'Map', icon: <Map size={12} /> },
     review: { label: ko ? '교사 계획 확인' : 'Review', icon: <ClipboardCheck size={12} /> },
@@ -73,6 +81,7 @@ export default function CurriculumView() {
         </div>
       </div>
       {showTab === 'boards' && sub === 'board' && <BoardView />}
+      {showTab === 'boards' && sub === 'program' && <ProgramMapView />}
       {showTab === 'boards' && sub === 'ladder' && <LadderView />}
       {showTab === 'map' && sub === 'map' && <MapView />}
       {showTab === 'map' && sub === 'review' && <ReviewView />}
