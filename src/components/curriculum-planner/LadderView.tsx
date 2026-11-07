@@ -85,7 +85,7 @@ export default function LadderView() {
                           {strand === 'all' && <p className="text-[11px] text-ink-3 leading-snug">{c.units ? `${c.units} ${ko ? '단원' : 'units'}` : (ko ? '색인 안 됨' : 'not indexed')}</p>}
                           <div className="flex gap-1 mt-auto">
                             {lb.terms.map(t => <span key={t} className="inline-flex h-5 px-1.5 rounded text-[10px] font-semibold bg-ink text-paper items-center">{TERM_CHIP[t]}</span>)}
-                            {lb.book.status !== 'confirmed' && <span className="inline-flex h-5 px-1.5 rounded text-[10px] bg-warn-soft text-warn items-center">{lb.book.status === 'polled' ? (ko ? '투표 중' : 'in the poll') : (ko ? '사용 안 함' : 'retired')}</span>}
+                            {lb.book.status === 'retired' && <span className="inline-flex h-5 px-1.5 rounded text-[10px] bg-paper-3 text-ink-3 items-center">{ko ? '사용 안 함' : 'retired'}</span>}
                           </div>
                         </div>
                       )

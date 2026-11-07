@@ -158,3 +158,13 @@ INSERT INTO curriculum_skills (code, label, strand, sort_order) VALUES
   ('past events', 'Talking about the past', 'speaking', 86), ('giving reasons', 'Giving reasons', 'speaking', 87), ('presenting', 'Presenting', 'speaking', 88),
   ('listening for detail', 'Listening for detail', 'speaking', 89)
 ON CONFLICT (code) DO NOTHING;
+
+-- ── 8 Nov 2026: current or retired, nothing else ────────────────────────────
+-- A book is either in use or retired; the poll is settled outside the app.
+UPDATE curriculum_books SET status = 'confirmed' WHERE status = 'polled';
+ALTER TABLE curriculum_books DROP CONSTRAINT IF EXISTS curriculum_books_status_check;
+ALTER TABLE curriculum_books ADD CONSTRAINT curriculum_books_status_check CHECK (status IN ('confirmed', 'retired'));
+ALTER TABLE curriculum_books ALTER COLUMN status SET DEFAULT 'confirmed';
+-- Science of Reading joins the phonics shelf; Thumbs Up leaves it when no book uses it.
+INSERT INTO curriculum_series (name, strand, color, sort_order) VALUES ('Science of Reading', 'phonics', 'teal', 15) ON CONFLICT DO NOTHING;
+DELETE FROM curriculum_series s WHERE lower(s.name) = 'thumbs up' AND NOT EXISTS (SELECT 1 FROM curriculum_books b WHERE b.series_id = s.id);

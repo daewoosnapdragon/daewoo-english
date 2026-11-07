@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { logActivity } from '@/lib/activity'
-import { normalizeTag, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
+import { normalizeStatus, normalizeTag, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
 
 // ─── Curriculum catalogue: the reads and writes ──────────────────
 // Every change goes through here so the activity log gets a line. Errors
@@ -26,7 +26,7 @@ export async function fetchCatalogue(): Promise<{ data: Catalogue; error: string
   return {
     data: {
       series: (s.data || []) as CurriculumSeries[],
-      books: (b.data || []) as CurriculumBook[],
+      books: ((b.data || []) as any[]).map(x => ({ ...x, status: normalizeStatus(x.status) })) as CurriculumBook[],
       units: ((u.data || []) as any[]).map(x => ({ ...x, default_weeks: Number(x.default_weeks), skill_tags: x.skill_tags || [], ccss_codes: x.ccss_codes || [] })) as CurriculumUnit[],
       lessons: ((l.data || []) as any[]).map(x => ({ ...x, skill_tags: x.skill_tags || [], ccss_codes: x.ccss_codes || [] })) as CurriculumLesson[],
       resources: ((r.data || []) as any[]).map(x => ({ ...x, copies_hint: x.copies_hint === null || x.copies_hint === undefined ? null : Number(x.copies_hint) })) as CurriculumResource[],
@@ -51,6 +51,12 @@ export async function saveSeries(id: string | null, d: SeriesDraft): Promise<{ i
   if (error) return { id: null, error: error.message }
   logActivity('created', `Series: ${row.name}`, { path: PATH })
   return { id: data.id, error: null }
+}
+
+export async function deleteSeries(id: string, name: string): Promise<string | null> {
+  const { error } = await supabase.from('curriculum_series').delete().eq('id', id)
+  if (!error) logActivity('deleted', `Series: ${name}`, { path: PATH })
+  return msg(error)
 }
 
 export interface BookDraft { series_id: string; level_number: string; title: string; status: BookStatus; drive_folder_url: string; notes: string }

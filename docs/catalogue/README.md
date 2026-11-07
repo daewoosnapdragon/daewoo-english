@@ -1,6 +1,6 @@
 # Catalogue paste files
 
-Text files in the shape the Bookshelf page reads (Curriculum → Bookshelf → open the book → Draft units and lessons from the contents → paste → Read the lines → Save as suggested). One file per book. Everything lands marked "Suggested by Claude" until admin confirms it.
+Text files in the shape the Bookshelf page reads (Curriculum → Curriculum map → Bookshelf → open the book → Draft units and lessons from the contents → paste → Read the lines → Save as suggested). One file per book. Everything lands marked "Suggested by Claude" until admin confirms it.
 
 ## Into Reading 1 to 4
 

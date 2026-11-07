@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { BOOK_COLORS, BOOK_STATUS_LABEL, RESOURCE_KINDS, STRANDS, STRAND_LABEL, bookName, colorHex, countBook, countLine, draftPrompt, isCurriculumMissing, kindFromUrl, parseCatalogueLines, parseCodes, parseTags, unknownTags, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
-import { addResource, appendDraft, deleteBook, deleteLesson, deleteResource, deleteSkill, deleteUnit, fetchCatalogue, reorder, saveBook, saveLesson, saveSeries, saveSkill, saveUnit, setConfirmed, type BookDraft, type Catalogue, type LessonDraft, type UnitDraft } from '@/lib/curriculumData'
+import { addResource, appendDraft, deleteBook, deleteLesson, deleteResource, deleteSeries, deleteSkill, deleteUnit, fetchCatalogue, reorder, saveBook, saveLesson, saveSeries, saveSkill, saveUnit, setConfirmed, type BookDraft, type Catalogue, type LessonDraft, type UnitDraft } from '@/lib/curriculumData'
 import { ArrowDown, ArrowUp, BookOpen, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Loader2, Pencil, Plus, RefreshCw, Sparkles, Tag, Trash2, X } from 'lucide-react'
 
 // ─── Bookshelf ───────────────────────────────────────────────────
@@ -13,8 +13,8 @@ import { ArrowDown, ArrowUp, BookOpen, Check, ChevronDown, ChevronRight, Copy, E
 // tags, and links to the files in the shared Drive. Units and lessons
 // arrive as Claude's draft from a table of contents or the teacher's guide,
 // pasted into the box on the right, and show as "suggested" until admin
-// confirms them. Books in the poll, confirmed books and retired books are
-// all here, so an old year's plan still resolves. This is phase 1 of the
+// confirms them. Books in use and retired books are both here, so an old
+// year's plan still resolves. This is phase 1 of the
 // curriculum planner (docs/curriculum-planner-plan.md): placements, pacing
 // and the boards come next and read from these tables.
 
@@ -70,14 +70,14 @@ export default function BookshelfView() {
     strand,
     series: c.series.filter(s => s.strand === strand).map(s => ({ s, books: visible.filter(b => b.series_id === s.id).sort((a, b) => a.level_number.localeCompare(b.level_number, undefined, { numeric: true })) })).filter(g => g.books.length || adding),
   })).filter(g => g.series.length)
-  const confirmedCount = c.books.filter(b => b.status === 'confirmed').length
-  const polled = c.books.filter(b => b.status === 'polled').length
+  const inUse = c.books.filter(b => b.status === 'confirmed').length
+  const retired = c.books.length - inUse
   const totals = countBook(c.units, c.lessons)
 
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between gap-6 flex-wrap mb-4">
-        <h2 className="font-display text-[22px] leading-none text-ink">{ko ? '책꽂이' : 'Bookshelf'}</h2>
+        <p className="text-[12.5px] text-ink-2">{ko ? '프로그램이 쓰는 책과 그 단원, 차시.' : 'Every book the program uses, with its units and lessons. Series and books are edited here; where they are taught is set on the map.'}</p>
         <div className="flex gap-2">
           {canManage && <button onClick={() => setAdding(a => !a)} className={btn}><Plus size={13} />{ko ? '책 추가' : 'Add a book'}</button>}
           <button onClick={c.reload} className={btn}><RefreshCw size={13} />{ko ? '새로고침' : 'Refresh'}</button>
@@ -88,8 +88,7 @@ export default function BookshelfView() {
 
       {!c.loading && !c.missing && (
         <p className="text-[13px] text-ink-2 mb-5 leading-relaxed">
-          {ko ? `책 ${c.books.length}권` : `${c.books.length} ${c.books.length === 1 ? 'book' : 'books'}`}
-          {confirmedCount ? ` · ${confirmedCount} ${ko ? '확정' : 'confirmed'}` : ''}{polled ? ` · ${polled} ${ko ? '투표 중' : 'in the poll'}` : ''}
+          {ko ? `사용 중인 책 ${inUse}권` : `${inUse} ${inUse === 1 ? 'book' : 'books'} in use`}{retired ? ` · ${retired} ${ko ? '사용 안 함' : 'retired'}` : ''}
           {' · '}{countLine(totals, ko)}
         </p>
       )}
@@ -105,11 +104,7 @@ export default function BookshelfView() {
                 <p className="eyebrow mb-2">{ko ? STRAND_LABEL[g.strand].ko : STRAND_LABEL[g.strand].en}</p>
                 {g.series.map(({ s, books }) => (
                   <div key={s.id} className="mb-3">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="w-2.5 h-2.5 rounded-sm" style={{ background: colorHex(s.color) }} />
-                      <span className="text-[12.5px] font-semibold text-ink">{s.name}</span>
-                      {s.publisher && <span className="text-[11px] text-ink-3">{s.publisher}</span>}
-                    </div>
+                    <SeriesHeader s={s} bookCount={c.books.filter(b => b.series_id === s.id).length} ko={ko} canManage={canManage} fail={fail} reload={c.reload} />
                     <div className="flex flex-col gap-1">
                       {books.map(b => {
                         const counts = countBook(c.units.filter(u => u.book_id === b.id), c.lessons)
@@ -158,8 +153,41 @@ export default function BookshelfView() {
 }
 
 function StatusChip({ status, ko }: { status: BookStatus; ko: boolean }) {
-  const cls = status === 'confirmed' ? 'bg-good-soft text-good' : status === 'retired' ? 'bg-paper-3 text-ink-3' : 'bg-warn-soft text-warn'
-  return <span className={`${chip} ${cls}`}>{ko ? BOOK_STATUS_LABEL[status].ko : BOOK_STATUS_LABEL[status].en}</span>
+  if (status !== 'retired') return null
+  return <span className={`${chip} bg-paper-3 text-ink-3`}>{ko ? BOOK_STATUS_LABEL.retired.ko : BOOK_STATUS_LABEL.retired.en}</span>
+}
+
+// ─── A series on the shelf ───────────────────────────────────────
+function SeriesHeader({ s, bookCount, ko, canManage, fail, reload }: { s: CurriculumSeries; bookCount: number; ko: boolean; canManage: boolean; fail: (e: string | null) => boolean; reload: () => Promise<void> }) {
+  const { confirmDialog } = useApp()
+  const [editing, setEditing] = useState(false)
+  const [d, setD] = useState({ name: s.name, publisher: s.publisher, strand: s.strand, color: s.color })
+  const save = async () => { const r = await saveSeries(s.id, d); if (!fail(r.error)) { setEditing(false); reload() } }
+  const remove = async () => {
+    if (!await confirmDialog({ title: ko ? '시리즈 삭제' : 'Remove this series', message: s.name, confirmLabel: ko ? '삭제' : 'Remove' })) return
+    if (!fail(await deleteSeries(s.id, s.name))) reload()
+  }
+  if (editing) return (
+    <div className="border border-rule-2 rounded p-2 mb-2 grid grid-cols-2 gap-2">
+      <div className="col-span-2"><span className={lbl}>{ko ? '시리즈 이름' : 'Series name'}</span><input value={d.name} onChange={e => setD({ ...d, name: e.target.value })} className={inp} autoFocus /></div>
+      <div><span className={lbl}>{ko ? '출판사' : 'Publisher'}</span><input value={d.publisher} onChange={e => setD({ ...d, publisher: e.target.value })} className={inp} /></div>
+      <div><span className={lbl}>{ko ? '영역' : 'Strand'}</span><select value={d.strand} onChange={e => setD({ ...d, strand: e.target.value as Strand })} className={`${sel} w-full`}>{STRANDS.map(x => <option key={x} value={x}>{ko ? STRAND_LABEL[x].ko : STRAND_LABEL[x].en}</option>)}</select></div>
+      <div className="col-span-2 flex gap-1.5">{Object.entries(BOOK_COLORS).map(([k, v]) => <button key={k} type="button" onClick={() => setD({ ...d, color: k })} title={v.label} className={`w-6 h-6 rounded ${d.color === k ? 'ring-2 ring-ink ring-offset-1' : ''}`} style={{ background: v.hex }} />)}</div>
+      <div className="col-span-2 flex gap-2">
+        <button onClick={save} className={btnS}><Check size={11} />{ko ? '저장' : 'Save'}</button>
+        <button onClick={() => setEditing(false)} className={btnS}>{ko ? '취소' : 'Cancel'}</button>
+        {bookCount === 0 && <button onClick={remove} className={`${btnS} ml-auto`}><Trash2 size={11} />{ko ? '시리즈 삭제' : 'Remove series'}</button>}
+      </div>
+    </div>
+  )
+  return (
+    <div className="flex items-center gap-2 mb-1.5 group">
+      <span className="w-2.5 h-2.5 rounded-sm" style={{ background: colorHex(s.color) }} />
+      <span className="text-[12.5px] font-semibold text-ink">{s.name}</span>
+      {s.publisher && <span className="text-[11px] text-ink-3">{s.publisher}</span>}
+      {canManage && <button onClick={() => { setD({ name: s.name, publisher: s.publisher, strand: s.strand, color: s.color }); setEditing(true) }} className="text-ink-3 hover:text-ink opacity-0 group-hover:opacity-100" aria-label="Edit series"><Pencil size={10} /></button>}
+    </div>
+  )
 }
 
 function SourceChip({ confirmed_at, confirmed_by, source, ko, nameOf }: { confirmed_at: string | null; confirmed_by: string | null; source: 'claude' | 'teacher'; ko: boolean; nameOf: (id: string | null) => string }) {
@@ -181,7 +209,7 @@ function Tags({ tags, codes }: { tags: string[]; codes: string[] }) {
 function AddBookForm({ c, ko, fail, onDone, onCancel }: { c: C; ko: boolean; fail: (e: string | null) => boolean; onDone: (id: string | null) => void; onCancel: () => void }) {
   const [seriesId, setSeriesId] = useState(c.series[0]?.id || 'new')
   const [newSeries, setNewSeries] = useState({ name: '', publisher: '', strand: 'reading' as Strand, color: 'blue' })
-  const [d, setD] = useState<Omit<BookDraft, 'series_id'>>({ level_number: '', title: '', status: 'polled', drive_folder_url: '', notes: '' })
+  const [d, setD] = useState<Omit<BookDraft, 'series_id'>>({ level_number: '', title: '', status: 'confirmed', drive_folder_url: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const save = async () => {
     setSaving(true)
@@ -218,9 +246,6 @@ function AddBookForm({ c, ko, fail, onDone, onCancel }: { c: C; ko: boolean; fai
       <div className="grid grid-cols-[72px_1fr] gap-2">
         <div><span className={lbl}>{ko ? '레벨' : 'Level'}</span><input value={d.level_number} onChange={e => setD({ ...d, level_number: e.target.value })} className={inp} placeholder="2" /></div>
         <div><span className={lbl}>{ko ? '제목 (선택)' : 'Title, if the series name is not enough'}</span><input value={d.title} onChange={e => setD({ ...d, title: e.target.value })} className={inp} /></div>
-      </div>
-      <div><span className={lbl}>{ko ? '상태' : 'Status'}</span>
-        <select value={d.status} onChange={e => setD({ ...d, status: e.target.value as BookStatus })} className={`${sel} w-full`}>{(['polled', 'confirmed', 'retired'] as BookStatus[]).map(s => <option key={s} value={s}>{ko ? BOOK_STATUS_LABEL[s].ko : BOOK_STATUS_LABEL[s].en}</option>)}</select>
       </div>
       <div className="flex gap-2 mt-1">
         <button onClick={save} disabled={saving} className={btnP}>{saving ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}{ko ? '추가' : 'Add'}</button>
@@ -322,7 +347,7 @@ function BookPanel({ book, series, c, ko, me, canManage, nameOf, fail, onDeleted
               <div><span className={lbl}>{ko ? '시리즈' : 'Series'}</span><select value={d.series_id} onChange={e => setD({ ...d, series_id: e.target.value })} className={`${sel} w-full`}>{c.series.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
               <div><span className={lbl}>{ko ? '레벨' : 'Level'}</span><input value={d.level_number} onChange={e => setD({ ...d, level_number: e.target.value })} className={inp} /></div>
               <div className="col-span-2"><span className={lbl}>{ko ? '제목' : 'Title'}</span><input value={d.title} onChange={e => setD({ ...d, title: e.target.value })} className={inp} /></div>
-              <div><span className={lbl}>{ko ? '상태' : 'Status'}</span><select value={d.status} onChange={e => setD({ ...d, status: e.target.value as BookStatus })} className={`${sel} w-full`}>{(['polled', 'confirmed', 'retired'] as BookStatus[]).map(s => <option key={s} value={s}>{ko ? BOOK_STATUS_LABEL[s].ko : BOOK_STATUS_LABEL[s].en}</option>)}</select></div>
+              <div><span className={lbl}>{ko ? '상태' : 'Status'}</span><select value={d.status} onChange={e => setD({ ...d, status: e.target.value as BookStatus })} className={`${sel} w-full`}>{(['confirmed', 'retired'] as BookStatus[]).map(s => <option key={s} value={s}>{ko ? BOOK_STATUS_LABEL[s].ko : BOOK_STATUS_LABEL[s].en}</option>)}</select></div>
               <div><span className={lbl}>{ko ? 'Drive 폴더' : 'Drive folder link'}</span><input value={d.drive_folder_url} onChange={e => setD({ ...d, drive_folder_url: e.target.value })} className={inp} placeholder="https://drive.google.com/drive/folders/…" /></div>
               <div className="col-span-2"><span className={lbl}>{ko ? '메모' : 'Notes'}</span><textarea value={d.notes} onChange={e => setD({ ...d, notes: e.target.value })} rows={2} className={area} /></div>
               <div className="col-span-2 flex gap-2"><button onClick={saveMeta} className={btnP}><Check size={13} />{ko ? '저장' : 'Save'}</button><button onClick={() => setEditing(false)} className={btn}>{ko ? '취소' : 'Cancel'}</button></div>
@@ -344,6 +369,7 @@ function BookPanel({ book, series, c, ko, me, canManage, nameOf, fail, onDeleted
         {canManage && !editing && (
           <div className="flex gap-1.5 shrink-0">
             <button onClick={() => setEditing(true)} className={btnS}><Pencil size={11} />{ko ? '수정' : 'Edit'}</button>
+            <button onClick={async () => { const r = await saveBook(book.id, { ...d, status: book.status === 'retired' ? 'confirmed' : 'retired' }, label); if (!fail(r.error)) c.reload() }} className={btnS}>{book.status === 'retired' ? (ko ? '다시 사용' : 'Back in use') : (ko ? '사용 안 함' : 'Retire')}</button>
             <button onClick={remove} className={btnS}><Trash2 size={11} /></button>
           </div>
         )}

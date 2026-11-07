@@ -13,9 +13,17 @@ export const STRAND_LABEL: Record<Strand, { en: string; ko: string }> = {
   speaking: { en: 'Speaking', ko: '말하기' }, grammar: { en: 'Grammar', ko: '문법' }, other: { en: 'Other', ko: '기타' },
 }
 
-export type BookStatus = 'polled' | 'confirmed' | 'retired'
+/** A book is in use ("confirmed", the stored value) or retired. Rows written before 8 Nov 2026 as "polled" read as in use. */
+export type BookStatus = 'confirmed' | 'retired'
 export const BOOK_STATUS_LABEL: Record<BookStatus, { en: string; ko: string }> = {
-  polled: { en: 'In the poll', ko: '투표 중' }, confirmed: { en: 'Confirmed', ko: '확정' }, retired: { en: 'Retired', ko: '사용 안 함' },
+  confirmed: { en: 'In use', ko: '사용 중' }, retired: { en: 'Retired', ko: '사용 안 함' },
+}
+export const normalizeStatus = (s: string): BookStatus => s === 'retired' ? 'retired' : 'confirmed'
+
+/** "M3 W2 · The Story of You" splits into the badge "M3 W2" and the title; anything else has no badge. */
+export function splitUnitTitle(title: string): { badge: string; name: string } {
+  const m = title.match(/^(M\d+\s*W\d+|Unit\s*\d+[a-z]?|Module\s*\d+)\s*[·:\-–]\s*(.+)$/i)
+  return m ? { badge: m[1].replace(/\s+/g, ' '), name: m[2] } : { badge: '', name: title }
 }
 
 export type ResourceKind = 'slides' | 'pdf' | 'doc' | 'sheet' | 'audio' | 'video' | 'folder' | 'other'
