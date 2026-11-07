@@ -136,7 +136,9 @@ export default function BoardView() {
     return () => { on = false }
   }, [semesters, theYear, grade])
   useEffect(() => { setPicked(null); setBlockForm(null); setWeekN(null); setHiCode(null) }, [cls, grade, theYear, view, planMode])
-  const loadLogs = useMemo(() => () => { if (p.plansMissing) return; fetchLogs(cls, grade).then(setLogs) }, [cls, grade, p.plansMissing])
+  // Taught lessons for this school year only: the same class and grade next March is a new cohort.
+  const yearSpan = useMemo(() => { const sp = termDates(semesters, theYear, 'spring'), f = termDates(semesters, theYear, 'fall'); return { from: sp.start || f.start, to: f.end || sp.end } }, [semesters, theYear])
+  const loadLogs = useMemo(() => () => { if (p.plansMissing) return; fetchLogs(cls, grade, yearSpan.from, yearSpan.to).then(setLogs) }, [cls, grade, p.plansMissing, yearSpan.from, yearSpan.to])
   useEffect(() => { loadLogs() }, [loadLogs])
   // Lesson plans that name a unit, for a class whose board follows its plans.
   const [linked, setLinked] = useState<LinkedDay[]>([])

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { pacingPatchesJson, tryRpc } from '@/lib/curriculumRpc'
 import { fetchAll } from '@/lib/fetchAll'
 import { logActivity } from '@/lib/activity'
 import type { CurriculumUnit } from '@/lib/curriculumCore'
@@ -37,6 +38,14 @@ export interface PlacementDraft { book_id: string; english_class: string; grade:
 
 /** Places a book with the given units (every unit of a sequence book, the chosen stories of an anthology), each with the unit's default weeks. */
 export async function createPlacement(d: PlacementDraft, units: CurriculumUnit[], teacherId: string, label: string): Promise<{ id: string | null; error: string | null }> {
+  // In one transaction when the database has the function: never a placement without its units.
+  const rowsJson = [...units].sort((a, b) => a.sort_order - b.sort_order).map((u, i) => ({ unit_id: u.id, sort_order: i + 1, weeks: u.default_weeks || 2 }))
+  const r = await tryRpc<string>('curriculum_create_placement', { p_book: d.book_id, p_class: d.english_class, p_grade: d.grade, p_year: d.academic_year, p_term: d.term, p_by: teacherId, p_rows: rowsJson })
+  if (!r.missing) {
+    if (r.error) return { id: null, error: /duplicate|unique/i.test(r.error) ? 'That book is already placed here for this term.' : r.error }
+    logActivity('created', `Placed ${label} in ${d.english_class} G${d.grade}, ${d.term} ${d.academic_year}`, { path: PATH })
+    return { id: r.data, error: null }
+  }
   const { data, error } = await supabase.from('curriculum_placements').insert({ ...d, is_master: true, created_by: teacherId }).select('id').single()
   if (error) return { id: null, error: /duplicate|unique/i.test(error.message) ? 'That book is already placed here for this term.' : error.message }
   const rows = [...units].sort((a, b) => a.sort_order - b.sort_order).map((u, i) => ({ placement_id: data.id, unit_id: u.id, sort_order: i + 1, weeks: u.default_weeks || 2, owner: 'master' }))
@@ -77,6 +86,9 @@ export async function movePacing(rows: CurriculumPacing[], id: string, dir: -1 |
   // Renumber everything so two rows never share an order.
   const next = sorted.map((r, k) => ({ id: r.id, sort_order: k + 1 }))
   const t = next[i].sort_order; next[i].sort_order = next[j].sort_order; next[j].sort_order = t
+  const ids = [...next].sort((a, b) => a.sort_order - b.sort_order).map(r => r.id)
+  const rpc = await tryRpc('curriculum_set_order', { p_table: 'curriculum_pacing', p_ids: ids })
+  if (!rpc.missing) return rpc.error
   for (const r of next) {
     const { error } = await supabase.from('curriculum_pacing').update({ sort_order: r.sort_order }).eq('id', r.id)
     if (error) return error.message
@@ -118,6 +130,9 @@ export async function clearPacingFixed(id: string, label: string): Promise<strin
 
 /** Writes several weeks patches to master rows. */
 export async function patchMasterRows(patches: { id: string; weeks?: number; gap_before?: number }[], label: string): Promise<string | null> {
+  if (!patches.length) return null
+  const rpc = await tryRpc('curriculum_patch_pacing', { p_patches: pacingPatchesJson(patches) })
+  if (!rpc.missing) { if (!rpc.error) logActivity('edited', `Pacing: ${label}`, { key: label, path: PATH }); return rpc.error }
   for (const pch of patches) {
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (pch.weeks !== undefined) patch.weeks = Math.max(0.5, Math.round(pch.weeks * 2) / 2)
@@ -136,6 +151,10 @@ export async function copyPlacements(from: { english_class: string; grade: numbe
   let copied = 0
   for (const p of src) {
     if (existing.some(e => e.book_id === p.book_id && e.term === p.term)) continue
+    // Each copy in one transaction when the database has the function: a placement always comes with its rows.
+    const rowsJson = pacing.filter(r => r.placement_id === p.id && r.owner === 'master').map(r => ({ unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, gap_before: r.gap_before || 0, fixed: !!r.fixed }))
+    const rpc = await tryRpc('curriculum_create_placement', { p_book: p.book_id, p_class: to.english_class, p_grade: to.grade, p_year: to.academic_year, p_term: p.term, p_by: teacherId, p_rows: rowsJson })
+    if (!rpc.missing) { if (rpc.error) return { copied, error: rpc.error }; copied += 1; continue }
     const { data, error } = await supabase.from('curriculum_placements').insert({ book_id: p.book_id, english_class: to.english_class, grade: to.grade, academic_year: to.academic_year, term: p.term, is_master: true, created_by: teacherId }).select('id').single()
     if (error) return { copied, error: error.message }
     const rows = pacing.filter(r => r.placement_id === p.id && r.owner === 'master').map(r => ({ placement_id: data.id, unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, gap_before: r.gap_before || 0, fixed: !!r.fixed, owner: 'master' }))

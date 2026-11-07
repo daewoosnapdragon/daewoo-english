@@ -26,9 +26,14 @@ export async function fetchWeek(cls: string, grade: number, dates: string[]): Pr
   return { days, logs: (l.data || []) as LogRow[], error: d.error?.message || null, logMissing: isLessonLogMissing(l.error?.message) }
 }
 
-/** Every log row for a class and grade, for coverage. */
-export async function fetchLogs(cls: string, grade: number): Promise<LogRow[]> {
-  const { data } = await fetchAll<LogRow>((f, t) => supabase.from('curriculum_lesson_log').select('*').eq('english_class', cls).eq('grade', grade).order('date').order('id').range(f, t))
+/** The log rows for a class and grade, for coverage: only between `from` and `to` when given, so last year's class does not count as this year's. */
+export async function fetchLogs(cls: string, grade: number, from?: string | null, to?: string | null): Promise<LogRow[]> {
+  const { data } = await fetchAll<LogRow>((f, t) => {
+    let q = supabase.from('curriculum_lesson_log').select('*').eq('english_class', cls).eq('grade', grade)
+    if (from) q = q.gte('date', from)
+    if (to) q = q.lte('date', to)
+    return q.order('date').order('id').range(f, t)
+  })
   return data
 }
 

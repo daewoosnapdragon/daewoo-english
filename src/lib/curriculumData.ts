@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { tryRpc } from '@/lib/curriculumRpc'
 import { fetchAll } from '@/lib/fetchAll'
 import { logActivity } from '@/lib/activity'
 import { normalizeStatus, normalizeTag, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
@@ -272,6 +273,10 @@ export async function reorder(table: 'curriculum_units' | 'curriculum_lessons', 
   const j = i + dir
   if (i < 0 || j < 0 || j >= sorted.length) return null
   const a = sorted[i], b = sorted[j]
+  // Renumber the whole list in one call when the database has the function, so no two share a position.
+  const ids = sorted.map(x => x.id); ids[i] = b.id; ids[j] = a.id
+  const rpc = await tryRpc('curriculum_set_order', { p_table: table, p_ids: ids })
+  if (!rpc.missing) return rpc.error
   const r1 = await supabase.from(table).update({ sort_order: b.sort_order }).eq('id', a.id)
   if (r1.error) return r1.error.message
   const r2 = await supabase.from(table).update({ sort_order: a.sort_order }).eq('id', b.id)

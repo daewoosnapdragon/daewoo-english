@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { pacingPatchesJson, tryRpc } from '@/lib/curriculumRpc'
 import { logActivity } from '@/lib/activity'
 import type { CurriculumUnit, Strand } from '@/lib/curriculumCore'
 import { masterRows, planSignature, teacherRows, type CurriculumBlock, type CurriculumPacing, type Half, type RowPatch } from '@/lib/curriculumPacing'
@@ -27,6 +28,10 @@ export async function ensureOwnPlan(pacing: CurriculumPacing[], placementId: str
 
 /** Applies weeks and gap patches to the teacher's rows. */
 export async function patchOwnRows(patches: RowPatch[], label: string): Promise<string | null> {
+  if (!patches.length) return null
+  // One transaction when the database has the function, so a drag never lands half saved.
+  const rpc = await tryRpc('curriculum_patch_pacing', { p_patches: pacingPatchesJson(patches) })
+  if (!rpc.missing) { if (!rpc.error) logActivity('edited', `Own plan: ${label}`, { key: label, path: PATH }); return rpc.error }
   for (const p of patches) {
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (p.weeks !== undefined) patch.weeks = Math.max(0.5, Math.round(p.weeks * 2) / 2)
@@ -65,6 +70,8 @@ export async function moveOwnRow(rows: CurriculumPacing[], id: string, dir: -1 |
   if (i < 0 || j < 0 || j >= sorted.length) return null
   const next = sorted.map((r, k) => ({ id: r.id, sort_order: k + 1 }))
   const t = next[i].sort_order; next[i].sort_order = next[j].sort_order; next[j].sort_order = t
+  const rpc = await tryRpc('curriculum_set_order', { p_table: 'curriculum_pacing', p_ids: [...next].sort((a, b) => a.sort_order - b.sort_order).map(r => r.id) })
+  if (!rpc.missing) return rpc.error
   for (const r of next) { const { error } = await supabase.from('curriculum_pacing').update({ sort_order: r.sort_order }).eq('id', r.id); if (error) return error.message }
   return null
 }
@@ -78,6 +85,8 @@ export async function setHere(placementId: string, teacherId: string, unitId: st
 
 /** Deletes the teacher's rows and pins for a placement; the master applies again. */
 export async function revertToMaster(placementId: string, teacherId: string, label: string, by: 'teacher' | 'admin'): Promise<string | null> {
+  const rpc = await tryRpc('curriculum_revert_to_master', { p_placement: placementId, p_teacher: teacherId })
+  if (!rpc.missing) { if (!rpc.error) logActivity('edited', `${by === 'admin' ? 'Reverted' : 'Went back'} to the school plan: ${label}`, { path: PATH }); return rpc.error }
   const r1 = await supabase.from('curriculum_pacing').delete().eq('placement_id', placementId).eq('owner', 'teacher').eq('teacher_id', teacherId)
   if (r1.error) return r1.error.message
   await supabase.from('curriculum_here').delete().eq('placement_id', placementId).eq('teacher_id', teacherId)
@@ -90,6 +99,9 @@ export async function revertToMaster(placementId: string, teacherId: string, lab
 export async function adoptAsMaster(pacing: CurriculumPacing[], placementId: string, teacherId: string, label: string): Promise<string | null> {
   const mine = teacherRows(pacing, placementId, teacherId)
   if (!mine.length) return 'This teacher has no plan of their own here.'
+  // One transaction when the database has the function: the school plan is never left empty.
+  const rpc = await tryRpc('curriculum_adopt_as_master', { p_placement: placementId, p_teacher: teacherId })
+  if (!rpc.missing) { if (!rpc.error) logActivity('edited', `Made the school plan: ${label}`, { path: PATH }); return rpc.error }
   const r0 = await supabase.from('curriculum_pacing').delete().eq('placement_id', placementId).eq('owner', 'master')
   if (r0.error) return r0.error.message
   const rows = mine.map(r => ({ placement_id: placementId, unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, gap_before: r.gap_before || 0, fixed: !!r.fixed, owner: 'master' }))
