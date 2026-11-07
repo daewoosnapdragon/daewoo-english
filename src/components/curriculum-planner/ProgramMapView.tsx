@@ -155,7 +155,7 @@ export default function ProgramMapView() {
         )}
       </div>
       {!N && <PeriodsLine year={theYear} />}
-      {N > 0 && rows.length === 0 && <p className="text-[12.5px] text-ink-3">{ko ? '이 기간에 배치된 책이 없습니다.' : 'Nothing is placed for this view yet. The map fills in as the Curriculum map does.'}</p>}
+      {N > 0 && rows.length === 0 && <p className="text-[12.5px] text-ink-3">{ko ? '이 기간에 배치된 책이 없습니다.' : 'Nothing is placed for this view yet. It fills in as books are placed on Planning → Books by class.'}</p>}
       {N > 0 && schoolHoliday && <p className="px-4 py-2.5 rounded bg-paper-2 text-[13px] text-ink-2">{schoolHoliday}{ko ? ': 이 주는 수업이 없는 학년이 있습니다.' : ': a holiday week for some or all grades. Units stretch across it.'}</p>}
 
       {/* Plan together: who is on the same unit, and whose files are ready */}
@@ -240,7 +240,7 @@ export default function ProgramMapView() {
           ))}
         </div>
       )}
-      {N > 0 && rows.length > 0 && <p className="text-[11.5px] text-ink-3">{ko ? '교사 계획이 있으면 그것을, 없으면 마스터를 보여줍니다. 칸을 누르면 그 반의 보드가 열립니다.' : 'Each row shows its teacher’s own plan where there is one, else the master. A letter marks a unit another class is on the same week. Click a unit to open that class’s board.'}</p>}
+      {N > 0 && rows.length > 0 && <p className="text-[11.5px] text-ink-3">{ko ? '교사 계획이 있으면 그것을, 없으면 학교 계획을 보여줍니다. 칸을 누르면 그 반의 보드가 열립니다.' : 'Each row shows its teacher’s own plan where there is one, else the school plan. A letter marks a unit another class is on the same week. Click a unit to open that class’s board.'}</p>}
     </div>
   )
 }

@@ -22,9 +22,9 @@ const btnS = 'h-7 px-2 rounded border border-rule-2 text-[11.5px] text-ink-2 hov
 const DAY_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], DAY_KO = ['월', '화', '수', '목', '금']
 const fmtDay = (iso: string, ko: boolean) => new Date(iso + 'T12:00:00+09:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { timeZone: 'Asia/Seoul', month: 'short', day: 'numeric' })
 
-interface Props { cls: string; grade: number; week: Week; bars: Bar[]; units: CurriculumUnit[]; lessons: CurriculumLesson[]; canEdit: boolean; teacherId: string; today: string; holiday: string | undefined; label?: string; onBack: () => void; onChanged?: () => void }
+interface Props { cls: string; grade: number; week: Week; bars: Bar[]; units: CurriculumUnit[]; lessons: CurriculumLesson[]; canEdit: boolean; teacherId: string; today: string; holiday: string | undefined; label?: string; planInLessons?: boolean; onBack: () => void; onChanged?: () => void }
 
-export default function WeekView({ cls, grade, week, bars, units, lessons, canEdit, teacherId, today, holiday, label, onBack, onChanged }: Props) {
+export default function WeekView({ cls, grade, week, bars, units, lessons, canEdit, teacherId, today, holiday, label, planInLessons, onBack, onChanged }: Props) {
   const { language, showToast, confirmDialog } = useApp()
   const ko = language === 'ko'
   const dates = useMemo(() => weekDays(week), [week])
@@ -74,6 +74,7 @@ export default function WeekView({ cls, grade, week, bars, units, lessons, canEd
         {holiday && <span className="text-[12px] text-ink-3">{holiday}</span>}
         <Link href="/lesson-plans" className="ml-auto text-[12px] text-accent inline-flex items-center gap-1">{ko ? '수업 계획 페이지' : 'Open Lesson Plans'}<ExternalLink size={11} /></Link>
       </div>
+      {planInLessons && <p className="text-[12px] text-ink-2 mb-3 px-3 py-2 rounded bg-paper-2">{ko ? '이 반은 수업 계획 페이지에서 차시를 날짜에 넣습니다. 이 주 보기는 보여주기만 합니다.' : 'This class puts lessons into days on Lesson Plans (the board’s units are offered there). This week view only shows them.'} <Link href="/lesson-plans" className="text-accent">{ko ? '수업 계획 열기' : 'Open Lesson Plans'}</Link></p>}
       {logMissing && canEdit && <p className="text-[12px] text-warn mb-3">{ko ? 'supabase/migration-curriculum-lesson-log.sql을 실행하면 가져오기와 완료 표시가 켜집니다.' : 'Run supabase/migration-curriculum-lesson-log.sql once to turn on importing and Mark done.'}</p>}
       {loading ? <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : (
         <div className="flex gap-5 items-start flex-wrap">

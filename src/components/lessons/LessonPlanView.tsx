@@ -158,7 +158,7 @@ function ParentCalendarView() {
   const conflictToast = (dates: string[]) => {
     if (!dates.length) return
     const list = dates.slice(0, 3).map(d => fmtShortDate(d)).join(', ') + (dates.length > 3 ? ` and ${dates.length - 3} more` : '')
-    showToast(`Not saved: ${list} changed somewhere else since this page loaded (another tab, a Push, or the board). Copy anything you typed, then reload the month.`)
+    showToast(`Not saved: ${list} changed somewhere else since this page loaded (another tab, a move a day, or the board). Copy anything you typed, then reload the month.`)
   }
 
   // Which week's editor is open, and which row's subject picker within it.
@@ -563,7 +563,7 @@ function ParentCalendarView() {
   const prepareShift = async (date: string, dir: 1 | -1, all: boolean) => {
     if (!canEdit) return
     // Only today on can be pulled into; plans never slide into the past.
-    if (dir === -1 && date < todayStr) { showToast('Pull back works from today on, so no plan moves into a day that has passed.'); return }
+    if (dir === -1 && date < todayStr) { showToast('Moving a day earlier works from today on, so no plan moves into a day that has passed.'); return }
     // Plans move only within the term the day is in: never across a break into the next term.
     const term = academicYears(semesters).flatMap(y => HALVES.map(h => termDates(semesters, y, h))).find(t => t.start && t.end && date >= t.start && date <= t.end)
     if (!term?.end) { showToast('This day is outside the terms in Settings, so nothing moves.'); return }
@@ -1029,7 +1029,7 @@ ${pages.join('\n')}
                         {syncOn && canEdit && dayData[day.date] && !isDayEmpty(dayData[day.date]) && (
                           <span className="mt-1 flex flex-col items-center gap-1 bg-white/85 rounded px-2 py-1.5">
                             <span className="text-[10.5px] text-text-primary leading-snug">Planned here: {dayData[day.date].subjects.filter(s => s.content.trim()).map(s => s.label || s.content).join(', ') || dayData[day.date].objective}</span>
-                            <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">{shifting === day.date ? 'Moving…' : 'Push from here →'}</button>
+                            <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">{shifting === day.date ? 'Moving…' : 'Move a day later from here →'}</button>
                           </span>
                         )}
                       </div>
@@ -1081,7 +1081,7 @@ ${pages.join('\n')}
                 {openWeek === wi && canEdit && (
                   <div className="border-b border-border bg-surface-alt/50 px-5 py-4 animate-fade-in">
                     {syncOn && (
-                      <p className="text-[11px] text-text-tertiary mb-2">{onBoardNow.length ? 'Pick a subject from the class board and the board follows what you plan. Push → moves a day and everything after it on a class day.' : 'Nothing on the class board this week. Push → still moves a day and everything after it on a class day.'}</p>
+                      <p className="text-[11px] text-text-tertiary mb-2">{onBoardNow.length ? 'Pick a subject from the class board and the board follows what you plan. Move a day later shifts a day and everything after it on by a class day.' : 'Nothing on the class board this week. Move a day later still shifts a day and everything after it on by a class day.'}</p>
                     )}
                     {fw.map((day, di) => {
                       if (!day) return null
@@ -1091,7 +1091,7 @@ ${pages.join('\n')}
                         <div key={day.date} className="grid grid-cols-[64px_1fr] gap-3 items-center py-2.5 border-b border-border/40 last:border-b-0">
                           <div className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">{DAY_SHORT[di]}<span className="block text-[12px] text-text-primary font-bold">{month + 1}/{day.dayNum}</span></div>
                           <div className="text-[12.5px] text-good font-semibold flex items-center gap-3">{off.title} <span className="text-ink-3 font-normal">· {lang === 'ko' ? '수업 없음' : 'no lesson'}</span>
-                            {syncOn && dayData[day.date] && !isDayEmpty(dayData[day.date]) && <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[11px] font-semibold text-navy hover:underline disabled:opacity-50">A plan is still here · Push from here →</button>}
+                            {syncOn && dayData[day.date] && !isDayEmpty(dayData[day.date]) && <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[11px] font-semibold text-navy hover:underline disabled:opacity-50">A plan is still here · Move a day later from here →</button>}
                           </div>
                         </div>
                       )
@@ -1103,8 +1103,8 @@ ${pages.join('\n')}
                             <span className="block text-[12px] text-text-primary font-bold">{month + 1}/{day.dayNum}</span>
                             {syncOn && (
                               <span className="flex flex-col items-start gap-0.5 mt-1.5 normal-case tracking-normal">
-                                {!isDayEmpty(data) && <button onClick={() => shiftFrom(day.date, 1)} disabled={!!shifting} title="Move this day's plan and every later one a class day on" className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">Push →</button>}
-                                {isDayEmpty(data) && <button onClick={() => shiftFrom(day.date, -1)} disabled={!!shifting} title="Bring the plans after this day back a class day, into this one" className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">← Pull back</button>}
+                                {!isDayEmpty(data) && <button onClick={() => shiftFrom(day.date, 1)} disabled={!!shifting} title="Move this day's plan and every later one a class day on" className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">Move a day later →</button>}
+                                {isDayEmpty(data) && <button onClick={() => shiftFrom(day.date, -1)} disabled={!!shifting} title="Bring the plans after this day back a class day, into this one" className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">← Move a day earlier</button>}
                               </span>
                             )}
                           </div>
@@ -1296,12 +1296,12 @@ ${pages.join('\n')}
       {shiftPlan && (() => {
         const sp = shiftPlan
         const total = sp.grades.reduce((a, g) => a + g.moves.length, 0)
-        const verb = sp.dir === 1 ? 'Push' : 'Pull back'
+        const verb = sp.dir === 1 ? 'Move a day later' : 'Move a day earlier'
         return (
           <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`${verb} preview`}>
             <div className="bg-surface rounded-xl shadow-xl w-full max-w-[620px] max-h-[85vh] flex flex-col">
               <div className="px-5 pt-4 pb-3 border-b border-border">
-                <h3 className="text-[16px] font-semibold text-navy">{sp.dir === 1 ? 'Push the plans a class day later' : 'Pull the plans back a class day'}</h3>
+                <h3 className="text-[16px] font-semibold text-navy">{sp.dir === 1 ? 'Move the plans a class day later' : 'Move the plans a class day earlier'}</h3>
                 <p className="text-[12.5px] text-text-secondary mt-1 leading-snug">From {fmtShort(sp.date)} to the end of the term ({fmtShort(sp.to)}). Days off, trips, no-class days and exam days are skipped and keep what they have. Weekly homework stays with its week.{sp.date < todayStr ? ' This starts on a day that has already passed.' : ''}</p>
                 <label className="mt-2.5 inline-flex items-center gap-2 text-[12.5px] text-text-primary cursor-pointer">
                   <input type="checkbox" checked={sp.all} disabled={!!shifting} onChange={e => prepareShift(sp.date, sp.dir, e.target.checked)} />
@@ -1354,7 +1354,7 @@ function SuggestChip({ lessons, objective, onAdd }: { lessons: CurriculumLesson[
     <div className="relative group shrink-0" onMouseLeave={() => setOpen(false)}>
       <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open}
         className="inline-flex items-center gap-1 text-[11px] font-semibold text-navy px-2.5 py-1 rounded-full border border-dashed border-navy/40 hover:border-navy transition-colors">
-        <Sparkles size={11} />Suggested
+        <Sparkles size={11} />From the book
       </button>
       <div className={`${open ? 'block' : 'hidden group-hover:block'} absolute right-0 top-full pt-1 z-30 w-[360px]`}>
         <div className="bg-surface border border-border rounded-xl shadow-lg p-3 space-y-3">

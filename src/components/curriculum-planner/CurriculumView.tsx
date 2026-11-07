@@ -13,7 +13,7 @@ import ProgramMapView from './ProgramMapView'
 // ─── Curriculum ──────────────────────────────────────────────────
 // Two tabs. Class boards, for everyone: any class and grade's term week by
 // week, the program map of every class across the term with what they
-// share, and the ladder of one level across the grades. Curriculum map, for
+// share, and the ladder of one level across the grades. Planning, for
 // admin: the grid of which book each class and grade uses for which term,
 // with the pacing of each, the review queue of teachers' plans that differ
 // from the master, and the Bookshelf behind it. See
@@ -47,13 +47,13 @@ export default function CurriculumView() {
 
   const tabs: { id: Tab; label: string; hint: string; icon: React.ReactNode; hidden?: boolean }[] = [
     { id: 'boards', label: ko ? '학급 보드' : 'Class boards', hint: ko ? '모든 교사' : 'everyone', icon: <CalendarRange size={13} /> },
-    { id: 'map', label: ko ? '교육과정 지도' : 'Curriculum map', hint: ko ? '관리자' : 'admin', icon: <Map size={13} />, hidden: !canManage },
+    { id: 'map', label: ko ? '계획' : 'Planning', hint: ko ? '관리자' : 'admin', icon: <Map size={13} />, hidden: !canManage },
   ]
   const subs: Record<Sub, { label: string; icon: React.ReactNode }> = {
     board: { label: ko ? '학기 보드' : 'Board', icon: <CalendarRange size={12} /> },
-    program: { label: ko ? '프로그램 지도' : 'Program map', icon: <TrainFront size={12} /> },
+    program: { label: ko ? '이번 주 전체 반' : 'All classes this week', icon: <TrainFront size={12} /> },
     ladder: { label: ko ? '학년 사다리' : 'Ladder', icon: <Rows3 size={12} /> },
-    map: { label: ko ? '배치와 진도' : 'Map', icon: <Map size={12} /> },
+    map: { label: ko ? '반별 교재' : 'Books by class', icon: <Map size={12} /> },
     review: { label: ko ? '교사 계획 확인' : 'Review', icon: <ClipboardCheck size={12} /> },
     bookshelf: { label: ko ? '책꽂이' : 'Bookshelf', icon: <BookOpen size={12} /> },
   }

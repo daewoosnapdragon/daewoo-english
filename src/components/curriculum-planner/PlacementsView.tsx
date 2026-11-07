@@ -13,7 +13,7 @@ import PeriodsLine from './PeriodsLine'
 import StoryPicker from './StoryPicker'
 import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, Copy, Loader2, Pin, PinOff, Plus, Trash2, X } from 'lucide-react'
 
-// ─── Curriculum map: the master plan ─────────────────────────────
+// ─── Planning → Books by class: the school plan ─────────────────────────────
 // One grid for the year: a row per class and grade, a column per half,
 // each placed book as a chip. Placing a sequence book brings every unit in
 // with the book's default weeks; placing an anthology opens its contents
@@ -97,7 +97,7 @@ export default function MapView() {
         <label className="text-[11px] text-ink-3">{ko ? '학년도' : 'Year'}<br />
           <select value={theYear} onChange={e => { setYear(e.target.value); setOpen(null); setPlacing(null); setCopying(null) }} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
         </label>
-        <span className="text-[12px] text-ink-3 pb-2">{terms.filter(t => t !== 'year').map(t => `${ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en} ${yw[t as 'spring' | 'fall'].length}${ko ? '주' : ' wk'}`).join(' · ')} · {masters.length} {ko ? '개 배치' : masters.length === 1 ? 'placement' : 'placements'}</span>
+        <span className="text-[12px] text-ink-3 pb-2">{terms.filter(t => t !== 'year').map(t => `${ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en} ${yw[t as 'spring' | 'fall'].length}${ko ? '주' : ' wk'}`).join(' · ')} · {masters.length} {ko ? '개 배치' : masters.length === 1 ? 'book placed' : 'books placed'}</span>
       </div>
       <div className="mb-4"><PeriodsLine year={theYear} /></div>
 
@@ -121,7 +121,7 @@ export default function MapView() {
                   {mine.map(chip)}
                   <div className="flex gap-1 mt-auto pt-0.5">
                     <button onClick={() => { setPlacing(placing === key ? null : key); setCopying(null); setOpen(null) }} className={`h-6 px-1.5 rounded text-[10.5px] inline-flex items-center gap-1 ${placing === key ? 'bg-ink text-paper' : 'text-ink-3 hover:text-ink hover:bg-paper-2'}`}><Plus size={10} />{ko ? '배치' : 'Place'}</button>
-                    <button onClick={() => { setCopying(copying === key ? null : key); setPlacing(null); setOpen(null) }} className={`h-6 px-1.5 rounded text-[10.5px] inline-flex items-center ${copying === key ? 'bg-ink text-paper' : 'text-ink-3 hover:text-ink hover:bg-paper-2'}`} title={ko ? '다른 곳에서 복사' : 'Copy another grade\u2019s placements here'}><Copy size={10} /></button>
+                    <button onClick={() => { setCopying(copying === key ? null : key); setPlacing(null); setOpen(null) }} className={`h-6 px-1.5 rounded text-[10.5px] inline-flex items-center ${copying === key ? 'bg-ink text-paper' : 'text-ink-3 hover:text-ink hover:bg-paper-2'}`} title={ko ? '다른 곳에서 복사' : 'Copy another grade\u2019s books here'}><Copy size={10} /></button>
                   </div>
                 </div>
               )
@@ -139,7 +139,7 @@ export default function MapView() {
         </div>
       )}
 
-      <p className="text-[11.5px] text-ink-3 mt-4 leading-relaxed">{ko ? '칩을 누르면 자세히 봅니다. 배치는 고른 단원이나 이야기의 목록이고, 주 수는 학기에 맞춰 나뉩니다.' : `Click a chip for its list. A placement is the units or stories a class chose, in order, with the term shared across them; pin a length only where one needs more or less.${showTags ? ' Sp and F are the spring and fall halves; Yr runs across both.' : ''}`}</p>
+      <p className="text-[11.5px] text-ink-3 mt-4 leading-relaxed">{ko ? '칩을 누르면 자세히 봅니다. 배치는 고른 단원이나 이야기의 목록이고, 주 수는 학기에 맞춰 나뉩니다.' : `Click a chip for its list. Each book for a class is the units or stories it chose, in order, with the term shared across them; pin a length only where one needs more or less.${showTags ? ' Sp and F are the spring and fall halves; Yr runs across both.' : ''}`}</p>
     </div>
   )
 }
@@ -162,7 +162,7 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
   const [fixing, setFixing] = useState<string | null>(null)
   const over = length > 0 && total > length + 0.01
   const remove = async () => {
-    if (!await confirmDialog({ title: ko ? '배치 삭제' : 'Remove this placement', message: ko ? `${label}을(를) ${pl.english_class} ${pl.grade}학년에서 뺍니다.` : `${label} comes out of ${pl.english_class} Grade ${pl.grade} for ${TERM_LABEL[pl.term].en.toLowerCase()} ${pl.academic_year}. Its ${anthology ? 'reading list' : 'pacing'} goes with it.`, confirmLabel: ko ? '삭제' : 'Remove' })) return
+    if (!await confirmDialog({ title: ko ? '배치 삭제' : 'Take this book out', message: ko ? `${label}을(를) ${pl.english_class} ${pl.grade}학년에서 뺍니다.` : `${label} comes out of ${pl.english_class} Grade ${pl.grade} for ${TERM_LABEL[pl.term].en.toLowerCase()} ${pl.academic_year}. Its ${anthology ? 'reading list' : 'pacing'} goes with it.`, confirmLabel: ko ? '삭제' : 'Remove' })) return
     if (!fail(await deletePlacement(pl.id, label))) { onRemoved(); p.reload() }
   }
   const shareAgain = async () => { setBusy(true); for (const r of rows.filter(x => x.fixed)) { if (fail(await clearPacingFixed(r.id, label))) break } await p.reload(); setBusy(false) }
@@ -314,15 +314,15 @@ export function CopyForm({ p, ko, me, years, to, fail, onDone }: { p: Planner; k
     setSaving(true)
     const r = await copyPlacements(from, to, p.placements, p.pacing, me)
     setSaving(false)
-    if (!fail(r.error)) { showToast(ko ? `${r.copied}개 복사됨` : `${r.copied} placements copied`); onDone() }
+    if (!fail(r.error)) { showToast(ko ? `${r.copied}개 복사됨` : `${r.copied} books copied`); onDone() }
   }
   return (
     <div className="flex items-end gap-3 flex-wrap">
-      <span className="text-[12.5px] text-ink-2 pb-2">{ko ? '복사 원본:' : 'Copy the placements of'}</span>
+      <span className="text-[12.5px] text-ink-2 pb-2">{ko ? '복사 원본:' : 'Copy the books of'}</span>
       <select value={from.english_class} onChange={e => setFrom({ ...from, english_class: e.target.value })} className={sel}>{PLACED_ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
       <select value={from.grade} onChange={e => setFrom({ ...from, grade: Number(e.target.value) })} className={sel}>{GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}</select>
       <select value={from.academic_year} onChange={e => setFrom({ ...from, academic_year: e.target.value })} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
-      <span className="text-[12.5px] text-ink-2 pb-2">{ko ? `→ ${to.english_class} ${to.grade}학년` : `into ${to.english_class} Grade ${to.grade}`} <span className="text-ink-3">({n} {ko ? '개' : n === 1 ? 'placement' : 'placements'}{same ? (ko ? ', 같은 곳' : ', the same place') : ''})</span></span>
+      <span className="text-[12.5px] text-ink-2 pb-2">{ko ? `→ ${to.english_class} ${to.grade}학년` : `into ${to.english_class} Grade ${to.grade}`} <span className="text-ink-3">({n} {ko ? '개' : n === 1 ? 'book' : 'books'}{same ? (ko ? ', 같은 곳' : ', the same place') : ''})</span></span>
       <span className="flex-1" />
       <button onClick={go} disabled={saving || !n || same} className={btnP}>{saving ? <Loader2 size={13} className="animate-spin" /> : <Copy size={13} />}{ko ? '복사' : 'Copy'}</button>
       <button onClick={onDone} className={btn}>{ko ? '취소' : 'Cancel'}</button>

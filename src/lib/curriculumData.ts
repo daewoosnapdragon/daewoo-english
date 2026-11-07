@@ -42,7 +42,7 @@ export async function fetchCatalogue(): Promise<{ data: Catalogue; error: string
 // Deleting a series, book or unit cascades in the database into every
 // class's placements, pacing, pins and taught history. So before any of
 // those, the app asks what uses it, and refuses while a class plan does:
-// take the book out of those placements on the Curriculum map first, or
+// take the book out of those classes on Planning → Books by class first, or
 // retire it, which keeps everything.
 
 export interface Usage { placements: { english_class: string; grade: number; academic_year: string }[]; pacing: number }
@@ -71,7 +71,7 @@ export function inUseMessage(what: string, u: Usage): string | null {
   if (u.placements.length) {
     const names = Array.from(new Set(u.placements.map(p => `${p.english_class} G${p.grade}${p.academic_year ? ` (${p.academic_year})` : ''}`)))
     const list = names.length > 6 ? `${names.slice(0, 6).join(', ')} and ${names.length - 6} more` : names.join(', ')
-    return `${what} is placed for ${list}. Deleting it would wipe those class plans and their taught history. Take it out of those placements on the Curriculum map first, or mark the book Retired instead.`
+    return `${what} is placed for ${list}. Deleting it would wipe those class plans and their taught history. Take it out of those classes on Planning → Books by class first, or mark the book Retired instead.`
   }
   if (u.pacing) return `${what} is in ${u.pacing} class ${u.pacing === 1 ? 'plan' : 'plans'}. Deleting it would wipe those weeks and their taught history. Skip it in those plans or take it out of the placements first.`
   return null
