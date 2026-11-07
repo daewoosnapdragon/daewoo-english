@@ -62,6 +62,20 @@ describe('followPlans', () => {
     const out = followPlans(plan, new Map([['u1', { first: 1, last: 2 }], ['u3', { first: 3, last: 3 }]]))
     expect(spans(out).map(x => x[0])).toEqual(['u1', 'u3', 'u2', 'u4'])
   })
+  it('a named unit is never pushed late by earlier units that cannot fit; they move after it', () => {
+    const five = [row('a', 'u1', 1, 2), row('b', 'u2', 2, 2), row('c', 'u3', 3, 2), row('d', 'u4', 4, 2)]
+    const out = followPlans(five, new Map([['u4', { first: 1, last: 1 }]]))
+    const s = spans(out)
+    expect(s[0]).toEqual(['u4', 1, 2])
+    expect(s.map(x => x[0])).toEqual(['u4', 'u1', 'u2', 'u3'])
+  })
+  it('two units started the same week share it and later units do not drift', () => {
+    const out = followPlans(plan, new Map([['u1', { first: 3, last: 3 }], ['u2', { first: 3, last: 4 }]]))
+    const s = spans(out)
+    expect(s[1]).toEqual(['u2', 3.5, 5])          // planned 3 weeks from week 3: ends week 5
+    expect(s[2]).toEqual(['u3', 6, 7])
+    expect(out[0].done_at).toBeNull()             // still taught the week u2 began
+  })
   it('works from the actual weeks of dated days', () => {
     const a = actualsFor([{ date: 'd1', unit_id: 'u2', lesson_id: null, placement_id: null }, { date: 'd2', unit_id: 'u2', lesson_id: null, placement_id: null }, { date: 'd3', unit_id: 'zz', lesson_id: null, placement_id: null }], new Set(['u1', 'u2']), d => ({ d1: 4, d2: 6, d3: 1 } as Record<string, number>)[d])
     expect(Array.from(a.entries())).toEqual([['u2', { first: 4, last: 6 }]])
@@ -88,6 +102,20 @@ describe('nextWeekDays', () => {
     expect(out.slice(1)).toEqual([null, null, null, null])
     const src2: (PlanDay | null)[] = [day([{ label: 'Into Reading', content: 'x', unit_id: 'u2', lesson_id: 'l2', placement_id: 'p1' }]), null, null, null, null]
     expect(nextWeekDays({ source: src2, running, unitOrder: order, units: units2, lessons })[0]!.subjects[0]).toMatchObject({ unit_id: 'u3', lesson_id: 'l3', content: 'Little Red: Intro' })
+  })
+  it('uses no lesson on a day that will not be written, and stays on a unit with lessons left', () => {
+    const three = [{ id: 'l1', unit_id: 'u2', title: 'A', objective: '', sort_order: 1 }, { id: 'l2', unit_id: 'u2', title: 'B', objective: '', sort_order: 2 }, { id: 'l3', unit_id: 'u2', title: 'C', objective: '', sort_order: 3 }]
+    const r = (l: string) => day([{ label: 'IR', content: 'x', unit_id: 'u2', lesson_id: l, placement_id: 'p1' }])
+    const boardMovedOn = [{ ...running[0], unit_id: 'u3' }]
+    const out = nextWeekDays({ source: [r('l1'), null, null, null, null], running: boardMovedOn, unitOrder: order, units: units2, lessons: three, skip: [false, false, false, false, false] })
+    expect(out[0]!.subjects[0]).toMatchObject({ unit_id: 'u2', lesson_id: 'l2' })
+    const skipped = nextWeekDays({ source: [r('l1'), r('l1'), null, null, null], running, unitOrder: order, units: units2, lessons: three, skip: [true, false, false, false, false] })
+    expect(skipped[0]).toBeNull()
+    expect(skipped[1]!.subjects[0]).toMatchObject({ lesson_id: 'l2' })
+  })
+  it('never blanks a row when the catalogue is not loaded', () => {
+    const src: (PlanDay | null)[] = [day([{ label: 'IR', content: 'Kept as it was', unit_id: 'u2', lesson_id: 'l1', placement_id: 'p1' }]), null, null, null, null]
+    expect(nextWeekDays({ source: src, running: [], unitOrder: new Map(), units: [], lessons: [] })[0]!.subjects[0].content).toBe('Kept as it was')
   })
   it('a unit-only row takes the unit the board has running now', () => {
     const src: (PlanDay | null)[] = [day([{ label: 'Into Reading', content: 'Old story', unit_id: 'u1', placement_id: 'p1' }]), null, null, null, null]

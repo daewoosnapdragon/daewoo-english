@@ -1,7 +1,8 @@
 -- Into Reading 1 to 4: units and lessons for the Bookshelf, generated from the scope-and-sequence extraction.
 -- Run once in the Supabase SQL Editor after migration-curriculum-catalogue.sql. Safe to re-run: a book that
--- already has units is left alone. To load a corrected version, first delete the book's units (the lessons go
--- with them):  DELETE FROM curriculum_units WHERE book_id = (SELECT b.id FROM curriculum_books b JOIN curriculum_series s ON s.id = b.series_id WHERE lower(s.name) = 'into reading' AND b.level_number = '1');
+-- already has units is left alone. Do NOT delete a book's units to reload it once any class has it placed:
+-- the delete cascades into every class's pacing, pins and taught history, and orphans the unit links saved
+-- in the lesson plans. Correct titles or lessons with UPDATEs on the existing rows instead.
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_curriculum_books_series_level ON curriculum_books (series_id, lower(level_number));
 INSERT INTO curriculum_series (name, strand, color, sort_order) VALUES ('Into Reading', 'reading', 'blue', 20) ON CONFLICT (lower(name)) DO NOTHING;

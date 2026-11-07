@@ -31,7 +31,8 @@ export interface LogRow { id: string; lesson_id: string; unit_id: string; englis
 
 /** The bars (units) that cover a given week of the view, in row order. */
 export function unitsInWeek<T extends { viewStart: number; viewEnd: number }>(bars: T[], weekN: number): T[] {
-  return bars.filter(b => b.viewStart <= weekN + 0.999 && b.viewEnd >= weekN - 0.001)
+  // A bar covers (viewStart − 1, viewEnd] and the week (weekN − 1, weekN]; they meet when they overlap.
+  return bars.filter(b => b.viewStart - 1 < weekN - 1e-6 && b.viewEnd > weekN - 1 + 1e-6)
 }
 
 /** The five school days of a week, Monday to Friday, as date keys. */

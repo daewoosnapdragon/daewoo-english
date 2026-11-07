@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { barsForView, freezeProjection, layoutPacing, placementLength, teachingToColumns, viewWeeks, weekList, type CurriculumPacing } from '../curriculumPacing'
+import { unitsInWeek } from '../curriculumWeek'
 import type { CurriculumUnit } from '../curriculumCore'
 
 const unit = (id: string): CurriculumUnit => ({ id, book_id: 'b1', sort_order: 0, title: id, summary: '', skill_tags: [], ccss_codes: [], default_weeks: 2, source: 'claude', confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' })
@@ -37,5 +38,22 @@ describe('freezeProjection', () => {
   it('pins every unpinned row at its shared length', () => {
     const rows = [row('a', 1, 2), row('b', 2, 2, { fixed: true, weeks: 4 }), row('c', 3, 2)]
     expect(freezeProjection(rows, 10)).toEqual([{ id: 'a', weeks: 3, fixed: true }, { id: 'c', weeks: 3, fixed: true }])
+  })
+})
+
+describe('half-week bars', () => {
+  const units = [{ id: 'h1' }, { id: 'h2' }].map(u => ({ id: u.id, book_id: 'b', sort_order: 0, title: u.id, summary: '', skill_tags: [], ccss_codes: [], default_weeks: 1, source: 'claude' as const, confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' }))
+  const half = [row('a', 1, 0.5), row('b', 2, 2)].map((r, i) => ({ ...r, unit_id: units[i].id }))
+  const yw = { spring: [], fall: weekList('2026-08-17', '2026-11-27') }
+  it('are kept in the view, half a week wide, and the next unit starts beside them', () => {
+    const bars = barsForView(layoutPacing(half, units), 'fall', 'fall', yw)
+    expect(bars.map(b => [b.unit.id, b.viewStart, b.viewEnd])).toEqual([['h1', 1, 0.5], ['h2', 1.5, 2.5]])
+  })
+  it('stay half a week wide across holiday columns', () => {
+    expect(teachingToColumns([{ viewStart: 1, viewEnd: 0.5 }, { viewStart: 1.5, viewEnd: 2.5 }], new Set([2]), 5)).toEqual([{ viewStart: 1, viewEnd: 0.5 }, { viewStart: 1.5, viewEnd: 3.5 }])
+  })
+  it('count as running in the week they sit in', () => {
+    expect(unitsInWeek([{ viewStart: 1, viewEnd: 0.5 }, { viewStart: 1.5, viewEnd: 2.5 }], 1)).toHaveLength(2)
+    expect(unitsInWeek([{ viewStart: 1, viewEnd: 0.5 }, { viewStart: 1.5, viewEnd: 2.5 }], 2)).toHaveLength(1)
   })
 })

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { fetchAll } from '@/lib/fetchAll'
 import { logActivity } from '@/lib/activity'
 import { normalizeStatus, normalizeTag, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
 
@@ -14,13 +15,14 @@ const PATH = '/curriculum'
 export interface Catalogue { series: CurriculumSeries[]; books: CurriculumBook[]; units: CurriculumUnit[]; lessons: CurriculumLesson[]; resources: CurriculumResource[]; skills: CurriculumSkill[] }
 
 export async function fetchCatalogue(): Promise<{ data: Catalogue; error: string | null }> {
+  // Paged: the lessons alone are past Supabase's 1000-row cap (see fetchAll.ts).
   const [s, b, u, l, r, k] = await Promise.all([
-    supabase.from('curriculum_series').select('*').order('sort_order').order('name'),
-    supabase.from('curriculum_books').select('*').order('level_number'),
-    supabase.from('curriculum_units').select('*').order('sort_order'),
-    supabase.from('curriculum_lessons').select('*').order('sort_order'),
-    supabase.from('curriculum_resources').select('*').order('created_at'),
-    supabase.from('curriculum_skills').select('*').order('strand').order('sort_order').order('label'),
+    fetchAll<any>((f, t) => supabase.from('curriculum_series').select('*').order('sort_order').order('name').order('id').range(f, t)),
+    fetchAll<any>((f, t) => supabase.from('curriculum_books').select('*').order('level_number').order('id').range(f, t)),
+    fetchAll<any>((f, t) => supabase.from('curriculum_units').select('*').order('sort_order').order('id').range(f, t)),
+    fetchAll<any>((f, t) => supabase.from('curriculum_lessons').select('*').order('sort_order').order('id').range(f, t)),
+    fetchAll<any>((f, t) => supabase.from('curriculum_resources').select('*').order('created_at').order('id').range(f, t)),
+    fetchAll<any>((f, t) => supabase.from('curriculum_skills').select('*').order('strand').order('sort_order').order('label').order('code').range(f, t)),
   ])
   const error = s.error?.message || b.error?.message || u.error?.message || l.error?.message || r.error?.message || k.error?.message || null
   return {
@@ -34,6 +36,50 @@ export async function fetchCatalogue(): Promise<{ data: Catalogue; error: string
     },
     error,
   }
+}
+
+// ─── What a delete would take with it ────────────────────────────
+// Deleting a series, book or unit cascades in the database into every
+// class's placements, pacing, pins and taught history. So before any of
+// those, the app asks what uses it, and refuses while a class plan does:
+// take the book out of those placements on the Curriculum map first, or
+// retire it, which keeps everything.
+
+export interface Usage { placements: { english_class: string; grade: number; academic_year: string }[]; pacing: number }
+
+/** The placements of these books, and the pacing rows (master and teachers') that use these units. */
+export async function usageOf(bookIds: string[], unitIds: string[]): Promise<{ usage: Usage; error: string | null }> {
+  const usage: Usage = { placements: [], pacing: 0 }
+  if (bookIds.length) {
+    const { data, error } = await fetchAll<any>((f, t) => supabase.from('curriculum_placements').select('english_class, grade, academic_year').in('book_id', bookIds).order('id').range(f, t))
+    if (error) return { usage, error: error.message }
+    usage.placements = data
+  }
+  if (unitIds.length) {
+    // In slices, so the id list stays well inside a URL.
+    for (let i = 0; i < unitIds.length; i += 150) {
+      const { count, error } = await supabase.from('curriculum_pacing').select('id', { count: 'exact', head: true }).in('unit_id', unitIds.slice(i, i + 150))
+      if (error) return { usage, error: error.message }
+      usage.pacing += count || 0
+    }
+  }
+  return { usage, error: null }
+}
+
+/** The refusal to show when something is in use, or null when it is free to go. */
+export function inUseMessage(what: string, u: Usage): string | null {
+  if (u.placements.length) {
+    const names = Array.from(new Set(u.placements.map(p => `${p.english_class} G${p.grade}${p.academic_year ? ` (${p.academic_year})` : ''}`)))
+    const list = names.length > 6 ? `${names.slice(0, 6).join(', ')} and ${names.length - 6} more` : names.join(', ')
+    return `${what} is placed for ${list}. Deleting it would wipe those class plans and their taught history. Take it out of those placements on the Curriculum map first, or mark the book Retired instead.`
+  }
+  if (u.pacing) return `${what} is in ${u.pacing} class ${u.pacing === 1 ? 'plan' : 'plans'}. Deleting it would wipe those weeks and their taught history. Skip it in those plans or take it out of the placements first.`
+  return null
+}
+
+const unitIdsOfBooks = async (bookIds: string[]) => {
+  const { data, error } = await fetchAll<{ id: string }>((f, t) => supabase.from('curriculum_units').select('id').in('book_id', bookIds).order('id').range(f, t))
+  return { ids: data.map(x => x.id), error: error?.message || null }
 }
 
 // ─── Series and books ────────────────────────────────────────────
@@ -54,6 +100,15 @@ export async function saveSeries(id: string | null, d: SeriesDraft): Promise<{ i
 }
 
 export async function deleteSeries(id: string, name: string): Promise<string | null> {
+  const books = await supabase.from('curriculum_books').select('id').eq('series_id', id)
+  if (books.error) return books.error.message
+  const bookIds = (books.data || []).map((b: any) => b.id as string)
+  const units = await unitIdsOfBooks(bookIds)
+  if (units.error) return units.error
+  const u = await usageOf(bookIds, units.ids)
+  if (u.error) return u.error
+  const refuse = inUseMessage(name, u.usage)
+  if (refuse) return refuse
   const { error } = await supabase.from('curriculum_series').delete().eq('id', id)
   if (!error) logActivity('deleted', `Series: ${name}`, { path: PATH })
   return msg(error)
@@ -75,6 +130,12 @@ export async function saveBook(id: string | null, d: BookDraft, label: string): 
 }
 
 export async function deleteBook(id: string, label: string): Promise<string | null> {
+  const units = await unitIdsOfBooks([id])
+  if (units.error) return units.error
+  const u = await usageOf([id], units.ids)
+  if (u.error) return u.error
+  const refuse = inUseMessage(label, u.usage)
+  if (refuse) return refuse
   const { error } = await supabase.from('curriculum_books').delete().eq('id', id)
   if (!error) logActivity('deleted', `Book: ${label}`, { path: PATH })
   return msg(error)
@@ -114,6 +175,13 @@ export async function deleteSkill(code: string): Promise<string | null> {
  */
 export async function appendDraft(bookId: string, units: ParsedUnit[], opts: { replace: boolean; after: number; label: string; strand: Strand; known: CurriculumSkill[] }): Promise<string | null> {
   if (opts.replace) {
+    // Replacing deletes every unit, which would wipe any class plan built on them.
+    const units = await unitIdsOfBooks([bookId])
+    if (units.error) return units.error
+    const u = await usageOf([bookId], units.ids)
+    if (u.error) return u.error
+    const refuse = inUseMessage(opts.label, u.usage)
+    if (refuse) return `${refuse} To change units a class already uses, edit them one by one, or add the new ones without replacing.`
     const { error } = await supabase.from('curriculum_units').delete().eq('book_id', bookId)
     if (error) return error.message
   }
@@ -156,6 +224,10 @@ export async function saveUnit(id: string | null, bookId: string, d: UnitDraft, 
 }
 
 export async function deleteUnit(id: string, label: string): Promise<string | null> {
+  const u = await usageOf([], [id])
+  if (u.error) return u.error
+  const refuse = inUseMessage(label, u.usage)
+  if (refuse) return refuse
   const { error } = await supabase.from('curriculum_units').delete().eq('id', id)
   if (!error) logActivity('deleted', `Unit: ${label}`, { path: PATH })
   return msg(error)

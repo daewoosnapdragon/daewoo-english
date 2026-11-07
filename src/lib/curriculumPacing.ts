@@ -106,7 +106,11 @@ export function viewWeeks(yw: YearWeeks, view: View): Week[] {
 
 export interface Bar { pacing: CurriculumPacing; unit: CurriculumUnit; start: number; end: number }
 
-/** Adds the weeks up in order: unit 1 runs from week 1, unit 2 starts where it ends, and so on. `start` and `end` are in placement weeks and may be fractional. */
+/**
+ * Adds the weeks up in order: unit 1 runs from week 1, unit 2 starts where it ends, and so on. `start` and `end` are in placement weeks and may be fractional.
+ * A bar covers the span (start − 1, end]: a whole unit in week 3 is start 3, end 3; a half-week unit at the start of week 1 is start 1, end 0.5.
+ * So `end` can be less than `start` for a half week, and the width is always end − start + 1.
+ */
 export function layoutPacing(pacing: CurriculumPacing[], units: CurriculumUnit[]): Bar[] {
   const byId = new Map(units.map(u => [u.id, u]))
   let cursor = 0
@@ -141,7 +145,8 @@ export function barsForView(bars: Bar[], term: Term, view: View, yw: YearWeeks, 
   const out: ViewBar[] = []
   for (const b of bars) {
     const s = b.start + shift, e = b.end + shift
-    if (e < 1 || s > n) continue
+    // The bar covers (s − 1, e]; the view covers (0, n].
+    if (e <= 0 || s - 1 >= n) continue
     out.push({ ...b, viewStart: Math.max(1, s), viewEnd: Math.min(n, e), cutLeft: s < 1, cutRight: e > n })
   }
   return out
@@ -156,12 +161,16 @@ export function teachingToColumns<T extends { viewStart: number; viewEnd: number
   const col: number[] = []                         // col[t] = column of teaching week t (1-based)
   for (let c = 1; c <= n; c++) if (!holidays.has(c)) col.push(c)
   if (!col.length) return bars
-  const at = (t: number) => col[Math.min(col.length, Math.max(1, Math.round(t))) - 1]
+  const colOf = (k: number) => col[Math.min(col.length, Math.max(1, k)) - 1]
+  // Edges, not weeks: a bar covers (viewStart − 1, viewEnd]. The left edge L
+  // sits inside teaching week floor(L)+1, the right edge R inside week ceil(R);
+  // each keeps its fraction within its week, so half weeks stay half wide.
   return bars.map(b => {
-    const s0 = Math.floor(b.viewStart), e0 = Math.ceil(b.viewEnd)
-    const start = at(s0) + (b.viewStart - s0)
-    const end = at(e0) - (e0 - b.viewEnd)
-    return { ...b, viewStart: start, viewEnd: Math.max(start, end) }
+    const L = b.viewStart - 1, R = b.viewEnd
+    const kl = Math.floor(L + 1e-9) + 1, kr = Math.max(1, Math.ceil(R - 1e-9))
+    const left = colOf(kl) - 1 + (L - (kl - 1))
+    const right = colOf(kr) - (kr - R)
+    return { ...b, viewStart: left + 1, viewEnd: Math.max(left + 0.5, right) }
   })
 }
 
@@ -358,7 +367,7 @@ export function blockBars(blocks: CurriculumBlock[], cls: string, grade: number,
   return blocks
     .filter(b => b.english_class === cls && b.grade === grade && b.academic_year === year && b.term === view && (!teacherId || b.teacher_id === teacherId))
     .map(b => ({ ...b, viewStart: Math.max(1, Number(b.start_week)), viewEnd: Math.min(n, Number(b.start_week) + Math.max(0.5, Number(b.weeks)) - 1) }))
-    .filter(b => b.viewEnd >= b.viewStart)
+    .filter(b => b.viewEnd > b.viewStart - 1)   // a half-week block has viewEnd = viewStart − 0.5
 }
 
 /** The lag in weeks between a pin and today: positive when the class is behind where it said it was. */

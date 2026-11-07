@@ -14,7 +14,8 @@ import { standardInfo, standardTitle } from '@/lib/standardText'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 import { useLessonSync } from './useLessonSync'
 import { classDays, lessonSyncFor, nextWeekDays, pushPlan, readPlanDay, type PlanDay, type RunningUnit } from '@/lib/lessonSync'
-import { fetchPlanDays, saveDays } from '@/lib/lessonSyncData'
+import { fetchFixedDays, fetchPlanDays, saveDays } from '@/lib/lessonSyncData'
+import { HALVES, academicYears, termDates } from '@/lib/curriculumPacing'
 import { loadAwayDays } from '@/lib/calendarDays'
 
 interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number; grade?: number }
@@ -32,6 +33,35 @@ function shiftDate(dateStr: string, days: number): string {
   const dt = new Date(y, m - 1, d)
   dt.setDate(dt.getDate() + days)
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * Writes days only if nobody changed them since this page loaded them: before
+ * the upsert each day's updated_at is read again and compared with the one
+ * remembered at load (or at our own last write). A day changed elsewhere (a
+ * Push, another tab, the board's week view) is left alone and reported, so a
+ * stale screen can never put old plans back. `stamps` is keyed class|grade|date.
+ */
+type Stamps = Record<string, string | null>
+const fmtShortDate = (d: string) => { const [y, m, dd] = d.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) }
+async function writeDays(cls: string, grade: number, entries: [string, unknown][], teacherId: string | undefined, stamps: Stamps): Promise<{ saved: string[]; conflicts: string[]; errors: number }> {
+  if (!entries.length) return { saved: [], conflicts: [], errors: 0 }
+  const key = (d: string) => `${cls}|${grade}|${d}`
+  const { data, error } = await supabase.from('parent_calendar').select('date, updated_at').eq('english_class', cls).eq('grade', grade).in('date', entries.map(e => e[0]))
+  if (error) return { saved: [], conflicts: [], errors: entries.length }
+  const now = new Map(((data || []) as { date: string; updated_at: string | null }[]).map(r => [r.date, r.updated_at || null]))
+  const conflicts: string[] = [], ok: [string, unknown][] = []
+  for (const [d, c] of entries) {
+    const cur = now.has(d) ? now.get(d)! : null
+    const seen = key(d) in stamps ? stamps[key(d)] : null
+    if (now.has(d) && cur !== seen) conflicts.push(d); else ok.push([d, c])
+  }
+  if (!ok.length) return { saved: [], conflicts, errors: 0 }
+  const at = new Date().toISOString()
+  const res = await supabase.from('parent_calendar').upsert(ok.map(([date, content]) => ({ date, english_class: cls, grade, content: JSON.stringify(content), updated_by: teacherId, updated_at: at })), { onConflict: 'date,english_class,grade' }).select('date, updated_at')
+  if (res.error) return { saved: [], conflicts, errors: ok.length }
+  for (const r of (res.data || []) as { date: string; updated_at: string | null }[]) stamps[key(r.date)] = r.updated_at || null
+  return { saved: ok.map(e => e[0]), conflicts, errors: 0 }
 }
 
 // Subjects offered when picking a day's lesson. Program names ("Into Reading",
@@ -79,7 +109,7 @@ export default function LessonPlanView() {
 }
 
 function ParentCalendarView() {
-  const { currentTeacher, showToast, language, confirmDialog } = useApp()
+  const { currentTeacher, showToast, language, confirmDialog, semesters } = useApp()
   const lang = language
   const { isNoClassDay } = useScheduleRules()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Snapdragon'
@@ -122,6 +152,13 @@ function ParentCalendarView() {
   // Dates that already have a stored row, so we can tell "cleared by the
   // teacher" apart from "never filled in".
   const persistedDates = useRef<Set<string>>(new Set())
+  // Each day's updated_at as this page last saw it, so a stale screen can't overwrite newer plans (see writeDays).
+  const stampsRef = useRef<Stamps>({})
+  const conflictToast = (dates: string[]) => {
+    if (!dates.length) return
+    const list = dates.slice(0, 3).map(d => fmtShortDate(d)).join(', ') + (dates.length > 3 ? ` and ${dates.length - 3} more` : '')
+    showToast(`Not saved: ${list} changed somewhere else since this page loaded (another tab, a Push, or the board). Copy anything you typed, then reload the month.`)
+  }
 
   // Which week's editor is open, and which row's subject picker within it.
   const [openWeek, setOpenWeek] = useState<number | null>(null)
@@ -235,6 +272,7 @@ function ParentCalendarView() {
     ])
 
     const dd: Record<string, DayContent> = {}
+    const stamps: Stamps = {}
 
     if (planRes.error && (planRes.error.message?.includes('does not exist') || planRes.error.code === '42P01')) {
       // parent_calendar table doesn't exist -- fall back to legacy
@@ -248,6 +286,7 @@ function ParentCalendarView() {
         })
       }
     } else if (planRes.data) {
+      planRes.data.forEach((row: any) => { stamps[`${selectedClass}|${selectedGrade}|${row.date}`] = row.updated_at || null })
       planRes.data.forEach((row: any) => {
         try {
           const parsed = typeof row.content === 'string' ? JSON.parse(row.content) : row.content
@@ -323,12 +362,17 @@ function ParentCalendarView() {
         if (!hw[mon]) hw[mon] = (d as any).homework
       }
     })
-    return { dd, ce, bd, hw }
+    return { dd, ce, bd, hw, stamps }
   }, [year, month])
 
+  // Each load gets a number; a slower, older load that lands after a newer one is dropped.
+  const loadToken = useRef(0)
   const loadData = useCallback(async () => {
+    const token = ++loadToken.current
     setLoading(true)
-    const { dd, ce, bd, hw } = await fetchMonth(selectedClass, selectedGrade)
+    const { dd, ce, bd, hw, stamps } = await fetchMonth(selectedClass, selectedGrade)
+    if (token !== loadToken.current) return
+    Object.assign(stampsRef.current, stamps)
     setCalEvents(ce)
     setBlockedDays(bd)
     setDayData(dd)
@@ -429,6 +473,7 @@ function ParentCalendarView() {
   const copyLastWeek = async (weekMonday: string, fromBoard = false) => {
     if (!canEdit || !weekMonday) return
     setCopyingWeek(weekMonday)
+    await flushDirty()   // so an edit to last week from a moment ago is copied too
     const prevMonday = shiftDate(weekMonday, -7)
     const { data, error } = await supabase.from('parent_calendar')
       .select('date, content')
@@ -448,7 +493,10 @@ function ParentCalendarView() {
     const validDates = new Set(monthDays.map(d => d.date))
     const updates: Record<string, DayContent> = {}
     let copied = 0, skipped = 0
-    const moved = fromBoard ? nextWeekDays({ source: [0, 1, 2, 3, 4].map(o => source[o] ? readPlanDay(source[o]) : null), running: sync.runningAt(weekMonday), unitOrder: sync.unitOrder, units: sync.units, lessons: sync.lessons }) : null
+    // Days this week that won't be written use up no lesson: no class, outside the month, a day off, or already planned.
+    const skip = [0, 1, 2, 3, 4].map(o => { const t = shiftDate(weekMonday, o); return isNoClassDay(selectedGrade, o + 1) || !validDates.has(t) || blockedDays[t]?.kind === 'off' || (!!dayData[t] && !isDayEmpty(dayData[t])) })
+    if (fromBoard && !sync.ready) { showToast('The class board is still loading. Try again in a moment.'); setCopyingWeek(null); return }
+    const moved = fromBoard ? nextWeekDays({ source: [0, 1, 2, 3, 4].map(o => source[o] ? readPlanDay(source[o]) : null), running: sync.runningAt(weekMonday), unitOrder: sync.unitOrder, units: sync.units, lessons: sync.lessons, skip }) : null
     for (let offset = 0; offset <= 4; offset++) {
       const src = moved ? (moved[offset] as DayContent | null) : source[offset]
       if (!src || isDayEmpty(src)) continue
@@ -468,17 +516,15 @@ function ParentCalendarView() {
       return
     }
 
-    setDayData(prev => ({ ...prev, ...updates }))
-    for (const [date, content] of Object.entries(updates)) {
-      const { error: upErr } = await supabase.from('parent_calendar').upsert({
-        date, english_class: selectedClass, grade: selectedGrade,
-        content: JSON.stringify(content),
-        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
-      }, { onConflict: 'date,english_class,grade' })
-      if (!upErr) persistedDates.current.add(date)
-    }
+    const w = await writeDays(selectedClass, selectedGrade, Object.entries(updates), currentTeacher?.id, stampsRef.current)
+    w.saved.forEach(d => persistedDates.current.add(d))
+    // Only what was really saved goes on screen.
+    setDayData(prev => { const next = { ...prev }; w.saved.forEach(d => { next[d] = updates[d] }); return next })
     setCopyingWeek(null)
-    showToast(`${fromBoard ? 'Filled' : 'Copied'} ${copied} day${copied > 1 ? 's' : ''} from last week${fromBoard ? ', moved on with the board' : ''}${skipped > 0 ? ` (${skipped} already had content)` : ''}`)
+    if (w.conflicts.length) conflictToast(w.conflicts)
+    else if (w.errors) showToast(`Could not save ${w.errors} day${w.errors > 1 ? 's' : ''}. Try again.`)
+    else showToast(`${fromBoard ? 'Filled' : 'Copied'} ${w.saved.length} day${w.saved.length !== 1 ? 's' : ''} from last week${fromBoard ? ', moved on with the board' : ''}${skipped > 0 ? ` (${skipped} already had content)` : ''}`)
+    if (w.saved.length) logActivity('saved', `Lesson plans · ${selectedClass} · Grade ${selectedGrade}: ${fromBoard ? 'next week from the board' : 'copied last week'} into ${weekMonday}`, { key: `lessons|${selectedClass}|${selectedGrade}` })
     if (fromBoard) sync.refresh()
   }
 
@@ -490,21 +536,29 @@ function ParentCalendarView() {
    * with its week.
    */
   const [shifting, setShifting] = useState<string | null>(null)
+  // While a Push, Pull or Copy is writing, the class, grade and month stay put, so its results land on the right page.
+  const busyWriting = !!shifting || !!copyingWeek
   const shiftFrom = async (date: string, dir: 1 | -1) => {
     if (!canEdit) return
     setShifting(date)
     try {
+      // Only today on can be pulled into; plans never slide into the past.
+      if (dir === -1 && date < todayStr) { showToast('Pull back works from today on, so no plan moves into a day that has passed.'); return }
+      // Plans move only within the term the day is in: never across a break into the next term.
+      const term = academicYears(semesters).flatMap(y => HALVES.map(h => termDates(semesters, y, h))).find(t => t.start && t.end && date >= t.start && date <= t.end)
+      if (!term?.end) { showToast('This day is outside the terms in Settings, so nothing moves.'); return }
       await flushDirty()
-      const to = shiftDate(date, 210)
-      const [{ days, error }, away] = await Promise.all([fetchPlanDays(selectedClass, selectedGrade, date, to), loadAwayDays(date, to, selectedGrade)])
+      const to = term.end
+      const [{ days, error }, away, fixed] = await Promise.all([fetchPlanDays(selectedClass, selectedGrade, date, to), loadAwayDays(date, to, selectedGrade), fetchFixedDays(date, to, selectedGrade)])
       if (error) { showToast(error); return }
-      const timeline = classDays(date, to, new Set(away.map(a => a.date)), wd => isNoClassDay(selectedGrade, wd))
+      // Exam days keep their plans: nothing slides onto them or off them.
+      const timeline = classDays(date, to, new Set([...away.map(a => a.date), ...Array.from(fixed).filter(d => d !== date)]), wd => isNoClassDay(selectedGrade, wd))
       const r = pushPlan(timeline, days, dir)
       if (r.error) { showToast(r.error); return }
       const dates = Object.keys(r.changes).sort()
       const ok = await confirmDialog({
         title: dir === 1 ? 'Push the plans a class day' : 'Pull the plans back a class day',
-        message: `${r.moved} planned day${r.moved === 1 ? '' : 's'} from ${fmtShort(date)} through ${fmtShort(dates[dates.length - 1])} move one class day ${dir === 1 ? 'later' : 'earlier'}. Days off, trips and no-class days are skipped, and weekly homework stays where it is.`,
+        message: `${r.moved} planned day${r.moved === 1 ? '' : 's'} from ${fmtShort(date)} through ${fmtShort(dates[dates.length - 1])} move one class day ${dir === 1 ? 'later' : 'earlier'}, up to the end of the term (${fmtShort(to)}). Days off, trips, no-class days and exam days are skipped and keep what they have. Weekly homework stays with its week.${date < todayStr ? ' This starts on a day that has already passed.' : ''}`,
         confirmLabel: dir === 1 ? 'Push' : 'Pull back',
       })
       if (!ok) return
@@ -518,17 +572,11 @@ function ParentCalendarView() {
   // Save all days in the month + all weekly homework
   const saveAll = async () => {
     setSaving(true)
-    let errors = 0
-    for (const date of monthDays.map(d => d.date)) {
-      if (!dayData[date]) continue
-      const content = dayData[date] || emptyDay()
-      const { error } = await supabase.from('parent_calendar').upsert({
-        date, english_class: selectedClass, grade: selectedGrade,
-        content: JSON.stringify(content),
-        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
-      }, { onConflict: 'date,english_class,grade' })
-      if (error) errors++
-    }
+    // Pending edits first, then every day of the month, skipping any changed elsewhere since load.
+    await flushDirty()
+    const w = await writeDays(selectedClass, selectedGrade, monthDays.map(d => d.date).filter(d => dayData[d]).map(d => [d, dayData[d]] as [string, unknown]), currentTeacher?.id, stampsRef.current)
+    w.saved.forEach(d => persistedDates.current.add(d))
+    let errors = w.errors
     // Save all weekly homework entries
     for (const [mon, hw] of Object.entries(weeklyHomework)) {
       const { error } = await supabase.from('parent_calendar').upsert({
@@ -539,7 +587,8 @@ function ParentCalendarView() {
       if (error) errors++
     }
     setSaving(false)
-    showToast(errors > 0 ? `Saved with ${errors} error(s)` : 'Month saved')
+    if (w.conflicts.length) conflictToast(w.conflicts)
+    else showToast(errors > 0 ? `Saved with ${errors} error(s)` : 'Month saved')
     logActivity('saved', `Lesson plans · ${selectedClass} · Grade ${selectedGrade}`, { key: `lessons|${selectedClass}|${selectedGrade}` })
   }
 
@@ -555,22 +604,23 @@ function ParentCalendarView() {
     dirtyDates.current.clear()
     const cls = saveTargetRef.current.cls
     const grd = saveTargetRef.current.grade
+    const entries: [string, unknown][] = []
     for (const date of dates) {
       const content = dayDataRef.current[date]
       if (!content) continue
       // Never create a row for a day that holds nothing; days that already
       // exist still save when emptied, so clearing one persists.
       if (isDayEmpty(content) && !persistedDates.current.has(date)) continue
-      const { error } = await supabase.from('parent_calendar').upsert({
-        date, english_class: cls, grade: grd,
-        content: JSON.stringify(content),
-        updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
-      }, { onConflict: 'date,english_class,grade' })
-      if (!error) persistedDates.current.add(date)
+      entries.push([date, content])
     }
+    const w = await writeDays(cls, grd, entries, currentTeacher?.id, stampsRef.current)
+    w.saved.forEach(d => persistedDates.current.add(d))
+    if (w.conflicts.length) conflictToastRef.current(w.conflicts)
   }, [currentTeacher?.id])
 
   useEffect(() => { flushRef.current = flushDirty }, [flushDirty])
+  const conflictToastRef = useRef(conflictToast)
+  useEffect(() => { conflictToastRef.current = conflictToast })
   useEffect(() => { dayDataRef.current = dayData }, [dayData])
   useEffect(() => { saveTargetRef.current = { cls: selectedClass, grade: selectedGrade } }, [selectedClass, selectedGrade])
 
@@ -720,7 +770,7 @@ ${pages.join('\n')}
   // Print the grade on screen
   const handlePrint = (selectedWeekIndices?: Set<number>) => {
     const pw = window.open('', '_blank'); if (!pw) return
-    const plan: MonthPlan = { dd: dayData, ce: calEvents, bd: blockedDays, hw: weeklyHomework }
+    const plan: MonthPlan = { dd: dayData, ce: calEvents, bd: blockedDays, hw: weeklyHomework, stamps: {} }
     writePrintDoc(pw, `${selectedClass} Grade ${selectedGrade} - ${MONTH_NAMES[month]} ${year}`,
       [gradePageHTML(selectedGrade, plan, pickWeeks(selectedWeekIndices), isPartialPick(selectedWeekIndices))])
   }
@@ -840,13 +890,13 @@ ${pages.join('\n')}
         <div className="flex items-center gap-4 mt-4">
           <div className="flex gap-1">
             {(isAdmin ? ENGLISH_CLASSES : [teacherClass]).filter(Boolean).map(c => (
-              <button key={c} onClick={async () => { if (c !== selectedClass) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setDayData({}); setWeeklyHomework({}); setSelectedClass(c) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedClass === c ? 'text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'}`}
+              <button key={c} disabled={busyWriting} onClick={async () => { if (busyWriting) return; if (c !== selectedClass) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setDayData({}); setWeeklyHomework({}); setSelectedClass(c) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedClass === c ? 'text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'}`}
                 style={selectedClass === c ? { backgroundColor: classToColor(c), color: classToTextColor(c) } : {}}>{c}</button>
             ))}
           </div>
           <div className="w-px h-6 bg-border" />
           <div className="flex gap-1">
-            {GRADES.map(g => <button key={g} onClick={async () => { if (g !== selectedGrade) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setDayData({}); setWeeklyHomework({}); setSelectedGrade(g) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Grade {g}</button>)}
+            {GRADES.map(g => <button key={g} disabled={busyWriting} onClick={async () => { if (busyWriting) return; if (g !== selectedGrade) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setDayData({}); setWeeklyHomework({}); setSelectedGrade(g) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Grade {g}</button>)}
           </div>
         </div>
       </div>
@@ -854,9 +904,9 @@ ${pages.join('\n')}
       <div className="px-8 py-6 max-w-[1400px] mx-auto">
         {/* Month nav */}
         <div className="flex items-center justify-center gap-4 mb-6">
-          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronLeft size={20} /></button>
+          <button onClick={prevMonth} disabled={busyWriting} aria-label="Previous month" className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary disabled:opacity-40"><ChevronLeft size={20} /></button>
           <h3 className="text-xl font-display font-bold text-navy min-w-[240px] text-center">{MONTH_NAMES[month]} {year}</h3>
-          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary"><ChevronRight size={20} /></button>
+          <button onClick={nextMonth} disabled={busyWriting} aria-label="Next month" className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary disabled:opacity-40"><ChevronRight size={20} /></button>
         </div>
 
         {/* Month grid */}
@@ -1151,7 +1201,7 @@ ${pages.join('\n')}
                       <span className="text-[10px] text-amber-900">{hw || '--'}</span>
                     )}
                     {canEdit && weekMonday && syncOn && (
-                      <button onClick={() => copyLastWeek(weekMonday, true)} disabled={copyingWeek === weekMonday}
+                      <button onClick={() => copyLastWeek(weekMonday, true)} disabled={copyingWeek === weekMonday || !sync.ready}
                         title="Fill this week's empty days from last week, each board unit moved on to its next lesson, or to the unit the board has now"
                         className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-navy hover:text-navy-dark px-2 py-0.5 rounded hover:bg-surface-alt transition-colors disabled:opacity-50">
                         {copyingWeek === weekMonday ? <><Loader2 size={10} className="animate-spin" /> Filling...</> : <><Copy size={10} /> Next from the board</>}

@@ -103,23 +103,43 @@ export function followPlans(rows: CurriculumPacing[], actual: Map<string, Actual
   const started = sorted.filter(r => actual.has(r.unit_id)).sort((a, b) => actual.get(a.unit_id)!.first - actual.get(b.unit_id)!.first || a.sort_order - b.sort_order)
   if (!started.length) return rows
   const minSo = Math.min(...started.map(r => r.sort_order))
-  const before = sorted.filter(r => !actual.has(r.unit_id) && r.sort_order < minSo).map(r => ({ ...r }))
-  const after = sorted.filter(r => !actual.has(r.unit_id) && r.sort_order > minSo).map(r => ({ ...r }))
   const W = (r: CurriculumPacing) => Math.max(0.5, Number(r.weeks) || 0)
   const G = (r: CurriculumPacing) => Math.max(0, Number(r.gap_before) || 0)
-  // Before: fit into the weeks ahead of the first named unit.
+  const total = (rs: CurriculumPacing[]) => rs.reduce((a, r) => a + W(r) + G(r), 0)
+  // Before: units the plans never named, ahead of the first named one. They are
+  // squeezed into the weeks before it (gaps first, then weeks, latest first,
+  // never under half a week). If even that does not fit, the latest of them
+  // have not been taught as far as the plans say, so they move after the
+  // units being taught instead of pushing those late.
   const room = Math.max(0, actual.get(started[0].unit_id)!.first - 1)
-  let over = before.reduce((a, r) => a + W(r) + G(r), 0) - room
-  for (let i = before.length - 1; i >= 0 && over > 0; i--) { const take = Math.min(G(before[i]), over); before[i].gap_before = G(before[i]) - take; over -= take }
-  for (let i = before.length - 1; i >= 0 && over > 0; i--) { const take = Math.min(W(before[i]) - 0.5, over); before[i].weeks = W(before[i]) - take; over -= take }
-  let cursor = before.reduce((a, r) => a + W(r) + G(r), 0)
+  const squeeze = (rs: CurriculumPacing[]) => {
+    const out = rs.map(r => ({ ...r }))
+    let over = total(out) - room
+    for (let i = out.length - 1; i >= 0 && over > 1e-9; i--) { const take = Math.min(G(out[i]), over); out[i].gap_before = G(out[i]) - take; over -= take }
+    for (let i = out.length - 1; i >= 0 && over > 1e-9; i--) { const take = Math.min(W(out[i]) - 0.5, over); out[i].weeks = W(out[i]) - take; over -= take }
+    return { out, over }
+  }
+  let pre = sorted.filter(r => !actual.has(r.unit_id) && r.sort_order < minSo)
+  const pushedOut: CurriculumPacing[] = []
+  let sq = squeeze(pre)
+  while (sq.over > 1e-9 && pre.length) { pushedOut.unshift(pre[pre.length - 1]); pre = pre.slice(0, -1); sq = squeeze(pre) }
+  const before = sq.out
+  const after = [...pushedOut, ...sorted.filter(r => !actual.has(r.unit_id) && r.sort_order > minSo)].map(r => ({ ...r }))
+  // Named units: each starts in the week of its first day and runs to the week
+  // before the next named one starts; the latest runs at least its planned
+  // length. Two starting the same week share it, without pushing later units.
+  let cursor = total(before)
   const mid = started.map((r, k) => {
     const a = actual.get(r.unit_id)!
     const next = started[k + 1] ? actual.get(started[k + 1].unit_id)! : null
     const gap = Math.max(0, a.first - 1 - cursor)
-    const weeks = next ? Math.max(0.5, next.first - a.first) : Math.max(W(r), a.last - a.first + 1)
-    cursor += gap + weeks
-    return { ...r, gap_before: gap, weeks, done_at: next ? (r.done_at || 'lesson-plans') : r.done_at }
+    const left = cursor + gap
+    const targetEnd = next ? next.first - 1 : Math.max(a.first - 1 + W(r), a.last)
+    const weeks = Math.max(0.5, targetEnd - left)
+    cursor = left + weeks
+    // Done once a later unit has started and this one is not named again from then on.
+    const done = !!next && next.first > a.last
+    return { ...r, gap_before: gap, weeks, done_at: done ? (r.done_at || 'lesson-plans') : r.done_at }
   })
   return [...before, ...mid, ...after].map((r, i) => ({ ...r, sort_order: i + 1, fixed: true }))
 }
@@ -145,6 +165,7 @@ export interface NextWeekInput {
   unitOrder: Map<string, string[]>                // placement → its unit ids in plan order
   units: Pick<CurriculumUnit, 'id' | 'title'>[]
   lessons: Pick<CurriculumLesson, 'id' | 'unit_id' | 'title' | 'objective' | 'sort_order'>[]
+  skip?: boolean[]                                // this week's days that will not be written
 }
 
 /**
@@ -156,29 +177,44 @@ export interface NextWeekInput {
  * when a lesson moved on, last week's objective no longer fits, so it is left
  * empty for the new lesson's suggestion. Days with nothing last week stay null.
  */
-export function nextWeekDays({ source, running, unitOrder, units, lessons }: NextWeekInput): (PlanDay | null)[] {
+export function nextWeekDays({ source, running, unitOrder, units, lessons, skip }: NextWeekInput): (PlanDay | null)[] {
   const lessonsOf = (u: string) => lessons.filter(l => l.unit_id === u).sort((a, b) => a.sort_order - b.sort_order)
   const nameOf = (u: string) => { const t = units.find(x => x.id === u)?.title; return t ? splitUnitTitle(t).name : '' }
   const cursor = new Map<string, number>()
   for (const d of source) for (const s of d?.subjects || []) if (s.unit_id && s.lesson_id) { const i = lessonsOf(s.unit_id).findIndex(l => l.id === s.lesson_id); if (i >= 0) cursor.set(s.unit_id, Math.max(cursor.get(s.unit_id) ?? -1, i)) }
-  return source.map(d => {
-    if (!d || isEmptyDay(d)) return null
+  /** The unit after `unit` for this book: the one the board has running if it is later, else the next in the plan. */
+  const nextUnit = (placementId: string | undefined, unit: string) => {
+    const order = placementId ? unitOrder.get(placementId) || [] : []
+    const here = order.indexOf(unit)
+    const onBoard = running.filter(r => r.placement_id === placementId).map(r => r.unit_id).find(u => order.indexOf(u) > here)
+    return onBoard || order[here + 1] || null
+  }
+  return source.map((d, day) => {
+    // A day this week that will not be written (off, no class, already planned) takes nothing, so no lesson is used up on it.
+    if (!d || isEmptyDay(d) || skip?.[day]) return null
     let movedOn = false
     const subjects = d.subjects.filter(s => s.label.trim() || s.content.trim()).map(s => {
       if (!s.unit_id) return { ...s }
-      const mine = running.filter(r => r.placement_id === s.placement_id)
-      let unit = mine.some(r => r.unit_id === s.unit_id) ? s.unit_id : (mine[0]?.unit_id || s.unit_id)
-      if (!s.lesson_id) return { ...s, unit_id: unit, content: unit === s.unit_id ? s.content : nameOf(unit) }
+      if (!s.lesson_id) {
+        // A unit-only row follows the board: the unit it has running for this book now.
+        const mine = running.filter(r => r.placement_id === s.placement_id)
+        const unit = mine.some(r => r.unit_id === s.unit_id) ? s.unit_id : (mine[0]?.unit_id || s.unit_id)
+        if (unit === s.unit_id || !nameOf(unit)) return { ...s }
+        movedOn = true
+        return { ...s, unit_id: unit, content: nameOf(unit) }
+      }
+      // A lesson row stays on its unit while the unit has lessons left, whatever the board's estimate says.
+      let unit = s.unit_id
       let idx = (cursor.get(unit) ?? -1) + 1
       if (idx >= lessonsOf(unit).length) {
-        const order = s.placement_id ? unitOrder.get(s.placement_id) || [] : []
-        const after = order[order.indexOf(unit) + 1]
-        if (after) { unit = after; idx = (cursor.get(unit) ?? -1) + 1 }
+        const after = nextUnit(s.placement_id, unit)
+        if (!after) return { ...s }                    // the book is finished: keep the row as it was
+        unit = after; idx = (cursor.get(unit) ?? -1) + 1
       }
-      cursor.set(unit, idx)
       const lesson = lessonsOf(unit)[idx]
-      if (!lesson) return { ...s, unit_id: unit, lesson_id: undefined, content: nameOf(unit) }
-      if (lesson.id !== s.lesson_id) movedOn = true
+      if (!lesson || !nameOf(unit)) return { ...s }    // nothing known to move on to: never blank the row
+      cursor.set(unit, idx)
+      movedOn = true
       return { ...s, unit_id: unit, lesson_id: lesson.id, content: `${nameOf(unit)}: ${lesson.title}` }
     })
     return { subjects, objective: movedOn ? '' : d.objective, notes: d.notes }

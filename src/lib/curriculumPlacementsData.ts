@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { fetchAll } from '@/lib/fetchAll'
 import { logActivity } from '@/lib/activity'
 import type { CurriculumUnit } from '@/lib/curriculumCore'
 import type { CurriculumBlock, CurriculumHere, CurriculumPacing, CurriculumPlacement, CurriculumPlanReview, Term } from '@/lib/curriculumPacing'
@@ -13,12 +14,13 @@ const msg = (e: { message?: string } | null | undefined) => e?.message || null
 const PATH = '/curriculum'
 
 export async function fetchPlacements(): Promise<{ placements: CurriculumPlacement[]; pacing: CurriculumPacing[]; blocks: CurriculumBlock[]; here: CurriculumHere[]; reviews: CurriculumPlanReview[]; error: string | null; plansError: string | null }> {
+  // Paged: pacing passes Supabase's 1000-row cap within a year (see fetchAll.ts).
   const [p, c, b, h, r] = await Promise.all([
-    supabase.from('curriculum_placements').select('*').order('created_at'),
-    supabase.from('curriculum_pacing').select('*').order('sort_order'),
-    supabase.from('curriculum_blocks').select('*').order('start_week'),
-    supabase.from('curriculum_here').select('*').order('set_at', { ascending: false }),
-    supabase.from('curriculum_plan_reviews').select('*'),
+    fetchAll<any>((f, t) => supabase.from('curriculum_placements').select('*').order('created_at').order('id').range(f, t)),
+    fetchAll<any>((f, t) => supabase.from('curriculum_pacing').select('*').order('sort_order').order('id').range(f, t)),
+    fetchAll<any>((f, t) => supabase.from('curriculum_blocks').select('*').order('start_week').order('id').range(f, t)),
+    fetchAll<any>((f, t) => supabase.from('curriculum_here').select('*').order('set_at', { ascending: false }).order('id').range(f, t)),
+    fetchAll<any>((f, t) => supabase.from('curriculum_plan_reviews').select('*').order('id').range(f, t)),
   ])
   return {
     placements: (p.data || []) as CurriculumPlacement[],

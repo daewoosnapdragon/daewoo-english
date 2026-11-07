@@ -15,7 +15,7 @@ export type MapBar = Lane['bars'][number]
 export interface MapRow { key: string; cls: string; grade: number; teacherId: string | null; bars: MapBar[] }
 
 /** The bars of a row that cover a week column. */
-export const barsAtWeek = (row: MapRow, weekN: number) => row.bars.filter(b => b.viewStart <= weekN + 0.999 && b.viewEnd >= weekN - 0.001)
+export const barsAtWeek = (row: MapRow, weekN: number) => row.bars.filter(b => b.viewStart - 1 < weekN - 1e-6 && b.viewEnd > weekN - 1 + 1e-6)
 
 export interface OverlapMember { row: MapRow; bar: MapBar }
 export interface Overlap { kind: 'unit' | 'skill'; key: string; label: string; detail: string; members: OverlapMember[] }

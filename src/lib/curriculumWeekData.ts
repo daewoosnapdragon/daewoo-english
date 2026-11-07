@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { fetchAll } from '@/lib/fetchAll'
 import { logActivity } from '@/lib/activity'
 import type { CurriculumLesson, CurriculumUnit } from '@/lib/curriculumCore'
 import { importIntoDay, readDay, removeFromDay, type DayContent, type LogRow } from '@/lib/curriculumWeek'
@@ -27,8 +28,8 @@ export async function fetchWeek(cls: string, grade: number, dates: string[]): Pr
 
 /** Every log row for a class and grade, for coverage. */
 export async function fetchLogs(cls: string, grade: number): Promise<LogRow[]> {
-  const { data } = await supabase.from('curriculum_lesson_log').select('*').eq('english_class', cls).eq('grade', grade)
-  return (data || []) as LogRow[]
+  const { data } = await fetchAll<LogRow>((f, t) => supabase.from('curriculum_lesson_log').select('*').eq('english_class', cls).eq('grade', grade).order('date').order('id').range(f, t))
+  return data
 }
 
 async function saveDay(date: string, cls: string, grade: number, content: DayContent, teacherId: string): Promise<string | null> {
