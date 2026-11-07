@@ -1,0 +1,4 @@
+# Licensed book content and the saved browser login never go to GitHub
+out/
+profile/
+node_modules/

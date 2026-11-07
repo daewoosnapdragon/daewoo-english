@@ -1,0 +1,13 @@
+{
+  "name": "daewoo-ebook-fetch",
+  "private": true,
+  "type": "module",
+  "description": "Pulls page images, hotspot data and audio out of an eSmart Campus (Toast viewer) ebook for internal lesson materials",
+  "scripts": {
+    "setup": "npm install && npx playwright install chromium",
+    "fetch": "node fetch-ebook.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.50.0"
+  }
+}
