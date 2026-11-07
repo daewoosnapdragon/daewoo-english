@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { classToColor } from '@/lib/utils'
-import { bookName, colorHex } from '@/lib/curriculumCore'
+import { bookName, colorHex, levelShort } from '@/lib/curriculumCore'
 import { deviations, masterRows, planSignature, teacherRows, type CurriculumPlacement } from '@/lib/curriculumPacing'
 import { adoptAsMaster, reviewPlan, revertToMaster } from '@/lib/curriculumPlanData'
 import { usePlanner } from './usePlanner'
@@ -75,7 +75,7 @@ export default function ReviewView() {
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: classToColor(it.pl.english_class as any) }} />
               <span className="text-[13px] font-semibold text-ink">{it.pl.english_class} · {ko ? `${it.pl.grade}학년` : `Grade ${it.pl.grade}`}</span>
               <span className="text-[12px] text-ink-2">{it.teacherName}</span>
-              <span className="font-display text-[20px] leading-none ml-2" style={{ color: it.color }}>{it.level}</span>
+              <span className="font-display text-[20px] leading-none ml-2" style={{ color: it.color }}>{levelShort(it.level)}</span>
               <span className="text-[12.5px] text-ink">{it.label}</span>
               <span className="text-[11px] text-ink-3">{it.pl.term} {it.pl.academic_year}</span>
               {it.seen && it.review?.seen_at && <span className="text-[11px] text-good ml-auto inline-flex items-center gap-1"><Check size={11} />{ko ? '확인함' : 'Seen'} {fmtWhen(it.review.seen_at, ko)}</span>}

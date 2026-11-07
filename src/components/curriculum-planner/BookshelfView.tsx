@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
-import { BOOK_COLORS, BOOK_STATUS_LABEL, RESOURCE_KINDS, SERIES_KIND_LABEL, STRANDS, STRAND_LABEL, bookName, colorHex, countBook, countLine, draftPrompt, isCurriculumMissing, kindFromUrl, parseCatalogueLines, parseCodes, parseTags, unknownTags, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
+import { BOOK_COLORS, BOOK_STATUS_LABEL, RESOURCE_KINDS, SERIES_KIND_LABEL, STRANDS, STRAND_LABEL, bookName, colorHex, countBook, countLine, draftPrompt, isCurriculumMissing, kindFromUrl, levelShort, parseCatalogueLines, parseCodes, parseTags, unknownTags, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
 import { addResource, appendDraft, deleteBook, deleteLesson, deleteResource, deleteSeries, deleteSkill, deleteUnit, fetchCatalogue, reorder, saveBook, saveLesson, saveSeries, saveSkill, saveUnit, setConfirmed, type BookDraft, type Catalogue, type LessonDraft, type UnitDraft } from '@/lib/curriculumData'
 import { ArrowDown, ArrowUp, BookOpen, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Loader2, Pencil, Plus, RefreshCw, Sparkles, Tag, Trash2, X } from 'lucide-react'
 
@@ -111,7 +111,7 @@ export default function BookshelfView() {
                         const on = selected === b.id
                         return (
                           <button key={b.id} onClick={() => pick(on ? null : b.id)} className={`text-left rounded border px-3 py-2 flex items-center gap-3 ${on ? 'border-ink bg-paper-2' : 'border-rule hover:border-rule-2'} ${b.status === 'retired' ? 'opacity-60' : ''}`}>
-                            <span className="font-display text-[26px] leading-none w-9 text-center" style={{ color: colorHex(s.color) }}>{b.level_number || '·'}</span>
+                            <span className="font-display text-[26px] leading-none min-w-9 text-center shrink-0" style={{ color: colorHex(s.color) }}>{levelShort(b.level_number) || '·'}</span>
                             <span className="min-w-0 flex-1">
                               <span className="block text-[13px] text-ink truncate">{b.title && b.title !== `${s.name} ${b.level_number}`.trim() ? b.title : `${s.name} ${b.level_number}`.trim()}</span>
                               <span className="block text-[11px] text-ink-3 truncate">{countLine(counts, ko)}</span>
@@ -342,7 +342,7 @@ function BookPanel({ book, series, c, ko, me, canManage, nameOf, fail, onDeleted
     <div>
       {/* Head */}
       <div className="flex items-start gap-4 mb-4">
-        <span className="font-display text-[44px] leading-none w-14 text-center shrink-0" style={{ color: colorHex(series?.color || 'slate') }}>{book.level_number || '·'}</span>
+        <span className="font-display text-[44px] leading-none min-w-14 text-center shrink-0" style={{ color: colorHex(series?.color || 'slate') }}>{levelShort(book.level_number) || '·'}</span>
         <div className="min-w-0 flex-1">
           {editing ? (
             <div className="grid grid-cols-2 gap-2 max-w-xl">

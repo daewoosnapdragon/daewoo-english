@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useApp } from '@/lib/context'
-import { splitUnitTitle, type CurriculumLesson, type CurriculumUnit } from '@/lib/curriculumCore'
+import { levelShort, splitUnitTitle, type CurriculumLesson, type CurriculumUnit } from '@/lib/curriculumCore'
 import type { Lane, Week } from '@/lib/curriculumPacing'
 import { emptyDay, unitsInWeek, weekDays, type DayContent, type LogRow } from '@/lib/curriculumWeek'
 import { fetchWeek, importLesson, removeLesson, setDayDone } from '@/lib/curriculumWeekData'
@@ -130,7 +130,7 @@ export default function WeekView({ cls, grade, week, bars, units, lessons, canEd
               return (
                 <div key={b.pacing.id} className="px-4 py-3 border-b border-rule last:border-b-0">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="font-display text-[18px] leading-none" style={{ color: b.color }}>{b.book.level_number || '·'}</span>
+                    <span className="font-display text-[18px] leading-none" style={{ color: b.color }}>{levelShort(b.book.level_number) || '·'}</span>
                     <div className="min-w-0"><p className="text-[12.5px] font-semibold text-ink truncate">{t.name}</p><p className="text-[10.5px] text-ink-3">{b.series?.name}{t.badge ? ` · ${t.badge}` : ''} · {ko ? '주' : 'wk'} {b.viewStart}–{b.viewEnd}</p></div>
                   </div>
                   {ls.length === 0 && <p className="text-[11.5px] text-ink-3">{ko ? '차시 없음' : 'No lessons indexed yet.'}</p>}

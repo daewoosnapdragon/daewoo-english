@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
 import { classToColor } from '@/lib/utils'
-import { STRANDS, STRAND_LABEL, bookName, colorHex, countBook, type Strand } from '@/lib/curriculumCore'
+import { STRANDS, STRAND_LABEL, bookName, colorHex, countBook, levelShort, type Strand } from '@/lib/curriculumCore'
 import { academicYears, ladderChecks, ladderRows, type Term } from '@/lib/curriculumPacing'
 import { usePlanner } from './usePlanner'
 import { Loader2 } from 'lucide-react'
@@ -75,7 +75,7 @@ export default function LadderView() {
                       return (
                         <div key={lb.book.id} className="flex-[1_1_170px] min-w-0 rounded bg-paper p-2.5 flex flex-col gap-1.5" style={{ borderTop: `4px solid ${color}`, boxShadow: '0 0 0 1px rgb(var(--rule))' }}>
                           <div className="flex items-baseline gap-2">
-                            <span className="font-display text-[28px] leading-none" style={{ color }}>{lb.book.level_number || '·'}</span>
+                            <span className="font-display text-[28px] leading-none" style={{ color }}>{levelShort(lb.book.level_number) || '·'}</span>
                             <div className="min-w-0">
                               <p className="text-[10px] uppercase tracking-wide text-ink-3">{lb.series ? (ko ? STRAND_LABEL[lb.series.strand].ko : STRAND_LABEL[lb.series.strand].en) : ''}</p>
                               <p className="text-[12.5px] font-semibold text-ink truncate">{bookName(lb.book, lb.series)}</p>

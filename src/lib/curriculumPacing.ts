@@ -372,17 +372,33 @@ const halfDown = (n: number) => Math.max(0.5, Math.floor(n * 2 + 1e-9) / 2)
 const halfUp = (n: number) => Math.max(0.5, Math.round(n * 2) / 2)
 
 /**
+ * Whole weeks for `k` rows out of `avail`: everyone gets the same, and the weeks
+ * left over go one each to rows spread evenly down the list, so the total is the
+ * term. A board is an estimate, so bars snap to weeks. Only when there are more
+ * rows than weeks does a row get half a week.
+ */
+export function shareWeeks(avail: number, k: number): number[] {
+  if (k <= 0) return []
+  const a = Math.max(0, avail)
+  if (a < k) return Array.from({ length: k }, () => halfDown(a / k))
+  const whole = Math.floor(a + 1e-9)
+  const base = Math.floor(whole / k), extra = whole - base * k
+  return Array.from({ length: k }, (_, i) => base + (Math.floor((i + 1) * extra / k) > Math.floor(i * extra / k) ? 1 : 0))
+}
+
+/**
  * Shares the term across the stories: every row without a fixed length gets an
- * equal share of what is left after the fixed ones and the gaps, in half weeks.
+ * equal share of what is left after the fixed ones and the gaps, in whole weeks.
  * Returns copies of the rows with `weeks` filled in; nothing is written.
  */
 export function projectAnthology(rows: CurriculumPacing[], length: number): CurriculumPacing[] {
   if (!rows.length) return rows
   const fixed = rows.filter(r => r.fixed)
-  const free = rows.filter(r => !r.fixed)
+  const free = rows.filter(r => !r.fixed).sort((a, b) => a.sort_order - b.sort_order)
   const used = fixed.reduce((a, r) => a + (Number(r.weeks) || 0), 0) + rows.reduce((a, r) => a + Math.max(0, Number(r.gap_before) || 0), 0)
-  const share = free.length ? halfDown((Math.max(length, 0) - used) / free.length) : 0
-  return rows.map(r => r.fixed ? r : { ...r, weeks: length > 0 ? share : halfUp(Number(r.weeks) || 2) })
+  const shares = shareWeeks(Math.max(length, 0) - used, free.length)
+  const shareOf = new Map(free.map((r, i) => [r.id, shares[i]]))
+  return rows.map(r => r.fixed ? r : { ...r, weeks: length > 0 ? shareOf.get(r.id)! : halfUp(Number(r.weeks) || 2) })
 }
 
 /**
@@ -393,17 +409,34 @@ export function freezeProjection(rows: CurriculumPacing[], length: number): RowP
   return projectAnthology(rows, length).filter(r => !r.fixed).map(r => ({ id: r.id, weeks: r.weeks, fixed: true }))
 }
 
-/** Sets every row's weeks so the total is the term: the same share for all, in half weeks, last row taking the remainder. */
+/** Sets every row's weeks so the total is the term, in whole weeks shared as evenly as they go. */
 export function fitToTerm(rows: CurriculumPacing[], length: number): RowPatch[] {
   const sorted = [...rows].sort((a, b) => a.sort_order - b.sort_order)
   if (!sorted.length || length <= 0) return []
   const gaps = sorted.reduce((a, r) => a + Math.max(0, Number(r.gap_before) || 0), 0)
-  const share = halfDown((length - gaps) / sorted.length)
-  const patches = sorted.map(r => ({ id: r.id, weeks: share }))
-  const last = patches[patches.length - 1]
-  last.weeks = halfUp(length - gaps - share * (sorted.length - 1))
-  return patches
+  const shares = shareWeeks(length - gaps, sorted.length)
+  return sorted.map((r, i) => ({ id: r.id, weeks: shares[i] }))
 }
+
+/** The length a bar snaps to after a stretch: whole weeks, at least one. */
+export function snapWeeks(w: number): number {
+  return Math.max(1, Math.round(w))
+}
+
+/** A column of the view as a teaching week: holiday columns before it are not counted, and a holiday column itself counts as the teaching week after it. */
+export function columnToTeaching(col: number, holidays: Set<number>): number {
+  const c = Math.round(col)
+  return c - Array.from(holidays).filter(h => h < c).length
+}
+
+/** The halves of a year that have dates, and so the views worth offering: a half with no weeks is hidden, and Year only shows when both halves have weeks. */
+export function viewsFor(yw: YearWeeks): View[] {
+  const out: View[] = HALVES.filter(h => yw[h].length > 0)
+  if (out.length === 2) out.push('year')
+  return out.length ? out : ['fall']
+}
+/** Which terms a placement can be given in a year: a half with no dates is not offered, nor is Whole year unless both halves have them. */
+export const termsFor = (yw: YearWeeks): Term[] => { const v = viewsFor(yw); return TERMS.filter(t => v.includes(t as View)) }
 
 export interface Progress { done: number; total: number; expected: number; diff: number; text: string }
 
@@ -427,7 +460,8 @@ export function groupByModule<T extends { title: string; sort_order: number }>(u
   for (const u of [...units].sort((a, b) => a.sort_order - b.sort_order)) {
     const badge = splitUnitTitle(u.title).badge
     const m = badge.match(/^M(\d+)/i)
-    const key = m ? 'M' + m[1] : (badge || 'other')
+    // "Unit 4" or "Lesson 12" is a numbering, not a section: those stay ungrouped.
+    const key = m ? 'M' + m[1] : (/^(unit|lesson)\s*\d+/i.test(badge) || !badge ? 'other' : badge)
     let g = out.find(x => x.key === key)
     if (!g) { g = { key, label: m ? `Module ${m[1]}` : (badge || 'Other'), units: [] }; out.push(g) }
     g.units.push(u)

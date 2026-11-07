@@ -20,6 +20,18 @@ export const BOOK_STATUS_LABEL: Record<BookStatus, { en: string; ko: string }> =
 }
 export const normalizeStatus = (s: string): BookStatus => s === 'retired' ? 'retired' : 'confirmed'
 
+/**
+ * A book's level as a short mark for the big coloured numeral beside its name:
+ * "3" and "S" stay as they are; longer levels shorten to initials and numbers,
+ * so "Intermediate 1 Plus" is "I1+", "Basic 2" is "B2" and "Purple" is "P".
+ * The full level is still written beside the mark.
+ */
+export function levelShort(level: string | null | undefined): string {
+  const t = (level || '').trim()
+  if (t.length <= 3) return t
+  return t.split(/\s+/).map(w => /^plus$/i.test(w) ? '+' : /^\d/.test(w) ? w : w.charAt(0).toUpperCase()).join('').slice(0, 4)
+}
+
 /** "M3 W2 · The Story of You" splits into the badge "M3 W2" and the title; so does any short prefix before " · ", such as a section name. */
 export function splitUnitTitle(title: string): { badge: string; name: string } {
   const m = title.match(/^(M\d+\s*W\d+|Unit\s*\d+[a-z]?|Module\s*\d+)\s*[·:\-–]\s*(.+)$/i)

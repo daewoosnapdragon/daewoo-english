@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { bookName, countLine, driveId, kindFromUrl, parseCatalogueLines, parseCodes, parseTags, unknownTags } from '../curriculumCore'
+import { bookName, countLine, driveId, kindFromUrl, levelShort, parseCatalogueLines, parseCodes, parseTags, unknownTags } from '../curriculumCore'
 
 describe('parseCodes', () => {
   it('reads codes in any separator and case, once each', () => {
@@ -85,5 +85,16 @@ describe('drive links', () => {
     expect(kindFromUrl('https://docs.google.com/presentation/d/1AbCdEfGhIjKlMnOp/edit')).toBe('slides')
     expect(kindFromUrl('https://drive.google.com/drive/folders/1ZyXwVuTsRqPoNm')).toBe('folder')
     expect(kindFromUrl('https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/view')).toBe('other')
+  })
+})
+
+describe('levelShort', () => {
+  it('keeps short levels and shortens long ones', () => {
+    expect(levelShort('3')).toBe('3')
+    expect(levelShort('S')).toBe('S')
+    expect(levelShort('Intermediate 1 Plus')).toBe('I1+')
+    expect(levelShort('Basic 2')).toBe('B2')
+    expect(levelShort('Purple')).toBe('P')
+    expect(levelShort('')).toBe('')
   })
 })

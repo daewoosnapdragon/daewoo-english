@@ -8,7 +8,7 @@ import { classToColor, getKSTDateString } from '@/lib/utils'
 import { teacherForClass } from '@/lib/classTeacher'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { splitUnitTitle } from '@/lib/curriculumCore'
-import { TERM_LABEL, VIEWS, academicYears, boardLanes, halfOf, holidayWeeks, teachingToColumns, termDates, todayPosition, viewWeeks, yearWeeks, type HolidayCounts, type View } from '@/lib/curriculumPacing'
+import { TERM_LABEL, academicYears, viewsFor, boardLanes, halfOf, holidayWeeks, teachingToColumns, termDates, todayPosition, viewWeeks, yearWeeks, type HolidayCounts, type View } from '@/lib/curriculumPacing'
 import { barsAtWeek, earlierOnUnit, overlapCounts, overlapsAt, type MapRow } from '@/lib/curriculumMap'
 import { usePlanner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
@@ -41,9 +41,11 @@ export default function ProgramMapView() {
   const [year, setYear] = useState<string>(activeSemester?.academic_year || '')
   const theYear = year || activeSemester?.academic_year || years[0] || ''
   const [viewPick, setViewPick] = useState<View | null>(null)
-  const view: View = viewPick || halfOf(semesters, theYear, today)
-  const half = view === 'year' ? 'spring' : view
   const yw = useMemo(() => yearWeeks(semesters, theYear), [semesters, theYear])
+  // A half with no dates is not offered; neither is Year unless both have them.
+  const views = useMemo(() => viewsFor(yw), [yw])
+  const view: View = viewPick && views.includes(viewPick) ? viewPick : views.includes(halfOf(semesters, theYear, today)) ? halfOf(semesters, theYear, today) : views[0]
+  const half = view === 'year' ? 'spring' : view
   const weeks = useMemo(() => viewWeeks(yw, view), [yw, view])
   const N = weeks.length
   const [away, setAway] = useState<Record<number, AwayDay[]>>({})
@@ -119,9 +121,9 @@ export default function ProgramMapView() {
         <label className="text-[11px] text-ink-3">{ko ? '학년도' : 'Year'}<br />
           <select value={theYear} onChange={e => setYear(e.target.value)} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
         </label>
-        <div role="group" className="inline-flex rounded border border-rule-2 overflow-hidden">
-          {VIEWS.map((v, i) => <button key={v} onClick={() => setViewPick(v)} className={`h-8 px-3 text-[12.5px] ${i ? 'border-l border-rule-2' : ''} ${view === v ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{viewLabel(v)}</button>)}
-        </div>
+        {views.length > 1 && <div role="group" className="inline-flex rounded border border-rule-2 overflow-hidden">
+          {views.map((v, i) => <button key={v} onClick={() => setViewPick(v)} className={`h-8 px-3 text-[12.5px] ${i ? 'border-l border-rule-2' : ''} ${view === v ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{viewLabel(v)}</button>)}
+        </div>}
         <span className="text-[12px] text-ink-3 pb-2">{N ? `${N} ${ko ? '주' : 'weeks'} · ${rows.length} ${ko ? '개 반·학년' : rows.length === 1 ? 'class' : 'classes'}` : (ko ? '이 기간의 날짜가 없습니다' : 'No weeks for this view yet')}</span>
         {focus && <button onClick={() => setFocus(null)} className={`${btnS} ml-auto`}>{ko ? '모두 보기' : 'Show every row'}</button>}
       </div>

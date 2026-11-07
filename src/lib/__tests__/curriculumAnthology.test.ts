@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { anthologyProgress, fitToTerm, groupByModule, projectAnthology, type CurriculumPacing } from '../curriculumPacing'
+import { anthologyProgress, columnToTeaching, fitToTerm, groupByModule, projectAnthology, shareWeeks, termsFor, viewsFor, type CurriculumPacing } from '../curriculumPacing'
 
 const row = (id: string, sort_order: number, extra: Partial<CurriculumPacing> = {}): CurriculumPacing => ({ id, placement_id: 'p1', unit_id: 'u' + id, sort_order, weeks: 2, owner: 'master', teacher_id: null, gap_before: 0, fixed: false, done_at: null, created_at: '', updated_at: '', ...extra })
 
 describe('projectAnthology', () => {
-  it('shares the term evenly in half weeks', () => {
+  it('shares the term in whole weeks, the leftover spread down the list', () => {
     const out = projectAnthology([row('a', 1), row('b', 2), row('c', 3)], 21)
     expect(out.map(r => r.weeks)).toEqual([7, 7, 7])
-    expect(projectAnthology([row('a', 1), row('b', 2), row('c', 3), row('d', 4)], 21).map(r => r.weeks)).toEqual([5, 5, 5, 5])
+    expect(projectAnthology([row('a', 1), row('b', 2), row('c', 3), row('d', 4)], 21).map(r => r.weeks)).toEqual([5, 5, 5, 6])
+    expect(projectAnthology(Array.from({ length: 9 }, (_, i) => row(String(i), i)), 21).map(r => r.weeks)).toEqual([2, 2, 3, 2, 2, 3, 2, 2, 3])
   })
   it('keeps a fixed story and shares the rest', () => {
     const out = projectAnthology([row('a', 1, { fixed: true, weeks: 9 }), row('b', 2), row('c', 3)], 21)
@@ -20,10 +21,40 @@ describe('projectAnthology', () => {
 })
 
 describe('fitToTerm', () => {
-  it('spreads the term over the rows, remainder on the last', () => {
-    expect(fitToTerm([row('a', 1), row('b', 2), row('c', 3), row('d', 4)], 18)).toEqual([{ id: 'a', weeks: 4.5 }, { id: 'b', weeks: 4.5 }, { id: 'c', weeks: 4.5 }, { id: 'd', weeks: 4.5 }])
+  it('spreads the term over the rows in whole weeks', () => {
+    expect(fitToTerm([row('a', 1), row('b', 2), row('c', 3), row('d', 4)], 18)).toEqual([{ id: 'a', weeks: 4 }, { id: 'b', weeks: 5 }, { id: 'c', weeks: 4 }, { id: 'd', weeks: 5 }])
     const p = fitToTerm([row('a', 1), row('b', 2), row('c', 3)], 20)
     expect(p.reduce((s, x) => s + x.weeks, 0)).toBe(20)
+    expect(p.every(x => Number.isInteger(x.weeks))).toBe(true)
+  })
+})
+
+describe('shareWeeks', () => {
+  it('uses whole weeks and fills the term', () => {
+    expect(shareWeeks(10, 4)).toEqual([2, 3, 2, 3])
+    expect(shareWeeks(21, 7)).toEqual([3, 3, 3, 3, 3, 3, 3])
+  })
+  it('falls back to half weeks only when rows outnumber weeks', () => {
+    expect(shareWeeks(3, 6)).toEqual([0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+    expect(shareWeeks(0, 2)).toEqual([0.5, 0.5])
+  })
+})
+
+describe('views and terms for a year', () => {
+  const wk = (n: number) => Array.from({ length: n }, (_, i) => ({ n: i + 1, monday: '', friday: '' }))
+  it('hides a half with no dates, and Year with it', () => {
+    expect(viewsFor({ spring: [], fall: wk(21) })).toEqual(['fall'])
+    expect(termsFor({ spring: [], fall: wk(21) })).toEqual(['fall'])
+    expect(viewsFor({ spring: wk(18), fall: wk(21) })).toEqual(['spring', 'fall', 'year'])
+    expect(termsFor({ spring: wk(18), fall: wk(21) })).toEqual(['year', 'spring', 'fall'])
+  })
+})
+
+describe('columnToTeaching', () => {
+  it('does not count holiday columns', () => {
+    expect(columnToTeaching(5, new Set([2]))).toBe(4)
+    expect(columnToTeaching(2, new Set([2]))).toBe(2)
+    expect(columnToTeaching(1, new Set([2]))).toBe(1)
   })
 })
 

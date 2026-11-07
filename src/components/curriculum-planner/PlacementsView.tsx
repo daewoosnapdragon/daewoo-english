@@ -4,8 +4,8 @@ import { Fragment, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
 import { classToColor } from '@/lib/utils'
-import { STRAND_LABEL, bookName, colorHex, splitUnitTitle, type CurriculumBook, type CurriculumUnit } from '@/lib/curriculumCore'
-import { HALVES, TERMS, TERM_LABEL, academicYears, groupByModule, layoutPacing, placementLength, projectAnthology, totalWeeks, yearWeeks, type CurriculumPlacement, type Term, type YearWeeks } from '@/lib/curriculumPacing'
+import { STRAND_LABEL, bookName, colorHex, levelShort, splitUnitTitle, type CurriculumBook, type CurriculumUnit } from '@/lib/curriculumCore'
+import { TERMS, TERM_LABEL, academicYears, groupByModule, layoutPacing, placementLength, projectAnthology, termsFor, totalWeeks, yearWeeks, type CurriculumPlacement, type Term, type YearWeeks } from '@/lib/curriculumPacing'
 import { addPacingMany, clearPacingFixed, copyPlacements, createPlacement, deletePlacement, dropPacing, movePacing, setPacingWeeks, updatePlacementTerm } from '@/lib/curriculumPlacementsData'
 import { usePlanner, type Planner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
@@ -38,6 +38,8 @@ export default function MapView() {
   const [year, setYear] = useState<string>(activeSemester?.academic_year || '')
   const theYear = year || activeSemester?.academic_year || years[0] || ''
   const yw = useMemo(() => yearWeeks(semesters, theYear), [semesters, theYear])
+  // A half with no dates in Settings is not offered, and its tags are not shown.
+  const terms = useMemo(() => termsFor(yw), [yw])
   const [open, setOpen] = useState<string | null>(null)        // a placement id
   const [placing, setPlacing] = useState<string | null>(null)  // a cell key
   const [copying, setCopying] = useState<string | null>(null)  // a cell key
@@ -52,6 +54,7 @@ export default function MapView() {
   if (p.missing) return <p className="text-[12.5px] text-warn">{p.missing === 'catalogue' ? 'Run supabase/migration-curriculum-catalogue.sql first.' : 'The placements tables are missing. Admin runs supabase/migration-curriculum-placements.sql once.'}</p>
 
   const TERM_TAG: Record<Term, string> = { spring: ko ? '봄' : 'Sp', fall: ko ? '가을' : 'F', year: ko ? '한 해' : 'Yr' }
+  const showTags = terms.length > 1 || masters.some(x => !terms.includes(x.term))
   const chip = (pl: CurriculumPlacement) => {
     const book = p.books.find(b => b.id === pl.book_id)
     const se = book ? seriesOf(book) : undefined
@@ -65,12 +68,12 @@ export default function MapView() {
     return (
       <button key={pl.id} onClick={() => { setOpen(on ? null : pl.id); setPlacing(null); setCopying(null) }}
         className={`w-full flex items-center gap-1.5 rounded px-1.5 py-1 text-left border ${on ? 'border-ink bg-paper-2' : 'border-rule hover:border-rule-2 bg-surface'}`} style={{ borderLeft: `3px solid ${color}` }} title={`${label(pl)} · ${TERM_LABEL[pl.term].en}`}>
-        <span className="font-display text-[15px] leading-none shrink-0" style={{ color }}>{book?.level_number || '·'}</span>
+        <span className="font-display text-[15px] leading-none shrink-0" style={{ color }}>{levelShort(book?.level_number) || '·'}</span>
         <span className="min-w-0 flex-1">
           <span className="block text-[11.5px] font-medium text-ink truncate">{se?.name || '?'}</span>
-          <span className={`block text-[10px] ${over ? 'text-bad' : 'text-ink-3'}`}>{what}{over ? (ko ? ` · ${num(total - length)}주 초과` : ` · ${num(total - length)} wk over`) : ''}</span>
+          <span className={`block text-[10px] truncate ${over ? 'text-bad' : 'text-ink-3'}`}>{book && levelShort(book.level_number) !== book.level_number ? `${book.level_number} · ` : ''}{what}{over ? (ko ? ` · ${num(total - length)}주 초과` : ` · ${num(total - length)} wk over`) : ''}</span>
         </span>
-        <span className={`shrink-0 text-[9.5px] font-semibold px-1 rounded ${pl.term === 'year' ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-2'}`}>{TERM_TAG[pl.term]}</span>
+        {showTags && <span className={`shrink-0 text-[9.5px] font-semibold px-1 rounded ${pl.term === 'year' ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-2'}`}>{TERM_TAG[pl.term]}</span>}
       </button>
     )
   }
@@ -82,7 +85,7 @@ export default function MapView() {
         <label className="text-[11px] text-ink-3">{ko ? '학년도' : 'Year'}<br />
           <select value={theYear} onChange={e => { setYear(e.target.value); setOpen(null); setPlacing(null); setCopying(null) }} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
         </label>
-        <span className="text-[12px] text-ink-3 pb-2">{ko ? `봄 ${yw.spring.length}주 · 가을 ${yw.fall.length}주` : `Spring ${yw.spring.length} wk · Fall ${yw.fall.length} wk`} · {masters.length} {ko ? '개 배치' : masters.length === 1 ? 'placement' : 'placements'}</span>
+        <span className="text-[12px] text-ink-3 pb-2">{terms.filter(t => t !== 'year').map(t => `${ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en} ${yw[t as 'spring' | 'fall'].length}${ko ? '주' : ' wk'}`).join(' · ')} · {masters.length} {ko ? '개 배치' : masters.length === 1 ? 'placement' : 'placements'}</span>
       </div>
       <div className="mb-4"><PeriodsLine year={theYear} /></div>
 
@@ -118,19 +121,19 @@ export default function MapView() {
       {(placing || copying || opened) && (
         <div className="mt-4 border border-rule-2 rounded bg-paper-2 p-3 flex flex-col gap-2">
           <p className="text-[11px] uppercase tracking-wide text-ink-3">{(() => { const k = activeKey ? cellOf(activeKey) : null; return k ? `${k.cls} · ${ko ? `${k.grade}학년` : `Grade ${k.grade}`}` : '' })()}</p>
-          {placing && <PlaceForm p={p} ko={ko} me={me} cls={cellOf(placing).cls} grade={cellOf(placing).grade} year={theYear} existing={masters.filter(x => x.english_class === cellOf(placing).cls && x.grade === cellOf(placing).grade)} fail={fail} onDone={() => { setPlacing(null); p.reload() }} />}
+          {placing && <PlaceForm terms={terms} p={p} ko={ko} me={me} cls={cellOf(placing).cls} grade={cellOf(placing).grade} year={theYear} existing={masters.filter(x => x.english_class === cellOf(placing).cls && x.grade === cellOf(placing).grade)} fail={fail} onDone={() => { setPlacing(null); p.reload() }} />}
           {copying && <CopyForm p={p} ko={ko} me={me} years={years} to={{ english_class: cellOf(copying).cls, grade: cellOf(copying).grade, academic_year: theYear }} fail={fail} onDone={() => { setCopying(null); p.reload() }} />}
-          {opened && <PlacementCard pl={opened} p={p} ko={ko} label={label(opened)} yw={yw} fail={fail} confirmDialog={confirmDialog} onRemoved={() => setOpen(null)} />}
+          {opened && <PlacementCard terms={terms} pl={opened} p={p} ko={ko} label={label(opened)} yw={yw} fail={fail} confirmDialog={confirmDialog} onRemoved={() => setOpen(null)} />}
         </div>
       )}
 
-      <p className="text-[11.5px] text-ink-3 mt-4 leading-relaxed">{ko ? '칩을 누르면 자세히 봅니다. 배치는 고른 단원이나 이야기의 목록이고, 주 수는 학기에 맞춰 나뉩니다.' : 'Click a chip for its list. A placement is the units or stories a class chose, in order, with the term shared across them; pin a length only where one needs more or less. Sp and F are the spring and fall halves; Yr runs across both.'}</p>
+      <p className="text-[11.5px] text-ink-3 mt-4 leading-relaxed">{ko ? '칩을 누르면 자세히 봅니다. 배치는 고른 단원이나 이야기의 목록이고, 주 수는 학기에 맞춰 나뉩니다.' : `Click a chip for its list. A placement is the units or stories a class chose, in order, with the term shared across them; pin a length only where one needs more or less.${showTags ? ' Sp and F are the spring and fall halves; Yr runs across both.' : ''}`}</p>
     </div>
   )
 }
 
 // ─── One placement ───────────────────────────────────────────────
-export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRemoved }: { pl: CurriculumPlacement; p: Planner; ko: boolean; label: string; yw: YearWeeks; fail: (e: string | null) => boolean; confirmDialog: (o: { title: string; message: string; confirmLabel?: string }) => Promise<boolean>; onRemoved: () => void }) {
+export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRemoved, terms = TERMS }: { terms?: Term[]; pl: CurriculumPlacement; p: Planner; ko: boolean; label: string; yw: YearWeeks; fail: (e: string | null) => boolean; confirmDialog: (o: { title: string; message: string; confirmLabel?: string }) => Promise<boolean>; onRemoved: () => void }) {
   const book = p.books.find(b => b.id === pl.book_id)
   const series = book ? p.series.find(s => s.id === book.series_id) : undefined
   const anthology = series?.kind === 'anthology'
@@ -159,7 +162,7 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
   return (
     <section className="border border-rule rounded bg-surface">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-rule flex-wrap">
-        <span className="font-display text-[26px] leading-none w-8 text-center" style={{ color: colorHex(series?.color || 'slate') }}>{book?.level_number || '·'}</span>
+        <span className="font-display text-[26px] leading-none min-w-8 text-center" style={{ color: colorHex(series?.color || 'slate') }}>{levelShort(book?.level_number) || '·'}</span>
         <div className="min-w-0">
           <p className="text-[14px] font-semibold text-ink">{label}<span className="ml-2 text-[11px] font-normal text-ink-3">{anthology ? (ko ? '읽기 목록' : 'reading list') : (ko ? '단원 목록' : 'unit list')}</span></p>
           <p className="text-[11.5px] text-ink-3">{series ? (ko ? STRAND_LABEL[series.strand].ko : STRAND_LABEL[series.strand].en) : ''} · {rows.length} {noun(rows.length)} · <span className={over ? 'text-bad font-medium' : ''}>{num(total)} {ko ? '주' : 'wk'}{length ? ` / ${length}` : ''}</span>{over && <span className="text-bad"> · {ko ? `${num(total - length)}주 초과` : `${num(total - length)} wk over the term`}</span>}{!over && length > 0 && <span className="text-ink-3"> · {rows.some(r => r.fixed) ? (ko ? '고정한 것 빼고 나눔' : 'shared around the pinned ones') : (ko ? '학기에 맞춰 나눔' : 'shared across the term')}</span>}</p>
@@ -168,7 +171,7 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
         {rows.some(r => r.fixed) && <button onClick={shareAgain} disabled={busy} className={btnS} title={ko ? '고정을 모두 풀고 다시 나눔' : 'Unpin every length and share the term evenly again'}><PinOff size={11} />{ko ? '다시 나누기' : 'Share evenly'}</button>}
         {left.length > 0 && <button onClick={() => { setPicking(s => !s); setPicked(new Set()) }} className={`${btnS} ${picking ? 'bg-ink text-paper border-ink' : ''}`}><Plus size={11} />{anthology ? (ko ? '이야기 추가' : 'Add stories') : (ko ? '단원 추가' : 'Add units')}</button>}
         <select value={pl.term} onChange={async e => { if (!fail(await updatePlacementTerm(pl.id, e.target.value as Term, label))) p.reload() }} className={sel}>
-          {TERMS.map(t => <option key={t} value={t}>{ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en}</option>)}
+          {(terms.includes(pl.term) ? terms : [pl.term, ...terms]).map(t => <option key={t} value={t}>{ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en}</option>)}
         </select>
         <button onClick={remove} className={btnS} aria-label="Remove placement"><Trash2 size={11} />{ko ? '배치 삭제' : 'Remove'}</button>
       </div>
@@ -235,9 +238,9 @@ export function WeeksInput({ value, onSave }: { value: number; onSave: (w: numbe
 }
 
 // ─── Place a book ────────────────────────────────────────────────
-export function PlaceForm({ p, ko, me, cls, grade, year, existing, fail, onDone }: { p: Planner; ko: boolean; me: string; cls: string; grade: number; year: string; existing: CurriculumPlacement[]; fail: (e: string | null) => boolean; onDone: () => void }) {
+export function PlaceForm({ p, ko, me, cls, grade, year, existing, fail, onDone, terms = TERMS }: { terms?: Term[]; p: Planner; ko: boolean; me: string; cls: string; grade: number; year: string; existing: CurriculumPlacement[]; fail: (e: string | null) => boolean; onDone: () => void }) {
   const [bookId, setBookId] = useState('')
-  const [term, setTerm] = useState<Term>('year')
+  const [term, setTerm] = useState<Term>(terms.includes('year') ? 'year' : terms[0])
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
   const choices = p.books.filter(b => b.status !== 'retired').map(b => ({ b, s: p.series.find(s => s.id === b.series_id) })).sort((x, y) => (x.s?.sort_order || 0) - (y.s?.sort_order || 0) || (x.s?.name || '').localeCompare(y.s?.name || '') || x.b.level_number.localeCompare(y.b.level_number, undefined, { numeric: true }))
@@ -272,7 +275,7 @@ export function PlaceForm({ p, ko, me, cls, grade, year, existing, fail, onDone 
           </select>
         </label>
         <label className="text-[11px] text-ink-3">{ko ? '기간' : 'Term'}<br />
-          <select value={term} onChange={e => setTerm(e.target.value as Term)} className={sel}>{TERMS.map(t => <option key={t} value={t}>{ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en}</option>)}</select>
+          <select value={term} onChange={e => setTerm(e.target.value as Term)} className={sel}>{terms.map(t => <option key={t} value={t}>{ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en}</option>)}</select>
         </label>
         <span className="text-[12px] text-ink-3 pb-2">{chosen && !units.length ? (ko ? '단원 없음: 먼저 색인하세요' : 'no units yet; index it on the Bookshelf first') : ''}{dup && <span className="text-warn"> · {ko ? '이미 배치됨' : 'already placed for this term'}</span>}</span>
         <span className="flex-1" />

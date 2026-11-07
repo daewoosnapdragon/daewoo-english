@@ -7,8 +7,8 @@ import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
 import { getKSTDateString } from '@/lib/utils'
 import { teacherForClass } from '@/lib/classTeacher'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
-import { STRANDS, STRAND_LABEL, bookName, parseTags, splitUnitTitle, type CurriculumLesson, type CurriculumUnit, type Strand } from '@/lib/curriculumCore'
-import { TERM_LABEL, VIEWS, academicYears, anthologyProgress, applyPatches, barsForView, blockBars, boardLanes, freezeProjection, halfOf, hasOwnPlan, holidayWeeks, lagWeeks, layoutPacing, masterRows, placementLength, projectAnthology, reflowTo, teacherRows, teachingToColumns, termDates, todayPosition, viewOffset, viewWeeks, yearWeeks, type CurriculumBlock, type CurriculumPacing, type HolidayCounts, type Lane, type RowPatch, type View } from '@/lib/curriculumPacing'
+import { STRANDS, STRAND_LABEL, bookName, levelShort, parseTags, splitUnitTitle, type CurriculumLesson, type CurriculumUnit, type Strand } from '@/lib/curriculumCore'
+import { TERM_LABEL, academicYears, columnToTeaching, snapWeeks, viewsFor, anthologyProgress, applyPatches, barsForView, blockBars, boardLanes, freezeProjection, halfOf, hasOwnPlan, holidayWeeks, lagWeeks, layoutPacing, masterRows, placementLength, projectAnthology, reflowTo, teacherRows, teachingToColumns, termDates, todayPosition, viewOffset, viewWeeks, yearWeeks, type CurriculumBlock, type CurriculumPacing, type HolidayCounts, type Lane, type RowPatch, type View } from '@/lib/curriculumPacing'
 import { addOwnUnit, deleteBlock, dropOwnUnit, ensureOwnPlan, patchOwnRows, revertToMaster, saveBlock, setHere, setOwnDone, type BlockDraft } from '@/lib/curriculumPlanData'
 import { coverage, type LogRow } from '@/lib/curriculumWeek'
 import { fetchLogs } from '@/lib/curriculumWeekData'
@@ -43,7 +43,7 @@ const stickyLabel: React.CSSProperties = { width: LABEL_W, position: 'sticky', l
 
 type Bar = Lane['bars'][number]
 interface Row { key: string; strand: Lane['strand']; first: boolean; bar0: Bar; bars: Bar[]; ticks: { at: number; off: boolean }[]; overBy: number; anthology: boolean; progress: string | null }
-type Drag = { id: string; mode: 'move' | 'resize'; dx: number; moved: boolean }
+type Drag = { id: string; mode: 'move' | 'resize'; dx: number; moved: boolean; colW: number }
 
 export default function BoardView() {
   const { currentTeacher, language, semesters, activeSemester, showToast, confirmDialog } = useApp()
@@ -65,9 +65,11 @@ export default function BoardView() {
     const onTarget = (e: Event) => { const d = (e as CustomEvent).detail || {}; if (d.cls && (PLACED_ENGLISH_CLASSES as string[]).includes(d.cls)) setCls(d.cls); const g = Number(d.grade); if ((GRADES as number[]).includes(g)) setGrade(g) }
     window.addEventListener('daewoo:board-target', onTarget); return () => window.removeEventListener('daewoo:board-target', onTarget)
   }, [])
-  const view: View = viewPick || halfOf(semesters, theYear, today)
-  const half = view === 'year' ? 'spring' : view
   const yw = useMemo(() => yearWeeks(semesters, theYear), [semesters, theYear])
+  // A half with no dates is not offered; neither is Year unless both have them.
+  const views = useMemo(() => viewsFor(yw), [yw])
+  const view: View = viewPick && views.includes(viewPick) ? viewPick : views.includes(halfOf(semesters, theYear, today)) ? halfOf(semesters, theYear, today) : views[0]
+  const half = view === 'year' ? 'spring' : view
   const weeks = useMemo(() => viewWeeks(yw, view), [yw, view])
   const N = weeks.length
   const [planMode, setPlanMode] = useState<'mine' | 'master'>('mine')
@@ -256,23 +258,28 @@ export default function BoardView() {
     e.preventDefault(); e.stopPropagation()
     const colW = areaRef.current.getBoundingClientRect().width / N
     dragRef.current = { bar: b, mode, x0: e.clientX, colW }
-    setDrag({ id: b.pacing.id, mode, dx: 0, moved: false })
-    const onMove = (ev: PointerEvent) => { const d = dragRef.current; if (!d) return; const dx = ev.clientX - d.x0; setDrag({ id: d.bar.pacing.id, mode: d.mode, dx, moved: Math.abs(dx) > 4 }) }
+    setDrag({ id: b.pacing.id, mode, dx: 0, moved: false, colW })
+    const onMove = (ev: PointerEvent) => { const d = dragRef.current; if (!d) return; const dx = ev.clientX - d.x0; setDrag({ id: d.bar.pacing.id, mode: d.mode, dx, moved: Math.abs(dx) > 4, colW: d.colW }) }
     const onUp = async (ev: PointerEvent) => {
       window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp)
       const d = dragRef.current; dragRef.current = null; setDrag(null)
       if (!d) return
-      const dw = Math.round((ev.clientX - d.x0) / d.colW * 2) / 2
-      if (Math.abs(dw) < 0.5) return
-      if (d.mode === 'move') await moveTo(d.bar, d.bar.start + dw)
-      else await resize(d.bar, d.bar.pacing.weeks + dw)
+      // Bars snap to whole weeks: the plan is an estimate, not a timetable.
+      // Columns become teaching weeks, so a drag across a holiday week is not counted twice.
+      const dc = Math.round((ev.clientX - d.x0) / d.colW)
+      if (!dc) return
+      const teach = (c: number) => columnToTeaching(c, holSet)
+      if (d.mode === 'move') { const from = Math.round(d.bar.viewStart); await moveTo(d.bar, Math.round(d.bar.start) + teach(from + dc) - teach(from)) }
+      else { const end = Math.round(d.bar.viewEnd); await resize(d.bar, snapWeeks(d.bar.pacing.weeks + teach(end + dc) - teach(end))) }
     }
     window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
   }
   const previewStyle = (b: Bar): React.CSSProperties => {
     if (!drag || drag.id !== b.pacing.id) return {}
-    if (drag.mode === 'move') return { transform: `translateX(${drag.dx}px)`, opacity: 0.85, zIndex: 5 }
-    return { width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px + ${drag.dx}px)`, zIndex: 5 }
+    // The preview jumps a column at a time, so it is clear where the bar will land.
+    const snapped = Math.round(drag.dx / drag.colW) * drag.colW
+    if (drag.mode === 'move') return { transform: `translateX(${snapped}px)`, opacity: 0.85, zIndex: 5, transition: 'transform 80ms ease-out' }
+    return { width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px + ${snapped}px)`, zIndex: 5, transition: 'width 80ms ease-out' }
   }
 
   if (p.loading) return <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
@@ -280,7 +287,7 @@ export default function BoardView() {
 
   const lagLines = rows.map(r => ({ r, pin: pins.get(r.bar0.placement.id) })).filter(x => x.pin && x.pin.lag >= 0.5)
   const overRows = rows.filter(r => r.overBy > 0)
-  const colMin = view === 'year' ? 40 : 64
+  const colMin = view === 'year' ? 48 : 84
   const summerAt = view === 'year' ? weeks.findIndex(w => w.half === 'fall') : -1
   const viewLabel = (v: View) => v === 'year' ? (ko ? '한 해' : 'Year') : (ko ? TERM_LABEL[v].ko : TERM_LABEL[v].en)
   const rangeText = N ? `${N} ${ko ? '주' : 'weeks'} · ${fmtDay(weeks[0].monday, ko)} – ${fmtDay(weeks[N - 1].friday, ko)}${holidays.size ? ` · ${holidays.size} ${ko ? '쉬는 주' : holidays.size === 1 ? 'holiday week' : 'holiday weeks'}` : ''}` : (ko ? '이 기간의 날짜가 없습니다' : 'No weeks for this view yet')
@@ -298,9 +305,9 @@ export default function BoardView() {
         <label className="text-[11px] text-ink-3">{ko ? '학년도' : 'Year'}<br />
           <select value={theYear} onChange={e => setYear(e.target.value)} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
         </label>
-        <div role="group" className="inline-flex rounded border border-rule-2 overflow-hidden">
-          {VIEWS.map((v, i) => <button key={v} onClick={() => setViewPick(v)} className={`h-8 px-3 text-[12.5px] ${i ? 'border-l border-rule-2' : ''} ${view === v ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{viewLabel(v)}</button>)}
-        </div>
+        {views.length > 1 && <div role="group" className="inline-flex rounded border border-rule-2 overflow-hidden">
+          {views.map((v, i) => <button key={v} onClick={() => setViewPick(v)} className={`h-8 px-3 text-[12.5px] ${i ? 'border-l border-rule-2' : ''} ${view === v ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{viewLabel(v)}</button>)}
+        </div>}
         {plansOn && (
           <div role="group" className="inline-flex rounded border border-rule-2 overflow-hidden">
             <button onClick={() => setPlanMode('mine')} className={`h-8 px-3 text-[12.5px] ${planMode === 'mine' ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{isOwn ? (ko ? '내 계획' : 'My plan') : (classTeacher ? `${classTeacher.name.split(' ')[0]}${ko ? '의 계획' : '’s plan'}` : (ko ? '교사 계획' : 'Teacher’s plan'))}</button>
@@ -358,8 +365,8 @@ export default function BoardView() {
                         <div className="shrink-0 px-3 flex flex-col justify-center border-r border-rule gap-0.5" style={stickyLabel}>
                           {r.first && <span className="text-[9.5px] uppercase tracking-wide text-ink-3">{ko ? STRAND_LABEL[r.strand].ko : STRAND_LABEL[r.strand].en}</span>}
                           <span className="flex items-center gap-1.5 min-w-0">
-                            <span className="font-display text-[17px] leading-none" style={{ color: r.bar0.color }}>{r.bar0.book.level_number || '·'}</span>
-                            <span className="text-[12px] font-medium text-ink truncate">{r.bar0.series?.name}</span>
+                            <span className="font-display text-[17px] leading-none" style={{ color: r.bar0.color }}>{levelShort(r.bar0.book.level_number) || '·'}</span>
+                            <span className="text-[12px] font-medium text-ink truncate" title={bookName(r.bar0.book, r.bar0.series)}>{r.bar0.series?.name}</span>
                           </span>
                           {r.ticks.length > 0 && <span className="text-[9.5px] text-ink-3">{r.ticks.some(t => t.off) ? (ko ? '마스터와 다름' : 'differs from master') : (ko ? '마스터와 같음' : 'same as master')}</span>}
                         </div>
@@ -374,12 +381,15 @@ export default function BoardView() {
                             const on = picked?.pacing.id === b.pacing.id
                             const t = splitUnitTitle(b.unit.title)
                             const open = r.anthology && !b.pacing.done_at
+                            // A one-week bar has room for the name on two lines and nothing else.
+                            const narrow = b.viewEnd - b.viewStart < 1.5
                             return (
                               <button key={b.pacing.id} onPointerDown={e => startDrag(e, b, 'move')} onClick={() => { if (drag?.moved) return; setPicked(on ? null : b) }} title={`${b.unit.title} · ${ko ? '주' : 'wk'} ${num(b.viewStart)}–${num(b.viewEnd)}`}
                                 className={`absolute text-left px-2 flex flex-col justify-center overflow-hidden select-none ${b.cutLeft ? 'rounded-l-none' : 'rounded-l'} ${b.cutRight ? 'rounded-r-none' : 'rounded-r'} ${on ? 'ring-2 ring-ink ring-offset-1 ring-offset-surface' : ''} ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${open ? 'text-ink' : 'text-white'}`}
                                 style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - (r.ticks.length ? 24 : 16), background: open ? `${b.color}33` : b.color, boxShadow: open ? `inset 0 0 0 2px ${b.color}` : undefined, opacity: hiCode ? (unitHas(b.unit, hiCode) ? 1 : 0.25) : 1, touchAction: 'none', ...previewStyle(b) }}>
-                                <span className="block text-[11.5px] font-semibold leading-tight truncate">{b.pacing.done_at ? '✓ ' : ''}{t.name}</span>
-                                <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}</span>
+                                <span className={`block font-semibold leading-tight break-words ${narrow ? 'text-[11px] line-clamp-2' : 'text-[11.5px] truncate'}`} style={{ paddingRight: b.pacing.done_at ? 10 : 0 }}>{t.name}</span>
+                                {!narrow && <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}</span>}
+                                {b.pacing.done_at && <Check size={10} strokeWidth={3} className="absolute top-1 right-1 opacity-90" aria-label={ko ? '완료' : 'done'} />}
                                 {canEdit && !b.cutRight && <span onPointerDown={e => startDrag(e, b, 'resize')} className="absolute top-0 bottom-0 right-0 w-2.5 cursor-ew-resize hover:bg-white/25" aria-hidden="true" />}
                               </button>
                             )
@@ -449,7 +459,7 @@ export default function BoardView() {
             )}
             <div className="px-3 py-2 text-[11px] text-ink-3 border-t border-rule flex gap-4 flex-wrap">
               <span>{ko ? '빗금: 학교 달력의 쉬는 주, 수업 주로 세지 않음 · 주 번호를 누르면 그 주를 엽니다' : 'Hatched: a holiday week from the school calendar, not counted as teaching · click a week number to open it'}</span>
-              {canEdit ? <span>{ko ? '막대를 끌어 옮기고, 오른쪽 끝을 끌어 늘리세요. 처음 끌면 모든 단원의 길이가 고정됩니다.' : 'Drag a bar to move it, drag its right edge to stretch it. The first drag pins every unit at its current length so the others stay put.'}</span> : <span>{ko ? '막대 클릭: 단원의 차시와 자료' : 'Click a bar for the unit’s lessons and files'}</span>}
+              {canEdit ? <span>{ko ? '막대를 끌어 옮기고, 오른쪽 끝을 끌어 늘리세요. 처음 끌면 모든 단원의 길이가 고정됩니다.' : 'Drag a bar to move it, drag its right edge to stretch it; bars snap to whole weeks. The first drag pins every unit at its current length so the others stay put.'}</span> : <span>{ko ? '막대 클릭: 단원의 차시와 자료' : 'Click a bar for the unit’s lessons and files'}</span>}
               <span className="ml-auto">{viewTeacher ? (isOwn ? (ko ? '내 계획' : 'Your plan') : (ko ? '교사 계획 · 읽기 전용' : 'The teacher’s plan · read-only')) : (ko ? '마스터 계획 · 읽기 전용' : 'The master plan · read-only')}</span>
             </div>
           </div>
@@ -482,7 +492,7 @@ function UnitPanel({ b, lessons, resources, ko, busy, canEdit, ownPlan, todayWee
   return (
     <aside className="flex-[1_1_300px] max-w-[380px] border border-rule-2 rounded bg-surface" style={{ borderTop: `4px solid ${b.color}` }}>
       <div className="px-4 py-3 border-b border-rule flex items-start gap-3">
-        <span className="font-display text-[28px] leading-none" style={{ color: b.color }}>{b.book.level_number || '·'}</span>
+        <span className="font-display text-[28px] leading-none" style={{ color: b.color }}>{levelShort(b.book.level_number) || '·'}</span>
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold text-ink leading-tight">{t.name}</p>
           <p className="text-[11.5px] text-ink-3">{t.badge ? `${t.badge} · ` : ''}{bookName(b.book, b.series)} · {ko ? '주' : 'wk'} {num(b.viewStart)}–{num(b.viewEnd)} · {b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : b.pacing.weeks === 1 ? 'week' : 'weeks'}</p>
@@ -506,9 +516,9 @@ function UnitPanel({ b, lessons, resources, ko, busy, canEdit, ownPlan, todayWee
             <button onClick={() => onShift(-1)} disabled={busy} className={btnS}>{ko ? '1주 앞으로' : '1 wk earlier'}</button>
             <button onClick={() => onShift(1)} disabled={busy} className={btnS}>{ko ? '1주 뒤로' : '1 wk later'}</button>
             <span className="inline-flex items-center gap-1 ml-auto">
-              <button onClick={() => onWeeks(b.pacing.weeks - 0.5)} disabled={busy || b.pacing.weeks <= 0.5} className={btnS} aria-label="Shorter"><Minus size={11} /></button>
+              <button onClick={() => onWeeks(b.pacing.weeks > 1 ? Math.round(b.pacing.weeks) - 1 : 0.5)} disabled={busy || b.pacing.weeks <= 0.5} className={btnS} aria-label="Shorter"><Minus size={11} /></button>
               <span className="text-[12px] text-ink tabular-nums w-12 text-center">{num(b.pacing.weeks)} {ko ? '주' : 'wk'}</span>
-              <button onClick={() => onWeeks(b.pacing.weeks + 0.5)} disabled={busy} className={btnS} aria-label="Longer"><Plus size={11} /></button>
+              <button onClick={() => onWeeks(b.pacing.weeks < 1 ? 1 : Math.round(b.pacing.weeks) + 1)} disabled={busy} className={btnS} aria-label="Longer"><Plus size={11} /></button>
             </span>
           </div>
           <div className="flex gap-1.5 flex-wrap items-center">
