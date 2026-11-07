@@ -12,6 +12,10 @@ import { TERM_LABEL, academicYears, applyPatches, barsForView, blockBars, boardL
 import { addOwnUnit, deleteBlock, dropOwnUnit, ensureOwnPlan, patchOwnRows, revertToMaster, saveBlock, setHere, type BlockDraft } from '@/lib/curriculumPlanData'
 import { usePlanner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
+import WeekView from './WeekView'
+import { coverage, type LogRow } from '@/lib/curriculumWeek'
+import { fetchLogs } from '@/lib/curriculumWeekData'
+import { CCSS_DOMAINS } from '@/components/curriculum/ccss-standards'
 import { Check, ExternalLink, Flag, Loader2, Minus, Plus, Trash2, Undo2, X } from 'lucide-react'
 
 // ─── Class board ─────────────────────────────────────────────────
@@ -65,6 +69,9 @@ export default function BoardView() {
   const [drag, setDrag] = useState<Drag | null>(null)
   const [busy, setBusy] = useState(false)
   const [blockForm, setBlockForm] = useState<CurriculumBlock | 'new' | null>(null)
+  const [weekN, setWeekN] = useState<number | null>(null)
+  const [logs, setLogs] = useState<LogRow[]>([])
+  const [hiCode, setHiCode] = useState<string | null>(null)
   const areaRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<{ bar: Bar; mode: 'move' | 'resize'; x0: number; colW: number } | null>(null)
 
@@ -82,7 +89,9 @@ export default function BoardView() {
     loadAwayDays(weeks[0].monday, weeks[weeks.length - 1].friday, grade).then(a => { if (on) setAway(a) })
     return () => { on = false }
   }, [weeks, grade])
-  useEffect(() => { setPicked(null); setBlockForm(null) }, [cls, grade, theYear, view, planMode])
+  useEffect(() => { setPicked(null); setBlockForm(null); setWeekN(null); setHiCode(null) }, [cls, grade, theYear, view, planMode])
+  const loadLogs = useMemo(() => () => { if (p.plansMissing) return; fetchLogs(cls, grade).then(setLogs) }, [cls, grade, p.plansMissing])
+  useEffect(() => { loadLogs() }, [loadLogs])
 
   const placements = useMemo(() => p.placements.filter(x => x.english_class === cls && x.grade === grade && x.academic_year === theYear && x.is_master), [p.placements, cls, grade, theYear])
   const lanes = useMemo(() => boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher), [placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher])
@@ -131,6 +140,15 @@ export default function BoardView() {
     }
     return m
   }, [rows, p.here, viewTeacher, view, yw, N, todayPos, weeks])
+  // Standards: every code on a unit or lesson in this plan, and how many lessons with it were imported and done.
+  const standards = useMemo(() => {
+    const inPlan = new Set<string>()
+    for (const r of rows) for (const b of r.bars) { b.unit.ccss_codes.forEach(c => inPlan.add(c)); p.lessons.filter(l => l.unit_id === b.unit.id).forEach(l => l.ccss_codes.forEach(c => inPlan.add(c))) }
+    const cov = new Map(coverage(logs, p.lessons).map(c => [c.code, c]))
+    const codes = Array.from(new Set([...Array.from(inPlan), ...Array.from(cov.keys())])).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+    return CCSS_DOMAINS.map(d => ({ key: d.key, label: d.label, codes: codes.filter(c => c.startsWith(d.key + '.')).map(c => ({ code: c, inPlan: inPlan.has(c), taught: cov.get(c)?.taught || 0, planned: cov.get(c)?.planned || 0 })) })).filter(d => d.codes.length)
+  }, [rows, p.lessons, logs])
+  const unitHas = (u: CurriculumUnit, code: string) => u.ccss_codes.includes(code) || p.lessons.some(l => l.unit_id === u.id && l.ccss_codes.includes(code))
   const review = useMemo(() => isOwn && viewTeacher ? p.reviews.filter(r => r.teacher_id === viewTeacher && placements.some(pl => pl.id === r.placement_id) && r.comment) : [], [p.reviews, isOwn, viewTeacher, placements])
   const fail = (e: string | null) => { if (e) showToast(e); return !!e }
 
@@ -243,7 +261,10 @@ export default function BoardView() {
         <p className="text-[12.5px] text-ink-3 mb-4 mt-2">{ko ? '이 반, 학년, 학기에 배치된 책이 없습니다.' : `Nothing placed for ${cls} Grade ${grade} this ${view}.`}{isAdmin && <> {ko ? '교육과정 지도에서 책을 놓으세요.' : 'Place books on the Curriculum map.'}</>}</p>
       )}
 
-      {N > 0 && (rows.length > 0 || canEdit || blocks.length > 0) && (
+      {N > 0 && weekN !== null && weeks[weekN - 1] && currentTeacher && (
+        <WeekView cls={cls} grade={grade} week={weeks[weekN - 1]} bars={rows.flatMap(r => r.bars)} units={p.units} lessons={p.lessons} canEdit={canEdit && !p.plansMissing} teacherId={currentTeacher.id} today={today} holiday={holidays.get(weekN)} onBack={() => setWeekN(null)} onChanged={loadLogs} />
+      )}
+      {N > 0 && weekN === null && (rows.length > 0 || canEdit || blocks.length > 0) && (
         <div className="flex gap-5 items-start flex-wrap mt-2">
           <div className="flex-[999_1_640px] min-w-0 border border-rule rounded overflow-hidden bg-surface">
             <div className="overflow-x-auto">
@@ -256,10 +277,10 @@ export default function BoardView() {
                       const hol = holidays.get(w.n)
                       const isNow = todayPos !== null && Math.floor(todayPos) === w.n
                       return (
-                        <div key={w.n} className={`border-l border-rule px-0.5 py-1.5 text-center ${isNow ? 'bg-accent-soft' : hol ? 'bg-paper-2' : ''}`} title={hol || `${fmtDay(w.monday, ko)} – ${fmtDay(w.friday, ko)}`}>
+                        <button key={w.n} onClick={() => setWeekN(w.n)} className={`border-l border-rule px-0.5 py-1.5 text-center hover:bg-paper-2 ${isNow ? 'bg-accent-soft' : hol ? 'bg-paper-2' : ''}`} title={(hol ? hol + ' · ' : '') + (ko ? '이 주 열기' : 'Open this week')}>
                           <div className={`text-[11.5px] font-semibold ${isNow ? 'text-accent' : 'text-ink'}`}>W{w.n}</div>
                           <div className="text-[9.5px] text-ink-3 truncate">{hol ? hol : fmtDay(w.monday, ko)}</div>
-                        </div>
+                        </button>
                       )
                     })}
                   </div>
@@ -291,7 +312,7 @@ export default function BoardView() {
                             return (
                               <button key={b.pacing.id} onPointerDown={e => startDrag(e, b, 'move')} onClick={() => { if (drag?.moved) return; setPicked(on ? null : b) }} title={`${b.unit.title} · ${ko ? '주' : 'wk'} ${num(b.viewStart)}–${num(b.viewEnd)}`}
                                 className={`absolute text-left text-white px-2 flex flex-col justify-center overflow-hidden select-none ${b.cutLeft ? 'rounded-l-none' : 'rounded-l'} ${b.cutRight ? 'rounded-r-none' : 'rounded-r'} ${on ? 'ring-2 ring-ink ring-offset-1 ring-offset-surface' : ''} ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''}`}
-                                style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - (r.ticks.length ? 24 : 16), background: b.color, opacity: b.unit.confirmed_at ? 1 : 0.82, touchAction: 'none', ...previewStyle(b) }}>
+                                style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - (r.ticks.length ? 24 : 16), background: b.color, opacity: hiCode ? (unitHas(b.unit, hiCode) ? 1 : 0.25) : (b.unit.confirmed_at ? 1 : 0.82), touchAction: 'none', ...previewStyle(b) }}>
                                 <span className="block text-[11.5px] font-semibold leading-tight truncate">{t.name}</span>
                                 <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}{!b.unit.confirmed_at ? (ko ? ' · 미확인' : ' · not confirmed') : ''}</span>
                                 {canEdit && !b.cutRight && <span onPointerDown={e => startDrag(e, b, 'resize')} className="absolute top-0 bottom-0 right-0 w-2.5 cursor-ew-resize hover:bg-white/25" aria-hidden="true" />}
@@ -337,8 +358,32 @@ export default function BoardView() {
                 </div>
               </div>
             </div>
+            {standards.length > 0 && (
+              <div className="border-t border-rule px-3 py-2 bg-paper">
+                <div className="flex items-center gap-3 flex-wrap mb-1.5">
+                  <span className="text-[10.5px] uppercase tracking-wide text-ink-3">{ko ? '이 계획의 표준' : 'Standards in this plan'}</span>
+                  <span className="text-[10.5px] text-ink-3 inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-ink-2" />{ko ? '가르침' : 'taught'}</span>
+                  <span className="text-[10.5px] text-ink-3 inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm border-[1.5px] border-ink-2" />{ko ? '계획됨' : 'in the plan'}</span>
+                  <span className="text-[10.5px] text-ink-3">{ko ? '코드를 누르면 그 표준을 가르치는 단원만 밝게 보입니다' : 'Click a code to light the units that teach it'}</span>
+                  {hiCode && <button onClick={() => setHiCode(null)} className="text-[10.5px] text-accent">{ko ? '해제' : 'Clear'}</button>}
+                </div>
+                <div className="flex flex-col gap-1">
+                  {standards.map(d => (
+                    <div key={d.key} className="flex items-start gap-2 text-[11px]">
+                      <span className="w-[104px] shrink-0 text-ink-3 truncate pt-0.5" title={d.label}>{d.key} · {d.label}</span>
+                      <span className="flex flex-wrap gap-1">
+                        {d.codes.map(c => (
+                          <button key={c.code} onClick={() => setHiCode(hiCode === c.code ? null : c.code)} title={`${c.code}: ${c.taught} ${ko ? '가르침' : 'taught'}, ${c.planned} ${ko ? '날짜에 들어감' : 'in a day'}${c.inPlan ? '' : (ko ? ', 이 계획에 없음' : ', not in this plan')}`}
+                            className={`h-5 px-1.5 rounded text-[10px] font-semibold tabular-nums ${c.taught ? 'bg-ink-2 text-paper' : c.inPlan ? 'border-[1.5px] border-ink-2 text-ink-2' : 'border border-rule-2 text-ink-3'} ${hiCode === c.code ? 'ring-2 ring-accent' : ''}`}>{c.code.replace(/^(RL|RI|RF|W|SL|L)\./, '')}{c.taught ? ` ·${c.taught}` : ''}</button>
+                        ))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="px-3 py-2 text-[11px] text-ink-3 border-t border-rule flex gap-4 flex-wrap">
-              <span>{ko ? '빗금: 쉬는 주' : 'Hatched: a holiday week'}</span>
+              <span>{ko ? '빗금: 쉬는 주 · 주 번호를 누르면 그 주를 엽니다' : 'Hatched: a holiday week · click a week number to open it'}</span>
               {canEdit ? <span>{ko ? '막대를 끌어 옮기고, 오른쪽 끝을 끌어 늘리세요. 막대를 눌러 "여기까지 왔어요"를 표시하세요.' : 'Drag a bar to move it, drag its right edge to make it longer, click it to say "we’re here". The rail underneath is the master; red ticks are where yours differs.'}</span> : <span>{ko ? '막대 클릭: 단원의 차시와 자료' : 'Click a bar for the unit’s lessons and files'}</span>}
               <span className="ml-auto">{viewTeacher ? (isOwn ? (ko ? '내 계획' : 'Your plan') : (ko ? '교사 계획 · 읽기 전용' : 'The teacher’s plan · read-only')) : (ko ? '마스터 계획 · 읽기 전용' : 'The master plan · read-only')}</span>
             </div>

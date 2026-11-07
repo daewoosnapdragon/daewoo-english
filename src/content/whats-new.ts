@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'week-import', date: '2026-11-09', title: 'Curriculum: open a week and drop its lessons into your daily plan',
+    body: 'You can now click a week number on your class board and see the five days as they are on Lesson Plans, with this week’s units and their lessons beside them. Press a day letter on a lesson and its words go into that day: the book as the subject, the title, the “students will” line, the notes. Mark the day done when it is taught and the standards fill in under the board, where every code in your plan is listed; click one to see which units teach it.',
+    path: '/curriculum', guide: 'bookshelf',
+  },
+  {
     id: 'teacher-plans', date: '2026-11-09', title: 'Curriculum: your own plan, “we’re here”, and blocks of your own',
     body: 'You can now change your class board. Click the unit you are starting now and press We’re here: behind, a gap opens before it and everything after moves; ahead, the units before it get shorter. Drag a bar to move it, drag its right edge to make it longer, skip a unit or add one back. Your plan becomes your own copy of the master the first time you change it, and a thin rail under the row shows where the master was. Our class at the bottom holds blocks of your own, things from no book. Admin sees every difference on the Curriculum map’s Review tab and can leave you a note, make your pacing the master, or put it back.',
     path: '/curriculum', guide: 'bookshelf',
