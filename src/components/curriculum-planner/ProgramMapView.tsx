@@ -10,6 +10,8 @@ import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { splitUnitTitle } from '@/lib/curriculumCore'
 import { TERM_LABEL, academicYears, viewsFor, boardLanes, halfOf, holidayWeeks, teachingToColumns, termDates, todayPosition, viewWeeks, yearWeeks, type HolidayCounts, type View } from '@/lib/curriculumPacing'
 import { barsAtWeek, earlierOnUnit, overlapCounts, overlapsAt, type MapRow } from '@/lib/curriculumMap'
+import { LESSON_SYNC_CLASSES, planFollower, type LinkedDay } from '@/lib/lessonSync'
+import { fetchLinked } from '@/lib/lessonSyncData'
 import { usePlanner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
 import { ChevronDown, ChevronRight, ExternalLink, Loader2, Users } from 'lucide-react'
@@ -63,6 +65,17 @@ export default function ProgramMapView() {
     return () => { on = false }
   }, [semesters, theYear])
   useEffect(() => { setWeek(null); setFocus(null) }, [theYear, view])
+  // Classes whose boards follow their lesson plans: the named units, per class and grade.
+  const [linked, setLinked] = useState<Record<string, LinkedDay[]>>({})
+  useEffect(() => {
+    const s = termDates(semesters, theYear, 'spring'), f = termDates(semesters, theYear, 'fall')
+    const from = s.start || f.start, to = f.end || s.end
+    if (!from || !to) { setLinked({}); return }
+    let on = true
+    const keys = LESSON_SYNC_CLASSES.flatMap(cls => GRADES.map(g => [cls, g] as const))
+    Promise.all(keys.map(([cls, g]) => fetchLinked(cls, g, from, to).then(l => [`${cls}|${g}`, l] as const))).then(all => { if (on) setLinked(Object.fromEntries(all)) })
+    return () => { on = false }
+  }, [semesters, theYear])
 
   // Holidays per grade and half → counts and column sets.
   const holidayFor = useMemo(() => {
@@ -85,13 +98,16 @@ export default function ProgramMapView() {
         const placements = p.placements.filter(x => x.english_class === cls && x.grade === grade && x.academic_year === theYear && x.is_master)
         if (!placements.length) continue
         const h = holidayFor.get(grade)
-        const lanes = boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, teacherId, h?.hc)
+        const l = linked[`${cls}|${grade}`] || []
+        const hs = holidayWeeks(away[grade] || [], yw.spring), hf = holidayWeeks(away[grade] || [], yw.fall)
+        const follow = teacherId && l.length ? planFollower(l, yw, new Set(hs.keys()), new Set(hf.keys())) : undefined
+        const lanes = boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, teacherId, h?.hc, follow)
         const bars = teachingToColumns(lanes.flatMap(l => l.bars), h?.cols || new Set(), N)
         if (bars.length) out.push({ key: `${cls}|${grade}`, cls, grade, teacherId, bars })
       }
     }
     return out
-  }, [p.placements, p.pacing, p.units, p.books, p.series, teachers, theYear, view, yw, holidayFor, N])
+  }, [p.placements, p.pacing, p.units, p.books, p.series, teachers, theYear, view, yw, holidayFor, N, linked, away])
   const counts = useMemo(() => overlapCounts(rows, N, p.lessons), [rows, N, p.lessons])
   const overlaps = useMemo(() => week === null ? [] : overlapsAt(rows, week, p.lessons), [rows, week, p.lessons])
   const todayPos = todayPosition(weeks, today)

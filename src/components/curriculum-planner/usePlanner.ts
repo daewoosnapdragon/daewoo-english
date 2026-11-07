@@ -17,7 +17,8 @@ export interface Planner extends Catalogue { placements: CurriculumPlacement[]; 
 
 const EMPTY: Catalogue = { series: [], books: [], units: [], lessons: [], resources: [], skills: [] }
 
-export function usePlanner(): Planner {
+/** `enabled` false loads nothing, for a page that only needs the planner for some viewers. */
+export function usePlanner(enabled = true): Planner {
   const [cat, setCat] = useState<Catalogue>(EMPTY)
   const [placements, setPlacements] = useState<CurriculumPlacement[]>([])
   const [pacing, setPacing] = useState<CurriculumPacing[]>([])
@@ -35,6 +36,6 @@ export function usePlanner(): Planner {
     setPlacements(p.placements); setPacing(p.pacing); setBlocks(p.blocks); setHere(p.here); setReviews(p.reviews)
     setPlansMissing(!!p.plansError && isPlansMissing(p.plansError)); setMissing(null); setLoading(false)
   }, [])
-  useEffect(() => { reload() }, [reload])
+  useEffect(() => { if (enabled) reload(); else setLoading(false) }, [reload, enabled])
   return { ...cat, placements, pacing, blocks, here, reviews, loading, missing, plansMissing, reload }
 }

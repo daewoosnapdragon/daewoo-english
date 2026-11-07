@@ -12,6 +12,8 @@ import { TERM_LABEL, academicYears, columnToTeaching, snapWeeks, viewsFor, antho
 import { addOwnUnit, deleteBlock, dropOwnUnit, ensureOwnPlan, patchOwnRows, revertToMaster, saveBlock, setHere, setOwnDone, type BlockDraft } from '@/lib/curriculumPlanData'
 import { coverage, type LogRow } from '@/lib/curriculumWeek'
 import { fetchLogs } from '@/lib/curriculumWeekData'
+import { followsPlans, planFollower, type LinkedDay } from '@/lib/lessonSync'
+import { fetchLinked } from '@/lib/lessonSyncData'
 import { CCSS_DOMAINS } from '@/components/curriculum/ccss-standards'
 import { usePlanner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
@@ -104,6 +106,16 @@ export default function BoardView() {
   useEffect(() => { setPicked(null); setBlockForm(null); setWeekN(null); setHiCode(null) }, [cls, grade, theYear, view, planMode])
   const loadLogs = useMemo(() => () => { if (p.plansMissing) return; fetchLogs(cls, grade).then(setLogs) }, [cls, grade, p.plansMissing])
   useEffect(() => { loadLogs() }, [loadLogs])
+  // Lesson plans that name a unit, for a class whose board follows its plans.
+  const [linked, setLinked] = useState<LinkedDay[]>([])
+  useEffect(() => {
+    const s = termDates(semesters, theYear, 'spring'), f = termDates(semesters, theYear, 'fall')
+    const from = s.start || f.start, to = f.end || s.end
+    if (!followsPlans(cls) || !from || !to) { setLinked([]); return }
+    let on = true
+    fetchLinked(cls, grade, from, to).then(l => { if (on) setLinked(l) })
+    return () => { on = false }
+  }, [cls, grade, semesters, theYear])
 
   const holSpring = useMemo(() => holidayWeeks(away, yw.spring), [away, yw.spring])
   const holFall = useMemo(() => holidayWeeks(away, yw.fall), [away, yw.fall])
@@ -121,9 +133,12 @@ export default function BoardView() {
   }, [weeks, view, half, holSpring, holFall, yw.spring.length])
   const holSet = useMemo(() => new Set(holidays.keys()), [holidays])
   const toCols = useMemo(() => <T extends { viewStart: number; viewEnd: number }>(bars: T[]) => teachingToColumns(bars, holSet, N), [holSet, N])
+  // The teacher's plan is drawn from their lesson plans where they name a unit; the master never is.
+  const follower = useMemo(() => viewTeacher && linked.length ? planFollower(linked, yw, new Set(holSpring.keys()), new Set(holFall.keys())) : undefined, [viewTeacher, linked, yw, holSpring, holFall])
+  const fromPlans = useMemo(() => new Set(follower ? linked.map(l => l.unit_id) : []), [follower, linked])
 
   const placements = useMemo(() => p.placements.filter(x => x.english_class === cls && x.grade === grade && x.academic_year === theYear && x.is_master), [p.placements, cls, grade, theYear])
-  const lanes = useMemo(() => boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc), [placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc])
+  const lanes = useMemo(() => boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc, follower), [placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc, follower])
   const todayPos = todayPosition(weeks, today)
   const rows = useMemo<Row[]>(() => {
     const out: Row[] = []
@@ -148,15 +163,17 @@ export default function BoardView() {
           }
         }
         const effective = own.length ? own : masterRows(p.pacing, pl.id)
-        const all = layoutPacing(projectAnthology(effective, len), p.units)
+        const shared = projectAnthology(effective, len)
+        const drawn = follower ? follower(pl, shared) : shared
+        const all = layoutPacing(drawn, p.units)
         const last = all.length ? all[all.length - 1].end : 0
-        const progress = anthology ? anthologyProgress(effective, len, todayPos === null ? null : todayPos + viewOffset(pl.term, half, yw, hc)).text : null
+        const progress = anthology ? anthologyProgress(drawn, len, todayPos === null ? null : todayPos + viewOffset(pl.term, half, yw, hc)).text : null
         out.push({ key, strand: lane.strand, first, bar0: bars[0], bars, ticks, overBy: len && last > len + 0.01 ? Math.round((last - len) * 2) / 2 : 0, anthology, progress })
         first = false
       })
     }
     return out
-  }, [lanes, p.pacing, p.units, view, half, yw, viewTeacher, hc, toCols, todayPos])
+  }, [lanes, p.pacing, p.units, view, half, yw, viewTeacher, hc, toCols, todayPos, follower])
   const blocks = useMemo(() => toCols(blockBars(p.blocks, cls, grade, theYear, half, viewTeacher, N)), [p.blocks, cls, grade, theYear, half, viewTeacher, N, toCols])
   const pins = useMemo(() => {
     const m = new Map<string, { week: number; lag: number; set_at: string }>()
@@ -176,10 +193,12 @@ export default function BoardView() {
   const standards = useMemo(() => {
     const inPlan = new Set<string>()
     for (const r of rows) for (const b of r.bars) { b.unit.ccss_codes.forEach(c => inPlan.add(c)); p.lessons.filter(l => l.unit_id === b.unit.id).forEach(l => l.ccss_codes.forEach(c => inPlan.add(c))) }
-    const cov = new Map(coverage(logs, p.lessons).map(c => [c.code, c]))
+    // A lesson named in the lesson plans counts as taught once its day has passed.
+    const fromDays: LogRow[] = linked.filter(l => l.lesson_id && !logs.some(x => x.lesson_id === l.lesson_id && x.date === l.date)).map(l => ({ id: `plan-${l.date}-${l.lesson_id}`, lesson_id: l.lesson_id!, unit_id: l.unit_id, english_class: cls, grade, date: l.date, teacher_id: null, done: l.date < today, done_at: null, created_at: '' }))
+    const cov = new Map(coverage([...logs, ...fromDays], p.lessons).map(c => [c.code, c]))
     const codes = Array.from(new Set([...Array.from(inPlan), ...Array.from(cov.keys())])).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
     return CCSS_DOMAINS.map(d => ({ key: d.key, label: d.label, codes: codes.filter(c => c.startsWith(d.key + '.')).map(c => ({ code: c, inPlan: inPlan.has(c), taught: cov.get(c)?.taught || 0, planned: cov.get(c)?.planned || 0 })) })).filter(d => d.codes.length)
-  }, [rows, p.lessons, logs])
+  }, [rows, p.lessons, logs, linked, cls, grade, today])
   const unitHas = (u: CurriculumUnit, code: string) => u.ccss_codes.includes(code) || p.lessons.some(l => l.unit_id === u.id && l.ccss_codes.includes(code))
   const fail = (e: string | null) => { if (e) showToast(e); return !!e }
 
@@ -196,7 +215,10 @@ export default function BoardView() {
   }
   const moveTo = async (b: Bar, targetStart: number, pin = false) => {
     const r = await own(b); if (r.error) return
-    const patches = [...r.pre, ...reflowTo(r.rows, p.units, b.unit.id, targetStart)]
+    // The bar is drawn where the board shows it, which can differ from the stored plan
+    // (the lesson plans move named units): move the stored unit by the same amount.
+    const stored = layoutPacing(r.rows, p.units).find(x => x.unit.id === b.unit.id)
+    const patches = [...r.pre, ...reflowTo(r.rows, p.units, b.unit.id, stored ? stored.start + (targetStart - b.start) : targetStart)]
     if (patches.length && fail(await patchOwnRows(patches, label(b)))) { setBusy(false); return }
     if (pin && fail(await setHere(b.placement.id, currentTeacher!.id, b.unit.id, targetStart, '', label(b)))) { setBusy(false); return }
     await p.reload(); setBusy(false); setPicked(null)
@@ -254,7 +276,7 @@ export default function BoardView() {
 
   // ── Drag ──
   const startDrag = (e: React.PointerEvent, b: Bar, mode: 'move' | 'resize') => {
-    if (!canEdit || busy || !areaRef.current) return
+    if (!canEdit || busy || !areaRef.current || fromPlans.has(b.unit.id)) return
     e.preventDefault(); e.stopPropagation()
     const colW = areaRef.current.getBoundingClientRect().width / N
     dragRef.current = { bar: b, mode, x0: e.clientX, colW }
@@ -460,10 +482,11 @@ export default function BoardView() {
             <div className="px-3 py-2 text-[11px] text-ink-3 border-t border-rule flex gap-4 flex-wrap">
               <span>{ko ? '빗금: 학교 달력의 쉬는 주, 수업 주로 세지 않음 · 주 번호를 누르면 그 주를 엽니다' : 'Hatched: a holiday week from the school calendar, not counted as teaching · click a week number to open it'}</span>
               {canEdit ? <span>{ko ? '막대를 끌어 옮기고, 오른쪽 끝을 끌어 늘리세요. 처음 끌면 모든 단원의 길이가 고정됩니다.' : 'Drag a bar to move it, drag its right edge to stretch it; bars snap to whole weeks. The first drag pins every unit at its current length so the others stay put.'}</span> : <span>{ko ? '막대 클릭: 단원의 차시와 자료' : 'Click a bar for the unit’s lessons and files'}</span>}
+              {follower && <span>{ko ? '수업 계획에 적힌 단원은 그 날짜대로 그려집니다' : 'Units your lesson plans name are drawn where the plans put them'}</span>}
               <span className="ml-auto">{viewTeacher ? (isOwn ? (ko ? '내 계획' : 'Your plan') : (ko ? '교사 계획 · 읽기 전용' : 'The teacher’s plan · read-only')) : (ko ? '마스터 계획 · 읽기 전용' : 'The master plan · read-only')}</span>
             </div>
           </div>
-          {picked && <UnitPanel b={picked} anthology={picked.series?.kind === 'anthology'} onDone={d => tickDone(picked, d)} lessons={p.lessons.filter(l => l.unit_id === picked.unit.id).sort((a, b) => a.sort_order - b.sort_order)} resources={p.resources} ko={ko} busy={busy} canEdit={canEdit} ownPlan={!!viewTeacher && hasOwnPlan(p.pacing, picked.placement.id, viewTeacher)} todayWeek={todayPos !== null ? Math.floor(todayPos) : null}
+          {picked && <UnitPanel b={picked} anthology={picked.series?.kind === 'anthology'} onDone={d => tickDone(picked, d)} lessons={p.lessons.filter(l => l.unit_id === picked.unit.id).sort((a, b) => a.sort_order - b.sort_order)} resources={p.resources} ko={ko} busy={busy} canEdit={canEdit} fromPlans={fromPlans.has(picked.unit.id)} ownPlan={!!viewTeacher && hasOwnPlan(p.pacing, picked.placement.id, viewTeacher)} todayWeek={todayPos !== null ? Math.floor(todayPos) : null}
             missing={p.units.filter(u => u.book_id === picked.book.id && !(viewTeacher ? teacherRows(p.pacing, picked.placement.id, viewTeacher) : masterRows(p.pacing, picked.placement.id)).some(r => r.unit_id === u.id)).sort((a, b) => a.sort_order - b.sort_order)}
             onClose={() => setPicked(null)} onHere={() => hereNow(picked)} onShift={d => moveTo(picked, picked.start + d)} onWeeks={w => resize(picked, w)} onDrop={() => dropUnit(picked)} onAddBack={u => addBack(picked, u)} onBack={() => backToMaster(picked)} />}
           {blockForm && canEdit && currentTeacher && (
@@ -480,10 +503,10 @@ export default function BoardView() {
 // ─── The open unit ───────────────────────────────────────────────
 interface PanelProps {
   b: Bar; lessons: CurriculumLesson[]; resources: { id: string; unit_id: string | null; lesson_id: string | null; name: string; kind: string; url: string; copies_hint: number | null }[]
-  ko: boolean; busy: boolean; canEdit: boolean; ownPlan: boolean; todayWeek: number | null; missing: CurriculumUnit[]; anthology: boolean; onDone: (done: boolean) => void
+  ko: boolean; busy: boolean; canEdit: boolean; fromPlans: boolean; ownPlan: boolean; todayWeek: number | null; missing: CurriculumUnit[]; anthology: boolean; onDone: (done: boolean) => void
   onClose: () => void; onHere: () => void; onShift: (d: number) => void; onWeeks: (w: number) => void; onDrop: () => void; onAddBack: (u: CurriculumUnit) => void; onBack: () => void
 }
-function UnitPanel({ b, lessons, resources, ko, busy, canEdit, ownPlan, todayWeek, missing, anthology, onDone, onClose, onHere, onShift, onWeeks, onDrop, onAddBack, onBack }: PanelProps) {
+function UnitPanel({ b, lessons, resources, ko, busy, canEdit, fromPlans, ownPlan, todayWeek, missing, anthology, onDone, onClose, onHere, onShift, onWeeks, onDrop, onAddBack, onBack }: PanelProps) {
   const unit: CurriculumUnit = b.unit
   const unitRes = resources.filter(r => r.unit_id === unit.id)
   const t = splitUnitTitle(unit.title)
@@ -499,7 +522,10 @@ function UnitPanel({ b, lessons, resources, ko, busy, canEdit, ownPlan, todayWee
         </div>
         <button onClick={onClose} className="text-ink-3 hover:text-ink" aria-label="Close"><X size={14} /></button>
       </div>
-      {canEdit && (
+      {canEdit && fromPlans && (
+        <p className="px-4 py-3 border-b border-rule bg-paper-2 text-[11.5px] text-ink-2 leading-snug">{ko ? '이 단원의 주는 수업 계획에서 옵니다. 수업 계획에서 날짜를 바꾸면 여기도 바뀝니다.' : 'Your lesson plans name this unit, so its weeks come from them. Move the days in Lesson Plans (Push or Pull) and the bar moves with them.'}</p>
+      )}
+      {canEdit && !fromPlans && (
         <div className="px-4 py-3 border-b border-rule flex flex-col gap-2 bg-paper-2">
           {anthology ? (
             <>

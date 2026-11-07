@@ -9,7 +9,7 @@ import type { CurriculumLesson, CurriculumUnit } from '@/lib/curriculumCore'
 // the day and leaves a log row so the app still knows which lesson it was.
 // The pure parts are here so they can be tested.
 
-export interface DayContent { subjects: { label: string; content: string }[]; objective: string; notes: string }
+export interface DayContent { subjects: { label: string; content: string; unit_id?: string; lesson_id?: string; placement_id?: string }[]; objective: string; notes: string }
 export const emptyDay = (): DayContent => ({ subjects: [], objective: '', notes: '' })
 
 /** Reads a parent_calendar content value, string or object, into a DayContent; anything odd becomes an empty day. */
@@ -17,7 +17,12 @@ export function readDay(raw: unknown): DayContent {
   try {
     const c: any = typeof raw === 'string' ? JSON.parse(raw) : raw
     if (!c || typeof c !== 'object') return emptyDay()
-    const subjects = Array.isArray(c.subjects) ? c.subjects.filter((s: any) => s && typeof s === 'object').map((s: any) => ({ label: String(s.label || ''), content: String(s.content || '') })) : []
+    // Rows linked to a board unit keep their links (see lessonSync.ts), so saving a day here never drops them.
+    const subjects = Array.isArray(c.subjects) ? c.subjects.filter((s: any) => s && typeof s === 'object').map((s: any) => {
+      const row: DayContent['subjects'][number] = { label: String(s.label || ''), content: String(s.content || '') }
+      for (const k of ['unit_id', 'lesson_id', 'placement_id'] as const) if (typeof s[k] === 'string' && s[k]) row[k] = s[k]
+      return row
+    }) : []
     return { subjects, objective: String(c.objective || ''), notes: String(c.notes || '') }
   } catch { return emptyDay() }
 }

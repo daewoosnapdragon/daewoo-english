@@ -10,6 +10,10 @@ import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
 import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Save, Copy } from 'lucide-react'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
+import { useLessonSync } from './useLessonSync'
+import { classDays, lessonSyncFor, nextWeekDays, pushPlan, readPlanDay, type PlanDay, type RunningUnit } from '@/lib/lessonSync'
+import { fetchPlanDays, saveDays } from '@/lib/lessonSyncData'
+import { loadAwayDays } from '@/lib/calendarDays'
 
 interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number; grade?: number }
 interface LessonEntry { id?: string; slot_label: string; title: string; objective: string; notes: string }
@@ -73,7 +77,7 @@ export default function LessonPlanView() {
 }
 
 function ParentCalendarView() {
-  const { currentTeacher, showToast, language } = useApp()
+  const { currentTeacher, showToast, language, confirmDialog } = useApp()
   const lang = language
   const { isNoClassDay } = useScheduleRules()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Snapdragon'
@@ -93,10 +97,16 @@ function ParentCalendarView() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  interface DayContent { subjects: { label: string; content: string }[]; objective: string; notes: string }
+  // A subject row may name the board unit (and lesson) it is about; see lib/lessonSync.ts.
+  interface DayContent { subjects: { label: string; content: string; unit_id?: string; lesson_id?: string; placement_id?: string }[]; objective: string; notes: string }
   const emptyDay = (): DayContent => ({ subjects: [{ label: '', content: '' }], objective: '', notes: '' })
 
   const [dayData, setDayData] = useState<Record<string, DayContent>>({})
+  // The board and the plans as one: only for the classes being tried out (see LESSON_SYNC_CLASSES).
+  const syncOn = lessonSyncFor(currentTeacher?.english_class, selectedClass)
+  const monthFirst = `${year}-${String(month + 1).padStart(2, '0')}-01`
+  const monthLast = `${year}-${String(month + 1).padStart(2, '0')}-${String(new Date(year, month + 1, 0).getDate()).padStart(2, '0')}`
+  const sync = useLessonSync({ enabled: syncOn, cls: selectedClass, grade: selectedGrade, monthFirst, monthLast, dayData: dayData as Record<string, PlanDay> })
   const [weeklyHomework, setWeeklyHomework] = useState<Record<string, string>>({}) // keyed by Monday date
   const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }[]>>({})
   // Days the school calendar takes over: a day off blocks the cell outright
@@ -340,7 +350,20 @@ function ParentCalendarView() {
     markDirty(date)
     setDayData(prev => {
       const d = { ...(prev[date] || emptyDay()) }
-      d.subjects = [...d.subjects]; d.subjects[idx] = { ...d.subjects[idx], label }
+      // A subject picked from the list is not a board unit, so any link goes.
+      d.subjects = [...d.subjects]; d.subjects[idx] = { label, content: d.subjects[idx]?.content || '' }
+      return { ...prev, [date]: d }
+    })
+  }
+  /** Makes a row about a unit the board has running, or one of its lessons; the objective fills from the lesson when it is empty. */
+  const linkSubject = (date: string, idx: number, ru: RunningUnit, lesson?: { id: string; title: string; objective: string }) => {
+    markDirty(date)
+    setDayData(prev => {
+      const d = { ...(prev[date] || emptyDay()) }
+      const cur = d.subjects[idx] || { label: '', content: '' }
+      const content = lesson ? `${ru.name}: ${lesson.title}` : (cur.content.trim() && !cur.unit_id ? cur.content : ru.name)
+      d.subjects = [...d.subjects]; d.subjects[idx] = { label: ru.label, content, unit_id: ru.unit_id, placement_id: ru.placement_id, ...(lesson ? { lesson_id: lesson.id } : {}) }
+      if (lesson?.objective.trim() && !d.objective.trim()) d.objective = lesson.objective.trim()
       return { ...prev, [date]: d }
     })
   }
@@ -394,7 +417,9 @@ function ParentCalendarView() {
    * alone, so this can never overwrite something already written.
    */
   const [copyingWeek, setCopyingWeek] = useState<string | null>(null)
-  const copyLastWeek = async (weekMonday: string) => {
+  // With the board on (syncOn), the copy moves on as well: each row about a
+  // board unit takes the next lesson, or the unit the board has running now.
+  const copyLastWeek = async (weekMonday: string, fromBoard = false) => {
     if (!canEdit || !weekMonday) return
     setCopyingWeek(weekMonday)
     const prevMonday = shiftDate(weekMonday, -7)
@@ -416,12 +441,14 @@ function ParentCalendarView() {
     const validDates = new Set(monthDays.map(d => d.date))
     const updates: Record<string, DayContent> = {}
     let copied = 0, skipped = 0
+    const moved = fromBoard ? nextWeekDays({ source: [0, 1, 2, 3, 4].map(o => source[o] ? readPlanDay(source[o]) : null), running: sync.runningAt(weekMonday), unitOrder: sync.unitOrder, units: sync.units, lessons: sync.lessons }) : null
     for (let offset = 0; offset <= 4; offset++) {
-      const src = source[offset]
+      const src = moved ? (moved[offset] as DayContent | null) : source[offset]
       if (!src || isDayEmpty(src)) continue
       if (isNoClassDay(selectedGrade, offset + 1)) continue // no class for this grade that weekday
       const target = shiftDate(weekMonday, offset)
       if (!validDates.has(target)) continue
+      if (fromBoard && blockedDays[target]?.kind === 'off') continue // a day off keeps nothing
       const existing = dayData[target]
       if (existing && !isDayEmpty(existing)) { skipped++; continue }
       updates[target] = { subjects: src.subjects.map(s => ({ ...s })), objective: src.objective, notes: src.notes }
@@ -444,7 +471,41 @@ function ParentCalendarView() {
       if (!upErr) persistedDates.current.add(date)
     }
     setCopyingWeek(null)
-    showToast(`Copied ${copied} day${copied > 1 ? 's' : ''} from last week${skipped > 0 ? ` (${skipped} already had content)` : ''}`)
+    showToast(`${fromBoard ? 'Filled' : 'Copied'} ${copied} day${copied > 1 ? 's' : ''} from last week${fromBoard ? ', moved on with the board' : ''}${skipped > 0 ? ` (${skipped} already had content)` : ''}`)
+    if (fromBoard) sync.refresh()
+  }
+
+  /**
+   * Push: this day's plan and every later one move one class day on, skipping
+   * days off, trips and the grade's no-class days, so a field trip or a sick
+   * day does not mean retyping the month. Pull back does the reverse into an
+   * empty day. The board follows, since it reads the plans. Homework stays
+   * with its week.
+   */
+  const [shifting, setShifting] = useState<string | null>(null)
+  const shiftFrom = async (date: string, dir: 1 | -1) => {
+    if (!canEdit) return
+    setShifting(date)
+    try {
+      await flushDirty()
+      const to = shiftDate(date, 210)
+      const [{ days, error }, away] = await Promise.all([fetchPlanDays(selectedClass, selectedGrade, date, to), loadAwayDays(date, to, selectedGrade)])
+      if (error) { showToast(error); return }
+      const timeline = classDays(date, to, new Set(away.map(a => a.date)), wd => isNoClassDay(selectedGrade, wd))
+      const r = pushPlan(timeline, days, dir)
+      if (r.error) { showToast(r.error); return }
+      const dates = Object.keys(r.changes).sort()
+      const ok = await confirmDialog({
+        title: dir === 1 ? 'Push the plans a class day' : 'Pull the plans back a class day',
+        message: `${r.moved} planned day${r.moved === 1 ? '' : 's'} from ${fmtShort(date)} through ${fmtShort(dates[dates.length - 1])} move one class day ${dir === 1 ? 'later' : 'earlier'}. Days off, trips and no-class days are skipped, and weekly homework stays where it is.`,
+        confirmLabel: dir === 1 ? 'Push' : 'Pull back',
+      })
+      if (!ok) return
+      const e = await saveDays(selectedClass, selectedGrade, r.changes, currentTeacher?.id || null, `${dir === 1 ? 'pushed' : 'pulled back'} a class day from ${date}`)
+      if (e) { showToast(`Error: ${e}`); return }
+      await loadData(); sync.refresh()
+      showToast(`${r.moved} day${r.moved === 1 ? '' : 's'} moved ${dir === 1 ? 'on' : 'back'} a class day`)
+    } finally { setShifting(null) }
   }
 
   // Save all days in the month + all weekly homework
@@ -806,8 +867,24 @@ ${pages.join('\n')}
             week.forEach(d => { fw[d.dayOfWeek - 1] = d })
             const weekMonday = week.length > 0 ? getMondayOf(week[0].date) : ''
             const hw = weeklyHomework[weekMonday] || ''
+            const onBoard = syncOn ? sync.runningAt(weekMonday) : []
+            const onBoardNow = onBoard
             return (
               <div key={wi}>
+                {/* What the class board has running this week: the plan's units, so the plans can follow it. */}
+                {syncOn && onBoard.length > 0 && (
+                  <div className="px-3 py-1 border-b border-border bg-surface-alt/60 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] text-text-secondary">
+                    <span className="uppercase tracking-wider text-[9.5px] font-semibold text-text-tertiary">On the board</span>
+                    {onBoard.map(ru => (
+                      <span key={ru.placement_id + ru.unit_id} className="inline-flex items-center gap-1 min-w-0">
+                        <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: ru.color }} />
+                        <span className="font-semibold text-text-primary">{ru.label}{ru.level ? ` ${ru.level}` : ''}</span>
+                        <span className="truncate max-w-[220px]">{ru.name}</span>
+                        {ru.weeks > 1 && <span className="text-text-tertiary">wk {ru.weekOf}/{ru.weeks}</span>}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="grid grid-cols-5 border-b border-border">
                 {fw.map((day, di) => {
                   if (!day) return <div key={di} className="bg-gray-50/50 border-r border-border last:border-r-0 min-h-[110px]" />
@@ -826,6 +903,13 @@ ${pages.join('\n')}
                         <span className="text-[10px] font-bold uppercase tracking-wider text-ink-3">{DAY_SHORT[di]} {month + 1}/{day.dayNum}</span>
                         <span className="text-[13px] font-semibold text-good">{blocked.title}</span>
                         <span className="text-[10.5px] text-ink-3">{lang === 'ko' ? '수업 없음 · 학교 달력' : 'No lesson · from the school calendar'}</span>
+                        {/* A plan written before the day was taken: say so, and offer to move it on. */}
+                        {syncOn && canEdit && dayData[day.date] && !isDayEmpty(dayData[day.date]) && (
+                          <span className="mt-1 flex flex-col items-center gap-1 bg-white/85 rounded px-2 py-1.5">
+                            <span className="text-[10.5px] text-text-primary leading-snug">Planned here: {dayData[day.date].subjects.filter(s => s.content.trim()).map(s => s.label || s.content).join(', ') || dayData[day.date].objective}</span>
+                            <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">{shifting === day.date ? 'Moving…' : 'Push from here →'}</button>
+                          </span>
+                        )}
                       </div>
                     )
                   }
@@ -874,6 +958,9 @@ ${pages.join('\n')}
                 {/* ─── Inline week editor ─── */}
                 {openWeek === wi && canEdit && (
                   <div className="border-b border-border bg-surface-alt/50 px-5 py-4 animate-fade-in">
+                    {syncOn && (
+                      <p className="text-[11px] text-text-tertiary mb-2">{onBoardNow.length ? 'Pick a subject from the class board and the board follows what you plan. Push → moves a day and everything after it on a class day.' : 'Nothing on the class board this week. Push → still moves a day and everything after it on a class day.'}</p>
+                    )}
                     {fw.map((day, di) => {
                       if (!day) return null
                       if (isNoClassDay(selectedGrade, di + 1)) return null // no class for this grade that weekday
@@ -881,7 +968,9 @@ ${pages.join('\n')}
                       if (off) return (
                         <div key={day.date} className="grid grid-cols-[64px_1fr] gap-3 items-center py-2.5 border-b border-border/40 last:border-b-0">
                           <div className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">{DAY_SHORT[di]}<span className="block text-[12px] text-text-primary font-bold">{month + 1}/{day.dayNum}</span></div>
-                          <div className="text-[12.5px] text-good font-semibold">{off.title} <span className="text-ink-3 font-normal">· {lang === 'ko' ? '수업 없음' : 'no lesson'}</span></div>
+                          <div className="text-[12.5px] text-good font-semibold flex items-center gap-3">{off.title} <span className="text-ink-3 font-normal">· {lang === 'ko' ? '수업 없음' : 'no lesson'}</span>
+                            {syncOn && dayData[day.date] && !isDayEmpty(dayData[day.date]) && <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[11px] font-semibold text-navy hover:underline disabled:opacity-50">A plan is still here · Push from here →</button>}
+                          </div>
                         </div>
                       )
                       const data = dayData[day.date] || emptyDay()
@@ -890,6 +979,12 @@ ${pages.join('\n')}
                           <div className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold pt-2.5">
                             {DAY_SHORT[di]}
                             <span className="block text-[12px] text-text-primary font-bold">{month + 1}/{day.dayNum}</span>
+                            {syncOn && (
+                              <span className="flex flex-col items-start gap-0.5 mt-1.5 normal-case tracking-normal">
+                                {!isDayEmpty(data) && <button onClick={() => shiftFrom(day.date, 1)} disabled={!!shifting} title="Move this day's plan and every later one a class day on" className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">Push →</button>}
+                                {isDayEmpty(data) && <button onClick={() => shiftFrom(day.date, -1)} disabled={!!shifting} title="Bring the plans after this day back a class day, into this one" className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">← Pull back</button>}
+                              </span>
+                            )}
                           </div>
                           <div className="min-w-0 space-y-2">
                             {data.subjects.map((sub, si) => {
@@ -904,6 +999,7 @@ ${pages.join('\n')}
                                           ? 'bg-accent-light text-navy border border-accent-light hover:border-navy'
                                           : 'border border-dashed border-border text-text-tertiary hover:border-navy hover:text-navy'
                                       }`}>
+                                      {sub.unit_id && <span className="inline-block w-2 h-2 rounded-sm mr-1.5 align-middle" style={{ background: onBoardNow.find(r => r.unit_id === sub.unit_id)?.color || 'currentColor' }} title="About a unit on the class board" />}
                                       {sub.label || '+ Subject'}
                                     </button>
                                     <input
@@ -919,11 +1015,38 @@ ${pages.join('\n')}
                                         className="shrink-0 p-1 text-text-tertiary hover:text-red-500 transition-colors"><X size={13} /></button>
                                     )}
                                   </div>
+                                  {/* The unit's lessons, one tap to put one in this row. */}
+                                  {syncOn && sub.unit_id && openPicker !== pickerKey && (() => {
+                                    const ru = onBoardNow.find(r => r.unit_id === sub.unit_id && r.placement_id === sub.placement_id) || onBoardNow.find(r => r.unit_id === sub.unit_id)
+                                    const ls = sync.lessonsOf(sub.unit_id)
+                                    if (!ru || !ls.length) return null
+                                    return (
+                                      <div className="flex flex-wrap gap-1 mt-1.5 ml-1">
+                                        {ls.map((l, li) => (
+                                          <button key={l.id} onClick={() => linkSubject(day.date, si, ru, l)} title={l.objective}
+                                            className={`text-[10.5px] px-2 py-0.5 rounded-full border transition-colors ${sub.lesson_id === l.id ? 'bg-navy text-white border-navy' : 'border-border text-text-secondary hover:border-navy hover:text-navy'}`}>{li + 1} {l.title}</button>
+                                        ))}
+                                      </div>
+                                    )
+                                  })()}
                                   {openPicker === pickerKey && (
                                     <div className="mt-2 p-3 bg-surface border border-border rounded-xl">
                                       <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">
                                         Subject for {DAY_SHORT[di]} {month + 1}/{day.dayNum}
                                       </p>
+                                      {syncOn && onBoardNow.length > 0 && (
+                                        <div className="mb-2.5 pb-2.5 border-b border-border/60">
+                                          <p className="text-[10px] text-text-tertiary mb-1.5">On the class board this week</p>
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {onBoardNow.map(ru => (
+                                              <button key={ru.placement_id + ru.unit_id} onClick={() => { linkSubject(day.date, si, ru); setOpenPicker(null) }}
+                                                className={`text-[12px] font-semibold px-3 py-1.5 rounded-full border transition-colors inline-flex items-center gap-1.5 ${sub.unit_id === ru.unit_id ? 'bg-navy text-white border-navy' : 'bg-surface text-text-primary border-border hover:border-navy'}`}>
+                                                <span className="w-2 h-2 rounded-sm" style={{ background: ru.color }} />{ru.label}{ru.level ? ` ${ru.level}` : ''} <span className="font-normal opacity-80">· {ru.name}</span>
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                       <div className="flex flex-wrap gap-1.5">
                                         {SUBJECT_OPTIONS.map(s => (
                                           <button key={s}
@@ -1018,6 +1141,13 @@ ${pages.join('\n')}
                         className="flex-1 text-[10px] bg-transparent outline-none text-amber-900 placeholder:text-amber-300 py-0.5" />
                     ) : (
                       <span className="text-[10px] text-amber-900">{hw || '--'}</span>
+                    )}
+                    {canEdit && weekMonday && syncOn && (
+                      <button onClick={() => copyLastWeek(weekMonday, true)} disabled={copyingWeek === weekMonday}
+                        title="Fill this week's empty days from last week, each board unit moved on to its next lesson, or to the unit the board has now"
+                        className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-navy hover:text-navy-dark px-2 py-0.5 rounded hover:bg-surface-alt transition-colors disabled:opacity-50">
+                        {copyingWeek === weekMonday ? <><Loader2 size={10} className="animate-spin" /> Filling...</> : <><Copy size={10} /> Next from the board</>}
+                      </button>
                     )}
                     {canEdit && weekMonday && (
                       <button data-guide="lessons.copy"

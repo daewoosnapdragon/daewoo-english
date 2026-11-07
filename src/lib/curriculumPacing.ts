@@ -179,6 +179,7 @@ const STRAND_EN: Record<Strand, string> = { phonics: 'Phonics', reading: 'Readin
 export function boardLanes(
   placements: CurriculumPlacement[], pacing: CurriculumPacing[], units: CurriculumUnit[], books: CurriculumBook[], series: CurriculumSeries[], view: View, yw: YearWeeks,
   teacherId: string | null = null, h: HolidayCounts = NO_HOLIDAYS,
+  adjust?: (pl: CurriculumPlacement, rows: CurriculumPacing[]) => CurriculumPacing[],
 ): Lane[] {
   const lanes = new Map<Strand, Lane>()
   for (const pl of placements) {
@@ -187,7 +188,9 @@ export function boardLanes(
     const se = series.find(s => s.id === book.series_id)
     const strand: Strand = se?.strand || 'other'
     const rows = effectiveRows(pacing, pl.id, teacherId)
-    const bars = barsForView(layoutPacing(projectAnthology(rows, placementLength(pl.term, yw, h)), units), pl.term, view, yw, h)
+    // `adjust` redraws the rows from elsewhere, such as the lesson plans (see lessonSync.ts).
+    const shared = projectAnthology(rows, placementLength(pl.term, yw, h))
+    const bars = barsForView(layoutPacing(adjust ? adjust(pl, shared) : shared, units), pl.term, view, yw, h)
     if (!bars.length) continue
     if (!lanes.has(strand)) lanes.set(strand, { strand, label: STRAND_EN[strand], bars: [] })
     const lane = lanes.get(strand)!
