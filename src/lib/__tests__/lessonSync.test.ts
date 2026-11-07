@@ -84,7 +84,7 @@ describe('nextWeekDays', () => {
     ]
     const out = nextWeekDays({ source: src, running, unitOrder: order, units: units2, lessons })
     expect(out[0]!.subjects).toEqual([{ label: 'Into Reading', content: 'Interrupting Chicken: Retell', unit_id: 'u2', lesson_id: 'l2', placement_id: 'p1' }, { label: 'Writing', content: 'Journal' }])
-    expect(out[0]!.objective).toBe('retell')
+    expect(out[0]!.objective).toBe('')   // titles only: the old objective is dropped, the new one is offered as a suggestion
     expect(out.slice(1)).toEqual([null, null, null, null])
     const src2: (PlanDay | null)[] = [day([{ label: 'Into Reading', content: 'x', unit_id: 'u2', lesson_id: 'l2', placement_id: 'p1' }]), null, null, null, null]
     expect(nextWeekDays({ source: src2, running, unitOrder: order, units: units2, lessons })[0]!.subjects[0]).toMatchObject({ unit_id: 'u3', lesson_id: 'l3', content: 'Little Red: Intro' })

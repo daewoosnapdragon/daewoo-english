@@ -8,7 +8,9 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Save, Copy } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Save, Copy, Sparkles } from 'lucide-react'
+import type { CurriculumLesson } from '@/lib/curriculumCore'
+import { standardInfo, standardTitle } from '@/lib/standardText'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 import { useLessonSync } from './useLessonSync'
 import { classDays, lessonSyncFor, nextWeekDays, pushPlan, readPlanDay, type PlanDay, type RunningUnit } from '@/lib/lessonSync'
@@ -147,6 +149,12 @@ function ParentCalendarView() {
   }, [])
   const forgetSubject = (label: string) =>
     setCustomSubjects(prev => prev.filter(s => s !== label))
+
+  /** The lessons a day's rows name that have an objective or standards to offer. */
+  const suggestionsFor = (d: DayContent): CurriculumLesson[] => {
+    const ids = Array.from(new Set(d.subjects.map(s => s.lesson_id).filter((x): x is string => !!x)))
+    return ids.map(id => sync.lessons.find(l => l.id === id)).filter((l): l is CurriculumLesson => !!l && (!!l.objective.trim() || l.ccss_codes.length > 0))
+  }
 
   // Autosave bookkeeping (see flushDirty below).
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null)
@@ -355,7 +363,7 @@ function ParentCalendarView() {
       return { ...prev, [date]: d }
     })
   }
-  /** Makes a row about a unit the board has running, or one of its lessons; the objective fills from the lesson when it is empty. */
+  /** Makes a row about a unit the board has running, or one of its lessons. Only the subject and title come in; the lesson's objective is offered as a suggestion. */
   const linkSubject = (date: string, idx: number, ru: RunningUnit, lesson?: { id: string; title: string; objective: string }) => {
     markDirty(date)
     setDayData(prev => {
@@ -363,7 +371,6 @@ function ParentCalendarView() {
       const cur = d.subjects[idx] || { label: '', content: '' }
       const content = lesson ? `${ru.name}: ${lesson.title}` : (cur.content.trim() && !cur.unit_id ? cur.content : ru.name)
       d.subjects = [...d.subjects]; d.subjects[idx] = { label: ru.label, content, unit_id: ru.unit_id, placement_id: ru.placement_id, ...(lesson ? { lesson_id: lesson.id } : {}) }
-      if (lesson?.objective.trim() && !d.objective.trim()) d.objective = lesson.objective.trim()
       return { ...prev, [date]: d }
     })
   }
@@ -1105,6 +1112,7 @@ ${pages.join('\n')}
                                 className="lp-field flex-1 min-w-0 text-[12px] italic bg-transparent border-b border-border/40 outline-none focus:border-navy py-1 placeholder:text-text-tertiary/35"
                                 onKeyDown={fieldNav}
                               />
+                              {syncOn && <SuggestChip lessons={suggestionsFor(data)} objective={data.objective} onAdd={text => updateField(day.date, 'objective', data.objective.trim() ? `${data.objective.trim()}; ${text}` : text)} />}
                               <button onClick={() => addSubjectRow(day.date)}
                                 className="shrink-0 text-[11px] text-text-tertiary hover:text-navy font-medium px-2 py-1 rounded hover:bg-surface transition-colors">
                                 + Another subject
@@ -1173,3 +1181,50 @@ ${pages.join('\n')}
   )
 }
 
+/** "Students will identify…" → "identify…": the day's line already starts with "Students will". */
+const bareObjective = (text: string) => text.trim().replace(/^students will\s+/i, '')
+
+/**
+ * The lessons a day names, offered rather than copied: hover (or click) the
+ * chip for each lesson's objective and standards, and Add puts an objective
+ * on the day's Students will line. Objectives drafted from the book and not
+ * yet checked say so.
+ */
+function SuggestChip({ lessons, objective, onAdd }: { lessons: CurriculumLesson[]; objective: string; onAdd: (text: string) => void }) {
+  const [open, setOpen] = useState(false)
+  if (!lessons.length) return null
+  return (
+    <div className="relative group shrink-0" onMouseLeave={() => setOpen(false)}>
+      <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open}
+        className="inline-flex items-center gap-1 text-[11px] font-semibold text-navy px-2.5 py-1 rounded-full border border-dashed border-navy/40 hover:border-navy transition-colors">
+        <Sparkles size={11} />Suggested
+      </button>
+      <div className={`${open ? 'block' : 'hidden group-hover:block'} absolute right-0 top-full pt-1 z-30 w-[360px]`}>
+        <div className="bg-surface border border-border rounded-xl shadow-lg p-3 space-y-3">
+          {lessons.map(l => {
+            const obj = bareObjective(l.objective)
+            const added = !!obj && objective.toLowerCase().includes(obj.toLowerCase())
+            return (
+              <div key={l.id} className="text-[12px]">
+                <p className="font-semibold text-text-primary">{l.title}</p>
+                {obj && (
+                  <div className="flex items-start gap-2 mt-1">
+                    <p className="flex-1 text-text-secondary italic leading-snug"><span className="not-italic font-semibold text-navy">Students will</span> {obj}</p>
+                    <button type="button" onClick={() => onAdd(obj)} disabled={added}
+                      className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded border border-border text-navy enabled:hover:border-navy disabled:opacity-50">{added ? 'Added' : 'Add'}</button>
+                  </div>
+                )}
+                {l.ccss_codes.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {l.ccss_codes.map(c => { const i = standardInfo(c); return <span key={c} title={standardTitle(c)} className="text-[10.5px] px-1.5 py-0.5 rounded border border-border text-text-secondary cursor-help">{i.code}{i.plain ? ` · ${i.plain}` : ''}</span> })}
+                  </div>
+                )}
+                {l.source === 'claude' && !l.confirmed_at && <p className="text-[10.5px] text-text-tertiary mt-1">Drafted from the book, not checked yet</p>}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -152,8 +152,9 @@ export interface NextWeekInput {
  * a linked row stays on its unit if the board still has it running this week,
  * else takes the unit the board has running for that book. A row that named a
  * lesson takes the next lesson of its unit, and the first lesson of the next
- * unit once the unit's lessons run out. The objective follows the new lessons
- * when any moved on. Days with nothing last week stay null.
+ * unit once the unit's lessons run out. Only subjects and titles come over:
+ * when a lesson moved on, last week's objective no longer fits, so it is left
+ * empty for the new lesson's suggestion. Days with nothing last week stay null.
  */
 export function nextWeekDays({ source, running, unitOrder, units, lessons }: NextWeekInput): (PlanDay | null)[] {
   const lessonsOf = (u: string) => lessons.filter(l => l.unit_id === u).sort((a, b) => a.sort_order - b.sort_order)
@@ -162,7 +163,7 @@ export function nextWeekDays({ source, running, unitOrder, units, lessons }: Nex
   for (const d of source) for (const s of d?.subjects || []) if (s.unit_id && s.lesson_id) { const i = lessonsOf(s.unit_id).findIndex(l => l.id === s.lesson_id); if (i >= 0) cursor.set(s.unit_id, Math.max(cursor.get(s.unit_id) ?? -1, i)) }
   return source.map(d => {
     if (!d || isEmptyDay(d)) return null
-    const objectives: string[] = []
+    let movedOn = false
     const subjects = d.subjects.filter(s => s.label.trim() || s.content.trim()).map(s => {
       if (!s.unit_id) return { ...s }
       const mine = running.filter(r => r.placement_id === s.placement_id)
@@ -177,10 +178,10 @@ export function nextWeekDays({ source, running, unitOrder, units, lessons }: Nex
       cursor.set(unit, idx)
       const lesson = lessonsOf(unit)[idx]
       if (!lesson) return { ...s, unit_id: unit, lesson_id: undefined, content: nameOf(unit) }
-      if (lesson.objective.trim()) objectives.push(lesson.objective.trim())
+      if (lesson.id !== s.lesson_id) movedOn = true
       return { ...s, unit_id: unit, lesson_id: lesson.id, content: `${nameOf(unit)}: ${lesson.title}` }
     })
-    return { subjects, objective: objectives.length ? objectives.join('\n') : d.objective, notes: d.notes }
+    return { subjects, objective: movedOn ? '' : d.objective, notes: d.notes }
   })
 }
 

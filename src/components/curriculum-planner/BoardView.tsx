@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
@@ -15,6 +15,7 @@ import { fetchLogs } from '@/lib/curriculumWeekData'
 import { followsPlans, planFollower, type LinkedDay } from '@/lib/lessonSync'
 import { fetchLinked } from '@/lib/lessonSyncData'
 import { CCSS_DOMAINS } from '@/components/curriculum/ccss-standards'
+import { standardInfo, standardTitle } from '@/lib/standardText'
 import { usePlanner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
 import WeekView from './WeekView'
@@ -39,7 +40,11 @@ const btnS = 'h-7 px-2 rounded border border-rule-2 text-[11.5px] text-ink-2 hov
 const lbl = 'block text-[11px] text-ink-3 mb-1'
 const fmtDay = (iso: string, ko: boolean) => new Date(iso + 'T12:00:00+09:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { timeZone: 'Asia/Seoul', month: 'short', day: 'numeric' })
 const num = (n: number) => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
-const ROW_H = 62
+const ROW_H = 78
+// How many weeks fill the board's width: 8 or 12 around today, or the whole term.
+type Zoom = '8' | '12' | 'term'
+const ZOOM_KEY = 'daewoo_board_zoom'
+const readZoom = (): Zoom => { try { const z = localStorage.getItem(ZOOM_KEY); return z === '8' || z === '12' || z === 'term' ? z : '8' } catch { return '8' } }
 const LABEL_W = 150
 const stickyLabel: React.CSSProperties = { width: LABEL_W, position: 'sticky', left: 0, zIndex: 4, background: 'rgb(var(--white))' }
 
@@ -83,7 +88,21 @@ export default function BoardView() {
   const [weekN, setWeekN] = useState<number | null>(null)
   const [logs, setLogs] = useState<LogRow[]>([])
   const [hiCode, setHiCode] = useState<string | null>(null)
+  const [hoverCode, setHoverCode] = useState<string | null>(null)
+  const [zoom, setZoomState] = useState<Zoom>('8')
+  useEffect(() => { setZoomState(readZoom()) }, [])
+  const setZoom = (z: Zoom) => { setZoomState(z); try { localStorage.setItem(ZOOM_KEY, z) } catch { /* private mode */ } }
+  // My plan draws like the master; the comparison rail shows only when asked for.
+  const [compare, setCompare] = useState(false)
   const areaRef = useRef<HTMLDivElement | null>(null)
+  // The scrolling box, measured so a zoom can fill its width.
+  const [boxW, setBoxW] = useState(0)
+  const scrollEl = useRef<HTMLDivElement | null>(null)
+  const roRef = useRef<ResizeObserver | null>(null)
+  const setScrollEl = useCallback((el: HTMLDivElement | null) => {
+    roRef.current?.disconnect(); scrollEl.current = el
+    if (el && typeof ResizeObserver !== 'undefined') { const ro = new ResizeObserver(() => setBoxW(el.clientWidth)); ro.observe(el); roRef.current = ro; setBoxW(el.clientWidth) }
+  }, [])
   const dragRef = useRef<{ bar: Bar; mode: 'move' | 'resize'; x0: number; colW: number } | null>(null)
 
   // Whose plan this is: the class's teacher. Their own when they look; the master otherwise.
@@ -140,6 +159,15 @@ export default function BoardView() {
   const placements = useMemo(() => p.placements.filter(x => x.english_class === cls && x.grade === grade && x.academic_year === theYear && x.is_master), [p.placements, cls, grade, theYear])
   const lanes = useMemo(() => boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc, follower), [placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc, follower])
   const todayPos = todayPosition(weeks, today)
+  // Zoomed in, the board opens with today in the middle.
+  useEffect(() => {
+    const el = scrollEl.current
+    if (!el || !boxW || !N) return
+    const sp = zoom === 'term' ? N : Math.min(N, Number(zoom))
+    if (sp >= N || todayPos === null) { el.scrollLeft = 0; return }
+    const cw = Math.max(84, (boxW - LABEL_W) / sp)
+    el.scrollLeft = Math.max(0, (todayPos - 1) * cw + cw / 2 - (boxW - LABEL_W) / 2)
+  }, [zoom, view, cls, grade, theYear, boxW > 0, weekN, N]) // eslint-disable-line react-hooks/exhaustive-deps
   const rows = useMemo<Row[]>(() => {
     const out: Row[] = []
     for (const lane of lanes) {
@@ -309,7 +337,10 @@ export default function BoardView() {
 
   const lagLines = rows.map(r => ({ r, pin: pins.get(r.bar0.placement.id) })).filter(x => x.pin && x.pin.lag >= 0.5)
   const overRows = rows.filter(r => r.overBy > 0)
-  const colMin = view === 'year' ? 48 : 84
+  const span = zoom === 'term' ? N : Math.min(N, Number(zoom))
+  const fitW = boxW > LABEL_W && span ? (boxW - LABEL_W) / span : 0
+  const colW = Math.max(zoom === 'term' ? 28 : 84, fitW || (view === 'year' ? 48 : 84))
+  const zoomLabel = (z: Zoom) => z === 'term' ? (ko ? '학기 전체' : view === 'year' ? 'Whole year' : 'Whole term') : (ko ? `${z}주` : `${z} weeks`)
   const summerAt = view === 'year' ? weeks.findIndex(w => w.half === 'fall') : -1
   const viewLabel = (v: View) => v === 'year' ? (ko ? '한 해' : 'Year') : (ko ? TERM_LABEL[v].ko : TERM_LABEL[v].en)
   const rangeText = N ? `${N} ${ko ? '주' : 'weeks'} · ${fmtDay(weeks[0].monday, ko)} – ${fmtDay(weeks[N - 1].friday, ko)}${holidays.size ? ` · ${holidays.size} ${ko ? '쉬는 주' : holidays.size === 1 ? 'holiday week' : 'holiday weeks'}` : ''}` : (ko ? '이 기간의 날짜가 없습니다' : 'No weeks for this view yet')
@@ -336,6 +367,10 @@ export default function BoardView() {
             <button onClick={() => setPlanMode('master')} className={`h-8 px-3 text-[12.5px] border-l border-rule-2 ${planMode === 'master' ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{ko ? '마스터' : 'Master'}</button>
           </div>
         )}
+        {N > 0 && <div role="group" aria-label={ko ? '확대' : 'Zoom'} className="inline-flex rounded border border-rule-2 overflow-hidden">
+          {(['8', '12', 'term'] as Zoom[]).map((z, i) => <button key={z} onClick={() => setZoom(z)} className={`h-8 px-3 text-[12.5px] ${i ? 'border-l border-rule-2' : ''} ${zoom === z ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{zoomLabel(z)}</button>)}
+        </div>}
+        {plansOn && planMode === 'mine' && viewTeacher && <label className="h-8 inline-flex items-center gap-1.5 text-[12.5px] text-ink-2 cursor-pointer"><input type="checkbox" checked={compare} onChange={e => setCompare(e.target.checked)} />{ko ? '마스터와 비교' : 'Compare with master'}</label>}
         <span className="text-[12px] text-ink-3 pb-2">{rangeText}</span>
       </div>
       {(isAdmin || !N) && <div className="mb-3"><PeriodsLine year={theYear} /></div>}
@@ -360,8 +395,8 @@ export default function BoardView() {
       {N > 0 && weekN === null && (rows.length > 0 || canEdit || blocks.length > 0) && (
         <div className="flex gap-5 items-start flex-wrap mt-2">
           <div className="flex-[999_1_640px] min-w-0 border border-rule rounded overflow-hidden bg-surface">
-            <div className="overflow-x-auto">
-              <div style={{ minWidth: LABEL_W + N * colMin }}>
+            <div className="overflow-x-auto" ref={setScrollEl}>
+              <div style={{ width: Math.max(LABEL_W + N * colW, boxW || 0) }}>
                 {/* Week header */}
                 <div className="flex border-b border-rule">
                   <div className="shrink-0 px-3 py-2 text-[10.5px] uppercase tracking-wide text-ink-3 self-end border-r border-rule" style={stickyLabel}>{ko ? '영역 · 책' : 'Strand · book'}</div>
@@ -395,7 +430,7 @@ export default function BoardView() {
                         <div className="flex-1 relative" ref={ri === 0 ? areaRef : undefined} style={{ backgroundImage: 'linear-gradient(90deg, rgb(var(--rule)) 1px, transparent 1px)', backgroundSize: `${100 / N}% 100%` }}>
                           {Array.from(holidays.keys()).map(n => <div key={n} className="absolute inset-y-0 pointer-events-none" style={{ left: `${(n - 1) / N * 100}%`, width: `${100 / N}%`, backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--paper-3)) 0 3px, transparent 3px 7px)' }} />)}
                           {summerAt > 0 && <div className="absolute inset-y-0 pointer-events-none border-l-[3px] border-ink-3" style={{ left: `${summerAt / N * 100}%` }} />}
-                          {r.ticks.length > 0 && <>
+                          {compare && r.ticks.length > 0 && <>
                             <div className="absolute left-0 right-0 pointer-events-none" style={{ bottom: 5, height: 2, background: 'rgb(var(--rule-2))' }} />
                             {r.ticks.map((t, i) => <div key={i} className="absolute pointer-events-none" style={{ left: `calc(${t.at / N * 100}% - 1px)`, bottom: 2, width: 2, height: 9, background: t.off ? 'rgb(var(--accent))' : 'rgb(var(--ink-3))' }} />)}
                           </>}
@@ -408,8 +443,8 @@ export default function BoardView() {
                             return (
                               <button key={b.pacing.id} onPointerDown={e => startDrag(e, b, 'move')} onClick={() => { if (drag?.moved) return; setPicked(on ? null : b) }} title={`${b.unit.title} · ${ko ? '주' : 'wk'} ${num(b.viewStart)}–${num(b.viewEnd)}`}
                                 className={`absolute text-left px-2 flex flex-col justify-center overflow-hidden select-none ${b.cutLeft ? 'rounded-l-none' : 'rounded-l'} ${b.cutRight ? 'rounded-r-none' : 'rounded-r'} ${on ? 'ring-2 ring-ink ring-offset-1 ring-offset-surface' : ''} ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${open ? 'text-ink' : 'text-white'}`}
-                                style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - (r.ticks.length ? 24 : 16), background: open ? `${b.color}33` : b.color, boxShadow: open ? `inset 0 0 0 2px ${b.color}` : undefined, opacity: hiCode ? (unitHas(b.unit, hiCode) ? 1 : 0.25) : 1, touchAction: 'none', ...previewStyle(b) }}>
-                                <span className={`block font-semibold leading-tight break-words ${narrow ? 'text-[11px] line-clamp-2' : 'text-[11.5px] truncate'}`} style={{ paddingRight: b.pacing.done_at ? 10 : 0 }}>{t.name}</span>
+                                style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - (compare && r.ticks.length ? 24 : 16), background: open ? `${b.color}33` : b.color, boxShadow: open ? `inset 0 0 0 2px ${b.color}` : undefined, opacity: hiCode ? (unitHas(b.unit, hiCode) ? 1 : 0.25) : 1, touchAction: 'none', ...previewStyle(b) }}>
+                                <span className={`block font-semibold leading-snug break-words line-clamp-2 ${narrow ? 'text-[11.5px]' : 'text-[12.5px]'}`} style={{ paddingRight: b.pacing.done_at ? 10 : 0 }}>{t.name}</span>
                                 {!narrow && <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}</span>}
                                 {b.pacing.done_at && <Check size={10} strokeWidth={3} className="absolute top-1 right-1 opacity-90" aria-label={ko ? '완료' : 'done'} />}
                                 {canEdit && !b.cutRight && <span onPointerDown={e => startDrag(e, b, 'resize')} className="absolute top-0 bottom-0 right-0 w-2.5 cursor-ew-resize hover:bg-white/25" aria-hidden="true" />}
@@ -461,16 +496,21 @@ export default function BoardView() {
                   <span className="text-[10.5px] uppercase tracking-wide text-ink-3">{ko ? '이 계획의 표준' : 'Standards in this plan'}</span>
                   <span className="text-[10.5px] text-ink-3 inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-ink-2" />{ko ? '가르침' : 'taught'}</span>
                   <span className="text-[10.5px] text-ink-3 inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm border-[1.5px] border-ink-2" />{ko ? '계획됨' : 'in the plan'}</span>
-                  <span className="text-[10.5px] text-ink-3">{ko ? '코드를 누르면 그 표준을 가르치는 단원만 밝게 보입니다' : 'Click a code to light the units that teach it'}</span>
+                  <span className="text-[10.5px] text-ink-3">{ko ? '코드를 누르면 그 표준을 가르치는 단원만 밝게 보입니다' : 'Hover a code to read it, click to light the units that teach it'}</span>
                   {hiCode && <button onClick={() => setHiCode(null)} className="text-[10.5px] text-accent">{ko ? '해제' : 'Clear'}</button>}
                 </div>
+                {(hoverCode || hiCode) && (() => { const i = standardInfo((hoverCode || hiCode)!); return (
+                  <div className="mb-2 px-3 py-2 rounded bg-surface border border-rule text-[12px] leading-snug">
+                    <span className="font-semibold text-ink">{i.code}</span>{i.plain && <span className="text-ink"> · {i.plain}</span>}
+                    {i.text && <span className="block text-ink-2 mt-0.5">{i.text}</span>}
+                  </div>) })()}
                 <div className="flex flex-col gap-1">
                   {standards.map(d => (
                     <div key={d.key} className="flex items-start gap-2 text-[11px]">
-                      <span className="w-[104px] shrink-0 text-ink-3 truncate pt-0.5" title={d.label}>{d.key} · {d.label}</span>
+                      <span className="w-[150px] shrink-0 text-ink-3 truncate pt-0.5" title={d.label}>{d.key} · {d.label}</span>
                       <span className="flex flex-wrap gap-1">
                         {d.codes.map(c => (
-                          <button key={c.code} onClick={() => setHiCode(hiCode === c.code ? null : c.code)} title={`${c.code}: ${c.taught} ${ko ? '가르침' : 'taught'}, ${c.planned} ${ko ? '날짜에 들어감' : 'in a day'}`}
+                          <button key={c.code} onClick={() => setHiCode(hiCode === c.code ? null : c.code)} onMouseEnter={() => setHoverCode(c.code)} onMouseLeave={() => setHoverCode(h => h === c.code ? null : h)} onFocus={() => setHoverCode(c.code)} onBlur={() => setHoverCode(h => h === c.code ? null : h)} title={`${standardTitle(c.code)} · ${c.taught} ${ko ? '가르침' : 'taught'}, ${c.planned} ${ko ? '날짜에 들어감' : 'planned'}`}
                             className={`h-5 px-1.5 rounded text-[10px] font-semibold tabular-nums ${c.taught ? 'bg-ink-2 text-paper' : c.inPlan ? 'border-[1.5px] border-ink-2 text-ink-2' : 'border border-rule-2 text-ink-3'} ${hiCode === c.code ? 'ring-2 ring-accent' : ''}`}>{c.code.replace(/^(RL|RI|RF|W|SL|L)\./, '')}{c.taught ? ` ·${c.taught}` : ''}</button>
                         ))}
                       </span>
@@ -561,7 +601,7 @@ function UnitPanel({ b, lessons, resources, ko, busy, canEdit, fromPlans, ownPla
       {(unit.skill_tags.length > 0 || unit.ccss_codes.length > 0) && (
         <div className="px-4 pt-2 flex flex-wrap gap-1">
           {unit.skill_tags.map(x => <span key={x} className="inline-flex h-5 px-1.5 rounded text-[10.5px] font-medium bg-info-soft text-info items-center">{x}</span>)}
-          {unit.ccss_codes.map(c => <span key={c} className="inline-flex h-5 px-1.5 rounded text-[10.5px] border border-rule-2 text-ink-2 items-center">{c}</span>)}
+          {unit.ccss_codes.map(c => <span key={c} title={standardTitle(c)} className="inline-flex h-5 px-1.5 rounded text-[10.5px] border border-rule-2 text-ink-2 items-center cursor-help">{c}</span>)}
         </div>
       )}
       <div className="px-4 py-3">
