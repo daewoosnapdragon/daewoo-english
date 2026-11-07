@@ -28,7 +28,8 @@ import { ChevronLeft, ChevronRight, ExternalLink, Loader2, Users } from 'lucide-
 const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink'
 const btnS = 'h-7 px-2 rounded border border-rule-2 text-[11.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
 const fmtDay = (iso: string, ko: boolean) => new Date(iso + 'T12:00:00+09:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { timeZone: 'Asia/Seoul', month: 'short', day: 'numeric' })
-const boardLink = (cls: string, grade: number) => `#boards/board?cls=${encodeURIComponent(cls)}&grade=${grade}`
+/** A class's board at the year, view and week being looked at here. */
+const boardLink = (cls: string, grade: number, at?: { year: string; view: string; week: number }) => `#boards/board?cls=${encodeURIComponent(cls)}&grade=${grade}${at ? `&year=${encodeURIComponent(at.year)}&view=${at.view}&week=${at.week}` : ''}`
 
 export default function ProgramMapView() {
   const { language, semesters, activeSemester } = useApp()
@@ -204,7 +205,7 @@ export default function ProgramMapView() {
                   <div key={r.key} className="grid border-b border-rule last:border-b-0" style={grid}>
                     <div className="px-4 py-2.5 flex flex-col gap-0.5">
                       <span className="text-[13.5px] font-semibold text-ink">{ko ? `${r.grade}학년` : `Grade ${r.grade}`}</span>
-                      <a href={boardLink(r.cls, r.grade)} className="text-[11.5px] text-accent inline-flex items-center gap-1">{ko ? '보드 열기' : 'Open board'}<ExternalLink size={10} /></a>
+                      <a href={boardLink(r.cls, r.grade, { year: theYear, view, week: wk })} className="text-[11.5px] text-accent inline-flex items-center gap-1">{ko ? '보드 열기' : 'Open board'}<ExternalLink size={10} /></a>
                     </div>
                     {holName ? (
                       <div className="border-l border-rule px-3 py-2.5 text-[13px] text-ink-3 flex items-center" style={{ gridColumn: `2 / span ${strandsShown.length}`, backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--paper-2)) 0 4px, transparent 4px 9px)' }}>{holName}{ko ? ' · 수업 없음' : ' · no classes'}</div>
@@ -218,7 +219,7 @@ export default function ProgramMapView() {
                             const tag = notes.tagOf.get(b.unit.id)
                             const pos = weekOfBar(b, wk, hol?.cols || new Set())
                             return (
-                              <a key={b.pacing.id} href={boardLink(r.cls, r.grade)} title={`${b.series?.name || ''} ${b.book.level_number} · ${b.unit.title}`} className={`flex items-start gap-2 rounded px-2 py-1.5 hover:ring-1 hover:ring-rule-2 ${tag ? 'bg-paper-2' : 'bg-paper'}`}>
+                              <a key={b.pacing.id} href={boardLink(r.cls, r.grade, { year: theYear, view, week: wk })} title={`${b.series?.name || ''} ${b.book.level_number} · ${b.unit.title}`} className={`flex items-start gap-2 rounded px-2 py-1.5 hover:ring-1 hover:ring-rule-2 ${tag ? 'bg-paper-2' : 'bg-paper'}`}>
                                 <span className="w-2.5 h-2.5 rounded-sm shrink-0 mt-1" style={{ background: b.color }} />
                                 <span className="min-w-0 flex-1">
                                   <span className="block text-[11.5px] text-ink-3 truncate">{b.series?.name} {b.book.level_number}{t.badge ? ` · ${t.badge}` : ''}</span>

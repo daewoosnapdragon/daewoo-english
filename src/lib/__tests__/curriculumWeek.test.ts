@@ -29,21 +29,22 @@ describe('importIntoDay and removeFromDay', () => {
   it('adds a subject row, the objective and the notes, replacing an empty placeholder row', () => {
     const day = { subjects: [{ label: '', content: '' }], objective: '', notes: '' }
     const out = importIntoDay(day, l, 'Super Phonics', { title: 'Unit 6 · Long E' })
-    expect(out.subjects).toEqual([{ label: 'Super Phonics', content: 'ea words (Unit 6 · Long E)' }])
-    expect(out.objective).toBe('Students will read and sort ea and ee words.')
+    expect(out.subjects).toEqual([{ label: 'Super Phonics', content: 'Long E — ea words', lesson_id: 'l1' }])
+    expect(out.objective).toBe('read and sort ea and ee words.')   // the printed plan adds "Students will" itself
     expect(out.notes).toBe('word sort first')
   })
   it('keeps what is already there and does not add the same lesson twice', () => {
     const day = { subjects: [{ label: 'Into Reading', content: 'Module 4 day 3' }], objective: 'Students will compare two homes.', notes: '' }
     const once = importIntoDay(day, l, 'Super Phonics')
     const twice = importIntoDay(once, l, 'Super Phonics')
-    expect(twice.subjects).toEqual([{ label: 'Into Reading', content: 'Module 4 day 3' }, { label: 'Super Phonics', content: 'ea words' }])
-    expect(twice.objective).toBe('Students will compare two homes.\nStudents will read and sort ea and ee words.')
+    expect(twice.subjects).toEqual([{ label: 'Into Reading', content: 'Module 4 day 3' }, { label: 'Super Phonics', content: 'ea words', lesson_id: 'l1' }])
+    expect(twice.objective).toBe('Students will compare two homes; read and sort ea and ee words.')
   })
   it('takes the lesson out again and leaves the rest', () => {
     const day = { subjects: [{ label: 'Into Reading', content: 'Module 4 day 3' }], objective: 'Students will compare two homes.', notes: 'bring maps' }
     const added = importIntoDay(day, l, 'Super Phonics')
-    expect(removeFromDay(added, l, 'Super Phonics')).toEqual(day)
+    // The day's own line loses only its closing full stop, which the join took off.
+    expect(removeFromDay(added, l, 'Super Phonics')).toEqual({ ...day, objective: day.objective.replace(/\.$/, '') })
   })
 })
 

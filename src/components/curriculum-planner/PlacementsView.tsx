@@ -1,11 +1,12 @@
 'use client'
 
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { useApp } from '@/lib/context'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
 import { classToColor } from '@/lib/utils'
 import { STRAND_LABEL, bookName, colorHex, levelShort, splitUnitTitle, type CurriculumBook, type CurriculumUnit } from '@/lib/curriculumCore'
-import { TERMS, TERM_LABEL, academicYears, groupByModule, layoutPacing, placementLength, projectAnthology, termsFor, totalWeeks, yearWeeks, type CurriculumPlacement, type Term, type YearWeeks } from '@/lib/curriculumPacing'
+import { TERMS, TERM_LABEL, academicYears, groupByModule, layoutPacing, placementLength, projectAnthology, termsFor, totalWeeks, yearWeeks, holidayWeeks, termDates, type HolidayCounts, type CurriculumPlacement, type Term, type YearWeeks } from '@/lib/curriculumPacing'
 import { addPacingMany, clearPacingFixed, copyPlacements, createPlacement, deletePlacement, dropPacing, movePacing, setPacingWeeks, updatePlacementTerm } from '@/lib/curriculumPlacementsData'
 import { usePlanner, type Planner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
@@ -40,6 +41,17 @@ export default function MapView() {
   const yw = useMemo(() => yearWeeks(semesters, theYear), [semesters, theYear])
   // A half with no dates in Settings is not offered, and its tags are not shown.
   const terms = useMemo(() => termsFor(yw), [yw])
+  // Holiday weeks per grade, so a placement's length here is the teaching weeks the board counts.
+  const [away, setAway] = useState<Record<number, AwayDay[]>>({})
+  useEffect(() => {
+    const sp = termDates(semesters, theYear, 'spring'), f = termDates(semesters, theYear, 'fall')
+    const from = sp.start || f.start, to = f.end || sp.end
+    if (!from || !to) { setAway({}); return }
+    let on = true
+    Promise.all(GRADES.map(g => loadAwayDays(from, to, g).then(a => [g, a] as const))).then(all => { if (on) setAway(Object.fromEntries(all)) })
+    return () => { on = false }
+  }, [semesters, theYear])
+  const hcOf = (grade: number): HolidayCounts => { const a = away[grade] || []; return { spring: holidayWeeks(a, yw.spring).size, fall: holidayWeeks(a, yw.fall).size } }
   const [open, setOpen] = useState<string | null>(null)        // a placement id
   const [placing, setPlacing] = useState<string | null>(null)  // a cell key
   const [copying, setCopying] = useState<string | null>(null)  // a cell key
@@ -59,7 +71,7 @@ export default function MapView() {
     const book = p.books.find(b => b.id === pl.book_id)
     const se = book ? seriesOf(book) : undefined
     const rows = p.pacing.filter(r => r.placement_id === pl.id && r.owner === 'master')
-    const length = placementLength(pl.term, yw)
+    const length = placementLength(pl.term, yw, hcOf(pl.grade))
     const total = totalWeeks(projectAnthology(rows, length))
     const over = length > 0 && total > length + 0.01
     const on = open === pl.id
@@ -123,7 +135,7 @@ export default function MapView() {
           <p className="text-[11px] uppercase tracking-wide text-ink-3">{(() => { const k = activeKey ? cellOf(activeKey) : null; return k ? `${k.cls} · ${ko ? `${k.grade}학년` : `Grade ${k.grade}`}` : '' })()}</p>
           {placing && <PlaceForm terms={terms} p={p} ko={ko} me={me} cls={cellOf(placing).cls} grade={cellOf(placing).grade} year={theYear} existing={masters.filter(x => x.english_class === cellOf(placing).cls && x.grade === cellOf(placing).grade)} fail={fail} onDone={() => { setPlacing(null); p.reload() }} />}
           {copying && <CopyForm p={p} ko={ko} me={me} years={years} to={{ english_class: cellOf(copying).cls, grade: cellOf(copying).grade, academic_year: theYear }} fail={fail} onDone={() => { setCopying(null); p.reload() }} />}
-          {opened && <PlacementCard terms={terms} pl={opened} p={p} ko={ko} label={label(opened)} yw={yw} fail={fail} confirmDialog={confirmDialog} onRemoved={() => setOpen(null)} />}
+          {opened && <PlacementCard terms={terms} hc={hcOf(opened.grade)} pl={opened} p={p} ko={ko} label={label(opened)} yw={yw} fail={fail} confirmDialog={confirmDialog} onRemoved={() => setOpen(null)} />}
         </div>
       )}
 
@@ -133,13 +145,13 @@ export default function MapView() {
 }
 
 // ─── One placement ───────────────────────────────────────────────
-export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRemoved, terms = TERMS }: { terms?: Term[]; pl: CurriculumPlacement; p: Planner; ko: boolean; label: string; yw: YearWeeks; fail: (e: string | null) => boolean; confirmDialog: (o: { title: string; message: string; confirmLabel?: string }) => Promise<boolean>; onRemoved: () => void }) {
+export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRemoved, terms = TERMS, hc }: { terms?: Term[]; hc?: HolidayCounts; pl: CurriculumPlacement; p: Planner; ko: boolean; label: string; yw: YearWeeks; fail: (e: string | null) => boolean; confirmDialog: (o: { title: string; message: string; confirmLabel?: string }) => Promise<boolean>; onRemoved: () => void }) {
   const book = p.books.find(b => b.id === pl.book_id)
   const series = book ? p.series.find(s => s.id === book.series_id) : undefined
   const anthology = series?.kind === 'anthology'
   const rows = p.pacing.filter(r => r.placement_id === pl.id && r.owner === 'master').sort((a, b) => a.sort_order - b.sort_order)
   const units = p.units.filter(u => u.book_id === pl.book_id).sort((a, b) => a.sort_order - b.sort_order)
-  const length = placementLength(pl.term, yw)
+  const length = placementLength(pl.term, yw, hc)
   const laid = projectAnthology(rows, length)
   const bars = layoutPacing(laid, units)
   const total = totalWeeks(laid)
@@ -284,7 +296,7 @@ export function PlaceForm({ p, ko, me, cls, grade, year, existing, fail, onDone,
       </div>
       {chosen && units.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <p className="text-[12px] text-ink-2">{anthology ? (ko ? '이 반이 읽을 이야기를 고르세요. 순서는 책의 순서이고, 주 수는 학기에 맞춰 나뉩니다.' : 'Tick the stories this class will read. The order is the book’s, and the term is shared across them; no weeks to type.') : (ko ? '이 반이 할 단원을 고르세요. 순서는 책의 순서이고, 주 수는 학기에 맞춰 나뉩니다. 보드에서 단원을 끌거나 늘리면 그 단원만 고정됩니다.' : 'Tick the units this class will do, or press All units. The order is the book’s and the term is shared across them. On the board, dragging or stretching a unit pins its length; the rest re-share.')}</p>
+          <p className="text-[12px] text-ink-2">{anthology ? (ko ? '이 반이 읽을 이야기를 고르세요. 순서는 책의 순서이고, 주 수는 학기에 맞춰 나뉩니다.' : 'Tick the stories this class will read. The order is the book’s, and the term is shared across them; no weeks to type.') : (ko ? '이 반이 할 단원을 고르세요. 순서는 책의 순서이고, 주 수는 학기에 맞춰 나뉩니다. 보드에서 처음 끌거나 늘리면 모든 단원의 길이가 고정되어, 하나를 옮기면 뒤의 단원이 밀립니다.' : 'Tick the units this class will do, or press All units. The order is the book’s and the term is shared across them. On the board, the first drag or stretch pins every unit at its current length, so moving one pushes the ones after it.')}</p>
           <StoryPicker units={units} selected={picked} onChange={setPicked} ko={ko} presets={presets} />
         </div>
       )}

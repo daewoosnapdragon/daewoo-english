@@ -8,7 +8,7 @@ import { getKSTDateString } from '@/lib/utils'
 import { teacherForClass } from '@/lib/classTeacher'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { STRANDS, STRAND_LABEL, bookName, levelShort, parseTags, splitUnitTitle, type CurriculumLesson, type CurriculumUnit, type Strand } from '@/lib/curriculumCore'
-import { TERM_LABEL, academicYears, columnToTeaching, snapWeeks, viewsFor, anthologyProgress, applyPatches, barsForView, blockBars, boardLanes, freezeProjection, halfOf, hasOwnPlan, holidayWeeks, lagWeeks, layoutPacing, masterRows, placementLength, projectAnthology, reflowTo, teacherRows, teachingToColumns, termDates, todayPosition, viewOffset, viewWeeks, yearWeeks, type CurriculumBlock, type CurriculumPacing, type HolidayCounts, type Lane, type RowPatch, type View } from '@/lib/curriculumPacing'
+import { TERM_LABEL, academicYears, columnToTeaching, snapWeeks, viewShift, viewsFor, anthologyProgress, applyPatches, barsForView, blockBars, boardLanes, freezeProjection, halfOf, hasOwnPlan, holidayWeeks, lagWeeks, layoutPacing, masterRows, placementLength, projectAnthology, reflowTo, teacherRows, teachingToColumns, termDates, todayPosition, viewWeeks, yearWeeks, type CurriculumBlock, type CurriculumPlacement, type CurriculumPacing, type HolidayCounts, type Lane, type RowPatch, type View } from '@/lib/curriculumPacing'
 import { addOwnUnit, deleteBlock, dropOwnUnit, ensureOwnPlan, patchOwnRows, revertToMaster, saveBlock, setHere, setOwnDone, type BlockDraft } from '@/lib/curriculumPlanData'
 import { coverage, type LogRow } from '@/lib/curriculumWeek'
 import { fetchLogs } from '@/lib/curriculumWeekData'
@@ -50,7 +50,7 @@ const stickyLabel: React.CSSProperties = { width: LABEL_W, position: 'sticky', l
 
 type Bar = Lane['bars'][number]
 interface Row { key: string; strand: Lane['strand']; first: boolean; bar0: Bar; bars: Bar[]; ticks: { at: number; off: boolean }[]; overBy: number; anthology: boolean; progress: string | null }
-type Drag = { id: string; mode: 'move' | 'resize'; dx: number; moved: boolean; colW: number }
+type Drag = { id: string; mode: 'move' | 'resize'; dx: number; moved: boolean; colW: number; from: number; saving?: boolean }
 
 export default function BoardView() {
   const { currentTeacher, language, semesters, activeSemester, showToast, confirmDialog } = useApp()
@@ -62,14 +62,23 @@ export default function BoardView() {
   const today = getKSTDateString()
   const years = useMemo(() => { const ys = academicYears(semesters); if (activeSemester && !ys.includes(activeSemester.academic_year)) ys.unshift(activeSemester.academic_year); return ys }, [semesters, activeSemester])
   // A link from the program map carries the class and grade to open on.
-  const fromLink = (() => { if (typeof window === 'undefined') return null; const q = (window.location.hash || '').split('?')[1]; if (!q) return null; const sp = new URLSearchParams(q); return { cls: sp.get('cls'), grade: Number(sp.get('grade')) } })()
+  const fromLink = (() => { if (typeof window === 'undefined') return null; const q = (window.location.hash || '').split('?')[1]; if (!q) return null; const sp = new URLSearchParams(q); return { cls: sp.get('cls'), grade: Number(sp.get('grade')), year: sp.get('year'), view: sp.get('view'), week: Number(sp.get('week')) || null } })()
   const [cls, setCls] = useState<string>(fromLink?.cls && (PLACED_ENGLISH_CLASSES as string[]).includes(fromLink.cls) ? fromLink.cls : ownClass)
   const [grade, setGrade] = useState<number>(fromLink?.grade && (GRADES as number[]).includes(fromLink.grade) ? fromLink.grade : 1)
-  const [year, setYear] = useState<string>(activeSemester?.academic_year || '')
+  const [year, setYear] = useState<string>(fromLink?.year || activeSemester?.academic_year || '')
+  // A week the link asked for: the board centres on it and marks its column, instead of today.
+  const [focusWeek, setFocusWeek] = useState<number | null>(fromLink?.week || null)
   const theYear = year || activeSemester?.academic_year || years[0] || ''
-  const [viewPick, setViewPick] = useState<View | null>(null)
+  const [viewPick, setViewPick] = useState<View | null>(fromLink?.view === 'spring' || fromLink?.view === 'fall' || fromLink?.view === 'year' ? fromLink.view : null)
   useEffect(() => {
-    const onTarget = (e: Event) => { const d = (e as CustomEvent).detail || {}; if (d.cls && (PLACED_ENGLISH_CLASSES as string[]).includes(d.cls)) setCls(d.cls); const g = Number(d.grade); if ((GRADES as number[]).includes(g)) setGrade(g) }
+    const onTarget = (e: Event) => {
+      const d = (e as CustomEvent).detail || {}
+      if (d.cls && (PLACED_ENGLISH_CLASSES as string[]).includes(d.cls)) setCls(d.cls)
+      const g = Number(d.grade); if ((GRADES as number[]).includes(g)) setGrade(g)
+      if (d.year) setYear(d.year)
+      if (d.view === 'spring' || d.view === 'fall' || d.view === 'year') setViewPick(d.view)
+      setFocusWeek(Number(d.week) || null)
+    }
     window.addEventListener('daewoo:board-target', onTarget); return () => window.removeEventListener('daewoo:board-target', onTarget)
   }, [])
   const yw = useMemo(() => yearWeeks(semesters, theYear), [semesters, theYear])
@@ -81,7 +90,9 @@ export default function BoardView() {
   const N = weeks.length
   const [planMode, setPlanMode] = useState<'mine' | 'master'>('mine')
   const [away, setAway] = useState<AwayDay[]>([])
-  const [picked, setPicked] = useState<Bar | null>(null)
+  // The open unit, by placement and unit, so the panel is always drawn from the current bars (a stored copy went stale after every edit).
+  const [pickedKey, setPickedKey] = useState<{ pl: string; unit: string } | null>(null)
+  const setPicked = (b: Bar | null) => setPickedKey(b ? { pl: b.placement.id, unit: b.unit.id } : null)
   const [drag, setDrag] = useState<Drag | null>(null)
   const [busy, setBusy] = useState(false)
   const [blockForm, setBlockForm] = useState<CurriculumBlock | 'new' | null>(null)
@@ -104,6 +115,8 @@ export default function BoardView() {
     if (el && typeof ResizeObserver !== 'undefined') { const ro = new ResizeObserver(() => setBoxW(el.clientWidth)); ro.observe(el); roRef.current = ro; setBoxW(el.clientWidth) }
   }, [])
   const dragRef = useRef<{ bar: Bar; mode: 'move' | 'resize'; x0: number; colW: number } | null>(null)
+  // Set when a pointer-up ends a real drag, so the click that follows does not also open the panel.
+  const justDragged = useRef(false)
 
   // Whose plan this is: the class's teacher. Their own when they look; the master otherwise.
   const classTeacher = teacherForClass(teachers, cls)
@@ -164,10 +177,13 @@ export default function BoardView() {
     const el = scrollEl.current
     if (!el || !boxW || !N) return
     const sp = zoom === 'term' ? N : Math.min(N, Number(zoom))
-    if (sp >= N || todayPos === null) { el.scrollLeft = 0; return }
+    const at = focusWeek && focusWeek <= N ? focusWeek - 0.5 : todayPos
+    if (sp >= N || at === null) { el.scrollLeft = 0; return }
     const cw = Math.max(84, (boxW - LABEL_W) / sp)
-    el.scrollLeft = Math.max(0, (todayPos - 1) * cw + cw / 2 - (boxW - LABEL_W) / 2)
-  }, [zoom, view, cls, grade, theYear, boxW > 0, weekN, N]) // eslint-disable-line react-hooks/exhaustive-deps
+    el.scrollLeft = Math.max(0, (at - 1) * cw + cw / 2 - (boxW - LABEL_W) / 2)
+  }, [zoom, view, cls, grade, theYear, boxW > 0, weekN, N, focusWeek]) // eslint-disable-line react-hooks/exhaustive-deps
+  /** Today as a teaching week of a placement, with the fraction of the week gone: holiday columns before it are not counted. */
+  const todayPlacement = (term: CurriculumPlacement['term']) => todayPos === null ? null : todayPos - Array.from(holSet).filter(h => h < Math.floor(todayPos)).length - viewShift(term, view, yw, hc)
   const rows = useMemo<Row[]>(() => {
     const out: Row[] = []
     for (const lane of lanes) {
@@ -195,14 +211,21 @@ export default function BoardView() {
         const drawn = follower ? follower(pl, shared) : shared
         const all = layoutPacing(drawn, p.units)
         const last = all.length ? all[all.length - 1].end : 0
-        const progress = anthology ? anthologyProgress(drawn, len, todayPos === null ? null : todayPos + viewOffset(pl.term, half, yw, hc)).text : null
+        const progress = anthology ? anthologyProgress(drawn, len, todayPlacement(pl.term)).text : null
         out.push({ key, strand: lane.strand, first, bar0: bars[0], bars, ticks, overBy: len && last > len + 0.01 ? Math.round((last - len) * 2) / 2 : 0, anthology, progress })
         first = false
       })
     }
     return out
-  }, [lanes, p.pacing, p.units, view, half, yw, viewTeacher, hc, toCols, todayPos, follower])
-  const blocks = useMemo(() => toCols(blockBars(p.blocks, cls, grade, theYear, half, viewTeacher, N)), [p.blocks, cls, grade, theYear, half, viewTeacher, N, toCols])
+  }, [lanes, p.pacing, p.units, view, half, yw, viewTeacher, hc, toCols, todayPos, follower, holSet]) // eslint-disable-line react-hooks/exhaustive-deps
+  const picked = useMemo(() => pickedKey ? rows.flatMap(r => r.bars).find(b => b.placement.id === pickedKey.pl && b.unit.id === pickedKey.unit) || null : null, [pickedKey, rows])
+  // Blocks are kept per half. The year view shows both, the fall's after the spring's teaching weeks.
+  const blocks = useMemo(() => {
+    if (view !== 'year') return toCols(blockBars(p.blocks, cls, grade, theYear, half, viewTeacher, N))
+    const shift = yw.spring.length - hc.spring
+    const fall = blockBars(p.blocks, cls, grade, theYear, 'fall', viewTeacher, N).map(b => ({ ...b, viewStart: b.viewStart + shift, viewEnd: b.viewEnd + shift }))
+    return toCols([...blockBars(p.blocks, cls, grade, theYear, 'spring', viewTeacher, N), ...fall])
+  }, [p.blocks, cls, grade, theYear, half, view, viewTeacher, N, toCols, yw.spring.length, hc.spring])
   const pins = useMemo(() => {
     const m = new Map<string, { week: number; lag: number; set_at: string }>()
     if (!viewTeacher) return m
@@ -210,13 +233,13 @@ export default function BoardView() {
       const pl = r.bar0.placement
       const h = p.here.find(x => x.placement_id === pl.id && x.teacher_id === viewTeacher)
       if (!h) continue
-      const teaching = h.week - viewOffset(pl.term, half, yw, hc)
+      const teaching = h.week + viewShift(pl.term, view, yw, hc)
       const wk = toCols([{ viewStart: teaching, viewEnd: teaching }])[0].viewStart
       if (wk < 1 || wk > N) continue
       m.set(pl.id, { week: wk, lag: lagWeeks(h, todayPos, weeks), set_at: h.set_at })
     }
     return m
-  }, [rows, p.here, viewTeacher, half, yw, hc, N, todayPos, weeks, toCols])
+  }, [rows, p.here, viewTeacher, view, yw, hc, N, todayPos, weeks, toCols])
   const review = useMemo(() => isOwn && viewTeacher ? p.reviews.filter(r => r.teacher_id === viewTeacher && placements.some(pl => pl.id === r.placement_id) && r.comment) : [], [p.reviews, isOwn, viewTeacher, placements])
   const standards = useMemo(() => {
     const inPlan = new Set<string>()
@@ -249,7 +272,7 @@ export default function BoardView() {
     const patches = [...r.pre, ...reflowTo(r.rows, p.units, b.unit.id, stored ? stored.start + (targetStart - b.start) : targetStart)]
     if (patches.length && fail(await patchOwnRows(patches, label(b)))) { setBusy(false); return }
     if (pin && fail(await setHere(b.placement.id, currentTeacher!.id, b.unit.id, targetStart, '', label(b)))) { setBusy(false); return }
-    await p.reload(); setBusy(false); setPicked(null)
+    await p.reload(); setBusy(false)
   }
   const resize = async (b: Bar, weeksNew: number) => {
     const r = await own(b); if (r.error) return
@@ -259,13 +282,7 @@ export default function BoardView() {
     setBusy(false)
   }
   /** Today's column as a teaching week of the placement. */
-  const todayTeaching = (b: Bar) => {
-    if (todayPos === null) return null
-    const col = Math.floor(todayPos)
-    const teaching = col - Array.from(holSet).filter(h => h < col).length
-    const fallShift = view === 'year' && b.placement.term === 'fall' ? yw.spring.length - hc.spring : 0
-    return teaching - fallShift + viewOffset(b.placement.term, half, yw, hc)
-  }
+  const todayTeaching = (b: Bar) => { const t = todayPlacement(b.placement.term); return t === null ? null : Math.floor(t) }
   const hereNow = async (b: Bar) => {
     const t = todayTeaching(b)
     if (t === null) { showToast(ko ? '오늘이 이 기간 밖입니다' : 'Today is outside this view'); return }
@@ -308,24 +325,33 @@ export default function BoardView() {
     e.preventDefault(); e.stopPropagation()
     const colW = areaRef.current.getBoundingClientRect().width / N
     dragRef.current = { bar: b, mode, x0: e.clientX, colW }
-    setDrag({ id: b.pacing.id, mode, dx: 0, moved: false, colW })
-    const onMove = (ev: PointerEvent) => { const d = dragRef.current; if (!d) return; const dx = ev.clientX - d.x0; setDrag({ id: d.bar.pacing.id, mode: d.mode, dx, moved: Math.abs(dx) > 4, colW: d.colW }) }
+    const from = mode === 'move' ? b.viewStart : b.viewEnd
+    setDrag({ id: b.pacing.id, mode, dx: 0, moved: false, colW, from })
+    const onMove = (ev: PointerEvent) => { const d = dragRef.current; if (!d) return; const dx = ev.clientX - d.x0; setDrag({ id: d.bar.pacing.id, mode: d.mode, dx, moved: Math.abs(dx) > 4, colW: d.colW, from }) }
     const onUp = async (ev: PointerEvent) => {
       window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp)
-      const d = dragRef.current; dragRef.current = null; setDrag(null)
-      if (!d) return
+      const d = dragRef.current; dragRef.current = null
+      if (!d) { setDrag(null); return }
+      const dx = ev.clientX - d.x0
+      if (Math.abs(dx) > 4) { justDragged.current = true; setTimeout(() => { justDragged.current = false }, 0) }
       // Bars snap to whole weeks: the plan is an estimate, not a timetable.
       // Columns become teaching weeks, so a drag across a holiday week is not counted twice.
-      const dc = Math.round((ev.clientX - d.x0) / d.colW)
-      if (!dc) return
+      const dc = Math.round(dx / d.colW)
+      if (!dc) { setDrag(null); return }
+      // The preview stays where it was dropped until the saved plan comes back, so the bar does not jump back meanwhile.
+      setDrag({ id: d.bar.pacing.id, mode: d.mode, dx: dc * d.colW, moved: true, colW: d.colW, from, saving: true })
       const teach = (c: number) => columnToTeaching(c, holSet)
-      if (d.mode === 'move') { const from = Math.round(d.bar.viewStart); await moveTo(d.bar, Math.round(d.bar.start) + teach(from + dc) - teach(from)) }
-      else { const end = Math.round(d.bar.viewEnd); await resize(d.bar, snapWeeks(d.bar.pacing.weeks + teach(end + dc) - teach(end))) }
+      try {
+        if (d.mode === 'move') { const f = Math.round(d.bar.viewStart); await moveTo(d.bar, Math.round(d.bar.start) + teach(f + dc) - teach(f)) }
+        else { const end = Math.round(d.bar.viewEnd); await resize(d.bar, snapWeeks(d.bar.pacing.weeks + teach(end + dc) - teach(end))) }
+      } finally { setDrag(null) }
     }
     window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
   }
   const previewStyle = (b: Bar): React.CSSProperties => {
     if (!drag || drag.id !== b.pacing.id) return {}
+    // Once the saved plan has come back the bar is already in its new place.
+    if (drag.saving && (drag.mode === 'move' ? b.viewStart : b.viewEnd) !== drag.from) return {}
     // The preview jumps a column at a time, so it is clear where the bar will land.
     const snapped = Math.round(drag.dx / drag.colW) * drag.colW
     if (drag.mode === 'move') return { transform: `translateX(${snapped}px)`, opacity: 0.85, zIndex: 5, transition: 'transform 80ms ease-out' }
@@ -390,7 +416,7 @@ export default function BoardView() {
       )}
 
       {N > 0 && weekN !== null && weeks[weekN - 1] && currentTeacher && (
-        <WeekView cls={cls} grade={grade} week={weeks[weekN - 1]} bars={rows.flatMap(r => r.bars)} units={p.units} lessons={p.lessons} canEdit={canEdit && !p.plansMissing} teacherId={currentTeacher.id} today={today} holiday={holidays.get(weekN)} onBack={() => setWeekN(null)} onChanged={loadLogs} />
+        <WeekView cls={cls} grade={grade} week={weeks[weekN - 1]} label={weekLabel(weeks[weekN - 1]).replace(/^W/, '')} bars={rows.flatMap(r => r.bars)} units={p.units} lessons={p.lessons} canEdit={canEdit && !p.plansMissing} teacherId={currentTeacher.id} today={today} holiday={holidays.get(weekN)} onBack={() => setWeekN(null)} onChanged={loadLogs} />
       )}
       {N > 0 && weekN === null && (rows.length > 0 || canEdit || blocks.length > 0) && (
         <div className="flex gap-5 items-start flex-wrap mt-2">
@@ -405,7 +431,7 @@ export default function BoardView() {
                       const hol = holidays.get(w.n)
                       const isNow = todayPos !== null && Math.floor(todayPos) === w.n
                       return (
-                        <button key={w.n} onClick={() => setWeekN(w.n)} className={`px-0.5 py-1.5 text-center hover:bg-paper-2 ${i === summerAt ? 'border-l-[3px] border-ink-3' : 'border-l border-rule'} ${isNow ? 'bg-accent-soft' : hol ? 'bg-paper-2' : ''}`} title={(hol ? hol + ' · ' : '') + (ko ? '이 주 열기' : 'Open this week')}>
+                        <button key={w.n} onClick={() => setWeekN(w.n)} className={`px-0.5 py-1.5 text-center hover:bg-paper-2 ${i === summerAt ? 'border-l-[3px] border-ink-3' : 'border-l border-rule'} ${isNow ? 'bg-accent-soft' : hol ? 'bg-paper-2' : ''} ${focusWeek === w.n ? 'ring-2 ring-inset ring-ink' : ''}`} title={(hol ? hol + ' · ' : '') + (ko ? '이 주 열기' : 'Open this week')}>
                           <div className={`text-[11px] font-semibold ${isNow ? 'text-accent' : 'text-ink'}`}>{weekLabel(w)}</div>
                           <div className="text-[9.5px] text-ink-3 truncate">{hol ? hol : fmtDay(w.monday, ko)}</div>
                         </button>
@@ -441,21 +467,24 @@ export default function BoardView() {
                             // A one-week bar has room for the name on two lines and nothing else.
                             const narrow = b.viewEnd - b.viewStart < 1.5
                             return (
-                              <button key={b.pacing.id} onPointerDown={e => startDrag(e, b, 'move')} onClick={() => { if (drag?.moved) return; setPicked(on ? null : b) }} title={`${b.unit.title} · ${ko ? '주' : 'wk'} ${num(b.viewStart)}–${num(b.viewEnd)}`}
-                                className={`absolute text-left px-2 flex flex-col justify-center overflow-hidden select-none ${b.cutLeft ? 'rounded-l-none' : 'rounded-l'} ${b.cutRight ? 'rounded-r-none' : 'rounded-r'} ${on ? 'ring-2 ring-ink ring-offset-1 ring-offset-surface' : ''} ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${open ? 'text-ink' : 'text-white'}`}
+                              <button key={b.pacing.id} onPointerDown={e => startDrag(e, b, 'move')} onClick={() => { if (justDragged.current) return; setPicked(on ? null : b) }} title={`${b.unit.title} · ${ko ? '주' : 'wk'} ${num(b.viewStart)}–${num(b.viewEnd)}`}
+                                className={`absolute text-left px-2 flex flex-col justify-center overflow-hidden select-none ${b.cutLeft ? 'rounded-l-none' : 'rounded-l'} ${b.cutRight ? 'rounded-r-none' : 'rounded-r'} ${on ? 'ring-2 ring-ink ring-offset-1 ring-offset-surface' : ''} ${canEdit && !fromPlans.has(b.unit.id) ? 'cursor-grab active:cursor-grabbing' : ''} ${open ? 'text-ink' : 'text-white'}`}
                                 style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - (compare && r.ticks.length ? 24 : 16), background: open ? `${b.color}33` : b.color, boxShadow: open ? `inset 0 0 0 2px ${b.color}` : undefined, opacity: hiCode ? (unitHas(b.unit, hiCode) ? 1 : 0.25) : 1, touchAction: 'none', ...previewStyle(b) }}>
                                 <span className={`block font-semibold leading-snug break-words line-clamp-2 ${narrow ? 'text-[11.5px]' : 'text-[12.5px]'}`} style={{ paddingRight: b.pacing.done_at ? 10 : 0 }}>{t.name}</span>
                                 {!narrow && <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}</span>}
                                 {b.pacing.done_at && <Check size={10} strokeWidth={3} className="absolute top-1 right-1 opacity-90" aria-label={ko ? '완료' : 'done'} />}
-                                {canEdit && !b.cutRight && <span onPointerDown={e => startDrag(e, b, 'resize')} className="absolute top-0 bottom-0 right-0 w-2.5 cursor-ew-resize hover:bg-white/25" aria-hidden="true" />}
+                                {canEdit && !b.cutRight && !fromPlans.has(b.unit.id) && <span onPointerDown={e => startDrag(e, b, 'resize')} className="absolute top-0 bottom-0 right-0 w-2.5 cursor-ew-resize hover:bg-white/25" aria-hidden="true" />}
                               </button>
                             )
                           })}
                           {pin && (
-                            <div className="absolute top-0 pointer-events-none" style={{ left: `${(pin.week - 1) / N * 100}%` }}>
-                              <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-accent -translate-x-1/2" />
-                              {pin.lag >= 0.5 && todayPos !== null && <div className="absolute top-[3px] border-t-2 border-dotted border-accent opacity-80" style={{ left: 0, width: `calc(${(todayPos - pin.week) / N * 100}% )` }} />}
-                            </div>
+                            <>
+                              <div className="absolute top-0 pointer-events-none" style={{ left: `${(pin.week - 1) / N * 100}%` }}>
+                                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-accent -translate-x-1/2" />
+                              </div>
+                              {/* From the pin to today, measured across the row, not inside the pin. */}
+                              {pin.lag >= 0.5 && todayPos !== null && todayPos > pin.week && <div className="absolute top-[3px] border-t-2 border-dotted border-accent opacity-80 pointer-events-none" style={{ left: `${(pin.week - 1) / N * 100}%`, width: `${(todayPos - pin.week) / N * 100}%` }} />}
+                            </>
                           )}
                         </div>
                       </div>
@@ -467,11 +496,12 @@ export default function BoardView() {
                       <div className="shrink-0 px-3 flex flex-col justify-center border-r border-rule gap-0.5" style={stickyLabel}>
                         <span className="text-[9.5px] uppercase tracking-wide text-ink-3">{ko ? '우리 반' : 'Our class'}</span>
                         <span className="text-[12px] font-medium text-ink">{ko ? '자체 블록' : 'Own blocks'}</span>
-                        {canEdit && <button onClick={() => setBlockForm('new')} className="text-[11px] text-accent text-left inline-flex items-center gap-1"><Plus size={10} />{ko ? '블록 추가' : 'Add a block'}</button>}
+                        {canEdit && view === 'year' && <span className="text-[10.5px] text-ink-3">{ko ? '봄이나 가을에서 추가' : 'Add in Spring or Fall'}</span>}
+                        {canEdit && view !== 'year' && <button onClick={() => setBlockForm('new')} className="text-[11px] text-accent text-left inline-flex items-center gap-1"><Plus size={10} />{ko ? '블록 추가' : 'Add a block'}</button>}
                       </div>
                       <div className="flex-1 relative" ref={rows.length === 0 ? areaRef : undefined} style={{ backgroundImage: 'linear-gradient(90deg, rgb(var(--rule)) 1px, transparent 1px)', backgroundSize: `${100 / N}% 100%` }}>
                         {blocks.map(b => (
-                          <button key={b.id} onClick={() => canEdit && setBlockForm(b)} title={b.title}
+                          <button key={b.id} onClick={() => canEdit && view !== 'year' && setBlockForm(b)} title={b.title}
                             className="absolute text-left px-2 flex flex-col justify-center overflow-hidden rounded border-[1.5px] border-dashed border-ink-3 bg-paper text-ink"
                             style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - 16 }}>
                             <span className="block text-[11.5px] font-semibold leading-tight truncate">{b.title}</span>
@@ -529,8 +559,8 @@ export default function BoardView() {
           {picked && <UnitPanel b={picked} anthology={picked.series?.kind === 'anthology'} onDone={d => tickDone(picked, d)} lessons={p.lessons.filter(l => l.unit_id === picked.unit.id).sort((a, b) => a.sort_order - b.sort_order)} resources={p.resources} ko={ko} busy={busy} canEdit={canEdit} fromPlans={fromPlans.has(picked.unit.id)} ownPlan={!!viewTeacher && hasOwnPlan(p.pacing, picked.placement.id, viewTeacher)} todayWeek={todayPos !== null ? Math.floor(todayPos) : null}
             missing={p.units.filter(u => u.book_id === picked.book.id && !(viewTeacher ? teacherRows(p.pacing, picked.placement.id, viewTeacher) : masterRows(p.pacing, picked.placement.id)).some(r => r.unit_id === u.id)).sort((a, b) => a.sort_order - b.sort_order)}
             onClose={() => setPicked(null)} onHere={() => hereNow(picked)} onShift={d => moveTo(picked, picked.start + d)} onWeeks={w => resize(picked, w)} onDrop={() => dropUnit(picked)} onAddBack={u => addBack(picked, u)} onBack={() => backToMaster(picked)} />}
-          {blockForm && canEdit && currentTeacher && (
-            <BlockForm initial={blockForm === 'new' ? null : blockForm} ko={ko} n={N} todayWeek={todayPos !== null ? Math.floor(todayPos) : 1} onCancel={() => setBlockForm(null)}
+          {blockForm && canEdit && view !== 'year' && currentTeacher && (
+            <BlockForm initial={blockForm === 'new' ? null : blockForm} ko={ko} n={N} todayWeek={todayPos !== null ? columnToTeaching(Math.floor(todayPos), holSet) : 1} onCancel={() => setBlockForm(null)}
               onSave={async d => { const e = await saveBlock(blockForm === 'new' ? null : blockForm.id, { teacher_id: currentTeacher.id, english_class: cls, grade, academic_year: theYear, term: half }, d); if (!fail(e)) { setBlockForm(null); p.reload() } }}
               onDelete={blockForm === 'new' ? undefined : async () => { if (!fail(await deleteBlock(blockForm))) { setBlockForm(null); p.reload() } }} />
           )}

@@ -9,8 +9,9 @@ import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
 import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Save, Copy, Sparkles } from 'lucide-react'
-import type { CurriculumLesson } from '@/lib/curriculumCore'
+import { splitUnitTitle, type CurriculumLesson } from '@/lib/curriculumCore'
 import { standardInfo, standardTitle } from '@/lib/standardText'
+import { bareObjective } from '@/lib/curriculumWeek'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 import { useLessonSync } from './useLessonSync'
 import { classDays, lessonSyncFor, nextWeekDays, pushPlan, readPlanDay, type PlanDay, type RunningUnit } from '@/lib/lessonSync'
@@ -407,13 +408,26 @@ function ParentCalendarView() {
       return { ...prev, [date]: d }
     })
   }
+  /** True when a row's words are the line the app writes for this unit: its name, or "name — lesson" (or the older "name: lesson"). */
+  const isAutoLine = (text: string, unitId: string) => {
+    const u = sync.units.find(x => x.id === unitId)
+    if (!u) return false
+    const name = splitUnitTitle(u.title).name, t = text.trim()
+    return t === name || t.startsWith(`${name} — `) || t.startsWith(`${name}: `)
+  }
   /** Makes a row about a unit the board has running, or one of its lessons. Only the subject and title come in; the lesson's objective is offered as a suggestion. */
   const linkSubject = (date: string, idx: number, ru: RunningUnit, lesson?: { id: string; title: string; objective: string }) => {
     markDirty(date)
     setDayData(prev => {
       const d = { ...(prev[date] || emptyDay()) }
       const cur = d.subjects[idx] || { label: '', content: '' }
-      const content = lesson ? `${ru.name}: ${lesson.title}` : (cur.content.trim() && !cur.unit_id ? cur.content : ru.name)
+      // Tapping what is already chosen changes nothing.
+      if (lesson ? cur.lesson_id === lesson.id : (cur.unit_id === ru.unit_id && !cur.lesson_id)) return prev
+      // The row's words are replaced only when they are the app's own (empty, or a unit or lesson line it wrote);
+      // anything the teacher typed stays, and only the link changes.
+      const auto = !cur.content.trim() || (!!cur.unit_id && isAutoLine(cur.content, cur.unit_id))
+      const fresh = lesson ? `${ru.name} — ${lesson.title}` : ru.name
+      const content = auto || (!cur.unit_id && !cur.content.trim()) ? fresh : cur.content
       d.subjects = [...d.subjects]; d.subjects[idx] = { label: ru.label, content, unit_id: ru.unit_id, placement_id: ru.placement_id, ...(lesson ? { lesson_id: lesson.id } : {}) }
       return { ...prev, [date]: d }
     })
@@ -1231,8 +1245,6 @@ ${pages.join('\n')}
   )
 }
 
-/** "Students will identify…" → "identify…": the day's line already starts with "Students will". */
-const bareObjective = (text: string) => text.trim().replace(/^students will\s+/i, '')
 
 /**
  * The lessons a day names, offered rather than copied: hover (or click) the

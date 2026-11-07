@@ -215,7 +215,7 @@ export function nextWeekDays({ source, running, unitOrder, units, lessons, skip 
       if (!lesson || !nameOf(unit)) return { ...s }    // nothing known to move on to: never blank the row
       cursor.set(unit, idx)
       movedOn = true
-      return { ...s, unit_id: unit, lesson_id: lesson.id, content: `${nameOf(unit)}: ${lesson.title}` }
+      return { ...s, unit_id: unit, lesson_id: lesson.id, content: `${nameOf(unit)} — ${lesson.title}` }
     })
     return { subjects, objective: movedOn ? '' : d.objective, notes: d.notes }
   })

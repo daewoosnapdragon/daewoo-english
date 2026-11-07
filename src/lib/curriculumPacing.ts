@@ -95,6 +95,9 @@ export const placementLength = (term: Term, yw: YearWeeks, h: HolidayCounts = NO
 /** Teaching weeks between the start of a year placement and the start of the view: the spring's teaching weeks when looking at the fall. */
 export const viewOffset = (term: Term, view: View, yw: YearWeeks, h: HolidayCounts = NO_HOLIDAYS) => term === 'year' && view === 'fall' ? yw.spring.length - h.spring : 0
 
+/** What to add to a placement's teaching week to get the view's teaching week: the spring's teaching weeks for a fall placement in the year view, and minus them for a year placement seen in the fall. barsForView, pins and today all use it. */
+export const viewShift = (term: Term, view: View, yw: YearWeeks, h: HolidayCounts = NO_HOLIDAYS) => view === 'year' ? (term === 'fall' ? yw.spring.length - h.spring : 0) : -viewOffset(term, view, yw, h)
+
 /** The weeks a view shows: one half, or spring then fall renumbered 1..N with each week knowing its half. */
 export function viewWeeks(yw: YearWeeks, view: View): Week[] {
   if (view !== 'year') return yw[view].map(w => ({ ...w, half: view }))
@@ -139,7 +142,7 @@ export interface ViewBar extends Bar { viewStart: number; viewEnd: number; cutLe
 export function barsForView(bars: Bar[], term: Term, view: View, yw: YearWeeks, h: HolidayCounts = NO_HOLIDAYS): ViewBar[] {
   if (view !== 'year' && term !== 'year' && term !== view) return []
   // In teaching weeks of the view: a fall placement seen in the year view starts after the spring's teaching weeks.
-  const shift = view === 'year' ? (term === 'fall' ? yw.spring.length - h.spring : 0) : -viewOffset(term, view, yw, h)
+  const shift = viewShift(term, view, yw, h)
   const n = view === 'year' ? placementLength('year', yw, h) : yw[view].length - h[view]
   if (n <= 0) return []
   const out: ViewBar[] = []

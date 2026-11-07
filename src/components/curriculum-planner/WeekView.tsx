@@ -22,9 +22,9 @@ const btnS = 'h-7 px-2 rounded border border-rule-2 text-[11.5px] text-ink-2 hov
 const DAY_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], DAY_KO = ['월', '화', '수', '목', '금']
 const fmtDay = (iso: string, ko: boolean) => new Date(iso + 'T12:00:00+09:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { timeZone: 'Asia/Seoul', month: 'short', day: 'numeric' })
 
-interface Props { cls: string; grade: number; week: Week; bars: Bar[]; units: CurriculumUnit[]; lessons: CurriculumLesson[]; canEdit: boolean; teacherId: string; today: string; holiday: string | undefined; onBack: () => void; onChanged?: () => void }
+interface Props { cls: string; grade: number; week: Week; bars: Bar[]; units: CurriculumUnit[]; lessons: CurriculumLesson[]; canEdit: boolean; teacherId: string; today: string; holiday: string | undefined; label?: string; onBack: () => void; onChanged?: () => void }
 
-export default function WeekView({ cls, grade, week, bars, units, lessons, canEdit, teacherId, today, holiday, onBack, onChanged }: Props) {
+export default function WeekView({ cls, grade, week, bars, units, lessons, canEdit, teacherId, today, holiday, label, onBack, onChanged }: Props) {
   const { language, showToast, confirmDialog } = useApp()
   const ko = language === 'ko'
   const dates = useMemo(() => weekDays(week), [week])
@@ -70,7 +70,7 @@ export default function WeekView({ cls, grade, week, bars, units, lessons, canEd
     <div>
       <div className="flex items-center gap-3 flex-wrap mb-3">
         <button onClick={onBack} className={btnS}><ArrowLeft size={11} />{ko ? '학기 보드로' : 'Back to the term'}</button>
-        <span className="text-[14px] font-semibold text-ink">{ko ? `${week.n}주` : `Week ${week.n}`} · {fmtDay(week.monday, ko)} – {fmtDay(week.friday, ko)}</span>
+        <span className="text-[14px] font-semibold text-ink">{ko ? `${label || week.n}주` : `Week ${label || week.n}`} · {fmtDay(week.monday, ko)} – {fmtDay(week.friday, ko)}</span>
         {holiday && <span className="text-[12px] text-ink-3">{holiday}</span>}
         <Link href="/lesson-plans" className="ml-auto text-[12px] text-accent inline-flex items-center gap-1">{ko ? '수업 계획 페이지' : 'Open Lesson Plans'}<ExternalLink size={11} /></Link>
       </div>
@@ -131,7 +131,7 @@ export default function WeekView({ cls, grade, week, bars, units, lessons, canEd
                 <div key={b.pacing.id} className="px-4 py-3 border-b border-rule last:border-b-0">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="font-display text-[18px] leading-none" style={{ color: b.color }}>{levelShort(b.book.level_number) || '·'}</span>
-                    <div className="min-w-0"><p className="text-[12.5px] font-semibold text-ink truncate">{t.name}</p><p className="text-[10.5px] text-ink-3">{b.series?.name}{t.badge ? ` · ${t.badge}` : ''} · {ko ? '주' : 'wk'} {b.viewStart}–{b.viewEnd}</p></div>
+                    <div className="min-w-0"><p className="text-[12.5px] font-semibold text-ink truncate">{t.name}</p><p className="text-[10.5px] text-ink-3">{b.series?.name}{t.badge ? ` · ${t.badge}` : ''} · {ko ? '주' : 'wk'} {Math.floor(b.viewStart)}–{Math.ceil(b.viewEnd)}</p></div>
                   </div>
                   {ls.length === 0 && <p className="text-[11.5px] text-ink-3">{ko ? '차시 없음' : 'No lessons indexed yet.'}</p>}
                   <div className="flex flex-col gap-1">

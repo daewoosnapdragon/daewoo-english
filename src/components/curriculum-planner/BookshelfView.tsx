@@ -55,11 +55,14 @@ export default function BookshelfView() {
   const [showRetired, setShowRetired] = useState(false)
   const [adding, setAdding] = useState(false)
   const [showSkills, setShowSkills] = useState(false)
+  // The open book rides in the tab's address (#map/bookshelf?book=<id>), so a reload comes back to the same book on the same tab.
   useEffect(() => {
-    const h = (window.location.hash || '').slice(1)
+    const raw = (window.location.hash || '').slice(1)
+    const q = raw.split('?')[1]
+    const h = q ? new URLSearchParams(q).get('book') : raw   // older links were #<id>
     if (h && c.books.some(b => b.id === h)) setSelected(h)
   }, [c.books])
-  const pick = (id: string | null) => { setSelected(id); history.replaceState(null, '', id ? `#${id}` : window.location.pathname) }
+  const pick = (id: string | null) => { setSelected(id); history.replaceState(null, '', id ? `#map/bookshelf?book=${id}` : '#map/bookshelf') }
   const nameOf = (id: string | null | undefined) => teachers.find(t => t.id === id)?.name || (ko ? '누군가' : 'someone')
   const fail = (e: string | null) => { if (e) showToast(e); return !!e }
   const seriesOf = (b: CurriculumBook) => c.series.find(s => s.id === b.series_id)
