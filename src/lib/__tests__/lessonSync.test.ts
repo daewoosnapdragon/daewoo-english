@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { layoutPacing, weekList, type CurriculumPacing } from '../curriculumPacing'
 import type { CurriculumUnit } from '../curriculumCore'
-import { actualsFor, classDays, followPlans, lessonSyncFor, linkedDays, nextWeekDays, pushPlan, readPlanDay, teachingWeekOf, type PlanDay } from '../lessonSync'
+import { actualsFor, classDays, daySummary, followPlans, lessonSyncFor, linkedDays, nextWeekDays, planMoves, pushPlan, readPlanDay, teachingWeekOf, type PlanDay } from '../lessonSync'
 
 const unit = (id: string, title = id): CurriculumUnit => ({ id, book_id: 'b1', sort_order: 0, title, summary: '', skill_tags: [], ccss_codes: [], default_weeks: 2, source: 'claude', confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' })
 const row = (id: string, unit_id: string, sort_order: number, weeks: number, extra: Partial<CurriculumPacing> = {}): CurriculumPacing => ({ id, placement_id: 'p1', unit_id, sort_order, weeks, owner: 'master', teacher_id: null, gap_before: 0, fixed: false, done_at: null, created_at: '', updated_at: '', ...extra })
@@ -155,5 +155,17 @@ describe('classDays', () => {
   it('skips weekends, away days and no-class weekdays, but keeps the first day', () => {
     // 2026-11-11 is a Wednesday and away; Friday has no class for the grade.
     expect(classDays('2026-11-11', '2026-11-17', new Set(['2026-11-11', '2026-11-16']), wd => wd === 5)).toEqual(['2026-11-11', '2026-11-12', '2026-11-17'])
+  })
+})
+
+describe('planMoves', () => {
+  const T = ['mon', 'tue', 'wed', 'thu']
+  const D = (t: string) => day([{ label: 'R', content: t }])
+  it('lists each planned day and where it goes, for a preview', () => {
+    expect(planMoves(T, { mon: D('a'), wed: D('c') }, 1)).toEqual([{ from: 'mon', to: 'tue', summary: 'R: a' }, { from: 'wed', to: 'thu', summary: 'R: c' }])
+    expect(planMoves(T, { tue: D('b'), thu: D('d') }, -1)).toEqual([{ from: 'tue', to: 'mon', summary: 'R: b' }, { from: 'thu', to: 'wed', summary: 'R: d' }])
+  })
+  it('sums a day up in one line', () => {
+    expect(daySummary(day([{ label: 'Into Reading', content: 'Chicken — Predict' }, { label: '', content: 'Journal' }]))).toBe('Into Reading: Chicken — Predict · Journal')
   })
 })

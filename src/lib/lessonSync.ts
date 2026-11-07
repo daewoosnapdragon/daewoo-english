@@ -255,6 +255,25 @@ export function pushPlan(timeline: string[], days: Record<string, PlanDay>, dir:
 const real = (changes: Record<string, PlanDay>, days: Record<string, PlanDay>) => Object.fromEntries(Object.entries(changes).filter(([d, c]) => !(isEmptyDay(c) && isEmptyDay(days[d]))))
 const clone = (d: PlanDay): PlanDay => ({ subjects: d.subjects.map(s => ({ ...s })), objective: d.objective, notes: d.notes })
 
+export interface PlanMove { from: string; to: string; summary: string }
+
+/** One line for a day's plan in a preview: its subjects, "Into Reading: Interrupting Chicken — Predict · Writing: Journal". */
+export function daySummary(d: PlanDay | undefined | null): string {
+  if (!d) return ''
+  const rows = d.subjects.filter(s => s.content.trim()).map(s => s.label.trim() ? `${s.label}: ${s.content}` : s.content)
+  return rows.length ? rows.join(' · ') : d.objective.trim()
+}
+
+/** What a Push or Pull would do, day by day, for a preview: each planned day and the day it moves to. Same timeline rules as pushPlan. */
+export function planMoves(timeline: string[], days: Record<string, PlanDay>, dir: 1 | -1): PlanMove[] {
+  let last = -1
+  timeline.forEach((d, i) => { if (!isEmptyDay(days[d])) last = i })
+  const out: PlanMove[] = []
+  if (dir === 1) { for (let i = 0; i <= last && i + 1 < timeline.length; i++) if (!isEmptyDay(days[timeline[i]])) out.push({ from: timeline[i], to: timeline[i + 1], summary: daySummary(days[timeline[i]]) }) }
+  else { for (let i = 1; i <= last; i++) if (!isEmptyDay(days[timeline[i]])) out.push({ from: timeline[i], to: timeline[i - 1], summary: daySummary(days[timeline[i]]) }) }
+  return out
+}
+
 /** The class days from `from` (always first, even when it is away) to `to`: weekdays the grade has class that are not away days. */
 export function classDays(from: string, to: string, away: Set<string>, noClass: (weekday: number) => boolean): string[] {
   const out = [from]

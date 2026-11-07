@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { fetchAll } from '@/lib/fetchAll'
 import { logActivity } from '@/lib/activity'
 import type { CurriculumLesson, CurriculumUnit } from '@/lib/curriculumCore'
-import { importIntoDay, readDay, removeFromDay, type DayContent, type LogRow } from '@/lib/curriculumWeek'
+import { emptyDay, importIntoDay, readDay, removeFromDay, type DayContent, type LogRow } from '@/lib/curriculumWeek'
 
 // ─── The week inside the board: reads and writes ─────────────────
 // Day plans are the Lesson Plans page's rows in parent_calendar, one per
@@ -37,9 +37,17 @@ async function saveDay(date: string, cls: string, grade: number, content: DayCon
   return msg(error)
 }
 
-/** Copies a lesson into a day's plan and logs it. */
-export async function importLesson(date: string, cls: string, grade: number, lesson: CurriculumLesson, unit: CurriculumUnit, subject: string, current: DayContent, teacherId: string): Promise<string | null> {
-  const next = importIntoDay(current, lesson, subject, unit)
+/** The day as it is in the database right now: the week view's copy can be stale (Lesson Plans open in another tab, a Push). */
+async function dayNow(date: string, cls: string, grade: number): Promise<{ day: DayContent; error: string | null }> {
+  const { data, error } = await supabase.from('parent_calendar').select('content').eq('english_class', cls).eq('grade', grade).eq('date', date).maybeSingle()
+  return { day: data ? readDay((data as any).content) : emptyDay(), error: msg(error) }
+}
+
+/** Copies a lesson into a day's plan and logs it. The day is read again first, so nothing written since the week opened is lost (`shown` is only what was on screen). */
+export async function importLesson(date: string, cls: string, grade: number, lesson: CurriculumLesson, unit: CurriculumUnit, subject: string, shown: DayContent, teacherId: string): Promise<string | null> {
+  const fresh = await dayNow(date, cls, grade)
+  if (fresh.error) return fresh.error
+  const next = importIntoDay(fresh.day, lesson, subject, unit)
   const e = await saveDay(date, cls, grade, next, teacherId)
   if (e) return e
   const { error } = await supabase.from('curriculum_lesson_log').upsert({ lesson_id: lesson.id, unit_id: unit.id, english_class: cls, grade, date, teacher_id: teacherId }, { onConflict: 'lesson_id,english_class,grade,date', ignoreDuplicates: true })
@@ -47,9 +55,11 @@ export async function importLesson(date: string, cls: string, grade: number, les
   return msg(error)
 }
 
-/** Takes a lesson out of a day's plan and removes its log row. */
-export async function removeLesson(date: string, cls: string, grade: number, lesson: CurriculumLesson, unit: CurriculumUnit, subject: string, current: DayContent, teacherId: string): Promise<string | null> {
-  const e = await saveDay(date, cls, grade, removeFromDay(current, lesson, subject, unit), teacherId)
+/** Takes a lesson out of a day's plan and removes its log row, from the day as it is now. */
+export async function removeLesson(date: string, cls: string, grade: number, lesson: CurriculumLesson, unit: CurriculumUnit, subject: string, shown: DayContent, teacherId: string): Promise<string | null> {
+  const fresh = await dayNow(date, cls, grade)
+  if (fresh.error) return fresh.error
+  const e = await saveDay(date, cls, grade, removeFromDay(fresh.day, lesson, subject, unit), teacherId)
   if (e) return e
   const { error } = await supabase.from('curriculum_lesson_log').delete().eq('lesson_id', lesson.id).eq('english_class', cls).eq('grade', grade).eq('date', date)
   if (!error) logActivity('edited', `Lesson out of ${date}: ${lesson.title}`, { key: `${cls}|${grade}|${date}`, path: PATH })

@@ -14,7 +14,7 @@ import { standardInfo, standardTitle } from '@/lib/standardText'
 import { bareObjective } from '@/lib/curriculumWeek'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 import { useLessonSync } from './useLessonSync'
-import { classDays, lessonSyncFor, nextWeekDays, pushPlan, readPlanDay, type PlanDay, type RunningUnit } from '@/lib/lessonSync'
+import { classDays, isEmptyDay as isEmptyPlan, lessonSyncFor, nextWeekDays, planMoves, pushPlan, readPlanDay, type PlanDay, type PlanMove, type RunningUnit } from '@/lib/lessonSync'
 import { fetchFixedDays, fetchPlanDays, saveDays } from '@/lib/lessonSyncData'
 import { HALVES, academicYears, termDates } from '@/lib/curriculumPacing'
 import { loadAwayDays } from '@/lib/calendarDays'
@@ -550,36 +550,79 @@ function ParentCalendarView() {
    * with its week.
    */
   const [shifting, setShifting] = useState<string | null>(null)
-  // While a Push, Pull or Copy is writing, the class, grade and month stay put, so its results land on the right page.
-  const busyWriting = !!shifting || !!copyingWeek
-  const shiftFrom = async (date: string, dir: 1 | -1) => {
+  // A Push or Pull is worked out first and shown as a preview (every day and
+  // where it goes, for this grade or all five); nothing is written until the
+  // teacher presses Push. Afterwards a bar offers Undo, which puts every
+  // changed day back as it was, unless it was edited again since.
+  interface GradeShift { grade: Grade; changes: Record<string, PlanDay>; before: Record<string, PlanDay>; moves: PlanMove[]; error: string | null }
+  interface ShiftPlan { date: string; dir: 1 | -1; to: string; all: boolean; grades: GradeShift[] }
+  const [shiftPlan, setShiftPlan] = useState<ShiftPlan | null>(null)
+  const [undo, setUndo] = useState<{ text: string; cls: EnglishClass; grades: { grade: Grade; before: Record<string, PlanDay>; after: Record<string, PlanDay> }[] } | null>(null)
+  // While a Push, Pull or Copy is being worked out, previewed or written, the class, grade and month stay put, so it lands on the right page.
+  const busyWriting = !!shifting || !!copyingWeek || !!shiftPlan
+  const prepareShift = async (date: string, dir: 1 | -1, all: boolean) => {
     if (!canEdit) return
+    // Only today on can be pulled into; plans never slide into the past.
+    if (dir === -1 && date < todayStr) { showToast('Pull back works from today on, so no plan moves into a day that has passed.'); return }
+    // Plans move only within the term the day is in: never across a break into the next term.
+    const term = academicYears(semesters).flatMap(y => HALVES.map(h => termDates(semesters, y, h))).find(t => t.start && t.end && date >= t.start && date <= t.end)
+    if (!term?.end) { showToast('This day is outside the terms in Settings, so nothing moves.'); return }
     setShifting(date)
     try {
-      // Only today on can be pulled into; plans never slide into the past.
-      if (dir === -1 && date < todayStr) { showToast('Pull back works from today on, so no plan moves into a day that has passed.'); return }
-      // Plans move only within the term the day is in: never across a break into the next term.
-      const term = academicYears(semesters).flatMap(y => HALVES.map(h => termDates(semesters, y, h))).find(t => t.start && t.end && date >= t.start && date <= t.end)
-      if (!term?.end) { showToast('This day is outside the terms in Settings, so nothing moves.'); return }
       await flushDirty()
       const to = term.end
-      const [{ days, error }, away, fixed] = await Promise.all([fetchPlanDays(selectedClass, selectedGrade, date, to), loadAwayDays(date, to, selectedGrade), fetchFixedDays(date, to, selectedGrade)])
-      if (error) { showToast(error); return }
-      // Exam days keep their plans: nothing slides onto them or off them.
-      const timeline = classDays(date, to, new Set([...away.map(a => a.date), ...Array.from(fixed).filter(d => d !== date)]), wd => isNoClassDay(selectedGrade, wd))
-      const r = pushPlan(timeline, days, dir)
-      if (r.error) { showToast(r.error); return }
-      const dates = Object.keys(r.changes).sort()
-      const ok = await confirmDialog({
-        title: dir === 1 ? 'Push the plans a class day' : 'Pull the plans back a class day',
-        message: `${r.moved} planned day${r.moved === 1 ? '' : 's'} from ${fmtShort(date)} through ${fmtShort(dates[dates.length - 1])} move one class day ${dir === 1 ? 'later' : 'earlier'}, up to the end of the term (${fmtShort(to)}). Days off, trips, no-class days and exam days are skipped and keep what they have. Weekly homework stays with its week.${date < todayStr ? ' This starts on a day that has already passed.' : ''}`,
-        confirmLabel: dir === 1 ? 'Push' : 'Pull back',
-      })
-      if (!ok) return
-      const e = await saveDays(selectedClass, selectedGrade, r.changes, currentTeacher?.id || null, `${dir === 1 ? 'pushed' : 'pulled back'} a class day from ${date}`)
-      if (e) { showToast(`Error: ${e}`); return }
+      const grades = await Promise.all((all ? GRADES : [selectedGrade]).map(async (g): Promise<GradeShift> => {
+        const [{ days, error }, away, fixed] = await Promise.all([fetchPlanDays(selectedClass, g, date, to), loadAwayDays(date, to, g), fetchFixedDays(date, to, g)])
+        if (error) return { grade: g, changes: {}, before: {}, moves: [], error }
+        // Exam days keep their plans: nothing slides onto them or off them.
+        const timeline = classDays(date, to, new Set([...away.map(a => a.date), ...Array.from(fixed).filter(d => d !== date)]), wd => isNoClassDay(g, wd))
+        const r = pushPlan(timeline, days, dir)
+        const before: Record<string, PlanDay> = {}
+        Object.keys(r.changes).forEach(d => { before[d] = days[d] || { subjects: [], objective: '', notes: '' } })
+        return { grade: g, changes: r.changes, before, moves: r.error ? [] : planMoves(timeline, days, dir), error: r.error }
+      }))
+      if (!all && grades[0].error) { showToast(grades[0].error); return }
+      setShiftPlan({ date, dir, to, all, grades })
+    } finally { setShifting(null) }
+  }
+  const shiftFrom = (date: string, dir: 1 | -1) => prepareShift(date, dir, false)
+  const applyShift = async () => {
+    const plan = shiftPlan
+    if (!plan) return
+    setShifting(plan.date)
+    try {
+      const done: { grade: Grade; before: Record<string, PlanDay>; after: Record<string, PlanDay> }[] = []
+      for (const g of plan.grades) {
+        if (g.error || !Object.keys(g.changes).length) continue
+        const e = await saveDays(selectedClass, g.grade, g.changes, currentTeacher?.id || null, `${plan.dir === 1 ? 'pushed' : 'pulled back'} a class day from ${plan.date}`)
+        if (e) { showToast(`Grade ${g.grade}: ${e}`); continue }
+        done.push({ grade: g.grade, before: g.before, after: g.changes })
+      }
+      setShiftPlan(null)
+      const moved = plan.grades.reduce((a, g) => a + (done.some(d => d.grade === g.grade) ? g.moves.length : 0), 0)
+      if (done.length) setUndo({ cls: selectedClass, grades: done, text: `${moved} planned day${moved === 1 ? '' : 's'} moved ${plan.dir === 1 ? 'a class day later' : 'a class day earlier'} from ${fmtShort(plan.date)}${done.length > 1 ? ` in ${done.length} grades` : ''}.` })
       await loadData(); sync.refresh()
-      showToast(`${r.moved} day${r.moved === 1 ? '' : 's'} moved ${dir === 1 ? 'on' : 'back'} a class day`)
+    } finally { setShifting(null) }
+  }
+  /** Puts every day a Push or Pull changed back, except days edited again since (those are named and left alone). */
+  const undoShift = async () => {
+    const u = undo
+    if (!u) return
+    setShifting('undo')
+    try {
+      const kept: string[] = []
+      for (const g of u.grades) {
+        const dates = Object.keys(g.before)
+        const { days } = await fetchPlanDays(u.cls, g.grade, dates[0], dates[dates.length - 1])
+        const same = (a?: PlanDay, b?: PlanDay) => JSON.stringify(a || { subjects: [], objective: '', notes: '' }) === JSON.stringify(b || { subjects: [], objective: '', notes: '' })
+        const back: Record<string, PlanDay> = {}
+        for (const d of dates) { if (same(days[d], g.after[d]) || (isEmptyPlan(days[d]) && isEmptyPlan(g.after[d]))) back[d] = g.before[d]; else kept.push(`G${g.grade} ${fmtShort(d)}`) }
+        const e = await saveDays(u.cls, g.grade, back, currentTeacher?.id || null, 'undid a push or pull')
+        if (e) showToast(`Grade ${g.grade}: ${e}`)
+      }
+      setUndo(null)
+      await loadData(); sync.refresh()
+      showToast(kept.length ? `Undone, except ${kept.slice(0, 4).join(', ')}${kept.length > 4 ? ` and ${kept.length - 4} more` : ''}, edited since` : 'Undone: the plans are back where they were')
     } finally { setShifting(null) }
   }
 
@@ -916,6 +959,14 @@ ${pages.join('\n')}
       </div>
 
       <div className="px-8 py-6 max-w-[1400px] mx-auto">
+        {/* After a Push or Pull: what moved, and Undo */}
+        {undo && undo.cls === selectedClass && (
+          <div className="mb-4 flex items-center gap-3 flex-wrap px-4 py-2.5 rounded-lg border border-border bg-surface-alt text-[13px]">
+            <span className="text-text-primary">{undo.text}</span>
+            <button onClick={undoShift} disabled={shifting === 'undo'} className="px-3 py-1 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{shifting === 'undo' ? 'Undoing…' : 'Undo'}</button>
+            <button onClick={() => setUndo(null)} className="ml-auto text-text-tertiary hover:text-text-primary" aria-label="Dismiss"><X size={14} /></button>
+          </div>
+        )}
         {/* Month nav */}
         <div className="flex items-center justify-center gap-4 mb-6">
           <button onClick={prevMonth} disabled={busyWriting} aria-label="Previous month" className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary disabled:opacity-40"><ChevronLeft size={20} /></button>
@@ -1241,6 +1292,50 @@ ${pages.join('\n')}
         </div>
       </div>
 
+      {/* The Push or Pull preview: nothing is written until Push is pressed */}
+      {shiftPlan && (() => {
+        const sp = shiftPlan
+        const total = sp.grades.reduce((a, g) => a + g.moves.length, 0)
+        const verb = sp.dir === 1 ? 'Push' : 'Pull back'
+        return (
+          <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`${verb} preview`}>
+            <div className="bg-surface rounded-xl shadow-xl w-full max-w-[620px] max-h-[85vh] flex flex-col">
+              <div className="px-5 pt-4 pb-3 border-b border-border">
+                <h3 className="text-[16px] font-semibold text-navy">{sp.dir === 1 ? 'Push the plans a class day later' : 'Pull the plans back a class day'}</h3>
+                <p className="text-[12.5px] text-text-secondary mt-1 leading-snug">From {fmtShort(sp.date)} to the end of the term ({fmtShort(sp.to)}). Days off, trips, no-class days and exam days are skipped and keep what they have. Weekly homework stays with its week.{sp.date < todayStr ? ' This starts on a day that has already passed.' : ''}</p>
+                <label className="mt-2.5 inline-flex items-center gap-2 text-[12.5px] text-text-primary cursor-pointer">
+                  <input type="checkbox" checked={sp.all} disabled={!!shifting} onChange={e => prepareShift(sp.date, sp.dir, e.target.checked)} />
+                  All grades of {selectedClass} (1–5), for a day the whole class missed
+                </label>
+              </div>
+              <div className="px-5 py-3 overflow-y-auto flex-1 space-y-3">
+                {sp.grades.map(g => (
+                  <div key={g.grade}>
+                    {sp.all && <p className="text-[11px] uppercase tracking-wider font-semibold text-text-tertiary mb-1">Grade {g.grade}</p>}
+                    {g.error ? <p className="text-[12.5px] text-text-tertiary">{g.error}</p> : (
+                      <ul className="space-y-1">
+                        {g.moves.slice(0, sp.all ? 4 : 14).map(m => (
+                          <li key={m.from} className="grid grid-cols-[132px_1fr] gap-2 text-[12.5px]">
+                            <span className="text-text-secondary tabular-nums">{fmtShort(m.from)} → <span className="text-text-primary font-semibold">{fmtShort(m.to)}</span></span>
+                            <span className="text-text-primary truncate" title={m.summary}>{m.summary}</span>
+                          </li>
+                        ))}
+                        {g.moves.length > (sp.all ? 4 : 14) && <li className="text-[12px] text-text-tertiary">and {g.moves.length - (sp.all ? 4 : 14)} more days, each one class day {sp.dir === 1 ? 'later' : 'earlier'}</li>}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="px-5 py-3 border-t border-border flex items-center gap-2">
+                <span className="text-[12px] text-text-tertiary">{total} planned day{total === 1 ? '' : 's'} move. You can undo it afterwards.</span>
+                <span className="flex-1" />
+                <button onClick={() => setShiftPlan(null)} disabled={!!shifting} className="px-4 py-1.5 rounded-lg text-[12.5px] font-medium bg-surface-alt text-text-secondary hover:bg-border">Cancel</button>
+                <button onClick={applyShift} disabled={!!shifting || total === 0} className="px-4 py-1.5 rounded-lg text-[12.5px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{shifting ? 'Moving…' : verb}</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
