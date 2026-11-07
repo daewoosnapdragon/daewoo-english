@@ -18,11 +18,11 @@ export async function ensureOwnPlan(pacing: CurriculumPacing[], placementId: str
   if (mine.length) return { rows: mine, error: null }
   const master = masterRows(pacing, placementId)
   if (!master.length) return { rows: [], error: 'Nothing to copy: the master has no units here.' }
-  const rows = master.map(r => ({ placement_id: placementId, unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, gap_before: r.gap_before || 0, owner: 'teacher', teacher_id: teacherId }))
+  const rows = master.map(r => ({ placement_id: placementId, unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, gap_before: r.gap_before || 0, fixed: !!r.fixed, owner: 'teacher', teacher_id: teacherId }))
   const { data, error } = await supabase.from('curriculum_pacing').insert(rows).select('*')
   if (error) return { rows: [], error: error.message }
   logActivity('created', 'Own plan started from the master', { key: placementId, path: PATH })
-  return { rows: ((data || []) as any[]).map(x => ({ ...x, weeks: Number(x.weeks), gap_before: Number(x.gap_before || 0) })) as CurriculumPacing[], error: null }
+  return { rows: ((data || []) as any[]).map(x => ({ ...x, weeks: Number(x.weeks), gap_before: Number(x.gap_before || 0), fixed: !!x.fixed, done_at: x.done_at || null })) as CurriculumPacing[], error: null }
 }
 
 /** Applies weeks and gap patches to the teacher's rows. */
@@ -36,6 +36,13 @@ export async function patchOwnRows(patches: RowPatch[], label: string): Promise<
   }
   if (patches.length) logActivity('edited', `Own plan: ${label}`, { key: label, path: PATH })
   return null
+}
+
+/** Ticks a story done (or not) on the teacher's row. */
+export async function setOwnDone(rowId: string, done: boolean, label: string): Promise<string | null> {
+  const { error } = await supabase.from('curriculum_pacing').update({ done_at: done ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).eq('id', rowId)
+  if (!error) logActivity('saved', `${done ? 'Done' : 'Not done'}: ${label}`, { key: rowId, path: PATH })
+  return msg(error)
 }
 
 export async function dropOwnUnit(rowId: string, label: string): Promise<string | null> {
@@ -84,7 +91,7 @@ export async function adoptAsMaster(pacing: CurriculumPacing[], placementId: str
   if (!mine.length) return 'This teacher has no plan of their own here.'
   const r0 = await supabase.from('curriculum_pacing').delete().eq('placement_id', placementId).eq('owner', 'master')
   if (r0.error) return r0.error.message
-  const rows = mine.map(r => ({ placement_id: placementId, unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, gap_before: r.gap_before || 0, owner: 'master' }))
+  const rows = mine.map(r => ({ placement_id: placementId, unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, gap_before: r.gap_before || 0, fixed: !!r.fixed, owner: 'master' }))
   const r1 = await supabase.from('curriculum_pacing').insert(rows)
   if (r1.error) return r1.error.message
   await supabase.from('curriculum_pacing').delete().eq('placement_id', placementId).eq('owner', 'teacher').eq('teacher_id', teacherId)

@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'reading-lists', date: '2026-11-09', title: 'Curriculum: Into Reading is a reading list, not a timetable',
+    body: 'Placing Into Reading now opens the book’s contents as a checklist by module: tick the stories the class will read and place them, no weeks to type. The term shares itself across the stories, which show as open bars on the board. Tick each story Done when you finish it and the line above the board says where you stand, 4 of 9 done · 1 story behind. Sequence books like Super Phonics keep their pacing, with a new Fit to term button.',
+    path: '/curriculum', guide: 'bookshelf',
+  },
+  {
     id: 'week-import', date: '2026-11-09', title: 'Curriculum: open a week and drop its lessons into your daily plan',
     body: 'You can now click a week number on your class board and see the five days as they are on Lesson Plans, with this week’s units and their lessons beside them. Press a day letter on a lesson and its words go into that day: the book as the subject, the title, the “students will” line, the notes. Mark the day done when it is taught and the standards fill in under the board, where every code in your plan is listed; click one to see which units teach it.',
     path: '/curriculum', guide: 'bookshelf',

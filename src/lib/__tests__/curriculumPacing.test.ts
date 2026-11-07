@@ -34,7 +34,7 @@ describe('weeks', () => {
 })
 
 const unit = (id: string, weeks = 2): CurriculumUnit => ({ id, book_id: 'b1', sort_order: 0, title: id, summary: '', skill_tags: [], ccss_codes: [], default_weeks: weeks, source: 'claude', confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' })
-const pace = (id: string, unit_id: string, sort_order: number, weeks: number, placement_id = 'p1'): CurriculumPacing => ({ id, placement_id, unit_id, sort_order, weeks, owner: 'master', teacher_id: null, gap_before: 0, created_at: '', updated_at: '' })
+const pace = (id: string, unit_id: string, sort_order: number, weeks: number, placement_id = 'p1'): CurriculumPacing => ({ id, placement_id, unit_id, sort_order, weeks, owner: 'master', teacher_id: null, gap_before: 0, fixed: false, done_at: null, created_at: '', updated_at: '' })
 
 describe('layout', () => {
   const units = [unit('u1'), unit('u2'), unit('u3')]
@@ -58,7 +58,7 @@ describe('layout', () => {
 })
 
 describe('board lanes', () => {
-  const series: CurriculumSeries[] = [{ id: 's1', name: 'Super Phonics', publisher: '', strand: 'phonics', color: 'plum', sort_order: 1, created_at: '' }, { id: 's2', name: 'Into Reading', publisher: '', strand: 'reading', color: 'blue', sort_order: 2, created_at: '' }]
+  const series: CurriculumSeries[] = [{ id: 's1', name: 'Super Phonics', publisher: '', strand: 'phonics', color: 'plum', kind: 'sequence', sort_order: 1, created_at: '' }, { id: 's2', name: 'Into Reading', publisher: '', strand: 'reading', color: 'blue', kind: 'sequence', sort_order: 2, created_at: '' }]
   const books: CurriculumBook[] = [{ id: 'b1', series_id: 's1', level_number: '2', title: '', status: 'confirmed', drive_folder_url: '', notes: '', created_at: '', updated_at: '' }, { id: 'b2', series_id: 's2', level_number: '2', title: '', status: 'confirmed', drive_folder_url: '', notes: '', created_at: '', updated_at: '' }]
   const pl = (id: string, book_id: string, term: 'fall' | 'spring' | 'year', grade = 2): CurriculumPlacement => ({ id, book_id, english_class: 'Daisy', grade, academic_year: '2027-2028', term, is_master: true, created_by: null, created_at: '', updated_at: '' })
   it('groups bars by strand in the fixed order and colours them by series', () => {
@@ -87,10 +87,10 @@ describe('holidays and today', () => {
 
 describe('ladder', () => {
   const series: CurriculumSeries[] = [
-    { id: 'sp', name: 'Super Phonics', publisher: '', strand: 'phonics', color: 'plum', sort_order: 1, created_at: '' },
-    { id: 'er', name: 'Easy Reading', publisher: '', strand: 'reading', color: 'ochre', sort_order: 2, created_at: '' },
-    { id: 'ws', name: 'Wonderskills', publisher: '', strand: 'reading', color: 'berry', sort_order: 3, created_at: '' },
-    { id: 'hh', name: 'Hand in Hand', publisher: '', strand: 'speaking', color: 'green', sort_order: 4, created_at: '' },
+    { id: 'sp', name: 'Super Phonics', publisher: '', strand: 'phonics', color: 'plum', kind: 'sequence', sort_order: 1, created_at: '' },
+    { id: 'er', name: 'Easy Reading', publisher: '', strand: 'reading', color: 'ochre', kind: 'sequence', sort_order: 2, created_at: '' },
+    { id: 'ws', name: 'Wonderskills', publisher: '', strand: 'reading', color: 'berry', kind: 'sequence', sort_order: 3, created_at: '' },
+    { id: 'hh', name: 'Hand in Hand', publisher: '', strand: 'speaking', color: 'green', kind: 'sequence', sort_order: 4, created_at: '' },
   ]
   const book = (id: string, series_id: string, level: string): CurriculumBook => ({ id, series_id, level_number: level, title: '', status: 'confirmed', drive_folder_url: '', notes: '', created_at: '', updated_at: '' })
   const books = [book('sp1', 'sp', '1'), book('sp2', 'sp', '2'), book('er1', 'er', '1'), book('er2', 'er', '2'), book('ws1', 'ws', '1'), book('hh5', 'hh', '5'), book('hh6', 'hh', '6'), book('hh4', 'hh', '4')]

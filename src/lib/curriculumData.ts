@@ -25,7 +25,7 @@ export async function fetchCatalogue(): Promise<{ data: Catalogue; error: string
   const error = s.error?.message || b.error?.message || u.error?.message || l.error?.message || r.error?.message || k.error?.message || null
   return {
     data: {
-      series: (s.data || []) as CurriculumSeries[],
+      series: ((s.data || []) as any[]).map(x => ({ ...x, kind: x.kind === 'anthology' ? 'anthology' : 'sequence' })) as CurriculumSeries[],
       books: ((b.data || []) as any[]).map(x => ({ ...x, status: normalizeStatus(x.status) })) as CurriculumBook[],
       units: ((u.data || []) as any[]).map(x => ({ ...x, default_weeks: Number(x.default_weeks), skill_tags: x.skill_tags || [], ccss_codes: x.ccss_codes || [] })) as CurriculumUnit[],
       lessons: ((l.data || []) as any[]).map(x => ({ ...x, skill_tags: x.skill_tags || [], ccss_codes: x.ccss_codes || [] })) as CurriculumLesson[],
@@ -38,9 +38,9 @@ export async function fetchCatalogue(): Promise<{ data: Catalogue; error: string
 
 // ─── Series and books ────────────────────────────────────────────
 
-export interface SeriesDraft { name: string; publisher: string; strand: Strand; color: string }
+export interface SeriesDraft { name: string; publisher: string; strand: Strand; color: string; kind?: 'sequence' | 'anthology' }
 export async function saveSeries(id: string | null, d: SeriesDraft): Promise<{ id: string | null; error: string | null }> {
-  const row = { name: d.name.trim(), publisher: d.publisher.trim(), strand: d.strand, color: d.color }
+  const row = { name: d.name.trim(), publisher: d.publisher.trim(), strand: d.strand, color: d.color, kind: d.kind || 'sequence' }
   if (!row.name) return { id: null, error: 'Series name required' }
   if (id) {
     const { error } = await supabase.from('curriculum_series').update(row).eq('id', id)

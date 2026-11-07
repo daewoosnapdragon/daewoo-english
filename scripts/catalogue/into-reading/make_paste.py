@@ -5,8 +5,10 @@ comprehension skill with a "students will" line and the CCSS code chosen by grad
 genre, and one vocabulary lesson carrying the week's power words.
 
 Usage: python3 -I make_paste.py <grade> <in.json> <out.txt>
+       python3 -I make_paste.py --sql <out.sql> grade-1.json grade-2.json ...   (the seed for the SQL editor)
 """
 import json
+import re
 import sys
 
 # Literature genres take RL codes; everything else is informational (RI).
@@ -144,9 +146,10 @@ def codes_for(skill, domain, grade):
 def tag(skill):
     return skill.lower().replace("'", '').replace('’', '')
 
-def main(grade, src, dst):
+def build(grade, src):
+    """The units of one grade as data: [{title, weeks, summary, tags, codes, lessons:[{title, objective, notes, codes, tags}]}]."""
     weeks = json.load(open(src))
-    out, unmapped, count_units, count_lessons = [], set(), 0, 0
+    out, unmapped = [], set()
     for w in weeks:
         if w['module'] > MAX_MODULE:
             continue
@@ -158,7 +161,7 @@ def main(grade, src, dst):
             domain = domain_of(genre)
             author = f" by {t['author']}" if t.get('author') else ''
             skills = skills_for(t, texts, [s for s in w.get('skills', []) if s])
-            lesson_lines, unit_codes = [], []
+            lessons, unit_codes = [], []
             for s in skills:
                 text, codes = codes_for(s, domain, grade)
                 if text is None:
@@ -167,25 +170,97 @@ def main(grade, src, dst):
                 for c in codes:
                     if c not in unit_codes:
                         unit_codes.append(c)
-                cc = f' | ccss: {", ".join(codes)}' if codes else ''
-                lesson_lines.append(f'- {s} | Students will {text}{cc} | skills: {tag(s)}')
+                lessons.append({'title': s, 'objective': f'Students will {text}', 'notes': '', 'codes': codes, 'tags': [tag(s)]})
             if words:
                 vc = [f'L.{grade}.6', f'L.{grade}.4']
                 for c in vc:
                     if c not in unit_codes:
                         unit_codes.append(c)
-                lesson_lines.append(f'- Vocabulary · {", ".join(words)} | Students will use the power words {", ".join(words)} when they talk and write about the text. | ccss: {", ".join(vc)} | skills: vocabulary in context | notes: the week\'s words, shared by both texts of the week')
+                lessons.append({'title': f'Vocabulary · {", ".join(words)}', 'objective': f'Students will use the power words {", ".join(words)} when they talk and write about the text.', 'notes': "the week's words, shared by both texts of the week", 'codes': vc, 'tags': ['vocabulary in context']})
             others = [x['title'] for x in texts if x is not t]
             summary = f'{genre}{author}. Module {mod} · {title}, week {wk}' + (f', paired with {"; ".join(others)}' if others else '') + '.'
-            tags = [tag(s) for s in skills] + (['vocabulary in context'] if words else [])
-            out.append(f'Unit: M{mod} W{wk} · {t["title"]} | weeks: 2 | summary: {summary} | skills: {", ".join(dict.fromkeys(tags))} | ccss: {", ".join(unit_codes)}')
-            out.extend(lesson_lines)
-            count_units += 1
-            count_lessons += len(lesson_lines)
-    open(dst, 'w').write('\n'.join(out) + '\n')
-    print(f'grade {grade}: {len(weeks)} weeks, {count_units} units, {count_lessons} lessons -> {dst}')
+            tags = list(dict.fromkeys([tag(s) for s in skills] + (['vocabulary in context'] if words else [])))
+            out.append({'title': f'M{mod} W{wk} · {t["title"]}', 'weeks': 2, 'summary': summary, 'tags': tags, 'codes': unit_codes, 'lessons': lessons})
+    return out, unmapped, len(weeks)
+
+
+def emit_paste(units):
+    lines = []
+    for u in units:
+        lines.append(f"Unit: {u['title']} | weeks: {u['weeks']} | summary: {u['summary']} | skills: {', '.join(u['tags'])} | ccss: {', '.join(u['codes'])}")
+        for l in u['lessons']:
+            cc = f" | ccss: {', '.join(l['codes'])}" if l['codes'] else ''
+            nn = f" | notes: {l['notes']}" if l['notes'] else ''
+            lines.append(f"- {l['title']} | {l['objective']}{cc} | skills: {', '.join(l['tags'])}{nn}")
+    return '\n'.join(lines) + '\n'
+
+
+def q(text):
+    """A SQL string literal: dollar-quoted so apostrophes need no escaping; an empty one is plain ''
+    (never $q$$q$, whose middle $$ would end the surrounding DO block early)."""
+    return f'$q${text}$q$' if text else "''"
+
+
+def arr(items):
+    return 'ARRAY[' + ', '.join(q(x) for x in items) + ']::text[]' if items else "'{}'::text[]"
+
+
+def emit_sql(grades):
+    """One file for every grade: series and books created if missing, units and lessons only for a book with none yet."""
+    out = ["-- Into Reading 1 to 4: units and lessons for the Bookshelf, generated from the scope-and-sequence extraction.",
+           "-- Run once in the Supabase SQL Editor after migration-curriculum-catalogue.sql. Safe to re-run: a book that",
+           "-- already has units is left alone. To load a corrected version, first delete the book's units (the lessons go",
+           "-- with them):  DELETE FROM curriculum_units WHERE book_id = (SELECT b.id FROM curriculum_books b JOIN curriculum_series s ON s.id = b.series_id WHERE lower(s.name) = 'into reading' AND b.level_number = '1');",
+           "", "CREATE UNIQUE INDEX IF NOT EXISTS idx_curriculum_books_series_level ON curriculum_books (series_id, lower(level_number));",
+           "INSERT INTO curriculum_series (name, strand, color, sort_order) VALUES ('Into Reading', 'reading', 'blue', 20) ON CONFLICT (lower(name)) DO NOTHING;", ""]
+    all_tags = []
+    for grade, units in grades:
+        for u in units:
+            for t in u['tags'] + [t for l in u['lessons'] for t in l['tags']]:
+                if t not in all_tags:
+                    all_tags.append(t)
+    out.append("INSERT INTO curriculum_skills (code, label, strand, sort_order)")
+    out.append("SELECT t, initcap(t), 'reading', 200 FROM unnest(" + arr(all_tags) + ") AS t ON CONFLICT (code) DO NOTHING;")
+    out.append("")
+    for grade, units in grades:
+        out.append(f"-- ── Into Reading {grade}: {len(units)} texts, {sum(len(u['lessons']) for u in units)} lessons ──")
+        out.append("DO $seed$")
+        out.append("DECLARE b UUID; u UUID; n INT;")
+        out.append("BEGIN")
+        out.append(f"  INSERT INTO curriculum_books (series_id, level_number, title, status) SELECT id, '{grade}', '', 'confirmed' FROM curriculum_series WHERE lower(name) = 'into reading' ON CONFLICT (series_id, lower(level_number)) DO NOTHING;")
+        out.append(f"  SELECT bk.id INTO b FROM curriculum_books bk JOIN curriculum_series s ON s.id = bk.series_id WHERE lower(s.name) = 'into reading' AND lower(bk.level_number) = '{grade}';")
+        out.append("  SELECT count(*) INTO n FROM curriculum_units WHERE book_id = b;")
+        out.append(f"  IF n > 0 THEN RAISE NOTICE 'Into Reading {grade} already has % units; left as it is', n; RETURN; END IF;")
+        for i, unit in enumerate(units, 1):
+            out.append(f"  INSERT INTO curriculum_units (book_id, sort_order, title, summary, skill_tags, ccss_codes, default_weeks, source) VALUES (b, {i}, {q(unit['title'])}, {q(unit['summary'])}, {arr(unit['tags'])}, {arr(unit['codes'])}, {unit['weeks']}, 'claude') RETURNING id INTO u;")
+            for j, l in enumerate(unit['lessons'], 1):
+                out.append(f"  INSERT INTO curriculum_lessons (unit_id, sort_order, title, objective, notes, ccss_codes, skill_tags, source) VALUES (u, {j}, {q(l['title'])}, {q(l['objective'])}, {q(l['notes'])}, {arr(l['codes'])}, {arr(l['tags'])}, 'claude');")
+        out.append(f"  RAISE NOTICE 'Into Reading {grade}: {len(units)} units loaded';")
+        out.append("END $seed$;")
+        out.append("")
+    return '\n'.join(out)
+
+
+def main(argv):
+    if argv[0] == '--sql':
+        # python3 -I make_paste.py --sql out.sql grade-1.json grade-2.json ...
+        grades = []
+        for src in argv[2:]:
+            g = int(re.search(r'grade-(\d)', src).group(1))
+            units, unmapped, _ = build(g, src)
+            if unmapped:
+                print('UNMAPPED skills:', sorted(unmapped))
+            grades.append((g, units))
+        open(argv[1], 'w').write(emit_sql(grades))
+        print('wrote', argv[1], 'for grades', [g for g, _ in grades])
+        return
+    grade, src, dst = int(argv[0]), argv[1], argv[2]
+    units, unmapped, nweeks = build(grade, src)
+    open(dst, 'w').write(emit_paste(units))
+    print(f"grade {grade}: {nweeks} weeks, {len(units)} units, {sum(len(u['lessons']) for u in units)} lessons -> {dst}")
     if unmapped:
         print('UNMAPPED skills:', sorted(unmapped))
 
+
 if __name__ == '__main__':
-    main(int(sys.argv[1]), sys.argv[2], sys.argv[3])
+    main(sys.argv[1:])

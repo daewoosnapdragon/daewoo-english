@@ -14,10 +14,20 @@ Made 7 Nov 2026 from the HMH scope-and-sequence PDFs, under these decisions from
 - **Vocabulary** is one lesson per text carrying the week's Power Words (grades 1 and 2) or Critical Vocabulary (grades 3 and 4), tagged L.x.6 and L.x.4. The same words appear on both texts of a week; drop one if that bothers you.
 - **Modules 11 and 12 are left out.** They are genre studies that re-read texts from modules 1 to 10 with no vocabulary. Change `MAX_MODULE` in the generator to include them.
 
-The extraction (one JSON per grade, texts, genres, skills and words per week) and the generator that turns it into these files are in `scripts/catalogue/into-reading/`. Regenerate with:
+## The quicker way: the seed file
+
+`supabase/seed-into-reading.sql` loads all four books at once. Run it in the Supabase SQL Editor after the catalogue migration: it creates the Into Reading series and books if they are missing, adds any skill tags the vocabulary lacks, and fills each book that has no units yet with the same units and lessons as the paste files, marked suggested by Claude. A book that already has units is left alone, so it is safe to re-run; the comment at the top of the file shows how to clear one book to reload a corrected version. The paste box in the app stays for books indexed without Claude.
+
+The extraction (one JSON per grade, texts, genres, skills and words per week) and the generator that turns it into these files are in `scripts/catalogue/into-reading/`. Regenerate the paste files with:
 
 ```
 python3 -I scripts/catalogue/into-reading/make_paste.py 1 scripts/catalogue/into-reading/grade-1.json docs/catalogue/into-reading-1.txt
+```
+
+and the seed with:
+
+```
+python3 -I scripts/catalogue/into-reading/make_paste.py --sql supabase/seed-into-reading.sql scripts/catalogue/into-reading/grade-1.json scripts/catalogue/into-reading/grade-2.json scripts/catalogue/into-reading/grade-3.json scripts/catalogue/into-reading/grade-4.json
 ```
 
 Counts: grade 1 has 60 texts and 267 lessons, grade 2 has 60 and 274, grade 3 has 50 and 238, grade 4 has 53 and 258. Grades 3 and 4 print no authors in the reading grid, so their summaries name none.

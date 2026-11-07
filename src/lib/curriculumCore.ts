@@ -37,7 +37,10 @@ export const BOOK_COLORS: Record<string, { hex: string; label: string }> = {
 }
 export const colorHex = (key: string) => (BOOK_COLORS[key] || BOOK_COLORS.slate).hex
 
-export interface CurriculumSeries { id: string; name: string; publisher: string; strand: Strand; color: string; sort_order: number; created_at: string }
+/** A sequence is taught unit by unit in order and paced in weeks; an anthology is a book of stories a class picks from. */
+export type SeriesKind = 'sequence' | 'anthology'
+export const SERIES_KIND_LABEL: Record<SeriesKind, { en: string; ko: string }> = { sequence: { en: 'Sequence', ko: '순서대로' }, anthology: { en: 'Anthology', ko: '선집' } }
+export interface CurriculumSeries { id: string; name: string; publisher: string; strand: Strand; color: string; kind: SeriesKind; sort_order: number; created_at: string }
 export interface CurriculumBook {
   id: string; series_id: string; level_number: string; title: string; status: BookStatus; drive_folder_url: string; notes: string
   created_at: string; updated_at: string

@@ -3,7 +3,7 @@ import { applyPatches, blockBars, deviations, effectiveRows, layoutPacing, planS
 import type { CurriculumUnit } from '../curriculumCore'
 
 const unit = (id: string): CurriculumUnit => ({ id, book_id: 'b1', sort_order: 0, title: id, summary: '', skill_tags: [], ccss_codes: [], default_weeks: 2, source: 'claude', confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' })
-const row = (id: string, unit_id: string, sort_order: number, weeks: number, extra: Partial<CurriculumPacing> = {}): CurriculumPacing => ({ id, placement_id: 'p1', unit_id, sort_order, weeks, owner: 'master', teacher_id: null, gap_before: 0, created_at: '', updated_at: '', ...extra })
+const row = (id: string, unit_id: string, sort_order: number, weeks: number, extra: Partial<CurriculumPacing> = {}): CurriculumPacing => ({ id, placement_id: 'p1', unit_id, sort_order, weeks, owner: 'master', teacher_id: null, gap_before: 0, fixed: false, done_at: null, created_at: '', updated_at: '', ...extra })
 const units = [unit('u1'), unit('u2'), unit('u3'), unit('u4')]
 const master = [row('a', 'u1', 1, 2), row('b', 'u2', 2, 3), row('c', 'u3', 3, 2), row('d', 'u4', 4, 1)]
 

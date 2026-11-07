@@ -18,7 +18,7 @@ export interface CurriculumPlacement {
 }
 export interface CurriculumPacing {
   id: string; placement_id: string; unit_id: string; sort_order: number; weeks: number; owner: 'master' | 'teacher'
-  teacher_id: string | null; gap_before: number; created_at: string; updated_at: string
+  teacher_id: string | null; gap_before: number; fixed: boolean; done_at: string | null; created_at: string; updated_at: string
 }
 export interface CurriculumBlock {
   id: string; teacher_id: string; english_class: string; grade: number; academic_year: string; term: Half; title: string; strand: Strand
@@ -142,7 +142,9 @@ export function boardLanes(
     if (!book) continue
     const se = series.find(s => s.id === book.series_id)
     const strand: Strand = se?.strand || 'other'
-    const bars = barsForView(layoutPacing(effectiveRows(pacing, pl.id, teacherId), units), pl.term, view, yw)
+    const rows = effectiveRows(pacing, pl.id, teacherId)
+    const laid = se?.kind === 'anthology' ? projectAnthology(rows, placementLength(pl.term, yw)) : rows
+    const bars = barsForView(layoutPacing(laid, units), pl.term, view, yw)
     if (!bars.length) continue
     if (!lanes.has(strand)) lanes.set(strand, { strand, label: STRAND_EN[strand], bars: [] })
     const lane = lanes.get(strand)!
@@ -319,4 +321,64 @@ export const lagWeeks = (pin: { week: number; set_at: string }, todayPos: number
   const setDay = pin.set_at.slice(0, 10)
   const setPos = todayPosition(weeks, setDay)
   return setPos === null ? 0 : half(todayPos - setPos)
+}
+
+// ─── Anthologies: a reading list, not a pacing ───────────────────
+
+const halfDown = (n: number) => Math.max(0.5, Math.floor(n * 2 + 1e-9) / 2)
+const halfUp = (n: number) => Math.max(0.5, Math.round(n * 2) / 2)
+
+/**
+ * Shares the term across the stories: every row without a fixed length gets an
+ * equal share of what is left after the fixed ones and the gaps, in half weeks.
+ * Returns copies of the rows with `weeks` filled in; nothing is written.
+ */
+export function projectAnthology(rows: CurriculumPacing[], length: number): CurriculumPacing[] {
+  if (!rows.length) return rows
+  const fixed = rows.filter(r => r.fixed)
+  const free = rows.filter(r => !r.fixed)
+  const used = fixed.reduce((a, r) => a + (Number(r.weeks) || 0), 0) + rows.reduce((a, r) => a + Math.max(0, Number(r.gap_before) || 0), 0)
+  const share = free.length ? halfDown((Math.max(length, 0) - used) / free.length) : 0
+  return rows.map(r => r.fixed ? r : { ...r, weeks: length > 0 ? share : halfUp(Number(r.weeks) || 2) })
+}
+
+/** Sets every row's weeks so the total is the term: the same share for all, in half weeks, last row taking the remainder. */
+export function fitToTerm(rows: CurriculumPacing[], length: number): RowPatch[] {
+  const sorted = [...rows].sort((a, b) => a.sort_order - b.sort_order)
+  if (!sorted.length || length <= 0) return []
+  const gaps = sorted.reduce((a, r) => a + Math.max(0, Number(r.gap_before) || 0), 0)
+  const share = halfDown((length - gaps) / sorted.length)
+  const patches = sorted.map(r => ({ id: r.id, weeks: share }))
+  const last = patches[patches.length - 1]
+  last.weeks = halfUp(length - gaps - share * (sorted.length - 1))
+  return patches
+}
+
+export interface Progress { done: number; total: number; expected: number; diff: number; text: string }
+
+/**
+ * Where a reading list stands: stories done against the number even pace would
+ * have reached by today. `pos` is today in placement weeks (null outside the term).
+ */
+export function anthologyProgress(rows: CurriculumPacing[], length: number, pos: number | null): Progress {
+  const total = rows.length
+  const done = rows.filter(r => !!r.done_at).length
+  const expected = pos === null || !length || !total ? 0 : Math.min(total, Math.floor((pos - 1) / length * total + 0.5))
+  const diff = done - expected
+  let text = `${done} of ${total} done`
+  if (pos !== null && length && total) text += diff === 0 ? ' · on pace' : diff > 0 ? ` · ${diff} ${diff === 1 ? 'story' : 'stories'} ahead` : ` · ${-diff} ${-diff === 1 ? 'story' : 'stories'} behind`
+  return { done, total, expected, diff, text }
+}
+
+/** Stories grouped by the module in their title badge ("M3 W1 · …" → "M3"), in book order. */
+export function groupByModule<T extends { title: string; sort_order: number }>(units: T[]): { key: string; label: string; units: T[] }[] {
+  const out: { key: string; label: string; units: T[] }[] = []
+  for (const u of [...units].sort((a, b) => a.sort_order - b.sort_order)) {
+    const m = u.title.match(/^(M\d+)\b/i)
+    const key = m ? m[1].toUpperCase() : 'other'
+    let g = out.find(x => x.key === key)
+    if (!g) { g = { key, label: m ? `Module ${m[1].slice(1)}` : 'Other', units: [] }; out.push(g) }
+    g.units.push(u)
+  }
+  return out
 }

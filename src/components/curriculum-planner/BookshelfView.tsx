@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
-import { BOOK_COLORS, BOOK_STATUS_LABEL, RESOURCE_KINDS, STRANDS, STRAND_LABEL, bookName, colorHex, countBook, countLine, draftPrompt, isCurriculumMissing, kindFromUrl, parseCatalogueLines, parseCodes, parseTags, unknownTags, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
+import { BOOK_COLORS, BOOK_STATUS_LABEL, RESOURCE_KINDS, SERIES_KIND_LABEL, STRANDS, STRAND_LABEL, bookName, colorHex, countBook, countLine, draftPrompt, isCurriculumMissing, kindFromUrl, parseCatalogueLines, parseCodes, parseTags, unknownTags, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
 import { addResource, appendDraft, deleteBook, deleteLesson, deleteResource, deleteSeries, deleteSkill, deleteUnit, fetchCatalogue, reorder, saveBook, saveLesson, saveSeries, saveSkill, saveUnit, setConfirmed, type BookDraft, type Catalogue, type LessonDraft, type UnitDraft } from '@/lib/curriculumData'
 import { ArrowDown, ArrowUp, BookOpen, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Loader2, Pencil, Plus, RefreshCw, Sparkles, Tag, Trash2, X } from 'lucide-react'
 
@@ -161,7 +161,7 @@ function StatusChip({ status, ko }: { status: BookStatus; ko: boolean }) {
 function SeriesHeader({ s, bookCount, ko, canManage, fail, reload }: { s: CurriculumSeries; bookCount: number; ko: boolean; canManage: boolean; fail: (e: string | null) => boolean; reload: () => Promise<void> }) {
   const { confirmDialog } = useApp()
   const [editing, setEditing] = useState(false)
-  const [d, setD] = useState({ name: s.name, publisher: s.publisher, strand: s.strand, color: s.color })
+  const [d, setD] = useState({ name: s.name, publisher: s.publisher, strand: s.strand, color: s.color, kind: s.kind })
   const save = async () => { const r = await saveSeries(s.id, d); if (!fail(r.error)) { setEditing(false); reload() } }
   const remove = async () => {
     if (!await confirmDialog({ title: ko ? '시리즈 삭제' : 'Remove this series', message: s.name, confirmLabel: ko ? '삭제' : 'Remove' })) return
@@ -172,6 +172,7 @@ function SeriesHeader({ s, bookCount, ko, canManage, fail, reload }: { s: Curric
       <div className="col-span-2"><span className={lbl}>{ko ? '시리즈 이름' : 'Series name'}</span><input value={d.name} onChange={e => setD({ ...d, name: e.target.value })} className={inp} autoFocus /></div>
       <div><span className={lbl}>{ko ? '출판사' : 'Publisher'}</span><input value={d.publisher} onChange={e => setD({ ...d, publisher: e.target.value })} className={inp} /></div>
       <div><span className={lbl}>{ko ? '영역' : 'Strand'}</span><select value={d.strand} onChange={e => setD({ ...d, strand: e.target.value as Strand })} className={`${sel} w-full`}>{STRANDS.map(x => <option key={x} value={x}>{ko ? STRAND_LABEL[x].ko : STRAND_LABEL[x].en}</option>)}</select></div>
+      <div className="col-span-2"><span className={lbl}>{ko ? '종류' : 'Kind'}</span><select value={d.kind} onChange={e => setD({ ...d, kind: e.target.value as 'sequence' | 'anthology' })} className={`${sel} w-full`}><option value="sequence">{ko ? SERIES_KIND_LABEL.sequence.ko : 'Sequence: every unit in order, paced in weeks'}</option><option value="anthology">{ko ? SERIES_KIND_LABEL.anthology.ko : 'Anthology: a book of stories a class picks from'}</option></select></div>
       <div className="col-span-2 flex gap-1.5">{Object.entries(BOOK_COLORS).map(([k, v]) => <button key={k} type="button" onClick={() => setD({ ...d, color: k })} title={v.label} className={`w-6 h-6 rounded ${d.color === k ? 'ring-2 ring-ink ring-offset-1' : ''}`} style={{ background: v.hex }} />)}</div>
       <div className="col-span-2 flex gap-2">
         <button onClick={save} className={btnS}><Check size={11} />{ko ? '저장' : 'Save'}</button>
@@ -185,7 +186,8 @@ function SeriesHeader({ s, bookCount, ko, canManage, fail, reload }: { s: Curric
       <span className="w-2.5 h-2.5 rounded-sm" style={{ background: colorHex(s.color) }} />
       <span className="text-[12.5px] font-semibold text-ink">{s.name}</span>
       {s.publisher && <span className="text-[11px] text-ink-3">{s.publisher}</span>}
-      {canManage && <button onClick={() => { setD({ name: s.name, publisher: s.publisher, strand: s.strand, color: s.color }); setEditing(true) }} className="text-ink-3 hover:text-ink opacity-0 group-hover:opacity-100" aria-label="Edit series"><Pencil size={10} /></button>}
+      {s.kind === 'anthology' && <span className="text-[10px] text-ink-3 border border-rule-2 rounded px-1">{ko ? '선집' : 'anthology'}</span>}
+      {canManage && <button onClick={() => { setD({ name: s.name, publisher: s.publisher, strand: s.strand, color: s.color, kind: s.kind }); setEditing(true) }} className="text-ink-3 hover:text-ink opacity-0 group-hover:opacity-100" aria-label="Edit series"><Pencil size={10} /></button>}
     </div>
   )
 }
