@@ -1,0 +1,1064 @@
+[
+ {
+  "module": 1,
+  "moduleTitle": "Nice to Meet You!",
+  "week": 1,
+  "texts": [
+   {
+    "title": "My First Day",
+    "author": "",
+    "genre": "Realistic Fiction"
+   },
+   {
+    "title": "Try This!",
+    "author": "Pam Muñoz Ryan",
+    "genre": "Narrative Nonfiction"
+   }
+  ],
+  "skills": [
+   "Story Structure",
+   "Elements of Poetry",
+   "Ask and Answer Questions",
+   "Author's Purpose"
+  ],
+  "powerWords": [
+   "enjoy",
+   "excited",
+   "great",
+   "nervous",
+   "new",
+   "try"
+  ]
+ },
+ {
+  "module": 1,
+  "moduleTitle": "Nice to Meet You!",
+  "week": 2,
+  "texts": [
+   {
+    "title": "My School Trip",
+    "author": "Aly G. Mays",
+    "genre": "Realistic Fiction"
+   },
+   {
+    "title": "A Kids' Guide to Friends",
+    "author": "Trey Amico",
+    "genre": "Informational Text"
+   }
+  ],
+  "skills": [
+   "Story Structure",
+   "Monitor and Clarify",
+   "Author's Purpose",
+   "Make Inferences",
+   "Topic and Central Idea"
+  ],
+  "powerWords": [
+   "kinds",
+   "last",
+   "partner",
+   "together",
+   "trip",
+   "wished"
+  ]
+ },
+ {
+  "module": 1,
+  "moduleTitle": "Nice to Meet You!",
+  "week": 3,
+  "texts": [
+   {
+    "title": "Big Dilly’s Tale",
+    "author": "Gail Carson Levine",
+    "genre": "Fairy Tale"
+   },
+   {
+    "title": "I'm Me",
+    "author": "The FuZees",
+    "genre": "Song"
+   }
+  ],
+  "skills": [
+   "Characters",
+   "Ask and Answer Questions"
+  ],
+  "powerWords": [
+   "beautiful",
+   "changed",
+   "chilly",
+   "paddled",
+   "ugly"
+  ]
+ },
+ {
+  "module": 2,
+  "moduleTitle": "My Family, My Community",
+  "week": 1,
+  "texts": [
+   {
+    "title": "Kids Speak Up!",
+    "author": "",
+    "genre": "Opinion Writing"
+   },
+   {
+    "title": "Dan Had a Plan",
+    "author": "Wong Herbert Yee",
+    "genre": "Realistic Fiction"
+   }
+  ],
+  "skills": [
+   "Ideas and Support",
+   "Text Organization",
+   "Retell",
+   "Setting"
+  ],
+  "powerWords": [
+   "help",
+   "market",
+   "mess",
+   "neighbors",
+   "sell",
+   "set"
+  ]
+ },
+ {
+  "module": 2,
+  "moduleTitle": "My Family, My Community",
+  "week": 2,
+  "texts": [
+   {
+    "title": "On the Map!",
+    "author": "Lisa Fleming",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "Places in My Neighborhood",
+    "author": "Shelly Lyons",
+    "genre": "Informational Text"
+   }
+  ],
+  "skills": [
+   "Setting",
+   "Summarize",
+   "Text Features",
+   "Make Connections",
+   "Content-Area Words"
+  ],
+  "powerWords": [
+   "clinic",
+   "community",
+   "map",
+   "places",
+   "purpose",
+   "town"
+  ]
+ },
+ {
+  "module": 2,
+  "moduleTitle": "My Family, My Community",
+  "week": 3,
+  "texts": [
+   {
+    "title": "Who Put the Cookies in the Cookie Jar?",
+    "author": "George Shannon",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "Curious About Jobs",
+    "author": "",
+    "genre": "Video"
+   }
+  ],
+  "skills": [
+   "Setting",
+   "Ask and Answer Questions",
+   "Text Organization",
+   "Content-Area Words"
+  ],
+  "powerWords": [
+   "against",
+   "churn",
+   "drive",
+   "heal",
+   "spoon",
+   "stock"
+  ]
+ },
+ {
+  "module": 3,
+  "moduleTitle": "Amazing Animals",
+  "week": 1,
+  "texts": [
+   {
+    "title": "Animal Q & A",
+    "author": "",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "The Nest",
+    "author": "Carole Roberts",
+    "genre": "Realistic Fiction"
+   }
+  ],
+  "skills": [
+   "Text Features",
+   "Ask and Answer Questions",
+   "Story Structure"
+  ],
+  "powerWords": [
+   "empty",
+   "exclaimed",
+   "soon",
+   "surprise",
+   "twigs",
+   "warm"
+  ]
+ },
+ {
+  "module": 3,
+  "moduleTitle": "Amazing Animals",
+  "week": 2,
+  "texts": [
+   {
+    "title": "Blue Bird and Coyote",
+    "author": "James Bruchac",
+    "genre": "Folktale"
+   },
+   {
+    "title": "Have You Heard the Nesting Bird?",
+    "author": "Rita Gray",
+    "genre": "Narrative Nonfiction"
+   }
+  ],
+  "skills": [
+   "Text Organization",
+   "Create Mental Images",
+   "Point of View",
+   "Monitor and Clarify"
+  ],
+  "powerWords": [
+   "dull",
+   "once",
+   "shingle",
+   "shriek",
+   "stroll",
+   "thank"
+  ]
+ },
+ {
+  "module": 3,
+  "moduleTitle": "Amazing Animals",
+  "week": 3,
+  "texts": [
+   {
+    "title": "Step-by-Step Advice from the Animal Kingdom",
+    "author": "Steve Jenkins and Robin Page",
+    "genre": "Procedural Text"
+   },
+   {
+    "title": "Beaver Family",
+    "author": "",
+    "genre": "Video"
+   }
+  ],
+  "skills": [
+   "Story Structure",
+   "Summarize",
+   "Text Organization",
+   "Chronological Order"
+  ],
+  "powerWords": [
+   "circling",
+   "herd",
+   "predators",
+   "prey",
+   "school"
+  ]
+ },
+ {
+  "module": 4,
+  "moduleTitle": "Better Together",
+  "week": 1,
+  "texts": [
+   {
+    "title": "Good Sports",
+    "author": "",
+    "genre": "Opinion Writing"
+   },
+   {
+    "title": "Goal!",
+    "author": "Jane Medina",
+    "genre": "Informational Text"
+   }
+  ],
+  "skills": [
+   "Ideas and Support",
+   "Topic and Central Idea",
+   "Evaluate",
+   "Point of View"
+  ],
+  "powerWords": [
+   "coach",
+   "equipment",
+   "fan",
+   "goal",
+   "rules",
+   "team"
+  ]
+ },
+ {
+  "module": 4,
+  "moduleTitle": "Better Together",
+  "week": 2,
+  "texts": [
+   {
+    "title": "Get Up and Go!",
+    "author": "Rozanne Lanczak Williams",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "Brontorina",
+    "author": "James Howe",
+    "genre": "Fantasy"
+   }
+  ],
+  "skills": [
+   "Topic and Central Idea",
+   "Synthesize",
+   "Text Features",
+   "Retell",
+   "Characters"
+  ],
+  "powerWords": [
+   "body",
+   "excuse",
+   "exercise",
+   "guy",
+   "hero",
+   "well"
+  ]
+ },
+ {
+  "module": 4,
+  "moduleTitle": "Better Together",
+  "week": 3,
+  "texts": [
+   {
+    "title": "If You Plant a Seed",
+    "author": "Kadir Nelson",
+    "genre": "Fantasy"
+   },
+   {
+    "title": "Color Your World with Kindness",
+    "author": "BetterWorldians Foundation",
+    "genre": "Video"
+   }
+  ],
+  "skills": [
+   "Point of View",
+   "Make Connections",
+   "Theme",
+   "Topic and Central Idea"
+  ],
+  "powerWords": [
+   "fruits",
+   "heap",
+   "seed",
+   "short",
+   "trouble"
+  ]
+ },
+ {
+  "module": 5,
+  "moduleTitle": "Now You See It, Now You Don't",
+  "week": 1,
+  "texts": [
+   {
+    "title": "Super Shadows!",
+    "author": "",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "The Black Rabbit",
+    "author": "Philippa Leathers",
+    "genre": "Fantasy"
+   }
+  ],
+  "skills": [
+   "Text Features",
+   "Make Inferences",
+   "Story Structure"
+  ],
+  "powerWords": [
+   "bank",
+   "nibbled",
+   "relief",
+   "scrambled",
+   "tight",
+   "trembled"
+  ]
+ },
+ {
+  "module": 5,
+  "moduleTitle": "Now You See It, Now You Don't",
+  "week": 2,
+  "texts": [
+   {
+    "title": "Day and Night",
+    "author": "Margaret Hall",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "The Best Season",
+    "author": "Nina Crews",
+    "genre": "Opinion Writing"
+   }
+  ],
+  "skills": [
+   "Text Features",
+   "Make and Confirm Predictions",
+   "Make Connections",
+   "Ideas and Support"
+  ],
+  "powerWords": [
+   "faces",
+   "fades",
+   "pattern",
+   "seasons",
+   "shines",
+   "weather"
+  ]
+ },
+ {
+  "module": 5,
+  "moduleTitle": "Now You See It, Now You Don't",
+  "week": 3,
+  "texts": [
+   {
+    "title": "What Are You Waiting For?",
+    "author": "Scott Menchin",
+    "genre": "Fantasy"
+   },
+   {
+    "title": "I'm So Hot",
+    "author": "StoryBots",
+    "genre": "Song"
+   }
+  ],
+  "skills": [
+   "Topic and Central Idea",
+   "Make and Confirm Predictions",
+   "Theme"
+  ],
+  "powerWords": [
+   "blink",
+   "early",
+   "sloppy",
+   "touched",
+   "waiting"
+  ]
+ },
+ {
+  "module": 6,
+  "moduleTitle": "Celebrate America",
+  "week": 1,
+  "texts": [
+   {
+    "title": "State the Facts!",
+    "author": "",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "Monument City",
+    "author": "Jerdine Nolen",
+    "genre": "Drama"
+   }
+  ],
+  "skills": [
+   "Text Features",
+   "Elements of Poetry",
+   "Make and Confirm Predictions",
+   "Elements of Drama"
+  ],
+  "powerWords": [
+   "freedom",
+   "grouchy",
+   "monuments",
+   "scene",
+   "sights",
+   "symbol"
+  ]
+ },
+ {
+  "module": 6,
+  "moduleTitle": "Celebrate America",
+  "week": 2,
+  "texts": [
+   {
+    "title": "The Contest",
+    "author": "Libby Martinez",
+    "genre": "Opinion Writing"
+   },
+   {
+    "title": "The Statue of Liberty",
+    "author": "Tyler Monroe",
+    "genre": "Informational Text"
+   }
+  ],
+  "skills": [
+   "Point of View",
+   "Evaluate",
+   "Ideas and Support",
+   "Make Connections",
+   "Text Organization"
+  ],
+  "powerWords": [
+   "base",
+   "contest",
+   "hope",
+   "liberty",
+   "national",
+   "towers"
+  ]
+ },
+ {
+  "module": 6,
+  "moduleTitle": "Celebrate America",
+  "week": 3,
+  "texts": [
+   {
+    "title": "Hooray for Holidays!",
+    "author": "Pat Cummings",
+    "genre": "Realistic Fiction"
+   },
+   {
+    "title": "Patriotic Poems",
+    "author": "",
+    "genre": "Poetry"
+   }
+  ],
+  "skills": [
+   "Text Features",
+   "Create Mental Images",
+   "Story Structure",
+   "Elements of Poetry"
+  ],
+  "powerWords": [
+   "celebrate",
+   "Constitution",
+   "parade",
+   "share",
+   "tradition"
+  ]
+ },
+ {
+  "module": 7,
+  "moduleTitle": "The Big Outdoors",
+  "week": 1,
+  "texts": [
+   {
+    "title": "Storm Report",
+    "author": "",
+    "genre": "Opinion Writing"
+   },
+   {
+    "title": "Sam & Dave Dig a Hole",
+    "author": "Mac Barnett",
+    "genre": "Fantasy"
+   }
+  ],
+  "skills": [
+   "Ideas and Support",
+   "Text Organization",
+   "Make Inferences",
+   "Point of View"
+  ],
+  "powerWords": [
+   "break",
+   "direction",
+   "landed",
+   "mission",
+   "problem",
+   "spectacular"
+  ]
+ },
+ {
+  "module": 7,
+  "moduleTitle": "The Big Outdoors",
+  "week": 2,
+  "texts": [
+   {
+    "title": "Deserts",
+    "author": "Quinn M. Arnold",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "Handmade",
+    "author": "Guadalupe Rodríguez",
+    "genre": "Procedural Text"
+   }
+  ],
+  "skills": [
+   "Setting",
+   "Monitor and Clarify",
+   "Topic and Central Idea",
+   "Summarize",
+   "Text Organization"
+  ],
+  "powerWords": [
+   "dunes",
+   "edges",
+   "rest",
+   "shrubs",
+   "spines",
+   "trace"
+  ]
+ },
+ {
+  "module": 7,
+  "moduleTitle": "The Big Outdoors",
+  "week": 3,
+  "texts": [
+   {
+    "title": "Grand Canyon",
+    "author": "Sara Gilbert",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "Water Cycle",
+    "author": "The Bazillions",
+    "genre": "Song"
+   }
+  ],
+  "skills": [
+   "Topic and Central Idea",
+   "Synthesize",
+   "Content-Area Words"
+  ],
+  "powerWords": [
+   "affect",
+   "fossils",
+   "hike",
+   "popular",
+   "rim"
+  ]
+ },
+ {
+  "module": 8,
+  "moduleTitle": "Tell Me a Story",
+  "week": 1,
+  "texts": [
+   {
+    "title": "Follow the Story Path",
+    "author": "",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "Interrupting Chicken",
+    "author": "David Ezra Stein",
+    "genre": "Fantasy"
+   }
+  ],
+  "skills": [
+   "Text Features",
+   "Theme",
+   "Create Mental Images",
+   "Characters"
+  ],
+  "powerWords": [
+   "follow",
+   "interrupt",
+   "involved",
+   "relaxing",
+   "supposed",
+   "warn"
+  ]
+ },
+ {
+  "module": 8,
+  "moduleTitle": "Tell Me a Story",
+  "week": 2,
+  "texts": [
+   {
+    "title": "Little Red Riding Hood",
+    "author": "Lisa Campbell Ernst",
+    "genre": "Drama"
+   },
+   {
+    "title": "The Grasshopper & the Ants",
+    "author": "Jerry Pinkney",
+    "genre": "Fable"
+   }
+  ],
+  "skills": [
+   "Theme",
+   "Make Connections",
+   "Elements of Drama",
+   "Make Inferences",
+   "Setting"
+  ],
+  "powerWords": [
+   "autumn",
+   "boldly",
+   "chirped",
+   "labor",
+   "sly",
+   "storyteller"
+  ]
+ },
+ {
+  "module": 8,
+  "moduleTitle": "Tell Me a Story",
+  "week": 3,
+  "texts": [
+   {
+    "title": "Thank You, Mr. Aesop",
+    "author": "Helen Lester",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "The Tortoise and the Hare",
+    "author": "Speakaboos, adapted by Amy Kraft",
+    "genre": "Video"
+   }
+  ],
+  "skills": [
+   "Point of View",
+   "Synthesize",
+   "Topic and Central Idea",
+   "Characters"
+  ],
+  "powerWords": [
+   "lesson",
+   "nonsense",
+   "reply",
+   "tale",
+   "wise"
+  ]
+ },
+ {
+  "module": 9,
+  "moduleTitle": "Grow, Plants, Grow!",
+  "week": 1,
+  "texts": [
+   {
+    "title": "Plant Pairs",
+    "author": "",
+    "genre": "Poetry"
+   },
+   {
+    "title": "So You Want to Grow a Taco?",
+    "author": "Bridget Heos",
+    "genre": "Procedural Text"
+   }
+  ],
+  "skills": [
+   "Elements of Poetry",
+   "Evaluate",
+   "Text Organization"
+  ],
+  "powerWords": [
+   "harvest",
+   "ingredients",
+   "nutrients",
+   "soil",
+   "sow",
+   "terrific"
+  ]
+ },
+ {
+  "module": 9,
+  "moduleTitle": "Grow, Plants, Grow!",
+  "week": 2,
+  "texts": [
+   {
+    "title": "Which Part Do We Eat?",
+    "author": "Katherine Ayres",
+    "genre": "Poetry"
+   },
+   {
+    "title": "The Talking Vegetables",
+    "author": "Won-Ldy Paye and Margaret H. Lippert",
+    "genre": "Folktale"
+   }
+  ],
+  "skills": [
+   "Story Structure",
+   "Monitor and Clarify",
+   "Elements of Poetry",
+   "Retell"
+  ],
+  "powerWords": [
+   "cook",
+   "delicious",
+   "pounding",
+   "smooth",
+   "stretched",
+   "sturdy"
+  ]
+ },
+ {
+  "module": 9,
+  "moduleTitle": "Grow, Plants, Grow!",
+  "week": 3,
+  "texts": [
+   {
+    "title": "Yum! ¡MmMm! ¡Qué rico!: Americas' Sproutings",
+    "author": "Pat Mora",
+    "genre": "Poetry"
+   },
+   {
+    "title": "A Year in the Garden",
+    "author": "Brad Hiebert",
+    "genre": "Video"
+   }
+  ],
+  "skills": [
+   "Text Features",
+   "Ask and Answer Questions",
+   "Elements of Poetry",
+   "Chronological Order"
+  ],
+  "powerWords": [
+   "indigo",
+   "juicy",
+   "ripe",
+   "syrup",
+   "wonder"
+  ]
+ },
+ {
+  "module": 10,
+  "moduleTitle": "Dare to Dream",
+  "week": 1,
+  "texts": [
+   {
+    "title": "Kids Are Inventors, Too!",
+    "author": "",
+    "genre": "Informational Text"
+   },
+   {
+    "title": "Young Frank Architect",
+    "author": "Frank Viva",
+    "genre": "Realistic Fiction"
+   }
+  ],
+  "skills": [
+   "Topic and Central Idea",
+   "Retell",
+   "Setting"
+  ],
+  "powerWords": [
+   "designed",
+   "floor",
+   "model",
+   "real",
+   "straight",
+   "whole"
+  ]
+ },
+ {
+  "module": 10,
+  "moduleTitle": "Dare to Dream",
+  "week": 2,
+  "texts": [
+   {
+    "title": "Sky Color",
+    "author": "Peter H. Reynolds",
+    "genre": "Realistic Fiction"
+   },
+   {
+    "title": "We Are the Future",
+    "author": "",
+    "genre": "Poetry"
+   }
+  ],
+  "skills": [
+   "Setting",
+   "Make Inferences",
+   "Theme",
+   "Create Mental Images",
+   "Elements of Poetry"
+  ],
+  "powerWords": [
+   "artist",
+   "gallery",
+   "merrily",
+   "mural",
+   "promise",
+   "rummaged"
+  ]
+ },
+ {
+  "module": 10,
+  "moduleTitle": "Dare to Dream",
+  "week": 3,
+  "texts": [
+   {
+    "title": "Joaquín's Zoo",
+    "author": "Pablo Bernasconi",
+    "genre": "Fantasy"
+   },
+   {
+    "title": "Marconi and the Radio",
+    "author": "StoryBots",
+    "genre": "Video"
+   }
+  ],
+  "skills": [
+   "Text Organization",
+   "Make Connections",
+   "Characters",
+   "Topic and Central Idea"
+  ],
+  "powerWords": [
+   "build",
+   "golden",
+   "neat",
+   "scraps",
+   "usually"
+  ]
+ },
+ {
+  "module": 11,
+  "moduleTitle": "Genre Study: Nonfiction",
+  "week": 1,
+  "texts": [
+   {
+    "title": "Try This!",
+    "author": "Pam Muñoz Ryan",
+    "genre": ""
+   },
+   {
+    "title": "Have You Heard the Nesting Bird?",
+    "author": "Rita Gray",
+    "genre": ""
+   }
+  ],
+  "skills": [
+   "Genre Characteristics: Narrative Nonfiction",
+   "Author's Purpose",
+   "Text Organization"
+  ],
+  "powerWords": []
+ },
+ {
+  "module": 11,
+  "moduleTitle": "Genre Study: Nonfiction",
+  "week": 2,
+  "texts": [
+   {
+    "title": "Animal Q & A",
+    "author": "",
+    "genre": ""
+   },
+   {
+    "title": "Goal!",
+    "author": "Jane Medina",
+    "genre": ""
+   },
+   {
+    "title": "Grand Canyon",
+    "author": "Sara Gilbert",
+    "genre": ""
+   }
+  ],
+  "skills": [
+   "Genre Characteristics: Informational Text",
+   "Topic and Central Idea",
+   "Text Features"
+  ],
+  "powerWords": []
+ },
+ {
+  "module": 11,
+  "moduleTitle": "Genre Study: Nonfiction",
+  "week": 3,
+  "texts": [],
+  "skills": [
+   "Genre Characteristics: Biography",
+   "Text Organization",
+   "Text Features"
+  ],
+  "powerWords": []
+ },
+ {
+  "module": 12,
+  "moduleTitle": "Genre Study: Literary Texts",
+  "week": 1,
+  "texts": [
+   {
+    "title": "The Nest",
+    "author": "Carole Roberts",
+    "genre": ""
+   },
+   {
+    "title": "My School Trip",
+    "author": "Aly G. Mays",
+    "genre": ""
+   },
+   {
+    "title": "Sky Color",
+    "author": "Peter H. Reynolds",
+    "genre": ""
+   }
+  ],
+  "skills": [
+   "Genre Characteristics: Realistic Fiction",
+   "Story Structure",
+   "Point of View"
+  ],
+  "powerWords": []
+ },
+ {
+  "module": 12,
+  "moduleTitle": "Genre Study: Literary Texts",
+  "week": 2,
+  "texts": [
+   {
+    "title": "Blue Bird and Coyote",
+    "author": "James Bruchac",
+    "genre": ""
+   },
+   {
+    "title": "The Talking Vegetables",
+    "author": "Won-Ldy Paye and Margaret H. Lippert",
+    "genre": ""
+   }
+  ],
+  "skills": [
+   "Genre Characteristics: Folktales",
+   "Characters",
+   "Theme"
+  ],
+  "powerWords": []
+ },
+ {
+  "module": 12,
+  "moduleTitle": "Genre Study: Literary Texts",
+  "week": 3,
+  "texts": [
+   {
+    "title": "Brontorina",
+    "author": "James Howe",
+    "genre": ""
+   },
+   {
+    "title": "Sam & Dave Dig a Hole",
+    "author": "Mac Barnett",
+    "genre": ""
+   },
+   {
+    "title": "Interrupting Chicken",
+    "author": "David Ezra Stein",
+    "genre": ""
+   }
+  ],
+  "skills": [
+   "Genre Characteristics: Fantasy",
+   "Setting",
+   "Story Structure"
+  ],
+  "powerWords": []
+ }
+]
