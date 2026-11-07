@@ -75,12 +75,9 @@ export default function BookshelfView() {
   const totals = countBook(c.units, c.lessons)
 
   return (
-    <div className="px-8 py-6 animate-fade-in">
-      <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
-        <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{ko ? '교육과정' : 'Curriculum'}</p>
-          <h1 className="font-display text-[34px] leading-none text-ink">{ko ? '책꽂이' : 'Bookshelf'}</h1>
-        </div>
+    <div className="animate-fade-in">
+      <div className="flex items-center justify-between gap-6 flex-wrap mb-4">
+        <h2 className="font-display text-[22px] leading-none text-ink">{ko ? '책꽂이' : 'Bookshelf'}</h2>
         <div className="flex gap-2">
           {canManage && <button onClick={() => setAdding(a => !a)} className={btn}><Plus size={13} />{ko ? '책 추가' : 'Add a book'}</button>}
           <button onClick={c.reload} className={btn}><RefreshCw size={13} />{ko ? '새로고침' : 'Refresh'}</button>
@@ -94,7 +91,6 @@ export default function BookshelfView() {
           {ko ? `책 ${c.books.length}권` : `${c.books.length} ${c.books.length === 1 ? 'book' : 'books'}`}
           {confirmedCount ? ` · ${confirmedCount} ${ko ? '확정' : 'confirmed'}` : ''}{polled ? ` · ${polled} ${ko ? '투표 중' : 'in the poll'}` : ''}
           {' · '}{countLine(totals, ko)}
-          {' · '}<span className="text-ink-3">{ko ? '다음 단계: 배치와 진도, 학급 보드' : 'Next: placements, pacing and the class boards'}</span>
         </p>
       )}
 

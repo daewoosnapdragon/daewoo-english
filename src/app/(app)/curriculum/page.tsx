@@ -1,5 +1,5 @@
-import BookshelfView from '@/components/curriculum-planner/BookshelfView'
+import CurriculumView from '@/components/curriculum-planner/CurriculumView'
 
 export default function Page() {
-  return <BookshelfView />
+  return <CurriculumView />
 }
