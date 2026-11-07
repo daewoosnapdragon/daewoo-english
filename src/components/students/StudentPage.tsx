@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useStudentActions } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
+import { loadClassTeacherMap } from '@/lib/classTeacherData'
 import { withoutAwayDays } from '@/lib/calendarDays'
 import { ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, type Student, type EnglishClass, type Grade, type KoreanClass } from '@/types'
 import { getKSTDateString, percentToLetter } from '@/lib/utils'
@@ -15,7 +16,7 @@ import BehaviorTracker from '@/components/behavior/BehaviorTracker'
 import WidaSupport from './WidaSupport'
 import {
   AboutTab, AcademicHistoryTab, ReadingTabInModal, AttendanceTabInModal, StandardsMasteryTab,
-  StudentGroupsTab, GoalsTab, WIDAPerformanceInsight, ClassTransferHistory, buildStudentPDFHtml, TEACHER_MAP,
+  StudentGroupsTab, GoalsTab, WIDAPerformanceInsight, ClassTransferHistory, buildStudentPDFHtml,
 } from './StudentsView'
 import { ArrowLeft, Loader2, Pencil, Printer, Trash2 } from 'lucide-react'
 import { LineChart, Bars, Sparkline } from '@/components/charts'
@@ -115,7 +116,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
   const saveEdit = async () => {
     if (!student) return
     setSaving(true)
-    const updates: any = { ...form, teacher_id: TEACHER_MAP[form.english_class] || null, transfer_date: form.is_transfer ? (form.transfer_date || null) : null }
+    const updates: any = { ...form, teacher_id: (await loadClassTeacherMap())[form.english_class] || null, transfer_date: form.is_transfer ? (form.transfer_date || null) : null }
     const { error } = await updateStudent(student.id, updates)
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return }

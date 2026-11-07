@@ -8,6 +8,7 @@ import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import { loadClassTeacherMap } from '@/lib/classTeacherData'
 import { withoutAwayDays } from '@/lib/calendarDays'
 import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw, BookOpen, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
@@ -23,11 +24,10 @@ import PassagePickerPanel from '@/components/shared/PassagePickerPanel'
 
 // ─── Constants ───────────────────────────────────────────────────────
 
-export const TEACHER_MAP: Record<string, string> = {
-  Lily: '00000000-0000-0000-0000-000000000001', Camellia: '00000000-0000-0000-0000-000000000002',
-  Daisy: '00000000-0000-0000-0000-000000000003', Sunflower: '00000000-0000-0000-0000-000000000004',
-  Marigold: '00000000-0000-0000-0000-000000000005', Snapdragon: '00000000-0000-0000-0000-000000000006',
-}
+// A student's teacher_id is a cached copy of the teacher of their class (see
+// lib/classTeacher.ts). Every write that changes english_class refreshes it
+// from the live teachers table so reports never print the previous class's
+// teacher.
 
 // ─── Main View ──────────────────────────────────────────────────────
 
@@ -192,10 +192,11 @@ export default function StudentsView() {
               if (entries.length > 0) {
                 (async () => {
                   let saved = 0
+                  const teacherByClass = await loadClassTeacherMap()
                   for (const [id, edit] of entries) {
                     const updates: Record<string, any> = { updated_at: new Date().toISOString() }
                     if (edit.english_name !== undefined) updates.english_name = edit.english_name
-                    if (edit.english_class !== undefined) updates.english_class = edit.english_class
+                    if (edit.english_class !== undefined) { updates.english_class = edit.english_class; updates.teacher_id = teacherByClass[edit.english_class] || null }
                     const { error } = await supabase.from('students').update(updates).eq('id', id)
                     if (!error) saved++
                   }
@@ -457,7 +458,7 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
       showToast(`A student already exists with ${form.korean_class} #${form.class_number} in Grade ${form.grade} (${existing[0].english_name}). Change the class number or edit the existing student.`)
       return
     }
-    const { error } = await addStudent({ ...form, teacher_id: TEACHER_MAP[form.english_class] || null, is_active: true, notes: '', photo_url: '', google_drive_folder_url: '' })
+    const { error } = await addStudent({ ...form, teacher_id: (await loadClassTeacherMap())[form.english_class] || null, is_active: true, notes: '', photo_url: '', google_drive_folder_url: '' })
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
     else { showToast(`Added ${form.english_name}`); setForm({ korean_name: '', english_name: '', grade: 2 as Grade, korean_class: '대' as KoreanClass, class_number: 1, english_class: 'Lily' as EnglishClass }); onComplete() }
@@ -525,7 +526,7 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
     if (edit.english_name && edit.english_name !== s.english_name) updates.english_name = edit.english_name
     if (edit.korean_class && edit.korean_class !== s.korean_class) updates.korean_class = edit.korean_class
     if (edit.class_number && edit.class_number !== s.class_number) updates.class_number = edit.class_number
-    if (edit.english_class && edit.english_class !== s.english_class) updates.english_class = edit.english_class
+    if (edit.english_class && edit.english_class !== s.english_class) { updates.english_class = edit.english_class; updates.teacher_id = (await loadClassTeacherMap())[edit.english_class] || null }
     if (edit.grade && edit.grade !== s.grade) updates.grade = edit.grade
 
     const { error } = await supabase.from('students').update(updates).eq('id', s.id)
