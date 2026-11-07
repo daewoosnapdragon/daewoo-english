@@ -34,7 +34,7 @@ describe('weeks', () => {
 })
 
 const unit = (id: string, weeks = 2): CurriculumUnit => ({ id, book_id: 'b1', sort_order: 0, title: id, summary: '', skill_tags: [], ccss_codes: [], default_weeks: weeks, source: 'claude', confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' })
-const pace = (id: string, unit_id: string, sort_order: number, weeks: number, placement_id = 'p1'): CurriculumPacing => ({ id, placement_id, unit_id, sort_order, weeks, owner: 'master', created_at: '', updated_at: '' })
+const pace = (id: string, unit_id: string, sort_order: number, weeks: number, placement_id = 'p1'): CurriculumPacing => ({ id, placement_id, unit_id, sort_order, weeks, owner: 'master', teacher_id: null, gap_before: 0, created_at: '', updated_at: '' })
 
 describe('layout', () => {
   const units = [unit('u1'), unit('u2'), unit('u3')]

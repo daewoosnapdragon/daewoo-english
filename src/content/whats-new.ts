@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'teacher-plans', date: '2026-11-09', title: 'Curriculum: your own plan, “we’re here”, and blocks of your own',
+    body: 'You can now change your class board. Click the unit you are starting now and press We’re here: behind, a gap opens before it and everything after moves; ahead, the units before it get shorter. Drag a bar to move it, drag its right edge to make it longer, skip a unit or add one back. Your plan becomes your own copy of the master the first time you change it, and a thin rail under the row shows where the master was. Our class at the bottom holds blocks of your own, things from no book. Admin sees every difference on the Curriculum map’s Review tab and can leave you a note, make your pacing the master, or put it back.',
+    path: '/curriculum', guide: 'bookshelf',
+  },
+  {
     id: 'class-boards', date: '2026-11-09', title: 'Curriculum: class boards, the ladder and the master plan',
     body: 'You can now open Curriculum → Class boards and see any class and grade’s term week by week, yours first: a row per book, each unit as a bar in its book’s colour where the plan puts it, holiday weeks hatched, today marked. Click a bar for the unit’s lessons and files. Ladder shows one level across Grades 1 to 5 with the books per grade and checks on the progression. Admin sets all of it on the Curriculum map: which book each class and grade uses for which term, and how many weeks each unit gets. Read-only for teachers this round; your own changes, “we’re here” pins and blank blocks come next.',
     path: '/curriculum', guide: 'bookshelf',

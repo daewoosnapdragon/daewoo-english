@@ -2,22 +2,24 @@
 
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
-import { BookOpen, CalendarRange, Map, Rows3 } from 'lucide-react'
+import { BookOpen, CalendarRange, ClipboardCheck, Map, Rows3 } from 'lucide-react'
 import BookshelfView from './BookshelfView'
 import MapView from './PlacementsView'
 import BoardView from './BoardView'
 import LadderView from './LadderView'
+import ReviewView from './ReviewView'
 
 // ─── Curriculum ──────────────────────────────────────────────────
 // Two tabs. Class boards, for everyone: any class and grade's term week by
 // week, and the ladder of one level across the grades. Curriculum map, for
 // admin: the grid of which book each class and grade uses for which term,
-// with the pacing of each, and the Bookshelf behind it. See
+// with the pacing of each, the review queue of teachers' plans that differ
+// from the master, and the Bookshelf behind it. See
 // docs/curriculum-planner-plan.md.
 
 type Tab = 'boards' | 'map'
-type Sub = 'board' | 'ladder' | 'map' | 'bookshelf'
-const SUBS: Record<Tab, Sub[]> = { boards: ['board', 'ladder'], map: ['map', 'bookshelf'] }
+type Sub = 'board' | 'ladder' | 'map' | 'review' | 'bookshelf'
+const SUBS: Record<Tab, Sub[]> = { boards: ['board', 'ladder'], map: ['map', 'review', 'bookshelf'] }
 
 export default function CurriculumView() {
   const { currentTeacher, language } = useApp()
@@ -44,6 +46,7 @@ export default function CurriculumView() {
     board: { label: ko ? '학기 보드' : 'Board', icon: <CalendarRange size={12} /> },
     ladder: { label: ko ? '학년 사다리' : 'Ladder', icon: <Rows3 size={12} /> },
     map: { label: ko ? '배치와 진도' : 'Map', icon: <Map size={12} /> },
+    review: { label: ko ? '교사 계획 확인' : 'Review', icon: <ClipboardCheck size={12} /> },
     bookshelf: { label: ko ? '책꽂이' : 'Bookshelf', icon: <BookOpen size={12} /> },
   }
 
@@ -72,6 +75,7 @@ export default function CurriculumView() {
       {showTab === 'boards' && sub === 'board' && <BoardView />}
       {showTab === 'boards' && sub === 'ladder' && <LadderView />}
       {showTab === 'map' && sub === 'map' && <MapView />}
+      {showTab === 'map' && sub === 'review' && <ReviewView />}
       {showTab === 'map' && sub === 'bookshelf' && <BookshelfView />}
     </div>
   )

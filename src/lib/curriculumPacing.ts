@@ -16,9 +16,19 @@ export interface CurriculumPlacement {
   id: string; book_id: string; english_class: string; grade: number; academic_year: string; term: Term; is_master: boolean
   created_by: string | null; created_at: string; updated_at: string
 }
-export interface CurriculumPacing { id: string; placement_id: string; unit_id: string; sort_order: number; weeks: number; owner: 'master' | 'teacher'; created_at: string; updated_at: string }
+export interface CurriculumPacing {
+  id: string; placement_id: string; unit_id: string; sort_order: number; weeks: number; owner: 'master' | 'teacher'
+  teacher_id: string | null; gap_before: number; created_at: string; updated_at: string
+}
+export interface CurriculumBlock {
+  id: string; teacher_id: string; english_class: string; grade: number; academic_year: string; term: Half; title: string; strand: Strand
+  skill_tags: string[]; start_week: number; weeks: number; notes: string; created_at: string; updated_at: string
+}
+export interface CurriculumHere { id: string; placement_id: string; teacher_id: string; unit_id: string | null; week: number; note: string; set_at: string }
+export interface CurriculumPlanReview { id: string; placement_id: string; teacher_id: string; signature: string; comment: string; seen_by: string | null; seen_at: string | null; updated_at: string }
 
 export const isPlacementsMissing = (message: string | undefined | null) => !!message && /curriculum_placements|curriculum_pacing/.test(message)
+export const isPlansMissing = (message: string | undefined | null) => !!message && /curriculum_blocks|curriculum_here|curriculum_plan_reviews|gap_before|teacher_id/.test(message)
 
 // ─── Dates and weeks ─────────────────────────────────────────────
 
@@ -85,13 +95,14 @@ export function layoutPacing(pacing: CurriculumPacing[], units: CurriculumUnit[]
     const unit = byId.get(p.unit_id)
     if (!unit) continue
     const w = Math.max(0.5, Number(p.weeks) || 0)
+    cursor += Math.max(0, Number(p.gap_before) || 0)
     out.push({ pacing: p, unit, start: cursor + 1, end: cursor + w })
     cursor += w
   }
   return out
 }
 
-export const totalWeeks = (pacing: CurriculumPacing[]) => pacing.reduce((a, p) => a + (Number(p.weeks) || 0), 0)
+export const totalWeeks = (pacing: CurriculumPacing[]) => pacing.reduce((a, p) => a + (Number(p.weeks) || 0) + Math.max(0, Number(p.gap_before) || 0), 0)
 
 export interface ViewBar extends Bar { viewStart: number; viewEnd: number; cutLeft: boolean; cutRight: boolean }
 
@@ -123,6 +134,7 @@ const STRAND_EN: Record<Strand, string> = { phonics: 'Phonics', reading: 'Readin
 /** One lane per strand that has a bar, in the fixed strand order. */
 export function boardLanes(
   placements: CurriculumPlacement[], pacing: CurriculumPacing[], units: CurriculumUnit[], books: CurriculumBook[], series: CurriculumSeries[], view: Half, yw: YearWeeks,
+  teacherId: string | null = null,
 ): Lane[] {
   const lanes = new Map<Strand, Lane>()
   for (const pl of placements) {
@@ -130,7 +142,7 @@ export function boardLanes(
     if (!book) continue
     const se = series.find(s => s.id === book.series_id)
     const strand: Strand = se?.strand || 'other'
-    const bars = barsForView(layoutPacing(pacing.filter(p => p.placement_id === pl.id), units), pl.term, view, yw)
+    const bars = barsForView(layoutPacing(effectiveRows(pacing, pl.id, teacherId), units), pl.term, view, yw)
     if (!bars.length) continue
     if (!lanes.has(strand)) lanes.set(strand, { strand, label: STRAND_EN[strand], bars: [] })
     const lane = lanes.get(strand)!
@@ -219,4 +231,92 @@ export function ladderChecks(rows: LadderRow[], series: CurriculumSeries[]): Lad
     }
   }
   return out
+}
+
+// ─── Teachers' own plans ─────────────────────────────────────────
+
+export const masterRows = (pacing: CurriculumPacing[], placementId: string) => pacing.filter(p => p.placement_id === placementId && p.owner === 'master')
+export const teacherRows = (pacing: CurriculumPacing[], placementId: string, teacherId: string) => pacing.filter(p => p.placement_id === placementId && p.owner === 'teacher' && p.teacher_id === teacherId)
+/** The teacher's rows when they have made a copy, else the master's. */
+export function effectiveRows(pacing: CurriculumPacing[], placementId: string, teacherId: string | null): CurriculumPacing[] {
+  if (teacherId) { const mine = teacherRows(pacing, placementId, teacherId); if (mine.length) return mine }
+  return masterRows(pacing, placementId)
+}
+export const hasOwnPlan = (pacing: CurriculumPacing[], placementId: string, teacherId: string) => teacherRows(pacing, placementId, teacherId).length > 0
+
+export interface RowPatch { id: string; weeks?: number; gap_before?: number }
+const half = (n: number) => Math.round(n * 2) / 2
+
+/**
+ * "We're here": make `unitId` start at `targetStart` (a placement week). Behind the
+ * plan, the unit gets a gap before it. Ahead of it, the gap goes first, then the
+ * units before it get shorter, latest first, never under half a week. Returns the
+ * rows to change; empty when nothing can move.
+ */
+export function reflowTo(rows: CurriculumPacing[], units: CurriculumUnit[], unitId: string, targetStart: number): RowPatch[] {
+  const bars = layoutPacing(rows, units)
+  const i = bars.findIndex(b => b.unit.id === unitId)
+  if (i < 0) return []
+  let delta = half(targetStart) - bars[i].start
+  if (Math.abs(delta) < 0.25) return []
+  const me = bars[i].pacing
+  if (delta > 0) return [{ id: me.id, gap_before: half(Math.max(0, Number(me.gap_before) || 0) + delta) }]
+  const patches: RowPatch[] = []
+  let need = -delta
+  const gap = Math.max(0, Number(me.gap_before) || 0)
+  if (gap > 0) { const take = Math.min(gap, need); patches.push({ id: me.id, gap_before: half(gap - take) }); need = half(need - take) }
+  for (let j = i - 1; j >= 0 && need > 0; j--) {
+    const r = bars[j].pacing
+    const g = Math.max(0, Number(r.gap_before) || 0)
+    let gapTake = Math.min(g, need)
+    need = half(need - gapTake)
+    const room = Math.max(0, (Number(r.weeks) || 0) - 0.5)
+    const take = Math.min(room, need)
+    need = half(need - take)
+    if (gapTake > 0 || take > 0) patches.push({ id: r.id, gap_before: half(g - gapTake), weeks: half((Number(r.weeks) || 0) - take) })
+  }
+  return patches
+}
+
+/** Applies patches to a copy of the rows, for a preview before saving. */
+export function applyPatches(rows: CurriculumPacing[], patches: RowPatch[]): CurriculumPacing[] {
+  return rows.map(r => { const p = patches.find(x => x.id === r.id); return p ? { ...r, weeks: p.weeks ?? r.weeks, gap_before: p.gap_before ?? r.gap_before } : r })
+}
+
+export interface Deviation { unit: CurriculumUnit; kind: 'later' | 'earlier' | 'longer' | 'shorter' | 'dropped' | 'added'; by: number; text: string }
+
+/** How a teacher's plan differs from the master, unit by unit. */
+export function deviations(master: CurriculumPacing[], teacher: CurriculumPacing[], units: CurriculumUnit[]): Deviation[] {
+  const m = layoutPacing(master, units), t = layoutPacing(teacher, units)
+  const out: Deviation[] = []
+  const wk = (n: number) => `${half(n)} wk`
+  for (const tb of t) {
+    const mb = m.find(x => x.unit.id === tb.unit.id)
+    if (!mb) { out.push({ unit: tb.unit, kind: 'added', by: 0, text: `${tb.unit.title}: added` }); continue }
+    const shift = half(tb.start - mb.start)
+    if (Math.abs(shift) >= 0.5) out.push({ unit: tb.unit, kind: shift > 0 ? 'later' : 'earlier', by: Math.abs(shift), text: `${tb.unit.title}: ${wk(Math.abs(shift))} ${shift > 0 ? 'later' : 'earlier'}` })
+    const dw = half(tb.pacing.weeks - mb.pacing.weeks)
+    if (Math.abs(dw) >= 0.5) out.push({ unit: tb.unit, kind: dw > 0 ? 'longer' : 'shorter', by: Math.abs(dw), text: `${tb.unit.title}: ${wk(Math.abs(dw))} ${dw > 0 ? 'longer' : 'shorter'}` })
+  }
+  for (const mb of m) if (!t.some(x => x.unit.id === mb.unit.id)) out.push({ unit: mb.unit, kind: 'dropped', by: 0, text: `${mb.unit.title}: dropped` })
+  return out
+}
+
+/** A short fingerprint of a plan, so a review can tell whether it changed since it was seen. */
+export const planSignature = (rows: CurriculumPacing[]) => [...rows].sort((a, b) => a.sort_order - b.sort_order).map(r => `${r.unit_id.slice(0, 8)}:${r.sort_order}:${r.weeks}:${r.gap_before || 0}`).join('|')
+
+/** Blocks for one half of a class and grade's year, as bars in view weeks. */
+export function blockBars(blocks: CurriculumBlock[], cls: string, grade: number, year: string, view: Half, teacherId: string | null, n: number): (CurriculumBlock & { viewStart: number; viewEnd: number })[] {
+  return blocks
+    .filter(b => b.english_class === cls && b.grade === grade && b.academic_year === year && b.term === view && (!teacherId || b.teacher_id === teacherId))
+    .map(b => ({ ...b, viewStart: Math.max(1, Number(b.start_week)), viewEnd: Math.min(n, Number(b.start_week) + Math.max(0.5, Number(b.weeks)) - 1) }))
+    .filter(b => b.viewEnd >= b.viewStart)
+}
+
+/** The lag in weeks between a pin and today: positive when the class is behind where it said it was. */
+export const lagWeeks = (pin: { week: number; set_at: string }, todayPos: number | null, weeks: Week[]) => {
+  if (todayPos === null) return 0
+  const setDay = pin.set_at.slice(0, 10)
+  const setPos = todayPosition(weeks, setDay)
+  return setPos === null ? 0 : half(todayPos - setPos)
 }

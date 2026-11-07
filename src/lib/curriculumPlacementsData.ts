@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { logActivity } from '@/lib/activity'
 import type { CurriculumUnit } from '@/lib/curriculumCore'
-import type { CurriculumPacing, CurriculumPlacement, Term } from '@/lib/curriculumPacing'
+import type { CurriculumBlock, CurriculumHere, CurriculumPacing, CurriculumPlacement, CurriculumPlanReview, Term } from '@/lib/curriculumPacing'
 
 // ─── Placements and pacing: the reads and writes ─────────────────
 // A placement is created with a pacing row for every unit of its book, in
@@ -12,15 +12,22 @@ import type { CurriculumPacing, CurriculumPlacement, Term } from '@/lib/curricul
 const msg = (e: { message?: string } | null | undefined) => e?.message || null
 const PATH = '/curriculum'
 
-export async function fetchPlacements(): Promise<{ placements: CurriculumPlacement[]; pacing: CurriculumPacing[]; error: string | null }> {
-  const [p, c] = await Promise.all([
+export async function fetchPlacements(): Promise<{ placements: CurriculumPlacement[]; pacing: CurriculumPacing[]; blocks: CurriculumBlock[]; here: CurriculumHere[]; reviews: CurriculumPlanReview[]; error: string | null; plansError: string | null }> {
+  const [p, c, b, h, r] = await Promise.all([
     supabase.from('curriculum_placements').select('*').order('created_at'),
     supabase.from('curriculum_pacing').select('*').order('sort_order'),
+    supabase.from('curriculum_blocks').select('*').order('start_week'),
+    supabase.from('curriculum_here').select('*').order('set_at', { ascending: false }),
+    supabase.from('curriculum_plan_reviews').select('*'),
   ])
   return {
     placements: (p.data || []) as CurriculumPlacement[],
-    pacing: ((c.data || []) as any[]).map(x => ({ ...x, weeks: Number(x.weeks) })) as CurriculumPacing[],
+    pacing: ((c.data || []) as any[]).map(x => ({ ...x, weeks: Number(x.weeks), gap_before: Number(x.gap_before || 0), teacher_id: x.teacher_id || null, owner: x.owner || 'master' })) as CurriculumPacing[],
+    blocks: ((b.data || []) as any[]).map(x => ({ ...x, start_week: Number(x.start_week), weeks: Number(x.weeks), skill_tags: x.skill_tags || [] })) as CurriculumBlock[],
+    here: ((h.data || []) as any[]).map(x => ({ ...x, week: Number(x.week) })) as CurriculumHere[],
+    reviews: (r.data || []) as CurriculumPlanReview[],
     error: p.error?.message || c.error?.message || null,
+    plansError: b.error?.message || h.error?.message || r.error?.message || null,
   }
 }
 
@@ -96,7 +103,7 @@ export async function copyPlacements(from: { english_class: string; grade: numbe
     if (existing.some(e => e.book_id === p.book_id && e.term === p.term)) continue
     const { data, error } = await supabase.from('curriculum_placements').insert({ book_id: p.book_id, english_class: to.english_class, grade: to.grade, academic_year: to.academic_year, term: p.term, is_master: true, created_by: teacherId }).select('id').single()
     if (error) return { copied, error: error.message }
-    const rows = pacing.filter(r => r.placement_id === p.id).map(r => ({ placement_id: data.id, unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, owner: 'master' }))
+    const rows = pacing.filter(r => r.placement_id === p.id && r.owner === 'master').map(r => ({ placement_id: data.id, unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, gap_before: r.gap_before || 0, owner: 'master' }))
     if (rows.length) { const { error: e } = await supabase.from('curriculum_pacing').insert(rows); if (e) return { copied, error: e.message } }
     copied += 1
   }
