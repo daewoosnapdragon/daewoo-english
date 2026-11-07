@@ -345,6 +345,24 @@ export const ADMIN_SECTIONS: GuideSection[] = [
     watchOut: ['Prices come from the receipt lines; a line entered without a price counts as zero until it is edited.'],
   },
   {
+    id: 'bookshelf', title: 'Curriculum: Bookshelf', updated: '2026-11-09',
+    purpose: 'The catalogue of books the program uses, each divided into units and lessons, every lesson with its “students will” line, CCSS codes and skill tags, and links to the files in the shared Drive. It is the first part of the curriculum planner: placements, pacing and the class boards come next and read from it. Curriculum in the top bar.',
+    screen: [
+      'The shelf on the left: books grouped by strand and series, the level as a big numeral in the series colour, a status (in the poll, confirmed, retired) and how far the book is indexed. Retired books are hidden until you tick Show retired. Under the shelf, the skill tags the catalogue uses, with how many places use each.',
+      'The open book on the right: its name, status, strand, Drive folder and notes, with Edit for admin. Then the draft box: the prompt to give Claude with the table of contents and the teacher’s guide pages, and the box to paste the lines it writes. Then the units in order, each with its weeks, summary, tags and codes, and a chip saying whether it was suggested by Claude or confirmed and by whom.',
+      'Open a unit to see its lessons: title, the “students will” line, notes, tags and codes, and the Drive links for that lesson. Confirm, edit, reorder and delete are on each unit and lesson for admin. Anyone can add a Drive link to a unit or a lesson.',
+    ],
+    tasks: [
+      { title: 'Add a book', steps: ['Curriculum → Add a book. Pick the series (or New series with its strand and colour), type the level and, if the series name is not enough, a title. Set the status: in the poll until the book poll closes, then confirmed or retired.', 'The book appears on the shelf as Not indexed yet.'] },
+      { title: 'Index a book from its contents', steps: ['Open the book → Draft units and lessons from the contents → set the CCSS grade → Copy the prompt.', 'Give Claude the prompt with photos or pasted text of the table of contents and the guide’s objective pages. It writes one Unit line per unit and one “-” line per lesson, with the students-will line, codes and tags.', 'Paste the lines in → Read the lines. The preview shows the units, their weeks and lessons, and any new skill tags.', 'Save as suggested. Everything lands marked “Suggested by Claude”.'] },
+      { title: 'Confirm what Claude drafted', steps: ['Open the book and read through. Fix anything with Edit on the unit or lesson; the chip changes to Not confirmed until you confirm it.', 'Confirm on each unit and lesson, Confirm these lessons on a unit, or Confirm all on the book once it is right.'] },
+      { title: 'Link the files in Drive', steps: ['Paste the book’s folder link in Edit on the book, and a unit’s folder link in Edit on the unit.', 'For one file: open the unit or lesson → Add a Drive link → name, the link (the kind is guessed from it), and for a handout how many copies.'] },
+      { title: 'Tidy the skill tags', steps: ['Skill tags under the shelf. Admin renames a tag or moves it to another strand with the pencil, or removes it with the ×. Units and lessons keep the word either way.'] },
+    ],
+    rules: ['A book exists once however many classes use it. Which class uses it and when is a placement, which comes in the next phase.', 'Units and lessons start as Claude’s suggestion and stay marked that way until admin confirms them; the boards will show which is which so teachers know what to trust.', 'Skill tags are the program’s own short words (long a vce, main idea, describing objects). CCSS codes are too coarse to show overlap on their own, so both are kept. A tag the list does not know is added to it when a unit or lesson is saved with it.', 'Retire a book rather than deleting it once any class has used it, so past plans still resolve. Delete removes its units, lessons and links.'],
+    watchOut: ['Admin runs supabase/migration-curriculum-catalogue.sql once. It seeds the series the lesson plans already name and a starting phonics vocabulary.', 'Index books only at the book level until the poll closes; tagging three hundred lessons of a book that gets dropped is wasted work.', 'The prompt lists the skill tags for the book’s strand, so keep the tags tidy and Claude’s lines will match without fixing.'],
+  },
+  {
     id: 'activity', title: 'Activity', updated: '2026-10-27',
     purpose: 'Who signed in and what they did, for admin, the head teacher and the Snapdragon teacher. Opened from the user menu.',
     screen: [
@@ -373,5 +391,5 @@ export const ALL_SECTIONS = () => [...GUIDE_SECTIONS, ...ADMIN_SECTIONS]
 /** The guide section for a view id, for “How this page works”. */
 export const SECTION_FOR_VIEW: Record<string, string> = {
   dashboard: 'dashboard', grades: 'grades', attendance: 'attendance', lessonPlans: 'lessons', students: 'students',
-  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', behavior: 'behavior', supplies: 'supplies', budget: 'budget',
+  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', behavior: 'behavior', supplies: 'supplies', budget: 'budget', planner: 'bookshelf',
 }
