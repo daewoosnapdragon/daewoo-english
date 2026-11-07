@@ -8,7 +8,7 @@
 -- placements of one catalogue entry. Grades inside a level use different
 -- books, so placements are always per class AND grade. A book that runs the
 -- whole year is one placement with term "year"; its units run on across the
--- winter break.
+-- summer break (the school year starts in March: spring, then fall).
 --
 -- Pacing is the master's answer to "how long does each unit get, in what
 -- order": one row per unit in the placement, in order, with its weeks.

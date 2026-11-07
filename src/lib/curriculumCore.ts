@@ -20,10 +20,12 @@ export const BOOK_STATUS_LABEL: Record<BookStatus, { en: string; ko: string }> =
 }
 export const normalizeStatus = (s: string): BookStatus => s === 'retired' ? 'retired' : 'confirmed'
 
-/** "M3 W2 · The Story of You" splits into the badge "M3 W2" and the title; anything else has no badge. */
+/** "M3 W2 · The Story of You" splits into the badge "M3 W2" and the title; so does any short prefix before " · ", such as a section name. */
 export function splitUnitTitle(title: string): { badge: string; name: string } {
   const m = title.match(/^(M\d+\s*W\d+|Unit\s*\d+[a-z]?|Module\s*\d+)\s*[·:\-–]\s*(.+)$/i)
-  return m ? { badge: m[1].replace(/\s+/g, ' '), name: m[2] } : { badge: '', name: title }
+  if (m) return { badge: m[1].replace(/\s+/g, ' '), name: m[2] }
+  const g = title.match(/^(.{1,28}?)\s·\s(.+)$/)
+  return g ? { badge: g[1], name: g[2] } : { badge: '', name: title }
 }
 
 export type ResourceKind = 'slides' | 'pdf' | 'doc' | 'sheet' | 'audio' | 'video' | 'folder' | 'other'

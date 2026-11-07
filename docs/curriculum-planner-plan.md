@@ -19,7 +19,7 @@ Written 7 Nov 2026 from the design conversation. Mockup: https://claude.ai/artif
 ## Answers from Kyla, 7 Nov 2026
 
 - **Grades inside a level use different books.** The master is per class + grade (Snapdragon G1 and Snapdragon G2 are separate placements). Never collapse pacing to the level.
-- **Some books span the year, some a semester.** A placement carries a span (`year` or `semester`) and a start semester. Pacing is always in units or modules inside the book, so a year-long book shows its units continuing across the semester break and "we're here" carries over it. Every book must be divisible into units/modules for display.
+- **Some books span the year, some a semester.** A placement carries a term: spring (the first half, the school year starts in March), fall (the second) or the whole year, which runs spring then fall across the summer break. Pacing is always in units or modules inside the book. Every book must be divisible into units/modules for display.
 - **One teacher teaches a level at every grade.** Kyla teaches Snapdragon G1 to G5. So the ladder (one level, all grades) is a teacher's home screen, with here-pins on every step; the class board is one step opened up. Build the ladder earlier than phase 6: a read-only ladder lands with phase 2.
 - **Kyla edits the master.** Victoria reviews and comments but does not edit it. The review queue is Kyla's.
 - **Dropped books stay as retired** so actuals and student book history keep resolving.

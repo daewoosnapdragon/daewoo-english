@@ -1,4 +1,4 @@
-import { colorHex, type CurriculumBook, type CurriculumSeries, type CurriculumUnit, type Strand } from '@/lib/curriculumCore'
+import { colorHex, splitUnitTitle, type CurriculumBook, type CurriculumSeries, type CurriculumUnit, type Strand } from '@/lib/curriculumCore'
 
 // ─── Placements and pacing ───────────────────────────────────────
 // A placement is a book in a class and grade for a term; pacing is the order
@@ -10,7 +10,10 @@ import { colorHex, type CurriculumBook, type CurriculumSeries, type CurriculumUn
 
 export type Term = 'fall' | 'spring' | 'year'
 export type Half = 'fall' | 'spring'
-export const TERM_LABEL: Record<Term, { en: string; ko: string }> = { fall: { en: 'Fall', ko: '가을 학기' }, spring: { en: 'Spring', ko: '봄 학기' }, year: { en: 'Whole year', ko: '한 해' } }
+// The school year starts in March: spring is the first half, fall the second, and a whole-year book carries across the summer break.
+export const TERM_LABEL: Record<Term, { en: string; ko: string }> = { spring: { en: 'Spring', ko: '봄 학기' }, fall: { en: 'Fall', ko: '가을 학기' }, year: { en: 'Whole year', ko: '한 해' } }
+export const HALVES: Half[] = ['spring', 'fall']
+export const TERMS: Term[] = ['year', 'spring', 'fall']
 
 export interface CurriculumPlacement {
   id: string; book_id: string; english_class: string; grade: number; academic_year: string; term: Term; is_master: boolean
@@ -67,20 +70,22 @@ export function termDates(semesters: SemesterLike[], year: string, half: Half): 
 /** The half of the year a date falls in, by the term dates; the nearer one when it is in neither. */
 export function halfOf(semesters: SemesterLike[], year: string, date: string): Half {
   const f = termDates(semesters, year, 'fall'), s = termDates(semesters, year, 'spring')
-  if (f.start && f.end && date >= f.start && date <= f.end) return 'fall'
   if (s.start && s.end && date >= s.start && date <= s.end) return 'spring'
-  if (s.start && date >= s.start) return 'spring'
-  return 'fall'
+  if (f.start && f.end && date >= f.start && date <= f.end) return 'fall'
+  if (f.start && date >= f.start) return 'fall'
+  return 'spring'
 }
 
-export interface YearWeeks { fall: Week[]; spring: Week[] }
+export interface YearWeeks { spring: Week[]; fall: Week[] }
 export const yearWeeks = (semesters: SemesterLike[], year: string): YearWeeks => {
   const f = termDates(semesters, year, 'fall'), s = termDates(semesters, year, 'spring')
-  return { fall: f.start && f.end ? weekList(f.start, f.end) : [], spring: s.start && s.end ? weekList(s.start, s.end) : [] }
+  return { spring: s.start && s.end ? weekList(s.start, s.end) : [], fall: f.start && f.end ? weekList(f.start, f.end) : [] }
 }
 
 /** How many weeks a placement has to fill: its term's weeks, or both halves for a year placement. */
-export const placementLength = (term: Term, yw: YearWeeks) => term === 'year' ? yw.fall.length + yw.spring.length : yw[term].length
+export const placementLength = (term: Term, yw: YearWeeks) => term === 'year' ? yw.spring.length + yw.fall.length : yw[term].length
+/** How far into a year placement the view's first week is: the spring's weeks when looking at the fall. */
+export const viewOffset = (term: Term, view: Half, yw: YearWeeks) => term === 'year' && view === 'fall' ? yw.spring.length : 0
 
 // ─── Where the units land ────────────────────────────────────────
 
@@ -108,13 +113,13 @@ export interface ViewBar extends Bar { viewStart: number; viewEnd: number; cutLe
 
 /**
  * The bars that show on a board for one half of the year. A placement for that
- * half starts at its week 1; a year placement shown in spring is shifted
- * back by the fall's weeks. Bars outside the view are dropped, bars crossing
+ * half starts at its week 1; a year placement shown in the fall is shifted
+ * back by the spring's weeks. Bars outside the view are dropped, bars crossing
  * its edges are cut and say so.
  */
 export function barsForView(bars: Bar[], term: Term, view: Half, yw: YearWeeks): ViewBar[] {
   if (term !== 'year' && term !== view) return []
-  const offset = term === 'year' && view === 'spring' ? yw.fall.length : 0
+  const offset = viewOffset(term, view, yw)
   const n = yw[view].length
   if (!n) return []
   const out: ViewBar[] = []
@@ -143,8 +148,7 @@ export function boardLanes(
     const se = series.find(s => s.id === book.series_id)
     const strand: Strand = se?.strand || 'other'
     const rows = effectiveRows(pacing, pl.id, teacherId)
-    const laid = se?.kind === 'anthology' ? projectAnthology(rows, placementLength(pl.term, yw)) : rows
-    const bars = barsForView(layoutPacing(laid, units), pl.term, view, yw)
+    const bars = barsForView(layoutPacing(projectAnthology(rows, placementLength(pl.term, yw)), units), pl.term, view, yw)
     if (!bars.length) continue
     if (!lanes.has(strand)) lanes.set(strand, { strand, label: STRAND_EN[strand], bars: [] })
     const lane = lanes.get(strand)!
@@ -246,7 +250,7 @@ export function effectiveRows(pacing: CurriculumPacing[], placementId: string, t
 }
 export const hasOwnPlan = (pacing: CurriculumPacing[], placementId: string, teacherId: string) => teacherRows(pacing, placementId, teacherId).length > 0
 
-export interface RowPatch { id: string; weeks?: number; gap_before?: number }
+export interface RowPatch { id: string; weeks?: number; gap_before?: number; fixed?: boolean }
 const half = (n: number) => Math.round(n * 2) / 2
 
 /**
@@ -275,14 +279,14 @@ export function reflowTo(rows: CurriculumPacing[], units: CurriculumUnit[], unit
     const room = Math.max(0, (Number(r.weeks) || 0) - 0.5)
     const take = Math.min(room, need)
     need = half(need - take)
-    if (gapTake > 0 || take > 0) patches.push({ id: r.id, gap_before: half(g - gapTake), weeks: half((Number(r.weeks) || 0) - take) })
+    if (gapTake > 0 || take > 0) patches.push({ id: r.id, gap_before: half(g - gapTake), weeks: half((Number(r.weeks) || 0) - take), fixed: true })
   }
   return patches
 }
 
 /** Applies patches to a copy of the rows, for a preview before saving. */
 export function applyPatches(rows: CurriculumPacing[], patches: RowPatch[]): CurriculumPacing[] {
-  return rows.map(r => { const p = patches.find(x => x.id === r.id); return p ? { ...r, weeks: p.weeks ?? r.weeks, gap_before: p.gap_before ?? r.gap_before } : r })
+  return rows.map(r => { const p = patches.find(x => x.id === r.id); return p ? { ...r, weeks: p.weeks ?? r.weeks, gap_before: p.gap_before ?? r.gap_before, fixed: p.fixed ?? r.fixed } : r })
 }
 
 export interface Deviation { unit: CurriculumUnit; kind: 'later' | 'earlier' | 'longer' | 'shorter' | 'dropped' | 'added'; by: number; text: string }
@@ -370,14 +374,15 @@ export function anthologyProgress(rows: CurriculumPacing[], length: number, pos:
   return { done, total, expected, diff, text }
 }
 
-/** Stories grouped by the module in their title badge ("M3 W1 · …" → "M3"), in book order. */
+/** Units grouped by the module or section in their title badge ("M3 W1 · …" → Module 3; "Closed Syllables · …" → Closed Syllables), in book order. */
 export function groupByModule<T extends { title: string; sort_order: number }>(units: T[]): { key: string; label: string; units: T[] }[] {
   const out: { key: string; label: string; units: T[] }[] = []
   for (const u of [...units].sort((a, b) => a.sort_order - b.sort_order)) {
-    const m = u.title.match(/^(M\d+)\b/i)
-    const key = m ? m[1].toUpperCase() : 'other'
+    const badge = splitUnitTitle(u.title).badge
+    const m = badge.match(/^M(\d+)/i)
+    const key = m ? 'M' + m[1] : (badge || 'other')
     let g = out.find(x => x.key === key)
-    if (!g) { g = { key, label: m ? `Module ${m[1].slice(1)}` : 'Other', units: [] }; out.push(g) }
+    if (!g) { g = { key, label: m ? `Module ${m[1]}` : (badge || 'Other'), units: [] }; out.push(g) }
     g.units.push(u)
   }
   return out

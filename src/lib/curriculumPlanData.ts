@@ -31,6 +31,7 @@ export async function patchOwnRows(patches: RowPatch[], label: string): Promise<
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (p.weeks !== undefined) patch.weeks = Math.max(0.5, Math.round(p.weeks * 2) / 2)
     if (p.gap_before !== undefined) patch.gap_before = Math.max(0, Math.round(p.gap_before * 2) / 2)
+    if (p.fixed !== undefined) patch.fixed = p.fixed
     const { error } = await supabase.from('curriculum_pacing').update(patch).eq('id', p.id)
     if (error) return error.message
   }

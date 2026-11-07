@@ -52,7 +52,7 @@ export default function StoryPicker({ units, selected, onChange, ko, presets = [
                 return (
                   <label key={u.id} className={`flex items-center gap-2 px-3 py-1 pl-7 ${off ? 'opacity-50' : 'cursor-pointer hover:bg-paper'}`}>
                     <input type="checkbox" checked={selected.has(u.id) || !!off} disabled={off} onChange={() => toggle(u.id)} />
-                    <span className="text-[10px] text-ink-3 w-12 shrink-0">{t.badge}</span>
+                    {t.badge.length <= 8 ? <span className="text-[10px] text-ink-3 w-12 shrink-0">{t.badge}</span> : <span className="w-2 shrink-0" />}
                     <span className="text-[12.5px] text-ink truncate">{t.name}</span>
                     <span className="text-[10.5px] text-ink-3 truncate ml-auto shrink-0 max-w-[160px]">{genreOf(u)}</span>
                   </label>

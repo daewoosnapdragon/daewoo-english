@@ -8,7 +8,7 @@ import { getKSTDateString } from '@/lib/utils'
 import { teacherForClass } from '@/lib/classTeacher'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { STRANDS, STRAND_LABEL, bookName, parseTags, splitUnitTitle, type CurriculumLesson, type CurriculumUnit, type Strand } from '@/lib/curriculumCore'
-import { TERM_LABEL, academicYears, anthologyProgress, barsForView, blockBars, boardLanes, halfOf, hasOwnPlan, holidayWeeks, lagWeeks, layoutPacing, masterRows, placementLength, projectAnthology, reflowTo, teacherRows, todayPosition, yearWeeks, type CurriculumBlock, type Half, type Lane } from '@/lib/curriculumPacing'
+import { HALVES, TERM_LABEL, academicYears, anthologyProgress, barsForView, blockBars, boardLanes, halfOf, hasOwnPlan, holidayWeeks, lagWeeks, layoutPacing, masterRows, placementLength, projectAnthology, reflowTo, teacherRows, todayPosition, viewOffset, yearWeeks, type CurriculumBlock, type Half, type Lane } from '@/lib/curriculumPacing'
 import { addOwnUnit, deleteBlock, dropOwnUnit, ensureOwnPlan, patchOwnRows, revertToMaster, saveBlock, setHere, setOwnDone, type BlockDraft } from '@/lib/curriculumPlanData'
 import { usePlanner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
@@ -117,9 +117,9 @@ export default function BoardView() {
           }
         }
         const effective = own.length ? own : masterRows(p.pacing, pl.id)
-        const all = layoutPacing(anthology ? projectAnthology(effective, len) : effective, p.units)
+        const all = layoutPacing(projectAnthology(effective, len), p.units)
         const last = all.length ? all[all.length - 1].end : 0
-        const offset = pl.term === 'year' && view === 'spring' ? yw.fall.length : 0
+        const offset = viewOffset(pl.term, view, yw)
         const pos = todayPosition(weeks, today)
         const progress = anthology ? anthologyProgress(effective, len, pos === null ? null : pos + offset).text : null
         out.push({ key, strand: lane.strand, first, bar0: bars[0], bars, ticks, overBy: len && last > len + 0.01 ? Math.round((last - len) * 2) / 2 : 0, anthology, progress })
@@ -138,7 +138,7 @@ export default function BoardView() {
       const pl = r.bar0.placement
       const h = p.here.find(x => x.placement_id === pl.id && x.teacher_id === viewTeacher)
       if (!h) continue
-      const offset = pl.term === 'year' && view === 'spring' ? yw.fall.length : 0
+      const offset = viewOffset(pl.term, view, yw)
       const wk = h.week - offset
       if (wk < 1 || wk > N) continue
       m.set(pl.id, { week: wk, lag: lagWeeks(h, todayPos, weeks), set_at: h.set_at })
@@ -158,7 +158,7 @@ export default function BoardView() {
   const fail = (e: string | null) => { if (e) showToast(e); return !!e }
 
   // ── Editing ──
-  const offsetOf = (b: Bar) => b.placement.term === 'year' && view === 'spring' ? yw.fall.length : 0
+  const offsetOf = (b: Bar) => viewOffset(b.placement.term, view, yw)
   const own = async (b: Bar) => { setBusy(true); const r = await ensureOwnPlan(p.pacing, b.placement.id, currentTeacher!.id); if (r.error) { setBusy(false); fail(r.error) }; return r }
   const moveTo = async (b: Bar, targetStart: number, pin = false) => {
     const r = await own(b); if (r.error) return
@@ -171,7 +171,7 @@ export default function BoardView() {
   const resize = async (b: Bar, weeksNew: number) => {
     const r = await own(b); if (r.error) return
     const mine = r.rows.find(x => x.unit_id === b.unit.id)
-    if (mine && !fail(await patchOwnRows([{ id: mine.id, weeks: Math.max(0.5, weeksNew) }], `${bookName(b.book, b.series)} · ${b.unit.title}`))) { await p.reload() }
+    if (mine && !fail(await patchOwnRows([{ id: mine.id, weeks: Math.max(0.5, weeksNew), fixed: true }], `${bookName(b.book, b.series)} · ${b.unit.title}`))) { await p.reload() }
     setBusy(false)
   }
   const hereNow = async (b: Bar) => {
@@ -248,7 +248,7 @@ export default function BoardView() {
           <select value={theYear} onChange={e => setYear(e.target.value)} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
         </label>
         <div role="group" className="inline-flex rounded border border-rule-2 overflow-hidden">
-          {(['fall', 'spring'] as Half[]).map(h => <button key={h} onClick={() => setHalf(h)} className={`h-8 px-3 text-[12.5px] ${view === h ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{ko ? TERM_LABEL[h].ko : TERM_LABEL[h].en}</button>)}
+          {HALVES.map(h => <button key={h} onClick={() => setHalf(h)} className={`h-8 px-3 text-[12.5px] ${view === h ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{ko ? TERM_LABEL[h].ko : TERM_LABEL[h].en}</button>)}
         </div>
         {plansOn && (
           <div role="group" className="inline-flex rounded border border-rule-2 overflow-hidden">
@@ -327,7 +327,7 @@ export default function BoardView() {
                                 className={`absolute text-left px-2 flex flex-col justify-center overflow-hidden select-none ${b.cutLeft ? 'rounded-l-none' : 'rounded-l'} ${b.cutRight ? 'rounded-r-none' : 'rounded-r'} ${on ? 'ring-2 ring-ink ring-offset-1 ring-offset-surface' : ''} ${canEdit && !r.anthology ? 'cursor-grab active:cursor-grabbing' : ''} ${r.anthology && !b.pacing.done_at ? 'text-ink' : 'text-white'}`}
                                 style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - (r.ticks.length ? 24 : 16), background: r.anthology && !b.pacing.done_at ? `${b.color}33` : b.color, boxShadow: r.anthology && !b.pacing.done_at ? `inset 0 0 0 2px ${b.color}` : undefined, opacity: hiCode ? (unitHas(b.unit, hiCode) ? 1 : 0.25) : (b.unit.confirmed_at ? 1 : 0.82), touchAction: 'none', ...previewStyle(b) }}>
                                 <span className="block text-[11.5px] font-semibold leading-tight truncate">{b.pacing.done_at ? '✓ ' : ''}{t.name}</span>
-                                <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{r.anthology ? (b.pacing.fixed ? '' : '≈ ') : ''}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}{!b.unit.confirmed_at ? (ko ? ' · 미확인' : ' · not confirmed') : ''}</span>
+                                <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}{!b.unit.confirmed_at ? (ko ? ' · 미확인' : ' · not confirmed') : ''}</span>
                                 {canEdit && !r.anthology && !b.cutRight && <span onPointerDown={e => startDrag(e, b, 'resize')} className="absolute top-0 bottom-0 right-0 w-2.5 cursor-ew-resize hover:bg-white/25" aria-hidden="true" />}
                               </button>
                             )

@@ -34,13 +34,13 @@ describe('reflowTo, "we’re here"', () => {
   it('ahead of the plan: the earlier units get shorter, latest first, never under half a week', () => {
     // u3 is planned for week 6; the class is ready in week 4.
     const patches = reflowTo(master, units, 'u3', 4)
-    expect(patches).toEqual([{ id: 'b', gap_before: 0, weeks: 1 }])
+    expect(patches).toEqual([{ id: 'b', gap_before: 0, weeks: 1, fixed: true }])   // a shortened unit keeps its length
     const after = layoutPacing(applyPatches(master, patches), units)
     expect(after.map(b => [b.unit.id, b.start])).toEqual([['u1', 1], ['u2', 3], ['u3', 4], ['u4', 6]])
   })
   it('ahead by more than one unit can give: it keeps taking from earlier units', () => {
     const patches = reflowTo(master, units, 'u3', 2)
-    expect(patches).toEqual([{ id: 'b', gap_before: 0, weeks: 0.5 }, { id: 'a', gap_before: 0, weeks: 0.5 }])
+    expect(patches).toEqual([{ id: 'b', gap_before: 0, weeks: 0.5, fixed: true }, { id: 'a', gap_before: 0, weeks: 0.5, fixed: true }])
     expect(layoutPacing(applyPatches(master, patches), units).find(b => b.unit.id === 'u3')!.start).toBe(2)
   })
   it('uses an existing gap before shortening anything', () => {

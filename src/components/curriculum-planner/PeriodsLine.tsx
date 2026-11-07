@@ -21,7 +21,7 @@ export default function PeriodsLine({ year }: { year: string }) {
       {ko ? '설정의 학기: ' : 'Grading periods in Settings for this year: '}
       {rows.length === 0 ? <span className="text-warn">{ko ? '없음. 설정 → 학기에서 학년도를 같은 형식으로 적으세요.' : `none. Add them in Settings → Semesters with the academic year written exactly "${year}".`}</span>
         : rows.map((r, i) => <span key={r.id}>{i ? ' · ' : ''}{ko ? r.name_ko || r.name : r.name} ({fmt(r.start_date, ko)} – {fmt(r.end_date, ko)}{!r.start_date || !r.end_date ? <span className="text-warn">{ko ? ', 날짜 없음' : ', dates missing'}</span> : ''})</span>)}
-      {rows.length > 0 && <> · {ko ? '가을' : 'fall'} {f.start ? `${fmt(f.start, ko)} – ${fmt(f.end, ko)}` : (ko ? '없음' : 'none')} · {ko ? '봄' : 'spring'} {s.start ? `${fmt(s.start, ko)} – ${fmt(s.end, ko)}` : (ko ? '없음' : 'none')}</>}
+      {rows.length > 0 && <> · {ko ? '봄 (1학기)' : 'spring, first half'} {s.start ? `${fmt(s.start, ko)} – ${fmt(s.end, ko)}` : (ko ? '없음' : 'none')} · {ko ? '가을 (2학기)' : 'fall, second half'} {f.start ? `${fmt(f.start, ko)} – ${fmt(f.end, ko)}` : (ko ? '없음' : 'none')}</>}
     </p>
   )
 }

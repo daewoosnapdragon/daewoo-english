@@ -29,7 +29,7 @@ describe('weeks', () => {
   it('knows which half a date is in', () => {
     expect(halfOf(sems, '2027-2028', '2027-11-03')).toBe('fall')
     expect(halfOf(sems, '2027-2028', '2028-03-10')).toBe('spring')
-    expect(halfOf(sems, '2027-2028', '2028-01-20')).toBe('fall')   // the winter break counts with fall
+    expect(halfOf(sems, '2027-2028', '2028-01-20')).toBe('fall')   // the winter break, after the fall, still shows the fall
   })
 })
 
@@ -46,14 +46,14 @@ describe('layout', () => {
   it('skips pacing rows whose unit is gone', () => {
     expect(layoutPacing([pace('x', 'nope', 1, 2)], units)).toEqual([])
   })
-  it('shows a year placement in spring shifted back by the fall weeks, cut at the edges', () => {
-    const yw = { fall: weekList('2027-08-30', '2027-09-24'), spring: weekList('2028-03-06', '2028-03-24') }  // 4 fall weeks, 3 spring weeks
+  it('shows a year placement in the fall shifted back by the spring weeks, cut at the edges', () => {
+    const yw = { spring: weekList('2027-03-01', '2027-03-26'), fall: weekList('2027-08-30', '2027-09-17') }  // 4 spring weeks, 3 fall weeks
     const bars = layoutPacing([pace('a', 'u1', 1, 3), pace('b', 'u2', 2, 3), pace('c', 'u3', 3, 3)], units)
-    const spring = barsForView(bars, 'year', 'spring', yw)
-    expect(spring.map(b => [b.unit.id, b.viewStart, b.viewEnd, b.cutLeft, b.cutRight])).toEqual([['u2', 1, 2, true, false], ['u3', 3, 3, false, true]])
     const fall = barsForView(bars, 'year', 'fall', yw)
-    expect(fall.map(b => [b.unit.id, b.viewStart, b.viewEnd])).toEqual([['u1', 1, 3], ['u2', 4, 4]])
-    expect(barsForView(bars, 'fall', 'spring', yw)).toEqual([])
+    expect(fall.map(b => [b.unit.id, b.viewStart, b.viewEnd, b.cutLeft, b.cutRight])).toEqual([['u2', 1, 2, true, false], ['u3', 3, 3, false, true]])
+    const spring = barsForView(bars, 'year', 'spring', yw)
+    expect(spring.map(b => [b.unit.id, b.viewStart, b.viewEnd])).toEqual([['u1', 1, 3], ['u2', 4, 4]])
+    expect(barsForView(bars, 'spring', 'fall', yw)).toEqual([])
   })
 })
 
@@ -67,7 +67,7 @@ describe('board lanes', () => {
     const lanes = boardLanes([pl('p2', 'b2', 'fall'), pl('p1', 'b1', 'fall')], [pace('a', 'u1', 1, 4, 'p1'), pace('b', 'u2', 1, 6, 'p2')], units, books, series, 'fall', yw)
     expect(lanes.map(l => l.strand)).toEqual(['phonics', 'reading'])
     expect(lanes[0].bars[0].color).toBe('#6B4C9A')
-    expect(lanes[1].bars[0].viewEnd).toBe(6)
+    expect(lanes[1].bars[0].viewEnd).toBe(18)   // one unit shares the whole 18-week fall unless its length is pinned
   })
 })
 
