@@ -22,7 +22,7 @@ export interface WhatsNewEntry {
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'reading-lists', date: '2026-11-09', title: 'Curriculum: Into Reading is a reading list, not a timetable',
-    body: 'Placing Into Reading now opens the book’s contents as a checklist by module: tick the stories the class will read and place them, no weeks to type. The term shares itself across the stories, which show as open bars on the board. Tick each story Done when you finish it and the line above the board says where you stand, 4 of 9 done · 1 story behind. Every other book works the same way now: tick the units the class will do and the term shares itself; drag or stretch a unit on the board only when one needs more or less.',
+    body: 'Placing Into Reading now opens the book’s contents as a checklist by module: tick the stories the class will read and place them, no weeks to type. The term shares itself across the stories, which show as open bars on the board. Tick each story Done when you finish it and the line above the board says where you stand, 4 of 9 done · 1 story behind. Every other book works the same way now: tick the units the class will do and the term shares itself; drag or stretch a unit on the board only when one needs more or less. The board also has a Year view, and holiday weeks from the school calendar no longer count as teaching weeks.',
     path: '/curriculum', guide: 'bookshelf',
   },
   {

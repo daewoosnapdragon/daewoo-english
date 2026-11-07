@@ -38,99 +38,93 @@ export default function MapView() {
   const [year, setYear] = useState<string>(activeSemester?.academic_year || '')
   const theYear = year || activeSemester?.academic_year || years[0] || ''
   const yw = useMemo(() => yearWeeks(semesters, theYear), [semesters, theYear])
-  const [open, setOpen] = useState<string | null>(null)
-  const [placing, setPlacing] = useState<string | null>(null)
-  const [copying, setCopying] = useState<string | null>(null)
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [open, setOpen] = useState<string | null>(null)        // a placement id
+  const [placing, setPlacing] = useState<string | null>(null)  // a cell key
+  const [copying, setCopying] = useState<string | null>(null)  // a cell key
   const fail = (e: string | null) => { if (e) showToast(e); return !!e }
   const seriesOf = (b: CurriculumBook) => p.series.find(s => s.id === b.series_id)
   const label = (pl: CurriculumPlacement) => { const b = p.books.find(x => x.id === pl.book_id); return b ? bookName(b, seriesOf(b)) : '?' }
   const masters = p.placements.filter(x => x.academic_year === theYear && x.is_master)
+  const cellOf = (key: string) => { const [cls, g] = key.split('|'); return { cls, grade: Number(g) } }
+  const activeKey = placing || copying || (open ? (() => { const pl = masters.find(x => x.id === open); return pl ? rowKey(pl.english_class, pl.grade) : null })() : null)
 
   if (p.loading) return <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
   if (p.missing) return <p className="text-[12.5px] text-warn">{p.missing === 'catalogue' ? 'Run supabase/migration-curriculum-catalogue.sql first.' : 'The placements tables are missing. Admin runs supabase/migration-curriculum-placements.sql once.'}</p>
 
-  const chip = (pl: CurriculumPlacement, half: 'fall' | 'spring') => {
+  const TERM_TAG: Record<Term, string> = { spring: ko ? '봄' : 'Sp', fall: ko ? '가을' : 'F', year: ko ? '한 해' : 'Yr' }
+  const chip = (pl: CurriculumPlacement) => {
     const book = p.books.find(b => b.id === pl.book_id)
     const se = book ? seriesOf(book) : undefined
     const rows = p.pacing.filter(r => r.placement_id === pl.id && r.owner === 'master')
     const length = placementLength(pl.term, yw)
-    const anthology = se?.kind === 'anthology'
     const total = totalWeeks(projectAnthology(rows, length))
     const over = length > 0 && total > length + 0.01
     const on = open === pl.id
-    const carries = pl.term === 'year' && half === 'fall'
-    const what = anthology ? (ko ? `이야기 ${rows.length}편` : `${rows.length} ${rows.length === 1 ? 'story' : 'stories'}`) : (ko ? `단원 ${rows.length}개` : `${rows.length} ${rows.length === 1 ? 'unit' : 'units'}`)
-    const fit = !length ? '' : over ? (ko ? ` · ${num(total - length)}주 초과` : ` · ${num(total - length)} wk over`) : (ko ? ' · 맞음' : ' · fits')
+    const color = colorHex(se?.color || 'slate')
+    const what = se?.kind === 'anthology' ? (ko ? `${rows.length}편` : `${rows.length} ${rows.length === 1 ? 'story' : 'stories'}`) : (ko ? `${rows.length}개` : `${rows.length} ${rows.length === 1 ? 'unit' : 'units'}`)
     return (
-      <button key={pl.id + half} onClick={() => { setOpen(on ? null : pl.id); setPlacing(null); setCopying(null) }}
-        className={`inline-flex items-center gap-2 rounded px-2 py-1 text-left border ${on ? 'border-ink bg-paper-2' : 'border-rule hover:border-rule-2 bg-surface'} ${carries ? 'opacity-70' : ''}`}
-        style={{ borderLeft: `4px solid ${colorHex(se?.color || 'slate')}` }} title={label(pl)}>
-        <span className="font-display text-[18px] leading-none" style={{ color: colorHex(se?.color || 'slate') }}>{book?.level_number || '·'}</span>
-        <span className="min-w-0">
-          <span className="block text-[12px] font-medium text-ink truncate max-w-[180px]">{se?.name || '?'}{book?.title && book.title !== `${se?.name} ${book.level_number}`.trim() ? ` · ${book.title}` : ''}</span>
-          <span className={`block text-[10.5px] ${over ? 'text-bad' : 'text-ink-3'}`}>{what}{fit}{pl.term === 'year' ? (carries ? (ko ? ' · 이어짐' : ' · carries on') : (ko ? ' · 한 해' : ' · whole year')) : ''}</span>
+      <button key={pl.id} onClick={() => { setOpen(on ? null : pl.id); setPlacing(null); setCopying(null) }}
+        className={`w-full flex items-center gap-1.5 rounded px-1.5 py-1 text-left border ${on ? 'border-ink bg-paper-2' : 'border-rule hover:border-rule-2 bg-surface'}`} style={{ borderLeft: `3px solid ${color}` }} title={`${label(pl)} · ${TERM_LABEL[pl.term].en}`}>
+        <span className="font-display text-[15px] leading-none shrink-0" style={{ color }}>{book?.level_number || '·'}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[11.5px] font-medium text-ink truncate">{se?.name || '?'}</span>
+          <span className={`block text-[10px] ${over ? 'text-bad' : 'text-ink-3'}`}>{what}{over ? (ko ? ` · ${num(total - length)}주 초과` : ` · ${num(total - length)} wk over`) : ''}</span>
         </span>
+        <span className={`shrink-0 text-[9.5px] font-semibold px-1 rounded ${pl.term === 'year' ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-2'}`}>{TERM_TAG[pl.term]}</span>
       </button>
     )
   }
 
+  const opened = open ? masters.find(x => x.id === open) : undefined
   return (
     <div>
       <div className="flex items-end gap-3 flex-wrap mb-2">
         <label className="text-[11px] text-ink-3">{ko ? '학년도' : 'Year'}<br />
-          <select value={theYear} onChange={e => { setYear(e.target.value); setOpen(null); setPlacing(null) }} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
+          <select value={theYear} onChange={e => { setYear(e.target.value); setOpen(null); setPlacing(null); setCopying(null) }} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
         </label>
         <span className="text-[12px] text-ink-3 pb-2">{ko ? `봄 ${yw.spring.length}주 · 가을 ${yw.fall.length}주` : `Spring ${yw.spring.length} wk · Fall ${yw.fall.length} wk`} · {masters.length} {ko ? '개 배치' : masters.length === 1 ? 'placement' : 'placements'}</span>
       </div>
-      <div className="mb-5"><PeriodsLine year={theYear} /></div>
+      <div className="mb-4"><PeriodsLine year={theYear} /></div>
 
       <div className="border border-rule rounded overflow-hidden bg-surface">
-        <div className="grid text-[10.5px] uppercase tracking-wide text-ink-3 border-b border-rule" style={{ gridTemplateColumns: '150px 1fr 1fr 170px' }}>
-          <div className="px-3 py-2">{ko ? '반 · 학년' : 'Class · grade'}</div>
-          {HALVES.map(h => <div key={h} className="px-3 py-2 border-l border-rule">{ko ? TERM_LABEL[h].ko : TERM_LABEL[h].en}{h === 'spring' ? (ko ? ' · 1학기' : ' · first half') : (ko ? ' · 2학기' : ' · second half')}</div>)}
-          <div className="px-3 py-2 border-l border-rule" />
+        <div className="grid border-b border-rule text-[10.5px] uppercase tracking-wide text-ink-3" style={{ gridTemplateColumns: `130px repeat(${GRADES.length}, minmax(0, 1fr))` }}>
+          <div className="px-3 py-2">{ko ? '레벨' : 'Level'}</div>
+          {GRADES.map(g => <div key={g} className="px-2 py-2 border-l border-rule">{ko ? `${g}학년` : `Grade ${g}`}</div>)}
         </div>
-        {PLACED_ENGLISH_CLASSES.map(cls => {
-          const count = masters.filter(x => x.english_class === cls).length
-          const isCollapsed = !!collapsed[cls]
-          return (
-            <Fragment key={cls}>
-              <button onClick={() => setCollapsed(c => ({ ...c, [cls]: !c[cls] }))} className="w-full flex items-center gap-2 px-3 py-1.5 bg-paper-2 border-b border-rule text-left">
-                {isCollapsed ? <ChevronRight size={13} className="text-ink-3" /> : <ChevronDown size={13} className="text-ink-3" />}
-                <span className="w-2.5 h-2.5 rounded-full" style={{ background: classToColor(cls as any) }} />
-                <span className="text-[12.5px] font-semibold text-ink">{cls}</span>
-                <span className="text-[11px] text-ink-3">{count ? `${count} ${ko ? '개' : count === 1 ? 'placement' : 'placements'}` : (ko ? '아직 없음' : 'nothing placed yet')}</span>
-              </button>
-              {!isCollapsed && GRADES.map(grade => {
-                const key = rowKey(cls, grade)
-                const mine = masters.filter(x => x.english_class === cls && x.grade === grade)
-                const fall = mine.filter(x => x.term === 'fall' || x.term === 'year')
-                const spring = mine.filter(x => x.term === 'spring' || x.term === 'year')
-                const opened = mine.find(x => x.id === open)
-                return (
-                  <Fragment key={key}>
-                    <div className="grid border-b border-rule" style={{ gridTemplateColumns: '150px 1fr 1fr 170px' }}>
-                      <div className="px-3 py-2 text-[12.5px] text-ink-2 flex items-center">{ko ? `${grade}학년` : `Grade ${grade}`}</div>
-                      <div className="px-3 py-2 border-l border-rule flex flex-wrap gap-1.5 items-center min-h-[44px]">{spring.map(pl => chip(pl, 'spring'))}{!spring.length && <span className="text-[11px] text-ink-3">—</span>}</div>
-                      <div className="px-3 py-2 border-l border-rule flex flex-wrap gap-1.5 items-center min-h-[44px]">{fall.map(pl => chip(pl, 'fall'))}{!fall.length && <span className="text-[11px] text-ink-3">—</span>}</div>
-                      <div className="px-3 py-2 border-l border-rule flex gap-1.5 items-center justify-end">
-                        <button onClick={() => { setPlacing(placing === key ? null : key); setCopying(null); setOpen(null) }} className={`${btnS} ${placing === key ? 'bg-ink text-paper border-ink' : ''}`}><Plus size={11} />{ko ? '배치' : 'Place'}</button>
-                        <button onClick={() => { setCopying(copying === key ? null : key); setPlacing(null); setOpen(null) }} className={btnS} title={ko ? '다른 곳에서 복사' : 'Copy another grade’s placements here'}><Copy size={11} /></button>
-                      </div>
-                    </div>
-                    {placing === key && <div className="border-b border-rule bg-paper-2 px-3 py-3"><PlaceForm p={p} ko={ko} me={me} cls={cls} grade={grade} year={theYear} existing={mine} fail={fail} onDone={() => { setPlacing(null); p.reload() }} /></div>}
-                    {copying === key && <div className="border-b border-rule bg-paper-2 px-3 py-3"><CopyForm p={p} ko={ko} me={me} years={years} to={{ english_class: cls, grade, academic_year: theYear }} fail={fail} onDone={() => { setCopying(null); p.reload() }} /></div>}
-                    {opened && <div className="border-b border-rule bg-paper-2 px-3 py-3"><PlacementCard pl={opened} p={p} ko={ko} label={label(opened)} yw={yw} fail={fail} confirmDialog={confirmDialog} onRemoved={() => setOpen(null)} /></div>}
-                  </Fragment>
-                )
-              })}
-            </Fragment>
-          )
-        })}
+        {PLACED_ENGLISH_CLASSES.map(cls => (
+          <div key={cls} className="grid border-b border-rule last:border-b-0" style={{ gridTemplateColumns: `130px repeat(${GRADES.length}, minmax(0, 1fr))` }}>
+            <div className="px-3 py-2 flex items-start gap-2 pt-3">
+              <span className="w-2.5 h-2.5 rounded-full mt-1 shrink-0" style={{ background: classToColor(cls as any) }} />
+              <span className="text-[12.5px] font-semibold text-ink">{cls}</span>
+            </div>
+            {GRADES.map(grade => {
+              const key = rowKey(cls, grade)
+              const mine = masters.filter(x => x.english_class === cls && x.grade === grade).sort((a, b) => TERMS.indexOf(a.term) - TERMS.indexOf(b.term))
+              const active = activeKey === key
+              return (
+                <div key={key} className={`border-l border-rule p-1.5 flex flex-col gap-1 min-h-[64px] ${active ? 'bg-paper-2' : ''}`}>
+                  {mine.map(chip)}
+                  <div className="flex gap-1 mt-auto pt-0.5">
+                    <button onClick={() => { setPlacing(placing === key ? null : key); setCopying(null); setOpen(null) }} className={`h-6 px-1.5 rounded text-[10.5px] inline-flex items-center gap-1 ${placing === key ? 'bg-ink text-paper' : 'text-ink-3 hover:text-ink hover:bg-paper-2'}`}><Plus size={10} />{ko ? '배치' : 'Place'}</button>
+                    <button onClick={() => { setCopying(copying === key ? null : key); setPlacing(null); setOpen(null) }} className={`h-6 px-1.5 rounded text-[10.5px] inline-flex items-center ${copying === key ? 'bg-ink text-paper' : 'text-ink-3 hover:text-ink hover:bg-paper-2'}`} title={ko ? '다른 곳에서 복사' : 'Copy another grade\u2019s placements here'}><Copy size={10} /></button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ))}
       </div>
 
-      <p className="text-[11.5px] text-ink-3 mt-4 leading-relaxed">{ko ? '칩을 누르면 자세히 봅니다. 선집(Into Reading)은 고른 이야기의 목록이고 주 수는 학기에 맞춰 나뉩니다. 순서 교재는 단원마다 주 수를 둡니다.' : 'Click a chip for the detail. An anthology (Into Reading) is a reading list: the stories you picked, in order, with the term shared across them, no weeks to type. A sequence book has weeks per unit; Fit to term shares them evenly. Dropping a unit or story means this class skips it; it stays on the Bookshelf.'}</p>
+      {(placing || copying || opened) && (
+        <div className="mt-4 border border-rule-2 rounded bg-paper-2 p-3 flex flex-col gap-2">
+          <p className="text-[11px] uppercase tracking-wide text-ink-3">{(() => { const k = activeKey ? cellOf(activeKey) : null; return k ? `${k.cls} · ${ko ? `${k.grade}학년` : `Grade ${k.grade}`}` : '' })()}</p>
+          {placing && <PlaceForm p={p} ko={ko} me={me} cls={cellOf(placing).cls} grade={cellOf(placing).grade} year={theYear} existing={masters.filter(x => x.english_class === cellOf(placing).cls && x.grade === cellOf(placing).grade)} fail={fail} onDone={() => { setPlacing(null); p.reload() }} />}
+          {copying && <CopyForm p={p} ko={ko} me={me} years={years} to={{ english_class: cellOf(copying).cls, grade: cellOf(copying).grade, academic_year: theYear }} fail={fail} onDone={() => { setCopying(null); p.reload() }} />}
+          {opened && <PlacementCard pl={opened} p={p} ko={ko} label={label(opened)} yw={yw} fail={fail} confirmDialog={confirmDialog} onRemoved={() => setOpen(null)} />}
+        </div>
+      )}
+
+      <p className="text-[11.5px] text-ink-3 mt-4 leading-relaxed">{ko ? '칩을 누르면 자세히 봅니다. 배치는 고른 단원이나 이야기의 목록이고, 주 수는 학기에 맞춰 나뉩니다.' : 'Click a chip for its list. A placement is the units or stories a class chose, in order, with the term shared across them; pin a length only where one needs more or less. Sp and F are the spring and fall halves; Yr runs across both.'}</p>
     </div>
   )
 }
@@ -199,7 +193,7 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
                   return (
                     <tr key={b.pacing.id} className="border-t border-rule">
                       <td className="px-4 py-1.5 text-ink-3">{i + 1}</td>
-                      <td className="py-1.5"><span className="inline-flex items-center gap-2 min-w-0">{t.badge && !showGroups && <span className={badge}>{t.badge}</span>}{t.badge && showGroups && /^M\d+/i.test(t.badge) && <span className={badge}>{t.badge}</span>}<span className="text-ink">{t.name}</span>{!b.unit.confirmed_at && <span className="text-[10.5px] text-ink-3">{ko ? '미확인' : 'not confirmed'}</span>}</span></td>
+                      <td className="py-1.5"><span className="inline-flex items-center gap-2 min-w-0">{t.badge && !showGroups && <span className={badge}>{t.badge}</span>}{t.badge && showGroups && /^M\d+/i.test(t.badge) && <span className={badge}>{t.badge}</span>}<span className="text-ink">{t.name}</span></span></td>
                       <td className="py-1.5">
                         {fixing === b.pacing.id || isFixed ? (
                             <span className="inline-flex items-center gap-1">

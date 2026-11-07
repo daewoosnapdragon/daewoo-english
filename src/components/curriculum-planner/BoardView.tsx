@@ -8,27 +8,26 @@ import { getKSTDateString } from '@/lib/utils'
 import { teacherForClass } from '@/lib/classTeacher'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { STRANDS, STRAND_LABEL, bookName, parseTags, splitUnitTitle, type CurriculumLesson, type CurriculumUnit, type Strand } from '@/lib/curriculumCore'
-import { HALVES, TERM_LABEL, academicYears, anthologyProgress, barsForView, blockBars, boardLanes, halfOf, hasOwnPlan, holidayWeeks, lagWeeks, layoutPacing, masterRows, placementLength, projectAnthology, reflowTo, teacherRows, todayPosition, viewOffset, yearWeeks, type CurriculumBlock, type Half, type Lane } from '@/lib/curriculumPacing'
+import { TERM_LABEL, VIEWS, academicYears, anthologyProgress, applyPatches, barsForView, blockBars, boardLanes, freezeProjection, halfOf, hasOwnPlan, holidayWeeks, lagWeeks, layoutPacing, masterRows, placementLength, projectAnthology, reflowTo, teacherRows, teachingToColumns, termDates, todayPosition, viewOffset, viewWeeks, yearWeeks, type CurriculumBlock, type CurriculumPacing, type HolidayCounts, type Lane, type RowPatch, type View } from '@/lib/curriculumPacing'
 import { addOwnUnit, deleteBlock, dropOwnUnit, ensureOwnPlan, patchOwnRows, revertToMaster, saveBlock, setHere, setOwnDone, type BlockDraft } from '@/lib/curriculumPlanData'
-import { usePlanner } from './usePlanner'
-import PeriodsLine from './PeriodsLine'
-import WeekView from './WeekView'
 import { coverage, type LogRow } from '@/lib/curriculumWeek'
 import { fetchLogs } from '@/lib/curriculumWeekData'
 import { CCSS_DOMAINS } from '@/components/curriculum/ccss-standards'
+import { usePlanner } from './usePlanner'
+import PeriodsLine from './PeriodsLine'
+import WeekView from './WeekView'
 import { Check, ExternalLink, Flag, Loader2, Minus, Plus, Trash2, Undo2, X } from 'lucide-react'
 
 // ─── Class board ─────────────────────────────────────────────────
-// One class and grade for one half of the year, week by week. A row per
-// placed book, grouped by strand, each unit as a bar where the plan's weeks
-// put it, holidays hatched, today marked. Everyone can look at any class.
-// The class's teacher sees their own plan, which starts as the master and
-// becomes theirs the first time they change it: drag a bar to move it,
-// drag its right edge to make it longer, or open it and say "we're here".
-// A thin rail under each row shows the master; its ticks turn red where
-// this plan differs. "Our class" at the bottom holds the teacher's own
-// blocks, things from no book. Admin reads every plan and reviews the
-// differences on the Curriculum map.
+// One class and grade, week by week: a half of the year or the whole year
+// with the summer between. A row per placed book, grouped by strand, each
+// unit as a bar where the plan puts it. Holiday weeks from the school
+// calendar are hatched and do not count as teaching weeks, so a unit that
+// spans one is drawn across it. The class's own teacher drags bars to move
+// them, drags the right edge to stretch, clicks a unit for "we're here" or,
+// on a reading list, Done. The first drag pins every unit at its shared
+// length so the rest stop re-sharing. A thin rail under a row is the
+// master where the plan differs. "Our class" holds the teacher's blocks.
 
 const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink'
 const inp = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink w-full'
@@ -40,6 +39,7 @@ const fmtDay = (iso: string, ko: boolean) => new Date(iso + 'T12:00:00+09:00').t
 const num = (n: number) => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
 const ROW_H = 62
 const LABEL_W = 150
+const stickyLabel: React.CSSProperties = { width: LABEL_W, position: 'sticky', left: 0, zIndex: 4, background: 'rgb(var(--white))' }
 
 type Bar = Lane['bars'][number]
 interface Row { key: string; strand: Lane['strand']; first: boolean; bar0: Bar; bars: Bar[]; ticks: { at: number; off: boolean }[]; overBy: number; anthology: boolean; progress: string | null }
@@ -58,10 +58,11 @@ export default function BoardView() {
   const [grade, setGrade] = useState<number>(1)
   const [year, setYear] = useState<string>(activeSemester?.academic_year || '')
   const theYear = year || activeSemester?.academic_year || years[0] || ''
-  const [half, setHalf] = useState<Half | null>(null)
-  const view: Half = half || halfOf(semesters, theYear, today)
+  const [viewPick, setViewPick] = useState<View | null>(null)
+  const view: View = viewPick || halfOf(semesters, theYear, today)
+  const half = view === 'year' ? 'spring' : view
   const yw = useMemo(() => yearWeeks(semesters, theYear), [semesters, theYear])
-  const weeks = yw[view]
+  const weeks = useMemo(() => viewWeeks(yw, view), [yw, view])
   const N = weeks.length
   const [planMode, setPlanMode] = useState<'mine' | 'master'>('mine')
   const [away, setAway] = useState<AwayDay[]>([])
@@ -83,32 +84,54 @@ export default function BoardView() {
   const viewTeacher = planMode === 'mine' && plansOn ? planTeacherId : null
   const canEdit = isOwn && plansOn && planMode === 'mine' && N > 0
 
+  // Away days for the whole year, once; holiday weeks come from them per half.
   useEffect(() => {
-    if (!weeks.length) { setAway([]); return }
+    const s = termDates(semesters, theYear, 'spring'), f = termDates(semesters, theYear, 'fall')
+    const from = s.start || f.start, to = f.end || s.end
+    if (!from || !to) { setAway([]); return }
     let on = true
-    loadAwayDays(weeks[0].monday, weeks[weeks.length - 1].friday, grade).then(a => { if (on) setAway(a) })
+    loadAwayDays(from, to, grade).then(a => { if (on) setAway(a) })
     return () => { on = false }
-  }, [weeks, grade])
+  }, [semesters, theYear, grade])
   useEffect(() => { setPicked(null); setBlockForm(null); setWeekN(null); setHiCode(null) }, [cls, grade, theYear, view, planMode])
   const loadLogs = useMemo(() => () => { if (p.plansMissing) return; fetchLogs(cls, grade).then(setLogs) }, [cls, grade, p.plansMissing])
   useEffect(() => { loadLogs() }, [loadLogs])
 
+  const holSpring = useMemo(() => holidayWeeks(away, yw.spring), [away, yw.spring])
+  const holFall = useMemo(() => holidayWeeks(away, yw.fall), [away, yw.fall])
+  const hc: HolidayCounts = useMemo(() => ({ spring: holSpring.size, fall: holFall.size }), [holSpring, holFall])
+  // Holiday columns of this view, with their names.
+  const holidays = useMemo(() => {
+    const m = new Map<number, string>()
+    weeks.forEach(w => {
+      const h = w.half || half
+      const key = view === 'year' && h === 'fall' ? w.n - yw.spring.length : w.n
+      const name = (h === 'spring' ? holSpring : holFall).get(key)
+      if (name) m.set(w.n, name)
+    })
+    return m
+  }, [weeks, view, half, holSpring, holFall, yw.spring.length])
+  const holSet = useMemo(() => new Set(holidays.keys()), [holidays])
+  const toCols = useMemo(() => <T extends { viewStart: number; viewEnd: number }>(bars: T[]) => teachingToColumns(bars, holSet, N), [holSet, N])
+
   const placements = useMemo(() => p.placements.filter(x => x.english_class === cls && x.grade === grade && x.academic_year === theYear && x.is_master), [p.placements, cls, grade, theYear])
-  const lanes = useMemo(() => boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher), [placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher])
+  const lanes = useMemo(() => boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc), [placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc])
+  const todayPos = todayPosition(weeks, today)
   const rows = useMemo<Row[]>(() => {
     const out: Row[] = []
     for (const lane of lanes) {
       const byPl = new Map<string, Bar[]>()
       for (const b of lane.bars) { if (!byPl.has(b.placement.id)) byPl.set(b.placement.id, []); byPl.get(b.placement.id)!.push(b) }
       let first = true
-      Array.from(byPl.entries()).forEach(([key, bars]) => {
+      Array.from(byPl.entries()).forEach(([key, rawBars]) => {
+        const bars = toCols(rawBars)
         const pl = bars[0].placement
         const own = viewTeacher ? teacherRows(p.pacing, pl.id, viewTeacher) : []
         const anthology = bars[0].series?.kind === 'anthology'
-        const len = placementLength(pl.term, yw)
+        const len = placementLength(pl.term, yw, hc)
         const ticks: Row['ticks'] = []
-        if (own.length && !anthology) {
-          const mb = barsForView(layoutPacing(masterRows(p.pacing, pl.id), p.units), pl.term, view, yw)
+        if (own.length) {
+          const mb = toCols(barsForView(layoutPacing(projectAnthology(masterRows(p.pacing, pl.id), len), p.units), pl.term, view, yw, hc))
           for (const m of mb) {
             const t = bars.find(b => b.unit.id === m.unit.id)
             const offStart = !t || Math.abs(t.viewStart - m.viewStart) >= 0.5, offEnd = !t || Math.abs(t.viewEnd - m.viewEnd) >= 0.5
@@ -119,33 +142,29 @@ export default function BoardView() {
         const effective = own.length ? own : masterRows(p.pacing, pl.id)
         const all = layoutPacing(projectAnthology(effective, len), p.units)
         const last = all.length ? all[all.length - 1].end : 0
-        const offset = viewOffset(pl.term, view, yw)
-        const pos = todayPosition(weeks, today)
-        const progress = anthology ? anthologyProgress(effective, len, pos === null ? null : pos + offset).text : null
+        const progress = anthology ? anthologyProgress(effective, len, todayPos === null ? null : todayPos + viewOffset(pl.term, half, yw, hc)).text : null
         out.push({ key, strand: lane.strand, first, bar0: bars[0], bars, ticks, overBy: len && last > len + 0.01 ? Math.round((last - len) * 2) / 2 : 0, anthology, progress })
         first = false
       })
     }
     return out
-  }, [lanes, p.pacing, p.units, view, yw, viewTeacher, weeks, today])
-  const holidays = useMemo(() => holidayWeeks(away, weeks), [away, weeks])
-  const todayPos = todayPosition(weeks, today)
-  const blocks = useMemo(() => blockBars(p.blocks, cls, grade, theYear, view, viewTeacher, N), [p.blocks, cls, grade, theYear, view, viewTeacher, N])
+  }, [lanes, p.pacing, p.units, view, half, yw, viewTeacher, hc, toCols, todayPos])
+  const blocks = useMemo(() => toCols(blockBars(p.blocks, cls, grade, theYear, half, viewTeacher, N)), [p.blocks, cls, grade, theYear, half, viewTeacher, N, toCols])
   const pins = useMemo(() => {
-    if (!viewTeacher) return new Map<string, { week: number; lag: number; set_at: string }>()
     const m = new Map<string, { week: number; lag: number; set_at: string }>()
+    if (!viewTeacher) return m
     for (const r of rows) {
       const pl = r.bar0.placement
       const h = p.here.find(x => x.placement_id === pl.id && x.teacher_id === viewTeacher)
       if (!h) continue
-      const offset = viewOffset(pl.term, view, yw)
-      const wk = h.week - offset
+      const teaching = h.week - viewOffset(pl.term, half, yw, hc)
+      const wk = toCols([{ viewStart: teaching, viewEnd: teaching }])[0].viewStart
       if (wk < 1 || wk > N) continue
       m.set(pl.id, { week: wk, lag: lagWeeks(h, todayPos, weeks), set_at: h.set_at })
     }
     return m
-  }, [rows, p.here, viewTeacher, view, yw, N, todayPos, weeks])
-  // Standards: every code on a unit or lesson in this plan, and how many lessons with it were imported and done.
+  }, [rows, p.here, viewTeacher, half, yw, hc, N, todayPos, weeks, toCols])
+  const review = useMemo(() => isOwn && viewTeacher ? p.reviews.filter(r => r.teacher_id === viewTeacher && placements.some(pl => pl.id === r.placement_id) && r.comment) : [], [p.reviews, isOwn, viewTeacher, placements])
   const standards = useMemo(() => {
     const inPlan = new Set<string>()
     for (const r of rows) for (const b of r.bars) { b.unit.ccss_codes.forEach(c => inPlan.add(c)); p.lessons.filter(l => l.unit_id === b.unit.id).forEach(l => l.ccss_codes.forEach(c => inPlan.add(c))) }
@@ -154,39 +173,67 @@ export default function BoardView() {
     return CCSS_DOMAINS.map(d => ({ key: d.key, label: d.label, codes: codes.filter(c => c.startsWith(d.key + '.')).map(c => ({ code: c, inPlan: inPlan.has(c), taught: cov.get(c)?.taught || 0, planned: cov.get(c)?.planned || 0 })) })).filter(d => d.codes.length)
   }, [rows, p.lessons, logs])
   const unitHas = (u: CurriculumUnit, code: string) => u.ccss_codes.includes(code) || p.lessons.some(l => l.unit_id === u.id && l.ccss_codes.includes(code))
-  const review = useMemo(() => isOwn && viewTeacher ? p.reviews.filter(r => r.teacher_id === viewTeacher && placements.some(pl => pl.id === r.placement_id) && r.comment) : [], [p.reviews, isOwn, viewTeacher, placements])
   const fail = (e: string | null) => { if (e) showToast(e); return !!e }
 
   // ── Editing ──
-  const offsetOf = (b: Bar) => viewOffset(b.placement.term, view, yw)
-  const own = async (b: Bar) => { setBusy(true); const r = await ensureOwnPlan(p.pacing, b.placement.id, currentTeacher!.id); if (r.error) { setBusy(false); fail(r.error) }; return r }
+  const lengthOf = (b: Bar) => placementLength(b.placement.term, yw, hc)
+  const label = (b: Bar) => `${bookName(b.book, b.series)} · ${b.unit.title}`
+  /** The teacher's rows, frozen at their shared lengths the first time anything is dragged. */
+  const own = async (b: Bar): Promise<{ rows: CurriculumPacing[]; pre: RowPatch[]; error: string | null }> => {
+    setBusy(true)
+    const r = await ensureOwnPlan(p.pacing, b.placement.id, currentTeacher!.id)
+    if (r.error) { setBusy(false); fail(r.error); return { rows: [], pre: [], error: r.error } }
+    const pre = freezeProjection(r.rows, lengthOf(b))
+    return { rows: applyPatches(r.rows, pre), pre, error: null }
+  }
   const moveTo = async (b: Bar, targetStart: number, pin = false) => {
     const r = await own(b); if (r.error) return
-    const patches = reflowTo(r.rows, p.units, b.unit.id, targetStart)
-    const label = `${bookName(b.book, b.series)} · ${b.unit.title}`
-    if (patches.length && fail(await patchOwnRows(patches, label))) { setBusy(false); return }
-    if (pin && fail(await setHere(b.placement.id, currentTeacher!.id, b.unit.id, targetStart, '', label))) { setBusy(false); return }
+    const patches = [...r.pre, ...reflowTo(r.rows, p.units, b.unit.id, targetStart)]
+    if (patches.length && fail(await patchOwnRows(patches, label(b)))) { setBusy(false); return }
+    if (pin && fail(await setHere(b.placement.id, currentTeacher!.id, b.unit.id, targetStart, '', label(b)))) { setBusy(false); return }
     await p.reload(); setBusy(false); setPicked(null)
   }
   const resize = async (b: Bar, weeksNew: number) => {
     const r = await own(b); if (r.error) return
     const mine = r.rows.find(x => x.unit_id === b.unit.id)
-    if (mine && !fail(await patchOwnRows([{ id: mine.id, weeks: Math.max(0.5, weeksNew), fixed: true }], `${bookName(b.book, b.series)} · ${b.unit.title}`))) { await p.reload() }
+    const patches = [...r.pre.filter(x => x.id !== mine?.id), ...(mine ? [{ id: mine.id, weeks: Math.max(0.5, weeksNew), fixed: true }] : [])]
+    if (!fail(await patchOwnRows(patches, label(b)))) await p.reload()
     setBusy(false)
   }
+  /** Today's column as a teaching week of the placement. */
+  const todayTeaching = (b: Bar) => {
+    if (todayPos === null) return null
+    const col = Math.floor(todayPos)
+    const teaching = col - Array.from(holSet).filter(h => h < col).length
+    const fallShift = view === 'year' && b.placement.term === 'fall' ? yw.spring.length - hc.spring : 0
+    return teaching - fallShift + viewOffset(b.placement.term, half, yw, hc)
+  }
   const hereNow = async (b: Bar) => {
-    if (todayPos === null) { showToast(ko ? '오늘이 이 학기 밖입니다' : 'Today is outside this half of the year'); return }
-    await moveTo(b, Math.floor(todayPos) + offsetOf(b), true)
+    const t = todayTeaching(b)
+    if (t === null) { showToast(ko ? '오늘이 이 기간 밖입니다' : 'Today is outside this view'); return }
+    await moveTo(b, t, true)
+  }
+  const tickDone = async (b: Bar, done: boolean) => {
+    setBusy(true)
+    const r = await ensureOwnPlan(p.pacing, b.placement.id, currentTeacher!.id)
+    if (r.error) { setBusy(false); fail(r.error); return }
+    const mine = r.rows.find(x => x.unit_id === b.unit.id)
+    if (mine && !fail(await setOwnDone(mine.id, done, label(b)))) await p.reload()
+    setBusy(false)
   }
   const dropUnit = async (b: Bar) => {
-    if (!await confirmDialog({ title: ko ? '단원 빼기' : 'Skip this unit', message: ko ? `${b.unit.title}을(를) 내 계획에서 뺍니다.` : `${b.unit.title} comes out of your plan. The master keeps it, and you can add it back.`, confirmLabel: ko ? '빼기' : 'Skip' })) return
-    const r = await own(b); if (r.error) return
+    if (!await confirmDialog({ title: ko ? '건너뛰기' : 'Skip this one', message: ko ? `${b.unit.title}을(를) 내 계획에서 뺍니다.` : `${splitUnitTitle(b.unit.title).name} comes out of your plan. The master keeps it, and you can add it back.`, confirmLabel: ko ? '빼기' : 'Skip' })) return
+    setBusy(true)
+    const r = await ensureOwnPlan(p.pacing, b.placement.id, currentTeacher!.id)
+    if (r.error) { setBusy(false); fail(r.error); return }
     const mine = r.rows.find(x => x.unit_id === b.unit.id)
     if (mine && !fail(await dropOwnUnit(mine.id, b.unit.title))) await p.reload()
     setBusy(false); setPicked(null)
   }
   const addBack = async (b: Bar, unit: CurriculumUnit) => {
-    const r = await own(b); if (r.error) return
+    setBusy(true)
+    const r = await ensureOwnPlan(p.pacing, b.placement.id, currentTeacher!.id)
+    if (r.error) { setBusy(false); fail(r.error); return }
     if (!fail(await addOwnUnit(b.placement.id, currentTeacher!.id, unit, r.rows.reduce((m, x) => Math.max(m, x.sort_order), 0), unit.title))) await p.reload()
     setBusy(false)
   }
@@ -198,15 +245,8 @@ export default function BoardView() {
   }
 
   // ── Drag ──
-  const isAnthology = (b: Bar) => b.series?.kind === 'anthology'
-  const tickDone = async (b: Bar, done: boolean) => {
-    const r = await own(b); if (r.error) return
-    const mine = r.rows.find(x => x.unit_id === b.unit.id)
-    if (mine && !fail(await setOwnDone(mine.id, done, `${bookName(b.book, b.series)} · ${b.unit.title}`))) await p.reload()
-    setBusy(false)
-  }
   const startDrag = (e: React.PointerEvent, b: Bar, mode: 'move' | 'resize') => {
-    if (!canEdit || busy || !areaRef.current || isAnthology(b)) return
+    if (!canEdit || busy || !areaRef.current) return
     e.preventDefault(); e.stopPropagation()
     const colW = areaRef.current.getBoundingClientRect().width / N
     dragRef.current = { bar: b, mode, x0: e.clientX, colW }
@@ -224,7 +264,7 @@ export default function BoardView() {
     window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
   }
   const previewStyle = (b: Bar): React.CSSProperties => {
-    if (!drag || drag.id !== b.pacing.id || !areaRef.current) return {}
+    if (!drag || drag.id !== b.pacing.id) return {}
     if (drag.mode === 'move') return { transform: `translateX(${drag.dx}px)`, opacity: 0.85, zIndex: 5 }
     return { width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px + ${drag.dx}px)`, zIndex: 5 }
   }
@@ -234,6 +274,11 @@ export default function BoardView() {
 
   const lagLines = rows.map(r => ({ r, pin: pins.get(r.bar0.placement.id) })).filter(x => x.pin && x.pin.lag >= 0.5)
   const overRows = rows.filter(r => r.overBy > 0)
+  const colMin = view === 'year' ? 40 : 64
+  const summerAt = view === 'year' ? weeks.findIndex(w => w.half === 'fall') : -1
+  const viewLabel = (v: View) => v === 'year' ? (ko ? '한 해' : 'Year') : (ko ? TERM_LABEL[v].ko : TERM_LABEL[v].en)
+  const rangeText = N ? `${N} ${ko ? '주' : 'weeks'} · ${fmtDay(weeks[0].monday, ko)} – ${fmtDay(weeks[N - 1].friday, ko)}${holidays.size ? ` · ${holidays.size} ${ko ? '쉬는 주' : holidays.size === 1 ? 'holiday week' : 'holiday weeks'}` : ''}` : (ko ? '이 기간의 날짜가 없습니다' : 'No weeks for this view yet')
+  const weekLabel = (w: typeof weeks[number]) => view === 'year' ? (w.half === 'fall' ? `F${w.n - yw.spring.length}` : `S${w.n}`) : `W${w.n}`
 
   return (
     <div>
@@ -248,7 +293,7 @@ export default function BoardView() {
           <select value={theYear} onChange={e => setYear(e.target.value)} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
         </label>
         <div role="group" className="inline-flex rounded border border-rule-2 overflow-hidden">
-          {HALVES.map(h => <button key={h} onClick={() => setHalf(h)} className={`h-8 px-3 text-[12.5px] ${view === h ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{ko ? TERM_LABEL[h].ko : TERM_LABEL[h].en}</button>)}
+          {VIEWS.map((v, i) => <button key={v} onClick={() => setViewPick(v)} className={`h-8 px-3 text-[12.5px] ${i ? 'border-l border-rule-2' : ''} ${view === v ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{viewLabel(v)}</button>)}
         </div>
         {plansOn && (
           <div role="group" className="inline-flex rounded border border-rule-2 overflow-hidden">
@@ -256,7 +301,7 @@ export default function BoardView() {
             <button onClick={() => setPlanMode('master')} className={`h-8 px-3 text-[12.5px] border-l border-rule-2 ${planMode === 'master' ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink'}`}>{ko ? '마스터' : 'Master'}</button>
           </div>
         )}
-        <span className="text-[12px] text-ink-3 pb-2">{N ? `${N} ${ko ? '주' : 'weeks'} · ${fmtDay(weeks[0].monday, ko)} – ${fmtDay(weeks[N - 1].friday, ko)}` : (ko ? '이 학기의 날짜가 없습니다' : 'No weeks for this half yet')}</span>
+        <span className="text-[12px] text-ink-3 pb-2">{rangeText}</span>
       </div>
       {(isAdmin || !N) && <div className="mb-3"><PeriodsLine year={theYear} /></div>}
       {p.plansMissing && isAdmin && <p className="text-[12px] text-warn mb-3">{ko ? 'supabase/migration-curriculum-teacher-plans.sql을 실행하면 교사 계획, 핀, 블록이 켜집니다.' : 'Run supabase/migration-curriculum-teacher-plans.sql to turn on teachers’ own plans, pins and blocks.'}</p>}
@@ -264,14 +309,14 @@ export default function BoardView() {
       {(lagLines.length > 0 || overRows.length > 0 || review.length > 0 || rows.some(r => r.anthology && r.progress)) && (
         <div className="flex flex-wrap gap-2 mb-3">
           {rows.filter(r => r.anthology && r.progress).map(r => <span key={r.key + 'p'} className="inline-flex items-center gap-1.5 text-[12px] text-ink-2 bg-paper-2 px-2.5 py-1 rounded"><span className="w-2 h-2 rounded-sm" style={{ background: r.bar0.color }} />{r.bar0.series?.name} {r.bar0.book.level_number}: {r.progress}</span>)}
-          {lagLines.map(({ r, pin }) => <span key={r.key} className="inline-flex items-center gap-1.5 text-[12px] text-ink-2 bg-paper-2 px-2.5 py-1 rounded"><Flag size={11} className="text-accent" />{r.bar0.series?.name} {r.bar0.book.level_number}: {num(pin!.lag)} {ko ? '주 뒤처짐 (핀 기준)' : `wk since you said "we’re here"`}</span>)}
+          {lagLines.map(({ r, pin }) => <span key={r.key} className="inline-flex items-center gap-1.5 text-[12px] text-ink-2 bg-paper-2 px-2.5 py-1 rounded"><Flag size={11} className="text-accent" />{r.bar0.series?.name} {r.bar0.book.level_number}: {num(pin!.lag)} {ko ? '주 전 핀' : `wk since "we’re here"`}</span>)}
           {overRows.map(r => <span key={r.key} className="inline-flex items-center gap-1.5 text-[12px] text-bad bg-bad-soft px-2.5 py-1 rounded">{r.bar0.series?.name} {r.bar0.book.level_number}: {ko ? `학기보다 ${num(r.overBy)}주 김` : `runs ${num(r.overBy)} wk past the term`}</span>)}
           {review.map(rv => <span key={rv.id} className="inline-flex items-center gap-1.5 text-[12px] text-ink bg-accent-soft px-2.5 py-1 rounded" title={rv.seen_at ? fmtDay(rv.seen_at.slice(0, 10), ko) : ''}>{ko ? '관리자' : 'From admin'}: {rv.comment}</span>)}
         </div>
       )}
 
       {N > 0 && rows.length === 0 && (
-        <p className="text-[12.5px] text-ink-3 mb-4 mt-2">{ko ? '이 반, 학년, 학기에 배치된 책이 없습니다.' : `Nothing placed for ${cls} Grade ${grade} this ${view}.`}{isAdmin && <> {ko ? '교육과정 지도에서 책을 놓으세요.' : 'Place books on the Curriculum map.'}</>}</p>
+        <p className="text-[12.5px] text-ink-3 mb-4 mt-2">{ko ? '이 반, 학년, 기간에 배치된 책이 없습니다.' : `Nothing placed for ${cls} Grade ${grade} in this view.`}{isAdmin && <> {ko ? '교육과정 지도에서 책을 놓으세요.' : 'Place books on the Curriculum map.'}</>}</p>
       )}
 
       {N > 0 && weekN !== null && weeks[weekN - 1] && currentTeacher && (
@@ -281,17 +326,17 @@ export default function BoardView() {
         <div className="flex gap-5 items-start flex-wrap mt-2">
           <div className="flex-[999_1_640px] min-w-0 border border-rule rounded overflow-hidden bg-surface">
             <div className="overflow-x-auto">
-              <div style={{ minWidth: LABEL_W + N * 64 }}>
+              <div style={{ minWidth: LABEL_W + N * colMin }}>
                 {/* Week header */}
                 <div className="flex border-b border-rule">
-                  <div className="shrink-0 px-3 py-2 text-[10.5px] uppercase tracking-wide text-ink-3 self-end" style={{ width: LABEL_W }}>{ko ? '영역 · 책' : 'Strand · book'}</div>
+                  <div className="shrink-0 px-3 py-2 text-[10.5px] uppercase tracking-wide text-ink-3 self-end border-r border-rule" style={stickyLabel}>{ko ? '영역 · 책' : 'Strand · book'}</div>
                   <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${N}, minmax(0, 1fr))` }}>
-                    {weeks.map(w => {
+                    {weeks.map((w, i) => {
                       const hol = holidays.get(w.n)
                       const isNow = todayPos !== null && Math.floor(todayPos) === w.n
                       return (
-                        <button key={w.n} onClick={() => setWeekN(w.n)} className={`border-l border-rule px-0.5 py-1.5 text-center hover:bg-paper-2 ${isNow ? 'bg-accent-soft' : hol ? 'bg-paper-2' : ''}`} title={(hol ? hol + ' · ' : '') + (ko ? '이 주 열기' : 'Open this week')}>
-                          <div className={`text-[11.5px] font-semibold ${isNow ? 'text-accent' : 'text-ink'}`}>W{w.n}</div>
+                        <button key={w.n} onClick={() => setWeekN(w.n)} className={`px-0.5 py-1.5 text-center hover:bg-paper-2 ${i === summerAt ? 'border-l-[3px] border-ink-3' : 'border-l border-rule'} ${isNow ? 'bg-accent-soft' : hol ? 'bg-paper-2' : ''}`} title={(hol ? hol + ' · ' : '') + (ko ? '이 주 열기' : 'Open this week')}>
+                          <div className={`text-[11px] font-semibold ${isNow ? 'text-accent' : 'text-ink'}`}>{weekLabel(w)}</div>
                           <div className="text-[9.5px] text-ink-3 truncate">{hol ? hol : fmtDay(w.monday, ko)}</div>
                         </button>
                       )
@@ -299,12 +344,12 @@ export default function BoardView() {
                   </div>
                 </div>
                 {/* Rows */}
-                <div className="relative" ref={areaRef as any}>
-                  {rows.map(r => {
+                <div className="relative">
+                  {rows.map((r, ri) => {
                     const pin = pins.get(r.bar0.placement.id)
                     return (
                       <div key={r.key} className={`flex ${r.first ? 'border-t border-rule-2' : 'border-t border-rule'} first:border-t-0`} style={{ height: ROW_H }}>
-                        <div className="shrink-0 px-3 flex flex-col justify-center border-r border-rule gap-0.5" style={{ width: LABEL_W }}>
+                        <div className="shrink-0 px-3 flex flex-col justify-center border-r border-rule gap-0.5" style={stickyLabel}>
                           {r.first && <span className="text-[9.5px] uppercase tracking-wide text-ink-3">{ko ? STRAND_LABEL[r.strand].ko : STRAND_LABEL[r.strand].en}</span>}
                           <span className="flex items-center gap-1.5 min-w-0">
                             <span className="font-display text-[17px] leading-none" style={{ color: r.bar0.color }}>{r.bar0.book.level_number || '·'}</span>
@@ -312,9 +357,9 @@ export default function BoardView() {
                           </span>
                           {r.ticks.length > 0 && <span className="text-[9.5px] text-ink-3">{r.ticks.some(t => t.off) ? (ko ? '마스터와 다름' : 'differs from master') : (ko ? '마스터와 같음' : 'same as master')}</span>}
                         </div>
-                        <div className="flex-1 relative" style={{ backgroundImage: 'linear-gradient(90deg, rgb(var(--rule)) 1px, transparent 1px)', backgroundSize: `${100 / N}% 100%` }}>
+                        <div className="flex-1 relative" ref={ri === 0 ? areaRef : undefined} style={{ backgroundImage: 'linear-gradient(90deg, rgb(var(--rule)) 1px, transparent 1px)', backgroundSize: `${100 / N}% 100%` }}>
                           {Array.from(holidays.keys()).map(n => <div key={n} className="absolute inset-y-0 pointer-events-none" style={{ left: `${(n - 1) / N * 100}%`, width: `${100 / N}%`, backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--paper-3)) 0 3px, transparent 3px 7px)' }} />)}
-                          {/* master rail */}
+                          {summerAt > 0 && <div className="absolute inset-y-0 pointer-events-none border-l-[3px] border-ink-3" style={{ left: `${summerAt / N * 100}%` }} />}
                           {r.ticks.length > 0 && <>
                             <div className="absolute left-0 right-0 pointer-events-none" style={{ bottom: 5, height: 2, background: 'rgb(var(--rule-2))' }} />
                             {r.ticks.map((t, i) => <div key={i} className="absolute pointer-events-none" style={{ left: `calc(${t.at / N * 100}% - 1px)`, bottom: 2, width: 2, height: 9, background: t.off ? 'rgb(var(--accent))' : 'rgb(var(--ink-3))' }} />)}
@@ -322,18 +367,19 @@ export default function BoardView() {
                           {r.bars.map(b => {
                             const on = picked?.pacing.id === b.pacing.id
                             const t = splitUnitTitle(b.unit.title)
+                            const open = r.anthology && !b.pacing.done_at
                             return (
                               <button key={b.pacing.id} onPointerDown={e => startDrag(e, b, 'move')} onClick={() => { if (drag?.moved) return; setPicked(on ? null : b) }} title={`${b.unit.title} · ${ko ? '주' : 'wk'} ${num(b.viewStart)}–${num(b.viewEnd)}`}
-                                className={`absolute text-left px-2 flex flex-col justify-center overflow-hidden select-none ${b.cutLeft ? 'rounded-l-none' : 'rounded-l'} ${b.cutRight ? 'rounded-r-none' : 'rounded-r'} ${on ? 'ring-2 ring-ink ring-offset-1 ring-offset-surface' : ''} ${canEdit && !r.anthology ? 'cursor-grab active:cursor-grabbing' : ''} ${r.anthology && !b.pacing.done_at ? 'text-ink' : 'text-white'}`}
-                                style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - (r.ticks.length ? 24 : 16), background: r.anthology && !b.pacing.done_at ? `${b.color}33` : b.color, boxShadow: r.anthology && !b.pacing.done_at ? `inset 0 0 0 2px ${b.color}` : undefined, opacity: hiCode ? (unitHas(b.unit, hiCode) ? 1 : 0.25) : (b.unit.confirmed_at ? 1 : 0.82), touchAction: 'none', ...previewStyle(b) }}>
+                                className={`absolute text-left px-2 flex flex-col justify-center overflow-hidden select-none ${b.cutLeft ? 'rounded-l-none' : 'rounded-l'} ${b.cutRight ? 'rounded-r-none' : 'rounded-r'} ${on ? 'ring-2 ring-ink ring-offset-1 ring-offset-surface' : ''} ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${open ? 'text-ink' : 'text-white'}`}
+                                style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - (r.ticks.length ? 24 : 16), background: open ? `${b.color}33` : b.color, boxShadow: open ? `inset 0 0 0 2px ${b.color}` : undefined, opacity: hiCode ? (unitHas(b.unit, hiCode) ? 1 : 0.25) : 1, touchAction: 'none', ...previewStyle(b) }}>
                                 <span className="block text-[11.5px] font-semibold leading-tight truncate">{b.pacing.done_at ? '✓ ' : ''}{t.name}</span>
-                                <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}{!b.unit.confirmed_at ? (ko ? ' · 미확인' : ' · not confirmed') : ''}</span>
-                                {canEdit && !r.anthology && !b.cutRight && <span onPointerDown={e => startDrag(e, b, 'resize')} className="absolute top-0 bottom-0 right-0 w-2.5 cursor-ew-resize hover:bg-white/25" aria-hidden="true" />}
+                                <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}</span>
+                                {canEdit && !b.cutRight && <span onPointerDown={e => startDrag(e, b, 'resize')} className="absolute top-0 bottom-0 right-0 w-2.5 cursor-ew-resize hover:bg-white/25" aria-hidden="true" />}
                               </button>
                             )
                           })}
                           {pin && (
-                            <div className="absolute top-0 pointer-events-none" style={{ left: `${(pin.week - 1) / N * 100}%` }} title={ko ? `핀: ${fmtDay(pin.set_at.slice(0, 10), ko)}` : `Pinned ${fmtDay(pin.set_at.slice(0, 10), ko)}`}>
+                            <div className="absolute top-0 pointer-events-none" style={{ left: `${(pin.week - 1) / N * 100}%` }}>
                               <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-accent -translate-x-1/2" />
                               {pin.lag >= 0.5 && todayPos !== null && <div className="absolute top-[3px] border-t-2 border-dotted border-accent opacity-80" style={{ left: 0, width: `calc(${(todayPos - pin.week) / N * 100}% )` }} />}
                             </div>
@@ -345,12 +391,12 @@ export default function BoardView() {
                   {/* Our class: blocks */}
                   {(blocks.length > 0 || canEdit) && (
                     <div className="flex border-t border-rule-2" style={{ height: ROW_H }}>
-                      <div className="shrink-0 px-3 flex flex-col justify-center border-r border-rule gap-0.5" style={{ width: LABEL_W }}>
+                      <div className="shrink-0 px-3 flex flex-col justify-center border-r border-rule gap-0.5" style={stickyLabel}>
                         <span className="text-[9.5px] uppercase tracking-wide text-ink-3">{ko ? '우리 반' : 'Our class'}</span>
                         <span className="text-[12px] font-medium text-ink">{ko ? '자체 블록' : 'Own blocks'}</span>
                         {canEdit && <button onClick={() => setBlockForm('new')} className="text-[11px] text-accent text-left inline-flex items-center gap-1"><Plus size={10} />{ko ? '블록 추가' : 'Add a block'}</button>}
                       </div>
-                      <div className="flex-1 relative" style={{ backgroundImage: 'linear-gradient(90deg, rgb(var(--rule)) 1px, transparent 1px)', backgroundSize: `${100 / N}% 100%` }}>
+                      <div className="flex-1 relative" ref={rows.length === 0 ? areaRef : undefined} style={{ backgroundImage: 'linear-gradient(90deg, rgb(var(--rule)) 1px, transparent 1px)', backgroundSize: `${100 / N}% 100%` }}>
                         {blocks.map(b => (
                           <button key={b.id} onClick={() => canEdit && setBlockForm(b)} title={b.title}
                             className="absolute text-left px-2 flex flex-col justify-center overflow-hidden rounded border-[1.5px] border-dashed border-ink-3 bg-paper text-ink"
@@ -363,7 +409,7 @@ export default function BoardView() {
                     </div>
                   )}
                   {todayPos !== null && (rows.length > 0 || blocks.length > 0 || canEdit) && (
-                    <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `calc(${LABEL_W}px + (100% - ${LABEL_W}px) * ${(todayPos - 1) / N})` }}>
+                    <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `calc(${LABEL_W}px + (100% - ${LABEL_W}px) * ${(todayPos - 1) / N})`, zIndex: 3 }}>
                       <div className="w-[2px] h-full bg-accent" />
                       <div className="absolute -top-0 left-1/2 -translate-x-1/2 bg-accent text-white text-[9.5px] font-semibold px-1.5 rounded-b">{ko ? '오늘' : 'today'}</div>
                     </div>
@@ -386,7 +432,7 @@ export default function BoardView() {
                       <span className="w-[104px] shrink-0 text-ink-3 truncate pt-0.5" title={d.label}>{d.key} · {d.label}</span>
                       <span className="flex flex-wrap gap-1">
                         {d.codes.map(c => (
-                          <button key={c.code} onClick={() => setHiCode(hiCode === c.code ? null : c.code)} title={`${c.code}: ${c.taught} ${ko ? '가르침' : 'taught'}, ${c.planned} ${ko ? '날짜에 들어감' : 'in a day'}${c.inPlan ? '' : (ko ? ', 이 계획에 없음' : ', not in this plan')}`}
+                          <button key={c.code} onClick={() => setHiCode(hiCode === c.code ? null : c.code)} title={`${c.code}: ${c.taught} ${ko ? '가르침' : 'taught'}, ${c.planned} ${ko ? '날짜에 들어감' : 'in a day'}`}
                             className={`h-5 px-1.5 rounded text-[10px] font-semibold tabular-nums ${c.taught ? 'bg-ink-2 text-paper' : c.inPlan ? 'border-[1.5px] border-ink-2 text-ink-2' : 'border border-rule-2 text-ink-3'} ${hiCode === c.code ? 'ring-2 ring-accent' : ''}`}>{c.code.replace(/^(RL|RI|RF|W|SL|L)\./, '')}{c.taught ? ` ·${c.taught}` : ''}</button>
                         ))}
                       </span>
@@ -396,17 +442,17 @@ export default function BoardView() {
               </div>
             )}
             <div className="px-3 py-2 text-[11px] text-ink-3 border-t border-rule flex gap-4 flex-wrap">
-              <span>{ko ? '빗금: 쉬는 주 · 주 번호를 누르면 그 주를 엽니다' : 'Hatched: a holiday week · click a week number to open it'}</span>
-              {canEdit ? <span>{ko ? '막대를 끌어 옮기고, 오른쪽 끝을 끌어 늘리세요. 막대를 눌러 "여기까지 왔어요"를 표시하세요.' : 'Drag a unit to move it, drag its right edge to make it longer, click it to say "we’re here". Open stories are a reading list: click one to tick it done. The rail under a row is the master; red ticks are where yours differs.'}</span> : <span>{ko ? '막대 클릭: 단원의 차시와 자료' : 'Click a bar for the unit’s lessons and files'}</span>}
+              <span>{ko ? '빗금: 학교 달력의 쉬는 주, 수업 주로 세지 않음 · 주 번호를 누르면 그 주를 엽니다' : 'Hatched: a holiday week from the school calendar, not counted as teaching · click a week number to open it'}</span>
+              {canEdit ? <span>{ko ? '막대를 끌어 옮기고, 오른쪽 끝을 끌어 늘리세요. 처음 끌면 모든 단원의 길이가 고정됩니다.' : 'Drag a bar to move it, drag its right edge to stretch it. The first drag pins every unit at its current length so the others stay put.'}</span> : <span>{ko ? '막대 클릭: 단원의 차시와 자료' : 'Click a bar for the unit’s lessons and files'}</span>}
               <span className="ml-auto">{viewTeacher ? (isOwn ? (ko ? '내 계획' : 'Your plan') : (ko ? '교사 계획 · 읽기 전용' : 'The teacher’s plan · read-only')) : (ko ? '마스터 계획 · 읽기 전용' : 'The master plan · read-only')}</span>
             </div>
           </div>
-          {picked && <UnitPanel b={picked} anthology={isAnthology(picked)} onDone={d => tickDone(picked, d)} lessons={p.lessons.filter(l => l.unit_id === picked.unit.id).sort((a, b) => a.sort_order - b.sort_order)} resources={p.resources} ko={ko} busy={busy} canEdit={canEdit} ownPlan={!!viewTeacher && hasOwnPlan(p.pacing, picked.placement.id, viewTeacher)} todayWeek={todayPos !== null ? Math.floor(todayPos) : null}
+          {picked && <UnitPanel b={picked} anthology={picked.series?.kind === 'anthology'} onDone={d => tickDone(picked, d)} lessons={p.lessons.filter(l => l.unit_id === picked.unit.id).sort((a, b) => a.sort_order - b.sort_order)} resources={p.resources} ko={ko} busy={busy} canEdit={canEdit} ownPlan={!!viewTeacher && hasOwnPlan(p.pacing, picked.placement.id, viewTeacher)} todayWeek={todayPos !== null ? Math.floor(todayPos) : null}
             missing={p.units.filter(u => u.book_id === picked.book.id && !(viewTeacher ? teacherRows(p.pacing, picked.placement.id, viewTeacher) : masterRows(p.pacing, picked.placement.id)).some(r => r.unit_id === u.id)).sort((a, b) => a.sort_order - b.sort_order)}
             onClose={() => setPicked(null)} onHere={() => hereNow(picked)} onShift={d => moveTo(picked, picked.start + d)} onWeeks={w => resize(picked, w)} onDrop={() => dropUnit(picked)} onAddBack={u => addBack(picked, u)} onBack={() => backToMaster(picked)} />}
           {blockForm && canEdit && currentTeacher && (
             <BlockForm initial={blockForm === 'new' ? null : blockForm} ko={ko} n={N} todayWeek={todayPos !== null ? Math.floor(todayPos) : 1} onCancel={() => setBlockForm(null)}
-              onSave={async d => { const e = await saveBlock(blockForm === 'new' ? null : blockForm.id, { teacher_id: currentTeacher.id, english_class: cls, grade, academic_year: theYear, term: view }, d); if (!fail(e)) { setBlockForm(null); p.reload() } }}
+              onSave={async d => { const e = await saveBlock(blockForm === 'new' ? null : blockForm.id, { teacher_id: currentTeacher.id, english_class: cls, grade, academic_year: theYear, term: half }, d); if (!fail(e)) { setBlockForm(null); p.reload() } }}
               onDelete={blockForm === 'new' ? undefined : async () => { if (!fail(await deleteBlock(blockForm))) { setBlockForm(null); p.reload() } }} />
           )}
         </div>
@@ -426,35 +472,30 @@ function UnitPanel({ b, lessons, resources, ko, busy, canEdit, ownPlan, todayWee
   const unitRes = resources.filter(r => r.unit_id === unit.id)
   const t = splitUnitTitle(unit.title)
   const [adding, setAdding] = useState('')
+  const noun = anthology ? (ko ? '이야기' : 'story') : (ko ? '단원' : 'unit')
   return (
     <aside className="flex-[1_1_300px] max-w-[380px] border border-rule-2 rounded bg-surface" style={{ borderTop: `4px solid ${b.color}` }}>
       <div className="px-4 py-3 border-b border-rule flex items-start gap-3">
         <span className="font-display text-[28px] leading-none" style={{ color: b.color }}>{b.book.level_number || '·'}</span>
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold text-ink leading-tight">{t.name}</p>
-          <p className="text-[11.5px] text-ink-3">{t.badge ? `${t.badge} · ` : ''}{bookName(b.book, b.series)} · {ko ? '주' : 'wk'} {num(b.viewStart)}–{num(b.viewEnd)} · {num(b.pacing.weeks)} {ko ? '주' : b.pacing.weeks === 1 ? 'week' : 'weeks'}</p>
-          <p className={`text-[11px] mt-0.5 ${unit.confirmed_at ? 'text-good' : 'text-warn'}`}>{unit.confirmed_at ? (ko ? '확인됨' : 'Confirmed') : (ko ? 'Claude 제안, 미확인' : 'Suggested by Claude, not confirmed yet')}</p>
+          <p className="text-[11.5px] text-ink-3">{t.badge ? `${t.badge} · ` : ''}{bookName(b.book, b.series)} · {ko ? '주' : 'wk'} {num(b.viewStart)}–{num(b.viewEnd)} · {b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : b.pacing.weeks === 1 ? 'week' : 'weeks'}</p>
         </div>
         <button onClick={onClose} className="text-ink-3 hover:text-ink" aria-label="Close"><X size={14} /></button>
       </div>
-      {canEdit && anthology && (
+      {canEdit && (
         <div className="px-4 py-3 border-b border-rule flex flex-col gap-2 bg-paper-2">
-          <button onClick={() => onDone(!b.pacing.done_at)} disabled={busy} className={b.pacing.done_at ? btn : btnP}>{busy ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{b.pacing.done_at ? (ko ? '완료 취소' : 'Not done after all') : (ko ? '이 이야기 완료' : 'Done with this story')}</button>
-          <p className="text-[11px] text-ink-3 leading-snug">{ko ? '읽기 목록은 주 수를 세지 않습니다. 끝낸 이야기를 표시하면 보드 위에 진도가 보입니다.' : 'A reading list counts stories, not weeks. Tick each one as you finish it and the line above the board says where you stand against even pace.'}</p>
-          <div className="flex gap-1.5 flex-wrap items-center">
-            <button onClick={onDrop} disabled={busy} className={btnS}><X size={11} />{ko ? '이 이야기 건너뛰기' : 'Skip this story'}</button>
-            {missing.length > 0 && <>
-              <select value={adding} onChange={e => setAdding(e.target.value)} className="h-7 px-1.5 bg-surface border border-rule-2 rounded text-[11.5px] text-ink max-w-[170px]"><option value="">{ko ? '이야기 추가…' : 'Add a story…'}</option>{missing.map(u => <option key={u.id} value={u.id}>{u.title}</option>)}</select>
-              <button onClick={() => { const u = missing.find(x => x.id === adding); if (u) { onAddBack(u); setAdding('') } }} disabled={busy || !adding} className={btnS}><Plus size={11} /></button>
-            </>}
-            {ownPlan && <button onClick={onBack} disabled={busy} className={`${btnS} ml-auto`}><Undo2 size={11} />{ko ? '마스터로' : 'Back to master'}</button>}
-          </div>
-        </div>
-      )}
-      {canEdit && !anthology && (
-        <div className="px-4 py-3 border-b border-rule flex flex-col gap-2 bg-paper-2">
-          <button onClick={onHere} disabled={busy || todayWeek === null || todayWeek === Math.floor(b.viewStart)} className={btnP}>{busy ? <Loader2 size={13} className="animate-spin" /> : <Flag size={13} />}{ko ? `여기까지 왔어요: 이 단원을 ${todayWeek ?? '?'}주에 시작` : `We’re here: this unit starts in week ${todayWeek ?? '?'}`}</button>
-          <p className="text-[11px] text-ink-3 leading-snug">{ko ? '뒤처졌으면 이 단원 앞에 빈 주가 생기고, 앞섰으면 이전 단원이 짧아집니다. 뒤의 단원은 따라 움직입니다.' : 'Behind: a gap opens before this unit. Ahead: the units before it get shorter. Everything after moves with it.'}</p>
+          {anthology ? (
+            <>
+              <button onClick={() => onDone(!b.pacing.done_at)} disabled={busy} className={b.pacing.done_at ? btn : btnP}>{busy ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{b.pacing.done_at ? (ko ? '완료 취소' : 'Not done after all') : (ko ? '이 이야기 완료' : 'Done with this story')}</button>
+              <p className="text-[11px] text-ink-3 leading-snug">{ko ? '읽기 목록은 이야기 수로 진도를 봅니다. 끝낸 이야기를 표시하세요.' : 'A reading list counts stories. Tick each one as you finish it and the line above the board says where you stand.'}</p>
+            </>
+          ) : (
+            <>
+              <button onClick={onHere} disabled={busy || todayWeek === null || todayWeek === Math.floor(b.viewStart)} className={btnP}>{busy ? <Loader2 size={13} className="animate-spin" /> : <Flag size={13} />}{ko ? `여기까지 왔어요: 이 단원을 ${todayWeek ?? '?'}주에 시작` : `We’re here: this unit starts in week ${todayWeek ?? '?'}`}</button>
+              <p className="text-[11px] text-ink-3 leading-snug">{ko ? '뒤처졌으면 이 단원 앞에 빈 주가 생기고, 앞섰으면 이전 단원이 짧아집니다.' : 'Behind: a gap opens before this unit. Ahead: the units before it get shorter. Everything after moves with it.'}</p>
+            </>
+          )}
           <div className="flex gap-1.5 flex-wrap">
             <button onClick={() => onShift(-1)} disabled={busy} className={btnS}>{ko ? '1주 앞으로' : '1 wk earlier'}</button>
             <button onClick={() => onShift(1)} disabled={busy} className={btnS}>{ko ? '1주 뒤로' : '1 wk later'}</button>
@@ -465,9 +506,9 @@ function UnitPanel({ b, lessons, resources, ko, busy, canEdit, ownPlan, todayWee
             </span>
           </div>
           <div className="flex gap-1.5 flex-wrap items-center">
-            <button onClick={onDrop} disabled={busy} className={btnS}><X size={11} />{ko ? '이 단원 건너뛰기' : 'Skip this unit'}</button>
+            <button onClick={onDrop} disabled={busy} className={btnS}><X size={11} />{ko ? `이 ${noun} 건너뛰기` : `Skip this ${noun}`}</button>
             {missing.length > 0 && <>
-              <select value={adding} onChange={e => setAdding(e.target.value)} className="h-7 px-1.5 bg-surface border border-rule-2 rounded text-[11.5px] text-ink max-w-[170px]"><option value="">{ko ? '빠진 단원 추가…' : 'Add a skipped unit…'}</option>{missing.map(u => <option key={u.id} value={u.id}>{u.title}</option>)}</select>
+              <select value={adding} onChange={e => setAdding(e.target.value)} className="h-7 px-1.5 bg-surface border border-rule-2 rounded text-[11.5px] text-ink max-w-[170px]"><option value="">{ko ? `${noun} 추가…` : `Add a ${noun}…`}</option>{missing.map(u => <option key={u.id} value={u.id}>{u.title}</option>)}</select>
               <button onClick={() => { const u = missing.find(x => x.id === adding); if (u) { onAddBack(u); setAdding('') } }} disabled={busy || !adding} className={btnS}><Plus size={11} /></button>
             </>}
             {ownPlan && <button onClick={onBack} disabled={busy} className={`${btnS} ml-auto`} title={ko ? '이 책의 내 변경을 모두 버림' : 'Drop all your changes to this book'}><Undo2 size={11} />{ko ? '마스터로' : 'Back to master'}</button>}
@@ -483,7 +524,7 @@ function UnitPanel({ b, lessons, resources, ko, busy, canEdit, ownPlan, todayWee
       )}
       <div className="px-4 py-3">
         <p className="eyebrow mb-1.5">{ko ? '차시' : 'Lessons'}</p>
-        {lessons.length === 0 && <p className="text-[12px] text-ink-3">{ko ? '차시 없음' : 'No lessons indexed yet.'}</p>}
+        {lessons.length === 0 && <p className="text-[12px] text-ink-3">{ko ? '차시 없음' : 'No lessons yet.'}</p>}
         <ol className="flex flex-col gap-2">
           {lessons.map((l, i) => {
             const res = resources.filter(r => r.lesson_id === l.id)
@@ -492,7 +533,7 @@ function UnitPanel({ b, lessons, resources, ko, busy, canEdit, ownPlan, todayWee
                 <div className="flex items-start gap-2">
                   <span className="text-ink-3 w-4 text-right shrink-0">{i + 1}</span>
                   <div className="min-w-0">
-                    <p className="text-ink font-medium">{l.title}{l.confirmed_at && <Check size={11} className="inline ml-1 text-good" />}</p>
+                    <p className="text-ink font-medium">{l.title}</p>
                     {l.objective && <p className="text-ink-2">{l.objective}</p>}
                     {res.map(r => <a key={r.id} href={r.url || undefined} target="_blank" rel="noreferrer" className="block text-[11.5px] text-accent truncate"><ExternalLink size={10} className="inline mr-1" />{r.name}{r.copies_hint ? ` × ${r.copies_hint}` : ''}</a>)}
                   </div>
@@ -530,7 +571,7 @@ function BlockForm({ initial, ko, n, todayWeek, onSave, onCancel, onDelete }: { 
         <div><span className={lbl}>{ko ? '기능 태그 (선택)' : 'Skill tags, optional'}</span><input value={d.tags} onChange={e => setD({ ...d, tags: e.target.value })} className={inp} placeholder="fluency, presenting" /></div>
       </div>
       <div><span className={lbl}>{ko ? '메모' : 'Notes'}</span><input value={d.notes} onChange={e => setD({ ...d, notes: e.target.value })} className={inp} /></div>
-      <p className="text-[10.5px] text-ink-3">{ko ? `이 학기는 ${n}주입니다.` : `This half has ${n} weeks.`}</p>
+      <p className="text-[10.5px] text-ink-3">{ko ? `이 기간은 ${n}주입니다.` : `This view has ${n} weeks.`}</p>
       <div className="flex gap-2 mt-1">
         <button onClick={submit} disabled={saving || !d.title.trim()} className={btnP}>{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{ko ? '저장' : 'Save'}</button>
         <button onClick={onCancel} className={btn}>{ko ? '취소' : 'Cancel'}</button>

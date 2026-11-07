@@ -13,6 +13,9 @@ export type Half = 'fall' | 'spring'
 // The school year starts in March: spring is the first half, fall the second, and a whole-year book carries across the summer break.
 export const TERM_LABEL: Record<Term, { en: string; ko: string }> = { spring: { en: 'Spring', ko: '봄 학기' }, fall: { en: 'Fall', ko: '가을 학기' }, year: { en: 'Whole year', ko: '한 해' } }
 export const HALVES: Half[] = ['spring', 'fall']
+/** What the board shows: one half, or the whole year with the summer between. */
+export type View = Half | 'year'
+export const VIEWS: View[] = ['spring', 'fall', 'year']
 export const TERMS: Term[] = ['year', 'spring', 'fall']
 
 export interface CurriculumPlacement {
@@ -42,7 +45,7 @@ export const addDays = (key: string, n: number) => { const d = new Date(key + 'T
 /** The Monday of the week a date is in. */
 export const mondayOf = (key: string) => { const wd = new Date(key + 'T12:00:00Z').getUTCDay(); return addDays(key, wd === 0 ? -6 : 1 - wd) }
 
-export interface Week { n: number; monday: string; friday: string }
+export interface Week { n: number; monday: string; friday: string; half?: Half }
 
 /** Every teaching week from the one holding `start` to the one holding `end`, numbered from 1. */
 export function weekList(start: string, end: string): Week[] {
@@ -83,9 +86,21 @@ export const yearWeeks = (semesters: SemesterLike[], year: string): YearWeeks =>
 }
 
 /** How many weeks a placement has to fill: its term's weeks, or both halves for a year placement. */
-export const placementLength = (term: Term, yw: YearWeeks) => term === 'year' ? yw.spring.length + yw.fall.length : yw[term].length
-/** How far into a year placement the view's first week is: the spring's weeks when looking at the fall. */
-export const viewOffset = (term: Term, view: Half, yw: YearWeeks) => term === 'year' && view === 'fall' ? yw.spring.length : 0
+/** Holiday weeks per half, which do not count as teaching weeks. */
+export interface HolidayCounts { spring: number; fall: number }
+const NO_HOLIDAYS: HolidayCounts = { spring: 0, fall: 0 }
+/** How many teaching weeks a placement has to fill: its term's weeks less its holiday weeks. */
+export const placementLength = (term: Term, yw: YearWeeks, h: HolidayCounts = NO_HOLIDAYS) =>
+  term === 'year' ? yw.spring.length + yw.fall.length - h.spring - h.fall : yw[term].length - h[term]
+/** Teaching weeks between the start of a year placement and the start of the view: the spring's teaching weeks when looking at the fall. */
+export const viewOffset = (term: Term, view: View, yw: YearWeeks, h: HolidayCounts = NO_HOLIDAYS) => term === 'year' && view === 'fall' ? yw.spring.length - h.spring : 0
+
+/** The weeks a view shows: one half, or spring then fall renumbered 1..N with each week knowing its half. */
+export function viewWeeks(yw: YearWeeks, view: View): Week[] {
+  if (view !== 'year') return yw[view].map(w => ({ ...w, half: view }))
+  const all = [...yw.spring.map(w => ({ ...w, half: 'spring' as Half })), ...yw.fall.map(w => ({ ...w, half: 'fall' as Half }))]
+  return all.map((w, i) => ({ ...w, n: i + 1 }))
+}
 
 // ─── Where the units land ────────────────────────────────────────
 
@@ -117,18 +132,42 @@ export interface ViewBar extends Bar { viewStart: number; viewEnd: number; cutLe
  * back by the spring's weeks. Bars outside the view are dropped, bars crossing
  * its edges are cut and say so.
  */
-export function barsForView(bars: Bar[], term: Term, view: Half, yw: YearWeeks): ViewBar[] {
-  if (term !== 'year' && term !== view) return []
-  const offset = viewOffset(term, view, yw)
-  const n = yw[view].length
-  if (!n) return []
+export function barsForView(bars: Bar[], term: Term, view: View, yw: YearWeeks, h: HolidayCounts = NO_HOLIDAYS): ViewBar[] {
+  if (view !== 'year' && term !== 'year' && term !== view) return []
+  // In teaching weeks of the view: a fall placement seen in the year view starts after the spring's teaching weeks.
+  const shift = view === 'year' ? (term === 'fall' ? yw.spring.length - h.spring : 0) : -viewOffset(term, view, yw, h)
+  const n = view === 'year' ? placementLength('year', yw, h) : yw[view].length - h[view]
+  if (n <= 0) return []
   const out: ViewBar[] = []
   for (const b of bars) {
-    const s = b.start - offset, e = b.end - offset
+    const s = b.start + shift, e = b.end + shift
     if (e < 1 || s > n) continue
     out.push({ ...b, viewStart: Math.max(1, s), viewEnd: Math.min(n, e), cutLeft: s < 1, cutRight: e > n })
   }
   return out
+}
+
+/**
+ * Teaching weeks to columns: holiday columns are skipped, so a unit that spans
+ * a holiday week is drawn across it and ends a column later. `holidays` are
+ * column numbers (1..n). Fractions inside a week are kept.
+ */
+export function teachingToColumns<T extends { viewStart: number; viewEnd: number }>(bars: T[], holidays: Set<number>, n: number): T[] {
+  const col: number[] = []                         // col[t] = column of teaching week t (1-based)
+  for (let c = 1; c <= n; c++) if (!holidays.has(c)) col.push(c)
+  if (!col.length) return bars
+  const at = (t: number) => col[Math.min(col.length, Math.max(1, Math.round(t))) - 1]
+  return bars.map(b => {
+    const s0 = Math.floor(b.viewStart), e0 = Math.ceil(b.viewEnd)
+    const start = at(s0) + (b.viewStart - s0)
+    const end = at(e0) - (e0 - b.viewEnd)
+    return { ...b, viewStart: start, viewEnd: Math.max(start, end) }
+  })
+}
+
+/** Holiday columns by half from away days: three or more away days in a week make it a holiday week. */
+export function holidayCounts(holidaysSpring: Map<number, string>, holidaysFall: Map<number, string>): HolidayCounts {
+  return { spring: holidaysSpring.size, fall: holidaysFall.size }
 }
 
 export interface Lane { strand: Strand; label: string; bars: (ViewBar & { placement: CurriculumPlacement; book: CurriculumBook; series: CurriculumSeries | undefined; color: string })[] }
@@ -138,8 +177,8 @@ const STRAND_EN: Record<Strand, string> = { phonics: 'Phonics', reading: 'Readin
 
 /** One lane per strand that has a bar, in the fixed strand order. */
 export function boardLanes(
-  placements: CurriculumPlacement[], pacing: CurriculumPacing[], units: CurriculumUnit[], books: CurriculumBook[], series: CurriculumSeries[], view: Half, yw: YearWeeks,
-  teacherId: string | null = null,
+  placements: CurriculumPlacement[], pacing: CurriculumPacing[], units: CurriculumUnit[], books: CurriculumBook[], series: CurriculumSeries[], view: View, yw: YearWeeks,
+  teacherId: string | null = null, h: HolidayCounts = NO_HOLIDAYS,
 ): Lane[] {
   const lanes = new Map<Strand, Lane>()
   for (const pl of placements) {
@@ -148,7 +187,7 @@ export function boardLanes(
     const se = series.find(s => s.id === book.series_id)
     const strand: Strand = se?.strand || 'other'
     const rows = effectiveRows(pacing, pl.id, teacherId)
-    const bars = barsForView(layoutPacing(projectAnthology(rows, placementLength(pl.term, yw)), units), pl.term, view, yw)
+    const bars = barsForView(layoutPacing(projectAnthology(rows, placementLength(pl.term, yw, h)), units), pl.term, view, yw, h)
     if (!bars.length) continue
     if (!lanes.has(strand)) lanes.set(strand, { strand, label: STRAND_EN[strand], bars: [] })
     const lane = lanes.get(strand)!
@@ -344,6 +383,14 @@ export function projectAnthology(rows: CurriculumPacing[], length: number): Curr
   const used = fixed.reduce((a, r) => a + (Number(r.weeks) || 0), 0) + rows.reduce((a, r) => a + Math.max(0, Number(r.gap_before) || 0), 0)
   const share = free.length ? halfDown((Math.max(length, 0) - used) / free.length) : 0
   return rows.map(r => r.fixed ? r : { ...r, weeks: length > 0 ? share : halfUp(Number(r.weeks) || 2) })
+}
+
+/**
+ * Before the first drag on a shared plan: pins every row at its projected length,
+ * so a move or stretch changes one unit and pushes the rest instead of re-sharing them.
+ */
+export function freezeProjection(rows: CurriculumPacing[], length: number): RowPatch[] {
+  return projectAnthology(rows, length).filter(r => !r.fixed).map(r => ({ id: r.id, weeks: r.weeks, fixed: true }))
 }
 
 /** Sets every row's weeks so the total is the term: the same share for all, in half weeks, last row taking the remainder. */
