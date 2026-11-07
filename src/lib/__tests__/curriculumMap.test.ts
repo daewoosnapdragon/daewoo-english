@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { earlierOnUnit, overlapCounts, overlapsAt, type MapBar, type MapRow } from '../curriculumMap'
+import { earlierOnUnit, overlapCounts, overlapsAt, planTogether, weekOfBar, type MapBar, type MapRow } from '../curriculumMap'
 import type { CurriculumBook, CurriculumLesson, CurriculumSeries, CurriculumUnit } from '../curriculumCore'
 
 const series = (id: string, name: string): CurriculumSeries => ({ id, name, publisher: '', strand: 'phonics', color: 'plum', kind: 'sequence', sort_order: 1, created_at: '' })
@@ -53,5 +53,30 @@ describe('overlapCounts', () => {
   it('marks the weeks with something shared', () => {
     const c = overlapCounts(rows, 12, lessons)
     expect(c[5]).toBe(1); expect(c[9]).toBe(1); expect(c[1]).toBe(0)
+  })
+})
+
+describe('planTogether', () => {
+  it('names the classes on the same unit, letters them, and says who finished it earlier', () => {
+    const { books, tagOf } = planTogether(rows, 10)
+    const hand = books.find(b => b.bookId === 'hh3')!
+    expect(hand.together).toHaveLength(1)
+    expect(hand.together[0].text).toBe('Sunflower G2 and Daisy G2 are both on Show and tell this week.')
+    expect(tagOf.get('ust')).toBe('A')
+    expect(hand.ready.map(r => r.text)).toEqual([
+      'Daisy G3 finished Show and tell 6 weeks ago, so their slides and notes are ready for Sunflower G2.',
+      'Daisy G3 finished Show and tell 6 weeks ago, so their slides and notes are ready for Daisy G2.',
+    ])
+    expect(books[0].bookId).toBe('hh3')
+  })
+  it('says nothing for a week nobody shares', () => {
+    expect(planTogether(rows, 1).books.every(b => !b.together.length && !b.ready.length)).toBe(true)
+  })
+})
+
+describe('weekOfBar', () => {
+  it('counts teaching weeks into a bar, skipping holidays', () => {
+    expect(weekOfBar({ viewStart: 5, viewEnd: 8 }, 7, new Set([6]))).toEqual({ at: 2, of: 3 })
+    expect(weekOfBar({ viewStart: 5, viewEnd: 5 }, 5, new Set())).toEqual({ at: 1, of: 1 })
   })
 })
