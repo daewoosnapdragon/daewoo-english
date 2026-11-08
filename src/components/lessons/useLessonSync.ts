@@ -5,11 +5,12 @@ import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { teacherForClass } from '@/lib/classTeacher'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
-import { bookName, splitUnitTitle, type CurriculumLesson } from '@/lib/curriculumCore'
+import { BOOK_COLORS, bookName, splitUnitTitle, type CurriculumLesson } from '@/lib/curriculumCore'
 import { HALVES, academicYears, boardLanes, holidayWeeks, teachingToColumns, termDates, yearWeeks } from '@/lib/curriculumPacing'
 import { unitsInWeek } from '@/lib/curriculumWeek'
 import { linkedDays, planFollower, type PlanDay, type RunningUnit } from '@/lib/lessonSync'
 import { fetchPlanDays } from '@/lib/lessonSyncData'
+import type { TrayBook } from '@/lib/lessonTray'
 import { usePlanner } from '@/components/curriculum-planner/usePlanner'
 
 // ─── What the class board says, for the Lesson Plans page ────────
@@ -27,6 +28,13 @@ export interface LessonSync {
   lessons: CurriculumLesson[]
   /** Every plan day of the year this class and grade has, this month as it stands on screen. */
   planDays: Record<string, PlanDay>
+  /** The books this class and grade have on the board this year, for the lesson tray. */
+  books: TrayBook[]
+  /** Unit → the Mondays the board first and last has it running. */
+  unitWeeks: Map<string, { first: string; last: string }>
+  /** Days with no class this year (days off and trips on the school calendar), and the year's last day. */
+  away: Set<string>
+  yearEnd: string
   refresh: () => void
 }
 
@@ -52,7 +60,9 @@ export function useLessonSync({ enabled, cls, grade, monthFirst, monthLast, dayD
   const computed = useMemo(() => {
     const byMonday = new Map<string, RunningUnit[]>()
     const unitOrder = new Map<string, string[]>()
-    if (!enabled || !year) return { byMonday, unitOrder, days: {} as Record<string, PlanDay> }
+    const unitWeeks = new Map<string, { first: string; last: string }>()
+    const books: TrayBook[] = []
+    if (!enabled || !year) return { byMonday, unitOrder, days: {} as Record<string, PlanDay>, unitWeeks, books }
     // The rest of the term from the database, this month as it stands on screen.
     const days: Record<string, PlanDay> = {}
     for (const [d, v] of Object.entries(others)) if (d < monthFirst || d > monthLast) days[d] = v
@@ -60,6 +70,10 @@ export function useLessonSync({ enabled, cls, grade, monthFirst, monthLast, dayD
     const linked = linkedDays(days)
     const teacherId = teacherForClass(teachers, cls)?.id || null
     const placements = p.placements.filter(x => x.english_class === cls && x.grade === grade && x.academic_year === year && x.is_master)
+    for (const pl of placements) {
+      const bk = p.books.find(b => b.id === pl.book_id); const se = bk && p.series.find(x => x.id === bk.series_id)
+      if (bk && se && !books.some(b => b.placement_id === pl.id)) books.push({ placement_id: pl.id, series_id: se.id, label: se.name, level: bk.level_number, color: BOOK_COLORS[se.color]?.hex || '#6B655B' })
+    }
     const hs = holidayWeeks(away, yw.spring), hf = holidayWeeks(away, yw.fall)
     const hc = { spring: hs.size, fall: hf.size }
     const follow = teacherId && linked.length ? planFollower(linked, yw, new Set(hs.keys()), new Set(hf.keys())) : undefined
@@ -69,16 +83,18 @@ export function useLessonSync({ enabled, cls, grade, monthFirst, monthLast, dayD
       const bars = teachingToColumns(lanes.flatMap(l => l.bars), new Set((half === 'spring' ? hs : hf).keys()), yw[half].length).sort((a, b) => a.viewStart - b.viewStart)
       for (const b of bars) { const o = unitOrder.get(b.placement.id) || []; if (!o.includes(b.unit.id)) o.push(b.unit.id); unitOrder.set(b.placement.id, o) }
       for (const w of yw[half]) {
+        for (const b of unitsInWeek(bars, w.n)) { const uw = unitWeeks.get(b.unit.id); if (!uw) unitWeeks.set(b.unit.id, { first: w.monday, last: w.monday }); else { if (w.monday < uw.first) uw.first = w.monday; if (w.monday > uw.last) uw.last = w.monday } }
         byMonday.set(w.monday, unitsInWeek(bars, w.n).map(b => ({
           placement_id: b.placement.id, unit_id: b.unit.id, label: b.series?.name || bookName(b.book, b.series), name: splitUnitTitle(b.unit.title).name,
           level: b.book.level_number, color: b.color, weekOf: w.n - Math.floor(b.viewStart) + 1, weeks: Math.ceil(b.viewEnd) - Math.floor(b.viewStart) + 1,
         })))
       }
     }
-    return { byMonday, unitOrder, days }
+    return { byMonday, unitOrder, days, unitWeeks, books }
   }, [enabled, year, others, dayData, monthFirst, monthLast, teachers, cls, grade, p.placements, p.pacing, p.units, p.books, p.series, away, yw])
 
+  const awaySet = useMemo(() => new Set(away.map(a => a.date)), [away])
   const lessonsOf = useCallback((unitId: string) => p.lessons.filter(l => l.unit_id === unitId).sort((a, b) => a.sort_order - b.sort_order), [p.lessons])
   const runningAt = useCallback((monday: string) => computed.byMonday.get(monday) || [], [computed])
-  return { on: enabled, ready: enabled && !p.loading && !p.missing, runningAt, unitOrder: computed.unitOrder, lessonsOf, units: p.units, lessons: p.lessons, planDays: computed.days, refresh }
+  return { on: enabled, ready: enabled && !p.loading && !p.missing, runningAt, unitOrder: computed.unitOrder, lessonsOf, units: p.units, lessons: p.lessons, planDays: computed.days, books: computed.books, unitWeeks: computed.unitWeeks, away: awaySet, yearEnd: range.to || '', refresh }
 }

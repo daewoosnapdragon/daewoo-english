@@ -19,6 +19,10 @@ import { boardWeekDays, bookPattern, classDays, isEmptyDay as isEmptyPlan, lesso
 import { fetchFixedDays, fetchPlanDays, saveDays } from '@/lib/lessonSyncData'
 import { HALVES, academicYears, termDates } from '@/lib/curriculumPacing'
 import { loadAwayDays } from '@/lib/calendarDays'
+import { LessonTray, MonthMap, PlacingBar, type TraySel } from './LessonTray'
+import { slotLine, spreadDates, trayLanes, usedCounts, weekPace, type TraySlot } from '@/lib/lessonTray'
+import { lessonSlots, setupFor, type ClassSetup } from '@/lib/classSetup'
+import { fetchSetups } from '@/lib/classSetupData'
 
 interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number; grade?: number }
 interface LessonEntry { id?: string; slot_label: string; title: string; objective: string; notes: string }
@@ -569,6 +573,139 @@ function ParentCalendarView() {
   const [undo, setUndo] = useState<{ text: string; cls: EnglishClass; grades: { grade: Grade; before: Record<string, PlanDay>; after: Record<string, PlanDay> }[] } | null>(null)
   // While a Push, Pull or Copy is being worked out, previewed or written, the class, grade and month stay put, so it lands on the right page.
   const busyWriting = !!shifting || !!copyingWeek || !!shiftPlan
+
+  // ─── The lesson tray and the month map (syncOn only; see LessonTray.tsx) ───
+  // The tray is worked out from the plans: a lesson a day names is not in it.
+  // Placing writes rows into days (this month through the page's own autosave,
+  // later months straight away with a fresh read); every tray change can be undone.
+  const [setups, setSetups] = useState<ClassSetup[]>([])
+  useEffect(() => { if (!syncOn) return; let live = true; fetchSetups().then(r => { if (live && !r.error) setSetups(r.rows) }); return () => { live = false } }, [syncOn, selectedClass])
+  const setup = setupFor(setups, selectedClass, selectedGrade)
+  const [trayOpen, setTrayOpen] = useState(() => { try { return localStorage.getItem('daewoo_lesson_tray') !== 'off' } catch { return true } })
+  const [mapOpen, setMapOpen] = useState(() => { try { return localStorage.getItem('daewoo_lesson_map') !== 'off' } catch { return true } })
+  useEffect(() => { try { localStorage.setItem('daewoo_lesson_tray', trayOpen ? 'on' : 'off'); localStorage.setItem('daewoo_lesson_map', mapOpen ? 'on' : 'off') } catch { /* private mode */ } }, [trayOpen, mapOpen])
+  const [traySel, setTraySel] = useState<TraySel | null>(null)
+  const [hoverUnit, setHoverUnit] = useState<string | null>(null)
+  const [focusUnit, setFocusUnit] = useState<string | null>(null)
+  const [bookOpen, setBookOpen] = useState<Record<string, boolean>>({})
+  const [moved, setMoved] = useState<Record<string, string>>({})
+  const [trayUndo, setTrayUndo] = useState<{ label: string; before: Record<string, DayContent | null> }[]>([])
+  const [trayBusy, setTrayBusy] = useState(false)
+  useEffect(() => { setTraySel(null); setTrayUndo([]); setMoved({}); setFocusUnit(null) }, [selectedClass, selectedGrade])
+  useEffect(() => { if (!traySel) return; const k = (e: KeyboardEvent) => { if (e.key === 'Escape') setTraySel(null) }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [traySel])
+  // "This week" is today's week when it is in the month on screen, else the month's first week.
+  const thisMonday = getMondayOf(todayStr)
+  const focusMonday = weeks.some(w => w.length > 0 && getMondayOf(w[0].date) === thisMonday) ? thisMonday : (weeks[0]?.length ? getMondayOf(weeks[0][0].date) : thisMonday)
+  const used = useMemo(() => usedCounts(sync.planDays), [sync.planDays])
+  const lanes = useMemo(() => syncOn ? trayLanes({ books: sync.books, unitOrder: sync.unitOrder, units: sync.units, lessons: sync.lessons, recipes: setup.recipes, used, unitWeeks: sync.unitWeeks, focusMonday, moved }) : [],
+    [syncOn, sync.books, sync.unitOrder, sync.units, sync.lessons, setup.recipes, used, sync.unitWeeks, focusMonday, moved])
+  // Each unit's lessons as the class teaches them, and how many are on a day, for the map's bars.
+  const unitProgress = useMemo(() => {
+    const out = new Map<string, { placed: number; total: number }>()
+    if (!syncOn) return out
+    const left = new Map<string, number>()
+    lanes.forEach(l => l.units.forEach(u => left.set(u.unit_id, u.slots.length)))
+    for (const b of sync.books) for (const unitId of sync.unitOrder.get(b.placement_id) || []) {
+      const total = lessonSlots(sync.lessons.filter(l => l.unit_id === unitId), setup.recipes[b.series_id]).length
+      out.set(unitId, { total, placed: Math.max(0, total - (left.get(unitId) || 0)) })
+    }
+    return out
+  }, [syncOn, lanes, sync.books, sync.unitOrder, sync.lessons, setup.recipes])
+  const inMonth = (d: string) => monthDays.some(m => m.date === d)
+  const dayAt = (date: string): DayContent | null => (dayData[date] as DayContent | undefined) || (sync.planDays[date] as DayContent | undefined) || null
+  const isClassDay = (date: string) => { const wd = new Date(date + 'T12:00:00Z').getUTCDay(); return wd >= 1 && wd <= 5 && !isNoClassDay(selectedGrade, wd) && !sync.away.has(date) && blockedDays[date]?.kind !== 'off' }
+  const bookOfRow = (s: DayContent['subjects'][number]) => s.placement_id || (s.unit_id ? sync.books.find(b => (sync.unitOrder.get(b.placement_id) || []).includes(s.unit_id!))?.placement_id : undefined)
+  const hasBook = (date: string, placementId: string) => !!dayAt(date)?.subjects.some(s => s.content.trim() && bookOfRow(s) === placementId)
+  const parseDay = (content: unknown): DayContent => {
+    try { const v = typeof content === 'string' ? JSON.parse(content) : content; const d = { ...emptyDay(), ...(v || {}) } as DayContent; d.subjects = (d.subjects || []).filter(x => x.content?.trim()); if (!d.subjects.length) d.subjects = [{ label: '', content: '' }]; return d } catch { return emptyDay() }
+  }
+  const cloneDay = (d: DayContent): DayContent => ({ ...d, subjects: d.subjects.map(x => ({ ...x })) })
+  const withRows = (cur: DayContent | null, rows: DayContent['subjects']): DayContent => {
+    const base = cur ? cloneDay(cur) : emptyDay()
+    return { ...base, subjects: [...base.subjects.filter(x => x.content.trim()), ...rows] }
+  }
+  const rowFor = (placementId: string, slot: TraySlot): DayContent['subjects'][number] => {
+    const b = sync.books.find(x => x.placement_id === placementId)
+    return { label: b?.label || '', content: slotLine(slot.unitName, slot.lesson_id ? slot.title : null, slot.n, slot.of), unit_id: slot.unit_id, placement_id: placementId, ...(slot.lesson_id ? { lesson_id: slot.lesson_id } : {}) }
+  }
+  /** Changes days for the tray: this month's through autosave, others written now after a fresh read. Remembers what was there for Undo. */
+  const trayWrite = async (dates: string[], change: (date: string, cur: DayContent | null) => DayContent, label: string | null): Promise<boolean> => {
+    if (!dates.length) return false
+    setTrayBusy(true)
+    try {
+      const away = dates.filter(d => !inMonth(d))
+      const fresh: Record<string, DayContent | null> = {}
+      if (away.length) {
+        const { data, error } = await supabase.from('parent_calendar').select('date, content, updated_at').eq('english_class', selectedClass).eq('grade', selectedGrade).in('date', away)
+        if (error) { showToast(`Could not read those days: ${error.message}`); return false }
+        away.forEach(d => { fresh[d] = null; stampsRef.current[`${selectedClass}|${selectedGrade}|${d}`] = null })
+        ;(data || []).forEach((r: { date: string; content: unknown; updated_at: string | null }) => { fresh[r.date] = parseDay(r.content); stampsRef.current[`${selectedClass}|${selectedGrade}|${r.date}`] = r.updated_at || null })
+      }
+      const before: Record<string, DayContent | null> = {}, next: Record<string, DayContent> = {}
+      for (const d of dates) { const cur = inMonth(d) ? (dayData[d] || null) : fresh[d]; before[d] = cur ? cloneDay(cur) : null; next[d] = change(d, cur) }
+      const here = dates.filter(inMonth)
+      if (here.length) { setDayData(prev => { const n = { ...prev }; here.forEach(d => { n[d] = next[d] }); return n }); here.forEach(markDirty) }
+      if (away.length) {
+        const w = await writeDays(selectedClass, selectedGrade, away.map(d => [d, next[d]] as [string, unknown]), currentTeacher?.id, stampsRef.current)
+        if (w.conflicts.length) conflictToast(w.conflicts)
+        else if (w.errors) showToast(`Could not save ${w.errors} day${w.errors > 1 ? 's' : ''} in another month. Try again.`)
+        away.filter(d => !w.saved.includes(d)).forEach(d => { delete before[d] })
+        sync.refresh()
+      }
+      if (label && Object.keys(before).length) setTrayUndo(u => [...u.slice(-19), { label, before }])
+      return true
+    } finally { setTrayBusy(false) }
+  }
+  const trayPlace = async (date: string, s: TraySel) => {
+    if (!canEdit || trayBusy) return
+    if (!isClassDay(date)) { showToast(`No class on ${fmtShortDate(date)}.`); return }
+    if (s.kind === 'slot') {
+      if (await trayWrite([date], (_d, cur) => withRows(cur, [rowFor(s.placement_id, s.slot)]), `${s.slot.title} on ${fmtShortDate(date)}`)) {
+        setMoved(m => { const n = { ...m }; delete n[s.slot.key]; if (s.slot.lesson_id) delete n[s.slot.lesson_id]; return n })
+        logActivity('saved', `Lesson plans · ${selectedClass} · Grade ${selectedGrade}: ${s.slot.unitName} — ${s.slot.title} onto ${date}`, { key: `lessons|${selectedClass}|${selectedGrade}` })
+      }
+    } else {
+      const lane = lanes.find(l => l.book.placement_id === s.placement_id); const unit = lane?.units.find(u => u.unit_id === s.unit_id)
+      if (!lane || !unit) return
+      const dates = spreadDates({ from: date, count: unit.slots.length, usual: setup.days[lane.book.series_id], isClassDay, hasBook: d => hasBook(d, s.placement_id), last: sync.yearEnd || shiftDate(date, 150) })
+      if (!dates.length) { showToast(`No free ${lane.book.label} days from ${fmtShortDate(date)}.`); return }
+      const slotOn = Object.fromEntries(dates.map((d, i) => [d, unit.slots[i]]))
+      if (await trayWrite(dates, (d, cur) => withRows(cur, [rowFor(s.placement_id, slotOn[d])]), `${unit.name} spread`)) {
+        const later = dates.filter(d => !inMonth(d)).length
+        const left = unit.slots.length - dates.length
+        showToast(`${unit.name}: ${dates.length} lesson${dates.length > 1 ? 's' : ''} from ${fmtShortDate(dates[0])} to ${fmtShortDate(dates[dates.length - 1])}${later ? `, ${later} in a later month` : ''}${left ? `. ${left} did not fit before the end of the year and stay in the tray` : ''}.`)
+        logActivity('saved', `Lesson plans · ${selectedClass} · Grade ${selectedGrade}: ${unit.name} spread over ${dates.length} days from ${dates[0]}`, { key: `lessons|${selectedClass}|${selectedGrade}` })
+      }
+    }
+    setTraySel(null)
+  }
+  /** Takes the board's lessons off a day (one row, or every row about a book): they go back to the tray. */
+  const trayBack = async (date: string, onlyIdx?: number) => {
+    if (!canEdit || trayBusy) return
+    const cur = dayAt(date); if (!cur) return
+    const isLinked = (x: DayContent['subjects'][number]) => !!x.unit_id
+    const gone = cur.subjects.filter((x, i) => (onlyIdx === undefined ? isLinked(x) : i === onlyIdx) && x.content.trim())
+    if (!gone.length) return
+    const ok = await trayWrite([date], (_d, c) => { const base = c ? cloneDay(c) : emptyDay(); const subjects = base.subjects.filter((x, i) => !(onlyIdx === undefined ? isLinked(x) : i === onlyIdx)); return { ...base, subjects: subjects.length ? subjects : [{ label: '', content: '' }] } }, `back to the tray from ${fmtShortDate(date)}`)
+    if (ok && onlyIdx === undefined) {
+      const tag = `moved off ${DAY_SHORT[(new Date(date + 'T12:00:00Z').getUTCDay() + 6) % 7]}`
+      setMoved(m => { const n = { ...m }; gone.forEach(x => { if (x.lesson_id) n[x.lesson_id] = tag; else if (x.unit_id) n[x.unit_id] = tag }); return n })
+      showToast(`${gone.length} lesson${gone.length > 1 ? 's' : ''} back at the top of the tray, marked “${tag}”.`)
+    }
+  }
+  const trayUndoLast = async () => {
+    const last = trayUndo[trayUndo.length - 1]; if (!last || trayBusy) return
+    setTrayUndo(u => u.slice(0, -1))
+    if (await trayWrite(Object.keys(last.before), d => last.before[d] ? cloneDay(last.before[d]!) : emptyDay(), null)) showToast(`Undone: ${last.label}`)
+  }
+  const trayDrop = (date: string, raw: string) => {
+    const [tag, kind, placement, id] = raw.split('|')
+    if (tag !== 'tray') return
+    const lane = lanes.find(l => l.book.placement_id === placement); if (!lane) return
+    if (kind === 'unit') { const u = lane.units.find(x => x.unit_id === id); if (u) trayPlace(date, { kind: 'unit', placement_id: placement, unit_id: id, name: u.name }) }
+    else { const slot = lane.units.flatMap(u => u.slots).find(x => x.key === id); if (slot) trayPlace(date, { kind: 'slot', placement_id: placement, slot }) }
+  }
+  const trayActive = syncOn && canEdit
   const prepareShift = async (date: string, dir: 1 | -1, all: boolean) => {
     if (!canEdit) return
     // Only today on can be pulled into; plans never slide into the past.
@@ -973,7 +1110,7 @@ ${pages.join('\n')}
         </div>
       </div>
 
-      <div className="px-8 py-6 max-w-[1400px] mx-auto">
+      <div className={`px-8 py-6 mx-auto ${syncOn && trayOpen ? 'max-w-[1840px]' : 'max-w-[1400px]'}`}>
         {/* After a Push or Pull: what moved, and Undo */}
         {undo && undo.cls === selectedClass && (
           <div className="mb-4 flex items-center gap-3 flex-wrap px-4 py-2.5 rounded-lg border border-border bg-surface-alt text-[13px]">
@@ -989,6 +1126,19 @@ ${pages.join('\n')}
           <button onClick={nextMonth} disabled={busyWriting} aria-label="Next month" className="p-2 rounded-lg hover:bg-surface-alt text-text-secondary disabled:opacity-40"><ChevronRight size={20} /></button>
         </div>
 
+        {syncOn && (
+          <MonthMap weeks={weeks.filter(w => w.length > 0).map(w => { const mon = getMondayOf(w[0].date); return { monday: mon, label: fmtShortDate(mon).replace(/^\w+, /, ''), current: mon === thisMonday } })}
+            books={sync.books} runningAt={sync.runningAt} progress={unitProgress} open={mapOpen} onToggle={() => setMapOpen(o => !o)} hoverUnit={hoverUnit}
+            onPick={(pl, u) => { setFocusUnit(u); setBookOpen(o => ({ ...o, [pl]: true })); setTrayOpen(true) }} />
+        )}
+        {syncOn && traySel && (
+          <PlacingBar text={traySel.kind === 'unit' ? `Tap the day ${traySel.name} starts. Its lessons spread over the book’s usual days, skipping days off.` : `Placing ${traySel.slot.unitName} — ${traySel.slot.title}${traySel.slot.of > 1 ? ` (${traySel.slot.n} of ${traySel.slot.of})` : ''}. Tap the day it goes on.`} onCancel={() => setTraySel(null)} />
+        )}
+        {syncOn && !trayOpen && (
+          <div className="flex justify-end mb-2"><button onClick={() => setTrayOpen(true)} className="text-[14px] font-semibold px-3 rounded-lg border border-border bg-surface min-h-[40px] hover:border-navy">Show the lesson tray</button></div>
+        )}
+        <div className={syncOn && trayOpen ? 'flex gap-5 items-start' : ''}>
+        <div className={syncOn && trayOpen ? 'flex-1 min-w-0' : ''}>
         {/* Month grid */}
         <div className="border border-border rounded-xl overflow-hidden shadow-sm">
           {/* Column headers */}
@@ -1012,6 +1162,9 @@ ${pages.join('\n')}
                 {syncOn && onBoard.length > 0 && (
                   <div className="px-3 py-1 border-b border-border bg-surface-alt/60 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] text-text-secondary">
                     <span className="uppercase tracking-wider text-[9.5px] font-semibold text-text-tertiary">On the board</span>
+                    {trayActive && sync.books.map(b => { const pace = weekPace({ monday: weekMonday, usual: setup.days[b.series_id], isClassDay, hasBook: d => hasBook(d, b.placement_id) }); return pace && pace.days > 0 ? (
+                      <span key={'pace' + b.placement_id} title={`${b.label}: ${pace.planned} of its ${pace.days} usual days this week have a lesson`} className={`font-semibold px-1.5 rounded ${pace.planned >= pace.days ? 'text-good bg-good-soft' : 'text-warn bg-warn-soft'}`}>{b.label} {pace.planned}/{pace.days}</span>
+                    ) : null })}
                     {onBoard.map(ru => (
                       <span key={ru.placement_id + ru.unit_id} className="inline-flex items-center gap-1 min-w-0">
                         <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: ru.color }} />
@@ -1045,6 +1198,9 @@ ${pages.join('\n')}
                           <span className="mt-1 flex flex-col items-center gap-1 bg-white/85 rounded px-2 py-1.5">
                             <span className="text-[10.5px] text-text-primary leading-snug">Planned here: {dayData[day.date].subjects.filter(s => s.content.trim()).map(s => s.label || s.content).join(', ') || dayData[day.date].objective}</span>
                             <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">{shifting === day.date ? 'Moving…' : 'Move a day later from here →'}</button>
+                            {trayActive && dayData[day.date].subjects.some(x => x.unit_id && x.content.trim()) && (
+                              <button onClick={() => trayBack(day.date)} disabled={trayBusy} className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">Back to the tray</button>
+                            )}
                           </span>
                         )}
                       </div>
@@ -1052,8 +1208,10 @@ ${pages.join('\n')}
                   }
                   return (
                     <div key={di}
-                      onClick={() => openDayWeek(wi)}
-                      className={`border-r border-border last:border-r-0 min-h-[140px] p-3 transition-all ${
+                      onClick={() => { if (trayActive && traySel && !noG5) { trayPlace(day.date, traySel); return } openDayWeek(wi) }}
+                      onDragOver={trayActive && !noG5 ? (e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy' }) : undefined}
+                      onDrop={trayActive && !noG5 ? (e => { e.preventDefault(); trayDrop(day.date, e.dataTransfer.getData('text/plain')) }) : undefined}
+                      className={`border-r border-border last:border-r-0 min-h-[140px] p-3 transition-all ${trayActive && traySel && !noG5 ? 'ring-2 ring-inset ring-accent/60 ' : ''}${
                         canEdit ? 'cursor-pointer hover:bg-blue-50/30' : ''
                       } ${isToday ? 'bg-amber-50/30 ring-2 ring-inset ring-gold/40' : blocked?.kind === 'exam' ? 'bg-warn-soft/60' : 'bg-white'}`}>
                       {/* Day header */}
@@ -1071,12 +1229,18 @@ ${pages.join('\n')}
                           {evts.map((ev, ei) => <div key={ei} className="text-[10px] font-bold text-slate-600 bg-slate-100 rounded px-2 py-1 mb-1.5">{ev.title}</div>)}
                           {/* Only rows with content. A labeled-but-empty row must never
                               show here or in print -- this is the parent-facing calendar. */}
-                          {data.subjects.filter(s => s.content.trim()).map((s, si) => (
-                            <div key={si} className="text-[11px] leading-snug mb-1">
-                              {s.label.trim() && <><span className="font-bold text-navy">{s.label}:</span>{' '}</>}
-                              <span className="text-text-primary">{s.content}</span>
+                          {data.subjects.map((s, si) => s.content.trim() ? (
+                            <div key={si} className="group/row text-[11px] leading-snug mb-1 flex items-start gap-1">
+                              <span className="flex-1 min-w-0">
+                                {s.label.trim() && <><span className="font-bold text-navy">{s.label}:</span>{' '}</>}
+                                <span className="text-text-primary">{s.content}</span>
+                              </span>
+                              {trayActive && s.unit_id && (
+                                <button onClick={e => { e.stopPropagation(); trayBack(day.date, si) }} aria-label={`Back to the tray: ${s.content}`} title="Back to the tray"
+                                  className="shrink-0 opacity-0 group-hover/row:opacity-100 focus:opacity-100 w-5 h-5 rounded inline-flex items-center justify-center text-text-tertiary hover:text-navy hover:bg-surface-alt"><X size={12} /></button>
+                              )}
                             </div>
-                          ))}
+                          ) : null)}
                           {data.objective && (
                             <div className="text-[10px] text-text-primary italic mt-1.5 pt-1.5 border-t border-border/20">
                               <span className="text-navy font-semibold">Students will</span> {data.objective}
@@ -1304,6 +1468,15 @@ ${pages.join('\n')}
               </div>
             )
           })}
+        </div>
+        </div>
+        {syncOn && trayOpen && (
+          <LessonTray lanes={lanes} sel={traySel} onSelect={setTraySel} canEdit={trayActive} hoverUnit={hoverUnit} onHoverUnit={setHoverUnit} focusUnit={focusUnit}
+            open={(pl, auto) => bookOpen[pl] ?? (auto || focusUnit !== null && lanes.some(l => l.book.placement_id === pl && l.units.some(u => u.unit_id === focusUnit)))}
+            onToggleBook={(pl, now) => setBookOpen(o => ({ ...o, [pl]: now }))}
+            undoLabel={trayUndo.length ? trayUndo[trayUndo.length - 1].label : null} onUndo={trayUndoLast} onHide={() => setTrayOpen(false)}
+            noSetup={trayActive && sync.books.length > 0 && sync.books.every(b => !(setup.days[b.series_id] || []).length)} />
+        )}
         </div>
       </div>
 
