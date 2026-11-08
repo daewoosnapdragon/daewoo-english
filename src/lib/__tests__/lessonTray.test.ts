@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { slotLine, spreadDates, trayLanes, usedCounts, weekPace } from '../lessonTray'
 import type { PlanDay } from '../lessonSync'
 
-const book = { placement_id: 'p1', series_id: 'hih', label: 'Hand in Hand', level: '3', color: '#3E6F25' }
+const book = { placement_id: 'p1', book_id: 'b3', series_id: 'hih', label: 'Hand in Hand', level: '3', color: '#3E6F25' }
 const units = [{ id: 'u6', title: 'Unit 6 · Going Shopping' }, { id: 'sl3', title: 'School Link 3 · Different places in a city' }, { id: 'u7', title: 'Unit 7 · School Subjects' }]
 const L = (id: string, unit_id: string, sort_order: number, title: string) => ({ id, unit_id, sort_order, title })
 const lessons = [
@@ -48,5 +48,15 @@ describe('lesson tray', () => {
   it('counts a week’s usual days and how many have the book', () => {
     expect(weekPace({ monday: '2026-12-07', usual: [1, 2, 3], isClassDay: d => d !== '2026-12-10', hasBook: d => d === '2026-12-08' })).toEqual({ planned: 1, days: 2 })
     expect(weekPace({ monday: '2026-12-07', usual: [], isClassDay: () => true, hasBook: () => false })).toBeNull()
+  })
+  it('shows joined lessons as one and lists skipped ones', () => {
+    const recipes = { hih: { parts: {}, joins: { c2: 'c3' }, skips: ['s2'] } }
+    const [lane] = trayLanes({ ...base, recipes, used: usedCounts({}) })
+    const u7 = lane.units.find(u => u.unit_id === 'u7')!
+    expect(u7.slots.map(s => [s.key, s.kind, s.title])).toEqual([['c1', 'plain', 'Conversation'], ['c2+c3', 'join', 'Words + Grammar']])
+    expect(lane.skipped).toEqual([{ lesson_id: 's2', unit_id: 'sl3', unitName: 'Different places in a city', title: 'Project' }])
+    // Placing the joined lesson names its first lesson, which uses the whole slot.
+    const [after] = trayLanes({ ...base, recipes, used: usedCounts({ d: day([{ label: '', content: 'x', unit_id: 'u7', lesson_id: 'c2' }]) }) })
+    expect(after.units.find(u => u.unit_id === 'u7')!.slots.map(s => s.key)).toEqual(['c1'])
   })
 })

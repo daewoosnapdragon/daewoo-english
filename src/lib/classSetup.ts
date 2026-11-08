@@ -7,7 +7,13 @@ import type { CurriculumLesson, CurriculumUnit } from '@/lib/curriculumCore'
 // that go on the same weekday every week. One row covers all grades (grade 0);
 // a grade set up differently has its own row.
 
-export interface Recipe { parts: Record<string, number> }
+/**
+ * How a class teaches a unit of a series. `parts`: days per part across every
+ * unit (0 skips it; a part not named takes one day). `joins` and `skips` are for
+ * single lessons: a lesson taught together with the next one, by lesson id, and
+ * lessons left out on purpose.
+ */
+export interface Recipe { parts: Record<string, number>; joins?: Record<string, string>; skips?: string[] }
 export interface StandingItem { id: string; title: string; weekday: number }
 export interface ClassSetup {
   english_class: string
@@ -63,13 +69,21 @@ export const partDays = (recipe: Recipe | undefined, key: string) => {
   return typeof n === 'number' && n >= 0 ? Math.min(3, Math.floor(n)) : 1
 }
 
-export interface LessonSlot<L> { lesson: L; part: string; n: number; of: number }
+export interface LessonSlot<L> { lesson: L; part: string; n: number; of: number; joined?: L }
 
-/** A unit's lessons as the class teaches them: skipped parts left out, a part over two days twice ("1 of 2", "2 of 2"). */
-export function lessonSlots<L extends Pick<CurriculumLesson, 'title' | 'sort_order'>>(unitLessons: L[], recipe: Recipe | undefined): LessonSlot<L>[] {
+/**
+ * A unit's lessons as the class teaches them: skipped parts and lessons left
+ * out, a part over two days twice ("1 of 2", "2 of 2"), a lesson joined to the
+ * next one as one slot carrying both.
+ */
+export function lessonSlots<L extends Pick<CurriculumLesson, 'title' | 'sort_order'> & { id?: string }>(unitLessons: L[], recipe: Recipe | undefined): LessonSlot<L>[] {
   const out: LessonSlot<L>[] = []
-  for (const lesson of [...unitLessons].sort((a, b) => a.sort_order - b.sort_order)) {
-    const part = partOf(lesson.title)
+  const skips = new Set(recipe?.skips || [])
+  const ls = [...unitLessons].sort((a, b) => a.sort_order - b.sort_order).filter(l => !(l.id && skips.has(l.id)) && partDays(recipe, partOf(l.title)) > 0)
+  for (let i = 0; i < ls.length; i++) {
+    const lesson = ls[i], part = partOf(lesson.title)
+    const next = ls[i + 1]
+    if (lesson.id && next?.id && recipe?.joins?.[lesson.id] === next.id) { out.push({ lesson, part, n: 1, of: 1, joined: next }); i++; continue }
     const of = partDays(recipe, part)
     for (let n = 1; n <= of; n++) out.push({ lesson, part, n, of })
   }
@@ -90,7 +104,20 @@ export const weeksFor = (days: number, perWeek: number) => perWeek > 0 ? Math.ro
 export function withPart(recipe: Recipe | undefined, key: string, days: number): Recipe {
   const parts = { ...(recipe?.parts || {}) }
   if (days === 1) delete parts[key]; else parts[key] = Math.max(0, Math.min(3, days))
-  return { parts }
+  return { ...recipe, parts }
+}
+
+/** The recipe with lesson `a` taught together with `b` (the next lesson), or apart again when `b` is null. */
+export function withJoin(recipe: Recipe | undefined, a: string, b: string | null): Recipe {
+  const joins = { ...(recipe?.joins || {}) }
+  if (b) joins[a] = b; else delete joins[a]
+  return { parts: { ...(recipe?.parts || {}) }, ...recipe, joins }
+}
+/** The recipe with a lesson left out on purpose, or brought back. */
+export function withSkip(recipe: Recipe | undefined, lessonId: string, skip: boolean): Recipe {
+  const skips = (recipe?.skips || []).filter(x => x !== lessonId)
+  if (skip) skips.push(lessonId)
+  return { parts: { ...(recipe?.parts || {}) }, ...recipe, skips }
 }
 
 /** Reads a row from the database, tolerating missing or malformed JSON. */
@@ -102,7 +129,11 @@ export function readSetup(row: Record<string, unknown>): ClassSetup {
   for (const [k, v] of Object.entries(obj(row.recipes))) {
     const parts: Record<string, number> = {}
     for (const [p, n] of Object.entries(obj(obj(v).parts))) if (typeof n === 'number') parts[p] = n
-    recipes[k] = { parts }
+    const joins: Record<string, string> = {}
+    for (const [a, b] of Object.entries(obj(obj(v).joins))) if (typeof b === 'string') joins[a] = b
+    const sk = obj(v).skips
+    const skips = Array.isArray(sk) ? sk.filter((x): x is string => typeof x === 'string') : []
+    recipes[k] = { parts, ...(Object.keys(joins).length ? { joins } : {}), ...(skips.length ? { skips } : {}) }
   }
   const standing = (Array.isArray(row.standing) ? row.standing : []).filter((s): s is StandingItem => !!s && typeof s.title === 'string' && Number.isInteger(s.weekday))
   return { english_class: String(row.english_class || ''), grade: Number(row.grade) || 0, days, recipes, standing, updated_at: (row.updated_at as string) || null }

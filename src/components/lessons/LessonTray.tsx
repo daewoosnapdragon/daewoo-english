@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { ArrowRight, ChevronDown, Undo2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowRight, BookOpen, ChevronDown, MoreHorizontal, Undo2, X } from 'lucide-react'
+import { standardInfo, standardTitle } from '@/lib/standardText'
 import type { TrayLane, TraySlot } from '@/lib/lessonTray'
 import type { RunningUnit } from '@/lib/lessonSync'
 
@@ -14,13 +15,28 @@ export type TraySel = { kind: 'slot'; placement_id: string; slot: TraySlot } | {
 /** Drag data: "tray|slot|<placement>|<slot key>" or "tray|unit|<placement>|<unit id>". */
 export const dragData = (sel: TraySel) => sel.kind === 'slot' ? `tray|slot|${sel.placement_id}|${sel.slot.key}` : `tray|unit|${sel.placement_id}|${sel.unit_id}`
 
-export function LessonTray({ lanes, sel, onSelect, canEdit, open, onToggleBook, hoverUnit, onHoverUnit, focusUnit, undoLabel, onUndo, onHide, noSetup }: {
+/** What a lesson card can show from the book. */
+export interface LessonInfo { notes: string; objective: string; ccss: string[]; draft: boolean; files: { name: string; url: string }[] }
+/** Changes to how the class teaches a book, made from a card's menu. */
+export type RecipeOp =
+  | { op: 'split'; slot: TraySlot } | { op: 'unsplit'; slot: TraySlot }
+  | { op: 'join'; slot: TraySlot; next: TraySlot } | { op: 'unjoin'; slot: TraySlot }
+  | { op: 'skip'; slot: TraySlot } | { op: 'unskip'; lesson_id: string; title: string }
+export interface CatchUp { text: string; action?: { label: string; run: () => void } }
+
+export function LessonTray({ lanes, sel, onSelect, canEdit, open, onToggleBook, hoverUnit, onHoverUnit, focusUnit, undoLabel, onUndo, onHide, noSetup, info, onRecipe, tips, others }: {
   lanes: TrayLane[]; sel: TraySel | null; onSelect: (s: TraySel | null) => void; canEdit: boolean
   open: (placementId: string, auto: boolean) => boolean; onToggleBook: (placementId: string, now: boolean) => void
   hoverUnit: string | null; onHoverUnit: (u: string | null) => void; focusUnit: string | null
   undoLabel: string | null; onUndo: () => void; onHide: () => void; noSetup: boolean
+  info: (lessonId: string, unitId: string) => LessonInfo | null
+  onRecipe: (lane: TrayLane, op: RecipeOp) => void
+  tips: Record<string, CatchUp>
+  others: Record<string, { cls: string; grade: number; unit: string }[]>
 }) {
   const focusRef = useRef<HTMLDivElement | null>(null)
+  const [menu, setMenu] = useState<string | null>(null)
+  const [detail, setDetail] = useState<string | null>(null)
   useEffect(() => { if (focusUnit) focusRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) }, [focusUnit])
   return (
     <aside aria-label="Lesson tray" className="w-[360px] shrink-0 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto space-y-3 pb-4">
@@ -54,6 +70,14 @@ export function LessonTray({ lanes, sel, onSelect, canEdit, open, onToggleBook, 
             </button>
             {isOpen && (
               <div className="px-3 pb-3 space-y-2.5">
+                {tips[lane.book.placement_id] && (
+                  <div className="rounded-xl border border-warn/40 bg-warn-soft/60 px-3 py-2.5 space-y-2">
+                    <p className="text-[14px] text-text-primary leading-snug">{tips[lane.book.placement_id].text}</p>
+                    {canEdit && tips[lane.book.placement_id].action && (
+                      <button onClick={tips[lane.book.placement_id].action!.run} className="text-[14px] font-semibold px-3 rounded-lg bg-navy text-white min-h-[40px]">{tips[lane.book.placement_id].action!.label}</button>
+                    )}
+                  </div>
+                )}
                 {lane.units.map(u => {
                   const lit = hoverUnit === u.unit_id || focusUnit === u.unit_id
                   const unitSel = sel?.kind === 'unit' && sel.unit_id === u.unit_id
@@ -75,23 +99,93 @@ export function LessonTray({ lanes, sel, onSelect, canEdit, open, onToggleBook, 
                           </button>
                         )}
                       </div>
-                      {u.slots.map(s => {
+                      {u.slots.map((s, si) => {
                         const pick: TraySel = { kind: 'slot', placement_id: lane.book.placement_id, slot: s }
                         const on = sel?.kind === 'slot' && sel.slot.key === s.key
+                        const next = u.slots[si + 1]
+                        const items: { label: string; help: string; op: RecipeOp }[] = []
+                        if (s.lesson_id) {
+                          if (s.kind === 'plain') items.push({ label: 'Split into 2 days', help: `Saved to your recipe: ${s.part} takes 2 days in every unit of this book.`, op: { op: 'split', slot: s } })
+                          if (s.kind === 'split') items.push({ label: 'Back to one day', help: `${s.part} takes one day again in every unit.`, op: { op: 'unsplit', slot: s } })
+                          if (s.kind === 'plain' && next?.kind === 'plain' && next.lesson_id) items.push({ label: `Join with ${next.title}`, help: 'Taught as one lesson, in this unit only.', op: { op: 'join', slot: s, next } })
+                          if (s.kind === 'join') items.push({ label: 'Split back into two', help: 'Two lessons again.', op: { op: 'unjoin', slot: s } })
+                          if (s.kind === 'plain') items.push({ label: 'Skip', help: 'Left out on purpose. Listed below, where you can bring it back.', op: { op: 'skip', slot: s } })
+                        }
+                        const inf = s.lesson_id ? info(s.lesson_id, u.unit_id) : null
+                        const menuOpen = menu === s.key, detailOpen = detail === s.key
                         return (
-                          <button key={s.key} disabled={!canEdit}
-                            draggable={canEdit} onDragStart={e => { e.dataTransfer.setData('text/plain', dragData(pick)); e.dataTransfer.effectAllowed = 'copy'; onSelect(pick) }}
-                            onClick={() => onSelect(on ? null : pick)} aria-pressed={on}
-                            className={`w-full text-left flex flex-col gap-1 px-3 py-2.5 rounded-lg border-2 bg-surface min-h-[44px] ${canEdit ? 'cursor-grab' : 'cursor-default'}`}
+                          <div key={s.key} draggable={canEdit} onDragStart={e => { e.dataTransfer.setData('text/plain', dragData(pick)); e.dataTransfer.effectAllowed = 'copy'; onSelect(pick) }}
+                            className={`rounded-lg border-2 bg-surface ${canEdit ? 'cursor-grab' : ''}`}
                             style={{ borderColor: on ? lane.book.color : 'rgb(var(--rule))', boxShadow: on ? `0 0 0 3px ${lane.book.color}33` : undefined }}>
-                            <span className="text-[15px] font-semibold text-text-primary leading-snug">{s.title}{s.of > 1 ? ` (${s.n} of ${s.of})` : ''}</span>
-                            {s.tag && <span className={`self-start text-[12px] font-semibold rounded-full px-2 py-0.5 ${s.tag === 'this week' ? 'bg-surface-alt text-text-primary' : 'bg-warn-soft text-warn'}`}>{s.tag}</span>}
-                          </button>
+                            <div className="flex items-start gap-1.5 pl-3 pr-1.5 py-1.5">
+                              <button disabled={!canEdit} onClick={() => onSelect(on ? null : pick)} aria-pressed={on}
+                                className="flex-1 min-w-0 text-left flex flex-col gap-1 py-1 min-h-[40px] disabled:cursor-default">
+                                <span className="text-[15px] font-semibold text-text-primary leading-snug">{s.title}{s.of > 1 ? ` (${s.n} of ${s.of})` : ''}</span>
+                                {s.tag && <span className={`self-start text-[12px] font-semibold rounded-full px-2 py-0.5 ${s.tag === 'this week' ? 'bg-surface-alt text-text-primary' : 'bg-warn-soft text-warn'}`}>{s.tag}</span>}
+                              </button>
+                              {inf && (
+                                <button onClick={() => { setDetail(detailOpen ? null : s.key); setMenu(null) }} aria-expanded={detailOpen} aria-label={`What the book has for ${s.title}`} title="From the book"
+                                  className={`w-9 h-9 shrink-0 rounded-lg border inline-flex items-center justify-center ${detailOpen ? 'border-navy text-navy' : 'border-border text-text-secondary hover:text-navy'}`}><BookOpen size={16} /></button>
+                              )}
+                              {canEdit && items.length > 0 && (
+                                <button onClick={() => { setMenu(menuOpen ? null : s.key); setDetail(null) }} aria-expanded={menuOpen} aria-label={`Split, join or skip ${s.title}`} title="Split, join or skip"
+                                  className={`w-9 h-9 shrink-0 rounded-lg border inline-flex items-center justify-center ${menuOpen ? 'border-navy text-navy' : 'border-border text-text-secondary hover:text-navy'}`}><MoreHorizontal size={16} /></button>
+                              )}
+                            </div>
+                            {menuOpen && (
+                              <div className="px-2 pb-2 space-y-1.5 border-t border-border pt-2">
+                                {items.map(it => (
+                                  <button key={it.label} onClick={() => { setMenu(null); onRecipe(lane, it.op) }}
+                                    className="w-full text-left px-3 py-2 rounded-lg border border-border bg-surface-alt/60 hover:border-navy min-h-[44px]">
+                                    <span className="block text-[14.5px] font-semibold text-text-primary">{it.label}</span>
+                                    <span className="block text-[13px] text-text-secondary leading-snug">{it.help}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {detailOpen && inf && (
+                              <div className="px-3 pb-3 pt-2 border-t border-border space-y-2">
+                                {inf.notes && (
+                                  <div>
+                                    <p className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">From the book</p>
+                                    {inf.notes.split(' / ').map((line, i) => <p key={i} className="text-[14px] text-text-primary leading-snug">{line}</p>)}
+                                  </div>
+                                )}
+                                {inf.objective && <p className="text-[14px] leading-snug"><span className="font-semibold text-navy">Students will</span> <span className="italic text-text-secondary">{inf.objective.replace(/^students will\s*/i, '')}</span></p>}
+                                {inf.ccss.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">{inf.ccss.map(c => { const i = standardInfo(c); return <span key={c} title={standardTitle(c)} className="text-[12px] px-1.5 py-0.5 rounded border border-border text-text-secondary cursor-help">{i.code}{i.plain ? ` · ${i.plain}` : ''}</span> })}</div>
+                                )}
+                                {inf.files.length > 0 && (
+                                  <div className="flex flex-col gap-0.5">{inf.files.map(f => <a key={f.url} href={f.url} target="_blank" rel="noreferrer" className="text-[14px] font-semibold text-navy underline truncate">{f.name}</a>)}</div>
+                                )}
+                                {inf.draft && <p className="text-[12.5px] text-text-tertiary">Drafted from the book, not checked yet. Once it is on a day, the day’s “From the book” chip adds it to Students will.</p>}
+                              </div>
+                            )}
+                          </div>
                         )
                       })}
                     </div>
                   )
                 })}
+                {lane.skipped.length > 0 && (
+                  <div className="pt-2 border-t border-border space-y-1.5">
+                    <p className="text-[13px] font-semibold text-text-secondary">Skipped on purpose</p>
+                    {lane.skipped.map(k => (
+                      <div key={k.lesson_id} className="flex items-center gap-2">
+                        <span className="flex-1 text-[14px] text-text-secondary leading-snug">{k.unitName} · {k.title}</span>
+                        {canEdit && <button onClick={() => onRecipe(lane, { op: 'unskip', lesson_id: k.lesson_id, title: k.title })} className="text-[13px] font-semibold px-2.5 rounded-lg border border-border bg-surface min-h-[36px] hover:border-navy">Bring back</button>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {(others[lane.book.book_id] || []).length > 0 && (
+                  <div className="pt-2 border-t border-border space-y-1">
+                    <p className="text-[13px] font-semibold text-text-secondary">Also teaching {lane.book.label}{lane.book.level ? ` ${lane.book.level}` : ''} this week</p>
+                    {others[lane.book.book_id].map(o => (
+                      <p key={o.cls + o.grade} className="text-[14px] text-text-primary leading-snug"><span className="font-semibold">{o.cls} Grade {o.grade}</span> <span className="text-text-secondary">· {o.unit}</span></p>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </section>

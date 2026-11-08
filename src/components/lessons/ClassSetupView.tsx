@@ -276,7 +276,8 @@ function RecipeCard({ series, books, recipe, perWeek, units, lessons, editable, 
   const days = typicalUnitDays(units, mine, recipe)
   const weeks = weeksFor(days, perWeek)
   const lessonsPerUnit = parts.filter(pt => partDays(recipe, pt.key) > 0).length
-  const asBook = !recipe || Object.keys(recipe.parts).length === 0
+  const asBook = !recipe || (Object.keys(recipe.parts).length === 0 && !Object.keys(recipe.joins || {}).length && !(recipe.skips || []).length)
+  const singles = Object.keys(recipe?.joins || {}).length + (recipe?.skips || []).length
   return (
     <div className="rounded-xl bg-surface-alt/60 border border-border p-4 space-y-4">
       <div className="flex flex-wrap items-start gap-3">
@@ -292,12 +293,13 @@ function RecipeCard({ series, books, recipe, perWeek, units, lessons, editable, 
             <button disabled={!editable || asBook} onClick={() => onChange({ parts: {} }, 'as the book has it')}
               className={`text-[14px] font-semibold px-3.5 rounded-full border min-h-[40px] ${asBook ? 'bg-navy text-white border-navy' : 'bg-surface border-border enabled:hover:border-navy'}`}>As the book has it</button>
             {others.map(o => (
-              <button key={o.english_class + o.grade} disabled={!editable} onClick={() => onChange({ parts: { ...o.recipes[series.id].parts } }, `copied from ${o.english_class}`)}
+              <button key={o.english_class + o.grade} disabled={!editable} onClick={() => onChange({ ...o.recipes[series.id], parts: { ...o.recipes[series.id].parts } }, `copied from ${o.english_class}`)}
                 className="text-[14px] font-semibold px-3.5 rounded-full border border-border bg-surface min-h-[40px] enabled:hover:border-navy">
                 Copy {o.english_class}{o.grade ? ` Grade ${o.grade}` : ''}’s
               </button>
             ))}
           </div>
+          {singles > 0 && <p className="text-[14px] text-text-secondary">Also {Object.keys(recipe?.joins || {}).length ? `${Object.keys(recipe?.joins || {}).length} pair${Object.keys(recipe?.joins || {}).length > 1 ? 's' : ''} of lessons joined` : ''}{Object.keys(recipe?.joins || {}).length && (recipe?.skips || []).length ? ' and ' : ''}{(recipe?.skips || []).length ? `${(recipe?.skips || []).length} lesson${(recipe?.skips || []).length > 1 ? 's' : ''} skipped` : ''} in single units, from the lesson tray. “As the book has it” clears those too.</p>}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[620px] bg-surface rounded-lg border border-border text-left">
               <thead>

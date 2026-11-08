@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { emptySetup, lessonSlots, partDays, partOf, readSetup, seriesParts, setupFor, typicalUnitDays, weeksFor, withPart } from '../classSetup'
+import { emptySetup, lessonSlots, partDays, partOf, readSetup, seriesParts, setupFor, typicalUnitDays, weeksFor, withJoin, withPart, withSkip } from '../classSetup'
 
 const L = (unit_id: string, sort_order: number, title: string, notes = '') => ({ unit_id, sort_order, title, notes })
 // Two Hand in Hand units and a School Link, as the seed has them.
@@ -43,5 +43,19 @@ describe('class setup', () => {
     expect(s.recipes).toEqual({ a: { parts: { Grammar: 2 } } })
     expect(s.standing).toHaveLength(1)
     expect(readSetup({ english_class: 'X', grade: 0, days: null, recipes: [], standing: 'no' })).toMatchObject({ days: {}, recipes: {}, standing: [] })
+  })
+  it('joins a lesson with the next one and leaves skipped lessons out, for single lessons only', () => {
+    const ls = [{ id: 'c1', sort_order: 1, title: 'Conversation' }, { id: 'c2', sort_order: 2, title: 'Words' }, { id: 'c3', sort_order: 3, title: 'Grammar' }, { id: 'c4', sort_order: 4, title: 'English Sounds' }]
+    let r = withSkip(withJoin(withPart(undefined, 'Grammar', 2), 'c2', 'c3'), 'c4', true)
+    const slots = lessonSlots(ls, r)
+    expect(slots.map(s => [s.lesson.id, s.joined?.id || null, s.n, s.of])).toEqual([['c1', null, 1, 1], ['c2', 'c3', 1, 1]])
+    expect(r.parts).toEqual({ Grammar: 2 })
+    r = withSkip(withJoin(r, 'c2', null), 'c4', false)
+    expect(lessonSlots(ls, r).map(s => `${s.lesson.id}${s.n}`)).toEqual(['c11', 'c21', 'c31', 'c32', 'c41'])
+    // With the lesson between them skipped, two lessons are next to each other and can be joined.
+    expect(lessonSlots(ls, withSkip(withJoin(undefined, 'c1', 'c3'), 'c2', true)).map(s => s.joined?.id || '-')).toEqual(['c3', '-'])
+    // A join to a lesson that is not next does nothing.
+    expect(lessonSlots(ls, withJoin(undefined, 'c1', 'c3')).map(s => s.joined?.id || '-')).toEqual(['-', '-', '-', '-'])
+    expect(readSetup({ english_class: 'S', grade: 0, recipes: { a: { parts: {}, joins: { c2: 'c3', bad: 1 }, skips: ['c4', 3] } } }).recipes.a).toEqual({ parts: {}, joins: { c2: 'c3' }, skips: ['c4'] })
   })
 })

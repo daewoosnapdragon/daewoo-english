@@ -9,16 +9,19 @@ import type { PlanDay } from '@/lib/lessonSync'
 // part none). A lesson leaves the tray when a day names it and comes back
 // when it is taken off, so the tray is worked out from the plans every time.
 
-export interface TrayBook { placement_id: string; series_id: string; label: string; level: string; color: string }
+export interface TrayBook { placement_id: string; book_id: string; series_id: string; label: string; level: string; color: string }
 export interface TraySlot {
   key: string                      // lesson id, "#n" for a part on its second day; the unit id for a unit with no lessons
   unit_id: string; unitName: string
   lesson_id: string | null; title: string
+  part: string                     // the part of the unit, for the recipe ("Grammar")
+  kind: 'plain' | 'split' | 'join' // one lesson, a part over several days, or two lessons taught as one
+  joined_id?: string               // for a join: the second lesson
   n: number; of: number
   tag: '' | 'this week' | 'carried over' | string
 }
 export interface TrayUnit { unit_id: string; name: string; slots: TraySlot[]; window: { first: string; last: string } | null }
-export interface TrayLane { book: TrayBook; units: TrayUnit[]; left: number; due: number }
+export interface TrayLane { book: TrayBook; units: TrayUnit[]; left: number; due: number; skipped: { lesson_id: string; unit_id: string; unitName: string; title: string }[] }
 
 /** How many days name each lesson, and each unit without a lesson. */
 export function usedCounts(days: Record<string, PlanDay>): { lessons: Map<string, number>; unitOnly: Map<string, number> } {
@@ -61,7 +64,7 @@ export function trayLanes({ books, unitOrder, units, lessons, recipes, used, uni
       const ls = byUnit.get(unitId) || []
       let slots: TraySlot[]
       if (!ls.length) {
-        slots = (used.unitOnly.get(unitId) || 0) > 0 ? [] : [{ key: unitId, unit_id: unitId, unitName: name, lesson_id: null, title: name, n: 1, of: 1, tag: moved[unitId] || when }]
+        slots = (used.unitOnly.get(unitId) || 0) > 0 ? [] : [{ key: unitId, unit_id: unitId, unitName: name, lesson_id: null, title: name, part: '', kind: 'plain', n: 1, of: 1, tag: moved[unitId] || when }]
       } else {
         // A lesson named on k days has used its first k slots.
         const seen = new Map<string, number>()
@@ -69,8 +72,9 @@ export function trayLanes({ books, unitOrder, units, lessons, recipes, used, uni
           const k = (seen.get(s.lesson.id) || 0) + 1; seen.set(s.lesson.id, k)
           return k > (used.lessons.get(s.lesson.id) || 0)
         }).map(s => {
-          const key = s.n > 1 ? `${s.lesson.id}#${s.n}` : s.lesson.id
-          return { key, unit_id: unitId, unitName: name, lesson_id: s.lesson.id, title: s.lesson.title, n: s.n, of: s.of, tag: moved[key] || moved[s.lesson.id] || when }
+          const key = s.joined ? `${s.lesson.id}+${s.joined.id}` : s.n > 1 ? `${s.lesson.id}#${s.n}` : s.lesson.id
+          const kind: TraySlot['kind'] = s.joined ? 'join' : s.of > 1 ? 'split' : 'plain'
+          return { key, unit_id: unitId, unitName: name, lesson_id: s.lesson.id, title: s.joined ? `${s.lesson.title} + ${s.joined.title}` : s.lesson.title, part: s.part, kind, ...(s.joined ? { joined_id: s.joined.id } : {}), n: s.n, of: s.of, tag: moved[key] || moved[s.lesson.id] || when }
         })
       }
       if (slots.length) out.push({ unit_id: unitId, name, slots, window })
@@ -79,7 +83,9 @@ export function trayLanes({ books, unitOrder, units, lessons, recipes, used, uni
     const rank = (s: TraySlot) => (s.tag.startsWith('moved') ? 0 : s.tag === 'carried over' ? 1 : 2)
     out.sort((a, b) => Math.min(...a.slots.map(rank)) - Math.min(...b.slots.map(rank)))
     const all = out.flatMap(u => u.slots)
-    return { book, units: out, left: all.length, due: all.filter(s => s.tag && s.tag !== '').length }
+    const skips = new Set(recipes[book.series_id]?.skips || [])
+    const skipped = (unitOrder.get(book.placement_id) || []).flatMap(unitId => (byUnit.get(unitId) || []).filter(l => skips.has(l.id)).map(l => ({ lesson_id: l.id, unit_id: unitId, unitName: splitUnitTitle(units.find(x => x.id === unitId)?.title || '').name, title: l.title })))
+    return { book, units: out, left: all.length, due: all.filter(s => s.tag && s.tag !== '').length, skipped }
   })
 }
 

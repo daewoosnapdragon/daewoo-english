@@ -19,10 +19,10 @@ import { boardWeekDays, bookPattern, classDays, isEmptyDay as isEmptyPlan, lesso
 import { fetchFixedDays, fetchPlanDays, saveDays } from '@/lib/lessonSyncData'
 import { HALVES, academicYears, termDates } from '@/lib/curriculumPacing'
 import { loadAwayDays } from '@/lib/calendarDays'
-import { LessonTray, MonthMap, PlacingBar, type TraySel } from './LessonTray'
-import { slotLine, spreadDates, trayLanes, usedCounts, weekPace, type TraySlot } from '@/lib/lessonTray'
-import { lessonSlots, setupFor, type ClassSetup } from '@/lib/classSetup'
-import { fetchSetups } from '@/lib/classSetupData'
+import { LessonTray, MonthMap, PlacingBar, type CatchUp, type LessonInfo, type RecipeOp, type TraySel } from './LessonTray'
+import { slotLine, spreadDates, trayLanes, usedCounts, weekPace, type TrayLane, type TraySlot } from '@/lib/lessonTray'
+import { emptySetup, lessonSlots, setupFor, withJoin, withPart, withSkip, type ClassSetup, type Recipe } from '@/lib/classSetup'
+import { fetchSetups, isSetupMissing, saveSetupField } from '@/lib/classSetupData'
 
 interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number; grade?: number }
 interface LessonEntry { id?: string; slot_label: string; title: string; objective: string; notes: string }
@@ -589,7 +589,8 @@ function ParentCalendarView() {
   const [focusUnit, setFocusUnit] = useState<string | null>(null)
   const [bookOpen, setBookOpen] = useState<Record<string, boolean>>({})
   const [moved, setMoved] = useState<Record<string, string>>({})
-  const [trayUndo, setTrayUndo] = useState<{ label: string; before: Record<string, DayContent | null> }[]>([])
+  // Each tray change, to undo: the days as they were, or the class's recipes as they were.
+  const [trayUndo, setTrayUndo] = useState<{ label: string; before?: Record<string, DayContent | null>; recipes?: { grade: number; value: Record<string, Recipe> } }[]>([])
   const [trayBusy, setTrayBusy] = useState(false)
   useEffect(() => { setTraySel(null); setTrayUndo([]); setMoved({}); setFocusUnit(null) }, [selectedClass, selectedGrade])
   useEffect(() => { if (!traySel) return; const k = (e: KeyboardEvent) => { if (e.key === 'Escape') setTraySel(null) }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [traySel])
@@ -696,7 +697,65 @@ function ParentCalendarView() {
   const trayUndoLast = async () => {
     const last = trayUndo[trayUndo.length - 1]; if (!last || trayBusy) return
     setTrayUndo(u => u.slice(0, -1))
-    if (await trayWrite(Object.keys(last.before), d => last.before[d] ? cloneDay(last.before[d]!) : emptyDay(), null)) showToast(`Undone: ${last.label}`)
+    if (last.recipes) { if (await writeRecipes(last.recipes.grade, last.recipes.value)) showToast(`Undone: ${last.label}`); return }
+    const before = last.before || {}
+    if (await trayWrite(Object.keys(before), d => before[d] ? cloneDay(before[d]!) : emptyDay(), null)) showToast(`Undone: ${last.label}`)
+  }
+  /** Saves the class's recipes (the setup row this grade uses), showing them at once and putting them back if the save fails. */
+  const writeRecipes = async (grade: number, value: Record<string, Recipe>): Promise<boolean> => {
+    const put = (v: Record<string, Recipe>) => setSetups(rows => {
+      const i = rows.findIndex(r => r.english_class === selectedClass && r.grade === grade)
+      const row = { ...(i >= 0 ? rows[i] : emptySetup(selectedClass, grade)), recipes: v }
+      return i >= 0 ? rows.map((r, k) => (k === i ? row : r)) : [...rows, row]
+    })
+    const was = setupFor(setups, selectedClass, selectedGrade).recipes
+    put(value)
+    const r = await saveSetupField(selectedClass, grade, 'recipes', value, currentTeacher?.id)
+    if (r.error) { put(was); showToast(isSetupMissing(r.error) ? 'Run supabase/migration-class-setup.sql first: the class setup has nowhere to save yet.' : `Could not save: ${r.error}`); return false }
+    return true
+  }
+  /** Split, join or skip from a tray card: a change to how the class teaches the book, saved to its Class setup. */
+  const trayRecipe = async (lane: TrayLane, op: RecipeOp) => {
+    if (!canEdit || trayBusy) return
+    const sid = lane.book.series_id, prev = setup.recipes, cur = prev[sid]
+    let next: Recipe, label: string, msg: string
+    if (op.op === 'split') { next = withPart(cur, op.slot.part, 2); label = `${op.slot.part} over 2 days`; msg = `${op.slot.part} takes 2 days in every unit of ${lane.book.label} now. Change it any time in Class setup.` }
+    else if (op.op === 'unsplit') { next = withPart(cur, op.slot.part, 1); label = `${op.slot.part} back to one day`; msg = `${op.slot.part} takes one day again.` }
+    else if (op.op === 'join') { next = withJoin(cur, op.slot.lesson_id!, op.next.lesson_id!); label = `joined ${op.slot.title} + ${op.next.title}`; msg = `${op.slot.title} and ${op.next.title} are one lesson in ${op.slot.unitName}.` }
+    else if (op.op === 'unjoin') { next = withJoin(cur, op.slot.lesson_id!, null); label = `split ${op.slot.title}`; msg = 'Two lessons again.' }
+    else if (op.op === 'skip') { next = withSkip(cur, op.slot.lesson_id!, true); label = `skipped ${op.slot.title}`; msg = `${op.slot.unitName} · ${op.slot.title} is skipped on purpose. It is listed under “Skipped on purpose” in the tray.` }
+    else { next = withSkip(cur, op.lesson_id, false); label = `brought back ${op.title}`; msg = `${op.title} is back in the tray.` }
+    setTrayBusy(true)
+    try {
+      if (await writeRecipes(setup.grade, { ...prev, [sid]: next })) {
+        setTrayUndo(u => [...u.slice(-19), { label, recipes: { grade: setup.grade, value: prev } }])
+        showToast(msg)
+        logActivity('saved', `Class setup · ${selectedClass}${setup.grade ? ` · Grade ${setup.grade}` : ''}: ${lane.book.label} ${label}`, { key: `classsetup|${selectedClass}|${setup.grade}|recipes` })
+      }
+    } finally { setTrayBusy(false) }
+  }
+  /** What the book has for a lesson card: its notes, the draft objective, standards and files. */
+  const lessonInfo = (lessonId: string, unitId: string): LessonInfo | null => {
+    const l = sync.lessons.find(x => x.id === lessonId); if (!l) return null
+    const files = sync.resources.filter(r => r.lesson_id === lessonId || (r.unit_id === unitId && !r.lesson_id)).map(r => ({ name: r.name, url: r.url })).filter(f => !!f.url)
+    if (!l.notes?.trim() && !l.objective?.trim() && !l.ccss_codes.length && !files.length) return null
+    return { notes: l.notes || '', objective: l.objective || '', ccss: l.ccss_codes, draft: l.source === 'claude' && !l.confirmed_at, files }
+  }
+  // A book with more lessons due than usual days left this week offers to join two.
+  const catchUps: Record<string, CatchUp> = {}
+  if (syncOn && canEdit) for (const lane of lanes) {
+    const usual = setup.days[lane.book.series_id]
+    if (!usual?.length) continue
+    const week = usual.map(wd => shiftDate(focusMonday, wd))
+    const free = week.filter(d => d >= todayStr && isClassDay(d) && !hasBook(d, lane.book.placement_id))
+    const lost = week.filter(d => !isClassDay(d) && blockedDays[d]?.title).map(d => `${DAY_SHORT[(new Date(d + 'T12:00:00Z').getUTCDay() + 6) % 7]} is ${blockedDays[d].title}`)
+    const due = lane.units.flatMap(u => u.slots.map((sl, i) => ({ sl, next: u.slots[i + 1] }))).filter(x => !!x.sl.tag)
+    if (due.length < 2 || due.length <= free.length) continue
+    const pair = due.find(x => x.sl.kind === 'plain' && x.sl.lesson_id && x.next?.kind === 'plain' && x.next.lesson_id && !!x.next.tag)
+    catchUps[lane.book.placement_id] = {
+      text: `${lost.length ? lost.join(', ') + ', so ' : ''}${lane.book.label} has ${free.length} day${free.length === 1 ? '' : 's'} left this week for ${due.length} lessons.${pair ? ' Join two into one lesson?' : ' What doesn’t fit carries into next week.'}`,
+      ...(pair ? { action: { label: `Join ${pair.sl.title} + ${pair.next!.title}`, run: () => trayRecipe(lane, { op: 'join', slot: pair.sl, next: pair.next! }) } } : {}),
+    }
   }
   const trayDrop = (date: string, raw: string) => {
     const [tag, kind, placement, id] = raw.split('|')
@@ -1475,7 +1534,8 @@ ${pages.join('\n')}
             open={(pl, auto) => bookOpen[pl] ?? (auto || focusUnit !== null && lanes.some(l => l.book.placement_id === pl && l.units.some(u => u.unit_id === focusUnit)))}
             onToggleBook={(pl, now) => setBookOpen(o => ({ ...o, [pl]: now }))}
             undoLabel={trayUndo.length ? trayUndo[trayUndo.length - 1].label : null} onUndo={trayUndoLast} onHide={() => setTrayOpen(false)}
-            noSetup={trayActive && sync.books.length > 0 && sync.books.every(b => !(setup.days[b.series_id] || []).length)} />
+            noSetup={trayActive && sync.books.length > 0 && sync.books.every(b => !(setup.days[b.series_id] || []).length)}
+            info={lessonInfo} onRecipe={trayRecipe} tips={catchUps} others={sync.othersOnBook} />
         )}
         </div>
       </div>
