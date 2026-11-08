@@ -8,7 +8,8 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Save, Copy, Sparkles } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Save, Copy, Sparkles, Settings2 } from 'lucide-react'
 import { splitUnitTitle, type CurriculumLesson } from '@/lib/curriculumCore'
 import { standardInfo, standardTitle } from '@/lib/standardText'
 import { bareObjective } from '@/lib/curriculumWeek'
@@ -899,6 +900,12 @@ ${pages.join('\n')}
             <p className="text-[13px] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
           </div>
           <div className="flex items-center gap-2">
+            {syncOn && (
+              <Link href={`/lesson-plans/setup?class=${encodeURIComponent(selectedClass)}`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium border border-border bg-surface text-text-primary hover:border-navy">
+                <Settings2 size={14} /> Class setup
+              </Link>
+            )}
             <div className="relative">
               <div className="flex">
                 <button onClick={() => handlePrint()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">{printingAll ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />} Print Month</button>
