@@ -72,6 +72,8 @@ export interface CurriculumResource {
   id: string; unit_id: string | null; lesson_id: string | null; name: string; kind: ResourceKind; url: string; copies_hint: number | null
   added_by: string | null; created_at: string
 }
+/** One line of a unit's objective bank: it finishes "Students will …", with the standards it serves. */
+export interface CurriculumObjective { id: string; unit_id: string; sort_order: number; text: string; ccss_codes: string[]; wida: string[] }
 export interface CurriculumSkill { code: string; label: string; strand: Strand; parent_code: string | null; sort_order: number }
 
 export const isCurriculumMissing = (message: string | undefined | null) =>

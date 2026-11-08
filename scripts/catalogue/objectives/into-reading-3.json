@@ -1,0 +1,2379 @@
+{
+  "series": "Into Reading",
+  "level": "3",
+  "units": [
+    {
+      "title": "M1 W1 · Zach Jumps In!",
+      "objectives": [
+        {
+          "text": "say who is telling Zach's story and what that lets readers know",
+          "ccss": [
+            "RL.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "predict what Zach will do next and check the guess while reading",
+          "ccss": [
+            "RL.3.10",
+            "RL.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe Zach, the setting and the problem he faces",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use the words winking, suggest, scrunches and mushy when talking about the story",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M1 W1 · Marisol McDonald Doesn't Match",
+      "objectives": [
+        {
+          "text": "describe how Marisol feels when people say she does not match",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the lesson Marisol learns about being herself",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "say who tells the story and how Marisol's view compares with theirs",
+          "ccss": [
+            "RL.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words clash, mismatched, bilingual and usual to talk about Marisol",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about a time they liked doing something their own way",
+          "ccss": [
+            "W.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M1 W2 · Judy Moody, Mood Martian",
+      "objectives": [
+        {
+          "text": "stop and reread when a part of Judy Moody's story is confusing",
+          "ccss": [
+            "RL.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain funny sayings in the story that do not mean exactly what they say",
+          "ccss": [
+            "RL.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe Judy's moods and how they change what she does",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use the words moody, pesky, snarled and protested to describe characters",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M1 W2 · Stink and the Freaky Frog Freakout",
+      "objectives": [
+        {
+          "text": "ask questions and reread to clear up confusing parts of Stink's story",
+          "ccss": [
+            "RL.3.10",
+            "RL.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "find colorful phrases the author uses and say what they really mean",
+          "ccss": [
+            "RL.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how Stink acts and feels as the story's problem grows",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words illustrate, annual, recited and pesky in their own sentences",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "compare Stink with his sister Judy in a short talk with a partner",
+          "ccss": [
+            "RL.3.9",
+            "SL.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive",
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M1 W3 · Scaredy Squirrel",
+      "objectives": [
+        {
+          "text": "work out how Scaredy Squirrel feels from clues in the words and pictures",
+          "ccss": [
+            "RL.3.1",
+            "RL.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use Scaredy's lists, plans and labels to understand the story",
+          "ccss": [
+            "RL.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the lesson Scaredy learns when he leaves his tree",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use the words emergency, predictable, venturing and drastic to talk about Scaredy",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write an emergency plan of their own, like Scaredy's",
+          "ccss": [
+            "W.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 W1 · A LOL Story",
+      "objectives": [
+        {
+          "text": "read text messages and use the pictures to follow what is happening",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "retell the story the friends tell each other in their messages",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "say who is writing each message and how they feel",
+          "ccss": [
+            "RI.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words video, costumes, block and march in their own messages",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 W1 · Dear Primo: A Letter to my Cousin",
+      "objectives": [
+        {
+          "text": "retell what the two cousins tell each other about their lives",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "compare the cousins' homes, games and days from their letters",
+          "ccss": [
+            "RL.3.3",
+            "RL.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "say who is writing each letter and what each cousin cares about",
+          "ccss": [
+            "RL.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words block, hydrant, march and costumes to describe a neighborhood",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a friendly letter to a cousin or friend about their own day",
+          "ccss": [
+            "W.3.3",
+            "L.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 W2 · Adventures with Words",
+      "objectives": [
+        {
+          "text": "ask and answer questions about what each poem is describing",
+          "ccss": [
+            "RL.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "point out rhyme, rhythm and lines in the poems and read them aloud",
+          "ccss": [
+            "RL.3.4",
+            "RL.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "explain word pictures in the poems that compare one thing to another",
+          "ccss": [
+            "RL.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words breezy, steep, speed and conductor in a short poem",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 W2 · The Upside Down Boy",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the author's first days at a new school",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the author feels \"upside down\" and what the words mean",
+          "ccss": [
+            "RI.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures to understand the author's feelings and his family",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words desires, entry, steep and conductor when talking about the memoir",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell or write about a time something new felt hard at first",
+          "ccss": [
+            "W.3.3",
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 W3 · Dear Dragon",
+      "objectives": [
+        {
+          "text": "picture the pen pals and their worlds from the words in their letters",
+          "ccss": [
+            "RL.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe the two pen pals and how their friendship grows",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "notice the rhyme and rhythm in the letters written as poems",
+          "ccss": [
+            "RL.3.4",
+            "RL.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell what each pen pal thinks the other is like and what is true",
+          "ccss": [
+            "RL.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words assigned, projects, precious and mosaics in their own letter",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 W1 · American Places, American Ideals",
+      "objectives": [
+        {
+          "text": "tell what the author wants readers to learn about famous American places",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "state the main idea and the details that support it",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "connect each place to an idea Americans value, like freedom",
+          "ccss": [
+            "RI.3.2",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-SS.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words delegates, convention, welfare and posterity to talk about the text",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 W1 · The U.S. Constitution",
+      "objectives": [
+        {
+          "text": "explain why leaders wrote the U.S. Constitution and what it does",
+          "ccss": [
+            "RI.3.2",
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-SS.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "put events in order to show how the Constitution was written",
+          "ccss": [
+            "RI.3.5",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "put together facts from both texts this week to explain freedom in America",
+          "ccss": [
+            "RI.3.9"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive",
+            "ELD-SS.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "use the words delegates, convention, domestic and posterity to explain the Constitution",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 W2 · Why We Celebrate the Fourth of July",
+      "objectives": [
+        {
+          "text": "summarize the video's main points about the Fourth of July",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell how pictures, sound and narration in the video help them learn",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the order of events that led to Independence Day",
+          "ccss": [
+            "RI.3.5",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-SS.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words independence, declaring, endowed and presented to talk about the holiday",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 W2 · The Flag Maker",
+      "objectives": [
+        {
+          "text": "retell how the giant flag was made, in order",
+          "ccss": [
+            "RI.3.2",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "summarize the most important events in The Flag Maker",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how time-order words help them follow the true story",
+          "ccss": [
+            "RI.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words hoisted, broad, gritty and presented to describe the flag",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 W3 · Why is the Statue of Liberty Green?",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the Statue of Liberty using the text",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the main idea of why the Statue of Liberty changed color",
+          "ccss": [
+            "RI.3.2",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "tell what the author wants readers to learn about the statue",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words sculptor, monument, torch and ferry to describe the statue",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a few sentences explaining why the statue turned green",
+          "ccss": [
+            "W.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 W1 · That's Entertainment!",
+      "objectives": [
+        {
+          "text": "find the author's opinion and the reasons that support it",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "picture the shows and events the author describes",
+          "ccss": [
+            "RI.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "explain colorful phrases the author uses to persuade readers",
+          "ccss": [
+            "RI.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words genuine, saga, tame and whirled in their own sentences",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        },
+        {
+          "text": "give their own opinion about a favorite kind of show with two reasons",
+          "ccss": [
+            "W.3.1",
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 W1 · The Saga of Pecos Bill",
+      "objectives": [
+        {
+          "text": "picture the amazing things Pecos Bill does from the words in the play",
+          "ccss": [
+            "RL.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "point out the cast list, stage directions and lines in the play",
+          "ccss": [
+            "RL.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how exaggeration makes Pecos Bill a tall tale",
+          "ccss": [
+            "RL.3.3",
+            "RL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words coiled, whirled, tame and genuine to describe Pecos Bill",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "read a part in the play aloud with expression",
+          "ccss": [
+            "RF.3.4B",
+            "SL.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 W2 · The Traveling Trio: Český Krumlov, Czech Republic",
+      "objectives": [
+        {
+          "text": "retell what the video shows about the old castle theater",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell how the video's pictures and narration show how the stage works",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words baroque, pulleys, backdrop and performance to describe the theater",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain to a partner one thing they learned about old theaters",
+          "ccss": [
+            "SL.3.4",
+            "SL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 W2 · Gigi and the Wishing Ring",
+      "objectives": [
+        {
+          "text": "summarize what happens in each scene of the play",
+          "ccss": [
+            "RL.3.2",
+            "RL.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use the cast list and stage directions to follow the play",
+          "ccss": [
+            "RL.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the lesson of the play from what Gigi wishes for and learns",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words peasant, deceive, superior and merciful to describe the characters",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 W3 · Two Bear Cubs",
+      "objectives": [
+        {
+          "text": "reread and ask questions when a part of the play is confusing",
+          "ccss": [
+            "RL.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use stage directions and scenes to follow how the cubs are rescued",
+          "ccss": [
+            "RL.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe how the animals try to help the bear cubs",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell the lesson this myth teaches, using what the animals do",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use the words drowsy, hesitation, burden and reassuring to talk about the play",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 W1 · Teamwork = Victory!",
+      "objectives": [
+        {
+          "text": "tell what the author wants readers to learn about working as a team",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "ask and answer questions about teamwork using facts from the text",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "notice how the author's examples help explain why teams win",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words competition, technical, apprehensive and intercepted in their own sentences",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 W1 · Soccer Shootout",
+      "objectives": [
+        {
+          "text": "describe the soccer players and how they feel during the big game",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "ask and answer questions about what happens in the game",
+          "ccss": [
+            "RL.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the lesson about teamwork the story teaches",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use the words deflected, intercepted, sprawling and apprehensive to describe soccer action",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about a time they worked with a team",
+          "ccss": [
+            "W.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 W2 · Bend It Like Bianca",
+      "objectives": [
+        {
+          "text": "ask questions and rewatch when part of the video is unclear",
+          "ccss": [
+            "RI.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the video uses sound, pictures and acting to make viewers laugh",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "say what the video makers want viewers to think about teamwork",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words captain, upset, concentrated and disappointed to talk about the video",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 W2 · Running Rivals",
+      "objectives": [
+        {
+          "text": "reread and ask questions to clear up confusing parts of the story",
+          "ccss": [
+            "RL.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe the two rivals and how their feelings change during the race",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell why the author shows the story from one runner's side",
+          "ccss": [
+            "RL.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words finals, meets, force and personal to talk about the race",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 W3 · Brothers at Bat",
+      "objectives": [
+        {
+          "text": "predict what will happen to the brothers' team and check while reading",
+          "ccss": [
+            "RI.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain colorful phrases the author uses to describe the games",
+          "ccss": [
+            "RI.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "put the main events of the brothers' baseball team in order",
+          "ccss": [
+            "RI.3.5",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use the words rivalry, disbanded, generations and soared to tell the true story",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W1 · Frozen Alive",
+      "objectives": [
+        {
+          "text": "use photos, captions and headings to learn how animals survive the cold",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-SC.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "summarize the main ideas in Frozen Alive in their own words",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell what the author wants readers to learn about frozen animals",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words larvae, deposited, patch and cumbersome to describe animal life",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W1 · This Is Your Life Cycle",
+      "objectives": [
+        {
+          "text": "summarize the stages of the insect's life cycle told in the story",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-SC.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the author makes a science topic fun to read",
+          "ccss": [
+            "RL.3.4",
+            "RL.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words larvae, molt, unsuspecting and cumbersome to describe the life cycle",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "draw and label a life cycle and explain each stage to a partner",
+          "ccss": [
+            "SL.3.4",
+            "W.3.2"
+          ],
+          "wida": [
+            "ELD-SC.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W2 · The Nose Awards",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how animals use their noses",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-SC.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "state the main idea of the article and give supporting details",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "use headings and photos to find facts about each animal's nose",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words nostrils, keener, trumpet and flexible to describe animal noses",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W2 · Octopus Escapes Again",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how the octopus stays safe",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-SC.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea about the octopus's tricks for escaping danger",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain colorful phrases the author uses to describe the chase",
+          "ccss": [
+            "RI.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words siphon, lurking, invisible and flexible to explain an octopus escape",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W3 · T.J. The Siberian Tiger Cub",
+      "objectives": [
+        {
+          "text": "reread and ask questions when a part about T.J. is confusing",
+          "ccss": [
+            "RI.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "put the events of T.J.'s first months in order",
+          "ccss": [
+            "RI.3.5",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use photos and captions to learn how zoo workers cared for T.J. the cub",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-SC.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "state the main idea of the text and give supporting details",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "use the words nursery, assistant, refused and pounce to tell T.J.'s story",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W1 · Let's Build a Park!",
+      "objectives": [
+        {
+          "text": "find the writer's opinion about building a park and the reasons given",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the essay is organized: opinion, reasons, then an ending",
+          "ccss": [
+            "RI.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "compare their own view on a new park with the writer's",
+          "ccss": [
+            "RI.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        },
+        {
+          "text": "use the words crowded, pollution, scarce and factories to talk about the neighborhood",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        },
+        {
+          "text": "write an opinion about something that would make their town better",
+          "ccss": [
+            "W.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W1 · Farmer Will Allen and the Growing Table",
+      "objectives": [
+        {
+          "text": "tell what the author wants readers to learn about Will Allen",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "predict what Will Allen will do next and check while reading",
+          "ccss": [
+            "RI.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "put the main events of Will Allen's life in order",
+          "ccss": [
+            "RI.3.5",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use the words greenhouses, vertical, vats and scarce to describe his city farm",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W2 · One Plastic Bag",
+      "objectives": [
+        {
+          "text": "work out how the women feel about the plastic bags from clues in the text",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the problem the plastic bags cause and how the women solve it",
+          "ccss": [
+            "RI.3.5",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures to understand the village and the recycling work",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words recycled, forage, confesses and willing to retell the true story",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W2 · Energy Island",
+      "objectives": [
+        {
+          "text": "explain how the people of the island changed the way they get energy",
+          "ccss": [
+            "RI.3.3",
+            "RI.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive",
+            "ELD-SC.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "work out why the islanders were unsure at first from clues in the text",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use diagrams and pictures to understand how wind makes energy",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-SC.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words renewable, environmental, resources and converted to explain clean energy",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "share one idea for saving energy at home or school",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W3 · The Storyteller's Candle",
+      "objectives": [
+        {
+          "text": "connect events in the story to learn how a library helped a community",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe the characters and how the storyteller makes a difference",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use the pictures to understand the setting, a long time ago",
+          "ccss": [
+            "RL.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain word pictures the author uses to describe the candle and the city",
+          "ccss": [
+            "RL.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words flickered, chimed, slender and preparations to describe the story",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M8 W1 · A Century of Amazing Inventions",
+      "objectives": [
+        {
+          "text": "use headings, photos and captions to learn about inventions from the last hundred years",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "work out how each invention changed people's lives from clues in the text",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "state the main idea of the text and give supporting details",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "use the words device, radar, breakthrough and technology to describe inventions",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M8 W1 · Timeless Thomas",
+      "objectives": [
+        {
+          "text": "put the events of Thomas Edison's life and inventions in order",
+          "ccss": [
+            "RI.3.5",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea of Timeless Thomas and give supporting details",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "work out what kind of person Edison was from clues in the text",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words valuable, dictation, device and breakthrough to talk about Edison",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write about which of Edison's inventions they use most",
+          "ccss": [
+            "W.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M8 W2 · A Bumpy Ride",
+      "objectives": [
+        {
+          "text": "predict how the invention will change next and check while reading",
+          "ccss": [
+            "RI.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell what the author wants readers to learn about this invention's history",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain colorful phrases the author uses to describe the bumpy rides",
+          "ccss": [
+            "RI.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words contraption, craze, era and dynamo to describe the invention",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M8 W2 · Rosie Revere, Engineer",
+      "objectives": [
+        {
+          "text": "predict whether Rosie's invention will work and check while reading",
+          "ccss": [
+            "RL.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe Rosie and how she feels when her invention does not work",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell the message the author wants readers to learn about trying again",
+          "ccss": [
+            "RL.3.2",
+            "RL.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "notice rhyme and word pictures in the story poem and read it aloud",
+          "ccss": [
+            "RL.3.4",
+            "RF.3.4B"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words engineer, perplexed, baffled and quest to talk about Rosie",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M8 W3 · Edison's Best Invention",
+      "objectives": [
+        {
+          "text": "summarize the writer's reasons for choosing Edison's best invention",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "find the writer's claim and the facts that support it",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use photos and captions to learn about Edison's inventions",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words visionary, innovative, compact and memorable to describe an invention",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        },
+        {
+          "text": "write their own opinion about the most important invention, with reasons",
+          "ccss": [
+            "W.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W1 · Great Ideas from Great Parents!",
+      "objectives": [
+        {
+          "text": "find the writers' opinion about food and the reasons they give",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the editorial is organized into an opinion and reasons",
+          "ccss": [
+            "RI.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "state the main idea and the details that support it",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words dairy, stalk, grove and scarlet when talking about food",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        },
+        {
+          "text": "share an opinion about school lunches with a partner, giving one reason",
+          "ccss": [
+            "SL.3.1",
+            "W.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive",
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W1 · How Did that Get in My Lunchbox?",
+      "objectives": [
+        {
+          "text": "explain the steps that bring a food from the farm to the lunchbox",
+          "ccss": [
+            "RI.3.3",
+            "RI.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use photos, headings and captions to follow how foods are made",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "put together facts from both texts to explain where food comes from",
+          "ccss": [
+            "RI.3.2",
+            "RI.3.9"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "use the words dairy, curds, stalk and grove to explain how foods are made",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W2 · Carrots: Farm to Fork",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how carrots are grown and sold",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-SC.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the video's pictures and narration show each step",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words rotation, prepping and storage to explain how carrots are grown",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "explain in order how a carrot goes from the farm to their plate",
+          "ccss": [
+            "SL.3.4",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W2 · How Do You Raise a Raisin?",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how grapes become raisins",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive",
+            "ELD-SC.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "explain playful word pictures in the poems inside the text",
+          "ccss": [
+            "RI.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use photos and captions to learn facts about raisins",
+          "ccss": [
+            "RI.3.7"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words vine, shrivel, burly and storage to explain raisin making",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W3 · It's Our Garden: From Seeds to Harvest in a School Garden",
+      "objectives": [
+        {
+          "text": "reread and ask questions to clear up confusing parts about the garden",
+          "ccss": [
+            "RI.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain in order how the school garden grows from seeds to harvest",
+          "ccss": [
+            "RI.3.5",
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive",
+            "ELD-SC.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "learn garden words like mulch, arbor, transplanted and kernels and use them",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "compare what the students think of their garden with their own view",
+          "ccss": [
+            "RI.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M10 W1 · Why We Share Stories",
+      "objectives": [
+        {
+          "text": "state the main idea about why people everywhere tell stories",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive",
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "work out why stories matter to people from clues in the text",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "notice how the author's examples help explain why we share stories",
+          "ccss": [
+            "RI.3.8",
+            "RI.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words lagoon, garlands, cinders and barren to describe a story setting",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M10 W1 · When the Giant Stirred",
+      "objectives": [
+        {
+          "text": "work out what the giant stands for from clues in the legend",
+          "ccss": [
+            "RL.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the lesson of the legend from what the people do and learn",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "explain word pictures the author uses to describe the giant and island",
+          "ccss": [
+            "RL.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words belched, cinders, appease and barren to retell the legend",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M10 W2 · Why the Sky Is Far Away",
+      "objectives": [
+        {
+          "text": "picture the sky and the village from the words of the folktale",
+          "ccss": [
+            "RL.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the lesson the folktale teaches about taking only what you need",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "explain how the folktale tells why something in nature is the way it is",
+          "ccss": [
+            "RL.3.2",
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words tempting, quantities, ominously and proclamation to retell the folktale",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M10 W2 · Cinder Al and the Stinky Footwear",
+      "objectives": [
+        {
+          "text": "picture the funny scenes from the words in Cinder Al's story",
+          "ccss": [
+            "RL.3.10"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "compare Cinder Al with the fairy tale it is based on",
+          "ccss": [
+            "RL.3.9"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell the lesson of the story from what Cinder Al does",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain funny word choices the author uses to make readers laugh",
+          "ccss": [
+            "RL.3.4",
+            "L.3.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words pungent, snickered, proclamation and upcoming to describe the story",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M10 W3 · Compay Mono and Comay Jicotea",
+      "objectives": [
+        {
+          "text": "retell the folktale in order: beginning, middle, end",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive",
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "describe Compay Mono and Comay Jicotea and how they treat each other",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell why the author tells the story this way and what the lesson is",
+          "ccss": [
+            "RL.3.6",
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words crafty, suspicious, theft and reputation to describe the characters",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

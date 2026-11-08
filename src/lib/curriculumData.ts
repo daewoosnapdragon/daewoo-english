@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { tryRpc } from '@/lib/curriculumRpc'
 import { fetchAll } from '@/lib/fetchAll'
 import { logActivity } from '@/lib/activity'
-import { normalizeStatus, normalizeTag, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
+import { normalizeStatus, normalizeTag, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumObjective, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
 
 // ─── Curriculum catalogue: the reads and writes ──────────────────
 // Every change goes through here so the activity log gets a line. Errors
@@ -13,17 +13,19 @@ import { normalizeStatus, normalizeTag, type BookStatus, type CurriculumBook, ty
 const msg = (e: { message?: string } | null | undefined) => e?.message || null
 const PATH = '/curriculum'
 
-export interface Catalogue { series: CurriculumSeries[]; books: CurriculumBook[]; units: CurriculumUnit[]; lessons: CurriculumLesson[]; resources: CurriculumResource[]; skills: CurriculumSkill[] }
+export interface Catalogue { series: CurriculumSeries[]; books: CurriculumBook[]; units: CurriculumUnit[]; lessons: CurriculumLesson[]; resources: CurriculumResource[]; skills: CurriculumSkill[]; objectives: CurriculumObjective[] }
 
 export async function fetchCatalogue(): Promise<{ data: Catalogue; error: string | null }> {
   // Paged: the lessons alone are past Supabase's 1000-row cap (see fetchAll.ts).
-  const [s, b, u, l, r, k] = await Promise.all([
+  const [s, b, u, l, r, k, o] = await Promise.all([
     fetchAll<any>((f, t) => supabase.from('curriculum_series').select('*').order('sort_order').order('name').order('id').range(f, t)),
     fetchAll<any>((f, t) => supabase.from('curriculum_books').select('*').order('level_number').order('id').range(f, t)),
     fetchAll<any>((f, t) => supabase.from('curriculum_units').select('*').order('sort_order').order('id').range(f, t)),
     fetchAll<any>((f, t) => supabase.from('curriculum_lessons').select('*').order('sort_order').order('id').range(f, t)),
     fetchAll<any>((f, t) => supabase.from('curriculum_resources').select('*').order('created_at').order('id').range(f, t)),
     fetchAll<any>((f, t) => supabase.from('curriculum_skills').select('*').order('strand').order('sort_order').order('label').order('code').range(f, t)),
+    // Objective banks: a database without migration-curriculum-objectives.sql simply has none.
+    fetchAll<any>((f, t) => supabase.from('curriculum_unit_objectives').select('*').order('sort_order').order('id').range(f, t)),
   ])
   const error = s.error?.message || b.error?.message || u.error?.message || l.error?.message || r.error?.message || k.error?.message || null
   return {
@@ -34,6 +36,7 @@ export async function fetchCatalogue(): Promise<{ data: Catalogue; error: string
       lessons: ((l.data || []) as any[]).map(x => ({ ...x, skill_tags: x.skill_tags || [], ccss_codes: x.ccss_codes || [] })) as CurriculumLesson[],
       resources: ((r.data || []) as any[]).map(x => ({ ...x, copies_hint: x.copies_hint === null || x.copies_hint === undefined ? null : Number(x.copies_hint) })) as CurriculumResource[],
       skills: (k.data || []) as CurriculumSkill[],
+      objectives: o.error ? [] : ((o.data || []) as any[]).map(x => ({ ...x, ccss_codes: x.ccss_codes || [], wida: x.wida || [] })) as CurriculumObjective[],
     },
     error,
   }
@@ -254,6 +257,26 @@ export async function saveLesson(id: string | null, unitId: string, d: LessonDra
 export async function deleteLesson(id: string, label: string): Promise<string | null> {
   const { error } = await supabase.from('curriculum_lessons').delete().eq('id', id)
   if (!error) logActivity('deleted', `Lesson: ${label}`, { path: PATH })
+  return msg(error)
+}
+
+/** Adds a line to a unit's objective bank (id null) or changes its words. */
+export async function saveObjective(id: string | null, unitId: string, text: string, after: number, label: string): Promise<string | null> {
+  const t = text.trim().replace(/^students will\s+/i, '').replace(/\.$/, '')
+  if (!t) return 'Write the objective first.'
+  if (id) {
+    const { error } = await supabase.from('curriculum_unit_objectives').update({ text: t, updated_at: new Date().toISOString() }).eq('id', id)
+    if (!error) logActivity('edited', `Objective: ${label} · ${t}`, { key: id, path: PATH })
+    return msg(error)
+  }
+  const { error } = await supabase.from('curriculum_unit_objectives').insert({ unit_id: unitId, text: t, sort_order: after + 1 })
+  if (!error) logActivity('created', `Objective: ${label} · ${t}`, { path: PATH })
+  return msg(error)
+}
+
+export async function deleteObjective(id: string, label: string): Promise<string | null> {
+  const { error } = await supabase.from('curriculum_unit_objectives').delete().eq('id', id)
+  if (!error) logActivity('deleted', `Objective: ${label}`, { path: PATH })
   return msg(error)
 }
 

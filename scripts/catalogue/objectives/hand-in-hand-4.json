@@ -1,0 +1,915 @@
+{
+ "series": "Hand in Hand",
+ "level": "4",
+ "units": [
+  {
+   "title": "Unit 1 · Everyday Life",
+   "objectives": [
+    {
+     "text": "act out the conversation about wake-up times that begins “I can sleep in tomorrow.”",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name daily routines: wake up, start school, finish school, come home, go to sleep",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What time does she wake up?” with “She wakes up at 6:15.”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “A School Day Morning” about Vietnam and compare it with their own mornings",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say words with short i, like sit, and long ee or ea, like see",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · After-school Fun",
+   "objectives": [
+    {
+     "text": "act out the conversation about a first origami class that begins “That's all for today, class.”",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name after-school activities: band practice, dance class, soccer practice, taekwondo class",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What does he do after school?” and “Does she have band practice?”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Kids Soccer Club” from the USA and compare it with their own after-school activities",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say the two sounds of oo, as in book and moon",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 1 · After-school programs",
+   "objectives": [
+    {
+     "text": "learn about after-school programs and what children can do in them",
+     "ccss": [
+      "RI.4.1"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "ask classmates about their favorite after-school activity in a class survey",
+     "ccss": [
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "make a chart of the class's favorite after-school activities",
+     "ccss": [
+      "W.4.7"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class what the survey shows, using their chart",
+     "ccss": [
+      "SL.4.4",
+      "SL.4.5"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Four Seasons",
+   "objectives": [
+    {
+     "text": "act out the conversation about a day at the pool that begins “What nice weather!”",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name the four seasons and weather words: warm, humid, dry, breezy, stormy",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What's the weather like in spring?” and “Why does he like spring?”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Seasons in Egypt” and compare the seasons in Egypt with the seasons in Korea",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say the two sounds of ow, as in cow and snow",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Seasonal Activities",
+   "objectives": [
+    {
+     "text": "act out the snow day conversation that begins “Look out the window. It's snowing!”",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name seasonal activities: build sandcastles, go sledding, pick apples, rake leaves",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What does he like to do?” with “He likes to plant flowers.”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Beautiful Fall” about South Korea and tell what people do in the fall",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say words with ay and oy, like day and boy",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 2 · Animals in winter",
+   "objectives": [
+    {
+     "text": "learn how different animals live through the cold winter",
+     "ccss": [
+      "RI.4.1"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "explain why some animals change what they do when winter comes",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write a short report about what one animal does during the winter",
+     "ccss": [
+      "W.4.2",
+      "W.4.7"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "share their winter animal report with the class in clear sentences",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Staying Home",
+   "objectives": [
+    {
+     "text": "act out the conversation that begins “I'm home.” about where everyone in the family is",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name things to do at home: clean the room, study English, play video games, watch a cartoon",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what people did and didn't do yesterday: “They talked on the phone.”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Fun Things We Did” from Mexico, Canada, Italy and Kenya and compare it with their weekend",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say words with short o and ar, like hot and car",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · At the Park",
+   "objectives": [
+    {
+     "text": "act out the ice cream truck conversation that begins “I'm hot. Let's take a break.”",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name park activities: fly a kite, go running, have a picnic, ride a kick scooter",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “Did they fly a kite yesterday?” with “Yes, they did” or “No, they didn't”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Little Prince Park” about a park in France and tell what people can do there",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say words with ar and or, like park and fork",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 3 · Making a kite",
+   "objectives": [
+    {
+     "text": "learn the steps for making a kite in an art lesson",
+     "ccss": [
+      "RI.4.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the steps of making a kite in order with first, next and last",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make a report about an interesting animal kite",
+     "ccss": [
+      "W.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe the shape and colors of an animal kite to a partner",
+     "ccss": [
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Dream Jobs",
+   "objectives": [
+    {
+     "text": "act out the interview with a cook that begins “May I interview you?”",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name jobs: an artist, a dentist, a firefighter, a pilot, a scientist, a vet",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What does he want to be?” with “He wants to be a vet.”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Fun Clowns” and tell what they learned about the job of a clown",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say words with ur, er and ir, like turn, her and bird",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · In the Future",
+   "objectives": [
+    {
+     "text": "act out the conversation that begins “Welcome to Willow Farm!” about a day on a farm",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name future plans: fly a plane, go to space, help sick animals, make movies",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What does she want to do in the future?” with “She wants to…”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Cool Jobs” and name the jobs and what the workers do",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say words with l at the start and at the end, like leg and ball",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 4 · Important people in history",
+   "objectives": [
+    {
+     "text": "learn about important people in history and why they are remembered",
+     "ccss": [
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "choose an important person in history and find facts about them",
+     "ccss": [
+      "W.4.7",
+      "W.4.8"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "make a report about an important person in history",
+     "ccss": [
+      "W.4.2"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class why the person they chose is important",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Describing People",
+   "objectives": [
+    {
+     "text": "act out the conversation that begins “Is your mom here?” and find someone by their clothes",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name hair and face words: curly hair, a ponytail, a beard, a mustache, glasses",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What does she look like?” and “Which one is Jack's mom?”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “We are Twins” and tell how the twins are alike and different",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say words with h and wh, like hat and who",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Being Sick",
+   "objectives": [
+    {
+     "text": "act out the toothache conversation that begins “What's wrong? My tooth hurts.”",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name ways of feeling sick: a fever, a runny nose, a sore throat, a stomachache",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What's the matter with him?” and “Does she have a cold?”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “When I Have a Cold” and tell what the writer does to get better",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say words with w and wh, like wet and white",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 5 · How to stay healthy",
+   "objectives": [
+    {
+     "text": "learn simple ways to stay healthy, like drinking enough water",
+     "ccss": [
+      "RI.4.1"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "keep a daily water chart that shows how many cups they drink",
+     "ccss": [
+      "W.4.8"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell a partner what they do every day to stay healthy",
+     "ccss": [
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "explain why our bodies need water every day",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Fun Vacations",
+   "objectives": [
+    {
+     "text": "act out the beach trip conversation that begins “Can we go to the beach now?”",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name the months of the year and vacation plans like go camping and visit a museum",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What will she do on vacation?” and “When will she go on vacation?”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Summer Vacation” about Denmark and compare it with their own summer vacation",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say words with ng and nk, like ring and pink",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Weekend Plans",
+   "objectives": [
+    {
+     "text": "act out the phone call between Joey and Matt about going to the park",
+     "ccss": [
+      "SL.4.1",
+      "SL.4.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name weekend plans: eat out, get a haircut, have a barbecue, wash a car",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “Will they eat out this weekend?” with “Yes, they will” or “No, they won't”",
+     "ccss": [
+      "L.4.1",
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “A Pajama Party” about Germany and tell what happens at a pajama party",
+     "ccss": [
+      "RI.4.1",
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear, read and say words that start with st and str, like stop and street",
+     "ccss": [
+      "RF.4.3",
+      "RF.4.4"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 6 · Addition, subtraction, and multiplication",
+   "objectives": [
+    {
+     "text": "use English to explain adding, subtracting and multiplying numbers",
+     "ccss": [
+      "SL.4.1"
+     ],
+     "wida": [
+      "ELD-MA.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "read math words like plus, minus, times and equals in word problems",
+     "ccss": [
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-MA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "find ticket prices for different activities and work out the totals",
+     "ccss": [
+      "W.4.7"
+     ],
+     "wida": [
+      "ELD-MA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "make a report about the ticket prices for different activities",
+     "ccss": [
+      "W.4.2"
+     ],
+     "wida": [
+      "ELD-MA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

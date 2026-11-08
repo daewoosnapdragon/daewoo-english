@@ -1,0 +1,906 @@
+{
+ "series": "Hand in Hand",
+ "level": "6",
+ "units": [
+  {
+   "title": "Unit 1 · Weekend Life",
+   "objectives": [
+    {
+     "text": "act out the conversation that begins “How was your weekend?” about an amusement park",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "tell how their weekend was with words like great, exciting and boring",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name weekend activities: see a musical, sail on a boat, build a model plane, have a sleepover",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What did she do on the weekend?” using past words like ate and saw",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “My First Bike Ride” from the Netherlands and retell the writer's story in order",
+     "ccss": [
+      "RL.6.1",
+      "RL.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Going on Vacation",
+   "objectives": [
+    {
+     "text": "act out the trip planning conversation that begins “I've just finished making the hotel reservation.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name vacation activities: go snorkeling, go whale watching, explore a cave, ride a camel",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say what will probably happen: “He'll probably go rafting.” “She probably won't go on a cruise.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What will he do during vacation?” about their own vacation plans",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "read “A Vacation in Iceland” and tell what visitors can see and do there",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 1 · Wonderful theater",
+   "objectives": [
+    {
+     "text": "learn how a play, an opera and a musical are alike and different",
+     "ccss": [
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about a play, opera or musical showing in their city",
+     "ccss": [
+      "W.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "join two short sentences into one with and, but or so",
+     "ccss": [
+      "L.6.3A",
+      "L.6.1"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class why they would or would not like to see the show",
+     "ccss": [
+      "SL.6.4"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Getting Around",
+   "objectives": [
+    {
+     "text": "act out the conversation that begins “Excuse me. I'm looking for a bank.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "give directions with go down this street, turn right and walk one block",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use movement words: into, out of, up, down, over, under, around, through",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe movement, like “He came down the stairs and walked out of the house.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Going for a Walk” from Germany and find the words that tell where things move",
+     "ccss": [
+      "RL.6.1",
+      "L.6.4"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · School Clubs",
+   "objectives": [
+    {
+     "text": "act out the robotics club conversation that begins “Welcome to our robotics club!”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name school clubs and what members do: drama club, science club, build model rockets, draw comics",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What's she interested in?” with “She's interested in acting in school plays.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "guess which club someone will join, like “She'll probably join the drama club.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Argue.Expressive"
+     ]
+    },
+    {
+     "text": "read “Robotic Fun” from the UK and tell what they learned about building robots",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 2 · Road safety",
+   "objectives": [
+    {
+     "text": "learn road safety rules for crossing the street and riding a bike",
+     "ccss": [
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-SS.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about traffic signs and what each one means",
+     "ccss": [
+      "W.6.2"
+     ],
+     "wida": [
+      "ELD-SS.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "fix run-on sentences by splitting them or joining them with and, but or so",
+     "ccss": [
+      "L.6.1",
+      "L.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "explain to a partner why one traffic sign is important for safety",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SS.6-8.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Around Town",
+   "objectives": [
+    {
+     "text": "act out the conversation that begins “Your uncle is coming to visit this weekend.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name places in town: library, post office, police station, train station, art museum",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "match places with what people do there: borrow books, mail a package, wait for the train",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "ask and answer “What was he doing there?” with “He was waiting for the train.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Oriental Pearl TV Tower” about China and tell facts about the tower",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · At the Fair",
+   "objectives": [
+    {
+     "text": "act out the school parade conversation that begins “Our class is going to march in the school parade.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "tell what they would dress up as for a parade, like Peter Pan",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name fair activities: ride a unicycle, pose for pictures, take a selfie, make masks",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What were they doing at the fair when it started to snow?”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Chanthaburi Fruit Festival” from Thailand and tell what people do at the festival",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 3 · Precipitation",
+   "objectives": [
+    {
+     "text": "learn about rain, snow, sleet and hail and how they fall from clouds",
+     "ccss": [
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "make a bar graph of the average precipitation each month in a city",
+     "ccss": [
+      "RI.6.7"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use their graph to tell which month gets the most and least rain or snow",
+     "ccss": [
+      "SL.6.4",
+      "SL.6.5"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write the names of people with capital letters, like Ted and Mary",
+     "ccss": [
+      "L.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · At the Market",
+   "objectives": [
+    {
+     "text": "act out the muffin conversation that begins “Mom, can we make muffins?”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name amounts: a bottle of ketchup, a box of cereal, a bunch of grapes, a carton of eggs",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what someone bought, like “She bought two cartons of milk and a bottle of ketchup.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "make a shopping list for muffins and say how much of each thing they need",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "read “Flea Markets” about Finland and tell what people buy and sell there",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · At the Library",
+   "objectives": [
+    {
+     "text": "act out the library conversation that begins “I have to return some books.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "ask to check out books and answer “Can I see your library card?”",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name library actions: look for a book, talk to the librarian, wait in line, wear headphones",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "point someone out: “He's the one who's carrying the books.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Library of Celsus” from Turkey and tell key facts about this very old library",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 4 · Metric system of measurement",
+   "objectives": [
+    {
+     "text": "learn metric units like meters, kilograms and liters and what each one measures",
+     "ccss": [
+      "L.6.6",
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-MA.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "measure different things and write a report about their measurements",
+     "ccss": [
+      "W.6.2"
+     ],
+     "wida": [
+      "ELD-MA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "compare two measurements and say which thing is longer or heavier",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-MA.6-8.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write the names of places with capital letters, like Seoul and Mount Fuji",
+     "ccss": [
+      "L.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Fun Experiences",
+   "objectives": [
+    {
+     "text": "act out the Grand Canyon conversation that begins “What did you do last summer?”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name experiences: ride in a hot air balloon, see a play, visit the Eiffel Tower",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “Have you ever been to a library?” and “Has he ever gone camping?”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell a partner about a trip they took and what they liked best",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "read “A Hot Spring for Monkeys” from Japan and tell facts about the monkeys",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Growing Up",
+   "objectives": [
+    {
+     "text": "act out the skiing conversation that begins “You're very good at skiing.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name things young children learn: tie her shoes, use chopsticks, peel a banana, get dressed",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What could Ted do when he was four?” using could and couldn't",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what they could or couldn't do by themselves when they were four",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "read “How to Use Chopsticks” and explain the steps in order",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.5"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Explain.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 5 · The Wright Brothers",
+   "objectives": [
+    {
+     "text": "learn how the Wright Brothers built and flew the first airplane",
+     "ccss": [
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-SS.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "make and fly a paper helicopter by following the steps",
+     "ccss": [
+      "RI.6.7"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "tell how their paper helicopter flew and what made it spin",
+     "ccss": [
+      "SL.6.4"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write names of special things with capital letters, like holidays, days and months",
+     "ccss": [
+      "L.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Up Until Now",
+   "objectives": [
+    {
+     "text": "act out the conversation about an old picture book that begins “What's that?”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name things people keep doing: learn French, live in London, teach English, wait for a bus",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How long has she been teaching English?” with “for three years”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell how long they have had something, using since and for",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Family from Vietnam” and tell what they learned about the family's life in the USA",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Dreams and Wishes",
+   "objectives": [
+    {
+     "text": "act out the conversation about wishes that begins “This is our last summer in elementary school.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "share wishes for the future, like “I wish I could travel the world.”",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name big dreams: climb Mount Fuji, invent a flying car, win a gold medal, own a farm",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What would she do if she could do anything in the world?”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Saving Earth” from Sweden and tell what people can do to help the planet",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 6 · Robotics",
+   "objectives": [
+    {
+     "text": "learn what robots are and how some machines can think and learn",
+     "ccss": [
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about a special robot or a machine that can think and learn",
+     "ccss": [
+      "W.6.2"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "check their writing for capital letters, end marks and complete sentences",
+     "ccss": [
+      "L.6.2",
+      "W.6.5"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class how their robot or machine helps people",
+     "ccss": [
+      "SL.6.4"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Explain.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

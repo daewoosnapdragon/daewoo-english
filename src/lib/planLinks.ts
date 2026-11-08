@@ -1,6 +1,7 @@
-import { BOOK_COLORS, bookName, splitUnitTitle, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumUnit } from '@/lib/curriculumCore'
+import { BOOK_COLORS, bookName, splitUnitTitle, type CurriculumBook, type CurriculumLesson, type CurriculumObjective, type CurriculumResource, type CurriculumSeries, type CurriculumUnit } from '@/lib/curriculumCore'
 import { termDates, type CurriculumPacing, type CurriculumPlacement, type SemesterLike } from '@/lib/curriculumPacing'
 import type { SubjectRow } from '@/lib/lessonSync'
+import { bareObjective } from '@/lib/curriculumWeek'
 
 // ─── Linking a day's row to the book ─────────────────────────────
 // A teacher types what the class does on a day, in parent words. When the
@@ -10,13 +11,16 @@ import type { SubjectRow } from '@/lib/lessonSync'
 // teacher's: the lesson a row is about is kept beside it for the teacher
 // and never written into what parents read.
 
-export interface BookUnit { id: string; name: string; badge: string; summary: string; ccss: string[]; lessons: CurriculumLesson[]; files: { name: string; url: string }[] }
+/** A line a teacher can tap onto Students will: the words finish "Students will …". */
+export interface BankLine { text: string; ccss: string[]; wida: string[] }
+export interface BookUnit { id: string; name: string; badge: string; summary: string; ccss: string[]; lessons: CurriculumLesson[]; files: { name: string; url: string }[]; objectives: BankLine[] }
 export interface ClassBook { placement_id: string; book_id: string; label: string; level: string; name: string; color: string; units: BookUnit[] }
 
 export interface ClassBooksInput {
   cls: string; grade: number; year: string; monthFirst: string; monthLast: string
   semesters: SemesterLike[]; placements: CurriculumPlacement[]; pacing: CurriculumPacing[]
   series: CurriculumSeries[]; books: CurriculumBook[]; units: CurriculumUnit[]; lessons: CurriculumLesson[]; resources: CurriculumResource[]
+  objectives?: CurriculumObjective[]
 }
 
 /** True when a placement's term covers some of the month. A term with no dates in Settings counts as covering it. */
@@ -37,6 +41,8 @@ export function classBooks(i: ClassBooksInput): ClassBook[] {
   const lessonsByUnit = new Map<string, CurriculumLesson[]>()
   for (const l of i.lessons) { const a = lessonsByUnit.get(l.unit_id); if (a) a.push(l); else lessonsByUnit.set(l.unit_id, [l]) }
   const unitById = new Map(i.units.map(u => [u.id, u]))
+  const bankByUnit = new Map<string, CurriculumObjective[]>()
+  for (const o of i.objectives || []) { const a = bankByUnit.get(o.unit_id); if (a) a.push(o); else bankByUnit.set(o.unit_id, [o]) }
   const out: ClassBook[] = []
   const placements = i.placements
     .filter(p => p.is_master && p.english_class === i.cls && p.grade === i.grade && p.academic_year === i.year && termCovers(i.semesters, p, i.monthFirst, i.monthLast))
@@ -53,11 +59,35 @@ export function classBooks(i: ClassBooksInput): ClassBook[] {
         const ids = new Set(ls.map(l => l.id))
         const files = i.resources.filter(r => (r.unit_id === u.id || (r.lesson_id && ids.has(r.lesson_id))) && !!r.url).map(r => ({ name: r.name, url: r.url }))
         const { badge, name } = splitUnitTitle(u.title)
-        return { id: u.id, name, badge, summary: u.summary || '', ccss: u.ccss_codes || [], lessons: ls, files }
+        return { id: u.id, name, badge, summary: u.summary || '', ccss: u.ccss_codes || [], lessons: ls, files, objectives: unitBank(bankByUnit.get(u.id) || [], ls) }
       }),
     })
   }
   return out
+}
+
+/**
+ * A unit's objective bank in order. A unit with no bank yet offers its lessons'
+ * "students will" lines instead, each once, so every book has something to tap.
+ */
+export function unitBank(bank: CurriculumObjective[], lessons: CurriculumLesson[]): BankLine[] {
+  if (bank.length) return bank.slice().sort((a, b) => a.sort_order - b.sort_order).map(o => ({ text: bareObjective(o.text), ccss: o.ccss_codes || [], wida: o.wida || [] })).filter(o => !!o.text)
+  const seen = new Set<string>(), out: BankLine[] = []
+  for (const l of lessons) {
+    const text = bareObjective(l.objective).replace(/\.$/, '')
+    if (!text || seen.has(text.toLowerCase())) continue
+    seen.add(text.toLowerCase())
+    out.push({ text, ccss: l.ccss_codes || [], wida: [] })
+  }
+  return out
+}
+
+/** The day's Students will line with one more objective on it, unless it is already there. */
+export function addObjective(current: string, text: string): string {
+  const cur = current.trim()
+  if (!cur) return text
+  if (norm(cur).includes(norm(text))) return current
+  return `${cur.replace(/[;.,]\s*$/, '')}; ${text}`
 }
 
 /** Lower case, straight quotes, one space, no dashes or punctuation at the ends: for comparing what was typed with a unit's name. */

@@ -29,7 +29,7 @@ Delete (nothing in the target reads them): teacher plan copies and `fixed` on pa
 
 1. Parent print carries catalogue lesson names. `slotLine` writes `"<unit> — <lesson> (1 of 2)"` and print outputs `label: content` verbatim (lessonTray.ts:37-38; LessonPlanView.tsx:636-638, 967). Parent text is the unit name unless the teacher types otherwise. Print HTML is not escaped (LessonPlanView.tsx:967); escape it.
 2. Editing a row's words keeps a stale `lesson_id` (LessonPlanView.tsx:401-406), and choosing the plain subject chip clears the link (413-414). In the target, the link is set by the autocomplete and cleared when the text no longer contains the unit's name.
-3. Into Reading seeds every myBook text and its paired text as separate units with the same six skills (seed-into-reading.sql:499, 506), which doubles the apparent length of a module. Fold the paired text into its partner as a lesson, so a module week is one unit.
+3. Into Reading seeds every myBook text and its paired text as separate units with the same skills (seed-into-reading.sql:499, 506). Not folded (decided 8 Nov 2026 during step 2): Kyla chose one unit per text on 7 Nov so classes can pick and skip stories, the pile-up came from the tray's recipe lengths, which are gone, and folding would delete units that saved plans link to. Suggested lengths in Class plans (step 3) should treat a week's two texts as one week between them.
 4. Unit titles with "·" (Into Reading vocabulary) break any split on ":" (classSetup.ts:38). No part detection survives; just note it for any title parsing.
 5. `isAdmin` is true for any Snapdragon teacher (LessonPlanView.tsx:121), and edit rights go to the first active teacher of a class only (classTeacher.ts:11-15). Edit rights: admin, or any teacher assigned to the class.
 6. Developer messages ("Run supabase/migration-… in the SQL Editor") show to teachers (BoardView.tsx:402, ProgramMapView.tsx:128, LadderView.tsx:38, ClassSetupView.tsx:148). Show them to admins only; teachers see "Not set up yet".
@@ -100,7 +100,7 @@ Derivations, all pure functions with tests: latest linked unit per placement; un
 Each step is usable on its own and gets Kyla's feedback before the next.
 
 1. **Lesson Plans linking.** Autocomplete to units and lessons, link clearing on edit, unit detail on hover, print escaping, Copy last week without links. Remove the tray, map, strip counts, Next from the board, Class setup link and the `LESSON_SYNC_CLASSES` switch from Lesson Plans. Every class.
-2. **Objective banks.** Migration for `curriculum_unit_objectives`; the generation script that writes banks from scope and sequence plus CCSS and WIDA for Hand in Hand, Into Reading and Science of Reading; Students will chips on linked rows; fold Into Reading paired texts into their partners.
+2. **Objective banks.** Migration for `curriculum_unit_objectives`; the generation script that writes banks from scope and sequence plus CCSS and WIDA for Hand in Hand, Into Reading and Science of Reading; Students will chips on linked rows. (Built 8 Nov 2026; the paired-text fold was dropped, see broken thing 3.)
 3. **Class plans.** Reduce `curriculum_pacing`; add suggested lengths and aim dates; the read-only timeline; the editor list for admin. Delete teacher copies, here, blocks, reviews, lesson log, class setup, and the board's drag, resize and panel actions.
 4. **Week line, Next, Plan this week for all grades, Done ticks.**
 5. **Overview:** suggested against actual, This week together, Standards from objectives.

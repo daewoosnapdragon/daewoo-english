@@ -37,3 +37,20 @@ python3 -I scripts/catalogue/into-reading/make_paste.py --sql supabase/seed-into
 Counts: grade 1 has 60 texts and 267 lessons, grade 2 has 60 and 274, grade 3 has 50 and 238, grade 4 has 53 and 258. Grades 3 and 4 print no authors in the reading grid, so their summaries name none.
 
 Things to check when confirming: the grid lists some week-level skills that belong to the Big Book rather than the myBook text (for example elements of poetry on a week whose poem was read aloud); drop the lesson where that is the case. Genre strings are copied as printed, so combined ones like "Drama/Myth" or "Informational Text and Interview" appear as is.
+
+## Objective banks
+
+Every unit of Into Reading 1 to 4, Hand in Hand Starter to 6 and Science of Reading has a bank of three to five "Students will…" lines (two for a short phonics review), written 8 Nov 2026 from the units, lessons and scope-and-sequence notes already in the catalogue, in words a parent can read, each tagged with CCSS codes and WIDA 2020 language expectations (`ELD-LA.2-3.Narrate.Interpretive`). Lesson Plans offers them as chips under a row linked to the unit; tapping one puts it on the day's Students will line, where it is the teacher's text. There is no review step: a bank is in use once loaded, and a wrong line is fixed on the Bookshelf (open the unit, Objectives).
+
+To load them, run in the Supabase SQL Editor:
+
+1. `supabase/migration-curriculum-objectives.sql` (the table)
+2. `supabase/seed-unit-objectives.sql` (the banks; safe to re-run, a unit that already has a bank is left alone; its last query lists any unit whose title did not match)
+
+The bank files, one per book, are in `scripts/catalogue/objectives/` with the writing brief (`BRIEF.md`), a checker (`check.py`) and the generator. Regenerate the seed with:
+
+```
+python3 -I scripts/catalogue/objectives/make_seed.py
+```
+
+WIDA grade clusters follow the book's nominal grade (Into Reading N and Hand in Hand Book N = grade N, Starter = K), not the age of the class using it.

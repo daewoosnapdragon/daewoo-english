@@ -1,0 +1,920 @@
+{
+ "series": "Hand in Hand",
+ "level": "2",
+ "units": [
+  {
+   "title": "Unit 1 · Colorful Clothes",
+   "objectives": [
+    {
+     "text": "ask “Are these your books?” and answer “Yes, they are.” while tidying up",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name clothes: a jacket, pants, a shirt, a skirt, shoes and a sweater",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use “What's that?” for one thing and “What are those?” for more than one",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read School Clothes and compare what students wear to school in New Zealand, Brazil and France",
+     "ccss": [
+      "RI.2.1",
+      "SL.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "hear the difference between the a and o sounds and read words with each",
+     "ccss": [
+      "RF.2.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · At the Clothing Store",
+   "objectives": [
+    {
+     "text": "ask “How do I look?” and answer “It's too big.” or “You look great!”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "describe clothes with opposites: big and small, long and short, old and new",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe clothes with “This skirt is short.” and “These pants are long.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read People's Fashion, from Italy, and tell what people like to wear",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear the difference between the e and u sounds and read words with each",
+     "ccss": [
+      "RF.2.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 1 · Traditional clothes",
+   "objectives": [
+    {
+     "text": "learn about traditional clothes that people wear in different countries",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "describe a traditional outfit using clothes words and colors",
+     "ccss": [
+      "SL.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "make a poster of the traditional clothes of one country",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "present their poster, naming the country and the clothes",
+     "ccss": [
+      "SL.2.4",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Lunch Time",
+   "objectives": [
+    {
+     "text": "ask “What's for lunch, Mom?” and answer “Tuna sandwiches.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name lunch foods: chicken, fish, spaghetti, fried rice and salad",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what others like and don't like: “She likes salad.” “They don't like salad.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read It's Lunch Time! and compare school lunches in the USA and Japan",
+     "ccss": [
+      "RI.2.1",
+      "SL.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the h and j sounds apart in words they hear and read",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Art Class",
+   "objectives": [
+    {
+     "text": "say “Hurry up!” and “OK. I'm coming.” when it is time for art class",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name art things: clay, glue, paint, a colored pencil, paper and tape",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Whose clay is this?” and answer with a name, like “It's Sam's clay.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Arts and Crafts, from the UK, and tell what people make",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the s and z sounds apart in words they hear and read",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 2 · Different art activities",
+   "objectives": [
+    {
+     "text": "learn the names of different art activities and the things each one needs",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how to do an art activity step by step with first, next and last",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make an art book with a page for each art activity",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "show a page of their art book and say what they used to make it",
+     "ccss": [
+      "SL.2.4",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · In the Living Room",
+   "objectives": [
+    {
+     "text": "suggest “How about a board game?” and answer “That's a good idea.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name things in a living room: a coffee table, a lamp, a rug and a sofa",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what is in a room with “There is a TV.” and “There are lamps.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read What's in the Living Room? and compare living rooms in Canada and Switzerland",
+     "ccss": [
+      "RI.2.1",
+      "SL.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the k and g sounds apart in words they hear and read",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · In My Room",
+   "objectives": [
+    {
+     "text": "help a friend find something with “Look under your bed.” and “Oh, here it is.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name bedroom things and place words: bookcase, computer, in, on, under and next to",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Where is the bag?” and answer “It's under the chair.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read What's in the Room?, from Hong Kong, and tell where things are in the room",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "read and say words spelled with k and words spelled with qu",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 3 · Rooms in a house",
+   "objectives": [
+    {
+     "text": "learn the names of the rooms in a house and what people do in each",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "say what people do in a room, like “We sleep in the bedroom.”",
+     "ccss": [
+      "SL.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "make a house mobile with a piece for each room",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class about each room in their house mobile",
+     "ccss": [
+      "SL.2.4",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Wild Animals",
+   "objectives": [
+    {
+     "text": "ask “Do you like wild animals?” and answer “Yes, I do.” or “No, I don't.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "count from eleven to twenty and name a bear, a giraffe, a tiger and a zebra",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “How many zebras are there?” and answer “There are four zebras.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Wild Animals of the World and tell which animals live in Australia, China, Indonesia and Argentina",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the r and w sounds apart in words they hear and read",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Fun Things",
+   "objectives": [
+    {
+     "text": "say “I'm sorry I'm late.” and answer “That's OK.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name fun things: a bike, a camera, a kite, a skateboard and a soccer ball",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Does he have a kite?” and answer “Yes, he does.” or “No, he doesn't.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Favorite Things and tell what children in New Zealand, South Korea, Spain and France like",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the w and y sounds apart in words they hear and read",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 4 · Counting numbers and ordinal numbers",
+   "objectives": [
+    {
+     "text": "learn the difference between counting numbers like one and two and order numbers like first and second",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "say who is first, second and third in a line",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make a poster about order numbers like first, second and third",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use their poster to tell the order of things, like “The cat is third.”",
+     "ccss": [
+      "SL.2.4",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Doing Things Outside",
+   "objectives": [
+    {
+     "text": "say “I'm bored.” and invite a friend with “Let's go out and play.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name and act out dancing, jumping, running, sleeping and walking",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What's she doing?” and answer “She's walking.” or “They're walking.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Fun Things to Do and tell what people do outside in Vietnam, Canada, Belgium and Austria",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear and read words that start with ch, like chair, and with sh, like ship",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Doing Things Inside",
+   "objectives": [
+    {
+     "text": "ask a friend “What are you doing?” and then ask “Can I come over?”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name and act out drawing, painting, reading, talking and writing",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Is he talking?” and answer “Yes, he is.” or “No, he isn't.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Fun Hobbies and tell about hobbies in Argentina, Denmark, Spain and Peru",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear and read words that end with ch, like lunch, and with sh, like fish",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 5 · Different activities in gym class",
+   "objectives": [
+    {
+     "text": "learn the names of different gym class activities and how to do them",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how to do one gym activity using action words",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make a poster about their favorite gym class activity",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell why they like their favorite gym activity best",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Favorite Activities",
+   "objectives": [
+    {
+     "text": "take turns in a game with “Can I go first?” and “Now, it's your turn.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name activities: climb a tree, play the drum, play hopscotch and ride a bike",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Can they play soccer?” and answer “Yes, they can.” or “No, they can't.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read School Talent Show, from the USA, and tell what the children can do",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell s and th apart at the start of words, like sink and think",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Favorite Snacks",
+   "objectives": [
+    {
+     "text": "ask “Can we get popcorn, Dad?” and answer “Yes, we can.” or “No, we can't.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name snacks: chips, a cookie, a candy bar, popcorn and ice cream",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What does he want?” and answer “He wants ice cream.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Healthy Snacks, from Sweden, and tell which snacks are good for our bodies",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell s and th apart at the end of words, like bus and bath",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 6 · Five food groups",
+   "objectives": [
+    {
+     "text": "learn the five food groups and name a food from each group",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "explain why we need food from every group to stay healthy",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make a poster of a dinner plate with foods from the five food groups",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class what is on their plate and which group each food is in",
+     "ccss": [
+      "SL.2.4",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

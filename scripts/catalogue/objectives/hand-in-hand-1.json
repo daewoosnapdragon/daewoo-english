@@ -1,0 +1,926 @@
+{
+ "series": "Hand in Hand",
+ "level": "1",
+ "units": [
+  {
+   "title": "Unit 1 · In My Classroom",
+   "objectives": [
+    {
+     "text": "greet a classmate and ask and answer “What's your name?” “My name's Mila.”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name things in the classroom: a board, a clock, a desk and a globe",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "point to classroom things and ask and answer “What's this?” “It's a map.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read My Classroom, about a school in Bangladesh, and compare it with their classroom",
+     "ccss": [
+      "RI.1.1",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive",
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "hear the difference between the a and e sounds and read short words with each",
+     "ccss": [
+      "RF.1.2A",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · My Things",
+   "objectives": [
+    {
+     "text": "introduce two friends to each other with “Mila, this is Matt.”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name school things: a bag, a crayon, an eraser and a pencil",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Is this a bag?” and answer “Yes, it is.” or “No, it isn't.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read In My School Bag, from Mexico, and say what they carry in their own bag",
+     "ccss": [
+      "RI.1.1",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive",
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "hear, say and read short words with the e and i sounds",
+     "ccss": [
+      "RF.1.2A",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 1 · Schools around the world",
+   "objectives": [
+    {
+     "text": "learn how schools around the world are alike and different",
+     "ccss": [
+      "SL.1.2",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-SS.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell one thing about a school in another country",
+     "ccss": [
+      "SL.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-SS.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "draw and label a poster of their dream school",
+     "ccss": [
+      "W.1.7",
+      "SL.1.5"
+     ],
+     "wida": [
+      "ELD-SS.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "present their dream school poster to the class in a few sentences",
+     "ccss": [
+      "SL.1.4",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SS.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · On the Farm",
+   "objectives": [
+    {
+     "text": "ask “How are you?” and answer “I'm fine.” or “I'm great. Thank you.”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name farm animals: a chicken, a cow, a goat, a goose, a horse and a sheep",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use “What's this?” for near things and “What's that?” for things far away",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read Favorite Farm Animals, from Australia, and say which farm animal they like best",
+     "ccss": [
+      "RI.1.1",
+      "RI.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "sort words by their middle sound, o or u, and read them aloud",
+     "ccss": [
+      "RF.1.2A",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · In the Park",
+   "objectives": [
+    {
+     "text": "introduce a friend to an adult and say “Nice to meet you.”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name things in a park: a bench, a duck, a pond and a picnic table",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Is that a pond?” and answer “Yes, it is.” or “No, it isn't.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read Different Parks and tell how the parks are alike and different",
+     "ccss": [
+      "RI.1.1",
+      "RI.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell b and p apart at the start of words, like bench and pond",
+     "ccss": [
+      "RF.1.2C",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 2 · Animal sounds",
+   "objectives": [
+    {
+     "text": "learn what sounds different animals make and match each sound to an animal",
+     "ccss": [
+      "SL.1.2",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-SC.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "say in English what sound an animal makes, like “A cow says moo.”",
+     "ccss": [
+      "SL.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-SC.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "make an animal puppet and give it a name and a sound",
+     "ccss": [
+      "W.1.7",
+      "SL.1.5"
+     ],
+     "wida": [
+      "ELD-SC.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use their puppet to act out a short animal talk with a partner",
+     "ccss": [
+      "SL.1.4",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SC.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Many Colors",
+   "objectives": [
+    {
+     "text": "ask a friend “What's your favorite color?” and ask back “What about you?”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name eleven colors, including pink, gray, orange and purple",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What color is this?” and “Is this green?” about things around them",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read National Flags and name the colors on the flags of Malaysia, Sudan, France and Jamaica",
+     "ccss": [
+      "RI.1.1",
+      "RI.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear whether a word ends in b or p and read words with each",
+     "ccss": [
+      "RF.1.2C",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · Colorful Fruits",
+   "objectives": [
+    {
+     "text": "ask “What's your favorite fruit?” and answer “I like bananas.” or “I like bananas too.”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name fruits for more than one: apples, grapes, peaches and watermelons",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What are these?” and answer “They're apples.” about more than one thing",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read Favorite Fruits, from India, and tell their own favorite fruit",
+     "ccss": [
+      "RI.1.1",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive",
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell d and t apart at the start of words they hear and read",
+     "ccss": [
+      "RF.1.2C",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 3 · Fruits and seeds",
+   "objectives": [
+    {
+     "text": "learn that fruits have seeds inside and that seeds can grow into new plants",
+     "ccss": [
+      "SL.1.2",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-SC.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "describe the seeds of a fruit by their color, size and number",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-SC.1.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make a poster of their favorite fruit, showing its color and its seeds",
+     "ccss": [
+      "W.1.7",
+      "SL.1.5"
+     ],
+     "wida": [
+      "ELD-SC.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class about their fruit poster in two or three sentences",
+     "ccss": [
+      "SL.1.4",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SC.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Numbers and Shapes",
+   "objectives": [
+    {
+     "text": "say “Happy birthday!” and ask and answer “How old are you?” “I'm seven.”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "count from one to ten and name a circle, a diamond, a rectangle and a triangle",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How many circles?” “Seven circles.” by counting shapes in a picture",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read A World of Numbers and tell where we see numbers every day",
+     "ccss": [
+      "RI.1.1",
+      "RI.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear whether a word ends in d or t and read words with each",
+     "ccss": [
+      "RF.1.2C",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · At the Store",
+   "objectives": [
+    {
+     "text": "say “Oops! I'm sorry.” and answer “That's OK.” after a small accident",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name school supplies at a store: glue sticks, markers, rulers and scissors",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Are these rulers?” and answer “Yes, they are.” or “No, they aren't.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read Tim's School Things, from the UK, and compare Tim's things with their own",
+     "ccss": [
+      "RI.1.1",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive",
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the c sound and the g sound apart in words they hear and read",
+     "ccss": [
+      "RF.1.2C",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 4 · Addition and subtraction",
+   "objectives": [
+    {
+     "text": "listen to a short story problem and add or take away to find the answer",
+     "ccss": [
+      "SL.1.2",
+      "SL.1.3"
+     ],
+     "wida": [
+      "ELD-MA.1.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "say a number sentence out loud, like “Three plus two is five.”",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-MA.1.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make a shape book with circles, squares, triangles and other shapes",
+     "ccss": [
+      "W.1.7",
+      "SL.1.5"
+     ],
+     "wida": [
+      "ELD-MA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read their shape book to a partner, naming and counting each shape",
+     "ccss": [
+      "SL.1.4",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-MA.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · My Family",
+   "objectives": [
+    {
+     "text": "give a present with “This is for you.” and ask and answer “What is it?”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name family members: grandma, grandpa, mom, dad, brother and sister",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use he and she to ask and answer “Who is he?” “He's Mila's brother.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read Families, Big and Small, about families in Italy, Japan and Zambia, and compare them with their own",
+     "ccss": [
+      "RI.1.1",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive",
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell f and v sounds apart in words they hear and read",
+     "ccss": [
+      "RF.1.2C",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Different Jobs",
+   "objectives": [
+    {
+     "text": "greet an adult with “Good morning, Dr. Brown.” and say “I don't feel good.”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name jobs: a cook, a doctor, a nurse and a police officer",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Is she a teacher?” and answer “Yes, she is.” or “No, she isn't.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read Jobs and Places and match each job to the place where people do it",
+     "ccss": [
+      "RI.1.1",
+      "RI.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell f and p sounds apart in words they hear and read",
+     "ccss": [
+      "RF.1.2C",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 5 · Animal families",
+   "objectives": [
+    {
+     "text": "learn how different animals live together in families",
+     "ccss": [
+      "SL.1.2",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-SS.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell about one animal family: who is in it and where it lives",
+     "ccss": [
+      "SL.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-SS.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "make a mobile of an animal family with a label for each animal",
+     "ccss": [
+      "W.1.7",
+      "SL.1.5"
+     ],
+     "wida": [
+      "ELD-SS.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "show their mobile and say who each animal is, like “This is the baby.”",
+     "ccss": [
+      "SL.1.4",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SS.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Our Feelings",
+   "objectives": [
+    {
+     "text": "suggest a game with “Let's play!” and say “I'm thirsty.” “Me too.”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name and act out feelings: happy, sad, angry, tired, hungry and thirsty",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "look at a picture and ask “Are they happy?” and answer “Yes, they are.” or “No, they aren't.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read Feelings and say how the people in the pictures feel",
+     "ccss": [
+      "RI.1.1",
+      "RI.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear and say l and r clearly and read words that start with each",
+     "ccss": [
+      "RF.1.2C",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Our Pets",
+   "objectives": [
+    {
+     "text": "say goodbye with “Goodbye.” and “See you later.” and say “I'm tired now.”",
+     "ccss": [
+      "SL.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "name pets: birds, cats, rabbits and turtles",
+     "ccss": [
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Do you like dogs?” and answer “Yes, I do.” or “No, I don't.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read My Pets, about pets in China, Egypt, Belgium and Colombia, and tell about a pet",
+     "ccss": [
+      "RI.1.1",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive",
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell m and n sounds apart in words they hear and read",
+     "ccss": [
+      "RF.1.2C",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 6 · Bar graphs",
+   "objectives": [
+    {
+     "text": "read a simple bar graph and tell which bar is the tallest",
+     "ccss": [
+      "SL.1.2",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-MA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "ask friends “Do you like cats?” to find out which pets they like",
+     "ccss": [
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "make a bar graph of the different pets their friends like",
+     "ccss": [
+      "W.1.7",
+      "SL.1.5"
+     ],
+     "wida": [
+      "ELD-MA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what their bar graph shows, like “Five friends like cats.”",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-MA.1.Explain.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { BOOK_COLORS, BOOK_STATUS_LABEL, RESOURCE_KINDS, SERIES_KIND_LABEL, STRANDS, STRAND_LABEL, bookName, colorHex, countBook, countLine, draftPrompt, isCurriculumMissing, kindFromUrl, levelShort, parseCatalogueLines, parseCodes, parseTags, unknownTags, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
-import { addResource, appendDraft, deleteBook, deleteLesson, deleteResource, deleteSeries, deleteSkill, deleteUnit, fetchCatalogue, reorder, saveBook, saveLesson, saveSeries, saveSkill, saveUnit, setConfirmed, type BookDraft, type Catalogue, type LessonDraft, type UnitDraft } from '@/lib/curriculumData'
+import { addResource, appendDraft, deleteBook, deleteLesson, deleteObjective, deleteResource, deleteSeries, deleteSkill, deleteUnit, fetchCatalogue, reorder, saveBook, saveLesson, saveObjective, saveSeries, saveSkill, saveUnit, setConfirmed, type BookDraft, type Catalogue, type LessonDraft, type UnitDraft } from '@/lib/curriculumData'
 import { ArrowDown, ArrowUp, BookOpen, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Loader2, Pencil, Plus, RefreshCw, Sparkles, Tag, Trash2, X } from 'lucide-react'
 
 // ─── Bookshelf ───────────────────────────────────────────────────
@@ -31,7 +31,7 @@ const fmtWhen = (iso: string, ko: boolean) => new Date(iso).toLocaleDateString(k
 const num = (n: number) => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
 
 function useCatalogue() {
-  const [data, setData] = useState<Catalogue>({ series: [], books: [], units: [], lessons: [], resources: [], skills: [] })
+  const [data, setData] = useState<Catalogue>({ series: [], books: [], units: [], lessons: [], resources: [], skills: [], objectives: [] })
   const [loading, setLoading] = useState(true)
   const [missing, setMissing] = useState(false)
   const reload = useCallback(async () => {
@@ -544,6 +544,7 @@ function UnitCard({ unit, index, total, siblings, bookLabel, strand, c, ko, me, 
       </div>
       {open && (
         <div className="border-t border-rule px-3 py-2 pl-9">
+          <ObjectiveBank unitId={unit.id} label={label} c={c} ko={ko} canManage={canManage} fail={fail} />
           {lessons.length === 0 && !addingLesson && <p className="text-[12px] text-ink-3 mb-1">{ko ? '차시 없음' : 'No lessons in this unit yet.'}</p>}
           <div className="flex flex-col">
             {lessons.map((l, i) => <LessonRow key={l.id} lesson={l} index={i} total={lessons.length} siblings={lessons} unitLabel={label} strand={strand} c={c} ko={ko} me={me} canManage={canManage} nameOf={nameOf} fail={fail} />)}
@@ -556,6 +557,64 @@ function UnitCard({ unit, index, total, siblings, bookLabel, strand, c, ko, me, 
           <Resources target={{ unit_id: unit.id }} items={resources} label={label} c={c} ko={ko} me={me} fail={fail} unitFolder={unit.drive_folder_url} />
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Objective bank ──────────────────────────────────────────────
+// The lines a teacher taps onto a day's Students will in Lesson Plans. In use as
+// soon as they are here; fix a line by editing it.
+function ObjectiveBank({ unitId, label, c, ko, canManage, fail }: { unitId: string; label: string; c: C; ko: boolean; canManage: boolean; fail: (e: string | null) => boolean }) {
+  const { confirmDialog } = useApp()
+  const rows = c.objectives.filter(o => o.unit_id === unitId).sort((a, b) => a.sort_order - b.sort_order)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [busy, setBusy] = useState(false)
+  const start = (id: string, text: string) => { setEditId(id); setDraft(text) }
+  const save = async () => {
+    if (busy) return
+    setBusy(true)
+    const e = await saveObjective(editId === 'new' ? null : editId, unitId, draft, rows.reduce((m, o) => Math.max(m, o.sort_order), 0), label)
+    setBusy(false)
+    if (!fail(e)) { setEditId(null); setDraft(''); c.reload() }
+  }
+  const remove = async (id: string, text: string) => {
+    if (!await confirmDialog({ title: ko ? '학습 목표 삭제' : 'Delete this objective', message: text, confirmLabel: ko ? '삭제' : 'Delete' })) return
+    if (!fail(await deleteObjective(id, `${label} · ${text}`))) c.reload()
+  }
+  if (!rows.length && !canManage) return null
+  const editor = (
+    <div className="flex items-center gap-2 py-1">
+      <span className="text-[12.5px] italic text-ink-3 shrink-0">Students will</span>
+      <input autoFocus value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditId(null) }} className={inp} placeholder={ko ? '예: retell the story in order' : 'retell the story in order'} />
+      <button onClick={save} disabled={busy || !draft.trim()} className={btnS}><Check size={11} />{ko ? '저장' : 'Save'}</button>
+      <button onClick={() => setEditId(null)} className={btnS}><X size={11} /></button>
+    </div>
+  )
+  return (
+    <div className="mb-3 pb-2 border-b border-rule">
+      <p className="text-[11px] uppercase tracking-wider font-semibold text-ink-3 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
+      {rows.length === 0 && editId !== 'new' && <p className="text-[12px] text-ink-3">{ko ? '아직 없습니다.' : 'None yet. Lesson Plans offers the lessons\' objectives until there are some.'}</p>}
+      <ul>
+        {rows.map(o => editId === o.id ? <li key={o.id}>{editor}</li> : (
+          <li key={o.id} className="group flex items-start gap-2 py-1">
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] text-ink-2"><span className="italic text-ink-3">Students will</span> {o.text}</p>
+              {(o.ccss_codes.length > 0 || o.wida.length > 0) && (
+                <div className="mt-0.5 flex flex-wrap items-center gap-1"><Tags tags={[]} codes={o.ccss_codes} />{o.wida.map(w => <span key={w} className="text-[10.5px] text-ink-3">{w}</span>)}</div>
+              )}
+            </div>
+            {canManage && (
+              <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                <button onClick={() => start(o.id, o.text)} className={btnS} aria-label="Edit"><Pencil size={11} /></button>
+                <button onClick={() => remove(o.id, o.text)} className={btnS} aria-label="Delete"><Trash2 size={11} /></button>
+              </div>
+            )}
+          </li>
+        ))}
+        {editId === 'new' && <li>{editor}</li>}
+      </ul>
+      {canManage && editId === null && <button onClick={() => start('new', '')} className={`${btnS} mt-1`}><Plus size={11} />{ko ? '학습 목표 추가' : 'Add an objective'}</button>}
     </div>
   )
 }

@@ -1,0 +1,2576 @@
+{
+  "series": "Into Reading",
+  "level": "4",
+  "units": [
+    {
+      "title": "M1 W1 · The Story of You",
+      "objectives": [
+        {
+          "text": "tell the main idea of The Story of You and the details that support it",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "ask and answer questions about what makes each person different, pointing to the words that answer them",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the headings, photos and captions to find facts about growing up",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "say why the author wrote the text and what they want readers to think about themselves",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "write a few sentences about what makes them who they are, using profound, considered and mundane",
+          "ccss": [
+            "W.4.2",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M1 W1 · Flora & Ulysses: The Illuminated Adventures",
+      "objectives": [
+        {
+          "text": "ask and answer questions about Flora and the squirrel Ulysses, using details from the story",
+          "ccss": [
+            "RL.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the comic-style pictures and the words work together to tell the story",
+          "ccss": [
+            "RL.4.6",
+            "RL.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain what funny comparisons and colorful phrases in the story really mean",
+          "ccss": [
+            "RL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the words cynic, defiance, inadvertently and mundane to talk about Flora",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M1 W2 · Yes! We Are Latinos",
+      "objectives": [
+        {
+          "text": "stop and reread when a poem in Yes! We Are Latinos is confusing",
+          "ccss": [
+            "RL.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "find the line breaks, repeated words and rhythm in the poems and say what they add",
+          "ccss": [
+            "RL.4.4",
+            "RL.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell who is speaking in each poem and how that child feels about their family's story",
+          "ccss": [
+            "RL.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use heritage, ancient and relying to talk about where families come from",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short poem about their own heritage and family",
+          "ccss": [
+            "W.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M1 W2 · The Year of the Rat",
+      "objectives": [
+        {
+          "text": "stop and reread to clear up confusing parts of The Year of the Rat",
+          "ccss": [
+            "RL.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe Pacy's thoughts, feelings and actions, using details from the story",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the story would change if another character were telling it",
+          "ccss": [
+            "RL.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use resolutions, doubts, clumsy and awkward to talk about Pacy's year",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write New Year resolutions of their own and say why they chose them",
+          "ccss": [
+            "W.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M1 W3 · Kitoto the Mighty",
+      "objectives": [
+        {
+          "text": "retell Kitoto the Mighty in order, telling the most important events",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive",
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "describe Kitoto and the places he goes, using details from the folktale",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the lesson of the folktale and the events that show it",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the author's word choices make the story exciting to read",
+          "ccss": [
+            "RL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use mighty, cautiously, marveled and proclaimed to talk about Kitoto's search",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 W1 · What Are the Five Senses?",
+      "objectives": [
+        {
+          "text": "tell the main idea of What Are the Five Senses? and the details that support it",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "summarize what each of the five senses does for our body",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "use headings, photos, diagrams and captions to learn about the senses",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "work out science words such as nerves and taste buds from the sentences around them",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use reflect, judge and transparent to describe how we sense the world",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 W1 · The Science Behind Sight",
+      "objectives": [
+        {
+          "text": "tell the main idea of The Science Behind Sight and the key details",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain in order how light helps our eyes see, using the text's steps",
+          "ccss": [
+            "RI.4.5",
+            "RI.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use the diagrams and labels to explain the parts of the eye",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use luminous, transparent, reflect and illuminates to explain how light travels",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of how we see",
+          "ccss": [
+            "RI.4.2",
+            "W.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 W2 · Animal Senses",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the animals in the Animal Senses video",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the video's pictures, sounds and narration help explain animal senses",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "compare how one animal's senses are different from a person's senses",
+          "ccss": [
+            "RI.4.5",
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "use enhance, adapt, familiar and command to talk about how animals sense",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 W2 · Blind Ambition",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the writer of Blind Ambition, using details from the text",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain what colorful phrases in the narrative mean and why the writer uses them",
+          "ccss": [
+            "RI.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the events of the writer's story in order, using time words like first and later",
+          "ccss": [
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use obstacles, adapt, accepted and comfort to talk about the writer's challenges",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about a time they kept going even when something was hard",
+          "ccss": [
+            "W.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 W3 · The Game of Silence",
+      "objectives": [
+        {
+          "text": "picture the scenes of The Game of Silence in their mind and describe them",
+          "ccss": [
+            "RL.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive",
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell the problem in the story, the main events and how it ends",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how Omakayas feels during the game of silence and why",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain what comparisons and descriptive phrases in the story mean",
+          "ccss": [
+            "RL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use absurd, taunt, forfeit and coveted to talk about the game",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 W1 · Never Give Up!",
+      "objectives": [
+        {
+          "text": "find the author's main claim in Never Give Up! and the reasons that support it",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "put ideas from the text together to explain why people keep trying",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "tell which words the author chooses to persuade readers",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use drifting, damp, chorus and spare to talk about hard times and hope",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        },
+        {
+          "text": "give their own opinion about never giving up, with one reason",
+          "ccss": [
+            "W.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 W1 · Rent Party Jazz",
+      "objectives": [
+        {
+          "text": "tell the problem Sonny's family faces in Rent Party Jazz and how they solve it",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the message of the story about helping each other in hard times",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the author's descriptions bring jazz music and New Orleans to life",
+          "ccss": [
+            "RL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use auction, spare, verses and brimming to retell the rent party",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "connect Rent Party Jazz to Never Give Up! and say what both teach",
+          "ccss": [
+            "RL.4.2",
+            "RI.4.9"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 W2 · Hurricanes: A Force of Nature",
+      "objectives": [
+        {
+          "text": "picture in their mind how a hurricane forms and moves, using details from the text",
+          "ccss": [
+            "RI.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "compare facts about hurricanes with the first-hand view in the interview",
+          "ccss": [
+            "RI.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain what common sayings in the text mean, like 'the calm before the storm'",
+          "ccss": [
+            "L.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use surge, debris and perished to explain what hurricanes can do",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 W2 · Catch Me If You Can",
+      "objectives": [
+        {
+          "text": "picture the scenes of Catch Me If You Can as they read the play",
+          "ccss": [
+            "RL.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the cast list, stage directions and dialogue to understand the play",
+          "ccss": [
+            "RL.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how different characters see what happens in the play",
+          "ccss": [
+            "RL.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use spectators, capable, adoringly and disbelief to describe the characters",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "read a part aloud with expression, following the stage directions",
+          "ccss": [
+            "RF.4.4B",
+            "SL.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 W3 · My Diary from Here to There",
+      "objectives": [
+        {
+          "text": "predict what will happen next in My Diary from Here to There and check",
+          "ccss": [
+            "RL.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe Amada's feelings about moving from Mexico to the United States",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the diary form lets readers hear Amada's own thoughts",
+          "ccss": [
+            "RL.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use immigration, opportunities and burst to talk about the family's move",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a diary entry about a big change in their own life",
+          "ccss": [
+            "W.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 W1 · Who's a Hero?",
+      "objectives": [
+        {
+          "text": "use headings, photos and captions in Who's a Hero? to find facts about heroes",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "picture the brave acts described in the text and explain them in their own words",
+          "ccss": [
+            "RI.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the author's view of heroes compares with their own view",
+          "ccss": [
+            "RI.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use elegant, intimidated, episode and foreboding to talk about heroes and danger",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write who they think is a hero and give a reason",
+          "ccss": [
+            "W.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 W1 · Prince Charming Misplaces His Bride",
+      "objectives": [
+        {
+          "text": "picture the funny scenes in Prince Charming Misplaces His Bride and describe them",
+          "ccss": [
+            "RL.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the narrator's point of view makes this fairy tale different from the usual one",
+          "ccss": [
+            "RL.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the message of the story and the events that show it",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use elegant, feisty, scowled and sulked to describe the characters",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 W2 · Smokejumpers to the Rescue!",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how smokejumpers fight forest fires",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the steps of a smokejumper's job in order",
+          "ccss": [
+            "RI.4.5",
+            "RI.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "put details together to explain why smokejumpers are heroes",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "explain what descriptive phrases about fire and danger mean in the text",
+          "ccss": [
+            "RI.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use strenuous, timid, distress and devised to describe smokejumpers' work",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 W2 · Perseus and the Fall of Medusa",
+      "objectives": [
+        {
+          "text": "ask and answer questions about Perseus's quest, using details from the play",
+          "ccss": [
+            "RL.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use scenes, stage directions and dialogue to follow the myth as a play",
+          "ccss": [
+            "RL.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "put events together to tell what makes Perseus a hero",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use mortal, destiny, odyssey and timid to talk about Perseus and Medusa",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "compare the hero in this myth with the smokejumpers from the other text",
+          "ccss": [
+            "RL.4.2",
+            "RI.4.9"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 W3 · St. Augustine: A Story of America",
+      "objectives": [
+        {
+          "text": "use clues from the text to work out how life in St. Augustine changed",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the timeline, maps and pictures to learn the city's history",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell events in St. Augustine's history in time order",
+          "ccss": [
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "say why the author wrote about America's oldest city",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use furious, occasionally and secure in sentences about the city's past",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 W1 · Why Art Centers Matter",
+      "objectives": [
+        {
+          "text": "find the author's opinion in Why Art Centers Matter and the reasons that support it",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "ask and answer questions about what art centers do for a town",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the text is organized into an opinion, reasons and an ending",
+          "ccss": [
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "say and write whether their town needs an art center, with two reasons",
+          "ccss": [
+            "W.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 W1 · The Beatles Were Fab (and They Were Funny)",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the Beatles' lives, using details from the biography",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the events of the Beatles' story in time order",
+          "ccss": [
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "find the details the author uses to show the Beatles were funny",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain what playful phrases and jokes in the biography mean",
+          "ccss": [
+            "RI.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use hilarious, stunned, observant and flattered to describe the band",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 W2 · How Can Photos Take Us Back in Time?",
+      "objectives": [
+        {
+          "text": "stop and replay parts of the video when something about old photos is unclear",
+          "ccss": [
+            "RI.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea of How Can Photos Take Us Back in Time? and key details",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "look at an old photo and describe its foreground and background",
+          "ccss": [
+            "RI.4.7",
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "use curator, foreground, background and highlight to talk about photographs",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 W2 · Let's Dance Around the World",
+      "objectives": [
+        {
+          "text": "stop and reread when a part of Let's Dance Around the World is unclear",
+          "ccss": [
+            "RI.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea of the text and the dances that support it",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "compare two dances from different countries, using details from the text",
+          "ccss": [
+            "RI.4.5",
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "use the photos, captions and map to learn where each dance comes from",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use rhythmic, distinctive and horizontal to describe how dancers move",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 W3 · The Art of Poetry",
+      "objectives": [
+        {
+          "text": "picture what each poem in The Art of Poetry describes and draw or tell it",
+          "ccss": [
+            "RL.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "find rhythm, rhyme and line breaks in the poems and say what they add",
+          "ccss": [
+            "RL.4.4",
+            "RL.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain what similes and metaphors in the poems mean",
+          "ccss": [
+            "RL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the big message of a poem in their own words",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use stir, plunges, cruising and unsurpassed in a short poem of their own",
+          "ccss": [
+            "L.4.6",
+            "W.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W1 · Seven Natural Wonders",
+      "objectives": [
+        {
+          "text": "use maps, photos and captions to find where the seven natural wonders are",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea of Seven Natural Wonders and the details that support it",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the text is organized, with one section for each wonder",
+          "ccss": [
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use summit, thrive, vital and glimpse to describe a natural wonder",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "choose one wonder and tell a partner three facts about it",
+          "ccss": [
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W1 · Mariana Trench",
+      "objectives": [
+        {
+          "text": "use the diagrams and captions to understand how deep the Mariana Trench is",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea of Mariana Trench and the key details",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain what life is like at the bottom of the ocean, using facts from the text",
+          "ccss": [
+            "RI.4.3",
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "use trench, prehistoric, thrive and remotely to talk about the deep sea",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W1 · Exploring Challenger Deep",
+      "objectives": [
+        {
+          "text": "use photos and diagrams to learn how explorers reached Challenger Deep",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the order of events in the dive to the deepest place in the ocean",
+          "ccss": [
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "put ideas from all three texts together to explain why the deep ocean is a wonder",
+          "ccss": [
+            "RI.4.9",
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "use submersible, autonomous, remotely and glimpse to describe the dive",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W2 · Weird and Wondrous Rocks",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how the rocks in the text were formed",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the cause and effect of how wind, water and heat shape rocks",
+          "ccss": [
+            "RI.4.5",
+            "RI.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive",
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "tell how the author makes rock facts interesting to read",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use eternal, intriguing, collision and core to describe how rocks form",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W2 · Nature's Wonders",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the poems in Nature's Wonders, using details from them",
+          "ccss": [
+            "RL.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how a poem's stanzas and lines are different from paragraphs in a text",
+          "ccss": [
+            "RL.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the poet's word choices help readers picture nature",
+          "ccss": [
+            "RL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use diverse, idle, fathom and wrath to talk about the poems",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short poem about a wonder of nature they have seen",
+          "ccss": [
+            "W.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 W3 · Grand Canyon: A Trail Through Time",
+      "objectives": [
+        {
+          "text": "use clues in Grand Canyon: A Trail Through Time to work out how the canyon formed",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the reasons and facts the author gives about the canyon's rock layers",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the similes and metaphors the author uses to describe the canyon",
+          "ccss": [
+            "L.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use chasm, eroding, embedded and glistens to describe the Grand Canyon",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W1 · A Tale of Traditional Tales",
+      "objectives": [
+        {
+          "text": "tell the main idea of A Tale of Traditional Tales and the key details",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "retell what the text says about folktales, fables, tall tales and legends",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain what common sayings like 'slow and steady wins the race' mean",
+          "ccss": [
+            "L.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use recall, vividly, partial and resourceful to talk about old tales",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W1 · Thunder Rose",
+      "objectives": [
+        {
+          "text": "retell Thunder Rose in order, telling the most important events",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "find the exaggerations in this tall tale and explain what they show about Rose",
+          "ccss": [
+            "RL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe Rose's strength and character, using details from the story",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use splendor, disposition, commendable and devastation to describe Rose's adventures",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short tall tale about a hero with an amazing power",
+          "ccss": [
+            "W.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W2 · In the Days of King Adobe",
+      "objectives": [
+        {
+          "text": "predict how the old woman will deal with the tricky travelers, then check",
+          "ccss": [
+            "RL.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe the old woman and the travelers, using their words and actions",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the lesson of the folktale and the events that show it",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use thrifty, generous, succulent and clamped to retell the story",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W2 · A Pair of Tricksters",
+      "objectives": [
+        {
+          "text": "predict how each trick in A Pair of Tricksters will turn out, then check",
+          "ccss": [
+            "RL.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the lesson each trickster tale teaches",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "compare the two tricksters and how they fool the other characters",
+          "ccss": [
+            "RL.4.3",
+            "RL.4.9"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "explain what colorful phrases and comparisons in the tales mean",
+          "ccss": [
+            "RL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use fascinated, character, thrifty and clamped to describe the tricksters",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W3 · Ten Suns: A Chinese Legend",
+      "objectives": [
+        {
+          "text": "describe the ten suns and the archer Yi, using details from the legend",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell what happens when all ten suns rise at once and how it is fixed",
+          "ccss": [
+            "RL.4.3",
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "use the pictures to understand how the earth changes in the legend",
+          "ccss": [
+            "RL.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use scorching, withered, reckless and gratitude to retell the legend",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M7 W3 · The Ten Suns",
+      "objectives": [
+        {
+          "text": "tell how the video's pictures, music and voices bring The Ten Suns to life",
+          "ccss": [
+            "RL.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "compare the video with the written legend and tell what is the same and different",
+          "ccss": [
+            "RL.4.7",
+            "RL.4.9"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "put both versions together to tell what the legend explains",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "use prosper, assumed, reckless and scorching to talk about the video",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M8 W1 · To Your Health!",
+      "objectives": [
+        {
+          "text": "use the charts, photos and captions in To Your Health! to learn about healthy eating",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "stop and reread when a fact about food and health is unclear",
+          "ccss": [
+            "RI.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell why the author wrote the text and what they want readers to do",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use hydrated, assess and impact to talk about healthy choices",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "plan a healthy meal and explain why each food is a good choice",
+          "ccss": [
+            "W.4.2",
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M8 W1 · Eco-Friendly Food",
+      "objectives": [
+        {
+          "text": "find the author's opinion in Eco-Friendly Food and the reasons that support it",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use the graphics and captions to learn how food choices affect the planet",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "stop and reread to make sense of how food is grown and transported",
+          "ccss": [
+            "RI.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use disposable, convenient, transported and intensive to talk about food and the earth",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        },
+        {
+          "text": "give their opinion on one way to eat more kindly for the planet",
+          "ccss": [
+            "W.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M8 W2 · Kids Rock Nutrition in the Kitchen",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the recipe in the Kids Rock Nutrition video",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the video's steps, pictures and talk help viewers cook",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea of the video and why the kids cook healthy food",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use unique, edible, adventurous and forbidden to talk about trying new foods",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain the steps of a simple recipe in order",
+          "ccss": [
+            "SL.4.4",
+            "W.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M8 W2 · Bug Bites",
+      "objectives": [
+        {
+          "text": "ask and answer questions about why some people eat insects",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea of Bug Bites and the key details",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "find the reasons and facts the author gives for eating bugs",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use edible, adventurous, pests and attitudes to talk about eating insects",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        },
+        {
+          "text": "say and write whether they would try eating bugs, with reasons",
+          "ccss": [
+            "W.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M8 W3 · Now You're Cooking!",
+      "objectives": [
+        {
+          "text": "predict what will happen in Now You're Cooking! and check as they read",
+          "ccss": [
+            "RL.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain what idioms in the story mean, like 'a piece of cake'",
+          "ccss": [
+            "L.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell who is telling the story and how that changes what readers learn",
+          "ccss": [
+            "RL.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures and other features to understand what happens in the kitchen",
+          "ccss": [
+            "RL.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use culinary, luscious, astounded and crestfallen to describe the characters' cooking",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W1 · The Eco Guardians!",
+      "objectives": [
+        {
+          "text": "find the opinions in The Eco Guardians! letters and the reasons given for them",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use clues in the letters to work out what problem each writer wants solved",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use the letter parts, like the greeting and signature, to understand the text",
+          "ccss": [
+            "RI.4.7",
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use permission, installing, sufficient and frequent to talk about helping the earth",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        },
+        {
+          "text": "write a short letter asking someone to help protect the environment",
+          "ccss": [
+            "W.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W1 · Luz Sees the Light",
+      "objectives": [
+        {
+          "text": "use the pictures and words in Luz Sees the Light to work out how Luz feels",
+          "ccss": [
+            "RL.4.1",
+            "RL.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the message of the graphic novel and the events that show it",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain what idioms in the speech bubbles mean",
+          "ccss": [
+            "L.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use oasis, abandoned and sufficient to tell how Luz changes her neighborhood",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W2 · On Sea Turtle Patrol",
+      "objectives": [
+        {
+          "text": "retell On Sea Turtle Patrol in order, telling the most important events",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "summarize how the characters help the baby sea turtles",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "explain what descriptive phrases about the beach and the turtles mean",
+          "ccss": [
+            "RL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use obsessed, stranded, disoriented and recruiting to retell the patrol",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W2 · Saving the Kemp's Ridley Sea Turtle",
+      "objectives": [
+        {
+          "text": "retell how people work to save the Kemp's ridley sea turtle",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "summarize the main problems the turtles face and how they are helped",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "explain what comparisons and colorful phrases in the text mean",
+          "ccss": [
+            "RL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use appointed, estimate, stranded and blunt to talk about turtle rescue",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "compare this text with On Sea Turtle Patrol and say how both help turtles",
+          "ccss": [
+            "RL.4.9",
+            "RI.4.9"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W2 · How Can We Reduce Household Waste?",
+      "objectives": [
+        {
+          "text": "find the author's opinion about household waste and the reasons that support it",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "summarize the ways the text says families can make less trash",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "use the charts, photos and captions to learn about waste at home",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use decay, estimate and appointed to talk about trash and recycling",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write one way their family could reduce waste and why it matters",
+          "ccss": [
+            "W.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M9 W3 · Seeds of Change",
+      "objectives": [
+        {
+          "text": "ask and answer questions about Wangari Maathai's life, using details from the biography",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the events of Wangari's life in time order",
+          "ccss": [
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "explain how Wangari's ideas and actions changed her country, Kenya",
+          "ccss": [
+            "RI.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "tell how the author's words make Wangari's story come alive",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use ancestors, outspoken, canopy and envision to describe Wangari's work",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M10 W1 · How Technology Has Changed Communication",
+      "objectives": [
+        {
+          "text": "use the timeline to tell when new ways of communicating were invented",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea of How Technology Has Changed Communication and the key details",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the text is organized in time order, from long ago to today",
+          "ccss": [
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use patent, transmitted, enabled and significantly to talk about inventions",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M10 W1 · The History of Communication",
+      "objectives": [
+        {
+          "text": "stop and reread when a part of The History of Communication is unclear",
+          "ccss": [
+            "RI.4.10"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea of the text and the details that support it",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "compare an old way of sending messages with a new way, using the text",
+          "ccss": [
+            "RI.4.5",
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "use the pictures and captions to learn how people sent messages long ago",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use proposed, influence, peak and plucked to talk about the history of communication",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M10 W2 · A New Language—Invented by Kids!",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how deaf children in Nicaragua made a new sign language",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the events of how the new language grew, in time order",
+          "ccss": [
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell the main idea of A New Language—Invented by Kids! and the key details",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use gestures, linguists, astonishment and instinct to talk about the new language",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M10 W2 · Dolphin Dinner",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how dolphins work together in the Dolphin Dinner video",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell how the video's pictures and narration show dolphins communicating",
+          "ccss": [
+            "RI.4.7"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the steps dolphins follow to catch their food",
+          "ccss": [
+            "RI.4.5",
+            "RI.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        },
+        {
+          "text": "tell the main idea of the video and two details that support it",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "use instinct, practical and operation to describe how dolphins hunt",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M10 W3 · Cooper's Lesson",
+      "objectives": [
+        {
+          "text": "use clues in Cooper's Lesson to work out how Cooper feels about speaking Korean",
+          "ccss": [
+            "RL.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell Cooper's problem, the main events and how it is solved",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the story might change if Mr. Lee were telling it",
+          "ccss": [
+            "RL.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use stammered, expectantly, inspect and demonstrated to describe Cooper and Mr. Lee",
+          "ccss": [
+            "L.4.6",
+            "L.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "talk or write about a time they learned something from an older person",
+          "ccss": [
+            "W.4.3",
+            "SL.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

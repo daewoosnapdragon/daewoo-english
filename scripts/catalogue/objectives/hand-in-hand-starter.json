@@ -1,0 +1,742 @@
+{
+ "series": "Hand in Hand",
+ "level": "Starter",
+ "units": [
+  {
+   "title": "Unit 1 · My Things",
+   "objectives": [
+    {
+     "text": "greet a friend and say their own name: “Hello. I'm Mila.” “Hi. I'm Joey.”",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "name things in a school bag: bag, book, crayon and pencil",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What's this?” “It's a book.” about things in the classroom",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "sing the alphabet song and point to each letter as they sing",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · My Classroom",
+   "objectives": [
+    {
+     "text": "ask “What's your name?” and answer “My name's Matt.” or “I'm Jade.”",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "name things in the classroom: board, chair, globe and table",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Is this a table?” and answer “Yes, it is.” or “No, it isn't.”",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the a sound in ant and alligator and the b sound in bat and bus",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 1 · Comic 1 and coloring",
+   "objectives": [
+    {
+     "text": "read Comic 1 with the teacher, pointing to each picture in order",
+     "ccss": [
+      "RL.K.1",
+      "RL.K.7"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "retell Comic 1 in their own words, using the pictures to help",
+     "ccss": [
+      "RL.K.2",
+      "SL.K.4"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "color a book, a pencil, a board and a chair and name each one",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Fun Colors",
+   "objectives": [
+    {
+     "text": "ask a friend “How are you?” and answer “I'm fine. Thank you.” or “I'm great.”",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "name six colors: red, blue, yellow, green, brown and black",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What color is this?” “It's red.” about things they can see",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the k sound in cat and cake and the d sound in dog and duck",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Shapes",
+   "objectives": [
+    {
+     "text": "hand something to a friend with “Here you are.” and answer “Thank you.”",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "name and draw a circle, a square, a star and a triangle",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What shape is this?” “It's a star.”",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the e sound in egg and elephant and the f sound in fish and fan",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 2 · Comic 2 and weather",
+   "objectives": [
+    {
+     "text": "read Comic 2 with the teacher, following the pictures from start to end",
+     "ccss": [
+      "RL.K.1",
+      "RL.K.7"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "retell Comic 2 in their own words, using the pictures to help",
+     "ccss": [
+      "RL.K.2",
+      "SL.K.4"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "ask “How's the weather?” and answer “It's sunny.” “It's rainy.” or “It's snowy.”",
+     "ccss": [
+      "SL.K.4",
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-SC.K.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Numbers",
+   "objectives": [
+    {
+     "text": "ask “How old are you?” and answer with their own age, like “I'm 6.”",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "count and say the numbers from one to twelve",
+     "ccss": [
+      "SL.K.2",
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-MA.K.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "ask and answer “How many triangles?” “Two triangles.” by counting shapes",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the g sound in girl and gorilla and the h sound in hat and hippo",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · My Body",
+   "objectives": [
+    {
+     "text": "say “I'm sorry.” and answer “That's OK.” when a friend says sorry",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "point to and name eye, ear, nose, mouth, arm and leg",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell about their body with “I have one nose.” and “I have two ears.”",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the i sound in igloo and iguana and the j sound in jacket and jet",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 3 · Comic 3 and numbers",
+   "objectives": [
+    {
+     "text": "read Comic 3 with the teacher, pointing to each picture in order",
+     "ccss": [
+      "RL.K.1",
+      "RL.K.7"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "retell Comic 3 in their own words, using the pictures to help",
+     "ccss": [
+      "RL.K.2",
+      "SL.K.4"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "color a picture by numbers, saying each number from one to twelve",
+     "ccss": [
+      "SL.K.2",
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-MA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · My Toys",
+   "objectives": [
+    {
+     "text": "say “Happy birthday!” to a friend and give a present with “Here you are.”",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "name toys: ball, car, robot and yo-yo",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What is it?” “It's a car.” about a toy",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the k sound in kangaroo and kite and the l sound in lion and lamp",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · My Pets",
+   "objectives": [
+    {
+     "text": "give something with “This is for you.” and answer “You're welcome.” to thanks",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "name pets: bird, cat, dog and fish",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell about a pet they like with “I like my cat.”",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the m sound in monkey and mouse and the n sound in net and nest",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 4 · Comic 4 and addition",
+   "objectives": [
+    {
+     "text": "read Comic 4 with the teacher, following the pictures from start to end",
+     "ccss": [
+      "RL.K.1",
+      "RL.K.7"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "retell Comic 4 in their own words, using the pictures to help",
+     "ccss": [
+      "RL.K.2",
+      "SL.K.4"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "add small numbers, like 3 + 2 = 5, and say the answer in English",
+     "ccss": [
+      "SL.K.4"
+     ],
+     "wida": [
+      "ELD-MA.K.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · My Actions",
+   "objectives": [
+    {
+     "text": "invite a friend with “Let's play!” and say “I like your car.”",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "act out and name dancing, jumping, running and singing",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What are you doing?” and answer “I'm singing.” while acting it out",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the o, p and q sounds in octopus, panda and queen",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · More Actions",
+   "objectives": [
+    {
+     "text": "use “Hurry up!” “OK.” and “I like your kite.” in a short role-play",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "act out and name fly a kite, jump rope, play soccer and ride a bike",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What can you do?” and answer “I can fly a kite.”",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the r, s and t sounds in rabbit, sun and tiger",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 5 · Comic 5 and telling time",
+   "objectives": [
+    {
+     "text": "read Comic 5 with the teacher, pointing to each picture in order",
+     "ccss": [
+      "RL.K.1",
+      "RL.K.7"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "retell Comic 5 in their own words, using the pictures to help",
+     "ccss": [
+      "RL.K.2",
+      "SL.K.4"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What time is it?” and read a clock on the hour: “It's 6 o'clock.”",
+     "ccss": [
+      "SL.K.4",
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-MA.K.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · My Snacks",
+   "objectives": [
+    {
+     "text": "offer a snack with “Do you want a cookie?” and answer “Yes, please.” or “No, thank you.”",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "name snacks: apple, cookie, ice cream and juice",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say what they want with “I want juice.” or “I want a cookie.”",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the u, v and w sounds in umbrella, violin and window",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · My Feelings",
+   "objectives": [
+    {
+     "text": "say goodbye with “Goodbye.” and “See you tomorrow.” at the end of the day",
+     "ccss": [
+      "SL.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "show with their face and name happy, hungry, sad and sleepy",
+     "ccss": [
+      "L.K.6"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “How do you feel?” and answer “I'm happy.” or another feeling",
+     "ccss": [
+      "L.K.1",
+      "SL.K.6"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "say the x sound in box and fox, and the y and z sounds in yo-yo and zebra",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 6 · Comic 6 and rules",
+   "objectives": [
+    {
+     "text": "read Comic 6 with the teacher, following the pictures from start to end",
+     "ccss": [
+      "RL.K.1",
+      "RL.K.7"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "retell Comic 6 in their own words, using the pictures to help",
+     "ccss": [
+      "RL.K.2",
+      "SL.K.4"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "say and follow our classroom rules in English",
+     "ccss": [
+      "SL.K.1"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive",
+      "ELD-SI.K.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

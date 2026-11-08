@@ -1,0 +1,3918 @@
+{
+ "series": "Science of Reading",
+ "level": "",
+ "units": [
+  {
+   "title": "Alphabet · Set 1: a, b, t, s, m",
+   "objectives": [
+    {
+     "text": "say the sound of each letter a, b, t, s and m and match it to its letter",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "tell that a is a vowel and b, t, s and m are consonants",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "blend the sounds to read short words like at, am, bat, sat and mat",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "write the letter for each sound they hear in words like tab and mat",
+     "ccss": [
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Alphabet · Set 2: f, c, i, p",
+   "objectives": [
+    {
+     "text": "say the sounds of f, c (as in cat), i and p and match them to the letters",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "tell that i is a vowel and f, c and p are consonants",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "blend the sounds to read short words like it, if, fit, sip and tip",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "write the letters for the sounds in words like cap, pit and fit",
+     "ccss": [
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Alphabet · Set 3: h, l, n, o",
+   "objectives": [
+    {
+     "text": "say the sounds of h, l, n and o and match them to the letters",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "tell that o is a vowel and h, l and n are consonants",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "blend the sounds to read short words like on, not, hot, lot and hop",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "write the letters for the sounds in words like hit, lap and nap",
+     "ccss": [
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Alphabet · Set 4: g, d, r, k",
+   "objectives": [
+    {
+     "text": "say the sounds of g (as in go), d, r and k and match them to the letters",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "listen for the first sound in a word and name its letter: g, d, r or k",
+     "ccss": [
+      "RF.K.2D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "blend the sounds to read short words like dog, rag, kid, dig and rod",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "write the letters for the sounds in words like dig, rat and kit",
+     "ccss": [
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Alphabet · Set 5: j, v, z, u",
+   "objectives": [
+    {
+     "text": "say the sounds of j, v, z and u and match them to the letters",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "tell that u is a vowel and j, v and z are consonants",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for the first sound in words like jam, van and zip and name the letter",
+     "ccss": [
+      "RF.K.2D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "blend the sounds to read short words like jug, up, fun and zip",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "write the letters for the sounds in words like jog, vat and hug",
+     "ccss": [
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Alphabet · Set 6: e, w, y, x, q",
+   "objectives": [
+    {
+     "text": "say the sounds of e, w, y, x and q, and know q usually comes with u",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "name all five vowels, a, e, i, o and u, and tell them from consonants",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "blend the sounds to read short words like wet, yes, box, six and quit",
+     "ccss": [
+      "RF.K.2D",
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "write the letters for the sounds in words like web, fox and yet",
+     "ccss": [
+      "RF.K.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · CVC & VC Words: Short a",
+   "objectives": [
+    {
+     "text": "hear and say the short a sound, as in cat, fan and bag",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell short a words like cat, fan, bag and map",
+     "ccss": [
+      "RF.1.3B",
+      "RF.K.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "touch and say each sound, then blend to read words like sat, ham and nap",
+     "ccss": [
+      "RF.1.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "read short a words in simple sentences, like Sam had a fat cat",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words can, man, ran, has and was by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · CVC & VC Words: Short i",
+   "objectives": [
+    {
+     "text": "hear and say the short i sound, as in fin, big and sit",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell short i words like fin, big, sit and lip",
+     "ccss": [
+      "RF.1.3B",
+      "RF.K.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell whether a word has short a or short i, like sat and sit",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read short i words in simple sentences, like His pig is big",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words in, did, him, six and his by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · CVC & VC Words: Short o",
+   "objectives": [
+    {
+     "text": "hear and say the short o sound, as in hot, log and rod",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell short o words like hot, log, mop and fox",
+     "ccss": [
+      "RF.1.3B",
+      "RF.K.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "change the vowel to make new words, like hat, hit and hot",
+     "ccss": [
+      "RF.1.3B",
+      "RF.K.3B"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "read short o words in simple sentences, like Bob got a hot pot",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words on, got, not and of by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · CVC & VC Words: Short u",
+   "objectives": [
+    {
+     "text": "hear and say the short u sound, as in fun, nut and hug",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell short u words like fun, nut, hug and bus",
+     "ccss": [
+      "RF.1.3B",
+      "RF.K.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell apart short o and short u in words like hot and hut",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read short u words in simple sentences, like Gus can run up to us",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words up, us, but, run and put by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · CVC & VC Words: Short e",
+   "objectives": [
+    {
+     "text": "hear and say the short e sound, as in net, pen and web",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell short e words like net, pen, web and bed",
+     "ccss": [
+      "RF.1.3B",
+      "RF.K.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell apart short e and short i in words like pen and pin",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read short e words in simple sentences, like Ben has a red pen",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words let, get, red and yes by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · CVC Words: All Short Vowels Together",
+   "objectives": [
+    {
+     "text": "read words with all five short vowels, like cap, bed, pig, hot and sun",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read short-vowel sentences aloud smoothly and correctly, rereading to get faster",
+     "ccss": [
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "spell short-vowel words by listening carefully for the middle vowel sound",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Morphology: Suffix -s",
+   "objectives": [
+    {
+     "text": "read and spell words that end in -s, like hits, bugs and wins",
+     "ccss": [
+      "RF.1.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "find the base word and the ending -s in words like cats and sits",
+     "ccss": [
+      "L.1.4C",
+      "RF.1.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "explain that -s can mean more than one, as in bugs and pigs",
+     "ccss": [
+      "L.1.4C"
+     ],
+     "wida": [
+      "ELD-LA.1.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "add -s to action words in sentences, like He runs and Sam sits",
+     "ccss": [
+      "L.1.4C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Consonant Digraphs: sh",
+   "objectives": [
+    {
+     "text": "read and spell words with sh, like ship, fish and shop",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "know that s and h together make one sound, as in shed and dish",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "hear whether sh comes at the start or the end, like ship and wish",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read sh words in sentences, like She has a fish in a dish",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words she and wash by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Consonant Digraphs: ch",
+   "objectives": [
+    {
+     "text": "read and spell words with ch, like chop, chin and such",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "know that c and h together make one sound, as in chip and rich",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "tell apart ch and sh in words like chip and ship",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read ch words in sentences, like Rich can chop a chip",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Consonant Digraphs: th",
+   "objectives": [
+    {
+     "text": "read and spell words with th, like that, math and thin",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "hear the two th sounds, with the voice on in this and off in thin",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read th words in sentences, like Seth did math with them",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words the, this, then, with and them by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Consonant Digraphs: wh",
+   "objectives": [
+    {
+     "text": "read and spell words with wh, like when, whip and which",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "know that w and h together make one sound at the start of words",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "read wh question words in sentences, like When is it? What is that?",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words when, which and what by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Consonant Digraphs: Review all",
+   "objectives": [
+    {
+     "text": "read and spell words with sh, ch, th and wh, like shop, chin, thin and when",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "sort words by the sound they have: sh, ch, th or wh",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read sentences with sh, ch, th and wh words smoothly and correctly",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Morphology: Suffix -es",
+   "objectives": [
+    {
+     "text": "read and spell words that end in -es, like dishes, buzzes and boxes",
+     "ccss": [
+      "RF.1.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that words ending in s, x, z, sh or ch take -es, not -s",
+     "ccss": [
+      "L.1.4C"
+     ],
+     "wida": [
+      "ELD-LA.1.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "choose -s or -es to make words like cups, foxes and wishes",
+     "ccss": [
+      "RF.1.3F",
+      "L.1.4C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "hear the extra beat that -es adds, as in fox and foxes",
+     "ccss": [
+      "RF.1.3F"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Beginning Blends",
+   "objectives": [
+    {
+     "text": "read and spell words that start with two consonants, like step, frog and plum",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "say each sound in a blend, like s-t in stop and f-r in frog",
+     "ccss": [
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "tell a blend like st, where both letters sound, from sh, which is one sound",
+     "ccss": [
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read beginning-blend words in sentences, like Brad and Fran slip on a slug",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words and, must, help, stop and from by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Ending Blends",
+   "objectives": [
+    {
+     "text": "read and spell words that end with two consonants, like tent, lift and jump",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "say each ending sound in words like tent (n-t) and jump (m-p)",
+     "ccss": [
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read ending-blend words in sentences, like The best tent is at the camp",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "spell words with ending blends by listening for both last sounds, like hand and milk",
+     "ccss": [
+      "RF.1.3B",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Review Together",
+   "objectives": [
+    {
+     "text": "read short-vowel words with blends, sh, ch and th, like crash, chest and thump",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read short stories with these words smoothly, correctly and with expression",
+     "ccss": [
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "spell short-vowel words with blends, sh, ch and th when the teacher says them",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Morphology: Suffix -ed",
+   "objectives": [
+    {
+     "text": "read and spell words that end in -ed, like jumped and rested",
+     "ccss": [
+      "RF.1.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "hear the three sounds of -ed, as in jumped, spelled and rested",
+     "ccss": [
+      "RF.1.3F"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "explain that -ed tells something already happened, as in Sam jumped",
+     "ccss": [
+      "L.1.4C"
+     ],
+     "wida": [
+      "ELD-LA.1.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write sentences about yesterday using -ed words, like We camped and fished",
+     "ccss": [
+      "L.1.4C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Double Consonants: ll, ff, ss, zz",
+   "objectives": [
+    {
+     "text": "read and spell words ending in ll, ff, ss or zz, like fill, puff, mess and buzz",
+     "ccss": [
+      "RF.1.3B",
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "use the rule: after a short vowel, double a final f, l, s or z",
+     "ccss": [
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read double-letter words in sentences, like The doll fell off the hill",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words will, off, well, full and pull by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Consonant Digraphs: ck",
+   "objectives": [
+    {
+     "text": "read and spell words ending in ck, like rock, sack and duck",
+     "ccss": [
+      "RF.1.3A",
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "choose ck right after a short vowel (duck) and k after a consonant (milk)",
+     "ccss": [
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read ck words in sentences, like Jack put a sock in the black box",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the word black by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Consonant Digraphs: tch",
+   "objectives": [
+    {
+     "text": "read and spell words ending in tch, like catch, match and itch",
+     "ccss": [
+      "RF.1.3A",
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "choose tch right after a short vowel (catch) and ch otherwise (lunch)",
+     "ccss": [
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read tch words in sentences, like Mitch can catch and pitch",
+     "ccss": [
+      "RF.1.3A"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the word watch by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Morphology: Suffix -ing",
+   "objectives": [
+    {
+     "text": "read and spell words that end in -ing, like jumping, fishing and resting",
+     "ccss": [
+      "RF.1.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that -ing tells something is happening now, as in Sam is jumping",
+     "ccss": [
+      "L.1.4C"
+     ],
+     "wida": [
+      "ELD-LA.1.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "find the base word in -ing words, like fish in fishing",
+     "ccss": [
+      "L.1.4C",
+      "RF.1.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell what is happening in a picture with -ing words, like He is kicking",
+     "ccss": [
+      "L.1.4C"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Exceptions: ild, old, ost, ind, olt",
+   "objectives": [
+    {
+     "text": "read and spell words with ild, ind and old, like wild, kind and fold",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with ost and olt, like most, post and bolt",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "know that the vowel in these words says its name, as in find, not fin",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read these words in sentences, like The child can hold the cold cup",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words old, cold, find, hold and mind by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · -ng and -nk (& new grapheme: ng)",
+   "objectives": [
+    {
+     "text": "read and spell words with ng, like sing, rang and king",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with nk, like wink, bank and pink",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "hear the short i in sing and wink and the short a in rang and bank",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words bring, thing, think, thank and long by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · <all> spells /ŏl/",
+   "objectives": [
+    {
+     "text": "read and spell words with all, like ball, call, tall and wall",
+     "ccss": [
+      "RF.1.3B",
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "use all to spell the ending sound in ball and tall, knowing doll is different",
+     "ccss": [
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read all words in sentences, like The small ball can fall off the wall",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words all, fall, small and call by sight",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive",
+      "ELD-LA.K.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Beginning /k/ spelling rule",
+   "objectives": [
+    {
+     "text": "choose c or k to begin words with the k sound, like camp and kit",
+     "ccss": [
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "use the rule: k comes before e, i or y; c comes before other letters",
+     "ccss": [
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.1.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words like cat, cost, kelp and kid correctly",
+     "ccss": [
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Digraph & Triple Blends (str, spr, spl, scr)",
+   "objectives": [
+    {
+     "text": "read and spell words that start with three sounds together, like string, splash and scrap",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "say each sound in str, spr, spl and scr, like s-t-r in string",
+     "ccss": [
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read words where sh or th comes before r, like shrub and thrill",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read these words in sentences, like Fran split the string and the strap",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Closed Syllables · Morphology Rule: Doubling Rule",
+   "objectives": [
+    {
+     "text": "read and spell words that double the last letter before -ed or -ing, like rubbed and hopping",
+     "ccss": [
+      "RF.2.3E",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain why hop becomes hopping but jump becomes jumping",
+     "ccss": [
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "add -ed and -ing to words like sit, run and stop, spelling them correctly",
+     "ccss": [
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Open Syllables · One-syllable Open",
+   "objectives": [
+    {
+     "text": "read and spell words ending with a vowel that says its name, like me and go",
+     "ccss": [
+      "RF.2.3A",
+      "RF.1.3D"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell the long vowel in go from the short vowel in got",
+     "ccss": [
+      "RF.2.3A"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "clap and read longer words with an open first part, like ba-by and ro-bot",
+     "ccss": [
+      "RF.1.3E"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words he, be, so and she, and the tricky words do and to",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Open Syllables · Y as a vowel (long i)",
+   "objectives": [
+    {
+     "text": "read and spell words where y says long i, like by, my, try and cry",
+     "ccss": [
+      "RF.1.3C",
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "use the rule: English words do not end in i, so we write y, as in sky",
+     "ccss": [
+      "L.1.2D"
+     ],
+     "wida": [
+      "ELD-LA.1.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "read y words in sentences, like Why did the fly cry?",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words my, by and why by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Open Syllables · Morphology: Drop the y, make it an i",
+   "objectives": [
+    {
+     "text": "change y to i before adding -es or -ed, as in tries and cried",
+     "ccss": [
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words like flies, tried and cries",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain why we write cried but crying, keeping the y before -ing",
+     "ccss": [
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Silent e · VCe Pattern: a_e",
+   "objectives": [
+    {
+     "text": "read and spell words with a and silent e, like cake, game and lake",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell how silent e changes words, like cap to cape and tap to tape",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "read long a words with silent e in sentences, like Jane ate the cake",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words make, made, gave, take and came by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Silent e · VCe Pattern: i_e",
+   "objectives": [
+    {
+     "text": "read and spell words with i and silent e, like fine, smile and bike",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "change short i words to long i with silent e, like kit to kite and pin to pine",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read long i words with silent e in sentences, like Mike rides his bike",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words like, five, time, ride and white by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Silent e · VCe Pattern: o_e",
+   "objectives": [
+    {
+     "text": "read and spell words with o and silent e, like home, mole and rope",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "change short o words to long o with silent e, like hop to hope and not to note",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read long o words with silent e in sentences, like The mole dug a hole",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words those and more, and the tricky words one, some and come",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Silent e · VCe Pattern: u_e",
+   "objectives": [
+    {
+     "text": "read and spell words with u and silent e, like cube, mule and cute",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "change short u words to long u with silent e, like cub to cube and tub to tube",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read long u words with silent e in sentences, like June has a cute mule",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words here, these, where and there by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Silent e · VCe Pattern: Review all together",
+   "objectives": [
+    {
+     "text": "read and spell silent e words with a, i, o and u, like cake, kite, rope and cube",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "sort words into short and long vowels, like cap and cape, kit and kite",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read sentences with silent e words smoothly and correctly",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Silent e · <ce>",
+   "objectives": [
+    {
+     "text": "read and spell words where ce says s, like race, mice and face",
+     "ccss": [
+      "RF.2.3F",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that c says s when e, i or y comes after it, as in rice",
+     "ccss": [
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "read ce words in sentences, like The mice ran a race in a nice place",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words place, chance and once by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Silent e · <ge> and <dge> spelling rule",
+   "objectives": [
+    {
+     "text": "read and spell words ending in ge, like page, cage and hinge",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words ending in dge, like bridge, badge and fudge",
+     "ccss": [
+      "RF.2.3F",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "choose dge right after a short vowel (badge) and ge otherwise (cage)",
+     "ccss": [
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell the word change by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Silent e · <ve>",
+   "objectives": [
+    {
+     "text": "read and spell words ending in ve, like give, have and valve",
+     "ccss": [
+      "RF.2.3F",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that English words do not end in v, so we add a silent e",
+     "ccss": [
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "notice that the vowel in give and have is short, even with silent e",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words have, give and live by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Silent e · Morphology: Silent e with suffixes",
+   "objectives": [
+    {
+     "text": "drop the silent e before adding -ed or -ing, as in raked and hiking",
+     "ccss": [
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words like baked, smiling and hoping",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell hoping from hopping, and explain how each word was made",
+     "ccss": [
+      "L.2.2D",
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Vowel Teams · Contractions",
+   "objectives": [
+    {
+     "text": "read and write contractions, short words made from two words, like can't and don't",
+     "ccss": [
+      "L.2.2C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell which two words make each contraction, like do not in don't",
+     "ccss": [
+      "L.2.2C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "put the apostrophe where letters are left out, as in doesn't and isn't",
+     "ccss": [
+      "L.2.2C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "know that won't is a special one that means will not",
+     "ccss": [
+      "L.2.2C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Vowel Teams · Long a: ai, ay",
+   "objectives": [
+    {
+     "text": "read and spell words with ai, like rain, tail and paint",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with ay, like stay, play and day",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "choose ai in the middle of a word (rain) and ay at the end (stay)",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell the words play, wait and way, and the tricky words said and they",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Vowel Teams · Long e: ee, ea",
+   "objectives": [
+    {
+     "text": "read and spell words with ee, like need, feet and green",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with ea, like seat, eat and leaf",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read long e words in sentences, like We eat green beans each week",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words three, sleep, keep, please and year by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Vowel Teams · Morphology: Suffix -y",
+   "objectives": [
+    {
+     "text": "add -y to naming words to make describing words, like windy and rainy",
+     "ccss": [
+      "L.2.4C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell -y words like windy, sunny and dusty",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "spell sun to sunny and fog to foggy by doubling the last letter",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "describe the weather with -y words, like It is sunny and windy",
+     "ccss": [
+      "L.2.4C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Vowel Teams · Long o: oa, ow, oe",
+   "objectives": [
+    {
+     "text": "read and spell words with oa, like boat, coat and road",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with ow and oe that say long o, like slow, snow and toe",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "choose oa in the middle of a word (boat) and ow at the end (slow)",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell the words grow, show, goes and own, and the tricky word though",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Vowel Teams · Long i: igh, ie",
+   "objectives": [
+    {
+     "text": "read and spell words with igh, like light, night and high",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with ie, like pie, tie and lie",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read long i words in sentences, like The light is on at night",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words might and right, and the tricky words eye and buy",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Vowel Teams · Morphology: -ful, -less, -ly, -ness",
+   "objectives": [
+    {
+     "text": "read and spell words with -ful and -less, like helpful and useless",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that -ful means full of and -less means without",
+     "ccss": [
+      "L.2.4C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "add -ly to tell how something is done, like quickly and softly",
+     "ccss": [
+      "L.2.4C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "add -ness to make words like sadness, kindness and quickness",
+     "ccss": [
+      "L.2.4C",
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Vowel Teams · Long e: ie; other sounds of ea",
+   "objectives": [
+    {
+     "text": "read and spell words where ie says long e, like field, chief and piece",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read words where ea says short e, like bread and head",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read words where ea says long a, like great, steak and break",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "try another sound for ea when a word does not sound right",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Vowel Teams · Morphology: Prefixes re-, un-",
+   "objectives": [
+    {
+     "text": "read and spell words with re-, like reread, redo and refill",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with un-, like unpaid, unlock and unhappy",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that re- means again or back and un- means not",
+     "ccss": [
+      "L.2.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use re- and un- words to tell what someone did, like She refilled the cup",
+     "ccss": [
+      "L.2.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Silent Letters · Digraphs: kn, wr",
+   "objectives": [
+    {
+     "text": "read and spell words with kn, like knot, knee and knock, where k is silent",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with wr, like wrist, wrap and wrong, where w is silent",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read silent letter words in sentences, like I knew how to tie a knot",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words know, knew, write and wrote by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "R-Controlled · <ar>",
+   "objectives": [
+    {
+     "text": "read and spell words with ar, like star, card and farm",
+     "ccss": [
+      "RF.1.3B",
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "hear how r changes the vowel, as in cat and cart",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read ar words in sentences, like The car is parked in the dark",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words start, part, hard and are by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "R-Controlled · <or>",
+   "objectives": [
+    {
+     "text": "read and spell words with or, like corn, storm and fork",
+     "ccss": [
+      "RF.1.3B",
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "hear how r changes the vowel, as in fox and fork",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read or words in sentences, like A horse ran in the storm",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words for and or, and the tricky words your and four",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "R-Controlled · <ir>, <er>, <ur> = /er/",
+   "objectives": [
+    {
+     "text": "read and spell words with ir, er and ur, like bird, fern and curb",
+     "ccss": [
+      "RF.1.3B",
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "know that ir, er and ur all make the same sound, as in her",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read words with ir, er and ur in sentences, like The first bird hurt her wing",
+     "ccss": [
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words first, her, turn, girl and were by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "R-Controlled · Morphology: Suffixes -er and -est",
+   "objectives": [
+    {
+     "text": "read and spell words with -er and -est, like taller and tallest",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "use -er and -est to compare, like fast, faster and fastest",
+     "ccss": [
+      "L.2.4C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that -er can also mean a person who, like a farmer or a helper",
+     "ccss": [
+      "L.2.4C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "compare two or three things in a sentence, like My dog is the biggest",
+     "ccss": [
+      "L.2.4C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "R-Controlled · war, wor",
+   "objectives": [
+    {
+     "text": "read and spell words with war, like war, warm and swarm",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with wor, like work, word and worm",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "know w changes the sound: war rhymes with for, and wor sounds like her",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words warm, world, work and word by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "R-Controlled · Morphology: Suffix -en",
+   "objectives": [
+    {
+     "text": "read and spell words with -en, like darken, golden and wooden",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that -en can mean to make, as in darken and soften",
+     "ccss": [
+      "L.2.4C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "explain that -en can mean made of, as in golden and wooden",
+     "ccss": [
+      "L.2.4C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use -en words in sentences, like The sky will darken at night",
+     "ccss": [
+      "L.2.4C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Other Vowels · /ū/: oo",
+   "objectives": [
+    {
+     "text": "read and spell words with oo, like moon, boot and spoon",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "hear the oo sound in moon and food, and tell it from the o in mop",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "read oo words in sentences, like Soon the moon will be up",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words too and soon by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Other Vowels · /ū/ and /yū/: ew, ui, ue",
+   "objectives": [
+    {
+     "text": "read and spell words with ew, like stew, new and grew",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with ue and ui, like glue, blue and fruit",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "hear the two sounds: oo, as in blue, and you, as in few and cue",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words new, few and blue by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Other Vowels · Short /oo/ (as in book)",
+   "objectives": [
+    {
+     "text": "read and spell words where oo sounds like book, like look, foot and stood",
+     "ccss": [
+      "RF.2.3C",
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell the oo in book from the oo in moon",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "read these words in sentences, like Look at the good book",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words good and look, and could, would and should",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Other Vowels · /ou/ = <ou> and <ow>",
+   "objectives": [
+    {
+     "text": "read and spell words with ou, like house, out and cloud",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with ow, like cow, how and brown",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "choose ou at the start or middle (out, loud) and ow at the end (cow)",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell the words now, down, our, round and found by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Other Vowels · Morphology: Prefixes pre- and mis-",
+   "objectives": [
+    {
+     "text": "read and spell words with pre-, like preview, precook and preheat",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with mis-, like misread, mistake and misspell",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that pre- means before and mis- means wrong",
+     "ccss": [
+      "L.2.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use pre- and mis- to work out new words, like misplace",
+     "ccss": [
+      "L.2.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Other Vowels · /oi/: <oy> and <oi>",
+   "objectives": [
+    {
+     "text": "read and spell words with oi, like coin, spoil and oil",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with oy, like toy, boy and joy",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "choose oi at the start or middle (coin) and oy at the end (toy)",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read oi and oy words in sentences, like Roy can point to the toy",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the word boy by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Other Vowels · <aw> and <au>",
+   "objectives": [
+    {
+     "text": "read and spell words with aw, like paw, saw and draw",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with au, like sauce, haul and launch",
+     "ccss": [
+      "RF.2.3C",
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "choose au at the start or middle (sauce) and aw at the end (paw)",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell the words saw, draw and cause, and the tricky words caught, laugh and thought",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Morphology: Suffix -able",
+   "objectives": [
+    {
+     "text": "read and spell words with -able, like usable, washable and readable",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that -able means can be, as in a washable shirt",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "describe things with -able words, like a breakable cup or a fixable toy",
+     "ccss": [
+      "L.3.4B",
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Digraphs & ghost sounds: ph, gn, mb",
+   "objectives": [
+    {
+     "text": "read and spell words with ph, which says f, like phone and graph",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with gn and mb, like gnaw, sign, thumb and lamb",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "know that the g in gnaw and the b in thumb are silent",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "read longer words with these letters, like alphabet, dolphin and climbing",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Compound Words",
+   "objectives": [
+    {
+     "text": "read compound words, two small words joined, like sunset and sandbox",
+     "ccss": [
+      "L.2.4D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "split compound words into their two words, like cup and cake in cupcake",
+     "ccss": [
+      "L.2.4D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use the two small words to work out the meaning, like a doghouse",
+     "ccss": [
+      "L.2.4D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make and write new compound words, like rainbow, backpack and goldfish",
+     "ccss": [
+      "L.2.4D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · VCCV Words (closed-closed)",
+   "objectives": [
+    {
+     "text": "split two-part words between the two middle consonants, like bas-ket and rab-bit",
+     "ccss": [
+      "RF.1.3E",
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell two-part words with short vowels, like napkin, muffin and basket",
+     "ccss": [
+      "RF.3.3C",
+      "RF.2.3D"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read two-part words in sentences, like The rabbit hid in a basket",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words until, often and almost by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive",
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · The Schwa",
+   "objectives": [
+    {
+     "text": "hear the lazy uh sound in words like bacon, data and nickel",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "know that any vowel can say the lazy uh sound, like the a in sofa",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell two-part words with a lazy uh sound, like lemon and wagon",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Y spells /ē/ & review Suffix -y",
+   "objectives": [
+    {
+     "text": "read and spell longer words where y at the end says long e, like funny and happy",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell when y says long e (happy) and when it says long i (cry)",
+     "ccss": [
+      "RF.2.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "add -y to make describing words, like bump to bumpy and fun to funny",
+     "ccss": [
+      "RF.2.3E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell the words only, carry, funny and pretty by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · VCCCV Syllable Division Rule (closed-closed)",
+   "objectives": [
+    {
+     "text": "split words with three middle consonants, usually after the first, like con-flict",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "keep blends together when splitting words, like pump-kin and hun-dred",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell longer words like pumpkin, hundred, children and monster",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · VCV Words (V-CV and VC-V)",
+   "objectives": [
+    {
+     "text": "split words with one middle consonant after the vowel for a long sound, like ro-bot",
+     "ccss": [
+      "RF.3.3C",
+      "RF.2.3D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "split after the consonant when the vowel is short, like clos-et and cab-in",
+     "ccss": [
+      "RF.3.3C",
+      "RF.2.3D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "try both ways to read a new word, like ti-ger or lem-on",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words even, open, seven, many and along by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Soft c and Soft G",
+   "objectives": [
+    {
+     "text": "read words where c says s, like city, pencil and cent",
+     "ccss": [
+      "RF.2.3F",
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read words where g says j, like gem, giant and magic",
+     "ccss": [
+      "RF.2.3F",
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use the rule: c and g change their sound before e, i or y",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "read soft c and g words in sentences, like The giant had a pencil",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Consonant -le",
+   "objectives": [
+    {
+     "text": "read and spell words ending in a consonant plus le, like table, turtle and puddle",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "split -le words right before the consonant, like ta-ble and pud-dle",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read -le words in sentences, like The turtle sat by the puddle",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words little and people by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · 2-Syllable Words with silent e",
+   "objectives": [
+    {
+     "text": "read and spell two-part words that end with silent e, like explore and define",
+     "ccss": [
+      "RF.2.3D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "find the part with silent e and say its long vowel, like fine in define",
+     "ccss": [
+      "RF.2.3D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read these words in sentences, like Kate will invite us to explore the cave",
+     "ccss": [
+      "RF.2.3D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words sentence, before and above by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Morphology: Suffix -ive and -ion",
+   "objectives": [
+    {
+     "text": "read and spell words with -ive, like active, detective and creative",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words ending in tion, which says shun, like action and location",
+     "ccss": [
+      "RF.3.3B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that -ion turns a doing word into a thing, like act to action",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use -ive words to describe people, like a creative or active friend",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Morphology: Suffix -ure, -age",
+   "objectives": [
+    {
+     "text": "read and spell words ending in ture, which says cher, like picture and nature",
+     "ccss": [
+      "RF.3.3B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words ending in age, which says ij, like package and storage",
+     "ccss": [
+      "RF.3.3B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "know that -ure and -age make naming words, like store to storage",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use ture and age words in sentences, like I took a picture of the package",
+     "ccss": [
+      "RF.3.3B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · 2-Syllable Words with Bossy r",
+   "objectives": [
+    {
+     "text": "read and spell two-part words with ar, or, er, ir or ur, like marker and corner",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "split words like cor-ner and birth-day, keeping each vowel with its r",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read these words in sentences, like My sister has a birthday party",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words number, under, after, never and mother by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Morphology: Prefix ex-",
+   "objectives": [
+    {
+     "text": "read and spell words with ex-, like export, extend and exit",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that ex- means out, as in export, sending goods out",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use ex- to work out new words like exhale and expel",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · 2-Syllable Words with long Vowel Teams",
+   "objectives": [
+    {
+     "text": "read and spell two-part words with ai, ee, ea, oa and ow, like complain, window and eagle",
+     "ccss": [
+      "RF.3.3C",
+      "RF.2.3D"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "split words into parts, keeping letter pairs like ai and ow together, as in win-dow",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read these words in sentences, like The eagle flew past the window",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell the words between, follow, again and ahead by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Prefixes con, com, in, im",
+   "objectives": [
+    {
+     "text": "read and spell words with con- and com-, like connect, combine and compare",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with in- and im-, like invite, incorrect and impossible",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that con- and com- mean with or together",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "explain that in- and im- can mean in or not, as in impossible",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · 2-Syllable Words with Vowel Teams (ou, ow, oo, ue, ew, oi, oy, aw)",
+   "objectives": [
+    {
+     "text": "read and spell two-part words with ou, ow, oo, oi, oy and aw, like about, flower and enjoy",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "split these words into parts, keeping the vowel letters together, like flow-er and car-toon",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell two-part words with ue and ew, like rescue and curfew",
+     "ccss": [
+      "RF.3.3C"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell the words because, around and enough by sight",
+     "ccss": [
+      "RF.2.3F"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Suffix -ment",
+   "objectives": [
+    {
+     "text": "read and spell words with -ment, like treatment, payment and movement",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that -ment turns a doing word into a thing, like pay to payment",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use -ment words in sentences, like We felt excitement at the game",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Prefixes de, dis",
+   "objectives": [
+    {
+     "text": "read and spell words with dis-, like dislike, disagree and disappear",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with de-, like defend, decrease and depart",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that dis- means not or opposite and de- means off or down",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use dis- and de- to work out new words, like dishonest and defrost",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Suffix: ible",
+   "objectives": [
+    {
+     "text": "read and spell words with -ible, like visible, possible and flexible",
+     "ccss": [
+      "RF.3.3B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that -ible, like -able, means can be, as in visible",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use -ible words in sentences, like The stars are visible tonight",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Prefix sub-, trans-",
+   "objectives": [
+    {
+     "text": "read and spell words with sub-, like subway, submarine and subtract",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with trans-, like transport and transform",
+     "ccss": [
+      "RF.3.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain that sub- means under and trans- means across",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use sub- and trans- to work out words like subzero and transplant",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Multisyllable & Morphology · Suffix -al/-ial (final stable cial, tial)",
+   "objectives": [
+    {
+     "text": "read and spell words ending in -al, like dismissal, arrival and personal",
+     "ccss": [
+      "RF.3.3B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive",
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "read words ending in cial and tial, which say shul, like facial and partial",
+     "ccss": [
+      "RF.3.3B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "explain that -al can make describing words, like nature to natural",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use -al words in sentences, like Her arrival was a special surprise",
+     "ccss": [
+      "L.3.4B"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

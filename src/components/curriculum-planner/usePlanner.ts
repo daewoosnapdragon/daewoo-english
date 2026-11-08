@@ -15,7 +15,7 @@ import { isPlacementsMissing, isPlansMissing, type CurriculumBlock, type Curricu
 
 export interface Planner extends Catalogue { placements: CurriculumPlacement[]; pacing: CurriculumPacing[]; blocks: CurriculumBlock[]; here: CurriculumHere[]; reviews: CurriculumPlanReview[]; loading: boolean; missing: 'catalogue' | 'placements' | null; plansMissing: boolean; reload: () => Promise<void> }
 
-const EMPTY: Catalogue = { series: [], books: [], units: [], lessons: [], resources: [], skills: [] }
+const EMPTY: Catalogue = { series: [], books: [], units: [], lessons: [], resources: [], skills: [], objectives: [] }
 
 /** `enabled` false loads nothing, for a page that only needs the planner for some viewers. */
 export function usePlanner(enabled = true): Planner {

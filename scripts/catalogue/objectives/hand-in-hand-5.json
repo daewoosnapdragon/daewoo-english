@@ -1,0 +1,910 @@
+{
+ "series": "Hand in Hand",
+ "level": "5",
+ "units": [
+  {
+   "title": "Unit 1 · Comparing Animals",
+   "objectives": [
+    {
+     "text": "act out the conversation about a gazelle that begins “I'm reading a book about animals.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name animals and describing words: cheetah, rhinoceros, hippopotamus, slow, heavy",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "compare two animals with -er and than: “The giraffe is faster than the deer.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell which animal is the fastest or heaviest, like “The cheetah is the fastest.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Slow Sloth” from Costa Rica and tell facts about how the sloth lives",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Comparing Things",
+   "objectives": [
+    {
+     "text": "act out the shoe shop conversation that begins “Can I try on these shoes?”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name things and describing words: earrings, helmet, necklace, expensive, colorful",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "compare two things with more, like “This puzzle is more difficult.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “Which sneakers are the most comfortable?” using the most",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Most Popular Flavor” from Belgium and tell what it says about the favorite flavor",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 1 · Wonders of the world",
+   "objectives": [
+    {
+     "text": "learn about famous wonders of the world and where they are",
+     "ccss": [
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about a special place in Korea",
+     "ccss": [
+      "W.5.2"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write complete sentences that start with a capital letter and end with a period",
+     "ccss": [
+      "L.5.1",
+      "L.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class why their special place is worth a visit",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Music and Sports",
+   "objectives": [
+    {
+     "text": "act out the concert invitation that begins “My school band is having a concert.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name music and sports activities: play the cello, practice the violin, play badminton",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How often does he play basketball?” with once, twice or three times a week",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say how often they practice something, like “I practice twice a week.”",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "read “Team Sports” from the USA and tell the main idea in their own words",
+     "ccss": [
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Ways of Doing Things",
+   "objectives": [
+    {
+     "text": "act out the baseball game conversation that begins “Look! Matt is next.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name kinds of people and how they act: a quick runner, a careful driver, a loud drum player",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "turn “He's a slow runner” into “He runs slowly,” using words like quickly and loudly",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How does she eat?” with “She eats quickly.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Talent Show” from South Africa and retell what happens at the show",
+     "ccss": [
+      "RL.5.1",
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 2 · String instruments",
+   "objectives": [
+    {
+     "text": "learn about string instruments and how they make sounds",
+     "ccss": [
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "name string instruments like the violin, cello and guitar and tell how they are played",
+     "ccss": [
+      "L.5.6",
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "find the naming part and the telling part of a sentence",
+     "ccss": [
+      "L.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about a musical instrument",
+     "ccss": [
+      "W.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · School Field Day",
+   "objectives": [
+    {
+     "text": "act out the hula hoop conversation that begins “I don't know how to hula hoop.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "encourage a friend with “Don't worry. I'll show you.” and “You're doing great!”",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name field day events: have a sack race, play tug-of-war, run in a race, play Frisbee",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What are they going to do?” with “They're going to run in a race.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Field Day” from Canada and compare it with field day at their school",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · Going Camping",
+   "objectives": [
+    {
+     "text": "act out the packing conversation that begins “Tomorrow is our camping trip.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name camping activities: set up a tent, build a campfire, go canoeing, catch fireflies",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What's he going to do?” and “Are they going to look at the stars?”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell a partner what they are going to do on a camping trip",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "retell the main events of “Catching Fireflies” from Argentina in order",
+     "ccss": [
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 3 · Muscles and bones",
+   "objectives": [
+    {
+     "text": "learn how muscles and bones work together to move the body",
+     "ccss": [
+      "RI.5.3"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "show how a muscle pulls on a bone when they bend an arm",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write a report about the muscles that bend and straighten their arms and legs",
+     "ccss": [
+      "W.5.2"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write telling sentences and asking sentences with the right end marks",
+     "ccss": [
+      "L.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Chores to Do",
+   "objectives": [
+    {
+     "text": "act out the dinner table conversation that begins “Pass me the salt, please.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "offer and turn down food politely: “Would you like some more?” “No, thanks. I'm full.”",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name chores: mow the lawn, do the laundry, set the table, take out the garbage",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What does she have to do?” with “She has to mow the lawn.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Morning Chores” from Singapore and compare the chores with their own",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Time to Clean Up",
+   "objectives": [
+    {
+     "text": "act out the spring cleaning conversation that begins “The weather is so nice!”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name cleaning jobs: dust the furniture, mop the floor, sweep the floor, wipe the table",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell cleaning steps in order with first, next and after that",
+     "ccss": [
+      "SL.5.4",
+      "L.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What will she do first?” and “Will they dust the furniture next?”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Our Clean Classroom” from Japan and tell how the class keeps the room clean",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 4 · Recycling",
+   "objectives": [
+    {
+     "text": "learn why recycling matters and which things can be recycled",
+     "ccss": [
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "make a parachute from a plastic bag by following the steps",
+     "ccss": [
+      "RI.5.3"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "write commands and exclamations, like “Tie the strings.” and “Look, it's flying!”",
+     "ccss": [
+      "L.5.2",
+      "L.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "tell a partner how to reuse something instead of throwing it away",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Getting There",
+   "objectives": [
+    {
+     "text": "act out the museum trip conversation that begins “We're going to the museum today.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How long will it take by subway?” with “It'll take about 20 minutes.”",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name ways to travel: take the subway, take a taxi, take the tram, ride a motorcycle",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How does he get to work?” with “He takes a bus to work.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Convenient T-money Card” and explain how the card helps people in Korea",
+     "ccss": [
+      "RI.5.2",
+      "RI.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Getting Ready",
+   "objectives": [
+    {
+     "text": "act out the conversation about birthday invitations that begins “Do you need help with the invitation cards?”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name party jobs: bake a cake, make a banner, order pizza, wrap the gift",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what is done and not done yet, like “She has baked the cake already.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “Has he wrapped the gift yet?” with “Yes, he has” or “No, he hasn't”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Making a Birthday Card” and follow the steps in order",
+     "ccss": [
+      "RI.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 5 · The Sumerians' wheel",
+   "objectives": [
+    {
+     "text": "learn about the Sumerians and the wheel they made long ago",
+     "ccss": [
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "name things with wheels and tell how a wheel makes work easier",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write a report about where wheels are used",
+     "ccss": [
+      "W.5.2"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "fix unfinished sentences by adding the missing part to make a whole sentence",
+     "ccss": [
+      "L.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · How Much Food",
+   "objectives": [
+    {
+     "text": "act out the sandwich-making conversation that begins “I'm getting hungry.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "use a lot of, a few and a little with foods like cookies, hot dogs and fruit",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How many sandwiches are there?” and “How much ice cream is there?”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell when to use how many, like cookies, and how much, like ice cream",
+     "ccss": [
+      "L.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "read “All-Fruit Popsicles” from Spain and tell what they learned about the popsicles",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Five Senses",
+   "objectives": [
+    {
+     "text": "act out the conversation with check questions like “These are new sneakers, aren't they?”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name sense and describing words: smell, taste, sound, delicious, awful, soft",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How does the music sound?” with “It sounds wonderful.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe a food with look, smell and taste, like “It smells good.”",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “My Dad's Bakery” from France and tell which senses the writer uses",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 6 · The five senses and the brain",
+   "objectives": [
+    {
+     "text": "learn how the five senses send messages to the brain",
+     "ccss": [
+      "RI.5.3"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about different foods and tastes, like sweet, salty and sour",
+     "ccss": [
+      "W.5.2"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write questions that start with who, what, where or how and end with a question mark",
+     "ccss": [
+      "L.5.1",
+      "L.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell which sense they use to learn about each food",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

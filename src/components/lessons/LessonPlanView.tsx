@@ -13,7 +13,7 @@ import { classDays, isEmptyDay as isEmptyPlan, planMoves, pushPlan, type PlanDay
 import { fetchFixedDays, fetchPlanDays, saveDays } from '@/lib/lessonSyncData'
 import { HALVES, academicYears, termDates } from '@/lib/curriculumPacing'
 import { loadAwayDays } from '@/lib/calendarDays'
-import { booksForLabel, copiedRow, escapeHtml, linkedRow, withContent, type UnitMatch } from '@/lib/planLinks'
+import { addObjective, booksForLabel, copiedRow, escapeHtml, linkedRow, withContent, type UnitMatch } from '@/lib/planLinks'
 import { useClassBooks } from './useClassBooks'
 import { UnitInput } from './UnitInput'
 import { UnitLine } from './UnitDetail'
@@ -1120,7 +1120,7 @@ ${pages.join('\n')}
                                       <UnitLine book={book} unit={unit} lessonId={sub.lesson_id} objective={data.objective}
                                         onLesson={id => setRowLesson(day.date, si, id)}
                                         onUnlink={() => unlinkRow(day.date, si)}
-                                        onAddObjective={text => updateField(day.date, 'objective', data.objective.trim() ? `${data.objective.trim()}; ${text}` : text)} />
+                                        onAddObjective={text => updateField(day.date, 'objective', addObjective(data.objective, text))} />
                                     )
                                   })()}
                                   {openPicker === pickerKey && (

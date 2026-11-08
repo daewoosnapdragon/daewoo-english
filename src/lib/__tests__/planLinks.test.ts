@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { booksForLabel, classBooks, copiedRow, escapeHtml, linkedRow, matchUnits, stillNamesUnit, withContent, type ClassBook } from '../planLinks'
+import { addObjective, booksForLabel, classBooks, copiedRow, escapeHtml, linkedRow, matchUnits, stillNamesUnit, unitBank, withContent, type ClassBook } from '../planLinks'
 
 const semesters = [
   { academic_year: '2026', type: 'spring_1', start_date: '2026-03-02', end_date: '2026-07-17' },
@@ -79,5 +79,22 @@ describe('links follow the words', () => {
 describe('escapeHtml', () => {
   it('makes typed text safe in the printed page', () => {
     expect(escapeHtml(`<b>"Tom" & Jerry's</b>`)).toBe('&lt;b&gt;&quot;Tom&quot; &amp; Jerry&#39;s&lt;/b&gt;')
+  })
+})
+
+describe('objective banks', () => {
+  const O = (unit_id: string, sort_order: number, text: string) => ({ id: unit_id + sort_order, unit_id, sort_order, text, ccss_codes: ['RL.2.3'], wida: ['ELD-LA.2-3.Narrate.Interpretive'] })
+  it('a unit offers its bank in order, through classBooks', () => {
+    const out = classBooks({ ...base, placements: [P('p1', 'ir2', 'fall')] as any, pacing: [], objectives: [O('clo', 2, 'tell what Cloudette wants'), O('clo', 1, 'Students will retell Cloudette in order')] })
+    expect(out[0].units.find(u => u.id === 'clo')!.objectives.map(o => o.text)).toEqual(['retell Cloudette in order', 'tell what Cloudette wants'])
+  })
+  it('with no bank, the lessons\' objectives, each once', () => {
+    const ls = [{ objective: 'Students will retell the story.', ccss_codes: ['RL.2.2'] }, { objective: 'students will retell the story', ccss_codes: [] }, { objective: '', ccss_codes: [] }] as any
+    expect(unitBank([], ls)).toEqual([{ text: 'retell the story', ccss: ['RL.2.2'], wida: [] }])
+  })
+  it('adds a line to Students will once', () => {
+    expect(addObjective('', 'retell the story')).toBe('retell the story')
+    expect(addObjective('name the setting.', 'retell the story')).toBe('name the setting; retell the story')
+    expect(addObjective('name the setting; retell the story', 'Retell the story')).toBe('name the setting; retell the story')
   })
 })
