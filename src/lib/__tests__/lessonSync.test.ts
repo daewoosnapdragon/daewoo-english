@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { layoutPacing, weekList, type CurriculumPacing } from '../curriculumPacing'
 import type { CurriculumUnit } from '../curriculumCore'
-import { actualsFor, boardWeekDays, bookPattern, classDays, daySummary, followPlans, lessonSyncFor, linkedDays, lessonsUsed, planMoves, pushPlan, readPlanDay, teachingWeekOf, type PlanDay } from '../lessonSync'
+import { actualsFor, bookPattern, classDays, daySummary, followPlans, lessonSyncFor, linkedDays, planMoves, pushPlan, readPlanDay, teachingWeekOf, type PlanDay } from '../lessonSync'
 
 const unit = (id: string, title = id): CurriculumUnit => ({ id, book_id: 'b1', sort_order: 0, title, summary: '', skill_tags: [], ccss_codes: [], default_weeks: 2, source: 'claude', confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' })
 const row = (id: string, unit_id: string, sort_order: number, weeks: number, extra: Partial<CurriculumPacing> = {}): CurriculumPacing => ({ id, placement_id: 'p1', unit_id, sort_order, weeks, owner: 'master', teacher_id: null, gap_before: 0, fixed: false, done_at: null, created_at: '', updated_at: '', ...extra })
@@ -82,46 +82,10 @@ describe('followPlans', () => {
   })
 })
 
-describe('boardWeekDays', () => {
-  const lessons = [
-    { id: 'l1', unit_id: 'u2', title: 'Predict', sort_order: 1 },
-    { id: 'l2', unit_id: 'u2', title: 'Retell', sort_order: 2 },
-    { id: 'l3', unit_id: 'u3', title: 'Intro', sort_order: 1 },
-  ]
-  const units2 = [unit('u2', 'M8 W1 · Interrupting Chicken'), unit('u3', 'M8 W2 · Little Red'), unit('u9', 'Long i: igh, ie')]
-  const running = [{ placement_id: 'p1', unit_id: 'u2', label: 'Into Reading', name: 'Interrupting Chicken', level: '1', color: '', weekOf: 2, weeks: 3 }]
-  const order = new Map([['p1', ['u2', 'u3']]])
-  const base = { running, pattern: new Map<string, number[]>(), used: new Map<string, number>(), unitOrder: order, units: units2, lessons }
-  it('gives nothing when the board has nothing this week', () => {
-    expect(boardWeekDays({ ...base, running: [] })).toEqual([null, null, null, null, null])
-  })
-  it('puts the next unused lessons on the days the book had, then moves into the next unit', () => {
-    const out = boardWeekDays({ ...base, pattern: new Map([['p1', [0, 2, 4]]]), used: new Map([['u2', 0]]) })
-    expect(out[0]!.subjects).toEqual([{ label: 'Into Reading', content: 'Interrupting Chicken — Retell', unit_id: 'u2', lesson_id: 'l2', placement_id: 'p1' }])
-    expect(out[1]).toBeNull()
-    expect(out[2]!.subjects[0]).toMatchObject({ unit_id: 'u3', lesson_id: 'l3', content: 'Little Red — Intro' })
-    expect(out[4]!.subjects[0]).toMatchObject({ unit_id: 'u3', content: 'Little Red' })   // no lessons left: the unit's name
-    expect(out[4]!.subjects[0].lesson_id).toBeUndefined()
-    expect(out[0]!.objective).toBe('')
-  })
-  it('goes on every day without a pattern, uses no lesson on a skipped day, and names a unit with no lessons', () => {
-    const out = boardWeekDays({ ...base, skip: [true, false, false, false, false] })
-    expect(out[0]).toBeNull()
-    expect(out[1]!.subjects[0]).toMatchObject({ lesson_id: 'l1' })
-    expect(out[2]!.subjects[0]).toMatchObject({ lesson_id: 'l2' })
-    const sor = boardWeekDays({ ...base, running: [{ ...running[0], placement_id: 'p2', unit_id: 'u9', label: 'Science of Reading', name: 'Long i: igh, ie' }] })
-    expect(sor.every(d => d!.subjects[0].content === 'Long i: igh, ie')).toBe(true)
-  })
-})
-
-describe('bookPattern and lessonsUsed', () => {
-  it('reads the days each book was on and the last lesson used before a date', () => {
+describe('bookPattern', () => {
+  it('reads the days each book was on', () => {
     const w: (PlanDay | null)[] = [day([{ label: 'IR', content: 'x', unit_id: 'u2', lesson_id: 'l1', placement_id: 'p1' }, { label: 'Writing', content: 'Journal' }]), null, day([{ label: 'IR', content: 'y', unit_id: 'u2', lesson_id: 'l2', placement_id: 'p1' }]), null, null]
     expect(Array.from(bookPattern(w).entries())).toEqual([['p1', [0, 2]]])
-    const ls = [{ id: 'l1', unit_id: 'u2', sort_order: 1 }, { id: 'l2', unit_id: 'u2', sort_order: 2 }]
-    const days = { '2026-11-30': w[0]!, '2026-12-02': w[2]! }
-    expect(lessonsUsed(days, '2026-12-01', ls).get('u2')).toBe(0)
-    expect(lessonsUsed(days, '2026-12-07', ls).get('u2')).toBe(1)
   })
 })
 describe('pushPlan', () => {

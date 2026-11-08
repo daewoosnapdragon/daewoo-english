@@ -62,13 +62,21 @@ export function trayLanes({ books, unitOrder, units, lessons, recipes, used, uni
       const window = unitWeeks.get(unitId) || null
       const when: TraySlot['tag'] = !window ? '' : window.last < focusMonday ? 'carried over' : window.first <= focusMonday ? 'this week' : ''
       const ls = byUnit.get(unitId) || []
+      // A unit over several weeks is due a share at a time: by the end of this week, its lessons times the
+      // weeks gone over its weeks on the board. Only that many of the ones left are "this week".
+      const share = (total: number, left: number) => {
+        if (when !== 'this week' || !window) return left
+        const span = weeksFrom(window.first, window.last) + 1, gone = weeksFrom(window.first, focusMonday) + 1
+        return Math.max(0, Math.min(left, Math.ceil((total * gone) / span) - (total - left)))
+      }
       let slots: TraySlot[]
       if (!ls.length) {
-        slots = (used.unitOnly.get(unitId) || 0) > 0 ? [] : [{ key: unitId, unit_id: unitId, unitName: name, lesson_id: null, title: name, part: '', kind: 'plain', n: 1, of: 1, tag: moved[unitId] || when }]
+        slots = (used.unitOnly.get(unitId) || 0) > 0 ? [] : [{ key: unitId, unit_id: unitId, unitName: name, lesson_id: null, title: name, part: '', kind: 'plain', n: 1, of: 1, tag: moved[unitId] || (share(1, 1) ? when : '') }]
       } else {
         // A lesson named on k days has used its first k slots.
         const seen = new Map<string, number>()
-        slots = lessonSlots(ls, recipes[book.series_id]).filter(s => {
+        const all = lessonSlots(ls, recipes[book.series_id])
+        slots = all.filter(s => {
           const k = (seen.get(s.lesson.id) || 0) + 1; seen.set(s.lesson.id, k)
           return k > (used.lessons.get(s.lesson.id) || 0)
         }).map(s => {
@@ -76,6 +84,8 @@ export function trayLanes({ books, unitOrder, units, lessons, recipes, used, uni
           const kind: TraySlot['kind'] = s.joined ? 'join' : s.of > 1 ? 'split' : 'plain'
           return { key, unit_id: unitId, unitName: name, lesson_id: s.lesson.id, title: s.joined ? `${s.lesson.title} + ${s.joined.title}` : s.lesson.title, part: s.part, kind, ...(s.joined ? { joined_id: s.joined.id } : {}), n: s.n, of: s.of, tag: moved[key] || moved[s.lesson.id] || when }
         })
+        const dueNow = share(all.length, slots.length)
+        slots.forEach((s, i) => { if (s.tag === 'this week' && i >= dueNow) s.tag = '' })
       }
       if (slots.length) out.push({ unit_id: unitId, name, slots, window })
     }
@@ -108,6 +118,31 @@ export function spreadDates({ from, count, usual, isClassDay, hasBook, last }: {
   return out
 }
 
+/**
+ * "Next from the board": a week filled from the tray. Each book with `pattern`
+ * days (its usual days, else the days it had last week, else every day) gets,
+ * on each of those days that will be written, the next lesson from its lane:
+ * moved and carried-over lessons first, then the board's order. Lessons
+ * already on any day are not in the tray, so nothing repeats. A day with
+ * nothing from any book stays null.
+ */
+export function fillWeek(lanes: TrayLane[], pattern: (lane: TrayLane) => number[], skip: boolean[]): (PlanDay | null)[] {
+  const queues = lanes.map(l => ({ lane: l, days: pattern(l), slots: l.units.flatMap(u => u.slots) }))
+  const out: (PlanDay | null)[] = []
+  for (let day = 0; day < 5; day++) {
+    if (skip[day]) { out.push(null); continue }
+    const subjects: PlanDay['subjects'] = []
+    for (const q of queues) {
+      if (!q.days.includes(day)) continue
+      const s = q.slots.shift()
+      if (!s) continue
+      subjects.push({ label: q.lane.book.label, content: slotLine(s.unitName, s.lesson_id ? s.title : null, s.n, s.of), unit_id: s.unit_id, placement_id: q.lane.book.placement_id, ...(s.lesson_id ? { lesson_id: s.lesson_id } : {}) })
+    }
+    out.push(subjects.length ? { subjects, objective: '', notes: '' } : null)
+  }
+  return out
+}
+
 /** How many of a book's usual days this week have it planned, and how many there are. */
 export function weekPace({ monday, usual, isClassDay, hasBook }: { monday: string; usual: number[] | undefined; isClassDay: (date: string) => boolean; hasBook: (date: string) => boolean }): { planned: number; days: number } | null {
   if (!usual || !usual.length) return null
@@ -119,6 +154,9 @@ export function weekPace({ monday, usual, isClassDay, hasBook }: { monday: strin
   }
   return { planned, days }
 }
+
+/** Whole weeks from one Monday to another. */
+const weeksFrom = (a: string, b: string) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / (7 * 86400000))
 
 function addDay(d: string): string {
   const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + 1)

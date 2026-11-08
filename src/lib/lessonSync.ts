@@ -159,75 +159,10 @@ export function planFollower(linked: LinkedDay[], yw: YearWeeks, holSpring: Set<
 /** A unit the board has running in a week, as the Lesson Plans page shows it. */
 export interface RunningUnit { placement_id: string; unit_id: string; label: string; name: string; level: string; color: string; weekOf: number; weeks: number }
 
-export interface BoardWeekInput {
-  running: RunningUnit[]                          // this week's units on the board, in board order
-  pattern: Map<string, number[]>                  // placement → the weekdays (0 = Monday) its rows go on; a book missing here goes on every day
-  used: Map<string, number>                       // unit → index of the last lesson the plans already used before this week
-  unitOrder: Map<string, string[]>                // placement → its unit ids in plan order
-  units: Pick<CurriculumUnit, 'id' | 'title'>[]
-  lessons: Pick<CurriculumLesson, 'id' | 'unit_id' | 'title' | 'sort_order'>[]
-  skip?: boolean[]                                // this week's days that will not be written
-}
-
-/**
- * A week filled from the board alone: for each book the board has running
- * this week, a row on each of its days (`pattern`) naming the next lesson the
- * plans have not used yet, moving into the next unit of the book once a
- * unit's lessons run out. When the board's unit has no lessons left (or none
- * at all), the row names the unit. Nothing typed by hand comes over, and a
- * week with nothing on the board gives nothing. Objectives and notes stay
- * empty: the lesson's own objective is offered as a suggestion.
- */
-export function boardWeekDays({ running, pattern, used, unitOrder, units, lessons, skip }: BoardWeekInput): (PlanDay | null)[] {
-  const lessonsOf = (u: string) => lessons.filter(l => l.unit_id === u).sort((a, b) => a.sort_order - b.sort_order)
-  const nameOf = (u: string) => { const t = units.find(x => x.id === u)?.title; return t ? splitUnitTitle(t).name : '' }
-  const cursor = new Map(used)
-  // One lane per book, starting at the first unit the board has running for it this week.
-  const books: RunningUnit[] = []
-  for (const r of running) if (!books.some(b => b.placement_id === r.placement_id)) books.push(r)
-  const current = new Map(books.map(b => [b.placement_id, b.unit_id]))
-  const out: (PlanDay | null)[] = []
-  for (let day = 0; day < 5; day++) {
-    if (skip?.[day]) { out.push(null); continue }
-    const subjects: PlanDay['subjects'] = []
-    for (const b of books) {
-      const days = pattern.get(b.placement_id)
-      if (days && !days.includes(day)) continue
-      let unit = current.get(b.placement_id)!
-      let idx = (cursor.get(unit) ?? -1) + 1
-      if (idx >= lessonsOf(unit).length && lessonsOf(unit).length) {
-        // This unit's lessons are used up: the next unit of the book with lessons left, if the plan has one.
-        const order = unitOrder.get(b.placement_id) || []
-        const after = order.slice(order.indexOf(unit) + 1).find(u => (cursor.get(u) ?? -1) + 1 < lessonsOf(u).length && nameOf(u))
-        if (after) { unit = after; idx = (cursor.get(unit) ?? -1) + 1; current.set(b.placement_id, unit) }
-      }
-      const lesson = lessonsOf(unit)[idx]
-      const name = nameOf(unit) || b.name
-      if (!name) continue
-      if (lesson) cursor.set(unit, idx)
-      subjects.push({ label: b.label, content: lesson ? `${name} — ${lesson.title}` : name, unit_id: unit, placement_id: b.placement_id, ...(lesson ? { lesson_id: lesson.id } : {}) })
-    }
-    out.push(subjects.length ? { subjects, objective: '', notes: '' } : null)
-  }
-  return out
-}
-
 /** The weekdays (0 = Monday) each book was on in a week of plans, from its linked rows. */
 export function bookPattern(week: (PlanDay | null)[]): Map<string, number[]> {
   const out = new Map<string, number[]>()
   week.forEach((d, day) => { for (const s of d?.subjects || []) if (s.placement_id) { const a = out.get(s.placement_id) || []; if (!a.includes(day)) a.push(day); out.set(s.placement_id, a) } })
-  return out
-}
-
-/** Unit → index of the last of its lessons the plans name on a day before `before`. */
-export function lessonsUsed(days: Record<string, PlanDay>, before: string, lessons: Pick<CurriculumLesson, 'id' | 'unit_id' | 'sort_order'>[]): Map<string, number> {
-  const byUnit = new Map<string, string[]>()
-  for (const l of [...lessons].sort((a, b) => a.sort_order - b.sort_order)) { const a = byUnit.get(l.unit_id) || []; a.push(l.id); byUnit.set(l.unit_id, a) }
-  const out = new Map<string, number>()
-  for (const [date, d] of Object.entries(days)) {
-    if (date >= before) continue
-    for (const s of d.subjects) if (s.unit_id && s.lesson_id) { const i = (byUnit.get(s.unit_id) || []).indexOf(s.lesson_id); if (i >= 0) out.set(s.unit_id, Math.max(out.get(s.unit_id) ?? -1, i)) }
-  }
   return out
 }
 

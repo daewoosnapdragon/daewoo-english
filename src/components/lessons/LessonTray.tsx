@@ -91,6 +91,7 @@ export function LessonTray({ lanes, sel, onSelect, canEdit, open, onToggleBook, 
                         <span className="flex-1 text-[15px] font-semibold text-text-primary leading-snug">{u.name}</span>
                         {canEdit && u.slots.length > 1 && (
                           <button draggable onDragStart={e => { e.dataTransfer.setData('text/plain', dragData(unitPick)); e.dataTransfer.effectAllowed = 'copy'; onSelect(unitPick) }}
+                            onDragEnd={e => { if (e.dataTransfer.dropEffect === 'none') onSelect(null) }}
                             onClick={() => onSelect(unitSel ? null : unitPick)} aria-pressed={unitSel}
                             title="Drag onto the day the unit starts, or tap and then that day: its lessons spread over the book's usual days"
                             className="inline-flex items-center gap-1 text-[13px] font-semibold px-2.5 rounded-lg border min-h-[36px] cursor-grab"
@@ -115,6 +116,7 @@ export function LessonTray({ lanes, sel, onSelect, canEdit, open, onToggleBook, 
                         const menuOpen = menu === s.key, detailOpen = detail === s.key
                         return (
                           <div key={s.key} draggable={canEdit} onDragStart={e => { e.dataTransfer.setData('text/plain', dragData(pick)); e.dataTransfer.effectAllowed = 'copy'; onSelect(pick) }}
+                            onDragEnd={e => { if (e.dataTransfer.dropEffect === 'none') onSelect(null) }}
                             className={`rounded-lg border-2 bg-surface ${canEdit ? 'cursor-grab' : ''}`}
                             style={{ borderColor: on ? lane.book.color : 'rgb(var(--rule))', boxShadow: on ? `0 0 0 3px ${lane.book.color}33` : undefined }}>
                             <div className="flex items-start gap-1.5 pl-3 pr-1.5 py-1.5">

@@ -179,7 +179,8 @@ export default function BoardView() {
   // the lessons a unit has as the class teaches it ÷ the book's usual days. Lengths set by dragging stay.
   const [setups, setSetups] = useState<ClassSetup[]>([])
   useEffect(() => { if (!followsPlans(cls)) { setSetups([]); return } let on = true; fetchSetups().then(r => { if (on && !r.error) setSetups(r.rows) }); return () => { on = false } }, [cls])
-  const adjust = useMemo(() => viewTeacher && followsPlans(cls) && setups.length ? bothAdjust<CurriculumPlacement, CurriculumPacing>(setupAdjuster(setups, p.books, p.lessons), follower) : follower, [viewTeacher, cls, setups, p.books, p.lessons, follower])
+  const fromSetup = useMemo(() => viewTeacher && followsPlans(cls) && setups.length ? setupAdjuster(setups, p.books, p.lessons) : undefined, [viewTeacher, cls, setups, p.books, p.lessons])
+  const adjust = useMemo(() => fromSetup ? bothAdjust<CurriculumPlacement, CurriculumPacing>(fromSetup, follower) : follower, [fromSetup, follower])
   const setupDrawn = adjust !== follower
   // For a class that plans in Lesson Plans (LESSON_SYNC_CLASSES), lessons go into days there only, and the
   // plans say where the class is: the week view only shows, and "we're here" is not offered.
@@ -286,8 +287,14 @@ export default function BoardView() {
     setBusy(true)
     const r = await ensureOwnPlan(p.pacing, b.placement.id, currentTeacher!.id)
     if (r.error) { setBusy(false); fail(r.error); return { rows: [], pre: [], error: r.error } }
-    const pre = freezeProjection(r.rows, lengthOf(b))
-    return { rows: applyPatches(r.rows, pre), pre, error: null }
+    // Before the first drag every unit is pinned at the length it is drawn with, so the drag moves one unit
+    // and pushes the rest. Units the Class setup sizes are left unpinned so they keep following the setup;
+    // the rows handed on carry the setup's lengths, so a move is worked out from what the board shows.
+    const len = lengthOf(b)
+    const sized = new Set(fromSetup ? fromSetup(b.placement, projectAnthology(r.rows, len)).filter(isFromSetup).map(x => x.id) : [])
+    const pre = freezeProjection(r.rows, len).filter(pt => !sized.has(pt.id))
+    const rows = applyPatches(r.rows, pre)
+    return { rows: fromSetup ? fromSetup(b.placement, projectAnthology(rows, len)) : rows, pre, error: null }
   }
   const moveTo = async (b: Bar, targetStart: number, pin = false) => {
     const r = await own(b); if (r.error) return

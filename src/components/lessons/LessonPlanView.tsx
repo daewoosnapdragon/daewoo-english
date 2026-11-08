@@ -15,12 +15,12 @@ import { standardInfo, standardTitle } from '@/lib/standardText'
 import { bareObjective } from '@/lib/curriculumWeek'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 import { useLessonSync } from './useLessonSync'
-import { boardWeekDays, bookPattern, classDays, isEmptyDay as isEmptyPlan, lessonSyncFor, lessonsUsed, planMoves, pushPlan, readPlanDay, type PlanDay, type PlanMove, type RunningUnit } from '@/lib/lessonSync'
+import { bookPattern, classDays, isEmptyDay as isEmptyPlan, lessonSyncFor, planMoves, pushPlan, readPlanDay, type PlanDay, type PlanMove, type RunningUnit } from '@/lib/lessonSync'
 import { fetchFixedDays, fetchPlanDays, saveDays } from '@/lib/lessonSyncData'
 import { HALVES, academicYears, termDates } from '@/lib/curriculumPacing'
 import { loadAwayDays } from '@/lib/calendarDays'
 import { LessonTray, MonthMap, PlacingBar, type CatchUp, type LessonInfo, type RecipeOp, type TraySel } from './LessonTray'
-import { slotLine, spreadDates, trayLanes, usedCounts, weekPace, type TrayLane, type TraySlot } from '@/lib/lessonTray'
+import { fillWeek, slotLine, spreadDates, trayLanes, usedCounts, weekPace, type TrayLane, type TraySlot } from '@/lib/lessonTray'
 import { emptySetup, lessonSlots, setupFor, withJoin, withPart, withSkip, type ClassSetup, type Recipe } from '@/lib/classSetup'
 import { fetchSetups, isSetupMissing, saveSetupField } from '@/lib/classSetupData'
 
@@ -517,14 +517,18 @@ function ParentCalendarView() {
     // Days this week that won't be written use up no lesson: no class, outside the month, a day off, or already planned.
     const skip = [0, 1, 2, 3, 4].map(o => { const t = shiftDate(weekMonday, o); return isNoClassDay(selectedGrade, o + 1) || !validDates.has(t) || blockedDays[t]?.kind === 'off' || (!!dayData[t] && !isDayEmpty(dayData[t])) })
     if (fromBoard && !sync.ready) { showToast('The class board is still loading. Try again in a moment.'); setCopyingWeek(null); return }
-    // From the board: only what the board has running this week, each book on the days it had last week
-    // (every class day if it had none), each row the next lesson the plans have not used. Nothing typed comes over.
+    // From the board: the books the board has running this week, each on its usual days from Class setup
+    // (else the days it had last week, else every day), with the next lessons from the tray. Lessons already
+    // on any day are not in the tray, so nothing repeats; nothing typed by hand comes over.
     let moved: (PlanDay | null)[] | null = null
     if (fromBoard) {
-      const running = sync.runningAt(weekMonday)
-      if (!running.length) { showToast('Nothing on the board for this week, so nothing was filled'); setCopyingWeek(null); return }
-      const lastWeek = [0, 1, 2, 3, 4].map(o => source[o] ? readPlanDay(source[o]) : null)
-      moved = boardWeekDays({ running, pattern: bookPattern(lastWeek), used: lessonsUsed(sync.planDays, weekMonday, sync.lessons), unitOrder: sync.unitOrder, units: sync.units, lessons: sync.lessons, skip })
+      const running = new Set(sync.runningAt(weekMonday).map(r => r.placement_id))
+      if (!running.size) { showToast('Nothing on the board for this week, so nothing was filled'); setCopyingWeek(null); return }
+      const lastWeek = bookPattern([0, 1, 2, 3, 4].map(o => source[o] ? readPlanDay(source[o]) : null))
+      moved = fillWeek(lanes.filter(l => running.has(l.book.placement_id)), l => {
+        const usual = setup.days[l.book.series_id]
+        return usual?.length ? usual : (lastWeek.get(l.book.placement_id) || [0, 1, 2, 3, 4])
+      }, skip)
     }
     for (let offset = 0; offset <= 4; offset++) {
       const src = moved ? (moved[offset] as DayContent | null) : source[offset]
@@ -607,8 +611,10 @@ function ParentCalendarView() {
     if (!syncOn) return out
     const left = new Map<string, number>()
     lanes.forEach(l => l.units.forEach(u => left.set(u.unit_id, u.slots.length)))
+    const byUnit = new Map<string, typeof sync.lessons>()
+    for (const l of sync.lessons) { const a = byUnit.get(l.unit_id); if (a) a.push(l); else byUnit.set(l.unit_id, [l]) }
     for (const b of sync.books) for (const unitId of sync.unitOrder.get(b.placement_id) || []) {
-      const total = lessonSlots(sync.lessons.filter(l => l.unit_id === unitId), setup.recipes[b.series_id]).length
+      const total = lessonSlots(byUnit.get(unitId) || [], setup.recipes[b.series_id]).length
       out.set(unitId, { total, placed: Math.max(0, total - (left.get(unitId) || 0)) })
     }
     return out
@@ -1506,7 +1512,7 @@ ${pages.join('\n')}
                     )}
                     {canEdit && weekMonday && syncOn && (
                       <button onClick={() => copyLastWeek(weekMonday, true)} disabled={copyingWeek === weekMonday || !sync.ready}
-                        title="Fill this week's empty days with what the board has running: the next lesson of each book, on the days that book had last week (every day if none). Nothing typed by hand comes over."
+                        title="Fill this week's empty days with the next lessons from the tray for each book the board has running, on its usual days from Class setup (else the days it had last week). Nothing typed by hand comes over, and no lesson already on a day repeats."
                         className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-navy hover:text-navy-dark px-2 py-0.5 rounded hover:bg-surface-alt transition-colors disabled:opacity-50">
                         {copyingWeek === weekMonday ? <><Loader2 size={10} className="animate-spin" /> Filling...</> : <><Copy size={10} /> Next from the board</>}
                       </button>

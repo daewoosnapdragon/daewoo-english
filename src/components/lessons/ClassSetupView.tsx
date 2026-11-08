@@ -8,7 +8,7 @@ import { ENGLISH_CLASSES, type EnglishClass } from '@/types'
 import { getKSTDateString } from '@/lib/utils'
 import { logActivity } from '@/lib/activity'
 import { BOOK_COLORS, bookName, type CurriculumBook, type CurriculumSeries } from '@/lib/curriculumCore'
-import { HALVES, academicYears, termDates } from '@/lib/curriculumPacing'
+import { yearFor } from '@/lib/curriculumPacing'
 import { lessonSyncFor } from '@/lib/lessonSync'
 import { emptySetup, partDays, seriesParts, typicalUnitDays, weeksFor, withPart, type ClassSetup, type Recipe, type StandingItem } from '@/lib/classSetup'
 import { createGradeSetup, deleteGradeSetup, fetchSetups, isSetupMissing, saveSetupField } from '@/lib/classSetupData'
@@ -25,15 +25,6 @@ const WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const WDL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 type Field = 'days' | 'recipes' | 'standing'
 
-/** The academic year today falls in, by the term dates; else the latest. */
-function currentYear(semesters: Parameters<typeof termDates>[0]): string {
-  const today = getKSTDateString()
-  const years = academicYears(semesters)
-  return years.find(y => HALVES.some(h => { const t = termDates(semesters, y, h); return !!t.start && !!t.end && today >= t.start && today <= t.end }))
-    || years.find(y => HALVES.some(h => { const t = termDates(semesters, y, h); return !!t.start && t.start <= today }))
-    || years[0] || ''
-}
-
 const newId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36)
 
 export default function ClassSetupView() {
@@ -49,7 +40,8 @@ export default function ClassSetupView() {
   const on = lessonSyncFor(currentTeacher?.english_class, cls)
   const canEdit = on && (isAdmin || currentTeacher?.english_class === cls)
   const p = usePlanner(on)
-  const year = useMemo(() => currentYear(semesters), [semesters])
+  // The academic year today is in; in the summer gap, the latest one started.
+  const year = useMemo(() => yearFor(semesters, getKSTDateString(), undefined, true), [semesters])
 
   const [rows, setRows] = useState<ClassSetup[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,7 +64,9 @@ export default function ClassSetupView() {
 
   // Saving: the screen changes at once; each part is written half a second after the last change to it.
   const timers = useRef<Partial<Record<Field, ReturnType<typeof setTimeout>>>>({})
+  const pending = useRef(new Set<Field>()), failed = useRef(new Set<Field>()), seq = useRef<Partial<Record<Field, number>>>({})
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const showStatus = () => setSaving(failed.current.size ? 'error' : pending.current.size ? 'saving' : 'saved')
   const edit = <F extends Field>(field: F, value: ClassSetup[F], what: string) => {
     if (!editable) return
     const g = setup.grade
@@ -81,12 +75,15 @@ export default function ClassSetupView() {
       const next = { ...(i >= 0 ? prev[i] : emptySetup(cls, g)), [field]: value }
       return i >= 0 ? prev.map((r, k) => (k === i ? next : r)) : [...prev, next]
     })
-    setSaving('saving')
+    const mine = (seq.current[field] || 0) + 1; seq.current[field] = mine
+    pending.current.add(field); failed.current.delete(field); showStatus()
     clearTimeout(timers.current[field])
     timers.current[field] = setTimeout(async () => {
       const r = await saveSetupField(cls, g, field, value, currentTeacher?.id)
-      if (r.error) { setSaving('error'); showToast(`Could not save: ${r.error}`); return }
-      setSaving('saved')
+      if (seq.current[field] !== mine) return   // a newer change to this part is on its way
+      pending.current.delete(field)
+      if (r.error) { failed.current.add(field); showStatus(); showToast(`Could not save: ${r.error}`); return }
+      showStatus()
       logActivity('saved', `Class setup · ${cls}${g ? ` · Grade ${g}` : ''}: ${what}`, { key: `classsetup|${cls}|${g}|${field}` })
     }, 500)
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { barsForView, boardLanes, halfOf, holidayWeeks, ladderChecks, ladderRows, layoutPacing, mondayOf, termDates, todayPosition, weekList, yearWeeks, type CurriculumPacing, type CurriculumPlacement } from '../curriculumPacing'
+import { yearFor, barsForView, boardLanes, halfOf, holidayWeeks, ladderChecks, ladderRows, layoutPacing, mondayOf, termDates, todayPosition, weekList, yearWeeks, type CurriculumPacing, type CurriculumPlacement } from '../curriculumPacing'
 import type { CurriculumBook, CurriculumSeries, CurriculumUnit } from '../curriculumCore'
 
 const sems = [
@@ -115,5 +115,22 @@ describe('ladder', () => {
     expect(checks.find(c => c.kind === 'drop')?.text).toContain('Hand in Hand goes from 6 at Grade 2 to 4 at Grade 3')
     expect(checks.find(c => c.kind === 'seam')?.text).toContain('Easy Reading to Wonderskills')
     expect(checks.some(c => c.kind === 'gap')).toBe(false)
+  })
+})
+
+describe('yearFor', () => {
+  const sems = [
+    { academic_year: '2025-2026', type: 'spring_mid', start_date: '2025-03-03', end_date: '2025-07-18' },
+    { academic_year: '2025-2026', type: 'fall_mid', start_date: '2025-08-18', end_date: '2026-01-09' },
+    { academic_year: '2026-2027', type: 'fall_mid', start_date: '2026-08-17', end_date: '2027-01-08' },
+  ]
+  it('finds the year a date or a month falls in', () => {
+    expect(yearFor(sems, '2026-12-08')).toBe('2026-2027')
+    expect(yearFor(sems, '2025-07-01', '2025-07-31')).toBe('2025-2026')
+  })
+  it('in the gap between terms gives nothing, or the latest year started when asked', () => {
+    expect(yearFor(sems, '2026-07-30')).toBe('')
+    expect(yearFor(sems, '2026-07-30', undefined, true)).toBe('2025-2026')
+    expect(yearFor(sems, '2024-01-01', undefined, true)).toBe('2026-2027')
   })
 })

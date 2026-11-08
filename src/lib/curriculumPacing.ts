@@ -61,6 +61,18 @@ export function weekList(start: string, end: string): Week[] {
 /** The academic years the semesters table knows, newest first. */
 export const academicYears = (semesters: { academic_year: string }[]) => Array.from(new Set(semesters.map(s => s.academic_year).filter(Boolean))).sort().reverse()
 
+/**
+ * The academic year whose terms overlap the dates from `from` to `to` (one day
+ * when `to` is left out). With `latest`, a date outside every term (the summer
+ * gap) gets the latest year already started, else the newest year; without it, ''.
+ */
+export function yearFor(semesters: SemesterLike[], from: string, to = from, latest = false): string {
+  const years = academicYears(semesters)
+  const hit = years.find(y => HALVES.some(h => { const t = termDates(semesters, y, h); return !!t.start && !!t.end && to >= t.start && from <= t.end }))
+  if (hit || !latest) return hit || ''
+  return years.find(y => HALVES.some(h => { const t = termDates(semesters, y, h); return !!t.start && t.start <= to })) || years[0] || ''
+}
+
 export interface TermDates { start: string | null; end: string | null }
 /** A term's dates: the earliest start and latest end of that half's grading periods in the year. */
 export function termDates(semesters: SemesterLike[], year: string, half: Half): TermDates {

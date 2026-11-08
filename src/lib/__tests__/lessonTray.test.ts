@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { slotLine, spreadDates, trayLanes, usedCounts, weekPace } from '../lessonTray'
+import { fillWeek, slotLine, spreadDates, trayLanes, usedCounts, weekPace } from '../lessonTray'
 import type { PlanDay } from '../lessonSync'
 
 const book = { placement_id: 'p1', book_id: 'b3', series_id: 'hih', label: 'Hand in Hand', level: '3', color: '#3E6F25' }
@@ -58,5 +58,24 @@ describe('lesson tray', () => {
     // Placing the joined lesson names its first lesson, which uses the whole slot.
     const [after] = trayLanes({ ...base, recipes, used: usedCounts({ d: day([{ label: '', content: 'x', unit_id: 'u7', lesson_id: 'c2' }]) }) })
     expect(after.units.find(u => u.unit_id === 'u7')!.slots.map(s => s.key)).toEqual(['c1'])
+  })
+  it('fills a week from the tray on each book’s days, never repeating a placed lesson', () => {
+    const used = usedCounts({ '2026-12-01': day([{ label: 'HiH', content: 'x', unit_id: 'u6', lesson_id: 'a1' }]), '2026-12-07': day([{ label: 'HiH', content: 'x', unit_id: 'u6', lesson_id: 'a5' }]) })
+    const [lane] = trayLanes({ ...base, recipes: { hih: { parts: {}, skips: ['s2'] } }, used })
+    const week = fillWeek([lane], () => [1, 2, 3], [false, false, true, false, false])
+    expect(week[0]).toBeNull()
+    expect(week[1]!.subjects[0]).toMatchObject({ label: 'Hand in Hand', unit_id: 'sl3', lesson_id: 's1', placement_id: 'p1', content: 'Different places in a city — Social Studies' })
+    expect(week[2]).toBeNull()                                  // a day that will not be written uses no lesson
+    expect(week[3]!.subjects[0]).toMatchObject({ lesson_id: 'c1' })   // the skipped Project is not offered
+    expect(fillWeek([lane], () => [], [false, false, false, false, false])).toEqual([null, null, null, null, null])
+  })
+  it('counts only this week’s share of a unit that runs several weeks as due', () => {
+    const five = ['c1', 'c2', 'c3', 'c4', 'c5'].map((id, i) => L(id, 'u7', i + 1, `Part ${i + 1}`))
+    const two = new Map([['u7', { first: '2026-12-07', last: '2026-12-14' }]])
+    const mk = (focusMonday: string, usedDays: Record<string, PlanDay> = {}) => trayLanes({ ...base, unitOrder: new Map([['p1', ['u7']]]), lessons: five, unitWeeks: two, focusMonday, recipes: {}, used: usedCounts(usedDays) })[0]
+    expect(mk('2026-12-07').due).toBe(3)                     // 5 lessons over 2 weeks: 3 by the end of the first
+    expect(mk('2026-12-07').units[0].slots.map(s => s.tag)).toEqual(['this week', 'this week', 'this week', '', ''])
+    expect(mk('2026-12-07', { d: day([{ label: '', content: 'x', unit_id: 'u7', lesson_id: 'c1' }]) }).due).toBe(2)
+    expect(mk('2026-12-14').due).toBe(5)
   })
 })
