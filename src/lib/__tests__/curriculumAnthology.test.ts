@@ -73,4 +73,9 @@ describe('groupByModule', () => {
     const g = groupByModule([{ title: 'M2 W1 · b', sort_order: 3 }, { title: 'M1 W1 · a', sort_order: 1 }, { title: 'M1 W2 · c', sort_order: 2 }, { title: 'Plain', sort_order: 4 }])
     expect(g.map(x => [x.label, x.units.map(u => u.title)])).toEqual([['Module 1', ['M1 W1 · a', 'M1 W2 · c']], ['Module 2', ['M2 W1 · b']], ['Other', ['Plain']]])
   })
+  it('keeps numbered units and School Links in one list', () => {
+    const g = groupByModule([{ title: 'Unit 1 · In the Morning', sort_order: 1 }, { title: 'School Link 1 · Telling time', sort_order: 2 }, { title: 'Unit 2 · At Home', sort_order: 3 }])
+    expect(g).toHaveLength(1)
+    expect(g[0].units.map(u => u.title)).toEqual(['Unit 1 · In the Morning', 'School Link 1 · Telling time', 'Unit 2 · At Home'])
+  })
 })

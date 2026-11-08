@@ -475,8 +475,8 @@ export function groupByModule<T extends { title: string; sort_order: number }>(u
   for (const u of [...units].sort((a, b) => a.sort_order - b.sort_order)) {
     const badge = splitUnitTitle(u.title).badge
     const m = badge.match(/^M(\d+)/i)
-    // "Unit 4" or "Lesson 12" is a numbering, not a section: those stay ungrouped.
-    const key = m ? 'M' + m[1] : (/^(unit|lesson)\s*\d+/i.test(badge) || !badge ? 'other' : badge)
+    // "Unit 4", "Lesson 12" or "School Link 3" is a numbering, not a section: those stay ungrouped.
+    const key = m ? 'M' + m[1] : (/^(unit|lesson|school link)\s*\d+/i.test(badge) || !badge ? 'other' : badge)
     let g = out.find(x => x.key === key)
     if (!g) { g = { key, label: m ? `Module ${m[1]}` : (badge || 'Other'), units: [] }; out.push(g) }
     g.units.push(u)
