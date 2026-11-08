@@ -3,10 +3,12 @@ import { colorHex, splitUnitTitle, type CurriculumBook, type CurriculumSeries, t
 // ─── Placements and pacing ───────────────────────────────────────
 // A placement is a book in a class and grade for a term; pacing is the order
 // and weeks of its units. See supabase/migration-curriculum-placements.sql.
-// The pure parts are here: which weeks a term has (from the grading periods
-// in the semesters table), where each unit lands when its weeks are added
-// up, which weeks are holidays, where today is, and what the ladder can
-// say about a level's books across the grades. The pages call them.
+// One plan per book for a class and grade, kept by admin: the units in
+// order, each with a suggested length in weeks (see
+// supabase/migration-curriculum-class-plans.sql). The pure parts are here:
+// which weeks a term has (from the grading periods in the semesters
+// table), where each unit lands when its weeks are added up, which weeks
+// are holidays and where today is. The pages call them.
 
 export type Term = 'fall' | 'spring' | 'year'
 export type Half = 'fall' | 'spring'
@@ -20,21 +22,19 @@ export const TERMS: Term[] = ['year', 'spring', 'fall']
 
 export interface CurriculumPlacement {
   id: string; book_id: string; english_class: string; grade: number; academic_year: string; term: Term; is_master: boolean
+  /** "Finish by": optional. */
+  aim_date?: string | null
   created_by: string | null; created_at: string; updated_at: string
 }
+/** One unit of a book's plan for a class and grade: its place in the order and its suggested length. */
 export interface CurriculumPacing {
   id: string; placement_id: string; unit_id: string; sort_order: number; weeks: number; owner: 'master' | 'teacher'
-  teacher_id: string | null; gap_before: number; fixed: boolean; done_at: string | null; created_at: string; updated_at: string
+  created_at: string; updated_at: string
 }
-export interface CurriculumBlock {
-  id: string; teacher_id: string; english_class: string; grade: number; academic_year: string; term: Half; title: string; strand: Strand
-  skill_tags: string[]; start_week: number; weeks: number; notes: string; created_at: string; updated_at: string
-}
-export interface CurriculumHere { id: string; placement_id: string; teacher_id: string; unit_id: string | null; week: number; note: string; set_at: string }
-export interface CurriculumPlanReview { id: string; placement_id: string; teacher_id: string; signature: string; comment: string; seen_by: string | null; seen_at: string | null; updated_at: string }
+/** A unit a class has finished (see curriculum_unit_done). */
+export interface UnitDone { id: string; placement_id: string; unit_id: string; done_at: string; done_by: string | null }
 
 export const isPlacementsMissing = (message: string | undefined | null) => !!message && /curriculum_placements|curriculum_pacing/.test(message)
-export const isPlansMissing = (message: string | undefined | null) => !!message && /curriculum_blocks|curriculum_here|curriculum_plan_reviews|gap_before|teacher_id/.test(message)
 
 // ─── Dates and weeks ─────────────────────────────────────────────
 
@@ -134,14 +134,13 @@ export function layoutPacing(pacing: CurriculumPacing[], units: CurriculumUnit[]
     const unit = byId.get(p.unit_id)
     if (!unit) continue
     const w = Math.max(0.5, Number(p.weeks) || 0)
-    cursor += Math.max(0, Number(p.gap_before) || 0)
     out.push({ pacing: p, unit, start: cursor + 1, end: cursor + w })
     cursor += w
   }
   return out
 }
 
-export const totalWeeks = (pacing: CurriculumPacing[]) => pacing.reduce((a, p) => a + (Number(p.weeks) || 0) + Math.max(0, Number(p.gap_before) || 0), 0)
+export const totalWeeks = (pacing: CurriculumPacing[]) => pacing.reduce((a, p) => a + Math.max(0.5, Number(p.weeks) || 0), 0)
 
 export interface ViewBar extends Bar { viewStart: number; viewEnd: number; cutLeft: boolean; cutRight: boolean }
 
@@ -199,11 +198,10 @@ export interface Lane { strand: Strand; label: string; bars: (ViewBar & { placem
 const STRAND_ORDER: Strand[] = ['phonics', 'reading', 'writing', 'speaking', 'grammar', 'other']
 const STRAND_EN: Record<Strand, string> = { phonics: 'Phonics', reading: 'Reading', writing: 'Writing', speaking: 'Speaking', grammar: 'Grammar', other: 'Other' }
 
-/** One lane per strand that has a bar, in the fixed strand order. */
+/** One lane per strand that has a bar, in the fixed strand order: each book's plan, units end to end at their suggested lengths. */
 export function boardLanes(
   placements: CurriculumPlacement[], pacing: CurriculumPacing[], units: CurriculumUnit[], books: CurriculumBook[], series: CurriculumSeries[], view: View, yw: YearWeeks,
-  teacherId: string | null = null, h: HolidayCounts = NO_HOLIDAYS,
-  adjust?: (pl: CurriculumPlacement, rows: CurriculumPacing[]) => CurriculumPacing[],
+  h: HolidayCounts = NO_HOLIDAYS,
 ): Lane[] {
   const lanes = new Map<Strand, Lane>()
   for (const pl of placements) {
@@ -211,10 +209,7 @@ export function boardLanes(
     if (!book) continue
     const se = series.find(s => s.id === book.series_id)
     const strand: Strand = se?.strand || 'other'
-    const rows = effectiveRows(pacing, pl.id, teacherId)
-    // `adjust` redraws the rows from elsewhere, such as the lesson plans (see lessonSync.ts).
-    const shared = projectAnthology(rows, placementLength(pl.term, yw, h))
-    const bars = barsForView(layoutPacing(adjust ? adjust(pl, shared) : shared, units), pl.term, view, yw, h)
+    const bars = barsForView(layoutPacing(masterRows(pacing, pl.id), units), pl.term, view, yw, h)
     if (!bars.length) continue
     if (!lanes.has(strand)) lanes.set(strand, { strand, label: STRAND_EN[strand], bars: [] })
     const lane = lanes.get(strand)!
@@ -244,165 +239,16 @@ export function todayPosition(weeks: Week[], today: string): number | null {
   return w.n + dayIndex / 5
 }
 
-// ─── The ladder ──────────────────────────────────────────────────
+// ─── A book's plan ───────────────────────────────────────────────
 
-export interface LadderBook { book: CurriculumBook; series: CurriculumSeries | undefined; terms: Term[]; placements: CurriculumPlacement[] }
-export interface LadderRow { grade: number; books: LadderBook[] }
-
-/** One row per grade, 5 down to 1, with the books placed for that class and year; a book placed in both halves is one card with both terms. */
-export function ladderRows(level: string, year: string, placements: CurriculumPlacement[], books: CurriculumBook[], series: CurriculumSeries[], grades: number[]): LadderRow[] {
-  return [...grades].sort((a, b) => b - a).map(grade => {
-    const mine = placements.filter(p => p.english_class === level && p.grade === grade && p.academic_year === year && p.is_master)
-    const byBook = new Map<string, LadderBook>()
-    for (const p of mine) {
-      const book = books.find(b => b.id === p.book_id)
-      if (!book) continue
-      if (!byBook.has(book.id)) byBook.set(book.id, { book, series: series.find(s => s.id === book.series_id), terms: [], placements: [] })
-      const lb = byBook.get(book.id)!
-      lb.placements.push(p)
-      if (!lb.terms.includes(p.term)) lb.terms.push(p.term)
-    }
-    const order = (lb: LadderBook) => STRAND_ORDER.indexOf(lb.series?.strand || 'other')
-    return { grade, books: Array.from(byBook.values()).sort((a, b) => order(a) - order(b) || (a.series?.name || '').localeCompare(b.series?.name || '')) }
-  })
-}
-
-export interface LadderCheck { kind: 'drop' | 'gap' | 'seam'; text: string }
-
-/** What the ladder can say about a level: a series whose level number falls between grades, a strand with no book at a grade, a series handing over to another. */
-export function ladderChecks(rows: LadderRow[], series: CurriculumSeries[]): LadderCheck[] {
-  const out: LadderCheck[] = []
-  const asc = [...rows].sort((a, b) => a.grade - b.grade)
-  const num = (s: string) => { const m = s.match(/\d+(\.\d+)?/); return m ? parseFloat(m[0]) : null }
-  for (const se of series) {
-    let prev: { grade: number; n: number } | null = null
-    for (const r of asc) {
-      for (const lb of r.books) {
-        if (lb.series?.id !== se.id) continue
-        const n = num(lb.book.level_number)
-        if (n === null) continue
-        if (prev && n < prev.n) out.push({ kind: 'drop', text: `${se.name} goes from ${prev.n} at Grade ${prev.grade} to ${n} at Grade ${r.grade}.` })
-        prev = { grade: r.grade, n }
-      }
-    }
-  }
-  const strands = Array.from(new Set(asc.flatMap(r => r.books.map(lb => lb.series?.strand || 'other'))))
-  for (const strand of strands) {
-    const have = asc.filter(r => r.books.some(lb => (lb.series?.strand || 'other') === strand)).map(r => r.grade)
-    const lo = Math.min(...have), hi = Math.max(...have)
-    const missing = asc.map(r => r.grade).filter(g => g > lo && g < hi && !have.includes(g))
-    if (missing.length) out.push({ kind: 'gap', text: `${STRAND_EN[strand as Strand]} has no book at Grade ${missing.join(', ')} but does above and below.` })
-    for (let i = 1; i < asc.length; i++) {
-      const a = asc[i - 1].books.filter(lb => (lb.series?.strand || 'other') === strand).map(lb => lb.series?.id)
-      const b = asc[i].books.filter(lb => (lb.series?.strand || 'other') === strand).map(lb => lb.series?.id)
-      if (a.length && b.length && !a.some(x => b.includes(x))) {
-        const from = asc[i - 1].books.find(lb => (lb.series?.strand || 'other') === strand)?.series?.name
-        const to = asc[i].books.find(lb => (lb.series?.strand || 'other') === strand)?.series?.name
-        out.push({ kind: 'seam', text: `${STRAND_EN[strand as Strand]} changes series at Grade ${asc[i].grade}: ${from} to ${to}. Check the seam for skills neither covers.` })
-      }
-    }
-  }
-  return out
-}
-
-// ─── Teachers' own plans ─────────────────────────────────────────
-
-export const masterRows = (pacing: CurriculumPacing[], placementId: string) => pacing.filter(p => p.placement_id === placementId && p.owner === 'master')
-export const teacherRows = (pacing: CurriculumPacing[], placementId: string, teacherId: string) => pacing.filter(p => p.placement_id === placementId && p.owner === 'teacher' && p.teacher_id === teacherId)
-/** The teacher's rows when they have made a copy, else the master's. */
-export function effectiveRows(pacing: CurriculumPacing[], placementId: string, teacherId: string | null): CurriculumPacing[] {
-  if (teacherId) { const mine = teacherRows(pacing, placementId, teacherId); if (mine.length) return mine }
-  return masterRows(pacing, placementId)
-}
-export const hasOwnPlan = (pacing: CurriculumPacing[], placementId: string, teacherId: string) => teacherRows(pacing, placementId, teacherId).length > 0
-
-export interface RowPatch { id: string; weeks?: number; gap_before?: number; fixed?: boolean }
-const half = (n: number) => Math.round(n * 2) / 2
-
-/**
- * "We're here": make `unitId` start at `targetStart` (a placement week). Behind the
- * plan, the unit gets a gap before it. Ahead of it, the gap goes first, then the
- * units before it get shorter, latest first, never under half a week. Returns the
- * rows to change; empty when nothing can move.
- */
-export function reflowTo(rows: CurriculumPacing[], units: CurriculumUnit[], unitId: string, targetStart: number): RowPatch[] {
-  const bars = layoutPacing(rows, units)
-  const i = bars.findIndex(b => b.unit.id === unitId)
-  if (i < 0) return []
-  let delta = half(targetStart) - bars[i].start
-  if (Math.abs(delta) < 0.25) return []
-  const me = bars[i].pacing
-  if (delta > 0) return [{ id: me.id, gap_before: half(Math.max(0, Number(me.gap_before) || 0) + delta) }]
-  const patches: RowPatch[] = []
-  let need = -delta
-  const gap = Math.max(0, Number(me.gap_before) || 0)
-  if (gap > 0) { const take = Math.min(gap, need); patches.push({ id: me.id, gap_before: half(gap - take) }); need = half(need - take) }
-  for (let j = i - 1; j >= 0 && need > 0; j--) {
-    const r = bars[j].pacing
-    const g = Math.max(0, Number(r.gap_before) || 0)
-    let gapTake = Math.min(g, need)
-    need = half(need - gapTake)
-    const room = Math.max(0, (Number(r.weeks) || 0) - 0.5)
-    const take = Math.min(room, need)
-    need = half(need - take)
-    if (gapTake > 0 || take > 0) patches.push({ id: r.id, gap_before: half(g - gapTake), weeks: half((Number(r.weeks) || 0) - take), fixed: true })
-  }
-  return patches
-}
-
-/** Applies patches to a copy of the rows, for a preview before saving. */
-export function applyPatches(rows: CurriculumPacing[], patches: RowPatch[]): CurriculumPacing[] {
-  return rows.map(r => { const p = patches.find(x => x.id === r.id); return p ? { ...r, weeks: p.weeks ?? r.weeks, gap_before: p.gap_before ?? r.gap_before, fixed: p.fixed ?? r.fixed } : r })
-}
-
-export interface Deviation { unit: CurriculumUnit; kind: 'later' | 'earlier' | 'longer' | 'shorter' | 'dropped' | 'added'; by: number; text: string }
-
-/** How a teacher's plan differs from the master, unit by unit. */
-export function deviations(master: CurriculumPacing[], teacher: CurriculumPacing[], units: CurriculumUnit[]): Deviation[] {
-  const m = layoutPacing(master, units), t = layoutPacing(teacher, units)
-  const out: Deviation[] = []
-  const wk = (n: number) => `${half(n)} wk`
-  for (const tb of t) {
-    const mb = m.find(x => x.unit.id === tb.unit.id)
-    if (!mb) { out.push({ unit: tb.unit, kind: 'added', by: 0, text: `${tb.unit.title}: added` }); continue }
-    const shift = half(tb.start - mb.start)
-    if (Math.abs(shift) >= 0.5) out.push({ unit: tb.unit, kind: shift > 0 ? 'later' : 'earlier', by: Math.abs(shift), text: `${tb.unit.title}: ${wk(Math.abs(shift))} ${shift > 0 ? 'later' : 'earlier'}` })
-    const dw = half(tb.pacing.weeks - mb.pacing.weeks)
-    if (Math.abs(dw) >= 0.5) out.push({ unit: tb.unit, kind: dw > 0 ? 'longer' : 'shorter', by: Math.abs(dw), text: `${tb.unit.title}: ${wk(Math.abs(dw))} ${dw > 0 ? 'longer' : 'shorter'}` })
-  }
-  for (const mb of m) if (!t.some(x => x.unit.id === mb.unit.id)) out.push({ unit: mb.unit, kind: 'dropped', by: 0, text: `${mb.unit.title}: dropped` })
-  return out
-}
-
-/** A short fingerprint of a plan, so a review can tell whether it changed since it was seen. */
-export const planSignature = (rows: CurriculumPacing[]) => [...rows].sort((a, b) => a.sort_order - b.sort_order).map(r => `${r.unit_id.slice(0, 8)}:${r.sort_order}:${r.weeks}:${r.gap_before || 0}`).join('|')
-
-/** Blocks for one half of a class and grade's year, as bars in view weeks. */
-export function blockBars(blocks: CurriculumBlock[], cls: string, grade: number, year: string, view: Half, teacherId: string | null, n: number): (CurriculumBlock & { viewStart: number; viewEnd: number })[] {
-  return blocks
-    .filter(b => b.english_class === cls && b.grade === grade && b.academic_year === year && b.term === view && (!teacherId || b.teacher_id === teacherId))
-    .map(b => ({ ...b, viewStart: Math.max(1, Number(b.start_week)), viewEnd: Math.min(n, Number(b.start_week) + Math.max(0.5, Number(b.weeks)) - 1) }))
-    .filter(b => b.viewEnd > b.viewStart - 1)   // a half-week block has viewEnd = viewStart − 0.5
-}
-
-/** The lag in weeks between a pin and today: positive when the class is behind where it said it was. */
-export const lagWeeks = (pin: { week: number; set_at: string }, todayPos: number | null, weeks: Week[]) => {
-  if (todayPos === null) return 0
-  const setDay = pin.set_at.slice(0, 10)
-  const setPos = todayPosition(weeks, setDay)
-  return setPos === null ? 0 : half(todayPos - setPos)
-}
-
-// ─── Anthologies: a reading list, not a pacing ───────────────────
+export const masterRows = (pacing: CurriculumPacing[], placementId: string) => pacing.filter(p => p.placement_id === placementId && p.owner !== 'teacher')
 
 const halfDown = (n: number) => Math.max(0.5, Math.floor(n * 2 + 1e-9) / 2)
-const halfUp = (n: number) => Math.max(0.5, Math.round(n * 2) / 2)
 
 /**
  * Whole weeks for `k` rows out of `avail`: everyone gets the same, and the weeks
  * left over go one each to rows spread evenly down the list, so the total is the
- * term. A board is an estimate, so bars snap to weeks. Only when there are more
- * rows than weeks does a row get half a week.
+ * term. Only when there are more rows than weeks does a row get half a week.
  */
 export function shareWeeks(avail: number, k: number): number[] {
   if (k <= 0) return []
@@ -413,41 +259,25 @@ export function shareWeeks(avail: number, k: number): number[] {
   return Array.from({ length: k }, (_, i) => base + (Math.floor((i + 1) * extra / k) > Math.floor(i * extra / k) ? 1 : 0))
 }
 
-/**
- * Shares the term across the stories: every row without a fixed length gets an
- * equal share of what is left after the fixed ones and the gaps, in whole weeks.
- * Returns copies of the rows with `weeks` filled in; nothing is written.
- */
-export function projectAnthology(rows: CurriculumPacing[], length: number): CurriculumPacing[] {
-  if (!rows.length) return rows
-  const fixed = rows.filter(r => r.fixed)
-  const free = rows.filter(r => !r.fixed).sort((a, b) => a.sort_order - b.sort_order)
-  const used = fixed.reduce((a, r) => a + (Number(r.weeks) || 0), 0) + rows.reduce((a, r) => a + Math.max(0, Number(r.gap_before) || 0), 0)
-  const shares = shareWeeks(Math.max(length, 0) - used, free.length)
-  const shareOf = new Map(free.map((r, i) => [r.id, shares[i]]))
-  return rows.map(r => r.fixed ? r : { ...r, weeks: length > 0 ? shareOf.get(r.id)! : halfUp(Number(r.weeks) || 2) })
-}
-
-/**
- * Before the first drag on a shared plan: pins every row at its projected length,
- * so a move or stretch changes one unit and pushes the rest instead of re-sharing them.
- */
-export function freezeProjection(rows: CurriculumPacing[], length: number): RowPatch[] {
-  return projectAnthology(rows, length).filter(r => !r.fixed).map(r => ({ id: r.id, weeks: r.weeks, fixed: true }))
-}
-
-/** Sets every row's weeks so the total is the term, in whole weeks shared as evenly as they go. */
-export function fitToTerm(rows: CurriculumPacing[], length: number): RowPatch[] {
+/** Lengths that make a plan fill the term exactly, shared as evenly as whole weeks go: for "Fit to the term". */
+export function fitToTerm(rows: CurriculumPacing[], length: number): { id: string; weeks: number }[] {
   const sorted = [...rows].sort((a, b) => a.sort_order - b.sort_order)
   if (!sorted.length || length <= 0) return []
-  const gaps = sorted.reduce((a, r) => a + Math.max(0, Number(r.gap_before) || 0), 0)
-  const shares = shareWeeks(length - gaps, sorted.length)
+  const shares = shareWeeks(length, sorted.length)
   return sorted.map((r, i) => ({ id: r.id, weeks: shares[i] }))
 }
 
-/** The length a bar snaps to after a stretch: whole weeks, at least one. */
-export function snapWeeks(w: number): number {
-  return Math.max(1, Math.round(w))
+/** Where an aim date falls, as a teaching week of the placement (holiday weeks before it not counted), or null outside its term. */
+export function aimWeek(aim: string | null | undefined, term: Term, yw: YearWeeks, holidays: { spring: Set<number>; fall: Set<number> }): number | null {
+  if (!aim) return null
+  const halves: Half[] = term === 'year' ? ['spring', 'fall'] : [term]
+  let before = 0
+  for (const h of halves) {
+    const w = yw[h].find(x => aim >= x.monday && aim <= addDays(x.monday, 6))
+    if (w) return before + w.n - Array.from(holidays[h]).filter(n => n < w.n).length
+    before += yw[h].length - holidays[h].size
+  }
+  return null
 }
 
 /** A column of the view as a teaching week: holiday columns before it are not counted, and a holiday column itself counts as the teaching week after it. */
@@ -465,21 +295,6 @@ export function viewsFor(yw: YearWeeks): View[] {
 /** Which terms a placement can be given in a year: a half with no dates is not offered, nor is Whole year unless both halves have them. */
 export const termsFor = (yw: YearWeeks): Term[] => { const v = viewsFor(yw); return TERMS.filter(t => v.includes(t as View)) }
 
-export interface Progress { done: number; total: number; expected: number; diff: number; text: string }
-
-/**
- * Where a reading list stands: stories done against the number even pace would
- * have reached by today. `pos` is today in placement weeks (null outside the term).
- */
-export function anthologyProgress(rows: CurriculumPacing[], length: number, pos: number | null): Progress {
-  const total = rows.length
-  const done = rows.filter(r => !!r.done_at).length
-  const expected = pos === null || !length || !total ? 0 : Math.min(total, Math.floor((pos - 1) / length * total + 0.5))
-  const diff = done - expected
-  let text = `${done} of ${total} done`
-  if (pos !== null && length && total) text += diff === 0 ? ' · on pace' : diff > 0 ? ` · ${diff} ${diff === 1 ? 'story' : 'stories'} ahead` : ` · ${-diff} ${-diff === 1 ? 'story' : 'stories'} behind`
-  return { done, total, expected, diff, text }
-}
 
 /** Units grouped by the module or section in their title badge ("M3 W1 · …" → Module 3; "Closed Syllables · …" → Closed Syllables), in book order. */
 export function groupByModule<T extends { title: string; sort_order: number }>(units: T[]): { key: string; label: string; units: T[] }[] {

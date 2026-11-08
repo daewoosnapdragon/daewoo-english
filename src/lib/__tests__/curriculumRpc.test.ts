@@ -9,7 +9,7 @@ describe('curriculum functions', () => {
     expect(isRpcMissing({ message: 'duplicate key value violates unique constraint' })).toBe(false)
     expect(isRpcMissing(null)).toBe(false)
   })
-  it('rounds patches and leaves out what does not change', () => {
-    expect(pacingPatchesJson([{ id: 'a', weeks: 2.3 }, { id: 'b', gap_before: -1, fixed: true }])).toEqual([{ id: 'a', weeks: 2.5 }, { id: 'b', gap_before: 0, fixed: true }])
+  it('rounds lengths to half weeks, never under half a week', () => {
+    expect(pacingPatchesJson([{ id: 'a', weeks: 2.3 }, { id: 'b', weeks: 0 }])).toEqual([{ id: 'a', weeks: 2.5 }, { id: 'b', weeks: 0.5 }])
   })
 })

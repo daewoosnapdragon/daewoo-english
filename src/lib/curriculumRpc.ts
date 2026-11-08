@@ -19,6 +19,6 @@ export async function tryRpc<T = unknown>(fn: string, args: Record<string, unkno
   return { missing: false, error: error?.message || null, data: (data as T) ?? null }
 }
 
-/** A drag's patches as the JSON curriculum_patch_pacing takes, rounded the way the app stores them. */
-export const pacingPatchesJson = (patches: { id: string; weeks?: number; gap_before?: number; fixed?: boolean }[]) =>
-  patches.map(p => ({ id: p.id, ...(p.weeks !== undefined ? { weeks: Math.max(0.5, Math.round(p.weeks * 2) / 2) } : {}), ...(p.gap_before !== undefined ? { gap_before: Math.max(0, Math.round(p.gap_before * 2) / 2) } : {}), ...(p.fixed !== undefined ? { fixed: p.fixed } : {}) }))
+/** Lengths as the JSON curriculum_patch_pacing takes, rounded to half weeks the way the app stores them. */
+export const pacingPatchesJson = (patches: { id: string; weeks: number }[]) =>
+  patches.map(p => ({ id: p.id, weeks: Math.max(0.5, Math.round(p.weeks * 2) / 2) }))

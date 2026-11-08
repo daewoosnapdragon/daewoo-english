@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { yearFor, barsForView, boardLanes, halfOf, holidayWeeks, ladderChecks, ladderRows, layoutPacing, mondayOf, termDates, todayPosition, weekList, yearWeeks, type CurriculumPacing, type CurriculumPlacement } from '../curriculumPacing'
+import { aimWeek, masterRows, yearFor, barsForView, boardLanes, halfOf, holidayWeeks, layoutPacing, mondayOf, termDates, todayPosition, weekList, yearWeeks, type CurriculumPacing, type CurriculumPlacement } from '../curriculumPacing'
 import type { CurriculumBook, CurriculumSeries, CurriculumUnit } from '../curriculumCore'
 
 const sems = [
@@ -34,7 +34,7 @@ describe('weeks', () => {
 })
 
 const unit = (id: string, weeks = 2): CurriculumUnit => ({ id, book_id: 'b1', sort_order: 0, title: id, summary: '', skill_tags: [], ccss_codes: [], default_weeks: weeks, source: 'claude', confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' })
-const pace = (id: string, unit_id: string, sort_order: number, weeks: number, placement_id = 'p1'): CurriculumPacing => ({ id, placement_id, unit_id, sort_order, weeks, owner: 'master', teacher_id: null, gap_before: 0, fixed: false, done_at: null, created_at: '', updated_at: '' })
+const pace = (id: string, unit_id: string, sort_order: number, weeks: number, placement_id = 'p1'): CurriculumPacing => ({ id, placement_id, unit_id, sort_order, weeks, owner: 'master', created_at: '', updated_at: '' })
 
 describe('layout', () => {
   const units = [unit('u1'), unit('u2'), unit('u3')]
@@ -67,7 +67,7 @@ describe('board lanes', () => {
     const lanes = boardLanes([pl('p2', 'b2', 'fall'), pl('p1', 'b1', 'fall')], [pace('a', 'u1', 1, 4, 'p1'), pace('b', 'u2', 1, 6, 'p2')], units, books, series, 'fall', yw)
     expect(lanes.map(l => l.strand)).toEqual(['phonics', 'reading'])
     expect(lanes[0].bars[0].color).toBe('#6B4C9A')
-    expect(lanes[1].bars[0].viewEnd).toBe(18)   // one unit shares the whole 18-week fall unless its length is pinned
+    expect(lanes[1].bars[0].viewEnd).toBe(6)   // a unit is as long as its suggested weeks
   })
 })
 
@@ -85,39 +85,6 @@ describe('holidays and today', () => {
   })
 })
 
-describe('ladder', () => {
-  const series: CurriculumSeries[] = [
-    { id: 'sp', name: 'Super Phonics', publisher: '', strand: 'phonics', color: 'plum', kind: 'sequence', sort_order: 1, created_at: '' },
-    { id: 'er', name: 'Easy Reading', publisher: '', strand: 'reading', color: 'ochre', kind: 'sequence', sort_order: 2, created_at: '' },
-    { id: 'ws', name: 'Wonderskills', publisher: '', strand: 'reading', color: 'berry', kind: 'sequence', sort_order: 3, created_at: '' },
-    { id: 'hh', name: 'Hand in Hand', publisher: '', strand: 'speaking', color: 'green', kind: 'sequence', sort_order: 4, created_at: '' },
-  ]
-  const book = (id: string, series_id: string, level: string): CurriculumBook => ({ id, series_id, level_number: level, title: '', status: 'confirmed', drive_folder_url: '', notes: '', created_at: '', updated_at: '' })
-  const books = [book('sp1', 'sp', '1'), book('sp2', 'sp', '2'), book('er1', 'er', '1'), book('er2', 'er', '2'), book('ws1', 'ws', '1'), book('hh5', 'hh', '5'), book('hh6', 'hh', '6'), book('hh4', 'hh', '4')]
-  const pl = (book_id: string, grade: number, term: 'fall' | 'spring' | 'year', cls = 'Snapdragon'): CurriculumPlacement => ({ id: `${book_id}-${grade}-${term}`, book_id, english_class: cls, grade, academic_year: '2027-2028', term, is_master: true, created_by: null, created_at: '', updated_at: '' })
-  const placements = [
-    pl('sp1', 1, 'year'), pl('er1', 1, 'fall'), pl('er1', 1, 'spring'), pl('hh5', 1, 'year'),
-    pl('sp2', 2, 'year'), pl('er2', 2, 'year'), pl('hh6', 2, 'year'),
-    pl('ws1', 3, 'year'), pl('hh4', 3, 'year'),
-    pl('hh5', 4, 'year', 'Lily'),
-  ]
-  const rows = ladderRows('Snapdragon', '2027-2028', placements, books, series, [1, 2, 3, 4, 5])
-  it('builds a row per grade, top down, merging a book placed in both halves', () => {
-    expect(rows.map(r => r.grade)).toEqual([5, 4, 3, 2, 1])
-    const g1 = rows[4]
-    expect(g1.books.map(b => b.book.id)).toEqual(['sp1', 'er1', 'hh5'])
-    expect(g1.books[1].terms).toEqual(['fall', 'spring'])
-    expect(rows[1].books).toEqual([])   // Lily's placement is not on this ladder
-  })
-  it('flags a series dropping a level, a gap and a seam', () => {
-    const checks = ladderChecks(rows, series)
-    expect(checks.map(c => c.kind)).toEqual(expect.arrayContaining(['drop', 'seam']))
-    expect(checks.find(c => c.kind === 'drop')?.text).toContain('Hand in Hand goes from 6 at Grade 2 to 4 at Grade 3')
-    expect(checks.find(c => c.kind === 'seam')?.text).toContain('Easy Reading to Wonderskills')
-    expect(checks.some(c => c.kind === 'gap')).toBe(false)
-  })
-})
-
 describe('yearFor', () => {
   const sems = [
     { academic_year: '2025-2026', type: 'spring_mid', start_date: '2025-03-03', end_date: '2025-07-18' },
@@ -132,5 +99,21 @@ describe('yearFor', () => {
     expect(yearFor(sems, '2026-07-30')).toBe('')
     expect(yearFor(sems, '2026-07-30', undefined, true)).toBe('2025-2026')
     expect(yearFor(sems, '2024-01-01', undefined, true)).toBe('2026-2027')
+  })
+})
+
+describe('class plans', () => {
+  it('reads only the school plan rows, not teachers\' old copies', () => {
+    const rows = [pace('a', 'u1', 1, 2), { ...pace('t', 'u1', 1, 5), owner: 'teacher' as const }, pace('b', 'u2', 1, 2, 'p2')]
+    expect(masterRows(rows, 'p1').map(r => r.id)).toEqual(['a'])
+  })
+  it('places an aim date as a teaching week, holiday weeks not counted', () => {
+    const yw = { spring: weekList('2027-03-01', '2027-03-26'), fall: weekList('2027-08-30', '2027-09-24') }   // 4 + 4 weeks
+    const none = { spring: new Set<number>(), fall: new Set<number>() }
+    expect(aimWeek('2027-09-08', 'fall', yw, none)).toBe(2)
+    expect(aimWeek('2027-09-08', 'fall', yw, { spring: new Set<number>(), fall: new Set([1]) })).toBe(1)
+    expect(aimWeek('2027-09-08', 'year', yw, none)).toBe(6)
+    expect(aimWeek('2027-03-10', 'fall', yw, none)).toBeNull()
+    expect(aimWeek(null, 'fall', yw, none)).toBeNull()
   })
 })

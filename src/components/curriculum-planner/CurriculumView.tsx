@@ -2,61 +2,50 @@
 
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
-import { BookOpen, CalendarRange, ClipboardCheck, Map, Rows3, TrainFront } from 'lucide-react'
+import { BookOpen, CalendarRange, Map, TrainFront } from 'lucide-react'
 import BookshelfView from './BookshelfView'
 import MapView from './PlacementsView'
-import BoardView from './BoardView'
-import LadderView from './LadderView'
-import ReviewView from './ReviewView'
+import ClassPlanView from './ClassPlanView'
 import ProgramMapView from './ProgramMapView'
 
 // ─── Curriculum ──────────────────────────────────────────────────
-// Two tabs. Class boards, for everyone: any class and grade's term week by
-// week, the program map of every class across the term with what they
-// share, and the ladder of one level across the grades. Planning, for
-// admin: the grid of which book each class and grade uses for which term,
-// with the pacing of each, the review queue of teachers' plans that differ
-// from the master, and the Bookshelf behind it. See
-// docs/curriculum-planner-plan.md.
+// Class plans: one class and grade's books as a timeline, units at their
+// suggested lengths (admin edits the lists under it). All classes this
+// week: every class's units this week and what they share. Books by class:
+// the grid of every class plan, for admin. Bookshelf: the books, their
+// units, lessons, objectives and files. See docs/lesson-planning-review.md.
 
-type Tab = 'boards' | 'map'
-type Sub = 'board' | 'program' | 'ladder' | 'map' | 'review' | 'bookshelf'
-const SUBS: Record<Tab, Sub[]> = { boards: ['board', 'program', 'ladder'], map: ['map', 'review', 'bookshelf'] }
+type Tab = 'plans' | 'week' | 'books' | 'bookshelf'
+const TABS: Tab[] = ['plans', 'week', 'books', 'bookshelf']
+
+/** Old addresses (#boards/board, #map/bookshelf, …) still land somewhere sensible. */
+function tabFromHash(hash: string): Tab {
+  const [path] = hash.replace(/^#/, '').split('?')
+  const [t, s] = path.split('/')
+  if ((TABS as string[]).includes(t)) return t as Tab
+  if (t === 'boards') return s === 'program' ? 'week' : 'plans'
+  if (t === 'map') return s === 'bookshelf' ? 'bookshelf' : 'books'
+  return 'plans'
+}
 
 export default function CurriculumView() {
   const { currentTeacher, language } = useApp()
   const ko = language === 'ko'
   const canManage = currentTeacher?.role === 'admin' || !!currentTeacher?.is_head_teacher
-  const [tab, setTab] = useState<Tab>('boards')
-  const [sub, setSub] = useState<Sub>('board')
+  const [tab, setTab] = useState<Tab>('plans')
   useEffect(() => {
-    const fromHash = () => {
-      const [t, s] = (window.location.hash || '').slice(1).split('?')[0].split('/')
-      if (t === 'boards' || t === 'map') { setTab(t); setSub(s && (SUBS[t] as string[]).includes(s) ? s as Sub : SUBS[t][0]) }
-      else if (t === 'bookshelf') { setTab('map'); setSub('bookshelf') }
-    }
+    const fromHash = () => setTab(tabFromHash(window.location.hash || ''))
     fromHash(); window.addEventListener('hashchange', fromHash); return () => window.removeEventListener('hashchange', fromHash)
   }, [])
-  const go = (t: Tab, s?: Sub) => { const next = s || SUBS[t][0]; setTab(t); setSub(next); history.replaceState(null, '', `#${t}/${next}`) }
-  // A link from the program map (#boards/board?cls=Daisy&grade=2) opens the board on that class and grade.
-  useEffect(() => {
-    const onHash = () => { const [, q] = (window.location.hash || '').split('?'); if (q) window.dispatchEvent(new CustomEvent('daewoo:board-target', { detail: Object.fromEntries(new URLSearchParams(q)) })) }
-    window.addEventListener('hashchange', onHash); onHash(); return () => window.removeEventListener('hashchange', onHash)
-  }, [])
-  const showTab: Tab = tab === 'map' && !canManage ? 'boards' : tab
+  const go = (t: Tab) => { setTab(t); history.replaceState(null, '', `#${t}`) }
+  const shown: Tab = tab === 'books' && !canManage ? 'plans' : tab
 
-  const tabs: { id: Tab; label: string; hint: string; icon: React.ReactNode; hidden?: boolean }[] = [
-    { id: 'boards', label: ko ? '학급 보드' : 'Class boards', hint: ko ? '모든 교사' : 'everyone', icon: <CalendarRange size={13} /> },
-    { id: 'map', label: ko ? '계획' : 'Planning', hint: ko ? '관리자' : 'admin', icon: <Map size={13} />, hidden: !canManage },
+  const tabs: { id: Tab; label: string; icon: React.ReactNode; hidden?: boolean }[] = [
+    { id: 'plans', label: ko ? '학급 계획' : 'Class plans', icon: <CalendarRange size={13} /> },
+    { id: 'week', label: ko ? '이번 주 전체 반' : 'All classes this week', icon: <TrainFront size={13} /> },
+    { id: 'books', label: ko ? '반별 교재' : 'Books by class', icon: <Map size={13} />, hidden: !canManage },
+    { id: 'bookshelf', label: ko ? '책꽂이' : 'Bookshelf', icon: <BookOpen size={13} /> },
   ]
-  const subs: Record<Sub, { label: string; icon: React.ReactNode }> = {
-    board: { label: ko ? '학기 보드' : 'Board', icon: <CalendarRange size={12} /> },
-    program: { label: ko ? '이번 주 전체 반' : 'All classes this week', icon: <TrainFront size={12} /> },
-    ladder: { label: ko ? '학년 사다리' : 'Ladder', icon: <Rows3 size={12} /> },
-    map: { label: ko ? '반별 교재' : 'Books by class', icon: <Map size={12} /> },
-    review: { label: ko ? '교사 계획 확인' : 'Review', icon: <ClipboardCheck size={12} /> },
-    bookshelf: { label: ko ? '책꽂이' : 'Bookshelf', icon: <BookOpen size={12} /> },
-  }
 
   return (
     <div className="px-8 py-6 animate-fade-in">
@@ -66,26 +55,17 @@ export default function CurriculumView() {
           <h1 className="font-display text-[34px] leading-none text-ink">{ko ? '교육과정' : 'Curriculum'}</h1>
         </div>
       </div>
-      <div className="flex items-center gap-4 flex-wrap mb-6">
-        <div className="flex gap-1.5">
-          {tabs.filter(t => !t.hidden).map(t => (
-            <button key={t.id} onClick={() => go(t.id)} className={`h-9 px-3.5 rounded text-[13px] inline-flex items-center gap-2 border ${showTab === t.id ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink'}`}>
-              {t.icon}{t.label}<span className={`text-[10.5px] ${showTab === t.id ? 'text-paper/70' : 'text-ink-3'}`}>{t.hint}</span>
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-1 border-l border-rule pl-4">
-          {SUBS[showTab].map(s => (
-            <button key={s} onClick={() => go(showTab, s)} className={`h-8 px-3 rounded text-[12.5px] inline-flex items-center gap-1.5 ${sub === s ? 'bg-paper-2 text-ink font-medium' : 'text-ink-2 hover:text-ink'}`}>{subs[s].icon}{subs[s].label}</button>
-          ))}
-        </div>
+      <div className="flex gap-1.5 flex-wrap mb-6">
+        {tabs.filter(t => !t.hidden).map(t => (
+          <button key={t.id} onClick={() => go(t.id)} className={`h-9 px-3.5 rounded text-[13px] inline-flex items-center gap-2 border ${shown === t.id ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink'}`}>
+            {t.icon}{t.label}
+          </button>
+        ))}
       </div>
-      {showTab === 'boards' && sub === 'board' && <BoardView />}
-      {showTab === 'boards' && sub === 'program' && <ProgramMapView />}
-      {showTab === 'boards' && sub === 'ladder' && <LadderView />}
-      {showTab === 'map' && sub === 'map' && <MapView />}
-      {showTab === 'map' && sub === 'review' && <ReviewView />}
-      {showTab === 'map' && sub === 'bookshelf' && <BookshelfView />}
+      {shown === 'plans' && <ClassPlanView />}
+      {shown === 'week' && <ProgramMapView />}
+      {shown === 'books' && <MapView />}
+      {shown === 'bookshelf' && <BookshelfView />}
     </div>
   )
 }

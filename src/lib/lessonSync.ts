@@ -1,26 +1,11 @@
-import { splitUnitTitle, type CurriculumLesson, type CurriculumUnit } from '@/lib/curriculumCore'
-import { addDays, columnToTeaching, type CurriculumPacing, type CurriculumPlacement, type Term, type YearWeeks } from '@/lib/curriculumPacing'
+import { addDays } from '@/lib/curriculumPacing'
 
-// ─── Lesson plans and the class board as one ─────────────────────
-// Teachers plan in Lesson Plans; the board is those plans seen as weeks,
-// plus an estimate of what comes next. A subject row in a day's plan can
-// carry the unit (and lesson) it is about: picked from the units the board
-// has running that week. The board then draws every unit that has such a
-// day from the plans (it started the week its first day is in), and lays
-// the rest out after it with their planned lengths. "Next week" fills a
-// week from the one before, moving each linked row on to the next lesson
-// or unit; "Push" slides the plans a class day when a trip or a sick day
-// takes one. The pure parts are here so they can be tested.
-
-// While this is tried out, only these classes have it: their teacher sees
-// the new Lesson Plans tools on their own class, and their boards follow
-// their plans. Every other class works as before. To turn it on for
-// everyone, list every class here (or return true from both checks).
-export const LESSON_SYNC_CLASSES: string[] = ['Snapdragon']
-/** The Lesson Plans tools show for this viewer on this class. */
-export const lessonSyncFor = (viewerClass: string | null | undefined, cls: string) => !!viewerClass && LESSON_SYNC_CLASSES.includes(viewerClass) && LESSON_SYNC_CLASSES.includes(cls)
-/** This class's board is drawn from its lesson plans. */
-export const followsPlans = (cls: string) => LESSON_SYNC_CLASSES.includes(cls)
+// ─── Lesson plans: reading days and moving them ──────────────────
+// A day's plan is a parent_calendar row; each subject row may carry the
+// unit (and lesson) it is about, set when the teacher picks the unit as
+// they type (see planLinks.ts). Move a day later / earlier slides a run of
+// days a class day when a trip or a sick day takes one. The pure parts are
+// here so they can be tested.
 
 export interface SubjectRow { label: string; content: string; unit_id?: string; lesson_id?: string; placement_id?: string }
 export interface PlanDay { subjects: SubjectRow[]; objective: string; notes: string }
@@ -53,111 +38,7 @@ export function linkedDays(days: Record<string, PlanDay>): LinkedDay[] {
   return out.sort((a, b) => a.date.localeCompare(b.date))
 }
 
-// ─── The board follows the plans ─────────────────────────────────
-
-/**
- * A date as a teaching week of a placement: its week in the half, less the
- * holiday weeks before it (a holiday week counts as the teaching week after
- * it), with the spring's teaching weeks added for a whole-year placement in
- * the fall. Null when the date is in neither half or outside the placement's term.
- */
-export function teachingWeekOf(date: string, term: Term, yw: YearWeeks, holSpring: Set<number>, holFall: Set<number>): number | null {
-  for (const half of ['spring', 'fall'] as const) {
-    const w = yw[half].find(x => date >= x.monday && date <= addDays(x.monday, 6))
-    if (!w) continue
-    if (term !== 'year' && term !== half) return null
-    const t = columnToTeaching(w.n, half === 'spring' ? holSpring : holFall)
-    return term === 'year' && half === 'fall' ? t + yw.spring.length - holSpring.size : t
-  }
-  return null
-}
-
-export interface Actual { first: number; last: number }
-
-/** For each unit with a linked day: the teaching week of its first and last day. */
-export function actualsFor(linked: LinkedDay[], unitIds: Set<string>, weekOf: (date: string) => number | null): Map<string, Actual> {
-  const m = new Map<string, Actual>()
-  for (const l of linked) {
-    if (!unitIds.has(l.unit_id)) continue
-    const w = weekOf(l.date)
-    if (w === null) continue
-    const a = m.get(l.unit_id)
-    if (!a) m.set(l.unit_id, { first: w, last: w })
-    else { a.first = Math.min(a.first, w); a.last = Math.max(a.last, w) }
-  }
-  return m
-}
-
-/**
- * Lays a plan out from what the lesson plans say. Units with linked days are
- * drawn from them, in the order they were started: each runs from the week of
- * its first day to the week before the next one starts, and the latest runs at
- * least its planned length. Units before them that the plans never named keep
- * their lengths, squeezed (gaps first, latest first) to end before the first
- * named one. Units after, and any skipped so far, follow with their planned
- * lengths and gaps. `rows` already carry their weeks (after sharing the term).
- * Returns copies for drawing; nothing is written.
- */
-export function followPlans(rows: CurriculumPacing[], actual: Map<string, Actual>): CurriculumPacing[] {
-  const sorted = [...rows].sort((a, b) => a.sort_order - b.sort_order)
-  const started = sorted.filter(r => actual.has(r.unit_id)).sort((a, b) => actual.get(a.unit_id)!.first - actual.get(b.unit_id)!.first || a.sort_order - b.sort_order)
-  if (!started.length) return rows
-  const minSo = Math.min(...started.map(r => r.sort_order))
-  const W = (r: CurriculumPacing) => Math.max(0.5, Number(r.weeks) || 0)
-  const G = (r: CurriculumPacing) => Math.max(0, Number(r.gap_before) || 0)
-  const total = (rs: CurriculumPacing[]) => rs.reduce((a, r) => a + W(r) + G(r), 0)
-  // Before: units the plans never named, ahead of the first named one. They are
-  // squeezed into the weeks before it (gaps first, then weeks, latest first,
-  // never under half a week). If even that does not fit, the latest of them
-  // have not been taught as far as the plans say, so they move after the
-  // units being taught instead of pushing those late.
-  const room = Math.max(0, actual.get(started[0].unit_id)!.first - 1)
-  const squeeze = (rs: CurriculumPacing[]) => {
-    const out = rs.map(r => ({ ...r }))
-    let over = total(out) - room
-    for (let i = out.length - 1; i >= 0 && over > 1e-9; i--) { const take = Math.min(G(out[i]), over); out[i].gap_before = G(out[i]) - take; over -= take }
-    for (let i = out.length - 1; i >= 0 && over > 1e-9; i--) { const take = Math.min(W(out[i]) - 0.5, over); out[i].weeks = W(out[i]) - take; over -= take }
-    return { out, over }
-  }
-  let pre = sorted.filter(r => !actual.has(r.unit_id) && r.sort_order < minSo)
-  const pushedOut: CurriculumPacing[] = []
-  let sq = squeeze(pre)
-  while (sq.over > 1e-9 && pre.length) { pushedOut.unshift(pre[pre.length - 1]); pre = pre.slice(0, -1); sq = squeeze(pre) }
-  const before = sq.out
-  const after = [...pushedOut, ...sorted.filter(r => !actual.has(r.unit_id) && r.sort_order > minSo)].map(r => ({ ...r }))
-  // Named units: each starts in the week of its first day and runs to the week
-  // before the next named one starts; the latest runs at least its planned
-  // length. Two starting the same week share it, without pushing later units.
-  let cursor = total(before)
-  const mid = started.map((r, k) => {
-    const a = actual.get(r.unit_id)!
-    const next = started[k + 1] ? actual.get(started[k + 1].unit_id)! : null
-    const gap = Math.max(0, a.first - 1 - cursor)
-    const left = cursor + gap
-    const targetEnd = next ? next.first - 1 : Math.max(a.first - 1 + W(r), a.last)
-    const weeks = Math.max(0.5, targetEnd - left)
-    cursor = left + weeks
-    // Done once a later unit has started and this one is not named again from then on.
-    const done = !!next && next.first > a.last
-    return { ...r, gap_before: gap, weeks, done_at: done ? (r.done_at || 'lesson-plans') : r.done_at }
-  })
-  return [...before, ...mid, ...after].map((r, i) => ({ ...r, sort_order: i + 1, fixed: true }))
-}
-
-/** The callback the board hands to boardLanes: a placement's rows drawn from the linked days. */
-export function planFollower(linked: LinkedDay[], yw: YearWeeks, holSpring: Set<number>, holFall: Set<number>) {
-  return (pl: CurriculumPlacement, rows: CurriculumPacing[]) => {
-    if (!linked.length) return rows
-    const mine = linked.filter(l => !l.placement_id || l.placement_id === pl.id)
-    const actual = actualsFor(mine, new Set(rows.map(r => r.unit_id)), d => teachingWeekOf(d, pl.term, yw, holSpring, holFall))
-    return actual.size ? followPlans(rows, actual) : rows
-  }
-}
-
-// ─── Next week from the board ────────────────────────────────────
-
-/** A unit the board has running in a week, as the Lesson Plans page shows it. */
-export interface RunningUnit { placement_id: string; unit_id: string; label: string; name: string; level: string; color: string; weekOf: number; weeks: number }
+// ─── A week's pattern ────────────────────────────────────────────
 
 /** The weekdays (0 = Monday) each book was on in a week of plans, from its linked rows. */
 export function bookPattern(week: (PlanDay | null)[]): Map<string, number[]> {

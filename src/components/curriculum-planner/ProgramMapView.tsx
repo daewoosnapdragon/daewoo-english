@@ -10,11 +10,6 @@ import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { STRANDS, STRAND_LABEL, splitUnitTitle } from '@/lib/curriculumCore'
 import { TERM_LABEL, academicYears, viewsFor, boardLanes, halfOf, holidayWeeks, teachingToColumns, termDates, todayPosition, viewWeeks, yearWeeks, type HolidayCounts, type View } from '@/lib/curriculumPacing'
 import { barsAtWeek, planTogether, weekOfBar, type MapRow } from '@/lib/curriculumMap'
-import { LESSON_SYNC_CLASSES, planFollower, type LinkedDay } from '@/lib/lessonSync'
-import { fetchLinked } from '@/lib/lessonSyncData'
-import { bothAdjust, setupAdjuster, type ClassSetup } from '@/lib/classSetup'
-import { fetchSetups } from '@/lib/classSetupData'
-import type { CurriculumPacing, CurriculumPlacement } from '@/lib/curriculumPacing'
 import { usePlanner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
 import { ChevronLeft, ChevronRight, ExternalLink, Loader2, Users } from 'lucide-react'
@@ -31,8 +26,8 @@ import { ChevronLeft, ChevronRight, ExternalLink, Loader2, Users } from 'lucide-
 const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink'
 const btnS = 'h-7 px-2 rounded border border-rule-2 text-[11.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
 const fmtDay = (iso: string, ko: boolean) => new Date(iso + 'T12:00:00+09:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { timeZone: 'Asia/Seoul', month: 'short', day: 'numeric' })
-/** A class's board at the year, view and week being looked at here. */
-const boardLink = (cls: string, grade: number, at?: { year: string; view: string; week: number }) => `#boards/board?cls=${encodeURIComponent(cls)}&grade=${grade}${at ? `&year=${encodeURIComponent(at.year)}&view=${at.view}&week=${at.week}` : ''}`
+/** A class's plan at the year and view being looked at here. */
+const boardLink = (cls: string, grade: number, at?: { year: string; view: string; week: number }) => `#plans?cls=${encodeURIComponent(cls)}&grade=${grade}${at ? `&year=${encodeURIComponent(at.year)}&view=${at.view}` : ''}`
 
 export default function ProgramMapView() {
   const { language, semesters, activeSemester } = useApp()
@@ -66,17 +61,6 @@ export default function ProgramMapView() {
     return () => { on = false }
   }, [semesters, theYear])
   useEffect(() => { setWeek(null) }, [theYear, view])
-  // Classes whose boards follow their lesson plans: the named units, per class and grade.
-  const [linked, setLinked] = useState<Record<string, LinkedDay[]>>({})
-  useEffect(() => {
-    const s = termDates(semesters, theYear, 'spring'), f = termDates(semesters, theYear, 'fall')
-    const from = s.start || f.start, to = f.end || s.end
-    if (!from || !to) { setLinked({}); return }
-    let on = true
-    const keys = LESSON_SYNC_CLASSES.flatMap(cls => GRADES.map(g => [cls, g] as const))
-    Promise.all(keys.map(([cls, g]) => fetchLinked(cls, g, from, to).then(l => [`${cls}|${g}`, l] as const))).then(all => { if (on) setLinked(Object.fromEntries(all)) })
-    return () => { on = false }
-  }, [semesters, theYear])
 
   // Holidays per grade and half → counts and column sets.
   const holidayFor = useMemo(() => {
@@ -91,29 +75,22 @@ export default function ProgramMapView() {
     return m
   }, [away, yw, weeks, view, half])
 
-  // Classes trying the new planning draw their teacher's plan from their Class setup, as their board does.
-  const [setups, setSetups] = useState<ClassSetup[]>([])
-  useEffect(() => { let on = true; fetchSetups().then(r => { if (on && !r.error) setSetups(r.rows) }); return () => { on = false } }, [])
   const rows = useMemo<MapRow[]>(() => {
     const out: MapRow[] = []
-    const fromSetup = setupAdjuster(setups, p.books, p.lessons)
     for (const cls of PLACED_ENGLISH_CLASSES) {
       const teacherId = teacherForClass(teachers, cls)?.id || null
       for (const grade of GRADES) {
         const placements = p.placements.filter(x => x.english_class === cls && x.grade === grade && x.academic_year === theYear && x.is_master)
         if (!placements.length) continue
         const h = holidayFor.get(grade)
-        const l = linked[`${cls}|${grade}`] || []
-        const hs = holidayWeeks(away[grade] || [], yw.spring), hf = holidayWeeks(away[grade] || [], yw.fall)
-        const follow = teacherId && l.length ? planFollower(l, yw, new Set(hs.keys()), new Set(hf.keys())) : undefined
-        const adjust = bothAdjust<CurriculumPlacement, CurriculumPacing>(teacherId && LESSON_SYNC_CLASSES.includes(cls) ? fromSetup : undefined, follow)
-        const lanes = boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, teacherId, h?.hc, adjust)
+        const lanes = boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, h?.hc)
         const bars = teachingToColumns(lanes.flatMap(l => l.bars), h?.cols || new Set(), N)
         if (bars.length) out.push({ key: `${cls}|${grade}`, cls, grade, teacherId, bars })
       }
     }
     return out
-  }, [p.placements, p.pacing, p.units, p.books, p.series, p.lessons, setups, teachers, theYear, view, yw, holidayFor, N, linked, away])
+  }, [p.placements, p.pacing, p.units, p.books, p.series, teachers, theYear, view, yw, holidayFor, N])
+  const doneSet = useMemo(() => new Set(p.done.map(d => `${d.placement_id}|${d.unit_id}`)), [p.done])
   const todayPos = todayPosition(weeks, today)
   const nowWeek = todayPos !== null ? Math.floor(todayPos) : 1
   const wk = Math.min(Math.max(1, week ?? nowWeek), Math.max(1, N))
@@ -125,7 +102,7 @@ export default function ProgramMapView() {
   const schoolHoliday = (() => { for (const g of GRADES) { const nm = holidayFor.get(g)?.names.get(wk); if (nm) return nm } return '' })()
 
   if (p.loading) return <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
-  if (p.missing) return <p className="text-[12.5px] text-warn">{p.missing === 'catalogue' ? 'Admin runs supabase/migration-curriculum-catalogue.sql first.' : 'Admin runs supabase/migration-curriculum-placements.sql once.'}</p>
+  if (p.missing) return <p className="text-[12.5px] text-ink-3">{ko ? '아직 준비되지 않았습니다.' : 'Class plans are not set up yet.'}</p>
 
   const levels = PLACED_ENGLISH_CLASSES.map(cls => ({ cls, rows: rows.filter(r => r.cls === cls) })).filter(l => l.rows.length && (only === null || only === l.cls))
   const levelNames = PLACED_ENGLISH_CLASSES.filter(cls => rows.some(r => r.cls === cls))
@@ -213,7 +190,7 @@ export default function ProgramMapView() {
                   <div key={r.key} className="grid border-b border-rule last:border-b-0" style={grid}>
                     <div className="px-4 py-2.5 flex flex-col gap-0.5">
                       <span className="text-[13.5px] font-semibold text-ink">{ko ? `${r.grade}학년` : `Grade ${r.grade}`}</span>
-                      <a href={boardLink(r.cls, r.grade, { year: theYear, view, week: wk })} className="text-[11.5px] text-accent inline-flex items-center gap-1">{ko ? '보드 열기' : 'Open board'}<ExternalLink size={10} /></a>
+                      <a href={boardLink(r.cls, r.grade, { year: theYear, view, week: wk })} className="text-[11.5px] text-accent inline-flex items-center gap-1">{ko ? '계획 열기' : 'Open plan'}<ExternalLink size={10} /></a>
                     </div>
                     {holName ? (
                       <div className="border-l border-rule px-3 py-2.5 text-[13px] text-ink-3 flex items-center" style={{ gridColumn: `2 / span ${strandsShown.length}`, backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--paper-2)) 0 4px, transparent 4px 9px)' }}>{holName}{ko ? ' · 수업 없음' : ' · no classes'}</div>
@@ -232,7 +209,7 @@ export default function ProgramMapView() {
                                 <span className="min-w-0 flex-1">
                                   <span className="block text-[11.5px] text-ink-3 truncate">{b.series?.name} {b.book.level_number}{t.badge ? ` · ${t.badge}` : ''}</span>
                                   <span className="block text-[13.5px] font-semibold text-ink leading-snug">{t.name}</span>
-                                  <span className="block text-[11.5px] text-ink-3">{pos.of > 1 ? (ko ? `${pos.of}주 중 ${pos.at}주` : `week ${pos.at} of ${pos.of}`) : (ko ? '이번 주' : 'this week')}{b.pacing.done_at ? (ko ? ' · 완료' : ' · done') : ''}</span>
+                                  <span className="block text-[11.5px] text-ink-3">{pos.of > 1 ? (ko ? `${pos.of}주 중 ${pos.at}주` : `week ${pos.at} of ${pos.of}`) : (ko ? '이번 주' : 'this week')}{doneSet.has(`${b.placement.id}|${b.unit.id}`) ? (ko ? ' · 완료' : ' · done') : ''}</span>
                                 </span>
                                 {tag && <span className="shrink-0 w-[18px] h-[18px] rounded-full bg-ink text-paper text-[10.5px] font-bold inline-flex items-center justify-center" title={ko ? '같은 단원을 하는 반이 있습니다' : 'Another class is on this unit this week'}>{tag}</span>}
                               </a>
@@ -248,7 +225,7 @@ export default function ProgramMapView() {
           ))}
         </div>
       )}
-      {N > 0 && rows.length > 0 && <p className="text-[11.5px] text-ink-3">{ko ? '교사 계획이 있으면 그것을, 없으면 학교 계획을 보여줍니다. 칸을 누르면 그 반의 보드가 열립니다.' : 'Each row shows its teacher’s own plan where there is one, else the school plan. A letter marks a unit another class is on the same week. Click a unit to open that class’s board.'}</p>}
+      {N > 0 && rows.length > 0 && <p className="text-[11.5px] text-ink-3">{ko ? '각 반의 계획에서 이번 주에 해당하는 단원입니다. 칸을 누르면 그 반의 계획이 열립니다.' : 'Each row is the unit its class plan has this week. A letter marks a unit another class is on the same week. Click a unit to open that class’s plan.'}</p>}
     </div>
   )
 }

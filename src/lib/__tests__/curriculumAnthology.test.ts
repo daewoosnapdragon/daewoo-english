@@ -1,24 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { anthologyProgress, columnToTeaching, fitToTerm, groupByModule, projectAnthology, shareWeeks, termsFor, viewsFor, type CurriculumPacing } from '../curriculumPacing'
+import { fitToTerm, groupByModule, shareWeeks, termsFor, viewsFor, type CurriculumPacing } from '../curriculumPacing'
 
-const row = (id: string, sort_order: number, extra: Partial<CurriculumPacing> = {}): CurriculumPacing => ({ id, placement_id: 'p1', unit_id: 'u' + id, sort_order, weeks: 2, owner: 'master', teacher_id: null, gap_before: 0, fixed: false, done_at: null, created_at: '', updated_at: '', ...extra })
-
-describe('projectAnthology', () => {
-  it('shares the term in whole weeks, the leftover spread down the list', () => {
-    const out = projectAnthology([row('a', 1), row('b', 2), row('c', 3)], 21)
-    expect(out.map(r => r.weeks)).toEqual([7, 7, 7])
-    expect(projectAnthology([row('a', 1), row('b', 2), row('c', 3), row('d', 4)], 21).map(r => r.weeks)).toEqual([5, 5, 5, 6])
-    expect(projectAnthology(Array.from({ length: 9 }, (_, i) => row(String(i), i)), 21).map(r => r.weeks)).toEqual([2, 2, 3, 2, 2, 3, 2, 2, 3])
-  })
-  it('keeps a fixed story and shares the rest', () => {
-    const out = projectAnthology([row('a', 1, { fixed: true, weeks: 9 }), row('b', 2), row('c', 3)], 21)
-    expect(out.map(r => r.weeks)).toEqual([9, 6, 6])
-  })
-  it('never goes under half a week and leaves an empty list alone', () => {
-    expect(projectAnthology(Array.from({ length: 10 }, (_, i) => row(String(i), i)), 3).every(r => r.weeks === 0.5)).toBe(true)
-    expect(projectAnthology([], 21)).toEqual([])
-  })
-})
+const row = (id: string, sort_order: number, extra: Partial<CurriculumPacing> = {}): CurriculumPacing => ({ id, placement_id: 'p1', unit_id: 'u' + id, sort_order, weeks: 2, owner: 'master', created_at: '', updated_at: '', ...extra })
 
 describe('fitToTerm', () => {
   it('spreads the term over the rows in whole weeks', () => {
@@ -47,24 +30,6 @@ describe('views and terms for a year', () => {
     expect(termsFor({ spring: [], fall: wk(21) })).toEqual(['fall'])
     expect(viewsFor({ spring: wk(18), fall: wk(21) })).toEqual(['spring', 'fall', 'year'])
     expect(termsFor({ spring: wk(18), fall: wk(21) })).toEqual(['year', 'spring', 'fall'])
-  })
-})
-
-describe('columnToTeaching', () => {
-  it('does not count holiday columns', () => {
-    expect(columnToTeaching(5, new Set([2]))).toBe(4)
-    expect(columnToTeaching(2, new Set([2]))).toBe(2)
-    expect(columnToTeaching(1, new Set([2]))).toBe(1)
-  })
-})
-
-describe('anthologyProgress', () => {
-  const rows = [row('a', 1, { done_at: 'x' }), row('b', 2, { done_at: 'x' }), row('c', 3), row('d', 4), row('e', 5), row('f', 6)]
-  it('says how many are done against even pace', () => {
-    expect(anthologyProgress(rows, 18, 10).text).toBe('2 of 6 done · 1 story behind')   // week 10 of 18: 3 expected
-    expect(anthologyProgress(rows, 18, 7).text).toBe('2 of 6 done · on pace')
-    expect(anthologyProgress(rows, 18, 1).text).toBe('2 of 6 done · 2 stories ahead')
-    expect(anthologyProgress(rows, 18, null).text).toBe('2 of 6 done')
   })
 })
 

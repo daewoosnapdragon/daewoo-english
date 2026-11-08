@@ -3,34 +3,32 @@ import { pacingPatchesJson, tryRpc } from '@/lib/curriculumRpc'
 import { fetchAll } from '@/lib/fetchAll'
 import { logActivity } from '@/lib/activity'
 import type { CurriculumUnit } from '@/lib/curriculumCore'
-import type { CurriculumBlock, CurriculumHere, CurriculumPacing, CurriculumPlacement, CurriculumPlanReview, Term } from '@/lib/curriculumPacing'
+import type { CurriculumPacing, CurriculumPlacement, Term, UnitDone } from '@/lib/curriculumPacing'
 
-// ─── Placements and pacing: the reads and writes ─────────────────
-// A placement is created with a pacing row for every unit of its book, in
-// the book's order, each with the unit's default weeks. Admin then changes
-// weeks, reorders, drops a unit the class will not do, or puts one back.
-// Errors come back as a message (null when it worked).
+// ─── Class plans: the reads and writes ───────────────────────────
+// A book for a class and grade (a placement) is created with a plan row for
+// each chosen unit, in the book's order, at the unit's suggested weeks.
+// Admin then changes weeks, reorders, drops a unit the class will not do,
+// puts one back, or sets an aim date. Errors come back as a message (null
+// when it worked).
 
 const msg = (e: { message?: string } | null | undefined) => e?.message || null
 const PATH = '/curriculum'
 
-export async function fetchPlacements(): Promise<{ placements: CurriculumPlacement[]; pacing: CurriculumPacing[]; blocks: CurriculumBlock[]; here: CurriculumHere[]; reviews: CurriculumPlanReview[]; error: string | null; plansError: string | null }> {
-  // Paged: pacing passes Supabase's 1000-row cap within a year (see fetchAll.ts).
-  const [p, c, b, h, r] = await Promise.all([
+export async function fetchPlacements(): Promise<{ placements: CurriculumPlacement[]; pacing: CurriculumPacing[]; done: UnitDone[]; error: string | null }> {
+  // Paged: plan rows pass Supabase's 1000-row cap within a year (see fetchAll.ts).
+  const [p, c, d] = await Promise.all([
     fetchAll<any>((f, t) => supabase.from('curriculum_placements').select('*').order('created_at').order('id').range(f, t)),
-    fetchAll<any>((f, t) => supabase.from('curriculum_pacing').select('*').order('sort_order').order('id').range(f, t)),
-    fetchAll<any>((f, t) => supabase.from('curriculum_blocks').select('*').order('start_week').order('id').range(f, t)),
-    fetchAll<any>((f, t) => supabase.from('curriculum_here').select('*').order('set_at', { ascending: false }).order('id').range(f, t)),
-    fetchAll<any>((f, t) => supabase.from('curriculum_plan_reviews').select('*').order('id').range(f, t)),
+    fetchAll<any>((f, t) => supabase.from('curriculum_pacing').select('id, placement_id, unit_id, sort_order, weeks, owner, created_at, updated_at').order('sort_order').order('id').range(f, t)),
+    // Done ticks: a database without migration-curriculum-class-plans.sql simply has none.
+    fetchAll<any>((f, t) => supabase.from('curriculum_unit_done').select('*').order('id').range(f, t)),
   ])
   return {
-    placements: (p.data || []) as CurriculumPlacement[],
-    pacing: ((c.data || []) as any[]).map(x => ({ ...x, weeks: Number(x.weeks), gap_before: Number(x.gap_before || 0), teacher_id: x.teacher_id || null, owner: x.owner || 'master', fixed: !!x.fixed, done_at: x.done_at || null })) as CurriculumPacing[],
-    blocks: ((b.data || []) as any[]).map(x => ({ ...x, start_week: Number(x.start_week), weeks: Number(x.weeks), skill_tags: x.skill_tags || [] })) as CurriculumBlock[],
-    here: ((h.data || []) as any[]).map(x => ({ ...x, week: Number(x.week) })) as CurriculumHere[],
-    reviews: (r.data || []) as CurriculumPlanReview[],
+    placements: ((p.data || []) as any[]).map(x => ({ ...x, aim_date: x.aim_date || null })) as CurriculumPlacement[],
+    // Teachers' own copies from the old class boards are not read: one plan per book.
+    pacing: ((c.data || []) as any[]).filter(x => (x.owner || 'master') === 'master').map(x => ({ ...x, weeks: Number(x.weeks), owner: 'master' })) as CurriculumPacing[],
+    done: d.error ? [] : (d.data || []) as UnitDone[],
     error: p.error?.message || c.error?.message || null,
-    plansError: b.error?.message || h.error?.message || r.error?.message || null,
   }
 }
 
@@ -69,11 +67,9 @@ export async function deletePlacement(id: string, label: string): Promise<string
   return msg(error)
 }
 
-export async function setPacingWeeks(id: string, weeks: number, label: string, fixed?: boolean): Promise<string | null> {
+export async function setPacingWeeks(id: string, weeks: number, label: string): Promise<string | null> {
   const w = Math.max(0.5, Math.round((Number(weeks) || 0) * 2) / 2)
-  const patch: Record<string, unknown> = { weeks: w, updated_at: new Date().toISOString() }
-  if (fixed !== undefined) patch.fixed = fixed
-  const { error } = await supabase.from('curriculum_pacing').update(patch).eq('id', id)
+  const { error } = await supabase.from('curriculum_pacing').update({ weeks: w, updated_at: new Date().toISOString() }).eq('id', id)
   if (!error) logActivity('edited', `Pacing: ${label} · ${w} wk`, { key: id, path: PATH })
   return msg(error)
 }
@@ -114,29 +110,28 @@ export async function addPacing(placementId: string, unit: CurriculumUnit, after
 export async function addPacingMany(placementId: string, units: CurriculumUnit[], existing: { unit_id: string; sort_order: number }[], label: string): Promise<string | null> {
   let order = existing.reduce((m, r) => Math.max(m, r.sort_order), 0)
   const have = new Set(existing.map(r => r.unit_id))
-  const rows = units.filter(u => !have.has(u.id)).map(u => ({ placement_id: placementId, unit_id: u.id, sort_order: ++order, weeks: u.default_weeks || 2, gap_before: 0, owner: 'master' }))
+  const rows = units.filter(u => !have.has(u.id)).map(u => ({ placement_id: placementId, unit_id: u.id, sort_order: ++order, weeks: u.default_weeks || 2, owner: 'master' }))
   if (!rows.length) return null
   const { error } = await supabase.from('curriculum_pacing').insert(rows)
   if (!error) logActivity('edited', `Pacing: added ${rows.length} to ${label}`, { path: PATH })
   return msg(error)
 }
 
-/** Turns a fixed story length off, so it shares the term with the others again. */
-export async function clearPacingFixed(id: string, label: string): Promise<string | null> {
-  const { error } = await supabase.from('curriculum_pacing').update({ fixed: false, updated_at: new Date().toISOString() }).eq('id', id)
-  if (!error) logActivity('edited', `Pacing: ${label} shares the term again`, { key: id, path: PATH })
+/** The day a book should be finished by, or none. */
+export async function setAimDate(id: string, date: string | null, label: string): Promise<string | null> {
+  const { error } = await supabase.from('curriculum_placements').update({ aim_date: date || null, updated_at: new Date().toISOString() }).eq('id', id)
+  if (!error) logActivity('edited', `Class plan: ${label} ${date ? `aims to finish by ${date}` : 'has no aim date'}`, { key: id, path: PATH })
   return msg(error)
 }
 
-/** Writes several weeks patches to master rows. */
-export async function patchMasterRows(patches: { id: string; weeks?: number; gap_before?: number }[], label: string): Promise<string | null> {
+/** Writes several lengths at once (Fit to the term). */
+export async function patchMasterRows(patches: { id: string; weeks: number }[], label: string): Promise<string | null> {
   if (!patches.length) return null
   const rpc = await tryRpc('curriculum_patch_pacing', { p_patches: pacingPatchesJson(patches) })
   if (!rpc.missing) { if (!rpc.error) logActivity('edited', `Pacing: ${label}`, { key: label, path: PATH }); return rpc.error }
   for (const pch of patches) {
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
-    if (pch.weeks !== undefined) patch.weeks = Math.max(0.5, Math.round(pch.weeks * 2) / 2)
-    if (pch.gap_before !== undefined) patch.gap_before = Math.max(0, Math.round(pch.gap_before * 2) / 2)
+    patch.weeks = Math.max(0.5, Math.round(pch.weeks * 2) / 2)
     const { error } = await supabase.from('curriculum_pacing').update(patch).eq('id', pch.id)
     if (error) return error.message
   }
@@ -152,12 +147,12 @@ export async function copyPlacements(from: { english_class: string; grade: numbe
   for (const p of src) {
     if (existing.some(e => e.book_id === p.book_id && e.term === p.term)) continue
     // Each copy in one transaction when the database has the function: a placement always comes with its rows.
-    const rowsJson = pacing.filter(r => r.placement_id === p.id && r.owner === 'master').map(r => ({ unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, gap_before: r.gap_before || 0, fixed: !!r.fixed }))
+    const rowsJson = pacing.filter(r => r.placement_id === p.id && r.owner === 'master').map(r => ({ unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks }))
     const rpc = await tryRpc('curriculum_create_placement', { p_book: p.book_id, p_class: to.english_class, p_grade: to.grade, p_year: to.academic_year, p_term: p.term, p_by: teacherId, p_rows: rowsJson })
     if (!rpc.missing) { if (rpc.error) return { copied, error: rpc.error }; copied += 1; continue }
     const { data, error } = await supabase.from('curriculum_placements').insert({ book_id: p.book_id, english_class: to.english_class, grade: to.grade, academic_year: to.academic_year, term: p.term, is_master: true, created_by: teacherId }).select('id').single()
     if (error) return { copied, error: error.message }
-    const rows = pacing.filter(r => r.placement_id === p.id && r.owner === 'master').map(r => ({ placement_id: data.id, unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, gap_before: r.gap_before || 0, fixed: !!r.fixed, owner: 'master' }))
+    const rows = pacing.filter(r => r.placement_id === p.id && r.owner === 'master').map(r => ({ placement_id: data.id, unit_id: r.unit_id, sort_order: r.sort_order, weeks: r.weeks, owner: 'master' }))
     if (rows.length) { const { error: e } = await supabase.from('curriculum_pacing').insert(rows); if (e) return { copied, error: e.message } }
     copied += 1
   }

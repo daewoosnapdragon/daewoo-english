@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { barsForView, freezeProjection, layoutPacing, placementLength, teachingToColumns, viewWeeks, weekList, type CurriculumPacing } from '../curriculumPacing'
+import { barsForView, layoutPacing, placementLength, teachingToColumns, viewWeeks, weekList, type CurriculumPacing } from '../curriculumPacing'
 import { unitsInWeek } from '../curriculumWeek'
 import type { CurriculumUnit } from '../curriculumCore'
 
 const unit = (id: string): CurriculumUnit => ({ id, book_id: 'b1', sort_order: 0, title: id, summary: '', skill_tags: [], ccss_codes: [], default_weeks: 2, source: 'claude', confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' })
-const row = (id: string, sort_order: number, weeks: number, extra: Partial<CurriculumPacing> = {}): CurriculumPacing => ({ id, placement_id: 'p1', unit_id: 'u' + id, sort_order, weeks, owner: 'master', teacher_id: null, gap_before: 0, fixed: false, done_at: null, created_at: '', updated_at: '', ...extra })
+const row = (id: string, sort_order: number, weeks: number, extra: Partial<CurriculumPacing> = {}): CurriculumPacing => ({ id, placement_id: 'p1', unit_id: 'u' + id, sort_order, weeks, owner: 'master', created_at: '', updated_at: '', ...extra })
 const units = [unit('ua'), unit('ub'), unit('uc')]
 const yw = { spring: weekList('2027-03-01', '2027-03-26'), fall: weekList('2027-08-30', '2027-09-17') }  // 4 + 3 weeks
 
@@ -31,13 +31,6 @@ describe('holidays stretch units instead of being covered', () => {
     expect(teachingToColumns(bars, new Set([2]), 5)).toEqual([{ viewStart: 1, viewEnd: 3 }, { viewStart: 4, viewEnd: 5 }])
     // a half-week start keeps its fraction
     expect(teachingToColumns([{ viewStart: 1.5, viewEnd: 2 }], new Set([2]), 5)).toEqual([{ viewStart: 1.5, viewEnd: 3 }])
-  })
-})
-
-describe('freezeProjection', () => {
-  it('pins every unpinned row at its shared length', () => {
-    const rows = [row('a', 1, 2), row('b', 2, 2, { fixed: true, weeks: 4 }), row('c', 3, 2)]
-    expect(freezeProjection(rows, 10)).toEqual([{ id: 'a', weeks: 3, fixed: true }, { id: 'c', weeks: 3, fixed: true }])
   })
 })
 

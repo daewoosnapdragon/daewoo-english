@@ -13,7 +13,7 @@ const uShowTell = unit('ust', 'hh3', 'Unit 4 · Show and tell', ['describing obj
 const uOther = unit('uo', 'sp2', 'Closed Syllables · Short a', ['short a'])
 
 const bar = (u: CurriculumUnit, b: CurriculumBook, s: CurriculumSeries, start: number, end: number): MapBar => ({
-  pacing: { id: 'p' + u.id, placement_id: 'pl', unit_id: u.id, sort_order: 1, weeks: end - start + 1, owner: 'master', teacher_id: null, gap_before: 0, fixed: false, done_at: null, created_at: '', updated_at: '' },
+  pacing: { id: 'p' + u.id, placement_id: 'pl', unit_id: u.id, sort_order: 1, weeks: end - start + 1, owner: 'master', created_at: '', updated_at: '' },
   unit: u, start, end, viewStart: start, viewEnd: end, cutLeft: false, cutRight: false,
   placement: { id: 'pl', book_id: b.id, english_class: 'x', grade: 1, academic_year: '', term: 'fall', is_master: true, created_by: null, created_at: '', updated_at: '' },
   book: b, series: s, color: '#000',
