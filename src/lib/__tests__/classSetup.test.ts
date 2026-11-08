@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { emptySetup, lessonSlots, partDays, partOf, readSetup, seriesParts, setupFor, typicalUnitDays, weeksFor, withJoin, withPart, withSkip } from '../classSetup'
+import { bothAdjust, setupAdjuster, weeksFromDays, emptySetup, lessonSlots, partDays, partOf, readSetup, seriesParts, setupFor, typicalUnitDays, weeksFor, withJoin, withPart, withSkip } from '../classSetup'
 
 const L = (unit_id: string, sort_order: number, title: string, notes = '') => ({ unit_id, sort_order, title, notes })
 // Two Hand in Hand units and a School Link, as the seed has them.
@@ -57,5 +57,29 @@ describe('class setup', () => {
     // A join to a lesson that is not next does nothing.
     expect(lessonSlots(ls, withJoin(undefined, 'c1', 'c3')).map(s => s.joined?.id || '-')).toEqual(['-', '-', '-', '-'])
     expect(readSetup({ english_class: 'S', grade: 0, recipes: { a: { parts: {}, joins: { c2: 'c3', bad: 1 }, skips: ['c4', 3] } } }).recipes.a).toEqual({ parts: {}, joins: { c2: 'c3' }, skips: ['c4'] })
+  })
+  it('draws unit lengths from class days, rounded to half weeks along the total', () => {
+    const r = (unit_id: string, sort_order: number, fixed = false, weeks = 2) => ({ unit_id, sort_order, weeks, fixed })
+    // Hand in Hand on 3 days a week: 5-day units and 2-day School Links.
+    const rows = [r('u1', 1), r('u2', 2), r('sl1', 3), r('u3', 4), r('pinned', 5, true, 4)]
+    const days = (u: string) => (u.startsWith('sl') ? 2 : u === 'pinned' ? 5 : 5)
+    const out = weeksFromDays(rows, days, 3)
+    expect(out.map(x => x.weeks)).toEqual([1.5, 2, 0.5, 1.5, 4])
+    expect(out.slice(0, 4).reduce((a, x) => a + x.weeks, 0)).toBe(5.5)   // 17 days ÷ 3 = 5.67, not 4 × 2 = 8
+    expect((out[0] as { from_setup?: boolean }).from_setup).toBe(true)
+    expect((out[4] as { from_setup?: boolean }).from_setup).toBeUndefined()
+    expect(weeksFromDays(rows, days, 0)).toBe(rows)
+  })
+  it('adjusts a placement from its class setup, and only when the series has usual days', () => {
+    const setups = [{ ...emptySetup('Snapdragon'), days: { hih: [1, 2, 3] }, recipes: { hih: { parts: { Grammar: 2 } } } }]
+    const ls = [{ id: 'a', unit_id: 'u7', sort_order: 1, title: 'Conversation' }, { id: 'b', unit_id: 'u7', sort_order: 2, title: 'Grammar' }]
+    const adj = setupAdjuster(setups, [{ id: 'b3', series_id: 'hih' }, { id: 'sor', series_id: 'sor' }], ls)
+    const rows = [{ unit_id: 'u7', sort_order: 1, weeks: 2, fixed: false }]
+    expect(adj({ english_class: 'Snapdragon', grade: 2, book_id: 'b3' }, rows)[0].weeks).toBe(1)        // 3 days ÷ 3
+    expect(adj({ english_class: 'Snapdragon', grade: 2, book_id: 'sor' }, rows)).toBe(rows)              // no usual days for that series
+    expect(adj({ english_class: 'Lily', grade: 2, book_id: 'b3' }, rows)).toBe(rows)
+    type Pl = { english_class: string; grade: number; book_id: string }; type Row = (typeof rows)[number]
+    const double = bothAdjust<Pl, Row>(adj, (_pl, r) => r.map(x => ({ ...x, weeks: x.weeks * 10 })))!
+    expect(double({ english_class: 'Snapdragon', grade: 2, book_id: 'b3' }, rows)[0].weeks).toBe(10)
   })
 })

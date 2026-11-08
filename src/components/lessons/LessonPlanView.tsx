@@ -144,7 +144,9 @@ function ParentCalendarView() {
   const syncOn = lessonSyncFor(currentTeacher?.english_class, selectedClass)
   const monthFirst = `${year}-${String(month + 1).padStart(2, '0')}-01`
   const monthLast = `${year}-${String(month + 1).padStart(2, '0')}-${String(new Date(year, month + 1, 0).getDate()).padStart(2, '0')}`
-  const sync = useLessonSync({ enabled: syncOn, cls: selectedClass, grade: selectedGrade, monthFirst, monthLast, dayData: dayData as Record<string, PlanDay> })
+  // The class setups (usual days, recipes): the tray and the board both use them. See ClassSetupView.
+  const [setups, setSetups] = useState<ClassSetup[]>([])
+  const sync = useLessonSync({ enabled: syncOn, cls: selectedClass, grade: selectedGrade, monthFirst, monthLast, dayData: dayData as Record<string, PlanDay>, setups })
   const [weeklyHomework, setWeeklyHomework] = useState<Record<string, string>>({}) // keyed by Monday date
   const [calEvents, setCalEvents] = useState<Record<string, { title: string; type?: string }[]>>({})
   // Days the school calendar takes over: a day off blocks the cell outright
@@ -578,7 +580,6 @@ function ParentCalendarView() {
   // The tray is worked out from the plans: a lesson a day names is not in it.
   // Placing writes rows into days (this month through the page's own autosave,
   // later months straight away with a fresh read); every tray change can be undone.
-  const [setups, setSetups] = useState<ClassSetup[]>([])
   useEffect(() => { if (!syncOn) return; let live = true; fetchSetups().then(r => { if (live && !r.error) setSetups(r.rows) }); return () => { live = false } }, [syncOn, selectedClass])
   const setup = setupFor(setups, selectedClass, selectedGrade)
   const [trayOpen, setTrayOpen] = useState(() => { try { return localStorage.getItem('daewoo_lesson_tray') !== 'off' } catch { return true } })

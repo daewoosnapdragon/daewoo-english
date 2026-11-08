@@ -1,4 +1,5 @@
 import type { CurriculumLesson, CurriculumUnit } from '@/lib/curriculumCore'
+import type { CurriculumPacing, CurriculumPlacement } from '@/lib/curriculumPacing'
 
 // ─── Class setup ─────────────────────────────────────────────────
 // What a class sets once for lesson planning (supabase/migration-class-setup.sql):
@@ -137,4 +138,57 @@ export function readSetup(row: Record<string, unknown>): ClassSetup {
   }
   const standing = (Array.isArray(row.standing) ? row.standing : []).filter((s): s is StandingItem => !!s && typeof s.title === 'string' && Number.isInteger(s.weekday))
   return { english_class: String(row.english_class || ''), grade: Number(row.grade) || 0, days, recipes, standing, updated_at: (row.updated_at as string) || null }
+}
+
+// ─── The board from the setup ────────────────────────────────────
+
+type PacingRow = Pick<CurriculumPacing, 'unit_id' | 'sort_order' | 'weeks' | 'fixed'>
+
+/**
+ * Unit lengths from class days: each unit takes its days ÷ the days a week,
+ * rounded to half weeks along the running total so a book's end lands where
+ * the days add up to rather than drifting unit by unit. A row with a length
+ * set by hand (fixed) or a unit with no lessons keeps its own. Rows that got
+ * a length here carry `from_setup`.
+ */
+export function weeksFromDays<R extends PacingRow>(rows: R[], days: (unitId: string) => number, perWeek: number): R[] {
+  if (perWeek <= 0) return rows
+  let total = 0, drawn = 0
+  const out = new Map<R, R>()
+  for (const r of [...rows].sort((a, b) => a.sort_order - b.sort_order)) {
+    const d = days(r.unit_id)
+    if (r.fixed || d <= 0) continue
+    total += d
+    const end = Math.round((total / perWeek) * 2) / 2
+    const w = Math.max(0.5, end - drawn)
+    drawn += w
+    out.set(r, { ...r, weeks: w, from_setup: true } as R)
+  }
+  return rows.map(r => out.get(r) || r)
+}
+
+/**
+ * For boardLanes' `adjust`: a placement's rows with unit lengths from its
+ * class setup (the recipe's lessons per unit ÷ the series' usual days), when
+ * the class has usual days for that series; otherwise the rows as they are.
+ */
+export function setupAdjuster(setups: ClassSetup[], books: { id: string; series_id: string }[], lessons: Pick<CurriculumLesson, 'id' | 'unit_id' | 'title' | 'sort_order'>[]) {
+  const byUnit = new Map<string, typeof lessons>()
+  for (const l of lessons) { const a = byUnit.get(l.unit_id); if (a) a.push(l); else byUnit.set(l.unit_id, [l]) }
+  return <R extends PacingRow>(pl: Pick<CurriculumPlacement, 'english_class' | 'grade' | 'book_id'>, rows: R[]): R[] => {
+    const book = books.find(b => b.id === pl.book_id)
+    if (!book) return rows
+    const s = setupFor(setups, pl.english_class, pl.grade)
+    const perWeek = (s.days[book.series_id] || []).length
+    if (!perWeek) return rows
+    const recipe = s.recipes[book.series_id]
+    return weeksFromDays(rows, u => lessonSlots(byUnit.get(u) || [], recipe).length, perWeek)
+  }
+}
+
+/** Both adjustments in turn, the setup's lengths first and then the plans', or undefined when there are none. */
+export function bothAdjust<P, R>(first: ((pl: P, rows: R[]) => R[]) | undefined, then: ((pl: P, rows: R[]) => R[]) | undefined) {
+  if (!first) return then
+  if (!then) return first
+  return (pl: P, rows: R[]) => then(pl, first(pl, rows))
 }

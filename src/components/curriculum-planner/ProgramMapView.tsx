@@ -12,6 +12,9 @@ import { TERM_LABEL, academicYears, viewsFor, boardLanes, halfOf, holidayWeeks, 
 import { barsAtWeek, planTogether, weekOfBar, type MapRow } from '@/lib/curriculumMap'
 import { LESSON_SYNC_CLASSES, planFollower, type LinkedDay } from '@/lib/lessonSync'
 import { fetchLinked } from '@/lib/lessonSyncData'
+import { bothAdjust, setupAdjuster, type ClassSetup } from '@/lib/classSetup'
+import { fetchSetups } from '@/lib/classSetupData'
+import type { CurriculumPacing, CurriculumPlacement } from '@/lib/curriculumPacing'
 import { usePlanner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
 import { ChevronLeft, ChevronRight, ExternalLink, Loader2, Users } from 'lucide-react'
@@ -88,8 +91,12 @@ export default function ProgramMapView() {
     return m
   }, [away, yw, weeks, view, half])
 
+  // Classes trying the new planning draw their teacher's plan from their Class setup, as their board does.
+  const [setups, setSetups] = useState<ClassSetup[]>([])
+  useEffect(() => { let on = true; fetchSetups().then(r => { if (on && !r.error) setSetups(r.rows) }); return () => { on = false } }, [])
   const rows = useMemo<MapRow[]>(() => {
     const out: MapRow[] = []
+    const fromSetup = setupAdjuster(setups, p.books, p.lessons)
     for (const cls of PLACED_ENGLISH_CLASSES) {
       const teacherId = teacherForClass(teachers, cls)?.id || null
       for (const grade of GRADES) {
@@ -99,13 +106,14 @@ export default function ProgramMapView() {
         const l = linked[`${cls}|${grade}`] || []
         const hs = holidayWeeks(away[grade] || [], yw.spring), hf = holidayWeeks(away[grade] || [], yw.fall)
         const follow = teacherId && l.length ? planFollower(l, yw, new Set(hs.keys()), new Set(hf.keys())) : undefined
-        const lanes = boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, teacherId, h?.hc, follow)
+        const adjust = bothAdjust<CurriculumPlacement, CurriculumPacing>(teacherId && LESSON_SYNC_CLASSES.includes(cls) ? fromSetup : undefined, follow)
+        const lanes = boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, teacherId, h?.hc, adjust)
         const bars = teachingToColumns(lanes.flatMap(l => l.bars), h?.cols || new Set(), N)
         if (bars.length) out.push({ key: `${cls}|${grade}`, cls, grade, teacherId, bars })
       }
     }
     return out
-  }, [p.placements, p.pacing, p.units, p.books, p.series, teachers, theYear, view, yw, holidayFor, N, linked, away])
+  }, [p.placements, p.pacing, p.units, p.books, p.series, p.lessons, setups, teachers, theYear, view, yw, holidayFor, N, linked, away])
   const todayPos = todayPosition(weeks, today)
   const nowWeek = todayPos !== null ? Math.floor(todayPos) : 1
   const wk = Math.min(Math.max(1, week ?? nowWeek), Math.max(1, N))

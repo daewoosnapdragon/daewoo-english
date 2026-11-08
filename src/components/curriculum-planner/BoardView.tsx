@@ -14,12 +14,17 @@ import { coverage, type LogRow } from '@/lib/curriculumWeek'
 import { fetchLogs } from '@/lib/curriculumWeekData'
 import { followsPlans, planFollower, type LinkedDay } from '@/lib/lessonSync'
 import { fetchLinked } from '@/lib/lessonSyncData'
+import { bothAdjust, setupAdjuster, setupFor, type ClassSetup } from '@/lib/classSetup'
+import { fetchSetups } from '@/lib/classSetupData'
 import { CCSS_DOMAINS } from '@/components/curriculum/ccss-standards'
 import { standardInfo, standardTitle } from '@/lib/standardText'
 import { usePlanner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
 import WeekView from './WeekView'
 import { Check, ExternalLink, Flag, Loader2, Minus, Plus, Trash2, Undo2, X } from 'lucide-react'
+
+/** A unit length the board took from the class setup rather than the pacing row. */
+const isFromSetup = (row: object) => (row as { from_setup?: boolean }).from_setup === true
 
 // ─── Class board ─────────────────────────────────────────────────
 // One class and grade, week by week: a half of the year or the whole year
@@ -170,12 +175,18 @@ export default function BoardView() {
   // The teacher's plan is drawn from their lesson plans where they name a unit; the master never is.
   const follower = useMemo(() => viewTeacher && linked.length ? planFollower(linked, yw, new Set(holSpring.keys()), new Set(holFall.keys())) : undefined, [viewTeacher, linked, yw, holSpring, holFall])
   const fromPlans = useMemo(() => new Set(follower ? linked.map(l => l.unit_id) : []), [follower, linked])
+  // For a class that plans in Lesson Plans, the teacher's plan takes unit lengths from its Class setup:
+  // the lessons a unit has as the class teaches it ÷ the book's usual days. Lengths set by dragging stay.
+  const [setups, setSetups] = useState<ClassSetup[]>([])
+  useEffect(() => { if (!followsPlans(cls)) { setSetups([]); return } let on = true; fetchSetups().then(r => { if (on && !r.error) setSetups(r.rows) }); return () => { on = false } }, [cls])
+  const adjust = useMemo(() => viewTeacher && followsPlans(cls) && setups.length ? bothAdjust<CurriculumPlacement, CurriculumPacing>(setupAdjuster(setups, p.books, p.lessons), follower) : follower, [viewTeacher, cls, setups, p.books, p.lessons, follower])
+  const setupDrawn = adjust !== follower
   // For a class that plans in Lesson Plans (LESSON_SYNC_CLASSES), lessons go into days there only, and the
   // plans say where the class is: the week view only shows, and "we're here" is not offered.
   const planInLessons = followsPlans(cls)
 
   const placements = useMemo(() => p.placements.filter(x => x.english_class === cls && x.grade === grade && x.academic_year === theYear && x.is_master), [p.placements, cls, grade, theYear])
-  const lanes = useMemo(() => boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc, follower), [placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc, follower])
+  const lanes = useMemo(() => boardLanes(placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc, adjust), [placements, p.pacing, p.units, p.books, p.series, view, yw, viewTeacher, hc, adjust])
   const todayPos = todayPosition(weeks, today)
   // Zoomed in, the board opens with today in the middle.
   useEffect(() => {
@@ -213,7 +224,7 @@ export default function BoardView() {
         }
         const effective = own.length ? own : masterRows(p.pacing, pl.id)
         const shared = projectAnthology(effective, len)
-        const drawn = follower ? follower(pl, shared) : shared
+        const drawn = adjust ? adjust(pl, shared) : shared
         const all = layoutPacing(drawn, p.units)
         const last = all.length ? all[all.length - 1].end : 0
         const progress = anthology ? anthologyProgress(drawn, len, todayPlacement(pl.term)).text : null
@@ -222,7 +233,7 @@ export default function BoardView() {
       })
     }
     return out
-  }, [lanes, p.pacing, p.units, view, half, yw, viewTeacher, hc, toCols, todayPos, follower, holSet]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lanes, p.pacing, p.units, view, half, yw, viewTeacher, hc, toCols, todayPos, adjust, holSet]) // eslint-disable-line react-hooks/exhaustive-deps
   // A unit the lesson plans have reached (named, or before the latest named unit of its book) is placed by the plans, not by dragging.
   const reachedTo = useMemo(() => {
     const m = new Map<string, number>()
@@ -292,6 +303,14 @@ export default function BoardView() {
     const r = await own(b); if (r.error) return
     const mine = r.rows.find(x => x.unit_id === b.unit.id)
     const patches = [...r.pre.filter(x => x.id !== mine?.id), ...(mine ? [{ id: mine.id, weeks: Math.max(0.5, weeksNew), fixed: true }] : [])]
+    if (!fail(await patchOwnRows(patches, label(b)))) await p.reload()
+    setBusy(false)
+  }
+  /** A unit whose length was set by hand takes the Class setup's length again. */
+  const toSetupLength = async (b: Bar) => {
+    const r = await own(b); if (r.error) return
+    const mine = r.rows.find(x => x.unit_id === b.unit.id)
+    const patches = [...r.pre.filter(x => x.id !== mine?.id), ...(mine ? [{ id: mine.id, fixed: false }] : [])]
     if (!fail(await patchOwnRows(patches, label(b)))) await p.reload()
     setBusy(false)
   }
@@ -485,7 +504,7 @@ export default function BoardView() {
                                 className={`absolute text-left px-2 flex flex-col justify-center overflow-hidden select-none ${b.cutLeft ? 'rounded-l-none' : 'rounded-l'} ${b.cutRight ? 'rounded-r-none' : 'rounded-r'} ${on ? 'ring-2 ring-ink ring-offset-1 ring-offset-surface' : ''} ${canEdit && !locked(b) ? 'cursor-grab active:cursor-grabbing' : ''} ${open ? 'text-ink' : 'text-white'}`}
                                 style={{ left: `${(b.viewStart - 1) / N * 100}%`, width: `calc(${(b.viewEnd - b.viewStart + 1) / N * 100}% - 4px)`, marginLeft: 2, top: 8, height: ROW_H - (compare && r.ticks.length ? 24 : 16), background: open ? `${b.color}33` : b.color, boxShadow: open ? `inset 0 0 0 2px ${b.color}` : undefined, opacity: hiCode ? (unitHas(b.unit, hiCode) ? 1 : 0.25) : 1, touchAction: 'none', ...previewStyle(b) }}>
                                 <span className={`block font-semibold leading-snug break-words line-clamp-2 ${narrow ? 'text-[11.5px]' : 'text-[12.5px]'}`} style={{ paddingRight: b.pacing.done_at ? 10 : 0 }}>{t.name}</span>
-                                {!narrow && <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}</span>}
+                                {!narrow && <span className="block text-[9.5px] opacity-85 leading-tight truncate">{t.badge ? `${t.badge} · ` : ''}{b.pacing.fixed || isFromSetup(b.pacing) ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : 'wk'}</span>}
                                 {b.pacing.done_at && <Check size={10} strokeWidth={3} className="absolute top-1 right-1 opacity-90" aria-label={ko ? '완료' : 'done'} />}
                                 {canEdit && !b.cutRight && !locked(b) && <span onPointerDown={e => startDrag(e, b, 'resize')} className="absolute top-0 bottom-0 right-0 w-2.5 cursor-ew-resize hover:bg-white/25" aria-hidden="true" />}
                               </button>
@@ -567,12 +586,14 @@ export default function BoardView() {
               <span>{ko ? '빗금: 학교 달력의 쉬는 주, 수업 주로 세지 않음 · 주 번호를 누르면 그 주를 엽니다' : 'Hatched: a holiday week from the school calendar, not counted as teaching · click a week number to open it'}</span>
               {canEdit ? <span>{ko ? '막대를 끌어 옮기고, 오른쪽 끝을 끌어 늘리세요. 처음 끌면 모든 단원의 길이가 고정됩니다.' : 'Drag a bar to move it, drag its right edge to stretch it; bars snap to whole weeks. The first drag pins every unit at its current length so the others stay put.'}</span> : <span>{ko ? '막대 클릭: 단원의 차시와 자료' : 'Click a bar for the unit’s lessons and files'}</span>}
               {follower && <span>{ko ? '수업 계획에 적힌 단원은 그 날짜대로 그려집니다' : 'Units your lesson plans name are drawn where the plans put them'}</span>}
+              {setupDrawn && <span>{ko ? '단원 길이는 수업 설정(단원별 수업 수 ÷ 주간 수업일)에서 옵니다' : <>Unit lengths come from <a href={`/lesson-plans/setup?class=${encodeURIComponent(cls)}`} className="underline">Class setup</a>: lessons per unit ÷ usual days a week</>}</span>}
               <span className="ml-auto">{viewTeacher ? (isOwn ? (ko ? '내 계획' : 'Your plan') : (ko ? '교사 계획 · 읽기 전용' : 'The teacher’s plan · read-only')) : (ko ? '학교 계획 · 읽기 전용' : 'The school plan · read-only')}</span>
             </div>
           </div>
           {picked && <UnitPanel b={picked} anthology={picked.series?.kind === 'anthology'} onDone={d => tickDone(picked, d)} lessons={p.lessons.filter(l => l.unit_id === picked.unit.id).sort((a, b) => a.sort_order - b.sort_order)} resources={p.resources} ko={ko} busy={busy} canEdit={canEdit} fromPlans={locked(picked)} noHere={planInLessons} ownPlan={!!viewTeacher && hasOwnPlan(p.pacing, picked.placement.id, viewTeacher)} todayWeek={todayPos !== null ? Math.floor(todayPos) : null}
             missing={p.units.filter(u => u.book_id === picked.book.id && !(viewTeacher ? teacherRows(p.pacing, picked.placement.id, viewTeacher) : masterRows(p.pacing, picked.placement.id)).some(r => r.unit_id === u.id)).sort((a, b) => a.sort_order - b.sort_order)}
-            onClose={() => setPicked(null)} onHere={() => hereNow(picked)} onShift={d => moveTo(picked, picked.start + d)} onWeeks={w => resize(picked, w)} onDrop={() => dropUnit(picked)} onAddBack={u => addBack(picked, u)} onBack={() => backToMaster(picked)} />}
+            onClose={() => setPicked(null)} onHere={() => hereNow(picked)} onShift={d => moveTo(picked, picked.start + d)} onWeeks={w => resize(picked, w)} onDrop={() => dropUnit(picked)} onAddBack={u => addBack(picked, u)} onBack={() => backToMaster(picked)}
+            onSetupLength={setupDrawn && picked.pacing.fixed && (setupFor(setups, cls, grade).days[picked.book.series_id] || []).length ? () => toSetupLength(picked) : undefined} />}
           {blockForm && canEdit && view !== 'year' && currentTeacher && (
             <BlockForm initial={blockForm === 'new' ? null : blockForm} ko={ko} n={N} todayWeek={todayPos !== null ? columnToTeaching(Math.floor(todayPos), holSet) : 1} onCancel={() => setBlockForm(null)}
               onSave={async d => { const e = await saveBlock(blockForm === 'new' ? null : blockForm.id, { teacher_id: currentTeacher.id, english_class: cls, grade, academic_year: theYear, term: half }, d); if (!fail(e)) { setBlockForm(null); p.reload() } }}
@@ -588,9 +609,9 @@ export default function BoardView() {
 interface PanelProps {
   b: Bar; lessons: CurriculumLesson[]; resources: { id: string; unit_id: string | null; lesson_id: string | null; name: string; kind: string; url: string; copies_hint: number | null }[]
   ko: boolean; busy: boolean; canEdit: boolean; fromPlans: boolean; noHere?: boolean; ownPlan: boolean; todayWeek: number | null; missing: CurriculumUnit[]; anthology: boolean; onDone: (done: boolean) => void
-  onClose: () => void; onHere: () => void; onShift: (d: number) => void; onWeeks: (w: number) => void; onDrop: () => void; onAddBack: (u: CurriculumUnit) => void; onBack: () => void
+  onClose: () => void; onHere: () => void; onShift: (d: number) => void; onWeeks: (w: number) => void; onDrop: () => void; onAddBack: (u: CurriculumUnit) => void; onBack: () => void; onSetupLength?: () => void
 }
-function UnitPanel({ b, lessons, resources, ko, busy, canEdit, fromPlans, noHere, ownPlan, todayWeek, missing, anthology, onDone, onClose, onHere, onShift, onWeeks, onDrop, onAddBack, onBack }: PanelProps) {
+function UnitPanel({ b, lessons, resources, ko, busy, canEdit, fromPlans, noHere, ownPlan, todayWeek, missing, anthology, onDone, onClose, onHere, onShift, onWeeks, onDrop, onAddBack, onBack, onSetupLength }: PanelProps) {
   const unit: CurriculumUnit = b.unit
   const unitRes = resources.filter(r => r.unit_id === unit.id)
   const t = splitUnitTitle(unit.title)
@@ -602,7 +623,7 @@ function UnitPanel({ b, lessons, resources, ko, busy, canEdit, fromPlans, noHere
         <span className="font-display text-[28px] leading-none" style={{ color: b.color }}>{levelShort(b.book.level_number) || '·'}</span>
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold text-ink leading-tight">{t.name}</p>
-          <p className="text-[11.5px] text-ink-3">{t.badge ? `${t.badge} · ` : ''}{bookName(b.book, b.series)} · {ko ? '주' : 'wk'} {num(b.viewStart)}–{num(b.viewEnd)} · {b.pacing.fixed ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : b.pacing.weeks === 1 ? 'week' : 'weeks'}</p>
+          <p className="text-[11.5px] text-ink-3">{t.badge ? `${t.badge} · ` : ''}{bookName(b.book, b.series)} · {ko ? '주' : 'wk'} {num(b.viewStart)}–{num(b.viewEnd)} · {b.pacing.fixed || isFromSetup(b.pacing) ? '' : '≈ '}{num(b.pacing.weeks)} {ko ? '주' : b.pacing.weeks === 1 ? 'week' : 'weeks'}{isFromSetup(b.pacing) ? (ko ? ' · 수업 설정 기준' : ' · from Class setup') : b.pacing.fixed ? (ko ? ' · 직접 정함' : ' · set by hand') : ''}</p>
         </div>
         <button onClick={onClose} className="text-ink-3 hover:text-ink" aria-label="Close"><X size={14} /></button>
       </div>
@@ -633,6 +654,9 @@ function UnitPanel({ b, lessons, resources, ko, busy, canEdit, fromPlans, noHere
               <button onClick={() => onWeeks(b.pacing.weeks < 1 ? 1 : Math.round(b.pacing.weeks) + 1)} disabled={busy} className={btnS} aria-label="Longer"><Plus size={11} /></button>
             </span>
           </div>
+          {onSetupLength && (
+            <button onClick={onSetupLength} disabled={busy} className={btnS} title={ko ? '수업 설정에서 길이를 다시 계산' : 'Lessons per unit ÷ usual days, from Class setup'}>{ko ? '수업 설정 길이로' : 'Use the Class setup length'}</button>
+          )}
           <div className="flex gap-1.5 flex-wrap items-center">
             <button onClick={onDrop} disabled={busy} className={btnS}><X size={11} />{ko ? `이 ${noun} 건너뛰기` : `Skip this ${noun}`}</button>
             {missing.length > 0 && <>

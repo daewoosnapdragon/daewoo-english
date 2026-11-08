@@ -12,6 +12,8 @@ import { unitsInWeek } from '@/lib/curriculumWeek'
 import { linkedDays, planFollower, type PlanDay, type RunningUnit } from '@/lib/lessonSync'
 import { fetchPlanDays } from '@/lib/lessonSyncData'
 import type { TrayBook } from '@/lib/lessonTray'
+import { bothAdjust, setupAdjuster, type ClassSetup } from '@/lib/classSetup'
+import type { CurriculumPacing, CurriculumPlacement } from '@/lib/curriculumPacing'
 import { usePlanner } from '@/components/curriculum-planner/usePlanner'
 
 // ─── What the class board says, for the Lesson Plans page ────────
@@ -42,7 +44,7 @@ export interface LessonSync {
   refresh: () => void
 }
 
-export function useLessonSync({ enabled, cls, grade, monthFirst, monthLast, dayData }: { enabled: boolean; cls: string; grade: number; monthFirst: string; monthLast: string; dayData: Record<string, PlanDay> }): LessonSync {
+export function useLessonSync({ enabled, cls, grade, monthFirst, monthLast, dayData, setups = [] }: { enabled: boolean; cls: string; grade: number; monthFirst: string; monthLast: string; dayData: Record<string, PlanDay>; setups?: ClassSetup[] }): LessonSync {
   const { semesters } = useApp()
   const { teachers } = useTeachers()
   const p = usePlanner(enabled)
@@ -82,9 +84,12 @@ export function useLessonSync({ enabled, cls, grade, monthFirst, monthLast, dayD
     const hs = holidayWeeks(away, yw.spring), hf = holidayWeeks(away, yw.fall)
     const hc = { spring: hs.size, fall: hf.size }
     const follow = teacherId && linked.length ? planFollower(linked, yw, new Set(hs.keys()), new Set(hf.keys())) : undefined
+    // Unit lengths from the class setup (lessons per unit ÷ usual days), then the plans where they name units.
+    const fromSetup = setupAdjuster(setups, p.books, p.lessons)
+    const adjust = bothAdjust<CurriculumPlacement, CurriculumPacing>(teacherId ? fromSetup : undefined, follow)
     for (const half of HALVES) {
       if (!yw[half].length) continue
-      const lanes = boardLanes(placements, p.pacing, p.units, p.books, p.series, half, yw, teacherId, hc, follow)
+      const lanes = boardLanes(placements, p.pacing, p.units, p.books, p.series, half, yw, teacherId, hc, adjust)
       const bars = teachingToColumns(lanes.flatMap(l => l.bars), new Set((half === 'spring' ? hs : hf).keys()), yw[half].length).sort((a, b) => a.viewStart - b.viewStart)
       for (const b of bars) { const o = unitOrder.get(b.placement.id) || []; if (!o.includes(b.unit.id)) o.push(b.unit.id); unitOrder.set(b.placement.id, o) }
       for (const w of yw[half]) {
@@ -104,14 +109,15 @@ export function useLessonSync({ enabled, cls, grade, monthFirst, monthLast, dayD
       const w = yw[half].find(x => x.monday === thisMonday)
       if (!w) continue
       for (const pl of theirs) {
-        const lanes = boardLanes([pl], p.pacing, p.units, p.books, p.series, half, yw, teacherForClass(teachers, pl.english_class)?.id || null, hc)
+        const tid = teacherForClass(teachers, pl.english_class)?.id || null
+        const lanes = boardLanes([pl], p.pacing, p.units, p.books, p.series, half, yw, tid, hc, tid ? fromSetup : undefined)
         const bars = teachingToColumns(lanes.flatMap(l => l.bars), new Set((half === 'spring' ? hs : hf).keys()), yw[half].length)
         const now = unitsInWeek(bars, w.n)[0]
         if (now) (othersOnBook[pl.book_id] ||= []).push({ cls: pl.english_class, grade: pl.grade, unit: splitUnitTitle(now.unit.title).name })
       }
     }
     return { byMonday, unitOrder, days, unitWeeks, books, othersOnBook }
-  }, [enabled, year, others, dayData, monthFirst, monthLast, teachers, cls, grade, p.placements, p.pacing, p.units, p.books, p.series, away, yw])
+  }, [enabled, year, others, dayData, monthFirst, monthLast, teachers, cls, grade, p.placements, p.pacing, p.units, p.books, p.series, p.lessons, setups, away, yw])
 
   const awaySet = useMemo(() => new Set(away.map(a => a.date)), [away])
   const lessonsOf = useCallback((unitId: string) => p.lessons.filter(l => l.unit_id === unitId).sort((a, b) => a.sort_order - b.sort_order), [p.lessons])
