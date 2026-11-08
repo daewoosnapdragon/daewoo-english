@@ -25,6 +25,8 @@ export interface LessonSync {
   lessonsOf: (unitId: string) => CurriculumLesson[]
   units: { id: string; title: string }[]
   lessons: CurriculumLesson[]
+  /** Every plan day of the year this class and grade has, this month as it stands on screen. */
+  planDays: Record<string, PlanDay>
   refresh: () => void
 }
 
@@ -50,7 +52,7 @@ export function useLessonSync({ enabled, cls, grade, monthFirst, monthLast, dayD
   const computed = useMemo(() => {
     const byMonday = new Map<string, RunningUnit[]>()
     const unitOrder = new Map<string, string[]>()
-    if (!enabled || !year) return { byMonday, unitOrder }
+    if (!enabled || !year) return { byMonday, unitOrder, days: {} as Record<string, PlanDay> }
     // The rest of the term from the database, this month as it stands on screen.
     const days: Record<string, PlanDay> = {}
     for (const [d, v] of Object.entries(others)) if (d < monthFirst || d > monthLast) days[d] = v
@@ -73,10 +75,10 @@ export function useLessonSync({ enabled, cls, grade, monthFirst, monthLast, dayD
         })))
       }
     }
-    return { byMonday, unitOrder }
+    return { byMonday, unitOrder, days }
   }, [enabled, year, others, dayData, monthFirst, monthLast, teachers, cls, grade, p.placements, p.pacing, p.units, p.books, p.series, away, yw])
 
   const lessonsOf = useCallback((unitId: string) => p.lessons.filter(l => l.unit_id === unitId).sort((a, b) => a.sort_order - b.sort_order), [p.lessons])
   const runningAt = useCallback((monday: string) => computed.byMonday.get(monday) || [], [computed])
-  return { on: enabled, ready: enabled && !p.loading && !p.missing, runningAt, unitOrder: computed.unitOrder, lessonsOf, units: p.units, lessons: p.lessons, refresh }
+  return { on: enabled, ready: enabled && !p.loading && !p.missing, runningAt, unitOrder: computed.unitOrder, lessonsOf, units: p.units, lessons: p.lessons, planDays: computed.days, refresh }
 }

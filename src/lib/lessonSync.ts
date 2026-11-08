@@ -159,66 +159,76 @@ export function planFollower(linked: LinkedDay[], yw: YearWeeks, holSpring: Set<
 /** A unit the board has running in a week, as the Lesson Plans page shows it. */
 export interface RunningUnit { placement_id: string; unit_id: string; label: string; name: string; level: string; color: string; weekOf: number; weeks: number }
 
-export interface NextWeekInput {
-  source: (PlanDay | null)[]                      // last week, Monday to Friday
-  running: RunningUnit[]                          // this week's units on the board
+export interface BoardWeekInput {
+  running: RunningUnit[]                          // this week's units on the board, in board order
+  pattern: Map<string, number[]>                  // placement → the weekdays (0 = Monday) its rows go on; a book missing here goes on every day
+  used: Map<string, number>                       // unit → index of the last lesson the plans already used before this week
   unitOrder: Map<string, string[]>                // placement → its unit ids in plan order
   units: Pick<CurriculumUnit, 'id' | 'title'>[]
-  lessons: Pick<CurriculumLesson, 'id' | 'unit_id' | 'title' | 'objective' | 'sort_order'>[]
+  lessons: Pick<CurriculumLesson, 'id' | 'unit_id' | 'title' | 'sort_order'>[]
   skip?: boolean[]                                // this week's days that will not be written
 }
 
 /**
- * Last week's days moved on a week: rows with no link are copied as they are;
- * a linked row stays on its unit if the board still has it running this week,
- * else takes the unit the board has running for that book. A row that named a
- * lesson takes the next lesson of its unit, and the first lesson of the next
- * unit once the unit's lessons run out. Only subjects and titles come over:
- * when a lesson moved on, last week's objective no longer fits, so it is left
- * empty for the new lesson's suggestion. Days with nothing last week stay null.
+ * A week filled from the board alone: for each book the board has running
+ * this week, a row on each of its days (`pattern`) naming the next lesson the
+ * plans have not used yet, moving into the next unit of the book once a
+ * unit's lessons run out. When the board's unit has no lessons left (or none
+ * at all), the row names the unit. Nothing typed by hand comes over, and a
+ * week with nothing on the board gives nothing. Objectives and notes stay
+ * empty: the lesson's own objective is offered as a suggestion.
  */
-export function nextWeekDays({ source, running, unitOrder, units, lessons, skip }: NextWeekInput): (PlanDay | null)[] {
+export function boardWeekDays({ running, pattern, used, unitOrder, units, lessons, skip }: BoardWeekInput): (PlanDay | null)[] {
   const lessonsOf = (u: string) => lessons.filter(l => l.unit_id === u).sort((a, b) => a.sort_order - b.sort_order)
   const nameOf = (u: string) => { const t = units.find(x => x.id === u)?.title; return t ? splitUnitTitle(t).name : '' }
-  const cursor = new Map<string, number>()
-  for (const d of source) for (const s of d?.subjects || []) if (s.unit_id && s.lesson_id) { const i = lessonsOf(s.unit_id).findIndex(l => l.id === s.lesson_id); if (i >= 0) cursor.set(s.unit_id, Math.max(cursor.get(s.unit_id) ?? -1, i)) }
-  /** The unit after `unit` for this book: the one the board has running if it is later, else the next in the plan. */
-  const nextUnit = (placementId: string | undefined, unit: string) => {
-    const order = placementId ? unitOrder.get(placementId) || [] : []
-    const here = order.indexOf(unit)
-    const onBoard = running.filter(r => r.placement_id === placementId).map(r => r.unit_id).find(u => order.indexOf(u) > here)
-    return onBoard || order[here + 1] || null
-  }
-  return source.map((d, day) => {
-    // A day this week that will not be written (off, no class, already planned) takes nothing, so no lesson is used up on it.
-    if (!d || isEmptyDay(d) || skip?.[day]) return null
-    let movedOn = false
-    const subjects = d.subjects.filter(s => s.label.trim() || s.content.trim()).map(s => {
-      if (!s.unit_id) return { ...s }
-      if (!s.lesson_id) {
-        // A unit-only row follows the board: the unit it has running for this book now.
-        const mine = running.filter(r => r.placement_id === s.placement_id)
-        const unit = mine.some(r => r.unit_id === s.unit_id) ? s.unit_id : (mine[0]?.unit_id || s.unit_id)
-        if (unit === s.unit_id || !nameOf(unit)) return { ...s }
-        movedOn = true
-        return { ...s, unit_id: unit, content: nameOf(unit) }
-      }
-      // A lesson row stays on its unit while the unit has lessons left, whatever the board's estimate says.
-      let unit = s.unit_id
+  const cursor = new Map(used)
+  // One lane per book, starting at the first unit the board has running for it this week.
+  const books: RunningUnit[] = []
+  for (const r of running) if (!books.some(b => b.placement_id === r.placement_id)) books.push(r)
+  const current = new Map(books.map(b => [b.placement_id, b.unit_id]))
+  const out: (PlanDay | null)[] = []
+  for (let day = 0; day < 5; day++) {
+    if (skip?.[day]) { out.push(null); continue }
+    const subjects: PlanDay['subjects'] = []
+    for (const b of books) {
+      const days = pattern.get(b.placement_id)
+      if (days && !days.includes(day)) continue
+      let unit = current.get(b.placement_id)!
       let idx = (cursor.get(unit) ?? -1) + 1
-      if (idx >= lessonsOf(unit).length) {
-        const after = nextUnit(s.placement_id, unit)
-        if (!after) return { ...s }                    // the book is finished: keep the row as it was
-        unit = after; idx = (cursor.get(unit) ?? -1) + 1
+      if (idx >= lessonsOf(unit).length && lessonsOf(unit).length) {
+        // This unit's lessons are used up: the next unit of the book with lessons left, if the plan has one.
+        const order = unitOrder.get(b.placement_id) || []
+        const after = order.slice(order.indexOf(unit) + 1).find(u => (cursor.get(u) ?? -1) + 1 < lessonsOf(u).length && nameOf(u))
+        if (after) { unit = after; idx = (cursor.get(unit) ?? -1) + 1; current.set(b.placement_id, unit) }
       }
       const lesson = lessonsOf(unit)[idx]
-      if (!lesson || !nameOf(unit)) return { ...s }    // nothing known to move on to: never blank the row
-      cursor.set(unit, idx)
-      movedOn = true
-      return { ...s, unit_id: unit, lesson_id: lesson.id, content: `${nameOf(unit)} — ${lesson.title}` }
-    })
-    return { subjects, objective: movedOn ? '' : d.objective, notes: d.notes }
-  })
+      const name = nameOf(unit) || b.name
+      if (!name) continue
+      if (lesson) cursor.set(unit, idx)
+      subjects.push({ label: b.label, content: lesson ? `${name} — ${lesson.title}` : name, unit_id: unit, placement_id: b.placement_id, ...(lesson ? { lesson_id: lesson.id } : {}) })
+    }
+    out.push(subjects.length ? { subjects, objective: '', notes: '' } : null)
+  }
+  return out
+}
+
+/** The weekdays (0 = Monday) each book was on in a week of plans, from its linked rows. */
+export function bookPattern(week: (PlanDay | null)[]): Map<string, number[]> {
+  const out = new Map<string, number[]>()
+  week.forEach((d, day) => { for (const s of d?.subjects || []) if (s.placement_id) { const a = out.get(s.placement_id) || []; if (!a.includes(day)) a.push(day); out.set(s.placement_id, a) } })
+  return out
+}
+
+/** Unit → index of the last of its lessons the plans name on a day before `before`. */
+export function lessonsUsed(days: Record<string, PlanDay>, before: string, lessons: Pick<CurriculumLesson, 'id' | 'unit_id' | 'sort_order'>[]): Map<string, number> {
+  const byUnit = new Map<string, string[]>()
+  for (const l of [...lessons].sort((a, b) => a.sort_order - b.sort_order)) { const a = byUnit.get(l.unit_id) || []; a.push(l.id); byUnit.set(l.unit_id, a) }
+  const out = new Map<string, number>()
+  for (const [date, d] of Object.entries(days)) {
+    if (date >= before) continue
+    for (const s of d.subjects) if (s.unit_id && s.lesson_id) { const i = (byUnit.get(s.unit_id) || []).indexOf(s.lesson_id); if (i >= 0) out.set(s.unit_id, Math.max(out.get(s.unit_id) ?? -1, i)) }
+  }
+  return out
 }
 
 // ─── Push and pull ───────────────────────────────────────────────

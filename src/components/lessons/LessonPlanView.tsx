@@ -14,7 +14,7 @@ import { standardInfo, standardTitle } from '@/lib/standardText'
 import { bareObjective } from '@/lib/curriculumWeek'
 import LessonScaffoldBanner from './LessonScaffoldBanner'
 import { useLessonSync } from './useLessonSync'
-import { classDays, isEmptyDay as isEmptyPlan, lessonSyncFor, nextWeekDays, planMoves, pushPlan, readPlanDay, type PlanDay, type PlanMove, type RunningUnit } from '@/lib/lessonSync'
+import { boardWeekDays, bookPattern, classDays, isEmptyDay as isEmptyPlan, lessonSyncFor, lessonsUsed, planMoves, pushPlan, readPlanDay, type PlanDay, type PlanMove, type RunningUnit } from '@/lib/lessonSync'
 import { fetchFixedDays, fetchPlanDays, saveDays } from '@/lib/lessonSyncData'
 import { HALVES, academicYears, termDates } from '@/lib/curriculumPacing'
 import { loadAwayDays } from '@/lib/calendarDays'
@@ -510,7 +510,15 @@ function ParentCalendarView() {
     // Days this week that won't be written use up no lesson: no class, outside the month, a day off, or already planned.
     const skip = [0, 1, 2, 3, 4].map(o => { const t = shiftDate(weekMonday, o); return isNoClassDay(selectedGrade, o + 1) || !validDates.has(t) || blockedDays[t]?.kind === 'off' || (!!dayData[t] && !isDayEmpty(dayData[t])) })
     if (fromBoard && !sync.ready) { showToast('The class board is still loading. Try again in a moment.'); setCopyingWeek(null); return }
-    const moved = fromBoard ? nextWeekDays({ source: [0, 1, 2, 3, 4].map(o => source[o] ? readPlanDay(source[o]) : null), running: sync.runningAt(weekMonday), unitOrder: sync.unitOrder, units: sync.units, lessons: sync.lessons, skip }) : null
+    // From the board: only what the board has running this week, each book on the days it had last week
+    // (every class day if it had none), each row the next lesson the plans have not used. Nothing typed comes over.
+    let moved: (PlanDay | null)[] | null = null
+    if (fromBoard) {
+      const running = sync.runningAt(weekMonday)
+      if (!running.length) { showToast('Nothing on the board for this week, so nothing was filled'); setCopyingWeek(null); return }
+      const lastWeek = [0, 1, 2, 3, 4].map(o => source[o] ? readPlanDay(source[o]) : null)
+      moved = boardWeekDays({ running, pattern: bookPattern(lastWeek), used: lessonsUsed(sync.planDays, weekMonday, sync.lessons), unitOrder: sync.unitOrder, units: sync.units, lessons: sync.lessons, skip })
+    }
     for (let offset = 0; offset <= 4; offset++) {
       const src = moved ? (moved[offset] as DayContent | null) : source[offset]
       if (!src || isDayEmpty(src)) continue
@@ -525,7 +533,7 @@ function ParentCalendarView() {
     }
 
     if (copied === 0) {
-      showToast(skipped > 0 ? 'This week already has content — nothing copied' : 'Last week is empty — nothing to copy')
+      showToast(skipped > 0 ? 'This week already has content — nothing copied' : fromBoard ? 'No class days left to fill this week' : 'Last week is empty — nothing to copy')
       setCopyingWeek(null)
       return
     }
@@ -537,7 +545,7 @@ function ParentCalendarView() {
     setCopyingWeek(null)
     if (w.conflicts.length) conflictToast(w.conflicts)
     else if (w.errors) showToast(`Could not save ${w.errors} day${w.errors > 1 ? 's' : ''}. Try again.`)
-    else showToast(`${fromBoard ? 'Filled' : 'Copied'} ${w.saved.length} day${w.saved.length !== 1 ? 's' : ''} from last week${fromBoard ? ', moved on with the board' : ''}${skipped > 0 ? ` (${skipped} already had content)` : ''}`)
+    else showToast(`${fromBoard ? 'Filled' : 'Copied'} ${w.saved.length} day${w.saved.length !== 1 ? 's' : ''}${fromBoard ? ' from the board' : ' from last week'}${skipped > 0 ? ` (${skipped} already had content)` : ''}`)
     if (w.saved.length) logActivity('saved', `Lesson plans · ${selectedClass} · Grade ${selectedGrade}: ${fromBoard ? 'next week from the board' : 'copied last week'} into ${weekMonday}`, { key: `lessons|${selectedClass}|${selectedGrade}` })
     if (fromBoard) sync.refresh()
   }
@@ -1267,7 +1275,7 @@ ${pages.join('\n')}
                     )}
                     {canEdit && weekMonday && syncOn && (
                       <button onClick={() => copyLastWeek(weekMonday, true)} disabled={copyingWeek === weekMonday || !sync.ready}
-                        title="Fill this week's empty days from last week, each board unit moved on to its next lesson, or to the unit the board has now"
+                        title="Fill this week's empty days with what the board has running: the next lesson of each book, on the days that book had last week (every day if none). Nothing typed by hand comes over."
                         className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-navy hover:text-navy-dark px-2 py-0.5 rounded hover:bg-surface-alt transition-colors disabled:opacity-50">
                         {copyingWeek === weekMonday ? <><Loader2 size={10} className="animate-spin" /> Filling...</> : <><Copy size={10} /> Next from the board</>}
                       </button>
