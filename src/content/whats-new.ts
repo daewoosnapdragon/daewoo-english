@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'overtime', date: '2026-11-16', title: 'Overtime: log it as you go, print the sheet',
+    body: 'You can now open Overtime from the user menu. Type the times you worked the way you say them, 4:30 to 6:45, and what the work was; the time and the won add themselves up as you type, at 10,320 won an hour. Your month is shown week by week: tick the weeks the office asks for and Print gives the school’s overtime sheet, filled in, ready to sign. Weekends and days off are not overtime, so they cannot be logged. Admin sees every teacher’s month and prints everyone’s sheets in one go.',
+    path: '/overtime', guide: 'overtime',
+  },
+  {
     id: 'program-map', date: '2026-11-09', title: 'Curriculum: the program map, every class on one page',
     body: 'You can now open Curriculum → Class boards → Program map and see every class and grade across the term, the books as thin strips in their colours. A dot on a week means two or more classes share something. Click it: lines join the classes on the same unit (dark) or on the same skill in different books (red), the panel names them with their teachers, and Everyone this week lists each class’s units, with a note where another class finished a unit earlier so its files are ready. Arrows open any class’s board.',
     path: '/curriculum', guide: 'bookshelf',

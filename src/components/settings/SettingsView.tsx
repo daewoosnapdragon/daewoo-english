@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { invalidateAssessmentWeights } from '@/lib/assessmentWeights'
 import { DEFAULT_LADDER, loadLadderSettings, saveLadderSettings, type LadderSettings } from '@/lib/behaviorLadder'
 import OfficeJobsSection from './OfficeJobsSection'
+import OvertimeSection from './OvertimeSection'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, canManageSemesters, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
 import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown, Archive, ArchiveRestore, X } from 'lucide-react'
@@ -16,11 +17,13 @@ import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, Ale
 export default function SettingsView() {
   const { language, showToast, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
+  const isRoleAdmin = currentTeacher?.role === 'admin'
 
   const sections: [string, string][] = [
     ['teachers', language === 'ko' ? '교사' : 'Teachers'], ['semesters', language === 'ko' ? '학기' : 'Semesters'], ['schedule', language === 'ko' ? '수업 없는 요일' : 'Days with no class'], ['office', language === 'ko' ? '사무실 청소' : 'Office jobs'],
     ['benchmarks', language === 'ko' ? '프로그램 기준' : 'Program benchmarks'], ['weights', language === 'ko' ? '평가 가중치' : 'Assessment weights'],
     ['ladder', language === 'ko' ? '행동 단계' : 'Behavior ladder'],
+    ...(isRoleAdmin ? [['overtime', language === 'ko' ? '초과근무' : 'Overtime'] as [string, string]] : []),
     ...(isAdmin ? [['classes', language === 'ko' ? '반 관리' : 'Classes'] as [string, string]] : []), ['school', language === 'ko' ? '학교 정보' : 'School information'],
   ]
   return (
@@ -41,6 +44,7 @@ export default function SettingsView() {
           <ProgramBenchmarksSection />
           <AssessmentWeightsSection />
           <BehaviorLadderSection />
+          {isRoleAdmin && <OvertimeSection />}
           {isAdmin && <ClassManagementSection />}
           <SchoolInfoSection />
         </div>

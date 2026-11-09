@@ -9,7 +9,7 @@ import { loadLadderSettings, isOverdue } from '@/lib/behaviorLadder'
 import { NAV_ORDER, VIEW_PATHS, PAGE_TITLES, viewForPath } from '@/lib/routes'
 import { logActivity, canViewActivity } from '@/lib/activity'
 import { isSchoolDayOff } from '@/lib/calendarDays'
-import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle, Activity, Package, Wallet } from 'lucide-react'
+import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle, Activity, Package, Wallet, Clock } from 'lucide-react'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
 import { OfficeJobsBand } from '@/components/dashboard/OfficeJobs'
 
@@ -142,6 +142,9 @@ function UserMenu() {
             </Link>
             <Link href="/supplies" className={item} onClick={() => setOpen(false)}>
               <Package size={14} />{language === 'ko' ? '비품' : 'Supplies'}
+            </Link>
+            <Link href="/overtime" className={item} onClick={() => setOpen(false)}>
+              <Clock size={14} />{language === 'ko' ? '초과근무' : 'Overtime'}
             </Link>
             <Link href="/budget" className={item} onClick={() => setOpen(false)}>
               <Wallet size={14} />{language === 'ko' ? '예산' : 'Budget'}
