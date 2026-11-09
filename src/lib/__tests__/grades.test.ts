@@ -23,10 +23,16 @@ describe('percentToLetter', () => {
     expect(percentToLetter(59)).toBe('E')
     expect(percentToLetter(0)).toBe('E')
   })
-  it('rounds before looking up, so 96.5 is an A+ and 92.4 is an A-', () => {
-    expect(percentToLetter(96.5)).toBe('A+')
+  it('never rounds up into the next band: 89.9 is a B+, 96.5 is an A', () => {
+    expect(percentToLetter(89.9)).toBe('B+')
+    expect(percentToLetter(89.5)).toBe('B+')
+    expect(percentToLetter(96.5)).toBe('A')
     expect(percentToLetter(92.4)).toBe('A-')
-    expect(percentToLetter(89.5)).toBe('A-')
+    expect(percentToLetter(59.9)).toBe('E')
+  })
+  it('matches the percentage as printed to one decimal, so 89.95 prints 90.0% and is an A-', () => {
+    expect(percentToLetter(89.95)).toBe('A-')
+    expect(percentToLetter(89.94)).toBe('B+')
   })
   it('uses a custom scale when one is given', () => {
     const scale = [{ letter: 'Pass', min: 70, max: 100 }, { letter: 'Fail', min: 0, max: 69 }]

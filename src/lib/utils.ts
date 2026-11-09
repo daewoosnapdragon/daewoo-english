@@ -48,9 +48,12 @@ const DEFAULT_SCALE: GradingScaleEntry[] = [
   { letter: 'E', min: 0, max: 59 },
 ]
 
+// The letter goes with the percentage as it is printed (one decimal), and a
+// grade is never rounded up into the next band: 89.9 is a B+, not an A-.
+// 89.95 prints as 90.0% and is an A-, so the letter always matches the number.
 export function percentToLetter(pct: number, scale?: GradingScaleEntry[]): string {
   const s = scale || DEFAULT_SCALE
-  const p = Math.round(pct)
+  const p = Math.round(pct * 10) / 10
   for (const g of s) {
     if (p >= g.min) return g.letter
   }

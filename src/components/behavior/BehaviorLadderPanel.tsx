@@ -12,7 +12,9 @@ import { AlertTriangle, Check, ChevronDown, ChevronRight, Eye, EyeOff, Loader2, 
 // with no dismiss. "I've read this" records who and when; the step's
 // action closes the case and writes the parent-contact entry. Teacher mode:
 // the same cases for one class (or one student, with history), with whether
-// admin has seen them yet and the teacher's one-line ask for admin.
+// admin has seen them yet and the teacher's one-line ask for admin. On the
+// dashboard a teacher can put the panel away: it folds to one line, kept per
+// teacher in this browser, and unfolds on its own when a new case opens.
 
 interface Props { mode: 'admin' | 'teacher'; studentId?: string; onChanged?: () => void }
 interface LogRow { id: string; date: string; type: string; note: string; is_flagged: boolean; time?: string | null; activity?: string | null; antecedents?: string[]; behaviors?: string[]; consequences?: string[]; intensity?: number; frequency?: number; teachers?: { name: string } | null }
@@ -46,6 +48,16 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
   const [missing, setMissing] = useState(false)
   const [detail, setDetail] = useState<BehaviorCase | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  // Teacher's dashboard only: the open case ids that were showing when the
+  // teacher put the panel away. While every open case is in that list the
+  // panel is folded; a new case (an id not in it) unfolds it.
+  const canFold = mode === 'teacher' && !isAdmin && !studentId
+  const foldKey = `daewoo_ladder_folded_${currentTeacher?.id || ''}`
+  const [foldedIds, setFoldedIds] = useState<string[] | null>(null)
+  useEffect(() => {
+    if (!canFold) return
+    try { const raw = localStorage.getItem(foldKey); setFoldedIds(raw ? JSON.parse(raw) : null) } catch { setFoldedIds(null) }
+  }, [canFold, foldKey])
 
   const load = useCallback(async () => {
     const cls = mode === 'teacher' && !isAdmin && !studentId ? currentTeacher?.english_class : null
@@ -106,6 +118,20 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
     return mode === 'admin' ? <div className="border border-rule-2 rounded-lg px-4 py-2.5 text-[12.5px] text-ink-3 flex items-center gap-2"><Check size={13} className="text-good" />{ko ? '행동 단계: 처리할 사례가 없습니다' : 'Behavior ladder: nothing needs your action'}</div> : null
   }
 
+  const folded = canFold && foldedIds != null && open.every(c => foldedIds.includes(c.id))
+  const fold = () => { const ids = open.map(c => c.id); setFoldedIds(ids); try { localStorage.setItem(foldKey, JSON.stringify(ids)) } catch {} }
+  const unfold = () => { setFoldedIds(null); try { localStorage.removeItem(foldKey) } catch {} }
+
+  if (folded) {
+    return (
+      <div className="border border-rule-2 rounded-lg px-4 py-2 text-[12.5px] text-ink-3 flex items-center gap-2">
+        <AlertTriangle size={13} />
+        <span>{ko ? `행동 단계 · ${open.length}건 진행 중` : `Behavior ladder · ${open.length} open`}</span>
+        <button onClick={unfold} className="ml-auto text-[11.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1"><ChevronRight size={12} />{ko ? '보기' : 'Show'}</button>
+      </div>
+    )
+  }
+
   const title = mode === 'admin'
     ? (ko ? `행동 단계 · ${open.length}건 처리 필요` : `Behavior ladder · ${open.length} ${open.length === 1 ? 'case needs' : 'cases need'} your action`)
     : studentId ? (ko ? '행동 단계' : 'Behavior ladder') : (ko ? `행동 단계 · ${open.length}건 진행 중` : `Behavior ladder · ${open.length} open`)
@@ -117,6 +143,7 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
         <AlertTriangle size={16} className={mode === 'admin' && open.length ? 'text-bad' : 'text-ink-3'} />
         <h3 className="font-display text-[18px] leading-none text-ink">{title}</h3>
         {mode === 'admin' && open.length > 0 && <span className="text-[11px] text-ink-2 ml-2">{ko ? '읽었다고 표시하고 조치를 기록할 때까지 남아 있습니다' : 'Stays here until you mark it read and record the action'}</span>}
+        {canFold && <button onClick={fold} title={ko ? '새 사례가 열리면 다시 나타납니다' : 'Comes back on its own when a new case opens'} className="ml-auto h-7 px-2 rounded text-[11.5px] text-ink-2 hover:text-ink hover:bg-paper-3 inline-flex items-center gap-1"><X size={12} />{ko ? '접기' : 'Hide'}</button>}
         {studentId && closed.length > 0 && <button onClick={() => setShowHistory(h => !h)} className="ml-auto text-[11.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1">{showHistory ? <ChevronDown size={12} /> : <ChevronRight size={12} />}{ko ? `지난 사례 ${closed.length}건` : `${closed.length} closed ${closed.length === 1 ? 'case' : 'cases'}`}</button>}
       </div>
       <div className="divide-y divide-rule">

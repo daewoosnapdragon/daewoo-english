@@ -192,7 +192,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[12.5px] tabular-nums">
             <dt className="text-ink-3">{lang === 'ko' ? '학년' : 'Grade'}</dt><dd className="text-ink font-medium">{student.grade} · {student.korean_class} {student.class_number}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '담당' : 'Teacher'}</dt><dd className="text-ink font-medium">{student.teacher_name || '—'}</dd>
-            <dt className="text-ink-3">{lang === 'ko' ? '종합' : 'Overall'}</dt><dd className="text-ink font-medium">{facts ? (facts.overall != null ? `${Math.round(facts.overall)} · ${letter}` : '—') : '…'}</dd>
+            <dt className="text-ink-3">{lang === 'ko' ? '종합' : 'Overall'}</dt><dd className="text-ink font-medium">{facts ? (facts.overall != null ? `${facts.overall.toFixed(1)}% · ${letter}` : '—') : '…'}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '출석' : 'Attendance'}</dt><dd className="text-ink font-medium">{facts ? (facts.attendanceRate != null ? `${facts.attendanceRate}% · ${facts.absences} ${lang === 'ko' ? '결석' : 'absent'}` : '—') : '…'}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '읽기' : 'Reading'}</dt><dd className="text-ink font-medium">{facts ? (facts.cwpm != null ? `${facts.cwpm} cwpm${facts.readingLevel ? ` · ${facts.readingLevel}` : ''}` : '—') : '…'}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '레벨 테스트' : 'Level test'}</dt><dd className="text-ink font-medium">{facts ? (facts.placement ? `${facts.placement}${facts.placementTest ? ` · ${facts.placementTest}` : ''}` : '—') : '…'}</dd>
