@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   blockedReason, counted, fmtDayDate, daysOffIn, fmtClock, fmtMinutes, fmtRange, fmtWon, minutesBetween, monthLabel, overlapping,
-  parseClock, parseOvertimeSettings, parseRange, selectionLabel, weeksFromKeys, nextWorkday, weeksSpan, rangeSpan, selSpans, chosenSpans, selTicked, toggleWeek, setWeeks, joinSpan, policyText, recentReasons, sheetPages, shiftMonth,
+  parseClock, parseOvertimeSettings, parseRange, selectionLabel, nextWorkday, rangeSpan, mondayOf, quickRanges, pickFor, policyText, recentReasons, sheetRows, sheetLayout, shiftMonth,
   splitRange, totals, weekLabel, weeksOfMonth, wonFor, entriesInWeeks, DEFAULT_OVERTIME_SETTINGS, type OvertimeEntry,
 } from '@/lib/overtime'
 
@@ -185,12 +185,9 @@ describe('weeks', () => {
     const es = [entry({ date: '2026-09-30' }), entry({ date: '2026-10-01' }), entry({ date: '2026-11-07' }), entry({ date: '2026-11-09' })]
     expect(entriesInWeeks(es, [r!]).map(e => e.date)).toEqual(['2026-10-01', '2026-11-07'])
   })
-  it('rebuilds weeks from their keys, in any month', () => {
-    expect(weeksFromKeys(['2026-12-01', '2026-11-30', 'nonsense', '2026-11-30'])).toEqual([{ from: '2026-11-30', to: '2026-11-30' }, { from: '2026-12-01', to: '2026-12-04' }])
-    expect(weeksFromKeys(['2026-11-03'])).toEqual([])
+  it('finds the next working day', () => {
     expect(nextWorkday('2026-11-27')).toBe('2026-11-30')
-    expect(weeksSpan(weeksFromKeys(['2026-12-01', '2026-11-23']))).toEqual({ from: '2026-11-23', to: '2026-12-04' })
-    expect(weeksSpan([])).toBeNull()
+    expect(nextWorkday('2026-11-30')).toBe('2026-12-01')
   })
   it('keeps the entries in the ticked weeks', () => {
     const w = weeksOfMonth('2026-11')
@@ -199,33 +196,20 @@ describe('weeks', () => {
   })
 })
 
-describe('what goes on the sheet', () => {
-  const def = ['2026-11-02', '2026-11-09']
-  it('uses the default ticks until someone ticks', () => {
-    expect(selSpans({ kind: 'weeks', keys: null }, def).map(w => w.from)).toEqual(def)
-    expect(chosenSpans({ kind: 'weeks', keys: null })).toEqual([])
-    expect(selTicked({ kind: 'weeks', keys: null }, '2026-11-09', def)).toBe(true)
+describe('quick picks', () => {
+  it('works out this month, last month and the last two weeks', () => {
+    expect(mondayOf('2026-11-10')).toBe('2026-11-09')
+    expect(mondayOf('2026-11-15')).toBe('2026-11-09')
+    expect(quickRanges('2026-11-10')).toEqual({
+      thisMonth: { from: '2026-11-01', to: '2026-11-30' },
+      lastMonth: { from: '2026-10-01', to: '2026-10-31' },
+      twoWeeks: { from: '2026-11-02', to: '2026-11-13' },
+    })
+    expect(quickRanges('2026-01-06').lastMonth).toEqual({ from: '2025-12-01', to: '2025-12-31' })
   })
-  it('keeps ticks from other months when ticking more', () => {
-    let s = toggleWeek({ kind: 'weeks', keys: ['2026-10-26'] }, '2026-11-02', def)
-    expect(s).toEqual({ kind: 'weeks', keys: ['2026-10-26', '2026-11-02'] })
-    s = toggleWeek(s, '2026-10-26', def)
-    expect(s).toEqual({ kind: 'weeks', keys: ['2026-11-02'] })
-    expect(toggleWeek({ kind: 'weeks', keys: null }, '2026-11-02', def)).toEqual({ kind: 'weeks', keys: ['2026-11-09'] })
-  })
-  it('switches from a range to ticks with the week ticked', () => {
-    expect(toggleWeek({ kind: 'range', from: '2026-10-01', to: '2026-11-07' }, '2026-11-09', def)).toEqual({ kind: 'weeks', keys: ['2026-11-09'] })
-    expect(selTicked({ kind: 'range', from: '2026-10-01', to: '2026-11-07' }, '2026-11-02', def)).toBe(false)
-    expect(selSpans({ kind: 'range', from: '2026-10-01', to: '2026-11-07' }, def)).toEqual([{ from: '2026-10-01', to: '2026-11-07' }])
-    expect(selSpans({ kind: 'range', from: '2026-11-07', to: '2026-10-01' }, def)).toEqual([])
-  })
-  it('ticks or unticks a month at a time', () => {
-    expect(setWeeks({ kind: 'weeks', keys: ['2026-10-26'] }, ['2026-11-02', '2026-11-09'], true, [])).toEqual({ kind: 'weeks', keys: ['2026-10-26', '2026-11-02', '2026-11-09'] })
-    expect(setWeeks({ kind: 'weeks', keys: ['2026-10-26', '2026-11-02'] }, ['2026-11-02', '2026-11-09'], false, [])).toEqual({ kind: 'weeks', keys: ['2026-10-26'] })
-  })
-  it('joins spans', () => {
-    expect(joinSpan({ from: '2026-11-01', to: '2026-11-30' }, { from: '2026-10-01', to: '2026-11-07' })).toEqual({ from: '2026-10-01', to: '2026-11-30' })
-    expect(joinSpan({ from: '2026-11-01', to: '2026-11-30' }, null)).toEqual({ from: '2026-11-01', to: '2026-11-30' })
+  it('names a range that is a quick pick', () => {
+    expect(pickFor('2026-10-01', '2026-10-31', '2026-11-10')).toBe('lastMonth')
+    expect(pickFor('2026-10-01', '2026-11-07', '2026-11-10')).toBeNull()
   })
 })
 
@@ -242,25 +226,30 @@ describe('totals and reasons', () => {
   })
 })
 
-describe('sheetPages', () => {
-  it('pads a short month to sixteen rows', () => {
-    const p = sheetPages([entry({ date: '2026-11-05' }), entry({ date: '2026-11-03' })])
-    expect(p).toHaveLength(1)
-    expect(p[0]).toHaveLength(16)
-    expect(p[0][0]?.entry.date).toBe('2026-11-03')
-    expect(p[0][1]?.no).toBe(2)
-    expect(p[0][2]).toBeNull()
+describe('the printed sheet', () => {
+  it('fills a short list to twelve rows', () => {
+    const r = sheetRows([entry({ date: '2026-11-05' }), entry({ date: '2026-11-03' })])
+    expect(r).toHaveLength(12)
+    expect(r[0]?.entry.date).toBe('2026-11-03')
+    expect(r[1]?.no).toBe(2)
+    expect(r[2]).toBeNull()
   })
   it('gives a blank sheet when there is nothing', () => {
-    expect(sheetPages([])).toEqual([Array(16).fill(null)])
+    expect(sheetRows([])).toEqual(Array(12).fill(null))
   })
-  it('continues the numbering on a second page', () => {
-    const es = Array.from({ length: 18 }, (_, i) => entry({ date: `2026-11-${String(i + 1).padStart(2, '0')}` }))
-    const p = sheetPages(es)
-    expect(p).toHaveLength(2)
-    expect(p[1][0]?.no).toBe(17)
-    expect(p[1].filter(Boolean)).toHaveLength(2)
-    expect(p[1]).toHaveLength(16)
+  it('keeps every entry on the one page, however many', () => {
+    const es = Array.from({ length: 25 }, (_, i) => entry({ date: `2026-11-${String(i + 1).padStart(2, '0')}` }))
+    const r = sheetRows(es)
+    expect(r).toHaveLength(25)
+    expect(r[24]?.no).toBe(25)
+  })
+  it('prints full size up to twelve rows and shrinks only past that', () => {
+    expect(sheetLayout(12)).toEqual({ rowMm: 9.5, cellPx: 17 })
+    const l20 = sheetLayout(20)
+    expect(l20.rowMm * 20).toBeLessThanOrEqual(114)
+    expect(l20.cellPx).toBeLessThan(17)
+    expect(l20.cellPx).toBeGreaterThan(12)
+    expect(sheetLayout(40).rowMm * 40).toBeLessThanOrEqual(114)
   })
 })
 

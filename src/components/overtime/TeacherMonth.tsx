@@ -3,29 +3,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { getKSTDateString } from '@/lib/utils'
-import { logActivity } from '@/lib/activity'
 import type { Teacher } from '@/types'
 import {
-  blockedReason, byDateTime, chosenSpans, counted, entriesInWeeks, fmtDayDate, fmtMinutes, fmtRange, fmtWon, joinSpan, monthLabel, monthRange, overlapping,
-  recentReasons, selectionLabel, selSpans, selTicked, shiftMonth, toggleWeek, totals, weekLabel, weekOf, weeksOfMonth, weeksSpan, wonFor, NO_SEL,
-  type MonthWeek, type OvertimeEntry, type OvertimeSettings, type SheetSel,
+  blockedReason, byDateTime, counted, fmtDayDate, fmtMinutes, fmtRange, fmtWon, monthLabel, monthRange, overlapping,
+  recentReasons, shiftMonth, totals, weekLabel, weekOf, weeksOfMonth, wonFor,
+  type MonthWeek, type OvertimeEntry, type OvertimeSettings,
 } from '@/lib/overtime'
 import { addEntry, deleteEntry, fetchOvertime, fetchRecentOvertime, updateEntry, type EntryDraft } from '@/lib/overtimeData'
 import EntryEditor, { OT_COLS, type EntryEditorHandle } from './EntryEditor'
-import { printOvertimeSheets } from './overtimeSheet'
-import SheetBar from './SheetBar'
-import { useOvertimeRange } from './useOvertime'
+import PrintView from './PrintView'
+import { useOvertimeMonth } from './useOvertime'
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Pencil, Printer, Trash2 } from 'lucide-react'
 
 // ─── One teacher's month, laid out like the paper sheet ──────────
 // One table. Its headings come once; its first row is where a new entry
 // is typed. Under that, the month's weeks oldest first, as they print,
-// each a row with a tick box and its subtotal, then its entries, with the
-// days off in it shown as a grey line. Weeks that have not started yet
-// are left out. The month's total closes the table. Print prints the
-// ticked weeks, which can be in more than one month, or a range of dates
-// typed above the table; until someone ticks, the month's weeks with
-// entries are ticked. Admin sees the same page
+// each a row with its subtotal, then its entries, with the days off in it
+// shown as a grey line. Weeks that have not started yet are left out. The
+// month's total closes the table. Print sheet opens the print view, where
+// the dates are chosen beside a preview of the sheet. Admin sees the same page
 // for any teacher, opened from the staff table, and can fix entries.
 
 const iconBtn = 'w-8 h-8 rounded border border-rule-2 bg-surface text-ink-2 hover:text-ink inline-flex items-center justify-center'
@@ -37,20 +33,18 @@ interface Props {
   /** Admin looking at someone else's sheet. */
   asAdmin?: boolean
   initialMonth?: string
-  initialSel?: SheetSel
   onBack?: () => void
 }
 
-export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth, initialSel, onBack }: Props) {
+export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth, onBack }: Props) {
   const { language, showToast, confirmDialog } = useApp()
   const ko = language === 'ko'
   const today = getKSTDateString()
   const [month, setMonth] = useState(initialMonth || today.slice(0, 7))
-  const [sel, setSel] = useState<SheetSel>(initialSel || NO_SEL)
+  const [printing, setPrinting] = useState(false)
   // The month on screen, joined with whatever was chosen for the sheet in other months.
   const range = monthRange(month)
-  const load = joinSpan(range, weeksSpan(chosenSpans(sel)))
-  const m = useOvertimeRange(teacher.id, load.from, load.to)
+  const m = useOvertimeMonth(teacher.id, month)
   const [recent, setRecent] = useState<OvertimeEntry[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const editorRef = useRef<EntryEditorHandle>(null)
@@ -63,25 +57,16 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
   const allWeeks = useMemo(() => weeksOfMonth(month), [month])
   // Weeks that have started; later ones appear as they come.
   const weeks = useMemo(() => allWeeks.filter(w => w.from <= today), [allWeeks, today])
-  const goodAll = useMemo(() => counted(m.entries, m.daysOff), [m.entries, m.daysOff])
-  const good = useMemo(() => goodAll.filter(e => e.date.slice(0, 7) === month), [goodAll, month])
-  const notCounted = useMemo(() => m.entries.filter(e => e.date.slice(0, 7) === month && blockedReason(e.date, m.daysOff)), [m.entries, m.daysOff, month])
-  // Until someone ticks or picks dates, the month's weeks with entries are on the sheet.
-  const defaultKeys = useMemo(() => weeks.filter(w => good.some(e => e.date >= w.from && e.date <= w.to)).map(w => w.from), [weeks, good])
-  const spans = selSpans(sel, defaultKeys)
-  const sheetEntries = entriesInWeeks(goodAll, spans)
-  const sheetTotal = totals(sheetEntries, settings.rate)
+  const good = useMemo(() => counted(m.entries, m.daysOff), [m.entries, m.daysOff])
+  const notCounted = useMemo(() => m.entries.filter(e => blockedReason(e.date, m.daysOff)), [m.entries, m.daysOff])
   const monthTotal = totals(good, settings.rate)
-  const monthShown = m.covers(range.from, range.to)
   const known = useMemo(() => { const ids = new Set(m.entries.map(e => e.id)); return [...m.entries, ...recent.filter(e => !ids.has(e.id))] }, [m.entries, recent])
   const reasons = useMemo(() => { const own = recentReasons(known); const lc = new Set(own.map(r => r.toLowerCase())); return [...own, ...settings.reasons.filter(r => !lc.has(r.toLowerCase()))].slice(0, 8) }, [known, settings.reasons])
   const last = useMemo(() => [...known].sort(byDateTime).pop() || null, [known])
   const isCurrent = month === today.slice(0, 7)
   const weekend = notCounted.filter(e => !weekOf(e.date, allWeeks))
 
-  // Leaving the month keeps what is on the sheet: the default ticks become real ones.
-  const keepSel = () => { if (sel.kind === 'weeks' && sel.keys === null) setSel({ kind: 'weeks', keys: defaultKeys }) }
-  const goMonth = (n: number) => { keepSel(); setMonth(shiftMonth(month, n)); setEditing(null) }
+  const goMonth = (n: number) => { setMonth(shiftMonth(month, n)); setEditing(null) }
 
   // The day is checked once more against the database: its days off and its other entries.
   const save = async (d: EntryDraft, id?: string): Promise<boolean> => {
@@ -95,7 +80,7 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
     showToast(id ? (ko ? '저장됨' : 'Saved') : `${ko ? '추가됨' : 'Added'} · ${fmtMinutes(d.minutes, ko)} · ${fmtWon(wonFor(d.minutes, settings.rate), ko)}`)
     setEditing(null)
     const target = d.date.slice(0, 7)
-    if (target !== month) { keepSel(); setMonth(target) } else await m.reload()
+    if (target !== month) setMonth(target); else await m.reload()
     loadRecent()
     return true
   }
@@ -106,13 +91,6 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
     if (error) { showToast(error); return }
     showToast(ko ? '삭제됨' : 'Deleted'); m.reload(); loadRecent()
   }
-  const print = () => {
-    if (!spans.length) return
-    const period = selectionLabel(spans)
-    if (!printOvertimeSheets([{ teacherName: teacher.name, className: teacher.role === 'admin' ? '' : teacher.english_class, period, entries: sheetEntries }], settings)) { showToast(ko ? '팝업이 차단되었습니다' : 'The print window was blocked. Allow pop-ups for this site.'); return }
-    logActivity('printed', `Overtime sheet: ${teacher.name} · ${period}`, { path: '/overtime' })
-  }
-
   const entryRow = (e: OvertimeEntry, note?: string) => editing === e.id ? (
     <EntryEditor key={e.id} initial={e} today={today} rate={settings.rate} ko={ko} daysOff={m.daysOff} known={known} onSave={d => save(d, e.id)} onCancel={() => setEditing(null)} />
   ) : (
@@ -144,11 +122,11 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
     ].sort((a, b) => a.date.localeCompare(b.date))
     return (
       <div key={w.from}>
-        <label className={`${OT_COLS} px-4 h-[44px] bg-paper border-b border-rule cursor-pointer select-none`}>
-          <input type="checkbox" checked={selTicked(sel, w.from, defaultKeys)} onChange={() => setSel(toggleWeek(sel, w.from, defaultKeys))} className="w-4 h-4 accent-[rgb(var(--accent))]" aria-label={ko ? `${weekLabel(w, true)} 인쇄` : `Print ${weekLabel(w)}`} />
+        <div className={`${OT_COLS} px-4 h-[44px] bg-paper border-b border-rule`}>
+          <span />
           <span className="col-span-4 text-[14px] font-semibold text-ink">{weekLabel(w, ko)}{thisWeek && <span className="ml-1.5 font-normal text-[12.5px] text-ink-2">· {ko ? '이번 주' : 'this week'}</span>}</span>
           <span className="col-span-2 text-right text-[13px] text-ink-2 tabular-nums">{es.length ? <><span className="font-semibold text-ink">{fmtMinutes(t.minutes, ko)}</span> · {fmtWon(t.won, ko)}</> : <span className="text-ink-3">{ko ? '기록 없음' : 'Nothing logged'}</span>}</span>
-        </label>
+        </div>
         {lines.map(l => l.kind === 'entry' ? entryRow(l.e, l.note) : (
           <div key={`off-${l.date}`} className={`${OT_COLS} px-4 h-[34px] border-b border-rule text-[12.5px] text-ink-3`}>
             <span />
@@ -159,6 +137,8 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
       </div>
     )
   }
+
+  if (printing) return <PrintView settings={settings} teachers={[teacher]} initialFrom={range.from} initialTo={range.to} onBack={() => { setPrinting(false); m.reload() }} />
 
   return (
     <div>
@@ -176,15 +156,12 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
             <span className="text-[14.5px] font-semibold text-ink min-w-[140px] text-center">{monthLabel(month, ko)}</span>
             <button onClick={() => goMonth(1)} className={iconBtn} aria-label={ko ? '다음 달' : 'Next month'}><ChevronRight size={15} /></button>
           </div>
-          <button onClick={print} disabled={!spans.length} title={spans.length ? selectionLabel(spans, ko) : undefined}
+          <button onClick={() => setPrinting(true)}
             className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-2">
             <Printer size={14} />{ko ? '양식 인쇄' : 'Print sheet'}
           </button>
         </div>
       </div>
-
-      <SheetBar sel={sel} setSel={setSel} label={selectionLabel(spans, ko)} total={sheetTotal} ko={ko}
-        hint={ko ? '아래에서 주를 고르세요 (여러 달 가능). 또는 날짜를 고르세요.' : 'Tick weeks below, in any month, or pick dates.'} />
 
       <div className="overflow-x-auto">
         <div id="add" className="min-w-[900px] bg-surface border border-rule rounded-md overflow-hidden">
@@ -196,7 +173,7 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
             <EntryEditor ref={editorRef} today={today} rate={settings.rate} ko={ko} daysOff={m.daysOff} known={known} reasons={reasons} last={last} onSave={d => save(d)} />
           </div>
 
-          {!monthShown ? (
+          {m.loading ? (
             <p className="px-4 py-6 text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
           ) : (
             <>

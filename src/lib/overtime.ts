@@ -261,33 +261,16 @@ export const weekOf = (date: string, weeks: MonthWeek[]) => weeks.find(w => date
 /** Entries whose date falls in one of the ticked weeks. */
 export const entriesInWeeks = <T extends { date: string }>(entries: T[], weeks: MonthWeek[]) => entries.filter(e => weeks.some(w => e.date >= w.from && e.date <= w.to))
 
-// ─── Ticked weeks, across months ─────────────────────────────────
-// A tick is kept as the week's key (its first working day in its month),
-// so weeks from different months can be ticked together: Nov 23 – 27,
-// Nov 30 and Dec 1 – 4 print on one sheet.
-
-/** The week a key names, rebuilt from its month; null when the key is not a week start. */
-export function weekForKey(key: string): MonthWeek | null {
-  if (!/^\d{4}-(0[1-9]|1[0-2])-\d{2}$/.test(key)) return null
-  return weeksOfMonth(key.slice(0, 7)).find(w => w.from === key) || null
-}
-
-/** Keys to weeks, in date order; keys that are not week starts are dropped. */
-export function weeksFromKeys(keys: Iterable<string>): MonthWeek[] {
-  return Array.from(new Set(keys)).map(weekForKey).filter((w): w is MonthWeek => !!w).sort((a, b) => a.from.localeCompare(b.from))
-}
+// ─── What goes on the sheet: a range of dates ────────────────────
+// The print view takes a From and a To, filled by a quick pick (this
+// month, last month, the last two weeks) or typed. selectionLabel names
+// it on the sheet.
 
 /** The first Monday-to-Friday day after a date. */
 export function nextWorkday(iso: string): string {
   let d = addDays(iso, 1)
   while (weekdayOf(d) === 0 || weekdayOf(d) === 6) d = addDays(d, 1)
   return d
-}
-
-/** The earliest and latest day the weeks cover, or null for none. */
-export function weeksSpan(weeks: MonthWeek[]): { from: string; to: string } | null {
-  if (!weeks.length) return null
-  return { from: weeks.reduce((m, w) => (w.from < m ? w.from : m), weeks[0].from), to: weeks.reduce((m, w) => (w.to > m ? w.to : m), weeks[0].to) }
 }
 
 function rangeLabel(from: string, to: string, ko: boolean, withYear: boolean): string {
@@ -340,42 +323,29 @@ export function selectionLabel(weeks: MonthWeek[], ko = false): string {
   return ko ? `${y1}년 ${body}` : `${body}, ${y1}`
 }
 
-// ─── What goes on the sheet ──────────────────────────────────────
-// Either ticked weeks (keys, any months; null = the page's default ticks)
-// or a date range typed by hand. Ticking a week while a range is set
-// starts a fresh set of ticks with that week.
-
-export type SheetSel = { kind: 'weeks'; keys: string[] | null } | { kind: 'range'; from: string; to: string }
-
-export const NO_SEL: SheetSel = { kind: 'weeks', keys: null }
-
-/** The spans on the sheet: the ticked weeks in date order, or the range. */
-export function selSpans(sel: SheetSel, defaultKeys: string[]): MonthWeek[] {
-  if (sel.kind === 'range') { const r = rangeSpan(sel.from, sel.to); return r ? [r] : [] }
-  return weeksFromKeys(sel.keys ?? defaultKeys)
+/** Monday of the week a date is in (Sunday counts with the week before). */
+export function mondayOf(iso: string): string {
+  const w = weekdayOf(iso)
+  return addDays(iso, w === 0 ? -6 : 1 - w)
 }
 
-/** Only what was chosen, never the default: decides how far beyond the month on screen to load. */
-export const chosenSpans = (sel: SheetSel): MonthWeek[] => sel.kind === 'range' ? selSpans(sel, []) : weeksFromKeys(sel.keys ?? [])
+export type QuickPick = 'thisMonth' | 'lastMonth' | 'twoWeeks'
 
-export const selTicked = (sel: SheetSel, key: string, defaultKeys: string[]) => sel.kind === 'weeks' && (sel.keys ?? defaultKeys).includes(key)
-
-export function toggleWeek(sel: SheetSel, key: string, defaultKeys: string[]): SheetSel {
-  if (sel.kind === 'range') return { kind: 'weeks', keys: [key] }
-  const keys = sel.keys ?? defaultKeys
-  return { kind: 'weeks', keys: keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key] }
+/** The quick picks in the print view, as date ranges from today. Last 2 weeks is last week's Monday to this week's Friday. */
+export function quickRanges(today: string): Record<QuickPick, { from: string; to: string }> {
+  const thisMonth = monthRange(today.slice(0, 7)), lastMonth = monthRange(shiftMonth(today.slice(0, 7), -1))
+  const mon = mondayOf(today)
+  return {
+    thisMonth: { from: thisMonth.from, to: thisMonth.to },
+    lastMonth: { from: lastMonth.from, to: lastMonth.to },
+    twoWeeks: { from: addDays(mon, -7), to: addDays(mon, 4) },
+  }
 }
 
-/** Tick (or untick) several weeks at once, keeping ticks in other months. */
-export function setWeeks(sel: SheetSel, keys: string[], on: boolean, defaultKeys: string[]): SheetSel {
-  const cur = sel.kind === 'weeks' ? (sel.keys ?? defaultKeys) : []
-  const rest = cur.filter(k => !keys.includes(k))
-  return { kind: 'weeks', keys: on ? [...rest, ...keys] : rest }
-}
-
-/** The smallest span holding both. */
-export function joinSpan(a: { from: string; to: string }, b: { from: string; to: string } | null): { from: string; to: string } {
-  return b ? { from: a.from < b.from ? a.from : b.from, to: a.to > b.to ? a.to : b.to } : a
+/** Which quick pick a range is, if any. */
+export function pickFor(from: string, to: string, today: string): QuickPick | null {
+  const q = quickRanges(today)
+  return (Object.keys(q) as QuickPick[]).find(k => q[k].from === from && q[k].to === to) || null
 }
 
 // ─── Totals ──────────────────────────────────────────────────────
@@ -403,16 +373,33 @@ export function recentReasons(entries: OvertimeEntry[], n = 5): string[] {
 /** The policy paragraph with the rate written in. */
 export const policyText = (template: string, rate: number) => template.split('{rate}').join(Math.round(rate).toLocaleString('en-US'))
 
-// ─── The printed sheet's pages ───────────────────────────────────
+// ─── The printed sheet: always one page ──────────────────────────
+// A teacher's sheet is one A4 landscape page, whatever the number of
+// entries, in type large enough for a reader with low vision. Up to
+// twelve entries the rows are full size and blank rows fill the table to
+// twelve; with more, the rows get shorter and the type follows them, never
+// past what fits. The print window then checks the real page and shrinks
+// everything a little further only if a long reason wrapped.
 
-export const ROWS_PER_PAGE = 16
+export const SHEET_MIN_ROWS = 12
+/** The height the table rows share on the page, at full size, in mm. */
+export const SHEET_ROWS_MM = 114
+/** Full-size row height (mm) and cell type (px). */
+export const SHEET_ROW_MM = 9.5
+export const SHEET_CELL_PX = 17
 
-/** Entries in date order cut into pages of sixteen, numbered from 1 across pages; the last page is padded with blank rows. */
-export function sheetPages(entries: OvertimeEntry[], rowsPerPage = ROWS_PER_PAGE): ({ no: number; entry: OvertimeEntry } | null)[][] {
-  const rows = [...entries].sort(byDateTime).map((entry, i) => ({ no: i + 1, entry }))
-  const pages: ({ no: number; entry: OvertimeEntry } | null)[][] = []
-  for (let i = 0; i < Math.max(rows.length, 1); i += rowsPerPage) pages.push(rows.slice(i, i + rowsPerPage))
-  const last = pages[pages.length - 1]
-  while (last.length < rowsPerPage) last.push(null)
-  return pages
+/** Entries in date order, numbered from 1, then blank rows up to the minimum. */
+export function sheetRows(entries: OvertimeEntry[], minRows = SHEET_MIN_ROWS): ({ no: number; entry: OvertimeEntry } | null)[] {
+  const rows: ({ no: number; entry: OvertimeEntry } | null)[] = [...entries].sort(byDateTime).map((entry, i) => ({ no: i + 1, entry }))
+  while (rows.length < minRows) rows.push(null)
+  return rows
+}
+
+/** Row height (mm) and cell type size (px) for a sheet of this many rows, so they fit the page. */
+export function sheetLayout(rowCount: number): { rowMm: number; cellPx: number } {
+  const n = Math.max(rowCount, 1)
+  const rowMm = Math.min(SHEET_ROW_MM, SHEET_ROWS_MM / n)
+  // The type is about 60% of the row's height, and never more than full size.
+  const cellPx = Math.min(SHEET_CELL_PX, Math.round(rowMm * 3.78 * 0.6 * 10) / 10)
+  return { rowMm: Math.round(rowMm * 100) / 100, cellPx }
 }

@@ -7,9 +7,9 @@ import { fetchOvertime, isOvertimeMissing, loadOvertimeSettings } from '@/lib/ov
 // ─── Overtime entries for a span of days ─────────────────────────
 // One teacher's entries (or everyone's, for admin) in [from, to], the
 // whole-school days off in it, and whether the table exists yet. The page
-// asks for the month on screen joined with whatever is on the sheet, which
-// can reach into other months. While a new span loads, the last one stays
-// on screen; `loading` is true only until the asked-for span is covered.
+// asks for the month on screen; the print view asks for the dates chosen,
+// which can reach into other months. While a new span loads, the last one
+// stays on screen; `loading` is true until the asked-for span is in.
 
 interface Loaded { key: string; from: string; to: string; entries: OvertimeEntry[]; daysOff: Record<string, string> }
 
@@ -34,8 +34,6 @@ export function useOvertimeRange(teacherId: string | null, from: string, to: str
     entries: data && data.key === key ? data.entries : [],
     daysOff: data && data.key === key ? data.daysOff : {},
     loading: !covered && !error,
-    /** True when the loaded days include [f, t], so that part can show while a wider span loads. */
-    covers: (f: string, t: string) => !!error || (!!data && data.key === key && data.from <= f && data.to >= t),
     missing, error, reload,
   }
 }

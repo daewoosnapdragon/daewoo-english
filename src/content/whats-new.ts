@@ -22,7 +22,7 @@ export interface WhatsNewEntry {
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'overtime', date: '2026-11-16', title: 'Overtime: log it as you go, print the sheet',
-    body: 'You can now open Overtime from the user menu. Type the times you worked the way you say them, 4:30 to 6:45, and what the work was; the time and the won add themselves up as you type, at 10,320 won an hour. Your month is shown week by week: tick the weeks the office asks for and Print gives the school’s overtime sheet, filled in, ready to sign. Weekends and days off are not overtime, so they cannot be logged. Admin sees every teacher’s month and prints everyone’s sheets in one go.',
+    body: 'You can now open Overtime from the user menu. Type the times you worked the way you say them, 4:30 to 6:45, and what the work was; the time and the won add themselves up as you type, at 10,320 won an hour. Print sheet shows the school’s overtime sheet, filled in and in large type, beside the dates: pick this month, last month or the last two weeks, or any two dates, and print it, ready to sign. Weekends and days off are not overtime, so they cannot be logged. Admin sees every teacher’s month and prints everyone’s sheets in one go.',
     path: '/overtime', guide: 'overtime',
   },
   {
