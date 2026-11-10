@@ -5,7 +5,6 @@ import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { getKSTDateString } from '@/lib/utils'
 import type { Teacher } from '@/types'
-import { NO_SEL, weeksOfMonth, type SheetSel } from '@/lib/overtime'
 import AdminMonth from './AdminMonth'
 import TeacherMonth from './TeacherMonth'
 import { useOvertimeMonth, useOvertimeSettings } from './useOvertime'
@@ -13,7 +12,7 @@ import { Loader2 } from 'lucide-react'
 
 // ─── Overtime ────────────────────────────────────────────────────
 // A teacher logs their own non-instructional overtime and prints the
-// school's sheet for the weeks they tick. Admin sees every teacher's
+// school's sheet for the dates they choose. Admin sees every teacher's
 // month, prints one sheet or all of them, exports, and can open any
 // teacher's page to fix an entry. Only role admin sees everyone.
 
@@ -24,7 +23,6 @@ export default function OvertimeView() {
   const { teachers, loading: teachersLoading } = useTeachers()
   const { settings, loaded } = useOvertimeSettings()
   const [month, setMonth] = useState(getKSTDateString().slice(0, 7))
-  const [sel, setSel] = useState<SheetSel>(NO_SEL)
   const [open, setOpen] = useState<Teacher | null>(null)
   // One cheap read tells whether the table exists yet.
   const probe = useOvertimeMonth(currentTeacher?.id || null, getKSTDateString().slice(0, 7))
@@ -44,8 +42,8 @@ export default function OvertimeView() {
         <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
       ) : isAdmin ? (
         open
-          ? <TeacherMonth key={open.id} teacher={open} settings={settings} asAdmin initialMonth={month} initialSel={sel.kind === 'weeks' && sel.keys === null ? { kind: 'weeks', keys: weeksOfMonth(month).map(w => w.from) } : sel} onBack={() => setOpen(null)} />
-          : <AdminMonth staff={staff} settings={settings} month={month} setMonth={setMonth} sel={sel} setSel={setSel} onOpen={t => setOpen(t)} />
+          ? <TeacherMonth key={open.id} teacher={open} settings={settings} asAdmin initialMonth={month} onBack={() => setOpen(null)} />
+          : <AdminMonth staff={staff} settings={settings} month={month} setMonth={setMonth} onOpen={t => setOpen(t)} />
       ) : (
         <TeacherMonth teacher={currentTeacher} settings={settings} />
       )}
