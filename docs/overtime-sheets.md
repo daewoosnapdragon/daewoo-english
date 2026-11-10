@@ -194,3 +194,7 @@ All five steps, in one change. Run `supabase/migration-overtime.sql` once in the
 - `src/components/dashboard/OvertimeLine.tsx` under Supplies; `src/components/settings/OvertimeSection.tsx`, admin only; the user-menu link and route; the guide section and a What's new entry dated 16 Nov 2026.
 - Settings holds the rate, the policy paragraph in both languages and the shared reasons. There is no cap setting, since weekends and days off cannot be logged.
 - Saving checks the day once more against the database (its days off and its other entries), so two tabs cannot sneak in an overlap.
+
+## Teacher page layout (10 Nov 2026)
+
+Kyla chose layout A of four prototypes: the page is one table laid out like the paper sheet. Headings once (Date, From – To, Time, Won, What was the work). The first row is the add row, its cells in those columns, with the reason chips and any rule's sentence under it. Then the weeks oldest first, as they print, each a row with its tick box and subtotal, then its entries and a grey line for each day off. Weeks that have not started are left out. The last row is the month's total and the rate. Print sits at the top right and says how many weeks are ticked. Editing an entry turns its row into the same fields in place. The admin page is unchanged; admin's Open shows a teacher's page in this layout.
