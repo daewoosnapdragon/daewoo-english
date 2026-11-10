@@ -70,14 +70,22 @@ The packet's rubric. Accuracy is words correct over words on the sheet.
 | Proficient | 90% and up | Practice for automaticity |
 | Mastered | 90% and up, *automatic* ticked | Reached automaticity |
 
-- **Heat map**: the class down the side, the sheets across the top, each
-  cell the accuracy of the *latest* check of that sheet. Column headers carry
-  the class average. *Working on* is the first sheet in packet order that is
-  not yet proficient. Click a cell for the words, what was heard, the
-  observations, and that sheet's history; from there, recheck the sheet or
-  edit the check.
-- **Student page**, Reading section: the same strip for one student, with
-  the working-on sheet and a link that opens the check screen on them.
+- **Class heat map**: the class down the side, the sheets across the top,
+  each cell the accuracy of the *latest* check of that sheet, with an arrow
+  for the change since the attempt before. Column headers carry the class
+  average. *Working on* is the first sheet in packet order that is not yet
+  proficient. Click a cell for the words, what was heard, the observations,
+  every earlier attempt as chips, and a words × attempts table of the words
+  missed; from there, recheck the sheet or edit the attempt. Click a name for
+  the student's progress.
+- **Student progress**: one student, the sheets ever checked down the side,
+  every sitting across the top in date order, each cell that attempt's
+  accuracy, and a *Change* column (latest minus the attempt before). Every
+  sitting is its own row in the table, so nothing is lost on a recheck; two
+  checks on one day are two columns, in save order.
+- **Student page**, Reading section: the latest strip for one student, the
+  working-on sheet, the same progress grid underneath, and a link that opens
+  the check screen on them.
 - **Leveling meeting**: the hover card on a student's name shows the strip
   and the working-on sheet beside the level test numbers.
 - **CSV** exports the heat map; **Word sheets** prints the twenty sheets in

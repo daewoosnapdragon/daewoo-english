@@ -360,3 +360,57 @@ export function longestErrorRun(words: string[], marks: Record<string, PhonicsMa
   words.forEach(w => { if (marks[w] === 'error') { run++; max = Math.max(max, run) } else run = 0 })
   return max
 }
+
+// ─── Attempts over time ──────────────────────────────────────────
+// Every sitting is kept, so progress is the same rows read in date order.
+
+export interface Attempt { checkId: string; date: string; score: SkillScore }
+
+/** Checks oldest first: by date, then by save time. */
+export function sortChecksAsc(checks: PhonicsCheckRow[]): PhonicsCheckRow[] {
+  return [...checks].sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
+}
+
+/** For one student's checks: every attempt at each sheet, oldest first. */
+export function attemptsBySkill(checks: PhonicsCheckRow[]): Record<string, Attempt[]> {
+  const out: Record<string, Attempt[]> = {}
+  sortChecksAsc(checks).forEach(c => {
+    scoreCheck(c).forEach(s => { (out[s.skill] ||= []).push({ checkId: c.id, date: c.date, score: s }) })
+  })
+  return out
+}
+
+/** Latest accuracy minus the attempt before it, or null with fewer than two attempts. */
+export function latestDelta(attempts: Attempt[] | undefined): number | null {
+  if (!attempts || attempts.length < 2) return null
+  return attempts[attempts.length - 1].score.pct - attempts[attempts.length - 2].score.pct
+}
+
+export interface WordHistory {
+  word: string
+  /** One entry per attempt at the sheet, oldest first; undefined when the word was not read. */
+  marks: (PhonicsMark | undefined)[]
+  misses: number
+}
+
+/**
+ * How each word on a sheet went across the student's attempts at it, words
+ * missed most often first and then in sheet order. Words never marked wrong
+ * are left out: the point is to see what keeps tripping the student.
+ */
+export function wordHistory(checks: PhonicsCheckRow[], skillId: string): WordHistory[] {
+  const attempts = sortChecksAsc(checks).filter(c => c.skills?.includes(skillId))
+  if (attempts.length === 0) return []
+  const words = phonicsSkill(skillId)?.words || []
+  const extra = new Set<string>()
+  attempts.forEach(c => Object.keys(c.results?.[skillId] || {}).forEach(w => { if (!words.includes(w)) extra.add(w) }))
+  const all = words.concat(Array.from(extra))
+  return all
+    .map((word, i) => {
+      const marks = attempts.map(c => c.results?.[skillId]?.[word])
+      return { word, marks, misses: marks.filter(m => m === 'error').length, i }
+    })
+    .filter(h => h.misses > 0)
+    .sort((a, b) => b.misses - a.misses || a.i - b.i)
+    .map(({ i: _i, ...h }) => h)
+}

@@ -245,7 +245,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
           </Section>
           <Section id="reading" title={lang === 'ko' ? '읽기' : 'Reading'} meta={facts?.readingDate ? `${lang === 'ko' ? '최근' : 'last test'} ${fmtDate(facts.readingDate)}` : ''}>
             <ReadingTrend student={student} lang={lang} />
-            <PhonicsSummary studentId={student.id} grade={student.grade} englishClass={student.english_class} lang={lang as 'en' | 'ko'} />
+            <PhonicsSummary student={student} lang={lang as 'en' | 'ko'} />
             <ReadingTabInModal studentId={student.id} studentName={student.english_name} lang={lang as 'en' | 'ko'} />
           </Section>
           <Section id="attendance" title={lang === 'ko' ? '출석' : 'Attendance'} meta={facts?.attendanceRate != null ? `${facts.attendanceRate}% · ${facts.absences} ${lang === 'ko' ? '결석' : 'absent'} · ${facts.tardies} ${lang === 'ko' ? '지각' : 'tardy'}` : ''}>

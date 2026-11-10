@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_GROUPS, phonicsSkill, orderSkills,
   scoreSkill, scoreCheck, latestBySkill, phonicsBand, summarizeStudent, phonicsOneLiner, notYetSecure, nextMark, longestErrorRun,
+  attemptsBySkill, latestDelta, wordHistory,
   type PhonicsCheckRow, type PhonicsMark,
 } from '@/lib/phonics'
 
@@ -111,5 +112,35 @@ describe('marking tiles', () => {
     const words = ['a', 'b', 'c', 'd', 'e', 'f']
     expect(longestErrorRun(words, { a: 'error', b: 'error', c: 'correct', d: 'error', e: 'error', f: 'error' })).toBe(3)
     expect(longestErrorRun(words, { a: 'correct' })).toBe(0)
+  })
+})
+
+describe('attempts over time', () => {
+  const a = check({ id: 'a', date: '2026-09-01', created_at: '2026-09-01T01:00:00Z', skills: ['cvc', 'digraphs'], results: { cvc: firstN('cvc', 10), digraphs: firstN('digraphs', 16) } })
+  const b = check({ id: 'b', date: '2026-10-01', created_at: '2026-10-01T01:00:00Z', skills: ['cvc'], results: { cvc: firstN('cvc', 14) } })
+  const c = check({ id: 'c', date: '2026-11-01', created_at: '2026-11-01T01:00:00Z', skills: ['cvc'], results: { cvc: firstN('cvc', 19) } })
+  it('lists every attempt at a sheet oldest first, whatever order the rows came in', () => {
+    const by = attemptsBySkill([c, a, b])
+    expect(by.cvc.map(x => [x.checkId, x.score.correct])).toEqual([['a', 10], ['b', 14], ['c', 19]])
+    expect(by.digraphs.map(x => x.checkId)).toEqual(['a'])
+  })
+  it('reports the change since the previous attempt, or nothing with one attempt', () => {
+    const by = attemptsBySkill([a, b, c])
+    expect(latestDelta(by.cvc)).toBe(25)
+    expect(latestDelta(by.digraphs)).toBeNull()
+    expect(latestDelta(undefined)).toBeNull()
+  })
+  it('shows how each missed word went across attempts, most-missed first', () => {
+    const h = wordHistory([c, b, a], 'cvc')
+    // firstN marks words 1..n correct, so the last words are missed most.
+    expect(h[0]).toMatchObject({ word: 'win', misses: 3, marks: ['error', 'error', 'error'] })
+    expect(h.find(x => x.word === 'hat')).toBeUndefined()
+    expect(h.find(x => x.word === 'let')).toMatchObject({ misses: 1, marks: ['error', 'correct', 'correct'] })
+    expect(h.find(x => x.word === 'zip')).toMatchObject({ misses: 2, marks: ['error', 'error', 'correct'] })
+  })
+  it('a word not read on one attempt shows as undefined, not an error', () => {
+    const partial = check({ id: 'p', date: '2026-12-01', skills: ['cvc'], results: { cvc: { hat: 'correct', big: 'error' } } })
+    const h = wordHistory([a, partial], 'cvc')
+    expect(h.find(x => x.word === 'win')!.marks).toEqual(['error', undefined])
   })
 })

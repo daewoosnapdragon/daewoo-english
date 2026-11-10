@@ -9,22 +9,25 @@ import { logActivity } from '@/lib/activity'
 import type { Student } from '@/types'
 import {
   PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
-  phonicsSkill, skillsInGroup, orderSkills, latestBySkill, phonicsBand, summarizeStudent, notYetSecure, scoreCheck, scoreSkill, nextMark, longestErrorRun,
+  phonicsSkill, skillsInGroup, orderSkills, latestBySkill, phonicsBand, summarizeStudent, notYetSecure, scoreCheck, nextMark, longestErrorRun, attemptsBySkill, latestDelta,
   type PhonicsCheckRow, type PhonicsMark, type LatestBySkill, type PhonicsBand,
 } from '@/lib/phonics'
 import { loadPhonicsChecks, savePhonicsCheck, deletePhonicsCheck } from '@/lib/phonicsData'
-import { BAND_TONE, BAND_CHIP, BAND_TEXT, BAND_DOT } from '@/components/reading/PhonicsSummary'
-import { Check, ChevronLeft, ChevronRight, ClipboardCheck, Download, Loader2, Pencil, Printer, Trash2, X } from 'lucide-react'
+import { BAND_TONE, BAND_CHIP, BAND_TEXT, BAND_DOT, fmtShort } from '@/components/reading/phonicsTones'
+import PhonicsCellDetail from '@/components/reading/PhonicsCellDetail'
+import StudentProgressGrid from '@/components/reading/PhonicsProgress'
+import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, ClipboardCheck, Download, ExternalLink, Loader2, Pencil, Printer, Trash2, X } from 'lucide-react'
 
 // ─── Phonics quick checks ────────────────────────────────────────
-// Reading → Phonics. Two faces: the heat map (every student in the class
+// Reading → Phonics. Three faces: the heat map (every student in the class
 // against every sheet of the Phonics Quick Checks packet, coloured by their
-// latest check) and the check screen (one student, the sheets the teacher
-// picked, a tile per word to tap as the student reads from the printed
-// sheet). Nothing is graded.
+// latest check), one student's progress (sheets × attempts, every sitting
+// kept), and the check screen (one student, the sheets the teacher picked, a
+// tile per word to tap as the student reads from the printed sheet).
+// Nothing is graded.
 
 type Lang = 'en' | 'ko'
-type Mode = 'heatmap' | 'assess'
+type Mode = 'heatmap' | 'student' | 'assess'
 type Marks = Record<string, Record<string, PhonicsMark>>
 type Heard = Record<string, Record<string, string>>
 type Observations = Record<string, string[]>
@@ -42,7 +45,7 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
   const [loadingChecks, setLoadingChecks] = useState(true)
   const [editing, setEditing] = useState<PhonicsCheckRow | null>(null)
   const [dirty, setDirty] = useState(false)
-  const [open, setOpen] = useState<{ sid: string; skill: string } | null>(null)
+  const [open, setOpen] = useState<{ sid: string; skill: string; checkId?: string } | null>(null)
   // The sheets ticked for the next check. Remembered: a teacher checking a
   // class on digraphs does not re-tick them fifteen times.
   const [selected, setSelected] = useState<string[]>(() => {
@@ -63,13 +66,18 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
   }, [students])
   useEffect(() => { reload() }, [reload])
 
-  const latestByStudent = useMemo(() => {
+  const byStudent = useMemo(() => {
     const by: Record<string, PhonicsCheckRow[]> = {}
+    students.forEach(s => { by[s.id] = [] })
     checks.forEach(c => { (by[c.student_id] ||= []).push(c) })
-    const out: Record<string, LatestBySkill> = {}
-    students.forEach(s => { out[s.id] = latestBySkill(by[s.id] || []) })
-    return out
+    return by
   }, [checks, students])
+  const latestByStudent = useMemo(() => Object.fromEntries(students.map(s => [s.id, latestBySkill(byStudent[s.id] || [])])) as Record<string, LatestBySkill>, [students, byStudent])
+  // Change since the previous attempt, per student and sheet, for the heat map's arrows.
+  const trendByStudent = useMemo(() => Object.fromEntries(students.map(s => {
+    const att = attemptsBySkill(byStudent[s.id] || [])
+    return [s.id, Object.fromEntries(Object.keys(att).map(k => [k, latestDelta(att[k])]))]
+  })) as Record<string, Record<string, number | null>>, [students, byStudent])
 
   const student = students.find(s => s.id === studentId) || null
 
@@ -89,6 +97,7 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
     setOpen(null)
     setMode('assess')
   })
+  const showStudent = (sid: string) => guardedSwitch(() => { setStudentId(sid); setEditing(null); setOpen(null); setMode('student') })
 
   const nextStudent = (dir: 1 | -1) => {
     if (!student) return
@@ -124,12 +133,14 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
   }
 
   const seg = (on: boolean) => `px-3 h-8 rounded text-[12.5px] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
+  const lastDates = useMemo(() => Object.fromEntries(students.map(s => [s.id, summarizeStudent(latestByStudent[s.id] || {}).lastDate])) as Record<string, string | null>, [students, latestByStudent])
 
   return (
     <div>
       <div className="flex items-center gap-3 flex-wrap mb-4">
         <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface" data-guide="reading.phonics.mode">
-          <button onClick={() => guardedSwitch(() => { setMode('heatmap'); setEditing(null) })} className={seg(mode === 'heatmap')}>{lang === 'ko' ? '히트맵' : 'Heat map'}</button>
+          <button onClick={() => guardedSwitch(() => { setMode('heatmap'); setEditing(null) })} className={seg(mode === 'heatmap')}>{lang === 'ko' ? '반 히트맵' : 'Class heat map'}</button>
+          <button onClick={() => { if (!studentId && students[0]) setStudentId(students[0].id); guardedSwitch(() => { setMode('student'); setEditing(null) }) }} className={seg(mode === 'student')}>{lang === 'ko' ? '학생 진전' : 'Student progress'}</button>
           <button onClick={() => { if (!studentId && students[0]) setStudentId(students[0].id); setMode('assess') }} className={seg(mode === 'assess')}>{lang === 'ko' ? '학생 점검' : 'Check a student'}</button>
         </div>
         <span className="text-[12px] text-ink-3">{lang === 'ko' ? '해독만 평가합니다. 뜻은 묻지 않습니다. 성적에 들어가지 않습니다.' : 'Decoding only, meaning never asked, nothing graded.'}</span>
@@ -142,44 +153,91 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
       {loading || loadingChecks ? <div className="py-12 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
       : students.length === 0 ? <p className="text-[13px] text-ink-3 py-8">{lang === 'ko' ? '이 반에 학생이 없습니다.' : 'No students in this class.'}</p>
       : mode === 'heatmap' ? (
-        <HeatMap students={students} latestByStudent={latestByStudent} lang={lang} onCell={(sid, skill) => setOpen({ sid, skill })} onCheck={(sid) => startCheck(sid)} />
-      ) : student ? (
+        <HeatMap students={students} latestByStudent={latestByStudent} trendByStudent={trendByStudent} lang={lang}
+          onCell={(sid, skill) => setOpen({ sid, skill })} onCheck={(sid) => startCheck(sid)} onStudent={showStudent} />
+      ) : !student ? null : mode === 'student' ? (
+        <div className="grid grid-cols-[210px_1fr] gap-6 items-start">
+          <RosterRail students={students} currentId={student.id} lang={lang} lastDates={lastDates} onPick={showStudent} />
+          <section className="min-w-0">
+            <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
+              <div>
+                <p className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '시도별 진전' : 'Progress across attempts'}</p>
+                <h2 className="font-display text-[28px] leading-none text-ink">{student.english_name} <span className="text-ink-3 text-[18px]">{student.korean_name}</span></h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link href={`/students/${student.id}`} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><ExternalLink size={12} /> {lang === 'ko' ? '학생 페이지' : 'Student page'}</Link>
+                <button onClick={() => startCheck(student.id)} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5"><ClipboardCheck size={13} /> {lang === 'ko' ? '점검하기' : 'Check now'}</button>
+              </div>
+            </div>
+            <StudentProgressGrid student={student} checks={byStudent[student.id] || []} lang={lang} onCell={(skill, checkId) => setOpen({ sid: student.id, skill, checkId })} />
+          </section>
+        </div>
+      ) : (
         <AssessPanel key={`${student.id}:${editing?.id || 'new'}`} student={student} students={students} lang={lang}
-          latest={latestByStudent[student.id] || {}} history={checks.filter(c => c.student_id === student.id)}
+          latest={latestByStudent[student.id] || {}} history={byStudent[student.id] || []} lastDates={lastDates}
           selected={selected} onSelect={pickSkills} editing={editing}
           onDirty={setDirty} onPick={(sid) => guardedSwitch(() => { setStudentId(sid); setEditing(null) })}
           onPrev={() => guardedSwitch(() => nextStudent(-1))} onNext={() => guardedSwitch(() => nextStudent(1))}
           onCancelEdit={() => { setEditing(null); setDirty(false) }}
           onSaved={async (andNext) => { setDirty(false); setEditing(null); await reload(); if (andNext) nextStudent(1) }}
           onEdit={(c) => startCheck(student.id, c.skills, c)}
+          onProgress={() => showStudent(student.id)}
           onDelete={async (c) => {
             const ok = await confirmDialog({ title: lang === 'ko' ? '점검 기록 삭제' : 'Delete this check?', message: lang === 'ko' ? `${c.date}의 파닉스 점검을 삭제합니다. 되돌릴 수 없습니다.` : `The phonics check from ${c.date} will be deleted. This cannot be undone.`, confirmLabel: lang === 'ko' ? '삭제' : 'Delete', danger: true })
             if (!ok) return
             await deletePhonicsCheck(c.id, student.english_name); await reload()
           }} />
-      ) : null}
-
-      {open && (
-        <CellDetail sid={open.sid} skill={open.skill} students={students} checks={checks} lang={lang} onClose={() => setOpen(null)}
-          onRecheck={() => startCheck(open.sid, [open.skill])}
-          onEdit={(c) => startCheck(open.sid, c.skills, c)} />
       )}
+
+      {open && (() => {
+        const s = students.find(x => x.id === open.sid)
+        return s ? (
+          <PhonicsCellDetail student={s} skill={open.skill} checks={byStudent[s.id] || []} lang={lang} initialCheckId={open.checkId} onClose={() => setOpen(null)}
+            onRecheck={() => startCheck(open.sid, [open.skill])}
+            onEdit={(c) => startCheck(open.sid, c.skills, c)} />
+        ) : null
+      })()}
     </div>
+  )
+}
+
+// ─── Roster rail ─────────────────────────────────────────────────
+
+function RosterRail({ students, currentId, lang, lastDates, onPick }: {
+  students: Student[]; currentId: string; lang: Lang; lastDates: Record<string, string | null>; onPick: (sid: string) => void
+}) {
+  return (
+    <aside className="sticky top-[120px] border border-rule-2 rounded-md bg-surface max-h-[calc(100vh-160px)] overflow-y-auto">
+      <p className="eyebrow px-3 pt-2.5 pb-1.5">{lang === 'ko' ? '학생' : 'Students'}</p>
+      <ul className="divide-y divide-rule">
+        {students.map(s => {
+          const own = s.id === currentId
+          const last = lastDates[s.id]
+          return (
+            <li key={s.id}>
+              <button onClick={() => !own && onPick(s.id)} className={`w-full text-left px-3 py-1.5 ${own ? 'bg-paper-2 shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-paper-2/60'}`}>
+                <span className={`block text-[12.5px] truncate ${own ? 'text-ink font-semibold' : 'text-ink-2'}`}>{s.english_name}</span>
+                <span className="block text-[10.5px] text-ink-3 truncate">{s.korean_name}{last ? ` · ${fmtShort(last, lang)}` : ''}</span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </aside>
   )
 }
 
 // ─── Heat map ────────────────────────────────────────────────────
 
-export function HeatMap({ students, latestByStudent, lang, onCell, onCheck }: {
-  students: Student[]; latestByStudent: Record<string, LatestBySkill>; lang: Lang
-  onCell: (sid: string, skill: string) => void; onCheck: (sid: string) => void
+export function HeatMap({ students, latestByStudent, trendByStudent, lang, onCell, onCheck, onStudent }: {
+  students: Student[]; latestByStudent: Record<string, LatestBySkill>; trendByStudent: Record<string, Record<string, number | null>>; lang: Lang
+  onCell: (sid: string, skill: string) => void; onCheck: (sid: string) => void; onStudent: (sid: string) => void
 }) {
   const colAvg = useMemo(() => Object.fromEntries(PHONICS_SKILL_IDS.map(id => {
     const ps = students.map(s => latestByStudent[s.id]?.[id]?.score.pct).filter((p): p is number => p != null)
     return [id, ps.length ? Math.round(ps.reduce((a, b) => a + b, 0) / ps.length) : null]
   })), [students, latestByStudent])
   const anyData = students.some(s => Object.keys(latestByStudent[s.id] || {}).length > 0)
-  const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' })
 
   return (
     <div>
@@ -191,9 +249,9 @@ export function HeatMap({ students, latestByStudent, lang, onCell, onCheck }: {
           </span>
         ))}
         <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-paper-2 border border-rule" />{lang === 'ko' ? '미점검' : 'Not checked'}</span>
-        <span className="text-ink-3">{lang === 'ko' ? '· 셀은 가장 최근 점검의 정확도(%)입니다. 클릭하면 단어별로 보입니다.' : '· a cell is the latest check’s accuracy; click it for the words'}</span>
+        <span className="text-ink-3">{lang === 'ko' ? '· 셀은 가장 최근 점검의 정확도(%)이고 화살표는 이전 시도 대비 변화입니다. 클릭하면 단어별로 보입니다. 이름을 클릭하면 시도별 진전이 보입니다.' : '· a cell is the latest check’s accuracy, the arrow its change since the attempt before; click it for the words, click a name for progress'}</span>
       </div>
-      {!anyData && <p className="text-[13px] text-ink-3 mb-3">{lang === 'ko' ? '아직 이 반에는 파닉스 점검이 없습니다. 학생 옆의 점검 버튼으로 시작하세요.' : 'No phonics checks for this class yet. Use Check beside a student to start.'}</p>}
+      {!anyData && <p className="text-[13px] text-ink-3 mb-3">{lang === 'ko' ? '아직 이 반에는 파닉스 점검이 없습니다. 학생 옆의 점검 버튼으로 시작하세요.' : 'No phonics checks for this class yet. Use the check button beside a student to start.'}</p>}
       {/* Fills the page width with no scrolling: the twenty sheet columns
           share what is left after the name and working-on columns, and the
           sheet names run vertically so a column can be narrow. */}
@@ -226,18 +284,26 @@ export function HeatMap({ students, latestByStudent, lang, onCell, onCheck }: {
           <tbody className="divide-y divide-rule">
             {students.map(s => {
               const latest = latestByStudent[s.id] || {}
+              const trend = trendByStudent[s.id] || {}
               const sum = summarizeStudent(latest)
               return (
                 <tr key={s.id}>
-                  <td className="px-3 py-1 border-r border-rule-2 overflow-hidden"><div className="truncate"><Link href={`/students/${s.id}`} className="text-ink hover:underline">{getDisplayName(s)}</Link><span className="text-ink-3 ml-1.5 text-[11px]">{s.korean_name}</span></div></td>
+                  <td className="px-3 py-1 border-r border-rule-2 overflow-hidden">
+                    <button onClick={() => onStudent(s.id)} className="block w-full text-left truncate hover:underline" title={lang === 'ko' ? '시도별 진전 보기' : `Progress for ${s.english_name}`}>
+                      <span className="text-ink">{getDisplayName(s)}</span><span className="text-ink-3 ml-1.5 text-[11px]">{s.korean_name}</span>
+                    </button>
+                  </td>
                   {PHONICS_SKILLS.map((sk, i) => {
                     const l = latest[sk.id]
                     const band = l ? phonicsBand(l.score) : null
+                    const d = trend[sk.id]
                     return (
                       <td key={sk.id} className={`p-[3px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
                         <button onClick={() => l && onCell(s.id, sk.id)} disabled={!l}
-                          title={l ? `${sk.label}: ${l.score.correct}/${l.score.total} · ${PHONICS_BAND_LABELS[band!].en} · ${fmt(l.date)}${l.score.unread ? ` · ${l.score.unread} ${lang === 'ko' ? '미읽음' : 'not read'}` : ''}` : `${sk.label}: ${lang === 'ko' ? '미점검' : 'not checked'}`}
-                          className={`w-full h-7 rounded-sm text-[10.5px] font-semibold ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>{l ? l.score.pct : '·'}</button>
+                          title={l ? `${sk.label}: ${l.score.correct}/${l.score.total} · ${PHONICS_BAND_LABELS[band!].en} · ${fmtShort(l.date, lang)}${d != null ? ` · ${d >= 0 ? '+' : ''}${d} since the attempt before` : ''}${l.score.unread ? ` · ${l.score.unread} ${lang === 'ko' ? '미읽음' : 'not read'}` : ''}` : `${sk.label}: ${lang === 'ko' ? '미점검' : 'not checked'}`}
+                          className={`w-full h-7 rounded-sm text-[10.5px] font-semibold inline-flex items-center justify-center gap-px ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
+                          {l ? l.score.pct : '·'}{d != null && d > 0 && <ArrowUp size={9} strokeWidth={3} />}{d != null && d < 0 && <ArrowDown size={9} strokeWidth={3} />}
+                        </button>
                       </td>
                     )
                   })}
@@ -245,7 +311,7 @@ export function HeatMap({ students, latestByStudent, lang, onCell, onCheck }: {
                     {sum.tested === 0 ? <span className="text-ink-3">—</span>
                       : sum.frontier ? <span className="block text-ink truncate" title={phonicsSkill(sum.frontier)?.label}>{phonicsSkill(sum.frontier)?.label}</span>
                       : <span className="block text-good truncate">{lang === 'ko' ? '모두 숙달' : 'All proficient'}</span>}
-                    {sum.lastDate && <span className="block text-[10px] text-ink-3">{fmt(sum.lastDate)}</span>}
+                    {sum.lastDate && <span className="block text-[10px] text-ink-3">{fmtShort(sum.lastDate, lang)}</span>}
                   </td>
                   <td className="py-1 text-center"><button onClick={() => onCheck(s.id)} title={lang === 'ko' ? '이 학생 점검' : `Check ${s.english_name}`} aria-label={`Check ${s.english_name}`} className="w-7 h-7 inline-flex items-center justify-center rounded border border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3"><ClipboardCheck size={13} /></button></td>
                 </tr>
@@ -258,85 +324,13 @@ export function HeatMap({ students, latestByStudent, lang, onCell, onCheck }: {
   )
 }
 
-// ─── One cell's story ────────────────────────────────────────────
-
-function CellDetail({ sid, skill, students, checks, lang, onClose, onRecheck, onEdit }: {
-  sid: string; skill: string; students: Student[]; checks: PhonicsCheckRow[]; lang: Lang
-  onClose: () => void; onRecheck: () => void; onEdit: (c: PhonicsCheckRow) => void
-}) {
-  const student = students.find(s => s.id === sid)
-  const sk = phonicsSkill(skill)
-  const history = checks.filter(c => c.student_id === sid && c.skills.includes(skill))
-  const [showing, setShowing] = useState<PhonicsCheckRow | null>(history[0] || null)
-  if (!student || !sk || !showing) return null
-  const score = scoreSkill(showing, skill)!
-  const band = phonicsBand(score)
-  const marks = showing.results[skill] || {}
-  const heard = showing.heard?.[skill] || {}
-  const obs = showing.observations?.[skill] || []
-  const how = obs.filter(o => !o.startsWith(PATTERN_PREFIX)).map(o => DECODING_OBSERVATIONS.find(d => d.id === o)).filter(Boolean)
-  const trouble = obs.filter(o => o.startsWith(PATTERN_PREFIX)).map(o => o.slice(PATTERN_PREFIX.length))
-  const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  return (
-    <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
-      <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-3.5 border-b border-rule-2 flex items-start justify-between gap-3">
-          <div>
-            <p className="eyebrow">{getDisplayName(student)} · {student.korean_name}</p>
-            <h3 className="font-display text-[22px] leading-tight text-ink mt-1">{lang === 'ko' ? sk.label_ko : sk.label}</h3>
-            <p className="text-[12.5px] text-ink-2 mt-1">
-              <span className={`inline-block px-2 py-0.5 rounded-full text-[10.5px] font-semibold mr-2 ${BAND_TONE[band]}`} title={PHONICS_BAND_LABELS[band].means}>{PHONICS_BAND_LABELS[band][lang]}</span>
-              {score.correct} / {score.total} · {score.pct}% · {fmt(showing.date)}{score.unread > 0 && <span className="text-ink-3"> · {score.unread} {lang === 'ko' ? '미읽음' : 'not read'}</span>}
-            </p>
-          </div>
-          <button onClick={onClose} aria-label="Close" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={15} /></button>
-        </div>
-        <div className="overflow-y-auto px-5 py-4 space-y-4">
-          <div className="flex flex-wrap gap-1.5">
-            {[...sk.words, ...Object.keys(marks).filter(w => !sk.words.includes(w))].map(w => {
-              const m = marks[w]
-              return (
-                <span key={w} className={`inline-flex flex-col items-center px-2.5 py-1 rounded border font-serif text-[15px] leading-tight ${m === 'correct' ? 'bg-good-soft border-good/30 text-good' : m === 'error' ? 'bg-bad-soft border-bad/30 text-bad' : 'bg-paper-2 border-rule text-ink-3'}`}>
-                  <span className="inline-flex items-center gap-1">{w}{m === 'correct' ? <Check size={11} /> : m === 'error' ? <X size={11} /> : null}</span>
-                  {m === 'error' && heard[w] && <span className="font-sans text-[10.5px] italic opacity-80">“{heard[w]}”</span>}
-                </span>
-              )
-            })}
-          </div>
-          {(how.length > 0 || trouble.length > 0) && (
-            <div className="text-[12.5px] text-ink-2 space-y-1">
-              {how.length > 0 && <p><span className="eyebrow mr-1.5">{lang === 'ko' ? '해독 방식' : 'How they decoded'}</span>{how.map(d => lang === 'ko' ? d!.label_ko : d!.label).join(' · ')}</p>}
-              {trouble.length > 0 && <p><span className="eyebrow mr-1.5">{lang === 'ko' ? '어려운 패턴' : 'Trouble with'}</span>{trouble.join(', ')}</p>}
-            </div>
-          )}
-          {showing.notes && <p className="text-[12.5px] text-ink-2 italic">“{showing.notes}”</p>}
-          {history.length > 1 && (
-            <div>
-              <p className="eyebrow mb-1.5">{lang === 'ko' ? '이 시트의 이력' : 'History for this sheet'}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {history.map(c => { const s = scoreSkill(c, skill)!; const b = phonicsBand(s); return (
-                  <button key={c.id} onClick={() => setShowing(c)} className={`px-2 py-1 rounded border text-[11.5px] tabular-nums ${c.id === showing.id ? 'ring-1 ring-ink' : ''} ${BAND_CHIP[b]}`}>{fmt(c.date)} · {s.correct}/{s.total}</button>
-                ) })}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="px-5 py-3 border-t border-rule-2 flex items-center gap-2">
-          <button onClick={onRecheck} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover">{lang === 'ko' ? '이 시트 다시 점검' : 'Recheck this sheet'}</button>
-          <button onClick={() => onEdit(showing)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Pencil size={12} /> {lang === 'ko' ? '이 점검 수정' : 'Edit this check'}</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Checking one student ────────────────────────────────────────
 
-function AssessPanel({ student, students, lang, latest, history, selected, onSelect, editing, onDirty, onPick, onPrev, onNext, onCancelEdit, onSaved, onEdit, onDelete }: {
-  student: Student; students: Student[]; lang: Lang; latest: LatestBySkill; history: PhonicsCheckRow[]
+function AssessPanel({ student, students, lang, latest, history, lastDates, selected, onSelect, editing, onDirty, onPick, onPrev, onNext, onCancelEdit, onSaved, onEdit, onDelete, onProgress }: {
+  student: Student; students: Student[]; lang: Lang; latest: LatestBySkill; history: PhonicsCheckRow[]; lastDates: Record<string, string | null>
   selected: string[]; onSelect: (ids: string[]) => void; editing: PhonicsCheckRow | null
   onDirty: (d: boolean) => void; onPick: (sid: string) => void; onPrev: () => void; onNext: () => void
-  onCancelEdit: () => void; onSaved: (andNext: boolean) => Promise<void>; onEdit: (c: PhonicsCheckRow) => void; onDelete: (c: PhonicsCheckRow) => void
+  onCancelEdit: () => void; onSaved: (andNext: boolean) => Promise<void>; onEdit: (c: PhonicsCheckRow) => void; onDelete: (c: PhonicsCheckRow) => void; onProgress: () => void
 }) {
   const { currentTeacher, showToast, promptDialog } = useApp()
   const [date, setDate] = useState(editing?.date || getKSTDateString())
@@ -397,29 +391,11 @@ function AssessPanel({ student, students, lang, latest, history, selected, onSel
 
   const recheckable = notYetSecure(latest)
   const untested = PHONICS_SKILL_IDS.filter(id => !latest[id])
-  const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' })
   const quick = 'h-7 px-2.5 rounded-full border border-rule-2 text-[11.5px] text-ink-2 hover:text-ink hover:border-ink-3 disabled:opacity-40'
 
   return (
     <div className="grid grid-cols-[210px_1fr] gap-6 items-start">
-      {/* Roster rail */}
-      <aside className="sticky top-[120px] border border-rule-2 rounded-md bg-surface max-h-[calc(100vh-160px)] overflow-y-auto">
-        <p className="eyebrow px-3 pt-2.5 pb-1.5">{lang === 'ko' ? '학생' : 'Students'}</p>
-        <ul className="divide-y divide-rule">
-          {students.map(s => {
-            const own = s.id === student.id
-            const last = own ? summarizeStudent(latest).lastDate : null
-            return (
-              <li key={s.id}>
-                <button onClick={() => !own && onPick(s.id)} className={`w-full text-left px-3 py-1.5 ${own ? 'bg-paper-2 shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-paper-2/60'}`}>
-                  <span className={`block text-[12.5px] truncate ${own ? 'text-ink font-semibold' : 'text-ink-2'}`}>{s.english_name}</span>
-                  <span className="block text-[10.5px] text-ink-3 truncate">{s.korean_name}{last ? ` · ${fmt(last)}` : ''}</span>
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      </aside>
+      <RosterRail students={students} currentId={student.id} lang={lang} lastDates={lastDates} onPick={onPick} />
 
       <section className="min-w-0">
         {/* Student header */}
@@ -446,22 +422,25 @@ function AssessPanel({ student, students, lang, latest, history, selected, onSel
             </div>
             <div className="flex flex-wrap gap-1.5 mt-2">
               {orderSkills(Object.keys(latest)).map(id => { const l = latest[id]; const b = phonicsBand(l.score); return (
-                <span key={id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11.5px] tabular-nums ${BAND_CHIP[b]}`} title={`${phonicsSkill(id)?.label} · ${PHONICS_BAND_LABELS[b].en} · ${fmt(l.date)}`}>{phonicsSkill(id)?.short} {l.score.correct}/{l.score.total}</span>
+                <span key={id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11.5px] tabular-nums ${BAND_CHIP[b]}`} title={`${phonicsSkill(id)?.label} · ${PHONICS_BAND_LABELS[b].en} · ${fmtShort(l.date, lang)}`}>{phonicsSkill(id)?.short} {l.score.correct}/{l.score.total}</span>
               ) })}
             </div>
-            <details className="mt-2">
-              <summary className="text-[11.5px] text-ink-3 cursor-pointer hover:text-ink">{history.length} {lang === 'ko' ? '회 점검' : history.length === 1 ? 'check' : 'checks'}</summary>
-              <ul className="mt-1.5 divide-y divide-rule">
-                {history.map(c => (
-                  <li key={c.id} className="py-1.5 flex items-center gap-3 text-[12px]">
-                    <span className="text-ink-2 w-20 shrink-0">{fmt(c.date)}</span>
-                    <span className="flex-1 min-w-0 text-ink-3 truncate">{scoreCheck(c).map(s => `${phonicsSkill(s.skill)?.short} ${s.correct}/${s.total}`).join(' · ')}</span>
-                    <button onClick={() => onEdit(c)} className="text-ink-3 hover:text-ink" title={lang === 'ko' ? '수정' : 'Edit'}><Pencil size={12} /></button>
-                    <button onClick={() => onDelete(c)} className="text-ink-3 hover:text-bad" title={lang === 'ko' ? '삭제' : 'Delete'}><Trash2 size={12} /></button>
-                  </li>
-                ))}
-              </ul>
-            </details>
+            <div className="flex items-center gap-3 mt-2 text-[11.5px]">
+              <button onClick={onProgress} className="text-accent hover:underline">{lang === 'ko' ? '시도별 진전 보기 →' : 'Progress across attempts →'}</button>
+              <details className="min-w-0">
+                <summary className="text-ink-3 cursor-pointer hover:text-ink">{history.length} {lang === 'ko' ? '회 점검' : history.length === 1 ? 'check' : 'checks'}</summary>
+                <ul className="mt-1.5 divide-y divide-rule">
+                  {history.map(c => (
+                    <li key={c.id} className="py-1.5 flex items-center gap-3 text-[12px]">
+                      <span className="text-ink-2 w-20 shrink-0">{fmtShort(c.date, lang)}</span>
+                      <span className="flex-1 min-w-0 text-ink-3 truncate">{scoreCheck(c).map(s => `${phonicsSkill(s.skill)?.short} ${s.correct}/${s.total}`).join(' · ')}</span>
+                      <button onClick={() => onEdit(c)} className="text-ink-3 hover:text-ink" title={lang === 'ko' ? '수정' : 'Edit'}><Pencil size={12} /></button>
+                      <button onClick={() => onDelete(c)} className="text-ink-3 hover:text-bad" title={lang === 'ko' ? '삭제' : 'Delete'}><Trash2 size={12} /></button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </div>
           </div>
         )}
 
@@ -486,7 +465,7 @@ function AssessPanel({ student, students, lang, latest, history, selected, onSel
                   const l = latest[s.id]
                   const b = l ? phonicsBand(l.score) : null
                   return (
-                    <button key={s.id} onClick={() => !editing && toggleSkill(s.id)} disabled={!!editing} title={`${s.label}\n${s.covers}${l ? `\n${lang === 'ko' ? '최근' : 'Last'}: ${l.score.correct}/${l.score.total} · ${PHONICS_BAND_LABELS[b!].en} · ${fmt(l.date)}` : ''}`}
+                    <button key={s.id} onClick={() => !editing && toggleSkill(s.id)} disabled={!!editing} title={`${s.label}\n${s.covers}${l ? `\n${lang === 'ko' ? '최근' : 'Last'}: ${l.score.correct}/${l.score.total} · ${PHONICS_BAND_LABELS[b!].en} · ${fmtShort(l.date, lang)}` : ''}`}
                       className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[12px] font-medium disabled:cursor-default ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
                       {s.short}
                       {b && <span className={`w-2 h-2 rounded-full ${BAND_DOT[b]}`} />}
