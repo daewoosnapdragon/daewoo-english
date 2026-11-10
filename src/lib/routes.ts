@@ -19,6 +19,7 @@ export const VIEW_PATHS: Record<string, string> = {
   behavior: '/behavior',
   supplies: '/supplies',
   budget: '/budget',
+  overtime: '/overtime',
   planner: '/curriculum',
 }
 
@@ -44,5 +45,5 @@ export const PAGE_TITLES: Record<string, string> = {
   dashboard: 'Dashboard', students: 'Students', grades: 'Grades',
   reports: 'Reports', leveling: 'Level Tests', attendance: 'Attendance',
   readingLevels: 'Reading', lessonPlans: 'Lesson Plans',
-  curriculum: 'Standards', wida: 'WIDA', settings: 'Settings', guide: 'How to use this app', whatsNew: 'What’s new', activity: 'Activity', behavior: 'Behavior', supplies: 'Supplies', budget: 'Budget', planner: 'Curriculum',
+  curriculum: 'Standards', wida: 'WIDA', settings: 'Settings', guide: 'How to use this app', whatsNew: 'What’s new', activity: 'Activity', behavior: 'Behavior', supplies: 'Supplies', budget: 'Budget', overtime: 'Overtime', planner: 'Curriculum',
 }

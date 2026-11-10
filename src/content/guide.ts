@@ -345,6 +345,33 @@ export const ADMIN_SECTIONS: GuideSection[] = [
     watchOut: ['Prices come from the receipt lines; a line entered without a price counts as zero until it is edited.'],
   },
   {
+    id: 'overtime', title: 'Overtime', updated: '2026-11-09',
+    purpose: 'Your non-instructional overtime, logged as you go, and the school’s overtime sheet printed from it for the weeks you choose. Opened from the user menu; a line on the dashboard shows this month so far. Admin sees every teacher’s month and prints everyone’s sheets at once.',
+    screen: [
+      'At the top right: the month with arrows, its total time and won, and the hourly rate.',
+      'The entry row: the date (today unless you change it), From and To as clock times, and the time and won worked out as soon as both are typed. Under it, what the work was, with chips of your recent reasons and Same as last time.',
+      'The month’s weeks, newest first, Monday to Friday. Each has a tick box, its total, and its entries with the times, the time, the won and the reason; the pencil edits an entry in place and the bin deletes it.',
+      'Print ticked weeks prints the sheet for the weeks that are ticked. Weeks with entries start ticked.',
+      'Admin: the month, the weeks as tick boxes with All and None, the total for the ticked weeks, Print all, Export to Excel, and one row per teacher with their entries, time, won, last entry, Open and Print.',
+    ],
+    tasks: [
+      { title: 'Log overtime', steps: ['Open Overtime from the user menu, or Add on the dashboard line.', 'Type the times the way you would say them: 4:30 and 6:45. You can also type 4:30-6:45 into From. The time and won show beside them.', 'Type what the work was, or tap a chip. Add, or press Enter.'] },
+      { title: 'Fix or delete an entry', steps: ['Find it under its week. The pencil opens it in place; change anything and Save, or Escape to leave it. The bin deletes it after asking.'] },
+      { title: 'Print your sheet', steps: ['Tick the weeks the office asked for (the weeks with entries are ticked to start with).', 'Print ticked weeks. The sheet opens in a new window: print it, or choose Save as PDF.', 'Sign it in the box and hand it in.'] },
+      { title: 'Print everyone’s sheets (admin)', steps: ['Open Overtime. Pick the month and tick the weeks the office wants.', 'Print all prints every teacher with entries in those weeks, one teacher per sheet, in one go. Print on a row prints one teacher.', 'Export to Excel gives the same weeks as a spreadsheet: every entry, and the totals per teacher.'] },
+      { title: 'Fix a teacher’s entry (admin)', steps: ['Open on their row shows their page as they see it. Edit, delete or add, then Back to all teachers.'] },
+      { title: 'Change the rate or the wording (admin)', steps: ['Settings → Overtime. Type the rate in won an hour; every won figure follows it.', 'Edit the policy paragraph that prints at the top of the sheet; {rate} becomes the rate. Add reasons everyone can tap, one per line. Save.'] },
+    ],
+    rules: [
+      'Weekends and days off on the school calendar (for the whole school) are not overtime, so they cannot be logged. An entry that is on a day later marked off stays on the page, crossed out and not counted.',
+      'Times with no am or pm are read as after school: 1 to 6 is afternoon, 7 to 11 is morning, 12 is noon. Type am or pm, or 24-hour time, to say otherwise.',
+      'Entries the same day cannot overlap. A stint that ends at 6:00 and another that starts at 6:00 are fine.',
+      'Only times and minutes are saved. Won is always the minutes at the rate in Settings, so a new rate changes every figure, past months included.',
+      'Admin sees everyone’s sheets. Everyone else sees their own.',
+    ],
+    watchOut: ['Admin runs supabase/migration-overtime.sql once; until then the page says Not set up yet.', 'Print opens a new window. If nothing happens, allow pop-ups for the site.', 'Days off only count when they are on the school calendar as a Day Off for every grade.'],
+  },
+  {
     id: 'bookshelf', title: 'Curriculum', updated: '2026-11-09',
     purpose: 'What each class teaches and when. Two tabs under Curriculum in the top bar. Class boards, for everyone: Board shows any class and grade’s term week by week, a row per book grouped by strand, the units as bars where the plan’s weeks put them, holidays hatched and today marked; the class’s own teacher can move and stretch bars, say “we’re here”, skip units and add blocks of their own; Program map shows every class and grade across the term on one page and, for any week, what they share. Ladder shows one level across Grades 1 to 5, the books per grade, with checks on the progression. Curriculum map, for admin: Map is the grid of which book each class and grade uses for spring (the first half, from March), fall (the second) or the whole year, as a list of the units or stories the class will do; Review lists every teacher plan that differs from the master; Bookshelf is the catalogue behind it, every book’s units and lessons with “students will” lines, CCSS codes, skill tags and Drive links.',
     screen: [
@@ -406,5 +433,5 @@ export const ALL_SECTIONS = () => [...GUIDE_SECTIONS, ...ADMIN_SECTIONS]
 /** The guide section for a view id, for “How this page works”. */
 export const SECTION_FOR_VIEW: Record<string, string> = {
   dashboard: 'dashboard', grades: 'grades', attendance: 'attendance', lessonPlans: 'lessons', students: 'students',
-  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', behavior: 'behavior', supplies: 'supplies', budget: 'budget', planner: 'bookshelf',
+  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', behavior: 'behavior', supplies: 'supplies', budget: 'budget', overtime: 'overtime', planner: 'bookshelf',
 }

@@ -13,6 +13,7 @@ import { Plus, X, ChevronLeft, ChevronRight, Trash2, Pencil, PanelLeftClose, Use
 import WeeklySchedule from './WeeklySchedule'
 import OfficeJobs from './OfficeJobs'
 import SuppliesCard from './SuppliesCard'
+import OvertimeLine from './OvertimeLine'
 import AttendanceDrawer, { ATTENDANCE_SAVED_EVENT } from '@/components/attendance/AttendanceDrawer'
 import { loadDayStatus, withoutAwayDays } from '@/lib/calendarDays'
 
@@ -261,6 +262,7 @@ export default function DashboardView() {
             </button>}
         <OfficeJobs />
         <SuppliesCard />
+        <OvertimeLine />
       </>} />
 
       {/* ─── Attention + grading ─── */}
