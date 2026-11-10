@@ -222,6 +222,15 @@ export function fmtDate(iso: string, ko = false): string {
   return ko ? `${m}월 ${d}일` : `${MONTHS_EN[m - 1]} ${d}`
 }
 
+const DAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토']
+
+/** "Tue, Nov 3"; Korean "11월 3일 (화)". */
+export function fmtDayDate(iso: string, ko = false): string {
+  const w = weekdayOf(iso)
+  return ko ? `${fmtDate(iso, true)} (${DAYS_KO[w]})` : `${DAYS_EN[w]}, ${fmtDate(iso)}`
+}
+
 /** "Nov 2 – 6", "Nov 30"; Korean "11월 2일 – 6일". */
 export function weekLabel(w: MonthWeek, ko = false): string {
   if (w.from === w.to) return fmtDate(w.from, ko)

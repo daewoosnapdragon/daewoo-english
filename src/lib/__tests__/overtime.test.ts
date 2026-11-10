@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  blockedReason, counted, daysOffIn, fmtClock, fmtMinutes, fmtRange, fmtWon, minutesBetween, monthLabel, overlapping,
+  blockedReason, counted, fmtDayDate, daysOffIn, fmtClock, fmtMinutes, fmtRange, fmtWon, minutesBetween, monthLabel, overlapping,
   parseClock, parseOvertimeSettings, parseRange, periodLabel, policyText, recentReasons, sheetPages, shiftMonth,
   splitRange, totals, weekLabel, weeksOfMonth, wonFor, entriesInWeeks, DEFAULT_OVERTIME_SETTINGS, type OvertimeEntry,
 } from '@/lib/overtime'
@@ -154,6 +154,8 @@ describe('weeks', () => {
     expect(weekLabel({ from: '2026-11-30', to: '2026-11-30' })).toBe('Nov 30')
     expect(weekLabel({ from: '2026-11-02', to: '2026-11-06' }, true)).toBe('11월 2일 – 6일')
     expect(monthLabel('2026-11')).toBe('November 2026')
+    expect(fmtDayDate('2026-11-03')).toBe('Tue, Nov 3')
+    expect(fmtDayDate('2026-11-03', true)).toBe('11월 3일 (화)')
     expect(shiftMonth('2026-12', 1)).toBe('2027-01')
     expect(shiftMonth('2026-01', -1)).toBe('2025-12')
   })
