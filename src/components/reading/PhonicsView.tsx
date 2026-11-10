@@ -15,7 +15,7 @@ import {
 import { loadPhonicsChecks, savePhonicsCheck, deletePhonicsCheck } from '@/lib/phonicsData'
 import { BAND_TONE, BAND_CHIP, BAND_TEXT, BAND_DOT } from '@/components/reading/PhonicsSummary'
 import TestNotesPanel from '@/components/leveling/TestNotesPanel'
-import { Check, ChevronLeft, ChevronRight, Download, Loader2, Pencil, Printer, Trash2, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ClipboardCheck, Download, Loader2, Pencil, Printer, Trash2, X } from 'lucide-react'
 
 // ─── Phonics quick checks ────────────────────────────────────────
 // Reading → Phonics. Two faces: the heat map (every student in the class
@@ -173,7 +173,7 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
 
 // ─── Heat map ────────────────────────────────────────────────────
 
-function HeatMap({ students, latestByStudent, lang, onCell, onCheck }: {
+export function HeatMap({ students, latestByStudent, lang, onCell, onCheck }: {
   students: Student[]; latestByStudent: Record<string, LatestBySkill>; lang: Lang
   onCell: (sid: string, skill: string) => void; onCheck: (sid: string) => void
 }) {
@@ -197,20 +197,31 @@ function HeatMap({ students, latestByStudent, lang, onCell, onCheck }: {
         <span className="text-ink-3">{lang === 'ko' ? '· 셀은 가장 최근 점검의 정확도(%)입니다. 클릭하면 단어별로 보입니다.' : '· a cell is the latest check’s accuracy; click it for the words'}</span>
       </div>
       {!anyData && <p className="text-[13px] text-ink-3 mb-3">{lang === 'ko' ? '아직 이 반에는 파닉스 점검이 없습니다. 학생 옆의 점검 버튼으로 시작하세요.' : 'No phonics checks for this class yet. Use Check beside a student to start.'}</p>}
-      <div className="overflow-x-auto border border-rule-2 rounded-md">
-        <table className="text-[12px] tabular-nums border-collapse">
+      {/* Fills the page width with no scrolling: the twenty sheet columns
+          share what is left after the name and working-on columns, and the
+          sheet names run vertically so a column can be narrow. */}
+      <div className="border border-rule-2 rounded-md overflow-hidden">
+        <table className="w-full table-fixed text-[12px] tabular-nums border-collapse">
+          <colgroup>
+            <col style={{ width: 168 }} />
+            {PHONICS_SKILLS.map(s => <col key={s.id} />)}
+            <col style={{ width: 148 }} />
+            <col style={{ width: 40 }} />
+          </colgroup>
           <thead>
             <tr className="bg-paper-2">
-              <th rowSpan={2} className="sticky left-0 z-10 bg-paper-2 text-left px-3 py-2 eyebrow font-semibold min-w-[170px] border-b border-r border-rule-2 align-bottom">{lang === 'ko' ? '학생' : 'Student'}</th>
-              {PHONICS_GROUPS.map(g => <th key={g.id} colSpan={skillsInGroup(g.id).length} className="px-1 pt-2 pb-1 eyebrow font-semibold border-b border-l border-rule text-center whitespace-nowrap">{lang === 'ko' ? g.label_ko : g.label}</th>)}
-              <th rowSpan={2} className="px-3 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-left align-bottom min-w-[120px]">{lang === 'ko' ? '현재 과제' : 'Working on'}</th>
-              <th rowSpan={2} className="px-2 py-2 border-b border-rule-2 align-bottom" />
+              <th rowSpan={2} className="text-left px-3 py-2 eyebrow font-semibold border-b border-r border-rule-2 align-bottom">{lang === 'ko' ? '학생' : 'Student'}</th>
+              {PHONICS_GROUPS.map(g => <th key={g.id} colSpan={skillsInGroup(g.id).length} className="px-1 pt-2 pb-1 eyebrow font-semibold border-b border-l border-rule text-center whitespace-nowrap overflow-hidden text-ellipsis">{lang === 'ko' ? g.label_ko : g.label}</th>)}
+              <th rowSpan={2} className="px-3 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-left align-bottom">{lang === 'ko' ? '현재 과제' : 'Working on'}</th>
+              <th rowSpan={2} className="border-b border-rule-2" />
             </tr>
             <tr className="bg-paper-2">
               {PHONICS_SKILLS.map((s, i) => (
-                <th key={s.id} className={`px-1 pb-2 border-b border-rule-2 min-w-[52px] align-bottom ${i > 0 && PHONICS_SKILLS[i - 1].group !== s.group ? 'border-l border-rule' : ''}`} title={`${s.label}\n${s.covers}`}>
-                  <span className="block text-[10.5px] font-semibold text-ink-2 whitespace-nowrap">{s.short}</span>
-                  <span className={`block text-[10px] mt-0.5 ${colAvg[s.id] != null && colAvg[s.id]! < 70 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[s.id] != null ? `${colAvg[s.id]}%` : ''}</span>
+                <th key={s.id} className={`px-0 pb-1.5 border-b border-rule-2 align-bottom h-[104px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== s.group ? 'border-l border-rule' : ''}`} title={`${s.label}\n${s.covers}`}>
+                  <div className="flex flex-col items-center justify-end gap-1 h-full">
+                    <span className="text-[10.5px] font-semibold text-ink-2 whitespace-nowrap leading-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{s.short}</span>
+                    <span className={`text-[10px] leading-none ${colAvg[s.id] != null && colAvg[s.id]! < 70 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[s.id] != null ? `${colAvg[s.id]}%` : ' '}</span>
+                  </div>
                 </th>
               ))}
             </tr>
@@ -221,7 +232,7 @@ function HeatMap({ students, latestByStudent, lang, onCell, onCheck }: {
               const sum = summarizeStudent(latest)
               return (
                 <tr key={s.id}>
-                  <td className="sticky left-0 z-10 bg-surface px-3 py-1 border-r border-rule-2 whitespace-nowrap"><Link href={`/students/${s.id}`} className="text-ink hover:underline">{getDisplayName(s)}</Link><span className="text-ink-3 ml-1.5 text-[11px]">{s.korean_name}</span></td>
+                  <td className="px-3 py-1 border-r border-rule-2 overflow-hidden"><div className="truncate"><Link href={`/students/${s.id}`} className="text-ink hover:underline">{getDisplayName(s)}</Link><span className="text-ink-3 ml-1.5 text-[11px]">{s.korean_name}</span></div></td>
                   {PHONICS_SKILLS.map((sk, i) => {
                     const l = latest[sk.id]
                     const band = l ? phonicsBand(l.score) : null
@@ -229,17 +240,17 @@ function HeatMap({ students, latestByStudent, lang, onCell, onCheck }: {
                       <td key={sk.id} className={`p-[3px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
                         <button onClick={() => l && onCell(s.id, sk.id)} disabled={!l}
                           title={l ? `${sk.label}: ${l.score.correct}/${l.score.total} · ${PHONICS_BAND_LABELS[band!].en} · ${fmt(l.date)}${l.score.unread ? ` · ${l.score.unread} ${lang === 'ko' ? '미읽음' : 'not read'}` : ''}` : `${sk.label}: ${lang === 'ko' ? '미점검' : 'not checked'}`}
-                          className={`w-full h-7 rounded-sm text-[11px] font-semibold ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>{l ? l.score.pct : '·'}</button>
+                          className={`w-full h-7 rounded-sm text-[10.5px] font-semibold ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>{l ? l.score.pct : '·'}</button>
                       </td>
                     )
                   })}
-                  <td className="px-3 py-1 border-l border-rule-2 text-[11.5px] whitespace-nowrap">
+                  <td className="px-3 py-1 border-l border-rule-2 text-[11px] leading-tight overflow-hidden">
                     {sum.tested === 0 ? <span className="text-ink-3">—</span>
-                      : sum.frontier ? <span className="text-ink">{phonicsSkill(sum.frontier)?.label}</span>
-                      : <span className="text-good">{lang === 'ko' ? '점검한 시트 모두 숙달' : 'Every checked sheet proficient'}</span>}
+                      : sum.frontier ? <span className="block text-ink truncate" title={phonicsSkill(sum.frontier)?.label}>{phonicsSkill(sum.frontier)?.label}</span>
+                      : <span className="block text-good truncate">{lang === 'ko' ? '모두 숙달' : 'All proficient'}</span>}
                     {sum.lastDate && <span className="block text-[10px] text-ink-3">{fmt(sum.lastDate)}</span>}
                   </td>
-                  <td className="px-2 py-1"><button onClick={() => onCheck(s.id)} className="h-7 px-2.5 rounded border border-rule-2 text-[11.5px] font-medium text-ink-2 hover:text-ink hover:border-ink-3 whitespace-nowrap">{lang === 'ko' ? '점검' : 'Check'}</button></td>
+                  <td className="py-1 text-center"><button onClick={() => onCheck(s.id)} title={lang === 'ko' ? '이 학생 점검' : `Check ${s.english_name}`} aria-label={`Check ${s.english_name}`} className="w-7 h-7 inline-flex items-center justify-center rounded border border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3"><ClipboardCheck size={13} /></button></td>
                 </tr>
               )
             })}
