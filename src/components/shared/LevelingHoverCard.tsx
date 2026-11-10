@@ -6,12 +6,16 @@ import { withoutAwayDays } from '@/lib/calendarDays'
 import { EnglishClass, ENGLISH_CLASSES } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { WIDA_LEVELS } from '@/lib/wida'
+import { latestBySkill, orderSkills, phonicsBand, phonicsSkill, summarizeStudent, type LatestBySkill } from '@/lib/phonics'
+import { loadStudentPhonicsChecks } from '@/lib/phonicsData'
 
 interface HoverData {
   grades: { domain: string; score: number }[]
   reading: { date: string; cwpm: number }[]
   wida: Record<string, number>
   attCounts: { present: number; absent: number; tardy: number }
+  /** Latest phonics check per skill: where decoding stands, for the leveling meeting. */
+  phonics: LatestBySkill
 }
 
 // Class averages for the current level test (passed from LevelingView)
@@ -54,11 +58,12 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
 
   const loadData = async () => {
     if (loaded) return
-    const [{ data: sg }, { data: rd }, { data: wd }, { data: at }] = await Promise.all([
+    const [{ data: sg }, { data: rd }, { data: wd }, { data: at }, phonicsRows] = await Promise.all([
       supabase.from('semester_grades').select('*').eq('student_id', studentId).order('created_at', { ascending: false }).limit(10),
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(4),
       supabase.from('student_wida_levels').select('*').eq('student_id', studentId),
       supabase.from('attendance').select('status, date').eq('student_id', studentId),
+      loadStudentPhonicsChecks(studentId).catch(() => []),
     ])
     const attCounts = { present: 0, absent: 0, tardy: 0 }
     at?.forEach((a: any) => { if (attCounts[a.status as keyof typeof attCounts] !== undefined) attCounts[a.status as keyof typeof attCounts]++ })
@@ -69,7 +74,8 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
     setData({
       grades: Object.entries(gradeMap).map(([domain, score]) => ({ domain, score })),
       reading: (rd || []).map((r: any) => ({ date: r.date, cwpm: r.cwpm })),
-      wida, attCounts
+      wida, attCounts,
+      phonics: latestBySkill(phonicsRows || []),
     })
     setLoaded(true)
   }
@@ -213,6 +219,22 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
                   {widaInfo && <p className="text-[9px] text-text-tertiary mt-1 italic">{widaInfo.desc}</p>}
                 </div>
               )}
+
+              {/* ── Phonics (decoding) ───────────────────────── */}
+              {Object.keys(data.phonics).length > 0 && (() => {
+                const sum = summarizeStudent(data.phonics)
+                const tone = (b: string) => b === 'mastered' ? 'bg-green-600 border-green-600 text-white' : b === 'proficient' ? 'bg-green-50 border-green-200 text-green-700' : b === 'developing' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-600'
+                return (
+                  <div>
+                    <p className="text-[8px] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Phonics (decoding) · {sum.frontier ? `working on ${phonicsSkill(sum.frontier)?.label}` : 'every checked sheet proficient'}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {orderSkills(Object.keys(data.phonics)).map(id => { const l = data.phonics[id]; return (
+                        <span key={id} className={`px-1.5 py-0.5 rounded border text-[9px] font-semibold tabular-nums ${tone(phonicsBand(l.score))}`} title={`${phonicsSkill(id)?.label} · ${l.date}`}>{phonicsSkill(id)?.short} {l.score.correct}/{l.score.total}</span>
+                      ) })}
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* ── Semester Grades ──────────────────────────── */}
               {data.grades.length > 0 && (

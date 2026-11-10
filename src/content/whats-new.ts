@@ -21,6 +21,12 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'phonics-checks', date: '2026-11-16', title: 'Reading: the phonics quick checks, in the app, for every level',
+    body: 'You can now open Reading → Phonics and run the Phonics Quick Checks packet from the app while the student reads the printed sheet. Tick the sheets to check, one (CVC) or several or all twenty, from CVC up to the two-syllable pages, and tap each word as the student reads it: once for correct, again for an error, with a pencil to write what they said. Under the words, the packet’s own checkboxes: how they decoded and which patterns gave trouble. The student decodes only; meaning is never asked, and nothing is graded. The heat map shows the whole class against every sheet, coloured by the packet’s bands (Beginning, Developing, Proficient, Mastered) from the latest check, with the sheet each student is working on. The result stays with the student: it shows on the student page under Reading and in the leveling meeting’s hover card, so decoding gaps are in front of you when you level.',
+    path: '/reading?tab=phonics', guide: 'reading',
+    tour: { path: '/reading?tab=phonics', steps: [{ anchor: 'reading.phonics.mode', text: 'Heat map for the class; Check a student to sit with one.' }, { anchor: 'reading.phonics.skills', text: 'Tick the sheets for this sitting: one, several or all twenty.' }, { anchor: 'reading.phonics.words', text: 'Tap each word as the student reads it: correct, error, clear. The pencil records what they said.' }] },
+  },
+  {
     id: 'overtime', date: '2026-11-16', title: 'Overtime: log it as you go, print the sheet',
     body: 'You can now open Overtime from the user menu. Type the times you worked the way you say them, 4:30 to 6:45, and what the work was; the time and the won add themselves up as you type, at 10,320 won an hour. Print sheet shows the school’s overtime sheet, filled in and in large type, beside the dates: pick this month, last month or the last two weeks, or any two dates, and print it, ready to sign. Weekends and days off are not overtime, so they cannot be logged. Admin sees every teacher’s month and prints everyone’s sheets in one go.',
     path: '/overtime', guide: 'overtime',

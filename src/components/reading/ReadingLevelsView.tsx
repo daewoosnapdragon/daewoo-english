@@ -16,6 +16,7 @@ import StudentPopover from '@/components/shared/StudentPopover'
 import PassagePickerPanel from '@/components/shared/PassagePickerPanel'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
+import PhonicsView from '@/components/reading/PhonicsView'
 
 type LangKey = 'en' | 'ko'
 interface ReadingRecord {
@@ -61,7 +62,20 @@ function useClassBenchmarks(englishClass: string, grade: number) {
 export default function ReadingLevelsView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
-  const [subView, setSubView] = useState<'class' | 'student' | 'groups' | 'flexgroups' | 'passages' | 'bypassage'>('class')
+  const [subView, setSubView] = useState<'class' | 'student' | 'groups' | 'flexgroups' | 'passages' | 'bypassage' | 'phonics'>('class')
+  // The student page links here with ?tab=phonics&student=…&grade=…&class=…
+  // to open the check screen on that student. Read after mount so the first
+  // render matches the server's.
+  const [phonicsStudentId, setPhonicsStudentId] = useState<string | null>(null)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('tab') !== 'phonics') return
+    const g = Number(q.get('grade')); const c = q.get('class')
+    if (GRADES.includes(g as Grade)) setSelectedGrade(g as Grade)
+    if (c && ALL_ENGLISH_CLASSES.includes(c as EnglishClass)) setSelectedClass(c as EnglishClass)
+    setPhonicsStudentId(q.get('student'))
+    setSubView('phonics')
+  }, [])
   const [selectedGrade, setSelectedGrade] = useState<Grade>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('daewoo_reading_grade')
@@ -98,10 +112,11 @@ export default function ReadingLevelsView() {
         {([
           { id: 'class', label: lang === 'ko' ? '반 개요' : 'Class overview' },
           { id: 'student', label: lang === 'ko' ? '학생별' : 'Student detail' },
+          { id: 'phonics', label: lang === 'ko' ? '파닉스' : 'Phonics' },
           { id: 'bypassage', label: lang === 'ko' ? '지문별' : 'By passage' },
           { id: 'passages', label: lang === 'ko' ? '지문 라이브러리' : 'Passage library' },
         ] as const).map((tab) => (
-          <button key={tab.id} onClick={() => setSubView(tab.id)}
+          <button key={tab.id} onClick={() => setSubView(tab.id)} data-guide={`reading.tab.${tab.id}`}
             className={`relative px-4 h-10 text-[13.5px] font-medium ${subView === tab.id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
             {tab.label}{subView === tab.id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}
           </button>
@@ -117,6 +132,7 @@ export default function ReadingLevelsView() {
       <div>
 
         {subView === 'class' && <ClassOverview key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} onSelectStudent={(sid: string) => { setSelectedStudentId(sid); setSubView('student') }} />}
+        {subView === 'phonics' && <PhonicsView students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} initialStudentId={phonicsStudentId} />}
         {subView === 'student' && <StudentReadingView key={refreshKey} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} grade={selectedGrade} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} />}
         {subView === 'bypassage' && <ByPassageView key={refreshKey} students={students} lang={lang} grade={selectedGrade} englishClass={selectedClass} onStartBatch={(passageTitle: string) => { setShowAddModal(true) }} />}
         {subView === 'passages' && <PassageLibrary lang={lang} />}
