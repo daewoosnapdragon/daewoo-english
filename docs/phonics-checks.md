@@ -35,8 +35,8 @@ also has nonsense-word pages and review pages; they are not in the app.
 
 ## Running a check
 
-The packet's directions, as the instructions panel above the screen puts
-them (`PHONICS_CHECK_NOTES`):
+The packet's directions, as `PHONICS_CHECK_NOTES` in `src/lib/phonics.ts`
+puts them (kept as reference text; the screen itself shows no panel):
 
 - Decoding only. The student reads the words left to right; meaning is never
   asked.

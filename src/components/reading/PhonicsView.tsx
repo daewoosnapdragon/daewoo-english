@@ -8,13 +8,12 @@ import { exportToCSV } from '@/lib/export'
 import { logActivity } from '@/lib/activity'
 import type { Student } from '@/types'
 import {
-  PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_CHECK_NOTES, PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
+  PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
   phonicsSkill, skillsInGroup, orderSkills, latestBySkill, phonicsBand, summarizeStudent, notYetSecure, scoreCheck, scoreSkill, nextMark, longestErrorRun,
   type PhonicsCheckRow, type PhonicsMark, type LatestBySkill, type PhonicsBand,
 } from '@/lib/phonics'
 import { loadPhonicsChecks, savePhonicsCheck, deletePhonicsCheck } from '@/lib/phonicsData'
 import { BAND_TONE, BAND_CHIP, BAND_TEXT, BAND_DOT } from '@/components/reading/PhonicsSummary'
-import TestNotesPanel from '@/components/leveling/TestNotesPanel'
 import { Check, ChevronLeft, ChevronRight, ClipboardCheck, Download, Loader2, Pencil, Printer, Trash2, X } from 'lucide-react'
 
 // ─── Phonics quick checks ────────────────────────────────────────
@@ -139,8 +138,6 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
           <button onClick={printSheets} className="inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink" title={lang === 'ko' ? '학생용 단어 시트 인쇄' : 'Print the twenty sheets in large type, one a page, for the student to read from'}><Printer size={11} /> {lang === 'ko' ? '단어 시트' : 'Word sheets'}</button>
         </div>
       </div>
-
-      <TestNotesPanel storageKey="phonics-check" title={lang === 'ko' ? '점검 방법' : 'How to run a phonics check'} groups={[{ label: lang === 'ko' ? '파닉스 점검' : 'Phonics quick checks', notes: PHONICS_CHECK_NOTES }]} />
 
       {loading || loadingChecks ? <div className="py-12 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
       : students.length === 0 ? <p className="text-[13px] text-ink-3 py-8">{lang === 'ko' ? '이 반에 학생이 없습니다.' : 'No students in this class.'}</p>
