@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   blockedReason, counted, fmtDayDate, daysOffIn, fmtClock, fmtMinutes, fmtRange, fmtWon, minutesBetween, monthLabel, overlapping,
-  parseClock, parseOvertimeSettings, parseRange, periodLabel, policyText, recentReasons, sheetPages, shiftMonth,
+  parseClock, parseOvertimeSettings, parseRange, selectionLabel, weeksFromKeys, nextWorkday, weeksSpan, rangeSpan, selSpans, chosenSpans, selTicked, toggleWeek, setWeeks, joinSpan, policyText, recentReasons, sheetPages, shiftMonth,
   splitRange, totals, weekLabel, weeksOfMonth, wonFor, entriesInWeeks, DEFAULT_OVERTIME_SETTINGS, type OvertimeEntry,
 } from '@/lib/overtime'
 
@@ -161,14 +161,71 @@ describe('weeks', () => {
   })
   it('names the ticked weeks for the sheet', () => {
     const w = weeksOfMonth('2026-11')
-    expect(periodLabel('2026-11', w)).toBe('November 2026')
-    expect(periodLabel('2026-11', [w[0], w[1]])).toBe('Nov 2 – 13, 2026')
-    expect(periodLabel('2026-11', [w[0], w[1], w[3]])).toBe('Nov 2 – 13, Nov 23 – 27, 2026')
+    expect(selectionLabel(w)).toBe('November 2026')
+    expect(selectionLabel([w[0], w[1]])).toBe('Nov 2 – 13, 2026')
+    expect(selectionLabel([w[3], w[0], w[1]])).toBe('Nov 2 – 13, Nov 23 – 27, 2026')
+    expect(selectionLabel([w[1]], true)).toBe('2026년 11월 9일 – 13일')
+  })
+  it('joins weeks from different months into one run', () => {
+    const nov = weeksOfMonth('2026-11'), dec = weeksOfMonth('2026-12')
+    expect(selectionLabel([nov[3], nov[4], dec[0]])).toBe('Nov 23 – Dec 4, 2026')
+    expect(selectionLabel([...nov, dec[0]])).toBe('Nov 2 – Dec 4, 2026')
+    expect(selectionLabel([nov[1], dec[1]])).toBe('Nov 9 – 13, Dec 7 – 11, 2026')
+    const jan = weeksOfMonth('2027-01')
+    expect(selectionLabel([dec[dec.length - 1], jan[0]])).toBe('Dec 28, 2026 – Jan 1, 2027')
+  })
+  it('takes a date range typed by hand', () => {
+    const r = rangeSpan('2026-10-01', '2026-11-07')
+    expect(r).toEqual({ from: '2026-10-01', to: '2026-11-07' })
+    expect(selectionLabel([r!])).toBe('Oct 1 – Nov 7, 2026')
+    expect(selectionLabel([rangeSpan('2026-11-01', '2026-11-30')!])).toBe('November 2026')
+    expect(selectionLabel([rangeSpan('2026-11-01', '2026-11-20')!])).toBe('Nov 1 – 20, 2026')
+    expect(rangeSpan('2026-11-07', '2026-10-01')).toBeNull()
+    expect(rangeSpan('', '2026-10-01')).toBeNull()
+    const es = [entry({ date: '2026-09-30' }), entry({ date: '2026-10-01' }), entry({ date: '2026-11-07' }), entry({ date: '2026-11-09' })]
+    expect(entriesInWeeks(es, [r!]).map(e => e.date)).toEqual(['2026-10-01', '2026-11-07'])
+  })
+  it('rebuilds weeks from their keys, in any month', () => {
+    expect(weeksFromKeys(['2026-12-01', '2026-11-30', 'nonsense', '2026-11-30'])).toEqual([{ from: '2026-11-30', to: '2026-11-30' }, { from: '2026-12-01', to: '2026-12-04' }])
+    expect(weeksFromKeys(['2026-11-03'])).toEqual([])
+    expect(nextWorkday('2026-11-27')).toBe('2026-11-30')
+    expect(weeksSpan(weeksFromKeys(['2026-12-01', '2026-11-23']))).toEqual({ from: '2026-11-23', to: '2026-12-04' })
+    expect(weeksSpan([])).toBeNull()
   })
   it('keeps the entries in the ticked weeks', () => {
     const w = weeksOfMonth('2026-11')
     const es = [entry({ date: '2026-11-03' }), entry({ date: '2026-11-10' }), entry({ date: '2026-11-24' })]
     expect(entriesInWeeks(es, [w[0], w[3]]).map(e => e.date)).toEqual(['2026-11-03', '2026-11-24'])
+  })
+})
+
+describe('what goes on the sheet', () => {
+  const def = ['2026-11-02', '2026-11-09']
+  it('uses the default ticks until someone ticks', () => {
+    expect(selSpans({ kind: 'weeks', keys: null }, def).map(w => w.from)).toEqual(def)
+    expect(chosenSpans({ kind: 'weeks', keys: null })).toEqual([])
+    expect(selTicked({ kind: 'weeks', keys: null }, '2026-11-09', def)).toBe(true)
+  })
+  it('keeps ticks from other months when ticking more', () => {
+    let s = toggleWeek({ kind: 'weeks', keys: ['2026-10-26'] }, '2026-11-02', def)
+    expect(s).toEqual({ kind: 'weeks', keys: ['2026-10-26', '2026-11-02'] })
+    s = toggleWeek(s, '2026-10-26', def)
+    expect(s).toEqual({ kind: 'weeks', keys: ['2026-11-02'] })
+    expect(toggleWeek({ kind: 'weeks', keys: null }, '2026-11-02', def)).toEqual({ kind: 'weeks', keys: ['2026-11-09'] })
+  })
+  it('switches from a range to ticks with the week ticked', () => {
+    expect(toggleWeek({ kind: 'range', from: '2026-10-01', to: '2026-11-07' }, '2026-11-09', def)).toEqual({ kind: 'weeks', keys: ['2026-11-09'] })
+    expect(selTicked({ kind: 'range', from: '2026-10-01', to: '2026-11-07' }, '2026-11-02', def)).toBe(false)
+    expect(selSpans({ kind: 'range', from: '2026-10-01', to: '2026-11-07' }, def)).toEqual([{ from: '2026-10-01', to: '2026-11-07' }])
+    expect(selSpans({ kind: 'range', from: '2026-11-07', to: '2026-10-01' }, def)).toEqual([])
+  })
+  it('ticks or unticks a month at a time', () => {
+    expect(setWeeks({ kind: 'weeks', keys: ['2026-10-26'] }, ['2026-11-02', '2026-11-09'], true, [])).toEqual({ kind: 'weeks', keys: ['2026-10-26', '2026-11-02', '2026-11-09'] })
+    expect(setWeeks({ kind: 'weeks', keys: ['2026-10-26', '2026-11-02'] }, ['2026-11-02', '2026-11-09'], false, [])).toEqual({ kind: 'weeks', keys: ['2026-10-26'] })
+  })
+  it('joins spans', () => {
+    expect(joinSpan({ from: '2026-11-01', to: '2026-11-30' }, { from: '2026-10-01', to: '2026-11-07' })).toEqual({ from: '2026-10-01', to: '2026-11-30' })
+    expect(joinSpan({ from: '2026-11-01', to: '2026-11-30' }, null)).toEqual({ from: '2026-11-01', to: '2026-11-30' })
   })
 })
 

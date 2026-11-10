@@ -5,6 +5,7 @@ import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { getKSTDateString } from '@/lib/utils'
 import type { Teacher } from '@/types'
+import { NO_SEL, weeksOfMonth, type SheetSel } from '@/lib/overtime'
 import AdminMonth from './AdminMonth'
 import TeacherMonth from './TeacherMonth'
 import { useOvertimeMonth, useOvertimeSettings } from './useOvertime'
@@ -23,8 +24,8 @@ export default function OvertimeView() {
   const { teachers, loading: teachersLoading } = useTeachers()
   const { settings, loaded } = useOvertimeSettings()
   const [month, setMonth] = useState(getKSTDateString().slice(0, 7))
-  const [ticks, setTicks] = useState<Set<string> | null>(null)
-  const [open, setOpen] = useState<{ teacher: Teacher; ticks: string[] } | null>(null)
+  const [sel, setSel] = useState<SheetSel>(NO_SEL)
+  const [open, setOpen] = useState<Teacher | null>(null)
   // One cheap read tells whether the table exists yet.
   const probe = useOvertimeMonth(currentTeacher?.id || null, getKSTDateString().slice(0, 7))
   const staff = useMemo(() => teachers.filter(t => t.role !== 'admin'), [teachers])
@@ -43,8 +44,8 @@ export default function OvertimeView() {
         <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
       ) : isAdmin ? (
         open
-          ? <TeacherMonth key={open.teacher.id} teacher={open.teacher} settings={settings} asAdmin initialMonth={month} initialTicks={open.ticks} onBack={() => setOpen(null)} />
-          : <AdminMonth staff={staff} settings={settings} month={month} setMonth={setMonth} ticks={ticks} setTicks={setTicks} onOpen={(t, tk) => setOpen({ teacher: t, ticks: tk })} />
+          ? <TeacherMonth key={open.id} teacher={open} settings={settings} asAdmin initialMonth={month} initialSel={sel.kind === 'weeks' && sel.keys === null ? { kind: 'weeks', keys: weeksOfMonth(month).map(w => w.from) } : sel} onBack={() => setOpen(null)} />
+          : <AdminMonth staff={staff} settings={settings} month={month} setMonth={setMonth} sel={sel} setSel={setSel} onOpen={t => setOpen(t)} />
       ) : (
         <TeacherMonth teacher={currentTeacher} settings={settings} />
       )}

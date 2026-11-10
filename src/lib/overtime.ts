@@ -261,24 +261,121 @@ export const weekOf = (date: string, weeks: MonthWeek[]) => weeks.find(w => date
 /** Entries whose date falls in one of the ticked weeks. */
 export const entriesInWeeks = <T extends { date: string }>(entries: T[], weeks: MonthWeek[]) => entries.filter(e => weeks.some(w => e.date >= w.from && e.date <= w.to))
 
-/**
- * What the ticked weeks are called on the sheet: the month when every week
- * is ticked, else runs of consecutive weeks, "Nov 2 – 13, Nov 23 – 27, 2026".
- */
-export function periodLabel(month: string, ticked: MonthWeek[], ko = false): string {
-  const all = weeksOfMonth(month)
-  const keys = new Set(ticked.map(w => w.from))
-  if (all.length && all.every(w => keys.has(w.from))) return monthLabel(month, ko)
-  const runs: MonthWeek[] = []
-  let run: MonthWeek | null = null
-  for (const w of all) {
-    if (keys.has(w.from)) { run = run ? { from: run.from, to: w.to } : { ...w } }
-    else if (run) { runs.push(run); run = null }
+// ─── Ticked weeks, across months ─────────────────────────────────
+// A tick is kept as the week's key (its first working day in its month),
+// so weeks from different months can be ticked together: Nov 23 – 27,
+// Nov 30 and Dec 1 – 4 print on one sheet.
+
+/** The week a key names, rebuilt from its month; null when the key is not a week start. */
+export function weekForKey(key: string): MonthWeek | null {
+  if (!/^\d{4}-(0[1-9]|1[0-2])-\d{2}$/.test(key)) return null
+  return weeksOfMonth(key.slice(0, 7)).find(w => w.from === key) || null
+}
+
+/** Keys to weeks, in date order; keys that are not week starts are dropped. */
+export function weeksFromKeys(keys: Iterable<string>): MonthWeek[] {
+  return Array.from(new Set(keys)).map(weekForKey).filter((w): w is MonthWeek => !!w).sort((a, b) => a.from.localeCompare(b.from))
+}
+
+/** The first Monday-to-Friday day after a date. */
+export function nextWorkday(iso: string): string {
+  let d = addDays(iso, 1)
+  while (weekdayOf(d) === 0 || weekdayOf(d) === 6) d = addDays(d, 1)
+  return d
+}
+
+/** The earliest and latest day the weeks cover, or null for none. */
+export function weeksSpan(weeks: MonthWeek[]): { from: string; to: string } | null {
+  if (!weeks.length) return null
+  return { from: weeks.reduce((m, w) => (w.from < m ? w.from : m), weeks[0].from), to: weeks.reduce((m, w) => (w.to > m ? w.to : m), weeks[0].to) }
+}
+
+function rangeLabel(from: string, to: string, ko: boolean, withYear: boolean): string {
+  const y1 = from.slice(0, 4), y2 = to.slice(0, 4)
+  const dFrom = Number(from.slice(8, 10)), dTo = Number(to.slice(8, 10))
+  if (ko) {
+    const a = `${withYear && y1 !== y2 ? `${y1}년 ` : ''}${fmtDate(from, true)}`
+    if (from === to) return a
+    const b = from.slice(0, 7) === to.slice(0, 7) ? `${dTo}일` : `${withYear && y1 !== y2 ? `${y2}년 ` : ''}${fmtDate(to, true)}`
+    return `${a} – ${b}`
   }
-  if (run) runs.push(run)
-  if (!runs.length) return monthLabel(month, ko)
-  const y = month.slice(0, 4)
-  return ko ? `${y}년 ${runs.map(r => weekLabel(r, true)).join(', ')}` : `${runs.map(r => weekLabel(r)).join(', ')}, ${y}`
+  if (from === to) return fmtDate(from) + (withYear && y1 !== y2 ? `, ${y1}` : '')
+  if (from.slice(0, 7) === to.slice(0, 7)) return `${fmtDate(from)} – ${dTo}`
+  if (withYear && y1 !== y2) return `${fmtDate(from)}, ${y1} – ${fmtDate(to)}, ${y2}`
+  return `${fmtDate(from)} – ${fmtDate(to)}`
+}
+
+/** A date range typed by hand, as a span the week helpers take; null unless both are dates and from is not after to. */
+export function rangeSpan(from: string, to: string): MonthWeek | null {
+  const ok = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(new Date(d + 'T12:00:00Z').getTime())
+  return ok(from) && ok(to) && from <= to ? { from, to } : null
+}
+
+/**
+ * What the ticked weeks are called on the sheet: the month when they are
+ * exactly one whole month, else runs of back-to-back weeks, across months
+ * too: "Nov 2 – 13, Nov 23 – 27, 2026", "Nov 23 – Dec 4, 2026".
+ */
+export function selectionLabel(weeks: MonthWeek[], ko = false): string {
+  const ws = [...weeks].sort((a, b) => a.from.localeCompare(b.from))
+  if (!ws.length) return ''
+  const months = new Set(ws.map(w => w.from.slice(0, 7)))
+  // A date range that is exactly one month.
+  if (ws.length === 1 && ws[0].from.slice(0, 7) === ws[0].to.slice(0, 7) && ws[0].from.endsWith('-01') && ws[0].to === monthRange(ws[0].from.slice(0, 7)).to) return monthLabel(ws[0].from.slice(0, 7), ko)
+  if (months.size === 1) {
+    const month = ws[0].from.slice(0, 7)
+    const all = weeksOfMonth(month)
+    if (all.length === ws.length && all.every((w, i) => w.from === ws[i].from)) return monthLabel(month, ko)
+  }
+  const runs: { from: string; to: string }[] = []
+  for (const w of ws) {
+    const last = runs[runs.length - 1]
+    if (last && nextWorkday(last.to) === w.from) last.to = w.to
+    else runs.push({ from: w.from, to: w.to })
+  }
+  const y1 = ws[0].from.slice(0, 4), y2 = ws[ws.length - 1].to.slice(0, 4)
+  const oneYear = y1 === y2
+  const body = runs.map(r => rangeLabel(r.from, r.to, ko, !oneYear)).join(', ')
+  if (!oneYear) return body
+  return ko ? `${y1}년 ${body}` : `${body}, ${y1}`
+}
+
+// ─── What goes on the sheet ──────────────────────────────────────
+// Either ticked weeks (keys, any months; null = the page's default ticks)
+// or a date range typed by hand. Ticking a week while a range is set
+// starts a fresh set of ticks with that week.
+
+export type SheetSel = { kind: 'weeks'; keys: string[] | null } | { kind: 'range'; from: string; to: string }
+
+export const NO_SEL: SheetSel = { kind: 'weeks', keys: null }
+
+/** The spans on the sheet: the ticked weeks in date order, or the range. */
+export function selSpans(sel: SheetSel, defaultKeys: string[]): MonthWeek[] {
+  if (sel.kind === 'range') { const r = rangeSpan(sel.from, sel.to); return r ? [r] : [] }
+  return weeksFromKeys(sel.keys ?? defaultKeys)
+}
+
+/** Only what was chosen, never the default: decides how far beyond the month on screen to load. */
+export const chosenSpans = (sel: SheetSel): MonthWeek[] => sel.kind === 'range' ? selSpans(sel, []) : weeksFromKeys(sel.keys ?? [])
+
+export const selTicked = (sel: SheetSel, key: string, defaultKeys: string[]) => sel.kind === 'weeks' && (sel.keys ?? defaultKeys).includes(key)
+
+export function toggleWeek(sel: SheetSel, key: string, defaultKeys: string[]): SheetSel {
+  if (sel.kind === 'range') return { kind: 'weeks', keys: [key] }
+  const keys = sel.keys ?? defaultKeys
+  return { kind: 'weeks', keys: keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key] }
+}
+
+/** Tick (or untick) several weeks at once, keeping ticks in other months. */
+export function setWeeks(sel: SheetSel, keys: string[], on: boolean, defaultKeys: string[]): SheetSel {
+  const cur = sel.kind === 'weeks' ? (sel.keys ?? defaultKeys) : []
+  const rest = cur.filter(k => !keys.includes(k))
+  return { kind: 'weeks', keys: on ? [...rest, ...keys] : rest }
+}
+
+/** The smallest span holding both. */
+export function joinSpan(a: { from: string; to: string }, b: { from: string; to: string } | null): { from: string; to: string } {
+  return b ? { from: a.from < b.from ? a.from : b.from, to: a.to > b.to ? a.to : b.to } : a
 }
 
 // ─── Totals ──────────────────────────────────────────────────────

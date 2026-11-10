@@ -5,15 +5,16 @@ import { useApp } from '@/lib/context'
 import { getKSTDateString } from '@/lib/utils'
 import { logActivity } from '@/lib/activity'
 import type { Teacher } from '@/types'
-import { counted, entriesInWeeks, fmtDate, fmtMinutes, fmtWon, monthLabel, periodLabel, shiftMonth, totals, weekLabel, weeksOfMonth, type OvertimeSettings } from '@/lib/overtime'
+import { chosenSpans, counted, entriesInWeeks, fmtDate, fmtMinutes, fmtWon, joinSpan, monthLabel, monthRange, selectionLabel, selSpans, selTicked, setWeeks, shiftMonth, toggleWeek, totals, weekLabel, weeksOfMonth, weeksSpan, type OvertimeSettings, type SheetSel } from '@/lib/overtime'
 import { printOvertimeSheets, type SheetInput } from './overtimeSheet'
 import { exportOvertime } from './overtimeExport'
-import { useOvertimeMonth } from './useOvertime'
+import SheetBar from './SheetBar'
+import { useOvertimeRange } from './useOvertime'
 import { ChevronLeft, ChevronRight, Download, Loader2, Printer, RefreshCw } from 'lucide-react'
 
 // ─── Everyone's month (admin) ────────────────────────────────────
-// Tick the weeks the office is asking for; the totals, the table, Print
-// and Export follow the ticks. One row per teacher: entries, time, won,
+// Tick the weeks the office is asking for, in one month or several, or
+// type a range of dates; the totals, the table, Print and Export follow. One row per teacher: entries, time, won,
 // the last entry, and Open (their page, editable) and Print (their sheet).
 // Print all puts every teacher with entries in one document, one teacher
 // per sheet.
@@ -27,31 +28,35 @@ interface Props {
   settings: OvertimeSettings
   month: string
   setMonth: (m: string) => void
-  ticks: Set<string> | null
-  setTicks: (t: Set<string> | null) => void
-  onOpen: (t: Teacher, ticked: string[]) => void
+  sel: SheetSel
+  setSel: (s: SheetSel) => void
+  onOpen: (t: Teacher) => void
 }
 
-export default function AdminMonth({ staff, settings, month, setMonth, ticks, setTicks, onOpen }: Props) {
+export default function AdminMonth({ staff, settings, month, setMonth, sel, setSel, onOpen }: Props) {
   const { language, showToast } = useApp()
   const ko = language === 'ko'
-  const m = useOvertimeMonth(null, month)
+  const range = monthRange(month)
+  const load = joinSpan(range, weeksSpan(chosenSpans(sel)))
+  const m = useOvertimeRange(null, load.from, load.to)
   const [exporting, setExporting] = useState(false)
   const weeks = useMemo(() => weeksOfMonth(month), [month])
-  const ticked = ticks ?? new Set(weeks.map(w => w.from))
-  const tickedWeeks = weeks.filter(w => ticked.has(w.from))
+  // Until someone ticks or picks dates, every week of the month on screen is on the sheet.
+  const defaultKeys = useMemo(() => weeks.map(w => w.from), [weeks])
+  const spans = useMemo(() => selSpans(sel, defaultKeys), [sel, defaultKeys])
   const good = useMemo(() => counted(m.entries, m.daysOff), [m.entries, m.daysOff])
-  const inTicked = useMemo(() => entriesInWeeks(good, tickedWeeks), [good, tickedWeeks]) // eslint-disable-line react-hooks/exhaustive-deps
+  const inTicked = useMemo(() => entriesInWeeks(good, spans), [good, spans])
   const rows = useMemo(() => staff.map(t => {
     const es = inTicked.filter(e => e.teacher_id === t.id)
     return { t, es, ...totals(es, settings.rate), last: es.map(e => e.date).sort().pop() || null }
   }), [staff, inTicked, settings.rate])
   const all = totals(inTicked.filter(e => staff.some(t => t.id === e.teacher_id)), settings.rate)
   const withEntries = rows.filter(r => r.count > 0)
-  const period = periodLabel(month, tickedWeeks)
+  const period = selectionLabel(spans)
+  // Leaving the month keeps what is on the sheet: the default ticks become real ones.
+  const goMonth = (to: string) => { if (sel.kind === 'weeks' && sel.keys === null) setSel({ kind: 'weeks', keys: defaultKeys }); setMonth(to) }
   const isCurrent = month === getKSTDateString().slice(0, 7)
 
-  const toggle = (key: string) => { const n = new Set(ticked); if (n.has(key)) n.delete(key); else n.add(key); setTicks(n) }
   const sheetFor = (r: typeof rows[number]): SheetInput => ({ teacherName: r.t.name, className: r.t.english_class, period, entries: r.es })
   const print = (rs: typeof rows) => {
     if (!rs.length) return
@@ -60,7 +65,8 @@ export default function AdminMonth({ staff, settings, month, setMonth, ticks, se
   }
   const doExport = async () => {
     setExporting(true)
-    try { await exportOvertime(rows.map(r => ({ teacher: r.t, entries: r.es })), settings.rate, `overtime-${month}${tickedWeeks.length === weeks.length ? '' : '-weeks'}`, period) }
+    const span = weeksSpan(spans)
+    try { await exportOvertime(rows.map(r => ({ teacher: r.t, entries: r.es })), settings.rate, span ? `overtime-${span.from}-to-${span.to}` : `overtime-${month}`, period) }
     catch (e: any) { showToast(e?.message || String(e)) }
     setExporting(false)
   }
@@ -73,36 +79,37 @@ export default function AdminMonth({ staff, settings, month, setMonth, ticks, se
           <h1 className="font-display text-[34px] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h1>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => { setMonth(shiftMonth(month, -1)); setTicks(null) }} className={iconBtn} aria-label={ko ? '지난달' : 'Previous month'}><ChevronLeft size={15} /></button>
+          <button onClick={() => goMonth(shiftMonth(month, -1))} className={iconBtn} aria-label={ko ? '지난달' : 'Previous month'}><ChevronLeft size={15} /></button>
           <span className="text-[14px] font-semibold text-ink min-w-[130px] text-center">{monthLabel(month, ko)}</span>
-          <button onClick={() => { setMonth(shiftMonth(month, 1)); setTicks(null) }} className={iconBtn} aria-label={ko ? '다음 달' : 'Next month'}><ChevronRight size={15} /></button>
-          {!isCurrent && <button onClick={() => { setMonth(getKSTDateString().slice(0, 7)); setTicks(null) }} className={`${btnS} ml-1`}>{ko ? '이번 달' : 'This month'}</button>}
+          <button onClick={() => goMonth(shiftMonth(month, 1))} className={iconBtn} aria-label={ko ? '다음 달' : 'Next month'}><ChevronRight size={15} /></button>
+          {!isCurrent && <button onClick={() => goMonth(getKSTDateString().slice(0, 7))} className={`${btnS} ml-1`}>{ko ? '이번 달' : 'This month'}</button>}
           <button onClick={m.reload} className={`${iconBtn} ml-1`} title={ko ? '새로고침' : 'Refresh'} aria-label={ko ? '새로고침' : 'Refresh'}><RefreshCw size={13} /></button>
         </div>
       </div>
 
       <div className="flex items-center gap-1.5 flex-wrap mb-2">
-        {weeks.map(w => (
-          <label key={w.from} className={`h-8 px-2.5 rounded border text-[12.5px] inline-flex items-center gap-1.5 cursor-pointer select-none ${ticked.has(w.from) ? 'border-ink bg-ink text-paper' : 'border-rule-2 text-ink-2 hover:text-ink'}`}>
-            <input type="checkbox" checked={ticked.has(w.from)} onChange={() => toggle(w.from)} className="sr-only" />
-            <span className={`w-3.5 h-3.5 rounded-sm border inline-flex items-center justify-center text-[10px] ${ticked.has(w.from) ? 'border-paper' : 'border-ink-3'}`}>{ticked.has(w.from) ? '✓' : ''}</span>
+        {weeks.map(w => { const on = selTicked(sel, w.from, defaultKeys); return (
+          <label key={w.from} className={`h-8 px-2.5 rounded border text-[12.5px] inline-flex items-center gap-1.5 cursor-pointer select-none ${on ? 'border-ink bg-ink text-paper' : 'border-rule-2 text-ink-2 hover:text-ink'}`}>
+            <input type="checkbox" checked={on} onChange={() => setSel(toggleWeek(sel, w.from, defaultKeys))} className="sr-only" />
+            <span className={`w-3.5 h-3.5 rounded-sm border inline-flex items-center justify-center text-[10px] ${on ? 'border-paper' : 'border-ink-3'}`}>{on ? '✓' : ''}</span>
             {weekLabel(w, ko)}
           </label>
-        ))}
-        <button onClick={() => setTicks(null)} className={btnS}>{ko ? '전체' : 'All'}</button>
-        <button onClick={() => setTicks(new Set())} className={btnS}>{ko ? '없음' : 'None'}</button>
+        ) })}
+        <button onClick={() => setSel(setWeeks(sel, defaultKeys, true, defaultKeys))} className={btnS}>{ko ? '이 달 전체' : 'All this month'}</button>
+        <button onClick={() => setSel(setWeeks(sel, defaultKeys, false, defaultKeys))} className={btnS}>{ko ? '이 달 없음' : 'None this month'}</button>
       </div>
-      <p className="text-[12.5px] text-ink-2 mb-5 tabular-nums">
-        {tickedWeeks.length ? <>{period} · <span className="font-semibold text-ink">{fmtMinutes(all.minutes, ko)}</span> · {fmtWon(all.won, ko)} · {withEntries.length} {ko ? '명' : withEntries.length === 1 ? 'teacher' : 'teachers'}</> : (ko ? '주를 하나 이상 고르세요.' : 'Tick at least one week.')}
-        <span className="text-ink-3"> · {ko ? `시간당 ${fmtWon(settings.rate, true)}` : `${fmtWon(settings.rate)} an hour`}</span>
-      </p>
+      <div className="mb-2">
+        <SheetBar sel={sel} setSel={setSel} label={selectionLabel(spans, ko)} total={all} ko={ko}
+          hint={ko ? '주를 고르세요 (여러 달 가능). 또는 날짜를 고르세요.' : 'Tick weeks, in any month, or pick dates.'}
+          suffix={`${withEntries.length} ${ko ? '명' : withEntries.length === 1 ? 'teacher' : 'teachers'} · ${ko ? `시간당 ${fmtWon(settings.rate, true)}` : `${fmtWon(settings.rate)} an hour`}`} />
+      </div>
 
       <div className="flex items-center gap-2 mb-3">
         <button onClick={() => print(withEntries)} disabled={!withEntries.length} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5"><Printer size={13} />{ko ? '모두 인쇄' : 'Print all'}{withEntries.length ? ` (${withEntries.length})` : ''}</button>
-        <button onClick={doExport} disabled={exporting || !tickedWeeks.length} className={btn}>{exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}{ko ? '엑셀로 내보내기' : 'Export to Excel'}</button>
+        <button onClick={doExport} disabled={exporting || !spans.length} className={btn}>{exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}{ko ? '엑셀로 내보내기' : 'Export to Excel'}</button>
       </div>
 
-      {m.loading ? <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : (
+      {!m.covers(range.from, range.to) ? <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : (
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
@@ -126,8 +133,8 @@ export default function AdminMonth({ staff, settings, month, setMonth, ticks, se
                   <td className="py-2 pr-3 text-right tabular-nums text-ink-2">{r.count ? fmtWon(r.won, ko) : '—'}</td>
                   <td className="py-2 pr-3 tabular-nums text-ink-3">{r.last ? fmtDate(r.last, ko) : '—'}</td>
                   <td className="py-2 text-right whitespace-nowrap">
-                    <button onClick={() => onOpen(r.t, tickedWeeks.map(w => w.from))} className={btnS}>{ko ? '열기' : 'Open'}</button>
-                    <button onClick={() => print([r])} disabled={!tickedWeeks.length} className={`${btnS} ml-1.5`}><Printer size={11} />{ko ? '인쇄' : 'Print'}</button>
+                    <button onClick={() => onOpen(r.t)} className={btnS}>{ko ? '열기' : 'Open'}</button>
+                    <button onClick={() => print([r])} disabled={!spans.length} className={`${btnS} ml-1.5`}><Printer size={11} />{ko ? '인쇄' : 'Print'}</button>
                   </td>
                 </tr>
               ))}

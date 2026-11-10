@@ -1,29 +1,48 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { monthRange, DEFAULT_OVERTIME_SETTINGS, type OvertimeEntry, type OvertimeSettings } from '@/lib/overtime'
 import { fetchOvertime, isOvertimeMissing, loadOvertimeSettings } from '@/lib/overtimeData'
 
-// ─── One month of overtime, as the page sees it ──────────────────
-// One teacher's entries (or everyone's, for admin) for the month, the
-// whole-school days off in it, and whether the table exists yet.
+// ─── Overtime entries for a span of days ─────────────────────────
+// One teacher's entries (or everyone's, for admin) in [from, to], the
+// whole-school days off in it, and whether the table exists yet. The page
+// asks for the month on screen joined with whatever is on the sheet, which
+// can reach into other months. While a new span loads, the last one stays
+// on screen; `loading` is true only until the asked-for span is covered.
 
-export function useOvertimeMonth(teacherId: string | null, month: string) {
-  const [entries, setEntries] = useState<OvertimeEntry[]>([])
-  const [daysOff, setDaysOff] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(true)
+interface Loaded { key: string; from: string; to: string; entries: OvertimeEntry[]; daysOff: Record<string, string> }
+
+export function useOvertimeRange(teacherId: string | null, from: string, to: string) {
+  const [data, setData] = useState<Loaded | null>(null)
   const [missing, setMissing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const seq = useRef(0)
+  const key = teacherId || '*'
 
   const reload = useCallback(async () => {
-    const { from, to } = monthRange(month)
+    const n = ++seq.current
     const r = await fetchOvertime(teacherId, from, to)
-    if (r.error) { setMissing(isOvertimeMissing(r.error)); setError(r.error); setLoading(false); return }
-    setEntries(r.entries); setDaysOff(r.daysOff); setMissing(false); setError(null); setLoading(false)
-  }, [teacherId, month])
-  useEffect(() => { setLoading(true); reload() }, [reload])
+    if (n !== seq.current) return
+    if (r.error) { setMissing(isOvertimeMissing(r.error)); setError(r.error); setData(d => d || { key, from, to, entries: [], daysOff: {} }); return }
+    setData({ key, from, to, entries: r.entries, daysOff: r.daysOff }); setMissing(false); setError(null)
+  }, [teacherId, key, from, to])
+  useEffect(() => { reload() }, [reload])
 
-  return { entries, daysOff, loading, missing, error, reload }
+  const covered = !!data && data.key === key && data.from <= from && data.to >= to
+  return {
+    entries: data && data.key === key ? data.entries : [],
+    daysOff: data && data.key === key ? data.daysOff : {},
+    loading: !covered && !error,
+    /** True when the loaded days include [f, t], so that part can show while a wider span loads. */
+    covers: (f: string, t: string) => !!error || (!!data && data.key === key && data.from <= f && data.to >= t),
+    missing, error, reload,
+  }
+}
+
+export function useOvertimeMonth(teacherId: string | null, month: string) {
+  const { from, to } = monthRange(month)
+  return useOvertimeRange(teacherId, from, to)
 }
 
 export function useOvertimeSettings() {
