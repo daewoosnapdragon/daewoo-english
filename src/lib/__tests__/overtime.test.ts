@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   blockedReason, counted, fmtDayDate, daysOffIn, fmtClock, fmtMinutes, fmtRange, fmtWon, minutesBetween, monthLabel, overlapping,
-  parseClock, parseOvertimeSettings, parseRange, selectionLabel, weeksFromKeys, nextWorkday, weeksSpan, rangeSpan, selSpans, chosenSpans, selTicked, toggleWeek, setWeeks, joinSpan, policyText, recentReasons, sheetPages, shiftMonth,
+  parseClock, parseOvertimeSettings, parseRange, selectionLabel, weeksFromKeys, nextWorkday, weeksSpan, rangeSpan, selSpans, chosenSpans, selTicked, toggleWeek, setWeeks, joinSpan, policyText, recentReasons, sheetRows, sheetLayout, shiftMonth,
   splitRange, totals, weekLabel, weeksOfMonth, wonFor, entriesInWeeks, DEFAULT_OVERTIME_SETTINGS, type OvertimeEntry,
 } from '@/lib/overtime'
 
@@ -242,25 +242,30 @@ describe('totals and reasons', () => {
   })
 })
 
-describe('sheetPages', () => {
-  it('pads a short month to sixteen rows', () => {
-    const p = sheetPages([entry({ date: '2026-11-05' }), entry({ date: '2026-11-03' })])
-    expect(p).toHaveLength(1)
-    expect(p[0]).toHaveLength(16)
-    expect(p[0][0]?.entry.date).toBe('2026-11-03')
-    expect(p[0][1]?.no).toBe(2)
-    expect(p[0][2]).toBeNull()
+describe('the printed sheet', () => {
+  it('fills a short list to twelve rows', () => {
+    const r = sheetRows([entry({ date: '2026-11-05' }), entry({ date: '2026-11-03' })])
+    expect(r).toHaveLength(12)
+    expect(r[0]?.entry.date).toBe('2026-11-03')
+    expect(r[1]?.no).toBe(2)
+    expect(r[2]).toBeNull()
   })
   it('gives a blank sheet when there is nothing', () => {
-    expect(sheetPages([])).toEqual([Array(16).fill(null)])
+    expect(sheetRows([])).toEqual(Array(12).fill(null))
   })
-  it('continues the numbering on a second page', () => {
-    const es = Array.from({ length: 18 }, (_, i) => entry({ date: `2026-11-${String(i + 1).padStart(2, '0')}` }))
-    const p = sheetPages(es)
-    expect(p).toHaveLength(2)
-    expect(p[1][0]?.no).toBe(17)
-    expect(p[1].filter(Boolean)).toHaveLength(2)
-    expect(p[1]).toHaveLength(16)
+  it('keeps every entry on the one page, however many', () => {
+    const es = Array.from({ length: 25 }, (_, i) => entry({ date: `2026-11-${String(i + 1).padStart(2, '0')}` }))
+    const r = sheetRows(es)
+    expect(r).toHaveLength(25)
+    expect(r[24]?.no).toBe(25)
+  })
+  it('prints full size up to twelve rows and shrinks only past that', () => {
+    expect(sheetLayout(12)).toEqual({ rowMm: 9.5, cellPx: 17 })
+    const l20 = sheetLayout(20)
+    expect(l20.rowMm * 20).toBeLessThanOrEqual(114)
+    expect(l20.cellPx).toBeLessThan(17)
+    expect(l20.cellPx).toBeGreaterThan(12)
+    expect(sheetLayout(40).rowMm * 40).toBeLessThanOrEqual(114)
   })
 })
 

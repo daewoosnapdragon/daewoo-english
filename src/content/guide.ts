@@ -370,6 +370,7 @@ export const ADMIN_SECTIONS: GuideSection[] = [
       'Entries the same day cannot overlap. A stint that ends at 6:00 and another that starts at 6:00 are fine.',
       'Only times and minutes are saved. Won is always the minutes at the rate in Settings, so a new rate changes every figure, past months included.',
       'Admin sees everyone’s sheets. Everyone else sees their own.',
+      'Each teacher’s sheet always prints on one page, in large type. Up to twelve entries print at full size; with more, the rows get shorter and the type smaller so everything still fits on the page.',
     ],
     watchOut: ['Admin runs supabase/migration-overtime.sql once; until then the page says Not set up yet.', 'Print opens a new window. If nothing happens, allow pop-ups for the site.', 'Days off only count when they are on the school calendar as a Day Off for every grade.'],
   },

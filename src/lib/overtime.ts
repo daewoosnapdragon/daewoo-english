@@ -403,16 +403,33 @@ export function recentReasons(entries: OvertimeEntry[], n = 5): string[] {
 /** The policy paragraph with the rate written in. */
 export const policyText = (template: string, rate: number) => template.split('{rate}').join(Math.round(rate).toLocaleString('en-US'))
 
-// ─── The printed sheet's pages ───────────────────────────────────
+// ─── The printed sheet: always one page ──────────────────────────
+// A teacher's sheet is one A4 landscape page, whatever the number of
+// entries, in type large enough for a reader with low vision. Up to
+// twelve entries the rows are full size and blank rows fill the table to
+// twelve; with more, the rows get shorter and the type follows them, never
+// past what fits. The print window then checks the real page and shrinks
+// everything a little further only if a long reason wrapped.
 
-export const ROWS_PER_PAGE = 16
+export const SHEET_MIN_ROWS = 12
+/** The height the table rows share on the page, at full size, in mm. */
+export const SHEET_ROWS_MM = 114
+/** Full-size row height (mm) and cell type (px). */
+export const SHEET_ROW_MM = 9.5
+export const SHEET_CELL_PX = 17
 
-/** Entries in date order cut into pages of sixteen, numbered from 1 across pages; the last page is padded with blank rows. */
-export function sheetPages(entries: OvertimeEntry[], rowsPerPage = ROWS_PER_PAGE): ({ no: number; entry: OvertimeEntry } | null)[][] {
-  const rows = [...entries].sort(byDateTime).map((entry, i) => ({ no: i + 1, entry }))
-  const pages: ({ no: number; entry: OvertimeEntry } | null)[][] = []
-  for (let i = 0; i < Math.max(rows.length, 1); i += rowsPerPage) pages.push(rows.slice(i, i + rowsPerPage))
-  const last = pages[pages.length - 1]
-  while (last.length < rowsPerPage) last.push(null)
-  return pages
+/** Entries in date order, numbered from 1, then blank rows up to the minimum. */
+export function sheetRows(entries: OvertimeEntry[], minRows = SHEET_MIN_ROWS): ({ no: number; entry: OvertimeEntry } | null)[] {
+  const rows: ({ no: number; entry: OvertimeEntry } | null)[] = [...entries].sort(byDateTime).map((entry, i) => ({ no: i + 1, entry }))
+  while (rows.length < minRows) rows.push(null)
+  return rows
+}
+
+/** Row height (mm) and cell type size (px) for a sheet of this many rows, so they fit the page. */
+export function sheetLayout(rowCount: number): { rowMm: number; cellPx: number } {
+  const n = Math.max(rowCount, 1)
+  const rowMm = Math.min(SHEET_ROW_MM, SHEET_ROWS_MM / n)
+  // The type is about 60% of the row's height, and never more than full size.
+  const cellPx = Math.min(SHEET_CELL_PX, Math.round(rowMm * 3.78 * 0.6 * 10) / 10)
+  return { rowMm: Math.round(rowMm * 100) / 100, cellPx }
 }
