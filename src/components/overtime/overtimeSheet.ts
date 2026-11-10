@@ -72,7 +72,7 @@ export function overtimeSheetHtml(sheets: SheetInput[], settings: OvertimeSettin
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body { font: 11px/1.4 -apple-system, "Segoe UI", Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif; color: #16202a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page { height: 187mm; display: flex; flex-direction: column; page-break-after: always; break-after: page; }
+  .page { height: 187mm; padding: 0 0.6mm; display: flex; flex-direction: column; page-break-after: always; break-after: page; }
   .page:last-child { page-break-after: auto; break-after: auto; }
   header { text-align: center; }
   h1 { font-size: 19px; letter-spacing: 0.2px; margin: 0 0 5px; font-weight: 700; }
@@ -87,7 +87,8 @@ export function overtimeSheetHtml(sheets: SheetInput[], settings: OvertimeSettin
   .name .n { font-size: 13px; font-weight: 700; }
   .name .c { font-weight: 400; color: #4b5866; }
   .name .p { font-size: 10.5px; color: #4b5866; margin-top: 1px; }
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.4px solid #16202a; }
+  /* Borders drawn separately: in the collapsed model the last column's border-right: 0 wiped out the table's right edge in print. */
+  table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; border: 1.4px solid #16202a; }
   col.c-no { width: 11mm; } col.c-date { width: 23mm; } col.c-time { width: 38mm; } col.c-hrs { width: 23mm; }
   th { font-size: 11px; font-weight: 700; text-align: left; padding: 4px 7px; background: #eef1f4; border-bottom: 1.4px solid #16202a; border-right: 1px solid #b9c2cc; vertical-align: middle; height: 10mm; }
   th small { display: block; font-weight: 400; font-size: 9px; color: #4b5866; }
