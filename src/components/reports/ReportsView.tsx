@@ -163,7 +163,7 @@ export default function ReportsView() {
 
   const isTeacher = currentTeacher?.role === 'teacher'
   const isAdmin = currentTeacher?.role === 'admin' || !!currentTeacher?.is_head_teacher
-  // Any teacher can switch to any class to review a partner's report cards.
+  // Any teacher can switch to any class to read another class's report cards and leave feedback.
   const availableClasses = ALL_ENGLISH_CLASSES
   // You "own" your own class — only then (or as admin) can you edit its comments/grades.
   const isOwnClass = isTeacher && currentTeacher?.english_class === selectedClass
@@ -407,14 +407,14 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [editingGrades, setEditingGrades] = useState(false)
   const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
   const [editNaValues, setEditNaValues] = useState<Record<string, boolean>>({})
-  const [reviewStatus, setReviewStatus] = useState<{ partner_approved: boolean; admin_approved: boolean } | null>(null)
+  const [reviewStatus, setReviewStatus] = useState<{ admin_approved: boolean } | null>(null)
 
-  // Load review status
+  // Load review status (admin approval only)
   useEffect(() => {
     ;(async () => {
-      const { data: rev } = await supabase.from('report_card_reviews').select('partner_approved, admin_approved')
+      const { data: rev } = await supabase.from('report_card_reviews').select('admin_approved')
         .eq('student_id', studentId).eq('semester_id', semesterId).single().catch(() => ({ data: null }))
-      setReviewStatus(rev || { partner_approved: false, admin_approved: false })
+      setReviewStatus(rev || { admin_approved: false })
     })()
   }, [studentId, semesterId])
 
@@ -511,7 +511,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const teacher = resolveStudentTeacher(await loadTeachers(), student)
     const staff = await loadReportStaff()
 
-    // Reviewer feedback flagged by partner/admin (graceful if migration not yet run)
+    // Reviewer feedback flagged by a reviewing teacher/admin (graceful if migration not yet run)
     let reviewerNote: string | null = null
     let reviewerNoteAck = false
     let reviewerNoteByName: string | null = null
@@ -645,22 +645,17 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {reviewStatus && (
-            <>
-              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium ${reviewStatus.partner_approved ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-text-tertiary'}`}>
-                {reviewStatus.partner_approved ? <CheckCircle2 size={11} /> : <Circle size={11} />} Partner
-              </span>
-              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium ${reviewStatus.admin_approved ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-text-tertiary'}`}>
-                {reviewStatus.admin_approved ? <CheckCircle2 size={11} /> : <Circle size={11} />} Admin
-              </span>
-            </>
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium ${reviewStatus.admin_approved ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-text-tertiary'}`}>
+              {reviewStatus.admin_approved ? <CheckCircle2 size={11} /> : <Circle size={11} />} {reviewStatus.admin_approved ? 'Admin approved' : 'Awaiting admin approval'}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          {reviewStatus && !reviewStatus.partner_approved && !reviewStatus.admin_approved && (
-            <span className="text-[10px] text-amber-600">Needs partner + admin approval to print</span>
+          {reviewStatus && !reviewStatus.admin_approved && (
+            <span className="text-[10px] text-amber-600">Needs admin approval to print</span>
           )}
           <button onClick={handlePrint}
-            disabled={reviewStatus != null && (!reviewStatus.partner_approved || !reviewStatus.admin_approved)}
+            disabled={reviewStatus != null && !reviewStatus.admin_approved}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border border-border hover:bg-surface-alt disabled:opacity-40 disabled:cursor-not-allowed">
             <Printer size={15} /> Print Report Card
           </button>
@@ -2044,12 +2039,11 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
 // ─── Review & Approval Workflow ─────────────────────────────────────
 
+// Approval is admin-only. The legacy partner_* columns still exist in the
+// report_card_reviews table but are no longer read or written by the app.
 interface ReviewStatus {
   student_id: string
   semester_id: string
-  partner_approved: boolean
-  partner_teacher_id: string | null
-  partner_approved_at: string | null
   admin_approved: boolean
   admin_approved_at: string | null
   notes: string
@@ -2227,9 +2221,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
 }) {
   const { showToast, currentTeacher } = useApp()
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
-  // Partner review is done by *another* teacher — never on your own class, and not by admin.
-  const canPartnerApprove = currentTeacher?.role === 'teacher' && !isOwnClass
-  // Reviewers (partner teachers on other classes, or admin) can leave feedback; you don't review your own.
+  // Approval is admin-only. Teachers viewing another class can still leave feedback; you don't review your own.
   const canLeaveFeedback = !isOwnClass
   const [reviews, setReviews] = useState<Record<string, ReviewStatus>>({})
   const [comments, setComments] = useState<Record<string, { text: string; draft_source: string | null; is_skipped: boolean }>>({})
@@ -2273,21 +2265,15 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
     })()
   }, [semesterId, students])
 
-  const toggleApproval = async (studentId: string, field: 'partner_approved' | 'admin_approved') => {
-    if (field === 'admin_approved' && !isAdmin) return
-    if (field === 'partner_approved' && !canPartnerApprove) return
+  const toggleApproval = async (studentId: string) => {
+    if (!isAdmin) return
     setSaving(studentId)
     const existing = reviews[studentId]
-    const newVal = !(existing?.[field])
+    const newVal = !(existing?.admin_approved)
     const row: any = {
       student_id: studentId, semester_id: semesterId,
-      [field]: newVal,
-      ...(field === 'partner_approved' ? {
-        partner_teacher_id: newVal ? currentTeacher?.id : null,
-        partner_approved_at: newVal ? new Date().toISOString() : null,
-      } : {
-        admin_approved_at: newVal ? new Date().toISOString() : null,
-      }),
+      admin_approved: newVal,
+      admin_approved_at: newVal ? new Date().toISOString() : null,
     }
     const { data, error } = await supabase.from('report_card_reviews').upsert(row, {
       onConflict: 'student_id,semester_id'
@@ -2301,23 +2287,17 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
     setSaving(null)
   }
 
-  const approveAll = async (field: 'partner_approved' | 'admin_approved') => {
-    if (field === 'admin_approved' && !isAdmin) return
-    if (field === 'partner_approved' && !canPartnerApprove) return
+  const approveAll = async () => {
+    if (!isAdmin) return
     setSaving('all')
     let errors = 0
     for (const s of students) {
       const existing = reviews[s.id]
-      if (existing?.[field]) continue // already approved
+      if (existing?.admin_approved) continue // already approved
       const row: any = {
         student_id: s.id, semester_id: semesterId,
-        [field]: true,
-        ...(field === 'partner_approved' ? {
-          partner_teacher_id: currentTeacher?.id,
-          partner_approved_at: new Date().toISOString(),
-        } : {
-          admin_approved_at: new Date().toISOString(),
-        }),
+        admin_approved: true,
+        admin_approved_at: new Date().toISOString(),
       }
       const { error } = await supabase.from('report_card_reviews').upsert(row, { onConflict: 'student_id,semester_id' }).select().single()
       if (!error) {
@@ -2389,9 +2369,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
 
   if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
 
-  const partnerCount = students.filter(s => reviews[s.id]?.partner_approved).length
   const adminCount = students.filter(s => reviews[s.id]?.admin_approved).length
-  const fullyApproved = students.filter(s => reviews[s.id]?.partner_approved && reviews[s.id]?.admin_approved).length
   const flaggedCount = students.filter(s => reviews[s.id]?.reviewer_note && !reviews[s.id]?.reviewer_note_ack).length
 
   return (
@@ -2405,16 +2383,8 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
           </div>
           <div className="flex gap-4 text-center">
             <div>
-              <p className="text-[22px] font-bold text-blue-600">{partnerCount}/{students.length}</p>
-              <p className="text-[9px] uppercase tracking-wider text-text-tertiary">Partner Reviewed</p>
-            </div>
-            <div>
               <p className="text-[22px] font-bold text-green-600">{adminCount}/{students.length}</p>
-              <p className="text-[9px] uppercase tracking-wider text-text-tertiary">Admin Approved</p>
-            </div>
-            <div>
-              <p className="text-[22px] font-bold text-navy">{fullyApproved}/{students.length}</p>
-              <p className="text-[9px] uppercase tracking-wider text-text-tertiary">Ready to Print</p>
+              <p className="text-[9px] uppercase tracking-wider text-text-tertiary">Admin Approved · Ready to Print</p>
             </div>
             <div>
               <p className={`text-[22px] font-bold ${flaggedCount > 0 ? 'text-orange-500' : 'text-text-tertiary'}`}>{flaggedCount}</p>
@@ -2423,20 +2393,14 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
           </div>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
-          <div className="h-2 rounded-full bg-green-500 transition-all" style={{ width: `${students.length > 0 ? (fullyApproved / students.length) * 100 : 0}%` }} />
+          <div className="h-2 rounded-full bg-green-500 transition-all" style={{ width: `${students.length > 0 ? (adminCount / students.length) * 100 : 0}%` }} />
         </div>
       </div>
 
       {/* Bulk approve buttons */}
       <div className="flex gap-2 flex-wrap">
-        {canPartnerApprove && (
-          <button onClick={() => approveAll('partner_approved')} disabled={saving === 'all'}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40">
-            <CheckCircle2 size={14} /> Approve All as Partner
-          </button>
-        )}
         {isAdmin && (
-          <button onClick={() => approveAll('admin_approved')} disabled={saving === 'all'}
+          <button onClick={approveAll} disabled={saving === 'all'}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
             <CheckCircle2 size={14} /> Approve All as Admin
           </button>
@@ -2449,18 +2413,16 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
 
       {/* Student list */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
-        <div className="px-4 py-2.5 bg-surface-alt border-b border-border grid grid-cols-[auto,1fr,8rem,8rem,6rem] items-center gap-4">
+        <div className="px-4 py-2.5 bg-surface-alt border-b border-border grid grid-cols-[auto,1fr,8rem,6rem] items-center gap-4">
           <span className="w-4" />
           <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Student</span>
-          <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold text-center">Partner Review</span>
           <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold text-center">Admin Approval</span>
           <span className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold text-center">Status</span>
         </div>
         {students.map(student => {
           const r = reviews[student.id]
-          const partnerOk = r?.partner_approved
           const adminOk = r?.admin_approved
-          const ready = partnerOk && adminOk
+          const ready = !!adminOk
           const isOpen = expanded === student.id
           const flag = commentFlag(student.id)
           const c = comments[student.id]
@@ -2469,7 +2431,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
 
           return (
             <div key={student.id} className={`border-b border-border last:border-0 ${ready ? 'bg-green-50/30' : ''}`}>
-              <div className="px-4 py-3 grid grid-cols-[auto,1fr,8rem,8rem,6rem] items-center gap-4 cursor-pointer hover:bg-surface-alt/40"
+              <div className="px-4 py-3 grid grid-cols-[auto,1fr,8rem,6rem] items-center gap-4 cursor-pointer hover:bg-surface-alt/40"
                 onClick={() => setExpanded(isOpen ? null : student.id)}>
                 <span className="text-text-tertiary">{isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
@@ -2479,25 +2441,8 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                   {noteUnack && <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-orange-50 text-orange-700 border-orange-200 inline-flex items-center gap-1"><AlertTriangle size={9} /> Needs changes</span>}
                 </div>
                 <div className="flex justify-center" onClick={e => e.stopPropagation()}>
-                  {canPartnerApprove ? (
-                    <button onClick={() => toggleApproval(student.id, 'partner_approved')}
-                      disabled={saving === student.id}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                        partnerOk ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-surface-alt text-text-tertiary border border-border hover:border-blue-300'
-                      }`}>
-                      {partnerOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-                      {partnerOk ? 'Reviewed' : 'Review'}
-                    </button>
-                  ) : (
-                    <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${partnerOk ? 'text-blue-600' : 'text-text-tertiary'}`}>
-                      {partnerOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-                      {partnerOk ? 'Reviewed' : 'Pending'}
-                    </span>
-                  )}
-                </div>
-                <div className="flex justify-center" onClick={e => e.stopPropagation()}>
                   {isAdmin ? (
-                    <button onClick={() => toggleApproval(student.id, 'admin_approved')}
+                    <button onClick={() => toggleApproval(student.id)}
                       disabled={saving === student.id}
                       className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
                         adminOk ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-surface-alt text-text-tertiary border border-border hover:border-green-300'
