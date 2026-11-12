@@ -116,6 +116,7 @@ function TeacherSection() {
       showToast(`Error: ${error.message}`)
     } else {
       setTeachers(prev => prev.filter(t => t.id !== deleteConfirm.id))
+      logActivity('settings', `Teacher deactivated: ${deleteConfirm.name}`)
       showToast(language === 'ko' ? '교사가 비활성화됨' : `${deleteConfirm.name} deactivated`)
     }
     setSaving(null)
@@ -315,6 +316,7 @@ function SemesterSection() {
     setSaving(null)
     if (error) { showToast(`Error: ${error.message}`); return }
     setSemesters((prev: any) => prev.map((s: any) => ({ ...s, is_active: s.id === id })))
+    logActivity('settings', `Active semester: ${semesters.find((s: any) => s.id === id)?.name || ''}`)
     // Repoint the rest of the app (and every other account on its next focus)
     // at the newly active semester.
     await refreshSemesters()
@@ -337,6 +339,7 @@ function SemesterSection() {
     if (error) { showToast(`Error: ${error.message}`); return }
     setSemesters((prev: any) => prev.map((s: any) => s.id === sem.id ? { ...s, ...patch } : s))
     await refreshSemesters()
+    logActivity('settings', `Semester ${next ? 'archived' : 'restored'}: ${sem.name}`)
     showToast(next ? 'Semester archived -- hidden from pickers, data kept' : 'Semester restored')
   }
 
@@ -349,7 +352,7 @@ function SemesterSection() {
       comments_due_date: newSem.report_card_cutoff_date || null, is_active: false,
     }).select().single()
     if (error) showToast(`Error: ${error.message}`)
-    else { setSemesters((prev: any) => [data, ...prev]); setAdding(false); setNewSem({ name: '', name_ko: '', academic_year: '2025-2026', type: 'spring', start_date: '', end_date: '', midterm_cutoff_date: '', report_card_cutoff_date: '' }); showToast('Semester added') }
+    else { logActivity('settings', `Semester added: ${newSem.name}`); setSemesters((prev: any) => [data, ...prev]); setAdding(false); setNewSem({ name: '', name_ko: '', academic_year: '2025-2026', type: 'spring', start_date: '', end_date: '', midterm_cutoff_date: '', report_card_cutoff_date: '' }); showToast('Semester added') }
   }
 
   const handleDelete = async (id: string) => {
@@ -389,7 +392,7 @@ function SemesterSection() {
       setSemesters((prev: any) => prev.filter((s: any) => s.id !== id))
       await refreshSemesters()
       showToast('Deleted')
-      logActivity('settings', 'Semester deleted')
+      logActivity('settings', `Semester deleted: ${semesters.find((s: any) => s.id === id)?.name || ''}`)
     }
   }
 
@@ -815,6 +818,7 @@ function ClassManagementSection() {
     await supabase.from('class_benchmarks').delete().eq('english_class', cls)
     setClasses(prev => prev.filter(c => c.english_class !== cls))
     setDeleting(null)
+    logActivity('settings', `Class deleted: ${cls} (its students deactivated)`)
     showToast(`Class "${cls}" deleted and students deactivated`)
   }
 

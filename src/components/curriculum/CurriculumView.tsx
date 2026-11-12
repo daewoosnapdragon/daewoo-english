@@ -4,6 +4,8 @@ import StandardsHeatMap from './StandardsHeatMap'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
+import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
@@ -52,6 +54,8 @@ function getClusters(domain: CCSSDomain, grade: number) {
 export default function CurriculumView() {
   const { language } = useApp()
   const [view, setView] = useState<'mastery' | 'standards' | 'guide' | 'quickcheck'>('mastery')
+  // What is on screen, for the activity log. The heat map and checklist name their class and grade themselves.
+  useViewLog(view === 'standards' || view === 'mastery' ? null : `Standards · ${view === 'guide' ? 'about CCSS' : view}`)
 
   return (
     <div className="animate-fade-in">
@@ -139,6 +143,7 @@ function ClusterTracker() {
   const { currentTeacher, showToast } = useApp()
   const [cls, setCls] = useState<EnglishClass>((currentTeacher?.english_class as EnglishClass) || 'Lily')
   const [gr, setGr] = useState<Grade>(3)
+  useViewLog(`Standards · checklist · ${cls} · Grade ${gr}`)
   const [statuses, setStatuses] = useState<Record<string, StdStatus>>({})
   const [loading, setLoading] = useState(true)
   const [stdAverages, setStdAverages] = useState<Record<string, number>>({})
@@ -175,6 +180,7 @@ function ClusterTracker() {
 
   const saveThresholds = async () => {
     await supabase.from('app_settings').upsert({ key: 'mastery_thresholds', value: JSON.stringify(thresholds) }, { onConflict: 'key' })
+    logActivity('settings', 'Mastery thresholds')
     showToast('Mastery thresholds saved')
     setShowThresholdEdit(false)
   }
@@ -329,12 +335,14 @@ function ClusterTracker() {
       setStatuses(p => { const n = { ...p }; delete n[code]; return n })
       await supabase.from('class_standard_status').delete()
         .eq('english_class', cls).eq('student_grade', gr).eq('standard_code', code)
+      logActivity('edited', `Standard ${code}: not started · ${cls} · Grade ${gr}`, { key: `std:${cls}:${gr}:${code}` })
     } else {
       setStatuses(p => ({ ...p, [code]: nx as StdStatus }))
       await supabase.from('class_standard_status').upsert({
         english_class: cls, student_grade: gr, standard_code: code, status: nx,
         updated_by: currentTeacher?.id, updated_at: new Date().toISOString()
       }, { onConflict: 'english_class,student_grade,standard_code' })
+      logActivity('edited', `Standard ${code}: ${nx} · ${cls} · Grade ${gr}`, { key: `std:${cls}:${gr}:${code}` })
     }
   }
 
@@ -549,6 +557,7 @@ function ClusterTracker() {
                                       status: es as StdStatus, intervention_status: val === 'none' ? null : val,
                                       updated_by: currentTeacher?.id, updated_at: new Date().toISOString()
                                     }, { onConflict: 'english_class,student_grade,standard_code' })
+                                    logActivity('edited', `Standard ${std.code}: intervention ${val} · ${cls} · Grade ${gr}`, { key: `int:${cls}:${gr}:${std.code}` })
                                   }}
                                   className={`text-[9px] font-medium px-1.5 py-0.5 rounded border-0 outline-none cursor-pointer ${
                                     INTERVENTION_OPTIONS.find(o => o.value === (iv || 'none'))?.color || 'text-gray-400 bg-transparent'

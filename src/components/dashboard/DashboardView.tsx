@@ -5,6 +5,8 @@ import Link from 'next/link'
 import BehaviorLadderPanel from '@/components/behavior/BehaviorLadderPanel'
 import WhatsNewModal from '@/components/guide/WhatsNewModal'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
+import { useViewLog } from '@/lib/useViewLog'
 import { useClassCounts } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, EnglishClass } from '@/types'
@@ -182,6 +184,7 @@ export default function DashboardView() {
 
   // Attendance drawer, opened from a class period on the schedule.
   const [attendanceGrade, setAttendanceGrade] = useState<number | null>(null)
+  useViewLog(attendanceGrade != null ? `Dashboard · attendance drawer · Grade ${attendanceGrade}` : null)
   const [todayOff, setTodayOff] = useState<string | null>(null)
   useEffect(() => { loadDayStatus(getKSTDateString(), null).then(s => setTodayOff(s.off)) }, [])
   useEffect(() => {
@@ -200,6 +203,7 @@ export default function DashboardView() {
       { onConflict: 'student_id,assessment_id' })
     if (error) { showToast(`Error: ${error.message}`); return }
     setResolved(prev => ({ ...prev, [item.id]: new Set([...Array.from(prev[item.id] || []), student.id]) }))
+    logActivity('scored', `${item.name}: ${student.english_name} marked ${how} (from the dashboard)`)
     showToast(lang === 'ko'
       ? `${student.english_name} · ${how === 'absent' ? '결석' : '면제'} 처리됨`
       : `${student.english_name} marked ${how} on ${item.name}`)
@@ -521,7 +525,9 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
 
   const handleDelete = async (id: string) => {
     if (!await confirmDialog({ title: lang === 'ko' ? '이 일정을 삭제할까요?' : 'Delete this event?', danger: true, confirmLabel: lang === 'ko' ? '삭제' : 'Delete' })) return
+    const gone = events.find(e => e.id === id)
     await supabase.from('calendar_events').delete().eq('id', id)
+    logActivity('deleted', `Calendar event: ${gone?.title || ''}${gone?.date ? ` · ${gone.date}` : ''}`)
     showToast(lang === 'ko' ? '삭제되었습니다' : 'Deleted'); load()
   }
 
@@ -759,6 +765,8 @@ function AdminAlertPanel() {
 
   const dismiss = async (id: string) => {
     await supabase.from('behavior_logs').update({ is_flagged: false }).eq('id', id)
+    const f = flagged.find(x => x.id === id)
+    logActivity('edited', `Behavior flag dismissed · ${f?.student_name || ''}${f?.date ? ` · ${f.date}` : ''}`)
     setFlagged(p => p.filter(f => f.id !== id))
     showToast('Flag dismissed')
   }
@@ -892,7 +900,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
 
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
-    else { if (!error) showToast(isEdit ? 'Event updated' : 'Event added'); onSaved() }
+    else { showToast(isEdit ? 'Event updated' : 'Event added'); logActivity(isEdit ? 'edited' : 'created', `Calendar event: ${payload.title} · ${payload.date}${payload.end_date ? ` to ${payload.end_date}` : ''}${payload.show_on_parent_calendar ? ' · on the parent calendar' : ''}`); onSaved() }
   }
 
   return (

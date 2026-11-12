@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
 import { supabase } from '@/lib/supabase'
 import { WIDA_DOMAINS, type WIDADomainKey } from '@/lib/wida'
 import { invalidateWIDACache } from '@/components/shared/WIDABadge'
@@ -90,6 +91,7 @@ export default function WidaAssessSheet({ students, grade, startStudentId, onExi
     setLevels(prev => ({ ...prev, [student.id]: { ...(prev[student.id] || {}), [domain]: chosen } }))
     setTicks(prev => ({ ...prev, [student.id]: { ...(prev[student.id] || {}), [domain]: new Set(draft) } }))
     setLastSaved(`${student.english_name} · ${dl(domain)} ${chosen}`)
+    logActivity('saved', `WIDA ${String(dl(domain)).toLowerCase()} level · ${student.english_name} · ${chosen}${stored && stored !== chosen ? ` (was ${stored})` : ''}`, { key: `wida:${student.id}:${domain}` })
     invalidateWIDACache(); onSaved?.()
     return true
   }, [student, dirty, domain, chosen, draft, stored, candoMissing, currentTeacher, activeSemester, showToast, onSaved]) // eslint-disable-line react-hooks/exhaustive-deps

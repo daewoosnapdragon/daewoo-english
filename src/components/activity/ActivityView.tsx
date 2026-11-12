@@ -10,8 +10,8 @@ import { Loader2, RefreshCw } from 'lucide-react'
 // ─── Activity ────────────────────────────────────────────────────
 // Who signed in and what they did, newest first, with a strip of when each
 // teacher last signed in and was last seen. Filters by teacher, kind of
-// action and how far back. For admin, the head teacher and the Snapdragon
-// teacher; everyone else is told so.
+// action and how far back. Only the Snapdragon teacher's account can open
+// it; everyone else is told so.
 
 interface Row { id: string; teacher_id: string | null; action: ActivityAction; detail: string; path: string; count: number; created_at: string; updated_at: string }
 
@@ -58,7 +58,7 @@ export default function ActivityView() {
   }).sort((a, b) => (b.lastSeen || '').localeCompare(a.lastSeen || '')), [teachers, rows])
 
   if (!allowed) return (
-    <div className="px-8 py-6 animate-fade-in"><p className="text-[13px] text-ink-3">{ko ? '이 페이지는 관리자, 수석 교사, 스냅드래곤 교사만 볼 수 있습니다.' : 'This page is for admin, the head teacher and the Snapdragon teacher.'}</p></div>
+    <div className="px-8 py-6 animate-fade-in"><p className="text-[13px] text-ink-3">{ko ? '이 페이지는 스냅드래곤 교사 계정에서만 볼 수 있습니다.' : 'This page can only be opened from the Snapdragon account.'}</p></div>
   )
 
   const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[12px] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
@@ -128,7 +128,7 @@ export default function ActivityView() {
           </div>
         </div>
       ))}
-      <p className="text-[11px] text-ink-3 mt-6">{ko ? '같은 작업을 10분 안에 반복하면 한 줄로 묶이고 횟수(×N)가 표시됩니다. 페이지 열람, 채점, 저장, 평가 생성·수정·삭제, 인쇄, 공지, 설정 변경, 로그인·로그아웃이 기록됩니다.' : 'The same action repeated within ten minutes folds into one line with a count (×N). Recorded: sign-ins and sign-outs, pages opened, scoring, saves, assessments created, edited and deleted, prints, notices and settings changes.'}</p>
+      <p className="text-[11px] text-ink-3 mt-6">{ko ? '같은 작업을 10분 안에 반복하면 한 줄로 묶이고 횟수(×N)가 표시됩니다. 열람 줄은 화면에 무엇이 있었는지(반·학년·학생·시트·탭)를 적고, 그 밖에 채점, 저장, 생성·수정·삭제, 인쇄, 공지, 설정 변경, 로그인·로그아웃이 기록됩니다.' : 'The same action repeated within ten minutes folds into one line with a count (×N). An Opened line says what was on screen: the class and grade, the student, the sheet or tab. Everything saved, scored, created, edited, deleted, printed or posted is recorded with what it was, along with settings changes and sign-ins and sign-outs.'}</p>
     </div>
   )
 }

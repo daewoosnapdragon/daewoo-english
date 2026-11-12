@@ -7,7 +7,7 @@ import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
 import { loadLadderSettings, isOverdue } from '@/lib/behaviorLadder'
 import { NAV_ORDER, VIEW_PATHS, PAGE_TITLES, viewForPath } from '@/lib/routes'
-import { logActivity, canViewActivity } from '@/lib/activity'
+import { logActivity, logPageOpen, canViewActivity } from '@/lib/activity'
 import { isSchoolDayOff } from '@/lib/calendarDays'
 import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle, Activity, Package, Wallet, Clock } from 'lucide-react'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
@@ -187,12 +187,14 @@ export default function Masthead() {
   useEffect(() => { try { setCollapsed(localStorage.getItem('daewoo_masthead') === 'collapsed') } catch {} }, [])
   const toggleCollapsed = () => setCollapsed(c => { try { localStorage.setItem('daewoo_masthead', c ? 'open' : 'collapsed') } catch {}; return !c })
   // Every page opened goes to the activity log, once per page per visit.
+  // Pages that know what is on them rewrite this line with the specifics
+  // (src/lib/useViewLog.ts).
   const lastVisit = useRef<string | null>(null)
   useEffect(() => {
     if (!currentTeacher || !pathname || lastVisit.current === pathname) return
     lastVisit.current = pathname
     const view = viewForPath(pathname)
-    logActivity('visit', `${PAGE_TITLES[view] || pathname}${pathname !== (VIEW_PATHS[view] || '') ? ` · ${pathname}` : ''}`, { key: pathname, path: pathname })
+    logPageOpen(`${PAGE_TITLES[view] || pathname}${pathname !== (VIEW_PATHS[view] || '') ? ` · ${pathname}` : ''}`, pathname)
   }, [pathname, currentTeacher])
   if (!currentTeacher) return null
 

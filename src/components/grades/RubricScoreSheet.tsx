@@ -116,6 +116,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
     setDirty(prev => { const n = new Set(prev); n.delete(sid); return n })
     setRow(0)
     showToast(lang === 'ko' ? `${s.english_name} 점수를 지웠습니다` : `Cleared ${s.english_name}'s rubric`)
+    logActivity('deleted', `${assessment.name}: cleared ${s.english_name}'s rubric`)
     onSaved?.()
   }
   const clearAll = async () => {
@@ -127,6 +128,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
     const { error } = await supabase.from('grades').delete().eq('assessment_id', assessment.id)
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return }
+    logActivity('deleted', `${assessment.name}: cleared all ${n} rubrics`)
     setLevels({}); setFlags({}); setDirty(new Set()); setActiveIdx(0); setRow(0)
     showToast(lang === 'ko' ? '모든 점수를 지웠습니다' : `Cleared ${n} students`)
     onSaved?.()

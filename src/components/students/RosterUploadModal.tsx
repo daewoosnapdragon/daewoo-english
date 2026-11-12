@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
 import { supabase } from '@/lib/supabase'
 import { Student, Grade, GRADES, ENGLISH_CLASSES, KOREAN_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
@@ -303,6 +304,7 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
 
     setProcessing(false)
     setStep('done')
+    logActivity('saved', `Roster upload: ${toUpdate.length} updated, ${toAdd.length} added, ${toDeactivate.length} deactivated${errors.length ? ` · ${errors.length} errors` : ''}`)
   }
 
   // ─── Stats ───────────────────────────────────────────────────────
@@ -588,6 +590,7 @@ export function BatchAssignEnglishClass({ onDone }: { onDone: () => void }) {
     for (const s of changed) { const { error } = await supabase.from('students').update({ english_class: assignments[s.id], updated_at: new Date().toISOString() }).eq('id', s.id); if (error) err++ }
     setSaving(false)
     showToast(err ? `Saved with ${err} error(s)` : `${changed.length} assigned`)
+    logActivity('saved', `English classes assigned · ${changed.map(s => `${s.korean_name || s.english_name} → ${assignments[s.id]}`).join(', ').slice(0, 160)}`)
     onDone()
   }
 

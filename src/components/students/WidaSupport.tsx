@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
 import { supabase } from '@/lib/supabase'
 import { WIDA_DOMAINS, WIDA_LEVELS, type WIDADomainKey } from '@/lib/wida'
 import { invalidateWIDACache } from '@/components/shared/WIDABadge'
@@ -22,6 +23,8 @@ interface Scaffold { id: string; domain: string; scaffold_text: string; wida_lev
 
 interface Props {
   studentId: string; grade: number
+  /** For the activity log; the component itself never shows it. */
+  studentName?: string
   /** On the student page: show levels, scaffolds and history, but change them on the WIDA page. */
   summary?: boolean
   /** Open this domain's questionnaire as soon as the data is in (WIDA page cell click). */
@@ -29,7 +32,7 @@ interface Props {
   onSaved?: () => void
 }
 
-export default function WidaSupport({ studentId, grade, summary = false, initialDomain, onSaved }: Props) {
+export default function WidaSupport({ studentId, studentName = '', grade, summary = false, initialDomain, onSaved }: Props) {
   const { currentTeacher, language: lang, showToast, activeSemester } = useApp()
   const band = widaBandForGrade(grade)
   const [levels, setLevels] = useState<Record<string, number>>({})
@@ -82,6 +85,7 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
     const err = (a as any).error || (b as any).error || (c as any).error
     if (err) { showToast(`Error: ${err.message}${/student_wida_cando/.test(err.message) ? ' · run supabase/migration-wida-cando.sql' : ''}`); return }
     invalidateWIDACache()
+    logActivity('saved', `WIDA ${DOMAIN_LABEL[open][0].toLowerCase()} level · ${studentName} · ${chosen} ${widaLevelName(chosen)}${levels[open] && levels[open] !== chosen ? ` (was ${levels[open]})` : ''}`)
     showToast(lang === 'ko' ? `${DOMAIN_LABEL[open][1]} ${chosen} (${widaLevelName(chosen)}) 저장됨` : `${DOMAIN_LABEL[open][0]} set to ${chosen} · ${widaLevelName(chosen)}`)
     setOpen(null); load(); onSaved?.()
   }
@@ -90,15 +94,16 @@ export default function WidaSupport({ studentId, grade, summary = false, initial
     const { data, error } = await supabase.from('student_scaffolds').insert({ student_id: studentId, domain, scaffold_text: text, wida_level: level, is_active: true, assigned_at: new Date().toISOString(), assigned_by: currentTeacher?.id || null }).select('id, domain, scaffold_text, wida_level, effectiveness, assigned_at').single()
     if (error) { showToast(`Error: ${error.message}`); return }
     setScaffolds(prev => [data as Scaffold, ...prev])
+    logActivity('created', `Scaffold for ${studentName} · ${domain} · ${text.slice(0, 60)}`)
   }
   const toggleEff = async (s: Scaffold) => {
     const next = s.effectiveness === 'working' ? 'not_working' : s.effectiveness === 'not_working' ? null : 'working'
     const { error } = await supabase.from('student_scaffolds').update({ effectiveness: next, effectiveness_updated_at: new Date().toISOString() }).eq('id', s.id)
-    if (error) showToast(`Error: ${error.message}`); else setScaffolds(prev => prev.map(x => x.id === s.id ? { ...x, effectiveness: next } : x))
+    if (error) showToast(`Error: ${error.message}`); else { setScaffolds(prev => prev.map(x => x.id === s.id ? { ...x, effectiveness: next } : x)); logActivity('edited', `Scaffold marked ${next || 'untried'} · ${studentName}`, { key: `eff:${s.id}` }) }
   }
   const removeScaffold = async (s: Scaffold) => {
     const { error } = await supabase.from('student_scaffolds').update({ is_active: false }).eq('id', s.id)
-    if (error) showToast(`Error: ${error.message}`); else setScaffolds(prev => prev.filter(x => x.id !== s.id))
+    if (error) showToast(`Error: ${error.message}`); else { setScaffolds(prev => prev.filter(x => x.id !== s.id)); logActivity('deleted', `Scaffold for ${studentName} · ${s.scaffold_text.slice(0, 60)}`) }
   }
 
   const active = new Set(scaffolds.map(s => s.scaffold_text))

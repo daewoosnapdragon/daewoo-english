@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
 import { supabase } from '@/lib/supabase'
 import { ChevronLeft, ChevronRight, Save, RotateCcw, Loader2, BarChart3, Check, X, Users, BookOpen, Eye, AlertTriangle, CheckCircle2, Circle } from 'lucide-react'
 import { isCorrectAnswer, acceptedLetters, hasMultipleKeys } from '@/lib/utils'
@@ -2148,6 +2149,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
       setExcludedQuestions(excludedQuestions)
     } else {
       showToast(newExcluded.includes(qNum) ? `Q${qNum} excluded from scoring` : `Q${qNum} restored to scoring`)
+      logActivity('edited', `${levelTest.name} · written test · Q${qNum} ${newExcluded.includes(qNum) ? 'excluded from' : 'restored to'} scoring`)
     }
   }, [excludedQuestions, canToggleExclude, levelTest.id])
 

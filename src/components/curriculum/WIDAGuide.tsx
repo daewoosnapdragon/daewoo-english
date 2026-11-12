@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
+import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
@@ -1242,9 +1244,11 @@ export function AssignScaffolds() {
   const [pickerDomain, setPickerDomain] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'individual' | 'class'>('individual')
   const [classScaffolds, setClassScaffolds] = useState<Record<string, any[]>>({})
+  useViewLog(`WIDA · scaffolds · ${cls} · Grade ${gr} · ${viewMode === 'class' ? 'whole class' : selectedStudent ? (students.find((s: any) => s.id === selectedStudent)?.english_name || 'one student') : 'no student picked'}`)
   const [classLoading, setClassLoading] = useState(false)
 
   const availableClasses = isAdmin ? ENGLISH_CLASSES : [currentTeacher?.english_class as EnglishClass].filter(Boolean)
+  const scaffoldStudentName = () => students.find((s: any) => s.id === selectedStudent)?.english_name || 'student'
 
   // Load assigned scaffolds and WIDA levels for selected student
   useEffect(() => {
@@ -1277,15 +1281,18 @@ export function AssignScaffolds() {
       showToast(`Error: ${error.message}`)
     } else if (data) {
       setAssignedScaffolds(prev => [data, ...prev])
+      logActivity('created', `Scaffold for ${scaffoldStudentName()} · ${scaffold.domain} · ${scaffold.text.slice(0, 60)}`)
       showToast('Scaffold assigned')
     }
     setSaving(false)
   }
 
   const removeScaffold = async (id: string) => {
+    const gone = assignedScaffolds.find(s => s.id === id)
     const { error } = await supabase.from('student_scaffolds').update({ is_active: false }).eq('id', id)
     if (error) { showToast(`Error: ${error.message}`); return }
     setAssignedScaffolds(prev => prev.filter(s => s.id !== id))
+    logActivity('deleted', `Scaffold for ${scaffoldStudentName()} · ${(gone?.scaffold_text || '').slice(0, 60)}`)
     showToast('Scaffold removed')
   }
 
@@ -1300,6 +1307,7 @@ export function AssignScaffolds() {
     }).select().single()
     if (error) { showToast(`Error: ${error.message}`) } else if (data) {
       setAssignedScaffolds(prev => [data, ...prev])
+      logActivity('created', `Custom scaffold for ${scaffoldStudentName()} · ${domain} · ${text.trim().slice(0, 60)}`)
       showToast('Custom scaffold added')
     }
     setSaving(false)
@@ -1360,6 +1368,7 @@ export function AssignScaffolds() {
     }).eq('id', scaffoldId)
     if (error) { showToast(`Error: ${error.message}`); return }
     setAssignedScaffolds(prev => prev.map(s => s.id === scaffoldId ? { ...s, effectiveness } : s))
+    logActivity('edited', `Scaffold marked ${effectiveness || 'untried'} · ${scaffoldStudentName()}`, { key: `eff:${scaffoldId}` })
   }
 
   const printScaffoldCard = () => {

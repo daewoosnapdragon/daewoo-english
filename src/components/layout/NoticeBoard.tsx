@@ -98,10 +98,12 @@ export default function NoticeBoard() {
   const dismiss = async (n: Notice) => {
     setReceipts(prev => [...prev.filter(r => !(r.notice_id === n.id && r.teacher_id === me)), { notice_id: n.id, teacher_id: me, seen_at: new Date().toISOString(), dismissed_at: new Date().toISOString() }])
     await supabase.from('notice_receipts').upsert({ notice_id: n.id, teacher_id: me, dismissed_at: new Date().toISOString() }, { onConflict: 'notice_id,teacher_id' })
+    logActivity('edited', `Notice dismissed · ${n.body.slice(0, 80)}`)
   }
   const remove = async (n: Notice) => {
     if (!await confirmDialog({ title: lang === 'ko' ? '이 공지를 삭제할까요?' : 'Remove this notice for everyone?', danger: true, confirmLabel: lang === 'ko' ? '삭제' : 'Remove' })) return
     await supabase.from('notices').delete().eq('id', n.id)
+    logActivity('deleted', `Notice removed for everyone · ${n.body.slice(0, 80)}`)
     showToast(lang === 'ko' ? '삭제되었습니다' : 'Notice removed'); load()
   }
 

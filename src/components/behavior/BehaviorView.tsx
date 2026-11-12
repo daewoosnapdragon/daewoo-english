@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { supabase } from '@/lib/supabase'
 import { getKSTDateString } from '@/lib/utils'
 import { type BehaviorCase, type LadderSettings, DEFAULT_LADDER, loadLadderSettings, fetchCases, noticeSeenBy, isOverdue, schoolDaysSince, isLadderMissing, sendReminder, reminderSentToday } from '@/lib/behaviorLadder'
@@ -43,6 +44,8 @@ export default function BehaviorView() {
   const [cls, setCls] = useState<string>('all')
   const [caseState, setCaseState] = useState<'needs' | 'closed' | 'all'>('needs')
   const [days, setDays] = useState(60)
+  // What is on screen, for the activity log.
+  useViewLog(`Behavior · ${cls === 'all' ? 'all classes' : cls} · ${caseState === 'needs' ? 'needs action' : caseState === 'closed' ? 'closed' : 'all cases'} · ${days} days${detail ? ` · case: ${detail.students?.english_name || ''}` : ''}`)
   const [type, setType] = useState('all')
   const [flaggedOnly, setFlaggedOnly] = useState(false)
   const [q, setQ] = useState('')

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
 import { useTeachers } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { TEMPLATES, buildFromTemplate, bandForGrade, type RubricCriterion, type Band } from '@/components/curriculum/rubric-library'
@@ -65,6 +66,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
       danger: true, confirmLabel: lang === 'ko' ? '삭제' : 'Remove' })) return
     const { error } = await supabase.from('rubrics').delete().eq('id', r.id)
     if (error) { showToast(`Error: ${error.message}`); return }
+    logActivity('deleted', `Rubric: ${r.name}`)
     if (sel?.kind === 'saved' && sel.id === r.id) setSel(null)
     showToast(lang === 'ko' ? '삭제되었습니다' : `Removed "${r.name}"`)
     load()

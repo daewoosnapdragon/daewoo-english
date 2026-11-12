@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { useTeachers } from '@/hooks/useData'
 import { budgetSummary, isSuppliesMissing, won, type SupplyBudget, type SupplyPurchase } from '@/lib/suppliesCore'
 import { fetchBudget, saveBudget, updatePurchase } from '@/lib/suppliesData'
@@ -40,6 +41,7 @@ export default function BudgetView() {
   const [missing, setMissing] = useState(false)
   const [editing, setEditing] = useState<SupplyPurchase | null>(null)
   const [who, setWho] = useState<string>('all')   // all | office | teacher id
+  useViewLog(`Budget · ${who === 'all' ? 'everyone' : who === 'office' ? 'office' : teachers.find(t => t.id === who)?.name || 'one teacher'}`)
   const load = useCallback(async () => {
     if (!semester) return
     setLoading(true)
