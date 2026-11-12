@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
+import { useViewLog } from '@/lib/useViewLog'
 import { supabase } from '@/lib/supabase'
 import { loadClassTeacherMap } from '@/lib/classTeacherData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
@@ -65,6 +67,9 @@ function LevelingView() {
   const [phase, setPhase] = useState<Phase>('setup')
   const [showArchived, setShowArchived] = useState(false)
   const [showAnalysis, setShowAnalysis] = useState(false)
+  // What is on screen, for the activity log.
+  const PHASE_EN: Record<Phase, string> = { setup: 'setup', scores: 'oral test scores', written_test: 'written test', anecdotal: 'teacher ratings', results: 'results', history: 'history', meeting: 'placement meeting' }
+  useViewLog(selectedTest ? `Level Tests · ${selectedTest.name} · ${PHASE_EN[phase]}${showAnalysis ? ' · analysis' : ''}` : 'Level Tests · test list')
   /** Named for the most recent year on record, since the page spans its grades. */
   const analysisLabel = useMemo(() => {
     const t = [...levelTests].sort((a, b) => `${b.academic_year}${b.semester}`.localeCompare(`${a.academic_year}${a.semester}`))[0]
@@ -93,7 +98,7 @@ function LevelingView() {
       name, grade, academic_year: academicYear, semester, created_by: currentTeacher?.id || null,
     }).select().single()
     if (error) showToast(`Error: ${error.message}`)
-    else { setLevelTests(prev => [data, ...prev]); setSelectedTest(data); setPhase('scores'); showToast('Level test created') }
+    else { setLevelTests(prev => [data, ...prev]); setSelectedTest(data); setPhase('scores'); showToast('Level test created'); logActivity('created', `Level test: ${name}`) }
   }
 
   const handleToggleArchive = async (test: LevelTest) => {
@@ -101,6 +106,7 @@ function LevelingView() {
     const { error } = await supabase.from('level_tests').update({ is_archived: next }).eq('id', test.id)
     if (error) { showToast(`Error: ${error.message}`); return }
     setLevelTests(prev => prev.map(t => t.id === test.id ? { ...t, is_archived: next } as LevelTest : t))
+    logActivity('edited', `Level test ${next ? 'archived' : 'restored'}: ${test.name}`)
     showToast(next ? 'Test archived — scores are kept' : 'Test restored')
   }
 
@@ -134,6 +140,7 @@ function LevelingView() {
     await supabase.from('level_test_scores_history').delete().eq('level_test_id', test.id)
     const { error } = await supabase.from('level_tests').delete().eq('id', test.id)
     if (error) { showToast(`Could not delete: ${error.message}`); return }
+    logActivity('deleted', `Level test: ${test.name} (with its scores)`)
     setLevelTests(prev => prev.filter(t => t.id !== test.id))
     if (selectedTest?.id === test.id) setSelectedTest(null)
     showToast('Level test deleted')
@@ -316,6 +323,7 @@ function EmergencyLeveling() {
       is_flagged: false, teacher_id: currentTeacher?.id || null,
     })
     setSaving(false)
+    logActivity('edited', `Emergency level change: ${student.english_name} from ${oldClass} to ${newClass} · ${reason.slice(0, 80)}`)
     showToast(`${student.english_name} moved from ${oldClass} to ${newClass}`)
     setSelectedStudent(''); setReason(''); setNewClass('Lily')
     // Refresh
@@ -493,6 +501,7 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
     const { error } = await supabase.from('level_tests').update({ config }).eq('id', levelTest.id)
     if (error) showToast(`Error: ${error.message}`)
     else {
+      logActivity('settings', `Level test sections: ${levelTest.name}`)
       // Update local levelTest config so changes show immediately
       levelTest.config = config
       showToast('Sections updated')
@@ -529,6 +538,7 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
     if (error) { showToast(`Error: ${error.message}`); return }
     if (data) { setPassages(prev => [data, ...prev]); setSelectedPassage(data) }
     setShowPassageUploader(false)
+    logActivity('created', `Reading passage: ${p.title}${p.level ? ` · ${p.level}` : ''}`)
     showToast('Passage saved to library')
   }
 
@@ -559,6 +569,7 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
     }
     setSaving(false)
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved ${activeTab} scores (${cs.length} students)`)
+    logActivity('scored', `${levelTest.name} · scores · ${activeTab} · ${cs.length} students`, { key: `lt:${levelTest.id}:${activeTab}` })
   }
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
@@ -812,6 +823,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
       setDirtyIds(new Set())
       setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
       if (errors > 0) showToast(`Auto-save: ${errors} error(s)`)
+      else logActivity('scored', `${levelTest.name} · teacher ratings · ${activeTab} · ${idsToSave.map(id => students.find(s => s.id === id)?.english_name).filter(Boolean).join(', ').slice(0, 120)}`, { key: `rate:${levelTest.id}:${activeTab}` })
     }, 3000)
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
   }, [dirtyIds, ratings, levelTest.id, currentTeacher?.id])
@@ -834,6 +846,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
       notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null,
     }, { onConflict: 'level_test_id,student_id' })
     if (error) { showToast(`Error: ${error.message}`); return false }
+    logActivity('scored', `${levelTest.name} · teacher ratings · ${activeTab} · ${students.find(s => s.id === sid)?.english_name || ''}`, { key: `rate:${levelTest.id}:${activeTab}` })
     setDirtyIds(prev => { const next = new Set(prev); next.delete(sid); return next })
     setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
     showToast('Saved')
@@ -847,6 +860,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
     setDirtyIds(prev => { const next = new Set(prev); cs.forEach(s => next.delete(s.id)); return next })
     setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
     setSaving(false); showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved all ${activeTab} ratings`)
+    logActivity('scored', `${levelTest.name} · teacher ratings · ${activeTab} · all ${cs.length} students`, { key: `rate:${levelTest.id}:${activeTab}` })
   }
 
   // ── Manual Grade Entry ────────────────────────────────────────────
@@ -887,6 +901,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
       }
     }
     showToast(`Saved ${saved} grade(s)`)
+    logActivity('saved', `Semester grades typed in by hand · ${student?.english_name || ''} · ${saved} domains`)
     setEditingManualGrades(false)
     // Refresh student data
     const { data: sg } = await supabase.from('semester_grades').select('*, semesters(name, type)').eq('student_id', studentId)
@@ -1259,6 +1274,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
         label,
       })
       showToast(`Checkpoint saved: ${label}`)
+      logActivity('created', `Level test checkpoint: ${levelTest.name} · ${label}`)
     } catch (e: any) {
       showToast(`Error saving checkpoint: ${e.message}`)
     }
@@ -1807,6 +1823,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
     dirty.clear()
     setDirtyCount(0)
     setSaving(false); showToast(errors ? `Saved with ${errors} error(s)` : `Saved ${savedCount} placement${savedCount === 1 ? '' : 's'}`)
+    logActivity('saved', `${levelTest.name} · placements · ${savedCount} students`, { key: `place:${levelTest.id}` })
   }
 
   const handleFinalize = async () => {
@@ -1842,6 +1859,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
     setStudents(prev => prev.map(s => finalMap[s.id] ? { ...s, english_class: finalMap[s.id] } : s))
     setPlacements(finalMap)
     setSaving(false)
+    logActivity('saved', `${levelTest.name} finalized · ${updated} students moved to new classes`)
     showToast(errors ? `Finalized with ${errors} error(s). ${updated} student(s) moved.` : `Placements finalized! ${updated} student(s) moved.`); onFinalize()
   }
 

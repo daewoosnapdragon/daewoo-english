@@ -4,6 +4,8 @@ import Link from 'next/link'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
+import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
@@ -96,6 +98,12 @@ export default function ReadingLevelsView() {
     ? [currentTeacher.english_class as EnglishClass] : ALL_ENGLISH_CLASSES
   const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
 
+  // What is on screen, for the activity log.
+  const SUB_EN: Record<typeof subView, string> = { class: 'class overview', student: 'student', groups: 'fluency groups', flexgroups: 'flexible grouping', passages: 'passage library', bypassage: 'by passage', phonics: 'phonics' }
+  const viewingId = subView === 'student' ? selectedStudentId : subView === 'phonics' ? phonicsStudentId : null
+  const viewingName = viewingId ? students.find((s: any) => s.id === viewingId)?.english_name || '' : ''
+  useViewLog(`Reading · ${selectedClass} · Grade ${selectedGrade} · ${SUB_EN[subView]}${viewingName ? ` · ${viewingName}` : ''}`)
+
   return (
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
@@ -170,6 +178,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
     setSavingBench(false)
     if (res.error) { showToast(`Error: ${res.error.message}`); return }
     showToast(lang === 'ko' ? '목표 저장됨' : `Targets saved for ${englishClass} Grade ${grade}`)
+    logActivity('settings', `Reading targets · ${englishClass} · Grade ${grade} · ${row.cwpm_mid}/${row.cwpm_end} CWPM`)
     setEditBench(false); reloadBench()
   }
 
@@ -418,7 +427,9 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 
   const handleDeleteRecord = async (id: string) => {
     if (!await confirmDialog({ title: 'Delete this reading record?', danger: true, confirmLabel: 'Delete' })) return
+    const gone = records.find(r => r.id === id)
     await supabase.from('reading_assessments').delete().eq('id', id)
+    logActivity('deleted', `Reading record · ${students.find((s: any) => s.id === selectedStudentId)?.english_name || ''}${gone?.date ? ` · ${gone.date}` : ''}${gone?.passage_title ? ` · ${gone.passage_title}` : ''}`)
     setRecords(prev => prev.filter(r => r.id !== id))
   }
 
@@ -433,6 +444,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
     const toUpdate = { ...fields, word_count: wc || null, time_seconds: ts || null, errors, cwpm, accuracy_rate }
     const { error } = await supabase.from('reading_assessments').update(toUpdate).eq('id', id)
     if (!error) {
+      logActivity('edited', `Reading record · ${students.find((s: any) => s.id === selectedStudentId)?.english_name || ''}${fields.date ? ` · ${fields.date}` : ''} · ${cwpm != null ? `${Math.round(cwpm)} CWPM` : 'no time'}`)
       setRecords(prev => prev.map(r => r.id === id ? { ...r, ...toUpdate } : r))
       setEditRecord(null)
     }
@@ -754,12 +766,14 @@ function FluencyGroups({ students, loading, lang, grade }: {
     if (error) { showToast(`Error: ${error.message}`); return }
     setSubgroups(prev => [...prev, data])
     setNewGroupName(''); setAddingBand(null)
+    logActivity('created', `Fluency group: ${data.name} · ${band} · ${selectedClass} · Grade ${grade}`)
     showToast(`Created group "${data.name}"`)
   }
 
   const renameSubgroup = async (id: string) => {
     if (!editName.trim()) return
     await supabase.from('fluency_subgroups').update({ name: editName.trim() }).eq('id', id)
+    logActivity('edited', `Fluency group renamed: ${subgroups.find(s => s.id === id)?.name || ''} → ${editName.trim()}`)
     setSubgroups(prev => prev.map(s => s.id === id ? { ...s, name: editName.trim() } : s))
     setEditingGroup(null)
   }
@@ -767,6 +781,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
   const deleteSubgroup = async (id: string) => {
     if (!await confirmDialog({ title: 'Delete this subgroup?', message: 'Students in it will be unassigned.', danger: true, confirmLabel: 'Delete' })) return
     await supabase.from('fluency_subgroups').delete().eq('id', id)
+    logActivity('deleted', `Fluency group: ${subgroups.find(s => s.id === id)?.name || ''}`)
     setSubgroups(prev => prev.filter(s => s.id !== id))
     setMembers(prev => { const n = { ...prev }; Object.keys(n).forEach(k => { if (n[k] === id) delete n[k] }); return n })
   }
@@ -777,6 +792,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
     if (current) await supabase.from('fluency_subgroup_members').delete().eq('student_id', studentId).eq('subgroup_id', current)
     // Add to new subgroup
     if (subgroupId) await supabase.from('fluency_subgroup_members').insert({ subgroup_id: subgroupId, student_id: studentId })
+    logActivity('edited', `Fluency group: ${students.find((s: any) => s.id === studentId)?.english_name || ''} ${subgroupId ? `put in ${subgroups.find(s => s.id === subgroupId)?.name || ''}` : 'taken out'}`, { key: `fg:${studentId}` })
     setMembers(prev => { const n = { ...prev }; if (subgroupId) n[studentId] = subgroupId; else delete n[studentId]; return n })
   }
 
@@ -1017,6 +1033,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
     if (error) { showToast(`Error: ${error.message}`); return }
     if (data) { setPassages(prev => [data, ...prev]); setSelectedPassage(data); setPassageTitle(data.title) }
     setShowPassageUploader(false)
+    logActivity('created', `Reading passage: ${p.title}${p.level ? ` · ${p.level}` : ''}`)
     showToast('Passage saved to library')
   }
 
@@ -1102,7 +1119,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
       })
       setSaving(false)
       if (error) showToast(`Error: ${error.message}`)
-      else { try { localStorage.removeItem(draftKey) } catch {}; showToast('Reading record saved'); onSaved() }
+      else { try { localStorage.removeItem(draftKey) } catch {}; showToast('Reading record saved'); logActivity('saved', `Reading record · ${students.find((s: any) => s.id === selStudent)?.english_name || ''} · ${date} · ${Math.round(cwpm)} CWPM${passageTitle ? ` · ${passageTitle}` : ''}`); onSaved() }
     } else {
       // Batch save — skip already-saved students
       const rows = Object.entries(batchScores)
@@ -1124,7 +1141,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
       const { error } = await supabase.from('reading_assessments').insert(rows)
       setSaving(false)
       if (error) showToast(`Error: ${error.message}`)
-      else { showToast(`Saved ${rows.length} reading records`); onSaved() }
+      else { showToast(`Saved ${rows.length} reading records`); logActivity('saved', `Reading records · ${rows.length} students · ${date}${passageTitle ? ` · ${passageTitle}` : ''}`); onSaved() }
     }
   }
 
@@ -1322,6 +1339,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                 setSaving(false)
                 if (error) { showToast(`Error: ${error.message}`); return }
                 showToast('Saved! Enter next passage.')
+                logActivity('saved', `Reading record · ${students.find((s: any) => s.id === selStudent)?.english_name || ''} · ${date} · ${Math.round(cwpm)} CWPM${passageTitle ? ` · ${passageTitle}` : ''}`, { key: `rr:${selStudent}:${date}` })
                 // Reset passage fields but keep student and date
                 setPassageTitle(''); setPassageDifficulty(''); setWordCount(''); setTimeSeconds(''); setTimeMin(''); setTimeSec(''); setErrors(0); setSelfCorrections(0); setNotes('')
               }} disabled={saving || !selStudent || !wordCount || !timeSeconds}
@@ -1557,6 +1575,7 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
     if (error) { showToast(`Error: ${error.message}`); return }
     if (data) setPassages(prev => [data, ...prev])
     setShowAdd(false)
+    logActivity('created', `Reading passage: ${newForm.title.trim()}${newForm.level ? ` · ${newForm.level}` : ''}`)
     setNewForm({ title: '', text: '', level: '', grade_range: '', source: '' })
     showToast('Passage added')
   }
@@ -1578,6 +1597,7 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return }
     setPassages(prev => prev.map(p => p.id === editingId ? { ...p, ...editForm, word_count: editForm.text.trim().split(/\s+/).length } : p))
+    logActivity('edited', `Reading passage: ${editForm.title}`)
     setEditingId(null)
     showToast('Passage updated')
   }
@@ -1586,6 +1606,7 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
     if (!await confirmDialog({ title: `Delete "${title}"?`, message: 'This cannot be undone.', danger: true, confirmLabel: 'Delete' })) return
     const { error } = await supabase.from('reading_passages').delete().eq('id', id)
     if (error) { showToast(`Error: ${error.message}`); return }
+    logActivity('deleted', `Reading passage: ${title}`)
     setPassages(prev => prev.filter(p => p.id !== id))
     showToast('Passage deleted')
   }

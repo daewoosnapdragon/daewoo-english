@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, type EnglishClass, type Grade } from '@/types'
@@ -27,6 +28,7 @@ export default function StandardsHeatMap() {
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.english_class === 'Admin'
   const [cls, setCls] = useState<EnglishClass>((currentTeacher?.english_class as EnglishClass) || 'Snapdragon')
   const [gr, setGr] = useState<Grade>(3)
+  useViewLog(`Standards · mastery heat map · ${cls} · Grade ${gr}`)
   const { students, loading: loadingStudents } = useStudents({ grade: gr, english_class: cls })
   const [grid, setGrid] = useState<Record<string, Record<string, Cell>>>({})
   const [codes, setCodes] = useState<string[]>([])

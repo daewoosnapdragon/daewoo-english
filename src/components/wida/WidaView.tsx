@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
+import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, type EnglishClass, type Grade } from '@/types'
@@ -44,6 +46,10 @@ export default function WidaView() {
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [guideTab, setGuideTab] = useState<'levels' | 'ccss' | 'index'>('levels')
   const [assessing, setAssessing] = useState(false)
+  // What is on screen, for the activity log. The scaffolds tab names its own student.
+  const TAB_EN: Record<Tab, string> = { levels: 'levels', progress: 'progress', scaffolds: 'scaffolds', guide: 'guide' }
+  const viewingName = selected ? students.find((s: any) => s.id === selected)?.english_name || '' : ''
+  useViewLog(tab === 'scaffolds' ? null : `WIDA · ${TAB_EN[tab]} · ${cls} · Grade ${gr}${assessing ? ' · assessing' : ''}${viewingName ? ` · ${viewingName}${domain ? ` · ${domain}` : ''}` : ''}`)
 
   const ids = useMemo(() => students.map(s => s.id), [students])
 
@@ -98,6 +104,7 @@ export default function WidaView() {
     if (!label) return
     const { error } = await supabase.from('wida_snapshots').insert({ english_class: cls, student_grade: gr, label, snapshot_data: JSON.stringify(levels), created_by: currentTeacher?.id })
     if (error) { showToast(`Error: ${error.message}`); return }
+    logActivity('created', `WIDA snapshot: ${label} · ${cls} · Grade ${gr}`)
     showToast(ko ? '스냅샷 저장됨' : 'Snapshot saved'); loadSnapshots()
   }
   const toggleCompare = async (id: string) => {
@@ -109,6 +116,7 @@ export default function WidaView() {
     if (!await confirmDialog({ title: ko ? '스냅샷을 삭제할까요?' : 'Delete this snapshot?', message: ko ? '되돌릴 수 없습니다.' : 'This cannot be undone. Levels are not affected.', danger: true, confirmLabel: 'Delete' })) return
     const { error } = await supabase.from('wida_snapshots').delete().eq('id', id)
     if (error) { showToast(`Error: ${error.message}`); return }
+    logActivity('deleted', `WIDA snapshot: ${snapshots.find(s => s.id === id)?.label || ''} · ${cls} · Grade ${gr}`)
     if (compare?.id === id) setCompare(null)
     loadSnapshots()
   }
@@ -223,7 +231,7 @@ export default function WidaView() {
                   <h2 className="font-display text-[24px] leading-none text-ink">{selectedStudent.english_name}<span className="font-sans text-[12.5px] text-ink-3 ml-2">{selectedStudent.korean_name}</span></h2>
                   <a href={`/students/${selectedStudent.id}`} className="text-[12px] text-ink-3 hover:text-ink whitespace-nowrap">{ko ? '학생 페이지 →' : 'Student page →'}</a>
                 </div>
-                <WidaSupport key={selectedStudent.id} studentId={selectedStudent.id} grade={selectedStudent.grade} initialDomain={domain} onSaved={loadLevels} />
+                <WidaSupport key={selectedStudent.id} studentId={selectedStudent.id} studentName={selectedStudent.english_name} grade={selectedStudent.grade} initialDomain={domain} onSaved={loadLevels} />
               </>
             ) : (
               <div className="py-10 text-center">

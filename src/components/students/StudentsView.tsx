@@ -4,6 +4,7 @@ import { logActivity } from '@/lib/activity'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
 import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
@@ -48,6 +49,12 @@ export default function StudentsView() {
 
   const teacherClass = currentTeacher?.role === 'teacher' ? currentTeacher.english_class as EnglishClass : null
   const widaLevels = useWIDALevels()
+
+  // What is on screen, for the activity log.
+  useViewLog(`Students · ${[
+    filterClass, filterGrade ? `Grade ${filterGrade}` : '', filterKoreanClass ? `class ${filterKoreanClass}` : '', filterWida ? `WIDA ${filterWida}` : '',
+    filterReview ? 'needs review' : '', search.trim() ? `search "${search.trim()}"` : '', showManage ? 'manage roster' : '', bulkEdit ? 'bulk edit' : '',
+  ].filter(Boolean).join(' · ') || 'whole roster'}`)
 
   // Sort and filters are remembered per teacher so the roster opens the way
   // they left it. Saving waits until the entry for the current key has been
@@ -461,7 +468,7 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
     const { error } = await addStudent({ ...form, teacher_id: (await loadClassTeacherMap())[form.english_class] || null, is_active: true, notes: '', photo_url: '', google_drive_folder_url: '' })
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast(`Added ${form.english_name}`); setForm({ korean_name: '', english_name: '', grade: 2 as Grade, korean_class: '대' as KoreanClass, class_number: 1, english_class: 'Lily' as EnglishClass }); onComplete() }
+    else { showToast(`Added ${form.english_name}`); logActivity('created', `Student: ${form.english_name} (${form.korean_name}) · ${form.english_class} · Grade ${form.grade}`); setForm({ korean_name: '', english_name: '', grade: 2 as Grade, korean_class: '대' as KoreanClass, class_number: 1, english_class: 'Lily' as EnglishClass }); onComplete() }
   }
 
   if (!show) {
@@ -533,6 +540,7 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
     setSaving(null)
     if (error) showToast(`Error: ${error.message}`)
     else {
+      logActivity('saved', `Student reviewed · ${updates.english_name || s.english_name}${Object.keys(updates).filter(k => !['needs_review', 'updated_at', 'teacher_id'].includes(k)).length ? ` · changed ${Object.keys(updates).filter(k => !['needs_review', 'updated_at', 'teacher_id'].includes(k)).join(', ')}` : ' · no changes'}`)
       setEdits(prev => { const copy = { ...prev }; delete copy[s.id]; return copy })
       onComplete()
     }
@@ -545,7 +553,7 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
     const { error } = await supabase.from('students').update({ needs_review: false, updated_at: new Date().toISOString() }).in('id', ids)
     setClearingAll(false)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast(`Cleared ${ids.length} review flags`); onComplete() }
+    else { showToast(`Cleared ${ids.length} review flags`); logActivity('edited', `Review flags cleared · ${ids.length} students`); onComplete() }
   }
 
   return (
@@ -1159,6 +1167,7 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
       assessed_by: currentTeacher?.id,
     })
     if (error) { showToast?.(`Error: ${error.message}`); return }
+    logActivity('saved', `Running record · ${studentName || ''} · ${Math.round(result.cwpm)} CWPM · ${selectedPassage?.title || pasteTitle || 'Untitled'}`)
     // Reload
     const [{ data }, lt] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }),
@@ -1205,6 +1214,7 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
     const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false })
     if (data) setRecords(data)
     setShowManualEntry(false)
+    logActivity('saved', `Reading record typed in · ${studentName || ''} · ${cwpm} CWPM${manualForm.passage_title ? ` · ${manualForm.passage_title}` : ''}`)
     setManualForm({ cwpm: '', accuracy: '', errors: '', self_corrections: '', time_seconds: '60', word_count: '', passage_title: '', naep: '', reading_level: '' })
     showToast?.(`Saved: ${cwpm} CWPM`)
   }
@@ -1228,6 +1238,7 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
     if (error) { showToast?.(`Error: ${error.message}`); setSavingEdit(false); return }
     const { data } = await supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false })
     if (data) setRecords(data)
+    logActivity('edited', `Reading record · ${studentName || ''}${updates.cwpm != null ? ` · ${updates.cwpm} CWPM` : ''}`)
     setEditingId(null)
     setSavingEdit(false)
     showToast?.('Updated')
@@ -1754,7 +1765,7 @@ export function StandardsMasteryTab({ studentId, lang }: { studentId: string; la
 
 // ─── Scaffolds Tab ──────────────────────────────────────────────────
 
-export function ScaffoldsTab({ studentId }: { studentId: string }) {
+export function ScaffoldsTab({ studentId, studentName = '' }: { studentId: string; studentName?: string }) {
   const { showToast, currentTeacher } = useApp()
   const [scaffolds, setScaffolds] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -1796,13 +1807,14 @@ export function ScaffoldsTab({ studentId }: { studentId: string }) {
     const next = current === 'working' ? 'not_working' : current === 'not_working' ? null : 'working'
     const { error } = await supabase.from('student_scaffolds').update({ effectiveness: next, effectiveness_updated_at: new Date().toISOString() }).eq('id', id)
     if (error) showToast(`Error: ${error.message}`)
-    else setScaffolds(prev => prev.map(s => s.id === id ? { ...s, effectiveness: next } : s))
+    else { setScaffolds(prev => prev.map(s => s.id === id ? { ...s, effectiveness: next } : s)); logActivity('edited', `Scaffold marked ${next || 'untried'} · ${studentName}`, { key: `eff:${id}` }) }
   }
 
   const removeScaffold = async (id: string) => {
+    const gone = scaffolds.find(s => s.id === id)
     const { error } = await supabase.from('student_scaffolds').update({ is_active: false }).eq('id', id)
     if (error) showToast(`Error: ${error.message}`)
-    else setScaffolds(prev => prev.filter(s => s.id !== id))
+    else { setScaffolds(prev => prev.filter(s => s.id !== id)); logActivity('deleted', `Scaffold for ${studentName} · ${(gone?.scaffold_text || '').slice(0, 60)}`) }
   }
 
   const addSuggested = async (text: string) => {
@@ -1812,6 +1824,7 @@ export function ScaffoldsTab({ studentId }: { studentId: string }) {
     }).select().single()
     if (error) { showToast(`Error: ${error.message}`); return }
     setScaffolds(prev => [data, ...prev])
+    logActivity('created', `Scaffold for ${studentName} · ${text.slice(0, 60)}`)
     showToast('Scaffold added')
   }
 
@@ -1823,6 +1836,7 @@ export function ScaffoldsTab({ studentId }: { studentId: string }) {
     }).select().single()
     if (error) { showToast(`Error: ${error.message}`); return }
     setScaffolds(prev => [data, ...prev])
+    logActivity('created', `Custom scaffold for ${studentName} · ${customDomain} · ${customText.trim().slice(0, 60)}`)
     setCustomText(''); setAddingCustom(false)
     showToast('Custom scaffold added')
   }
@@ -2148,6 +2162,7 @@ export function GoalsTab({ studentId, studentName }: { studentId: string; studen
     }).select().single()
     if (error) { showToast(`Error: ${error.message}`); return }
     setGoals(prev => [data, ...prev])
+    logActivity('created', `Goal for ${studentName} · ${newGoal.goal_text.trim().slice(0, 80)}`)
     setNewGoal({ goal_text: '', target_metric: 'custom', target_value: '', baseline_value: '' })
     setAdding(false)
     showToast('Goal added')
@@ -2155,12 +2170,15 @@ export function GoalsTab({ studentId, studentName }: { studentId: string; studen
 
   const updateStatus = async (goalId: string, status: string) => {
     await supabase.from('student_goals').update({ status, updated_at: new Date().toISOString() }).eq('id', goalId)
+    logActivity('edited', `Goal marked ${status} · ${studentName} · ${(goals.find(g => g.id === goalId)?.goal_text || '').slice(0, 60)}`)
     setGoals(prev => prev.map(g => g.id === goalId ? { ...g, status } : g))
     showToast(`Goal marked as ${status}`)
   }
 
   const deleteGoal = async (goalId: string) => {
+    const gone = goals.find(g => g.id === goalId)
     await supabase.from('student_goals').delete().eq('id', goalId)
+    logActivity('deleted', `Goal for ${studentName} · ${(gone?.goal_text || '').slice(0, 60)}`)
     setGoals(prev => prev.filter(g => g.id !== goalId))
     showToast('Goal removed')
   }

@@ -5,8 +5,7 @@
 -- Who did what, when. The app writes it (the app knows who is signed in;
 -- the database does not): one row per sign-in, sign-out, page opened and
 -- saved action. Repeated saves on the same thing within ten minutes fold
--- into one row with a count. Read on /activity by admin, the head teacher
--- and the Snapdragon teacher.
+-- into one row with a count. Read on /activity by the Snapdragon account.
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS activity_log (

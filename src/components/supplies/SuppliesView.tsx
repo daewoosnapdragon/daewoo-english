@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { useTeachers } from '@/hooks/useData'
 import { getKSTDateString } from '@/lib/utils'
 import { logActivity } from '@/lib/activity'
@@ -49,6 +50,7 @@ export default function SuppliesView() {
   const { teachers } = useTeachers()
   const s = useSupplies()
   const [tab, setTab] = useState<Tab>('stock')
+  useViewLog(`Supplies · ${tab}`)
   useEffect(() => {
     const fromHash = () => { const h = (window.location.hash || '').slice(1); if (['stock', 'requests', 'receipts', 'count'].includes(h)) setTab(h as Tab) }
     fromHash(); window.addEventListener('hashchange', fromHash); return () => window.removeEventListener('hashchange', fromHash)

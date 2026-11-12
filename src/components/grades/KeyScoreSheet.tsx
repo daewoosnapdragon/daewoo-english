@@ -254,6 +254,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
     setDirty(prev => { const n = new Set(prev); n.delete(sid); return n })
     setFocusedQ(map[0]?.num || 1); setCritIdx(0)
     showToast(lang === 'ko' ? `${s.english_name} 점수를 지웠습니다` : `Cleared ${s.english_name}'s paper`)
+    logActivity('deleted', `${assessment.name}: cleared ${s.english_name}'s paper`)
     onSaved?.()
   }
   const clearAll = async () => {
@@ -265,6 +266,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
     const { error } = await supabase.from('grades').delete().eq('assessment_id', assessment.id)
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return }
+    logActivity('deleted', `${assessment.name}: cleared all ${n} papers`)
     setResponses({}); setFlags({}); setDirty(new Set()); setActiveIdx(0); setFocusedQ(map[0]?.num || 1); setCritIdx(0)
     showToast(lang === 'ko' ? '모든 점수를 지웠습니다' : `Cleared ${n} papers`)
     onSaved?.()

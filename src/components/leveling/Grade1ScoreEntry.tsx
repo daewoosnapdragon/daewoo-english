@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
@@ -3968,6 +3969,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
         label,
       })
       showToast(`Checkpoint saved: ${label}`)
+      logActivity('created', `Level test checkpoint: ${levelTest.name} · ${label}`)
     } catch (e: any) {
       showToast(`Error saving checkpoint: ${e.message}`)
     }

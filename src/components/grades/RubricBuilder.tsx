@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
 import { supabase } from '@/lib/supabase'
 import { CRITERIA, criterionFor, type Band, type RubricCriterion } from '@/components/curriculum/rubric-library'
 import { X, ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react'
@@ -46,6 +47,7 @@ export default function RubricBuilder({ draft, grade, englishClass, onClose, onS
     setSaving(false)
     if (res.error) { showToast(`Error: ${res.error.message}${res.error.message.includes('rubrics') ? ' · run supabase/migration-rubrics.sql' : ''}`); return }
     showToast(lang === 'ko' ? '루브릭 저장됨' : `Saved "${name.trim()}"`)
+    logActivity(draft.id ? 'edited' : 'created', `Rubric: ${name.trim()} · ${band} · ${criteria.length} criteria${shareSchool ? ' · shared with the school' : ` · ${englishClass}`}`)
     onSaved(res.data as { id: string })
   }
 

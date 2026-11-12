@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { logActivity } from '@/lib/activity'
 import { getKSTDateString, toKSTDateString } from '@/lib/utils'
 
 // ─── Behavior ladder ─────────────────────────────────────────────
@@ -90,6 +91,7 @@ export async function acknowledgeCase(c: BehaviorCase, teacherId: string): Promi
   const now = new Date().toISOString()
   const { error } = await supabase.from('behavior_cases').update({ status: 'acknowledged', acknowledged_by: teacherId, acknowledged_at: now, updated_at: now }).eq('id', c.id).eq('status', 'open')
   if (error) return error.message
+  logActivity('edited', `Behavior case acknowledged · ${c.students?.english_name || ''} · step ${c.step} (${c.action_label})`)
   for (const nid of [c.notice_id, c.reminder_notice_id]) {
     if (nid) await supabase.from('notice_receipts').upsert({ notice_id: nid, teacher_id: teacherId }, { onConflict: 'notice_id,teacher_id', ignoreDuplicates: true })
   }
@@ -122,6 +124,7 @@ export async function sendReminder(c: BehaviorCase, adminIds: string[]): Promise
   if (nErr) return nErr.message
   const { error } = await supabase.from('behavior_cases').update({ reminder_at: now, reminder_count: (c.reminder_count || 0) + 1, reminder_notice_id: notice?.id || null, updated_at: now }).eq('id', c.id)
   if (error) return /reminder_/.test(error.message || '') ? 'Run supabase/migration-behavior-reminders.sql first' : error.message
+  logActivity('posted', `Behavior reminder to admin · ${c.students?.english_name || ''} · step ${c.step}`)
   return null
 }
 
@@ -138,6 +141,7 @@ export async function closeCase(c: BehaviorCase, teacherId: string, actionDate: 
     note: `${c.action_label} (behavior ladder, step ${c.step})${note.trim() ? `: ${note.trim()}` : ''}`,
   })
   if (logErr) return logErr.message
+  logActivity('saved', `Behavior case closed · ${c.students?.english_name || ''} · ${c.action_label} on ${actionDate}${note.trim() ? ` · ${note.trim().slice(0, 80)}` : ''}`)
   // Expire the case's notices as of yesterday (Seoul), so they leave every board at once.
   for (const nid of [c.notice_id, c.reminder_notice_id]) {
     if (nid) await supabase.from('notices').update({ expires_on: yesterdayKST(), updated_at: now }).eq('id', nid)
@@ -147,6 +151,7 @@ export async function closeCase(c: BehaviorCase, teacherId: string, actionDate: 
 
 export async function updateAsk(caseId: string, ask: string): Promise<string | null> {
   const { error } = await supabase.from('behavior_cases').update({ ask: ask.trim(), updated_at: new Date().toISOString() }).eq('id', caseId)
+  if (!error) logActivity('edited', `Behavior case ask changed · ${ask.trim().slice(0, 80)}`, { key: `ask:${caseId}` })
   return error ? error.message : null
 }
 

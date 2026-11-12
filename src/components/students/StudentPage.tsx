@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
+import { useViewLog } from '@/lib/useViewLog'
 import { useStudentActions } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { loadClassTeacherMap } from '@/lib/classTeacherData'
@@ -56,6 +58,8 @@ export default function StudentPage({ studentId }: { studentId: string }) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [active, setActive] = useState('behavior')
+  // What is on screen, for the activity log.
+  useViewLog(student ? `Student · ${student.english_name} · ${student.english_class} · Grade ${student.grade} · ${active}${editing ? ' · editing details' : ''}` : null)
 
   const load = async () => {
     const { data } = await supabase.from('students').select('*, teachers ( name )').eq('id', studentId).single()
@@ -121,7 +125,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
     const { error } = await updateStudent(student.id, updates)
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return }
-    showToast(lang === 'ko' ? '저장되었습니다' : 'Student updated'); setEditing(false); load()
+    showToast(lang === 'ko' ? '저장되었습니다' : 'Student updated'); logActivity('saved', `Student details · ${form.english_name || student.english_name} · ${form.english_class} · Grade ${form.grade}`); setEditing(false); load()
   }
   const exportPDF = async () => {
     if (!student) return
@@ -152,6 +156,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
     const { error } = await supabase.from('students').delete().eq('id', student.id)
     setDeleting(false)
     if (error) { showToast(`Error: ${error.message}`); return }
+    logActivity('deleted', `Student: ${student.english_name} (${student.english_class} · Grade ${student.grade}) and ${total} linked records`)
     showToast(`${student.english_name} deleted`); router.push('/students')
   }
 
@@ -175,7 +180,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
       {student.needs_review && (
         <div className="mb-4 px-4 py-2.5 bg-warn-soft border border-rule rounded flex items-center justify-between gap-3 text-[13px] text-warn">
           <span>{lang === 'ko' ? '명단 업로드 시 검토 대상으로 표시된 학생입니다. 정보를 확인하세요.' : 'Flagged for review during roster upload. Check the details are right.'}</span>
-          <button onClick={async () => { const { error } = await supabase.from('students').update({ needs_review: false }).eq('id', student.id); if (!error) { showToast('Review flag cleared'); load() } }} className="h-7 px-3 rounded bg-warn text-white text-[12px] font-semibold whitespace-nowrap">{lang === 'ko' ? '검토 완료' : 'Mark reviewed'}</button>
+          <button onClick={async () => { const { error } = await supabase.from('students').update({ needs_review: false }).eq('id', student.id); if (!error) { showToast('Review flag cleared'); logActivity('edited', `Review flag cleared · ${student.english_name}`); load() } }} className="h-7 px-3 rounded bg-warn text-white text-[12px] font-semibold whitespace-nowrap">{lang === 'ko' ? '검토 완료' : 'Mark reviewed'}</button>
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-8">
@@ -259,7 +264,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
           </Section>
           <Section id="support" title={lang === 'ko' ? '지원' : 'Support'} meta={lang === 'ko' ? 'WIDA 수준 · 스캐폴드 · 목표 · 그룹' : 'WIDA levels · scaffolds · goals · groups'}>
             <div className="space-y-8">
-              <WidaSupport studentId={student.id} grade={student.grade} summary />
+              <WidaSupport studentId={student.id} studentName={student.english_name} grade={student.grade} summary />
               <WIDAPerformanceInsight studentId={student.id} lang={lang} />
               <div><h3 className="eyebrow mb-2">{lang === 'ko' ? '목표' : 'Goals'}</h3><GoalsTab studentId={student.id} studentName={student.english_name} /></div>
               <div><h3 className="eyebrow mb-2">{lang === 'ko' ? '그룹' : 'Groups'}</h3><StudentGroupsTab studentId={student.id} studentName={student.english_name} /></div>

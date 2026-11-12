@@ -420,18 +420,18 @@ export const ADMIN_SECTIONS: GuideSection[] = [
     watchOut: ['The board has no weeks until the grading periods for that half have start and end dates in Settings.', 'Admin runs supabase/migration-curriculum-teacher-plans.sql once for teachers’ own plans, pins, blocks and the review queue; until then the board shows the master only.', 'Admin runs supabase/migration-curriculum-lesson-log.sql once for importing lessons into days and Mark done.', 'Admin runs supabase/migration-curriculum-anthology.sql once for the series kind, fixed story lengths and Done ticks; it also repairs titles mangled by the first seed.', 'Admin runs supabase/migration-curriculum-placements.sql once, after the catalogue migration.', 'Admin runs supabase/migration-curriculum-catalogue.sql once. It seeds the series the lesson plans already name and a starting phonics vocabulary.', 'The prompt lists the skill tags for the book’s strand, so keep the tags tidy and Claude’s lines will match without fixing.'],
   },
   {
-    id: 'activity', title: 'Activity', updated: '2026-10-27',
-    purpose: 'Who signed in and what they did, for admin, the head teacher and the Snapdragon teacher. Opened from the user menu.',
+    id: 'activity', title: 'Activity', updated: '2026-11-12',
+    purpose: 'Who signed in and exactly what they did, down to the class, student and sheet. Only the Snapdragon account can open it, from the user menu.',
     screen: [
       'A strip of every teacher with their last sign-in and when they were last seen, in the chosen window. Click one to filter the list to them.',
       'Filters: Today, 7 days or 30 days; one teacher or everyone; one kind of action or everything.',
-      'The list, newest first, by day: the time, who, what kind of action, and what it was. ×N means the same action was repeated that many times within ten minutes and folded into one line.',
+      'The list, newest first, by day: the time, who, what kind of action, and what it was. An Opened line names what was on screen (Grades · Snapdragon · Grade 4 · Unit 3 Quiz score sheet), not just the page. ×N means the same action was repeated that many times within ten minutes and folded into one line.',
     ],
     tasks: [
       { title: 'See when someone last signed in', steps: ['Open Activity from the user menu.', 'Read their card in the strip at the top, or pick Sign-ins and sign-outs in the action filter.'] },
       { title: 'See what was done on a day', steps: ['Set the window and, if you like, the teacher.', 'Scroll to the day. Scoring shows the assessment and how many saves; prints show what was printed and for whom.'] },
     ],
-    rules: ['Recorded: sign-ins and sign-outs, pages opened, scoring on any sheet, attendance, lesson plans, comments, student details and notes, behavior notes, assessments created, edited and deleted, prints, notices, and every Settings section.', 'The app writes the log, so only actions taken in the app appear; a change made directly in the database does not.', 'Before the log existed, saves can be rebuilt from the records: admin runs supabase/backfill-activity-log.sql once after the migration. Those lines show “backfill” as their page; attendance lines are placed at 15:30 on their day because the records carry no time. Sign-ins before the log cannot be rebuilt.'],
+    rules: ['Recorded: sign-ins and sign-outs, every page opened with what was on it, scoring on any sheet, attendance, lesson plans, comments, report card approvals and reviewer notes, level tests, reading records and passages, WIDA levels and scaffolds, student details, notes and goals, behavior notes and cases, assessments and rubrics created, edited and deleted, standards mastery, calendar events, prints, notices, and every Settings section.', 'The app writes the log, so only actions taken in the app appear; a change made directly in the database does not.', 'Before the log existed, saves can be rebuilt from the records: admin runs supabase/backfill-activity-log.sql once after the migration. Those lines show “backfill” as their page; attendance lines are placed at 15:30 on their day because the records carry no time. Sign-ins before the log cannot be rebuilt.'],
     watchOut: ['A sign-in is recorded when a teacher picks their name and signs in, not when a page is reloaded in a tab that was already signed in.', 'Admin runs supabase/migration-activity-log.sql once; until then the page says so and nothing is recorded.'],
   },
   {

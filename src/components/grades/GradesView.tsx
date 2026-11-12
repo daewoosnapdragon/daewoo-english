@@ -3,6 +3,7 @@
 import { logActivity } from '@/lib/activity'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, Semester, QuestionMapItem } from '@/types'
@@ -117,6 +118,19 @@ export default function GradesView() {
     ? [currentTeacher.english_class as EnglishClass] : ALL_ENGLISH_CLASSES
 
   const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
+
+  // What is on screen, for the activity log.
+  useViewLog((() => {
+    const base = `Grades · ${selectedClass} · Grade ${selectedGrade}`
+    if (subView === 'entry') {
+      if (showCreateFlow) return `${base} · new assessment`
+      if (editingAssessment) return `${base} · editing ${editingAssessment.name}`
+      return selectedAssessment ? `${base} · ${selectedAssessment.name} score sheet` : `${base} · ${selectedDomain} · score entry`
+    }
+    if (subView === 'student') { const s = students.find(x => x.id === selectedStudentId); return `${base} · student view${s ? ` · ${s.english_name}` : ''}` }
+    if (subView === 'batch') return `${base} · batch grid · ${selectedDomain}`
+    return `${base} · ${subView === 'overview' ? 'domain overview' : 'assessment calendar'}`
+  })())
 
   // ── One load for the class, every domain at once ──
   // The list for the open domain tab is derived from it, so switching tabs
@@ -354,6 +368,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
             const { error } = await supabase.from('assessments').update({ rubric: snapshot, rubric_id: r.rubric_id, max_score: maxScore }).eq('id', a.id)
             if (error) { showToast(`Error: ${error.message}${error.message.includes('rubric') ? ' · run supabase/migration-rubrics.sql first' : ''}`); return }
             setRubricOpen(false)
+            logActivity('edited', `${a.name}: rubric "${r.name}" attached · ${selectedClass} · Grade ${selectedGrade}`)
             onPatched({ ...a, rubric: snapshot, rubric_id: r.rubric_id, max_score: maxScore })
             setTotalsOnly(null)
           }} />
@@ -529,6 +544,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
     setHasChanges(false)
     const entered = students.filter(s => hasAnyScore(s.id)).length
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved section scores for ${entered} students`)
+    logActivity('scored', `${assessment.name} · sections · ${selectedClass} · Grade ${selectedGrade} · ${entered} students`, { key: assessment.id })
   }
 
   if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
@@ -754,6 +770,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
     setSaving(false)
     setHasChanges(false)
     showToast(errors > 0 ? 'Saved with errors' : 'Saved ' + rows.length + ' scores')
+    logActivity('scored', `Batch grid · ${selectedDomain} · ${selectedClass} · Grade ${selectedGrade} · ${rows.length} scores`, { key: `batch|${selectedClass}|${selectedGrade}|${selectedDomain}` })
   }
 
   // Build column list: for each assessment, show total + optional expanded sections

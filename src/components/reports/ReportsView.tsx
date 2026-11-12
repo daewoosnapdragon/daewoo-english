@@ -6,6 +6,7 @@ import { syncSemesterGrades } from '@/lib/semesterGrades'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { withoutAwayDays } from '@/lib/calendarDays'
@@ -197,6 +198,10 @@ export default function ReportsView() {
   // "Class Overview" is a selectable dropdown entry (not a student). Treat an empty
   // selection as overview too, so landing on a mode shows the overview by default.
   const isOverview = !selectedStudentId || selectedStudentId === '__overview__'
+  // What is on screen, for the activity log.
+  const MODE_EN: Record<typeof mode, string> = { individual: 'Report card', progress: 'Progress report', comments: 'Comments', class: 'Class summary', review: 'Review & approve', print: 'Print' }
+  const viewing = (mode === 'individual' || mode === 'progress') ? (isOverview ? 'class overview' : students.find((s: any) => s.id === selectedStudentId)?.english_name || '') : ''
+  useViewLog(selectedSemester ? `Reports · ${MODE_EN[mode]} · ${selectedClass} · Grade ${selectedGrade} · ${selectedSemester.name}${viewing ? ` · ${viewing}` : ''}` : null)
   const currentIdx = students.findIndex((s: any) => s.id === selectedStudentId)
   const prevStudent = () => { if (currentIdx > 0) setSelectedStudentId(students[currentIdx - 1].id) }
   const nextStudent = () => { if (currentIdx < students.length - 1) setSelectedStudentId(students[currentIdx + 1].id) }
@@ -604,7 +609,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     setHideComparison(next)
     const { error } = await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, report_type: 'report_card', hide_comparison: next, text: comment.trim(), is_skipped: commentSkipped, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id,report_type' })
     if (error) { setHideComparison(!next); showToast(error.message?.includes('hide_comparison') ? 'Run the hide_comparison migration first.' : `Error: ${error.message}`) }
-    else showToast(next ? 'Class comparison hidden' : 'Class comparison shown')
+    else { showToast(next ? 'Class comparison hidden' : 'Class comparison shown'); logActivity('edited', `Report card · ${data?.student?.english_name || ''} · class comparison ${next ? 'hidden' : 'shown'}`) }
   }
 
   const acknowledgeReviewerNote = async () => {
@@ -612,7 +617,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const { error } = await supabase.from('report_card_reviews')
       .update({ reviewer_note_ack: true }).eq('student_id', studentId).eq('semester_id', semesterId)
     if (error) showToast(`Error: ${error.message}`)
-    else { setData(prev => prev ? { ...prev, reviewerNoteAck: true } : prev); showToast('Marked as reviewed') }
+    else { setData(prev => prev ? { ...prev, reviewerNoteAck: true } : prev); showToast('Marked as reviewed'); logActivity('edited', `Reviewer note read · ${data?.student?.english_name || ''}`) }
     setAckingNote(false)
   }
 
@@ -760,6 +765,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   }
                   setEditingGrades(false)
                   showToast('Grades saved')
+                  logActivity('saved', `Report card grades edited by hand · ${student?.english_name || ''} · ${DOMAINS.filter(dom => !isNaN(parseFloat(editGradeValues[dom]))).map(dom => `${dom} ${editGradeValues[dom]}`).join(', ')}${editGradeValues.behavior ? ` · behavior ${editGradeValues.behavior}` : ''}`)
                   loadReport()
                 }} className="px-3 py-1 rounded-lg text-[10px] font-semibold bg-navy text-white hover:bg-navy-dark">Save</button>
               </div>
@@ -1824,6 +1830,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                   }
                   setEditingGrades(false)
                   showToast('Grades saved')
+                  logActivity('saved', `Progress report grades edited by hand · ${student?.english_name || ''} · ${DOMAINS.filter(dom => !isNaN(parseFloat(editGradeValues[dom]))).map(dom => `${dom} ${editGradeValues[dom]}`).join(', ')}`)
                   loadReport()
                 }} className="px-3 py-1 rounded-lg text-[10px] font-semibold bg-navy text-white hover:bg-navy-dark">Save</button>
               </div>
@@ -2150,6 +2157,7 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
     }
     setSaving(false)
     showToast(errors ? `Saved with ${errors} error(s)` : `Saved ${dirtyIds.length} comment${dirtyIds.length === 1 ? '' : 's'}`)
+    logActivity('saved', `${docLabel} comments · ${selectedClass} · Grade ${selectedGrade} · ${dirtyIds.map(id => students.find((s: any) => s.id === id)?.english_name).filter(Boolean).join(', ').slice(0, 120)}`, { key: `comments:${docType}:${selectedClass}:${selectedGrade}` })
   }
 
   if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
@@ -2282,6 +2290,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       showToast(error.message?.includes('404') || error.code === '42P01' ? 'Report card reviews table not set up yet. Run the SQL migration.' : `Error: ${error.message}`)
     } else {
       setReviews(prev => ({ ...prev, [studentId]: { ...prev[studentId], ...data } }))
+      logActivity('edited', `Report card ${newVal ? 'approved' : 'approval removed'} · ${students.find((s: any) => s.id === studentId)?.english_name || ''} · ${selectedClass} · Grade ${selectedGrade}`)
       showToast(newVal ? 'Approved' : 'Approval removed')
     }
     setSaving(null)
@@ -2305,6 +2314,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       } else errors++
     }
     setSaving(null)
+    logActivity('edited', `Report cards approved · ${selectedClass} · Grade ${selectedGrade} · all ${students.length} students`)
     showToast(errors > 0 ? `Approved with ${errors} error(s)` : `All ${students.length} students approved`)
   }
 
@@ -2324,6 +2334,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       showToast(error.code === '42P01' || error.message?.includes('reviewer_note') ? 'Run the reviewer-note SQL migration first.' : `Error: ${error.message}`)
     } else {
       setReviews(prev => ({ ...prev, [studentId]: { ...prev[studentId], ...data } }))
+      logActivity('edited', `Reviewer note ${text ? 'left for the teacher' : 'cleared'} · ${students.find((s: any) => s.id === studentId)?.english_name || ''}${text ? ` · ${text.slice(0, 80)}` : ''}`)
       showToast(text ? 'Feedback saved & flagged for the teacher' : 'Feedback cleared')
     }
     setSaving(null)
@@ -2552,6 +2563,7 @@ function PrintCenter({ students, semesterId, selectedClass, selectedGrade, isAdm
     setSavingReady(false)
     if (error) { showToast(error.code === '42P01' ? 'grade_print_status table not set up yet. Run the SQL migration.' : `Error: ${error.message}`); return }
     setGradeReady(next); if (next) setOverride(false)
+    logActivity('edited', `Grade ${selectedGrade} ${next ? 'marked ready to print' : 'unmarked as ready to print'}`)
     showToast(next ? `Grade ${selectedGrade} marked ready to print` : `Grade ${selectedGrade} unmarked`)
   }
 
@@ -2890,6 +2902,7 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
       return
     }
     showToast(newVal ? `${DOMAIN_SHORT[domain]} marked N/A for class` : `${DOMAIN_SHORT[domain]} N/A removed for class`)
+    logActivity('settings', `Report domain ${domain} ${newVal ? 'marked N/A' : 'N/A removed'} · ${selectedClass} · Grade ${selectedGrade}`)
     load()
   }
 

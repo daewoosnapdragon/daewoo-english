@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
@@ -1826,6 +1827,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     setSaving(false)
     savingRef.current = false
     showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved (${toSave.length} student${toSave.length === 1 ? '' : 's'})`)
+    logActivity('scored', `${levelTest.name} · oral test · ${Object.keys(written).map(id => students.find(s => s.id === id)?.english_name).filter(Boolean).join(', ').slice(0, 120)}`, { key: `oral:${levelTest.id}` })
     // Only the students this save actually wrote. It once advanced the snapshot
     // for the whole roster, so a save of one class marked another class's
     // unsaved work as saved -- and the refresh then erased it from the screen.

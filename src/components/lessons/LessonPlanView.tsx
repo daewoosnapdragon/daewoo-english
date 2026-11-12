@@ -5,6 +5,7 @@ import { useScheduleRules, WEEKDAY_LABELS } from '@/lib/scheduleRules'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
@@ -243,6 +244,8 @@ function ParentCalendarView() {
     monthDays.forEach(d => { while (w.length <= d.weekIdx) w.push([]); w[d.weekIdx].push(d) })
     return w
   }, [monthDays])
+  // What is on screen, for the activity log.
+  useViewLog(`Lesson Plans · ${selectedClass} · Grade ${selectedGrade} · ${new Date(year, month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}${openWeek != null && weeks[openWeek]?.[0] ? ` · week of ${weeks[openWeek][0].date}` : ''}`)
 
   const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
   const todayStr = getKSTDateString()
@@ -1217,6 +1220,7 @@ ${pages.join('\n')}
                             content: JSON.stringify({ homework: weeklyHomework[weekMonday] || '' }),
                             updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
                           }, { onConflict: 'date,english_class,grade' })
+                          logActivity('saved', `Lesson plans · ${selectedClass} · Grade ${selectedGrade}: weekly homework for ${weekMonday}`, { key: `lessons|${selectedClass}|${selectedGrade}` })
                         }}
                         placeholder="Enter homework for this week..."
                         className="flex-1 text-[10px] bg-transparent outline-none text-amber-900 placeholder:text-amber-300 py-0.5" />

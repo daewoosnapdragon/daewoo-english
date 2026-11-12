@@ -93,14 +93,15 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
 
   const handleDelete = async (id: string) => {
     if (!await confirmDialog({ title: lang === 'ko' ? '이 기록을 삭제하시겠습니까?' : 'Delete this log entry?', danger: true, confirmLabel: lang === 'ko' ? '삭제' : 'Delete', cancelLabel: lang === 'ko' ? '취소' : 'Cancel' })) return
+    const gone = logs.find(l => l.id === id)
     const { error } = await supabase.from('behavior_logs').delete().eq('id', id)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast(lang === 'ko' ? '삭제되었습니다' : 'Deleted'); loadLogs() }
+    else { showToast(lang === 'ko' ? '삭제되었습니다' : 'Deleted'); logActivity('deleted', `Behavior note · ${studentName}${gone?.date ? ` · ${gone.date}` : ''}`); loadLogs() }
   }
 
   const handleToggleFlag = async (log: BehaviorLog) => {
     const { error } = await supabase.from('behavior_logs').update({ is_flagged: !log.is_flagged }).eq('id', log.id)
-    if (!error) loadLogs()
+    if (!error) { logActivity('edited', `Behavior note ${log.is_flagged ? 'unflagged' : 'flagged for admin'} · ${studentName} · ${log.date}`); loadLogs() }
   }
 
   const flaggedCount = logs.filter((l: any) => l.is_flagged).length
@@ -267,7 +268,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
         ))}
       </div>
 
-      {showAddForm && <AddBehaviorForm studentId={studentId} lang={lang} onClose={() => setShowAddForm(false)} onSaved={afterSave} />}
+      {showAddForm && <AddBehaviorForm studentId={studentId} studentName={studentName} lang={lang} onClose={() => setShowAddForm(false)} onSaved={afterSave} />}
 
       {loading ? (
         <div className="py-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
@@ -344,7 +345,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
 
 // ─── Add Form ───────────────────────────────────────────────────────
 
-function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: string; lang: LangKey; onClose: () => void; onSaved: () => void }) {
+function AddBehaviorForm({ studentId, studentName, lang, onClose, onSaved }: { studentId: string; studentName: string; lang: LangKey; onClose: () => void; onSaved: () => void }) {
   const { currentTeacher, showToast } = useApp()
   const [type, setType] = useState<string>('note')
   const now = new Date()
@@ -381,7 +382,7 @@ function AddBehaviorForm({ studentId, lang, onClose, onSaved }: { studentId: str
     })
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast(lang === 'ko' ? '저장되었습니다' : 'Saved'); onSaved(); logActivity('saved', 'Behavior note') }
+    else { showToast(lang === 'ko' ? '저장되었습니다' : 'Saved'); onSaved(); logActivity('saved', `Behavior note · ${studentName} · ${date} · ${hasAbcData ? 'ABC' : type}${isFlagged ? ' · flagged for admin' : ''}`) }
   }
 
   return (

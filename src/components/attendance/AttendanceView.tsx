@@ -6,6 +6,7 @@ import { loadDayStatus, fillAwayDays, type DayStatus } from '@/lib/calendarDays'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { useStudents, useAvailableClasses } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { GRADES, EnglishClass, Grade } from '@/types'
@@ -88,6 +89,10 @@ export default function AttendanceView() {
   const [gradeTotals, setGradeTotals] = useState<Record<number, number>>({})
   const [monthLoading, setMonthLoading] = useState(false)
   const [dayStatus, setDayStatus] = useState<DayStatus>({ off: null, trip: null })
+  // What is on screen, for the activity log.
+  useViewLog(viewMode === 'day'
+    ? `Attendance · ${selectedClass} · Grade ${selectedGrade} · ${selectedDate}`
+    : `Attendance · ${selectedClass} · Grade ${selectedGrade} · month view · ${calMonth.year}-${String(calMonth.month + 1).padStart(2, '0')}`)
   useEffect(() => { loadDayStatus(selectedDate, selectedGrade).then(setDayStatus) }, [selectedDate, selectedGrade])
 
   const guardUnsaved = (action: () => void) => {

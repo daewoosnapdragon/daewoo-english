@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
 import { supabase } from '@/lib/supabase'
 import { ALL_ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { getDisplayName, getKSTDateString } from '@/lib/utils'
@@ -99,6 +100,7 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return }
     showToast(lang === 'ko' ? `${grade}학년 ${cls} 출석 저장됨` : `Saved attendance for Grade ${grade} · ${cls}`)
+    logActivity('saved', `Attendance · ${cls} · Grade ${grade} · ${today} · ${entries.length} students (from the dashboard)`, { key: `attendance|${cls}|${grade}|${today}` })
     window.dispatchEvent(new Event(ATTENDANCE_SAVED_EVENT))
     onClose()
   }

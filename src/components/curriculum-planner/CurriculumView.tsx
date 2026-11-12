@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { BookOpen, CalendarRange, Map, TrainFront } from 'lucide-react'
 import BookshelfView from './BookshelfView'
 import MapView from './PlacementsView'
@@ -39,6 +40,7 @@ export default function CurriculumView() {
   }, [])
   const go = (t: Tab) => { setTab(t); history.replaceState(null, '', `#${t}`) }
   const shown: Tab = tab === 'books' && !canManage ? 'plans' : tab
+  useViewLog(`Curriculum · ${{ plans: 'class plans', week: 'program week', books: 'books', bookshelf: 'bookshelf' }[shown]}`)
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode; hidden?: boolean }[] = [
     { id: 'plans', label: ko ? '학급 계획' : 'Class plans', icon: <CalendarRange size={13} /> },

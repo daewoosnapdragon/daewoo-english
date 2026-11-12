@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useViewLog } from '@/lib/useViewLog'
 import { useTeachers } from '@/hooks/useData'
 import { getKSTDateString } from '@/lib/utils'
 import type { Teacher } from '@/types'
@@ -24,6 +25,7 @@ export default function OvertimeView() {
   const { settings, loaded } = useOvertimeSettings()
   const [month, setMonth] = useState(getKSTDateString().slice(0, 7))
   const [open, setOpen] = useState<Teacher | null>(null)
+  useViewLog(`Overtime · ${month}${open ? ` · ${open.name}` : ''}`)
   // One cheap read tells whether the table exists yet.
   const probe = useOvertimeMonth(currentTeacher?.id || null, getKSTDateString().slice(0, 7))
   const staff = useMemo(() => teachers.filter(t => t.role !== 'admin'), [teachers])

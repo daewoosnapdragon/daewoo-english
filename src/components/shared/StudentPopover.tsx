@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { withoutAwayDays } from '@/lib/calendarDays'
 import { useApp } from '@/lib/context'
+import { logActivity } from '@/lib/activity'
 import { itemsForDomain } from '@/lib/domainSplit'
 import { calculateWeightedAverage } from '@/lib/utils'
 import { loadAssessmentWeights } from '@/lib/assessmentWeights'
@@ -46,6 +47,7 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
       student_id: studentId, teacher_id: currentTeacher.id, note: noteText.trim(),
     })
     setData(prev => prev ? { ...prev, note: noteText.trim() } : prev)
+    logActivity('saved', `Quick note · ${name} · ${noteText.trim().slice(0, 80)}`)
     setNoteText('')
     setSavingNote(false)
   }
