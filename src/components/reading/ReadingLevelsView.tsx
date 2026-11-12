@@ -18,7 +18,8 @@ import StudentPopover from '@/components/shared/StudentPopover'
 import PassagePickerPanel from '@/components/shared/PassagePickerPanel'
 import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecord'
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
-import PhonicsView from '@/components/reading/PhonicsView'
+import PhonicsView, { SKILLS_STORAGE_KEY } from '@/components/reading/PhonicsView'
+import PhonicsCompare, { type PhonicsScope } from '@/components/reading/PhonicsCompare'
 
 type LangKey = 'en' | 'ko'
 interface ReadingRecord {
@@ -69,6 +70,12 @@ export default function ReadingLevelsView() {
   // to open the check screen on that student. Read after mount so the first
   // render matches the server's.
   const [phonicsStudentId, setPhonicsStudentId] = useState<string | null>(null)
+  // This class, whole grade, or all grades. Past one class every teacher sees
+  // every class: the comparison is for leveling.
+  const [phonicsScope, setPhonicsScope] = useState<PhonicsScope>('class')
+  // A student opened from the comparison: their own class's Phonics view, on
+  // their progress or the check screen. The jump count remounts the view.
+  const [phonicsJump, setPhonicsJump] = useState<{ mode: 'student' | 'assess'; n: number }>({ mode: 'assess', n: 0 })
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     if (q.get('tab') !== 'phonics') return
@@ -94,8 +101,19 @@ export default function ReadingLevelsView() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   const isTeacher = currentTeacher?.role === 'teacher'
-  const availableClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
+  const ownClasses = isTeacher && currentTeacher?.english_class !== 'Admin'
     ? [currentTeacher.english_class as EnglishClass] : ALL_ENGLISH_CLASSES
+  // A teacher who opened another class's student from the phonics comparison
+  // gets that class as a chip too, and their own to go back to.
+  const availableClasses = ownClasses.includes(selectedClass) ? ownClasses : [...ownClasses, selectedClass]
+  const openPhonicsStudent = (s: any, mode: 'student' | 'assess', skills?: string[]) => {
+    if (skills) { try { localStorage.setItem(SKILLS_STORAGE_KEY, JSON.stringify(skills)) } catch {} }
+    if (GRADES.includes(s.grade)) setSelectedGrade(s.grade as Grade)
+    if (ALL_ENGLISH_CLASSES.includes(s.english_class)) setSelectedClass(s.english_class as EnglishClass)
+    setPhonicsStudentId(s.id)
+    setPhonicsJump(j => ({ mode, n: j.n + 1 }))
+    setPhonicsScope('class')
+  }
   const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
 
   // What is on screen, for the activity log.
@@ -131,16 +149,28 @@ export default function ReadingLevelsView() {
         ))}
       </div>
       <div className="flex items-center gap-3 flex-wrap mb-6">
-        <div className="flex gap-1.5">{GRADES.map((g: any) => <button key={g} onClick={() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) }} className={`px-2.5 h-7 rounded-full border text-[12px] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
+        {subView === 'phonics' && <>
+          <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface" data-guide="reading.phonics.scope">
+            {([['class', lang === 'ko' ? '이 반' : 'This class'], ['grade', lang === 'ko' ? '학년 전체' : 'Whole grade'], ['all', lang === 'ko' ? '전 학년' : 'All grades']] as const).map(([id, label]) => (
+              <button key={id} onClick={() => { setPhonicsScope(id); setPhonicsStudentId(null) }} className={`px-3 h-7 rounded text-[12px] font-medium ${phonicsScope === id ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{label}</button>
+            ))}
+          </div>
+          {phonicsScope !== 'all' && <span className="w-px h-6 bg-rule" />}
+        </>}
+        {!(subView === 'phonics' && phonicsScope === 'all') && <div className="flex gap-1.5">{GRADES.map((g: any) => <button key={g} onClick={() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) }} className={`px-2.5 h-7 rounded-full border text-[12px] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>}
+        {!(subView === 'phonics' && phonicsScope !== 'class') && <>
         <span className="w-px h-6 bg-rule" />
         {availableClasses.length > 1
           ? <div className="flex gap-1.5">{availableClasses.map((cls: any) => <button key={cls} onClick={() => setSelectedClass(cls)} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[12px] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
           : <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink"><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[selectedClass] || 'bg-ink-3'}`} />{selectedClass}</span>}
+        </>}
       </div>
       <div>
 
         {subView === 'class' && <ClassOverview key={refreshKey} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} onSelectStudent={(sid: string) => { setSelectedStudentId(sid); setSubView('student') }} />}
-        {subView === 'phonics' && <PhonicsView students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} initialStudentId={phonicsStudentId} />}
+        {subView === 'phonics' && phonicsScope === 'class' && <PhonicsView key={phonicsJump.n} students={students} loading={loadingStudents} lang={lang} grade={selectedGrade} englishClass={selectedClass} initialStudentId={phonicsStudentId} initialMode={phonicsJump.mode} />}
+        {subView === 'phonics' && phonicsScope !== 'class' && <PhonicsCompare scope={phonicsScope} grade={selectedGrade} lang={lang}
+          onOpenStudent={(s) => openPhonicsStudent(s, 'student')} onCheckStudent={(s, skills) => openPhonicsStudent(s, 'assess', skills)} />}
         {subView === 'student' && <StudentReadingView key={refreshKey} students={students} selectedStudentId={selectedStudentId} setSelectedStudentId={setSelectedStudentId} lang={lang} grade={selectedGrade} onAddRecord={(sid: string) => { setAddForStudentId(sid); setShowAddModal(true) }} />}
         {subView === 'bypassage' && <ByPassageView key={refreshKey} students={students} lang={lang} grade={selectedGrade} englishClass={selectedClass} onStartBatch={(passageTitle: string) => { setShowAddModal(true) }} />}
         {subView === 'passages' && <PassageLibrary lang={lang} />}
