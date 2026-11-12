@@ -15,6 +15,18 @@ export async function loadPhonicsChecks(studentIds: string[]): Promise<PhonicsCh
   return (data || []).map(normalize)
 }
 
+/**
+ * Every check in the school, for the whole-grade and all-grades comparisons.
+ * One read rather than an id list: a school's worth of ids does not fit in
+ * a request URL.
+ */
+export async function loadAllPhonicsChecks(): Promise<PhonicsCheckRow[]> {
+  const { data } = await fetchAll<PhonicsCheckRow>((from, to) =>
+    supabase.from('phonics_checks').select('*')
+      .order('date', { ascending: false }).order('created_at', { ascending: false }).order('id').range(from, to))
+  return (data || []).map(normalize)
+}
+
 export async function loadStudentPhonicsChecks(studentId: string): Promise<PhonicsCheckRow[]> {
   return loadPhonicsChecks([studentId])
 }

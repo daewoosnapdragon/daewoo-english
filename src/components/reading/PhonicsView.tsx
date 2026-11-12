@@ -35,11 +35,13 @@ type Observations = Record<string, string[]>
 export const SKILLS_STORAGE_KEY = 'daewoo_phonics_skills'
 const BANDS: PhonicsBand[] = ['mastered', 'proficient', 'developing', 'beginning']
 
-export default function PhonicsView({ students, loading, lang, grade, englishClass, initialStudentId }: {
+export default function PhonicsView({ students, loading, lang, grade, englishClass, initialStudentId, initialMode }: {
   students: Student[]; loading: boolean; lang: Lang; grade: number; englishClass: string; initialStudentId?: string | null
+  /** With initialStudentId: open on their progress rather than the check screen. */
+  initialMode?: 'student' | 'assess'
 }) {
   const { confirmDialog } = useApp()
-  const [mode, setMode] = useState<Mode>(initialStudentId ? 'assess' : 'heatmap')
+  const [mode, setMode] = useState<Mode>(initialStudentId ? (initialMode || 'assess') : 'heatmap')
   const [studentId, setStudentId] = useState<string | null>(initialStudentId || null)
   const [checks, setChecks] = useState<PhonicsCheckRow[]>([])
   const [loadingChecks, setLoadingChecks] = useState(true)
