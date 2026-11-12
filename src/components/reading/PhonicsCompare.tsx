@@ -20,6 +20,9 @@ import { BAND_TONE, fmtShort } from '@/components/reading/phonicsTones'
 import PhonicsCellDetail from '@/components/reading/PhonicsCellDetail'
 import PhonicsLevelingStrip, { FlagChip } from '@/components/reading/PhonicsLevelingStrip'
 import PhonicsStudentCompare, { MAX_COMPARE } from '@/components/reading/PhonicsStudentCompare'
+import PhonicsPatterns, { type PatternColumn } from '@/components/reading/PhonicsPatterns'
+import PhonicsGroups from '@/components/reading/PhonicsGroups'
+import { nextToTeach } from '@/lib/phonicsPatterns'
 import { AlertTriangle, ChevronDown, ChevronRight, Columns3, Download, Loader2, X } from 'lucide-react'
 
 // ─── Phonics: whole grade and all grades ─────────────────────────
@@ -32,13 +35,17 @@ import { AlertTriangle, ChevronDown, ChevronRight, Columns3, Download, Loader2, 
 // 70%) outlined. Students: the heat map for every student in scope, grouped
 // by class or ranked by mastery position, the furthest sheet meeting the
 // bar. Cells tested by fewer than three students are greyed: too thin to
-// compare on. Between them, Leveling: a strip per grade with every checked
-// student placed on the twenty sheets, and the students who read like the
-// class above or below. Tick students anywhere to compare them side by side.
+// compare on. Those two are the first tab. Leveling: a strip per grade with
+// every checked student placed on the twenty sheets, and the students who
+// read like the class above or below. Error patterns: how students decoded,
+// what gave trouble and which words were missed, class against class.
+// Groups: students gathered across classes by the sheet to teach next.
+// Tick students anywhere to compare them side by side.
 
 type Lang = 'en' | 'ko'
 export type PhonicsScope = 'class' | 'grade' | 'all'
 type Sort = 'class' | 'position'
+type Tab = 'overview' | 'leveling' | 'patterns' | 'groups'
 
 const CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy', Sunflower: 'bg-level-sunflower', Marigold: 'bg-level-marigold', Snapdragon: 'bg-level-snapdragon' }
 const BANDS: PhonicsBand[] = ['mastered', 'proficient', 'developing', 'beginning']
@@ -68,6 +75,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
   const [loadingChecks, setLoadingChecks] = useState(true)
   const [basis, setBasis] = useState<MasteryBasis>('mastered')
   const [sort, setSort] = useState<Sort>('class')
+  const [tab, setTab] = useState<Tab>('overview')
   const [since, setSince] = useState('')
   const [open, setOpen] = useState<{ sid: string; skill: string } | null>(null)
   const [picked, setPicked] = useState<string[]>([])
@@ -116,6 +124,16 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
   [students, leveling, posByStudent])
   const pickedStudents = picked.map(id => studentById[id]).filter(Boolean)
 
+  // Error patterns: a column per class in a grade, per grade across the school, and one for everyone.
+  const patternColumns = useMemo<PatternColumn[]>(() => {
+    const cols: PatternColumn[] = scope === 'grade'
+      ? Array.from(new Set(students.map(s => s.english_class))).sort((a, b) => classRank(a) - classRank(b))
+          .map(c => ({ key: c, label: c, dot: CLASS_DOT[c] || 'bg-ink-3', studentIds: students.filter(s => s.english_class === c).map(s => s.id) }))
+      : grades.map(g => ({ key: `g${g}`, label: lang === 'ko' ? `${g}학년` : `Grade ${g}`, studentIds: students.filter(s => s.grade === g).map(s => s.id) }))
+    cols.push({ key: 'all', label: scope === 'grade' ? (lang === 'ko' ? '학년 전체' : 'Whole grade') : (lang === 'ko' ? '전교' : 'Whole school'), studentIds: students.map(s => s.id), total: true })
+    return cols
+  }, [scope, students, grades, lang])
+
   // Classes compared: a row per class, and in All grades a whole-grade row heading each grade.
   const classRows = useMemo(() => {
     const rows: { key: string; label: string; grade: number; englishClass: string | null; stats: GroupStats; isGrade: boolean }[] = []
@@ -158,7 +176,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
 
   const exportCsv = () => {
     exportToCSV(`phonics-${scope === 'grade' ? `G${grade}-all-classes` : 'all-grades'}${basis === 'secure' ? '-proficient' : ''}`,
-      ['Grade', 'Class', 'Student', 'Korean name', ...PHONICS_SKILLS.map(s => s.short), basis === 'mastered' ? 'Mastered through' : 'Proficient+ through', 'Position (of 20)', 'Gaps below', 'Tested through (of 20)', 'Reads like', 'Last check'],
+      ['Grade', 'Class', 'Student', 'Korean name', ...PHONICS_SKILLS.map(s => s.short), basis === 'mastered' ? 'Mastered through' : 'Proficient+ through', 'Position (of 20)', 'Gaps below', 'Tested through (of 20)', 'Reads like', 'Next to teach', 'Last check'],
       [...students].sort((a, b) => a.grade - b.grade || classRank(a.english_class) - classRank(b.english_class) || a.english_name.localeCompare(b.english_name)).map(s => {
         const latest = latestByStudent[s.id] || {}
         const p = posByStudent[s.id]
@@ -166,7 +184,9 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         return [s.grade, s.english_class, s.english_name, s.korean_name,
           ...PHONICS_SKILL_IDS.map(id => latest[id] ? `${latest[id].score.correct}/${latest[id].score.total}` : ''),
           p.through ? phonicsSkill(p.through)?.label || '' : '', p.tested ? p.position : '', p.gaps.map(g => phonicsSkill(g)?.short || g).join('; '), p.tested ? p.testedThrough : '',
-          leveling.flags[s.id] ? `${leveling.flags[s.id].dir === 'up' ? 'above' : 'below'}: ${leveling.flags[s.id].likeClass}${leveling.flags[s.id].unsure ? ' (not tested further)' : ''}` : '', last]
+          leveling.flags[s.id] ? `${leveling.flags[s.id].dir === 'up' ? 'above' : 'below'}: ${leveling.flags[s.id].likeClass}${leveling.flags[s.id].unsure ? ' (not tested further)' : ''}` : '',
+          (() => { const n = nextToTeach(latest, basis); return n.sheet ? `${phonicsSkill(n.sheet)?.label || ''}${n.reason === 'gap' ? ' (hole below position)' : !n.checked ? ' (not checked on it)' : ''}` : n.reason === 'done' ? 'all done' : '' })(),
+          last]
       }))
   }
 
@@ -184,10 +204,10 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
           <button onClick={() => setBasis('mastered')} className={seg(basis === 'mastered')}>{lang === 'ko' ? '완성' : 'Mastered'}</button>
           <button onClick={() => setBasis('secure')} className={seg(basis === 'secure')}>{lang === 'ko' ? '숙달 이상' : 'Proficient+'}</button>
         </div>
-        <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface">
+        {tab === 'overview' && <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface">
           <button onClick={() => setSort('class')} className={seg(sort === 'class')}>{lang === 'ko' ? '반별' : 'By class'}</button>
           <button onClick={() => setSort('position')} className={seg(sort === 'position')}>{lang === 'ko' ? '위치순' : 'By position'}</button>
-        </div>
+        </div>}
         <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-2">
           {lang === 'ko' ? '이후 점검만' : 'Checks since'}
           <input type="date" value={since} onChange={e => setSince(e.target.value)} className="h-8 px-2 rounded border border-rule-2 bg-surface text-[12px] text-ink" />
@@ -202,6 +222,24 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         {' '}{lang === 'ko' ? `학생 ${MIN_TESTED}명 미만이 점검한 시트는 회색입니다.` : `Figures from fewer than ${MIN_TESTED} students tested are greyed: too few to compare on.`}
         {since && <> {lang === 'ko' ? `${since} 이후 점검만 셉니다.` : `Counting checks from ${fmtShort(since, lang)} on.`}</>}
       </p>
+
+      <div className="flex border-b border-rule-2 mb-5" data-guide="reading.phonics.compare-tabs">
+        {([
+          ['overview', lang === 'ko' ? '반과 학생' : 'Classes & students'],
+          ['leveling', lang === 'ko' ? `레벨링 · ${candidates.length}` : `Leveling · ${candidates.length}`],
+          ['patterns', lang === 'ko' ? '오류 패턴' : 'Error patterns'],
+          ['groups', lang === 'ko' ? '그룹' : 'Groups'],
+        ] as const).map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)} className={`relative px-4 h-9 text-[13px] font-medium ${tab === id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
+            {label}{tab === id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'patterns' && <PhonicsPatterns columns={patternColumns} latestByStudent={latestByStudent} checksById={checksById} studentById={studentById} lang={lang} onOpenStudent={onOpenStudent} />}
+      {tab === 'groups' && <PhonicsGroups students={students} latestByStudent={latestByStudent} checksById={checksById} basis={basis} lang={lang} onOpenStudent={onOpenStudent} />}
+
+      {tab === 'overview' && <>
 
       {/* ─── Classes compared ─── */}
       <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '반 비교' : 'Classes compared'}</h3>
@@ -246,6 +284,9 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         </table>
       </div>
 
+      </>}
+
+      {tab === 'leveling' && <>
       {/* ─── Leveling ─── */}
       <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '레벨링' : 'Leveling'}</h3>
       <p className="text-[11.5px] text-ink-3 mb-2 max-w-[920px]">{lang === 'ko'
@@ -288,6 +329,9 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         )}
       </div>
 
+      </>}
+
+      {tab === 'overview' && <>
       {/* ─── Students ─── */}
       <div className="flex items-end justify-between gap-3 flex-wrap mb-2">
         <div>
@@ -338,6 +382,8 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
           </tbody>
         </table>
       </div>
+
+      </>}
 
       {pickedStudents.length > 0 && (
         <div className="sticky bottom-4 z-20 mt-4 flex justify-center pointer-events-none">
