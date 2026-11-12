@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import type { Student } from '@/types'
+import { PLACED_ENGLISH_CLASSES, type Student } from '@/types'
 import { useStudents } from '@/hooks/useData'
 import { getDisplayName } from '@/lib/utils'
 import { exportToCSV } from '@/lib/export'
@@ -12,25 +12,29 @@ import {
   type PhonicsCheckRow, type LatestBySkill, type PhonicsBand,
 } from '@/lib/phonics'
 import {
-  MIN_TESTED, EDGE_PCT, masteryPosition, groupStats, checksSince, byPosition,
-  type MasteryBasis, type MasteryPosition, type GroupStats,
+  MIN_TESTED, EDGE_PCT, masteryPosition, groupStats, checksSince, byPosition, levelingLanes,
+  type MasteryBasis, type MasteryPosition, type GroupStats, type LevelFlag,
 } from '@/lib/phonicsCompare'
 import { loadAllPhonicsChecks } from '@/lib/phonicsData'
 import { BAND_TONE, fmtShort } from '@/components/reading/phonicsTones'
 import PhonicsCellDetail from '@/components/reading/PhonicsCellDetail'
-import { AlertTriangle, ChevronDown, ChevronRight, Download, Loader2, X } from 'lucide-react'
+import PhonicsLevelingStrip, { FlagChip } from '@/components/reading/PhonicsLevelingStrip'
+import PhonicsStudentCompare, { MAX_COMPARE } from '@/components/reading/PhonicsStudentCompare'
+import { AlertTriangle, ChevronDown, ChevronRight, Columns3, Download, Loader2, X } from 'lucide-react'
 
 // ─── Phonics: whole grade and all grades ─────────────────────────
 // Reading → Phonics with the scope set past one class. Every teacher sees
 // every class here, for leveling: where whole classes sit on the packet's
 // twenty sheets, and which students sit where against their class.
 //
-// Two tables. Classes compared: a row per class, each sheet the share of
+// Classes compared: a row per class, each sheet the share of
 // its tested students meeting the bar, the class's edge (first sheet under
 // 70%) outlined. Students: the heat map for every student in scope, grouped
 // by class or ranked by mastery position, the furthest sheet meeting the
 // bar. Cells tested by fewer than three students are greyed: too thin to
-// compare on.
+// compare on. Between them, Leveling: a strip per grade with every checked
+// student placed on the twenty sheets, and the students who read like the
+// class above or below. Tick students anywhere to compare them side by side.
 
 type Lang = 'en' | 'ko'
 export type PhonicsScope = 'class' | 'grade' | 'all'
@@ -66,6 +70,9 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
   const [sort, setSort] = useState<Sort>('class')
   const [since, setSince] = useState('')
   const [open, setOpen] = useState<{ sid: string; skill: string } | null>(null)
+  const [picked, setPicked] = useState<string[]>([])
+  const [comparing, setComparing] = useState(false)
+  const togglePick = (id: string) => setPicked(prev => prev.includes(id) ? prev.filter(x => x !== id) : prev.length >= MAX_COMPARE ? prev : [...prev, id])
   // Collapsed student groups. All grades starts with every group shut: a
   // school's worth of rows is too long to scroll past to the one you want.
   const [collapsed, setCollapsed] = useState<Set<string> | 'all'>(scope === 'all' ? 'all' : new Set())
@@ -88,6 +95,26 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
   const posByStudent = useMemo(() => Object.fromEntries(students.map(s => [s.id, masteryPosition(latestByStudent[s.id] || {}, basis)])) as Record<string, MasteryPosition>, [students, latestByStudent, basis])
 
   const grades = useMemo(() => Array.from(new Set(students.map(s => s.grade))).sort((a, b) => a - b), [students])
+  const studentById = useMemo(() => Object.fromEntries(students.map(s => [s.id, s])) as Record<string, Student>, [students])
+  const checksById = useMemo(() => Object.fromEntries(checks.map(c => [c.id, c])) as Record<string, PhonicsCheckRow>, [checks])
+
+  // Leveling: lanes per grade, lowest class first; Unplaced last and never a neighbour.
+  const leveling = useMemo(() => {
+    const flags: Record<string, LevelFlag> = {}
+    const byGrade = grades.map(g => {
+      const inGrade = students.filter(s => s.grade === g)
+      const classes = Array.from(new Set(inGrade.map(s => s.english_class))).sort((a, b) => classRank(a) - classRank(b))
+      const r = levelingLanes(classes.map(c => ({ englishClass: c, placed: PLACED_ENGLISH_CLASSES.includes(c as any), studentIds: inGrade.filter(s => s.english_class === c).map(s => s.id) })), posByStudent)
+      Object.assign(flags, r.flags)
+      return { grade: g, lanes: r.lanes }
+    })
+    return { byGrade, flags }
+  }, [grades, students, posByStudent])
+  const candidates = useMemo(() => students
+    .filter(s => leveling.flags[s.id])
+    .sort((a, b) => a.grade - b.grade || (leveling.flags[a.id].dir === leveling.flags[b.id].dir ? 0 : leveling.flags[a.id].dir === 'up' ? -1 : 1) || classRank(a.english_class) - classRank(b.english_class) || posByStudent[b.id].position - posByStudent[a.id].position),
+  [students, leveling, posByStudent])
+  const pickedStudents = picked.map(id => studentById[id]).filter(Boolean)
 
   // Classes compared: a row per class, and in All grades a whole-grade row heading each grade.
   const classRows = useMemo(() => {
@@ -131,14 +158,15 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
 
   const exportCsv = () => {
     exportToCSV(`phonics-${scope === 'grade' ? `G${grade}-all-classes` : 'all-grades'}${basis === 'secure' ? '-proficient' : ''}`,
-      ['Grade', 'Class', 'Student', 'Korean name', ...PHONICS_SKILLS.map(s => s.short), basis === 'mastered' ? 'Mastered through' : 'Proficient+ through', 'Position (of 20)', 'Gaps below', 'Tested through (of 20)', 'Last check'],
+      ['Grade', 'Class', 'Student', 'Korean name', ...PHONICS_SKILLS.map(s => s.short), basis === 'mastered' ? 'Mastered through' : 'Proficient+ through', 'Position (of 20)', 'Gaps below', 'Tested through (of 20)', 'Reads like', 'Last check'],
       [...students].sort((a, b) => a.grade - b.grade || classRank(a.english_class) - classRank(b.english_class) || a.english_name.localeCompare(b.english_name)).map(s => {
         const latest = latestByStudent[s.id] || {}
         const p = posByStudent[s.id]
         const last = Object.values(latest).reduce<string>((m, l) => l.date > m ? l.date : m, '')
         return [s.grade, s.english_class, s.english_name, s.korean_name,
           ...PHONICS_SKILL_IDS.map(id => latest[id] ? `${latest[id].score.correct}/${latest[id].score.total}` : ''),
-          p.through ? phonicsSkill(p.through)?.label || '' : '', p.tested ? p.position : '', p.gaps.map(g => phonicsSkill(g)?.short || g).join('; '), p.tested ? p.testedThrough : '', last]
+          p.through ? phonicsSkill(p.through)?.label || '' : '', p.tested ? p.position : '', p.gaps.map(g => phonicsSkill(g)?.short || g).join('; '), p.tested ? p.testedThrough : '',
+          leveling.flags[s.id] ? `${leveling.flags[s.id].dir === 'up' ? 'above' : 'below'}: ${leveling.flags[s.id].likeClass}${leveling.flags[s.id].unsure ? ' (not tested further)' : ''}` : '', last]
       }))
   }
 
@@ -218,13 +246,55 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         </table>
       </div>
 
+      {/* ─── Leveling ─── */}
+      <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '레벨링' : 'Leveling'}</h3>
+      <p className="text-[11.5px] text-ink-3 mb-2 max-w-[920px]">{lang === 'ko'
+        ? `점 하나가 학생 한 명, 위치(0–20)에 놓입니다. 음영은 그 반의 중간 50%, 막대는 중앙값. 초록 테두리: 위 반의 중앙값에 이름. 빨간 테두리: 아래 반의 중앙값 이하. 노란 테두리: 아래 반 수준이지만 그 위로는 점검하지 않음.`
+        : `A dot per checked student at their position (0–20). Shaded: the class’s middle half; bar: its median. Ringed green: at or past the median of the class above. Ringed red: at or under the median of the class below. Ringed amber: the same, but never tested past that point, so check further first.`}</p>
+      {leveling.byGrade.map(g => (
+        <PhonicsLevelingStrip key={g.grade} title={lang === 'ko' ? `${g.grade}학년` : `Grade ${g.grade}`} lanes={g.lanes} students={studentById} pos={posByStudent} flags={leveling.flags}
+          basisWord={basisWord} lang={lang} onOpenStudent={onOpenStudent} />
+      ))}
+      <div className="mt-4 mb-8">
+        <p className="text-[12.5px] font-semibold text-ink mb-1.5">{lang === 'ko' ? '레벨링 후보' : 'Leveling candidates'} <span className="font-normal text-ink-3">· {candidates.length}</span></p>
+        {candidates.length === 0 ? <p className="text-[12px] text-ink-3">{lang === 'ko' ? '이웃 반 수준에 있는 학생이 없습니다.' : 'Nobody reads like a neighbouring class on phonics.'}</p> : (
+          <div className="border border-rule-2 rounded-md overflow-x-auto">
+            <table className="w-full min-w-[760px] text-[12px] border-collapse">
+              <thead><tr className="bg-paper-2 text-left">
+                <th className="w-8" />
+                <th className="px-2 py-1.5 eyebrow font-semibold">{lang === 'ko' ? '학생' : 'Student'}</th>
+                <th className="px-2 py-1.5 eyebrow font-semibold">{lang === 'ko' ? '현재 반' : 'Now in'}</th>
+                <th className="px-2 py-1.5 eyebrow font-semibold">{lang === 'ko' ? '위치' : 'Position'}</th>
+                <th className="px-2 py-1.5 eyebrow font-semibold">{lang === 'ko' ? '파닉스 수준' : 'Phonics reads like'}</th>
+                <th className="px-2 py-1.5 eyebrow font-semibold">{lang === 'ko' ? '아래 구멍' : 'Gaps below'}</th>
+              </tr></thead>
+              <tbody className="divide-y divide-rule">
+                {candidates.map(s => {
+                  const p = posByStudent[s.id]; const f = leveling.flags[s.id]
+                  return (
+                    <tr key={s.id}>
+                      <td className="text-center"><PickBox on={picked.includes(s.id)} full={picked.length >= MAX_COMPARE} onToggle={() => togglePick(s.id)} lang={lang} /></td>
+                      <td className="px-2 py-1"><button onClick={() => onOpenStudent(s)} className="hover:underline text-ink">{getDisplayName(s)}</button> <span className="text-ink-3 text-[11px]">{s.korean_name}</span></td>
+                      <td className="px-2 py-1 text-ink-2 whitespace-nowrap"><span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{lang === 'ko' ? `${s.grade}학년` : `G${s.grade}`} · {s.english_class}</td>
+                      <td className="px-2 py-1 text-ink whitespace-nowrap"><span className="font-semibold">{p.position}</span> {p.through ? phonicsSkill(p.through)?.short : (lang === 'ko' ? '아직 없음' : 'none yet')} <span className="text-ink-3 text-[11px]">· {lang === 'ko' ? `${p.testedThrough}번까지 점검` : `tested to ${p.testedThrough}`}</span></td>
+                      <td className="px-2 py-1"><FlagChip f={f} lang={lang} /> <span className="text-[11px] text-ink-3">{lang === 'ko' ? `중앙값 ${f.likeMedian}` : `median ${f.likeMedian}`}</span></td>
+                      <td className="px-2 py-1 text-[11px] text-ink-2">{p.gaps.length ? p.gaps.map(g => phonicsSkill(g)?.short).join(', ') : <span className="text-ink-3">—</span>}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* ─── Students ─── */}
       <div className="flex items-end justify-between gap-3 flex-wrap mb-2">
         <div>
           <h3 className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '학생' : 'Students'}</h3>
           <p className="text-[11.5px] text-ink-3">{lang === 'ko'
-            ? `위치 = ${basisWord}인 가장 먼 시트 (20개 중). ⚠ = 그 아래에 90% 미만인 시트가 있음. 이름을 클릭하면 시도별 진전, 칸을 클릭하면 단어가 보입니다.`
-            : `Position = the furthest sheet ${basisWord}, of 20. ⚠ = a sheet below it still under 90%. Click a name for progress, a cell for the words.`}</p>
+            ? `위치 = ${basisWord}인 가장 먼 시트 (20개 중). ⚠ = 그 아래에 90% 미만인 시트가 있음. 이름을 클릭하면 시도별 진전, 칸을 클릭하면 단어가 보입니다. 체크하면 최대 ${MAX_COMPARE}명까지 나란히 비교합니다.`
+            : `Position = the furthest sheet ${basisWord}, of 20. ⚠ = a sheet below it still under 90%. Click a name for progress, a cell for the words. Tick up to ${MAX_COMPARE} students to compare them side by side.`}</p>
         </div>
         <div className="flex items-center gap-3 text-[11.5px] text-ink-2 flex-wrap">
           {BANDS.map(b => <span key={b} className="inline-flex items-center gap-1.5"><span className={`w-3 h-3 rounded-sm ${BAND_TONE[b]} ${b !== 'mastered' ? 'border border-rule-2' : ''}`} />{PHONICS_BAND_LABELS[b][lang]}</span>)}
@@ -235,9 +305,9 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       <div className="border border-rule-2 rounded-md overflow-x-auto">
         <table className="w-full min-w-[980px] table-fixed text-[12px] tabular-nums border-collapse">
           <colgroup>
-            <col style={{ width: 168 }} />
+            <col style={{ width: 196 }} />
             {PHONICS_SKILLS.map(s => <col key={s.id} />)}
-            <col style={{ width: 150 }} />
+            <col style={{ width: 160 }} />
           </colgroup>
           <SheetHeader lang={lang} lead={[lang === 'ko' ? '학생' : 'Student']} trail={lang === 'ko' ? '위치' : 'Position'} />
           <tbody>
@@ -258,8 +328,9 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                     </td>
                   </tr>
                   {!shut && g.students.map(s => (
-                    <StudentRow key={s.id} s={s} latest={latestByStudent[s.id] || {}} pos={posByStudent[s.id]} basisWord={basisWord} lang={lang}
-                      showClass={!g.englishClass} onName={() => onOpenStudent(s)} onCell={(skill) => setOpen({ sid: s.id, skill })} />
+                    <StudentRow key={s.id} s={s} latest={latestByStudent[s.id] || {}} pos={posByStudent[s.id]} flag={leveling.flags[s.id]} basisWord={basisWord} lang={lang}
+                      showClass={!g.englishClass} onName={() => onOpenStudent(s)} onCell={(skill) => setOpen({ sid: s.id, skill })}
+                      picked={picked.includes(s.id)} full={picked.length >= MAX_COMPARE} onPick={() => togglePick(s.id)} />
                   ))}
                 </Fragment>
               )
@@ -267,6 +338,30 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
           </tbody>
         </table>
       </div>
+
+      {pickedStudents.length > 0 && (
+        <div className="sticky bottom-4 z-20 mt-4 flex justify-center pointer-events-none">
+          <div className="pointer-events-auto flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border border-rule-2 bg-surface shadow-lg">
+            {pickedStudents.map(s => (
+              <span key={s.id} className="inline-flex items-center gap-1 pl-2 pr-1 h-7 rounded-full border border-rule-2 text-[12px] text-ink">
+                <span className={`w-2 h-2 rounded-full ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{getDisplayName(s)}
+                <button onClick={() => togglePick(s.id)} aria-label={`Remove ${s.english_name}`} className="text-ink-3 hover:text-ink"><X size={12} /></button>
+              </span>
+            ))}
+            <span className="text-[11px] text-ink-3">{pickedStudents.length}/{MAX_COMPARE}</span>
+            <button onClick={() => setPicked([])} className="text-[12px] text-ink-3 hover:text-ink">{lang === 'ko' ? '지우기' : 'Clear'}</button>
+            <button onClick={() => setComparing(true)} disabled={pickedStudents.length < 2}
+              className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-40 inline-flex items-center gap-1.5">
+              <Columns3 size={13} /> {pickedStudents.length < 2 ? (lang === 'ko' ? '2명 이상 선택' : 'Pick 2 or more') : (lang === 'ko' ? '나란히 비교' : 'Compare')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {comparing && pickedStudents.length > 0 && (
+        <PhonicsStudentCompare students={pickedStudents} latestByStudent={latestByStudent} checksById={checksById} pos={posByStudent} flags={leveling.flags}
+          basisWord={basisWord} lang={lang} onClose={() => setComparing(false)} onRemove={togglePick} onOpenStudent={(s) => { setComparing(false); onOpenStudent(s) }} />
+      )}
 
       {open && openStudent && (
         <PhonicsCellDetail student={openStudent} skill={open.skill} checks={byStudent[openStudent.id] || []} lang={lang} onClose={() => setOpen(null)}
@@ -309,18 +404,28 @@ function SheetHeader({ lang, lead, trail }: { lang: Lang; lead: string[]; trail?
   )
 }
 
-function StudentRow({ s, latest, pos, basisWord, lang, showClass, onName, onCell }: {
-  s: Student; latest: LatestBySkill; pos: MasteryPosition; basisWord: string; lang: Lang; showClass: boolean
-  onName: () => void; onCell: (skill: string) => void
+function PickBox({ on, full, onToggle, lang }: { on: boolean; full: boolean; onToggle: () => void; lang: Lang }) {
+  return (
+    <input type="checkbox" checked={on} disabled={!on && full} onChange={onToggle} className="align-middle cursor-pointer disabled:cursor-not-allowed"
+      title={!on && full ? (lang === 'ko' ? `최대 ${MAX_COMPARE}명` : `Up to ${MAX_COMPARE} at a time`) : (lang === 'ko' ? '비교에 추가' : 'Add to compare')} />
+  )
+}
+
+function StudentRow({ s, latest, pos, flag, basisWord, lang, showClass, onName, onCell, picked, full, onPick }: {
+  s: Student; latest: LatestBySkill; pos: MasteryPosition; flag?: LevelFlag; basisWord: string; lang: Lang; showClass: boolean
+  onName: () => void; onCell: (skill: string) => void; picked: boolean; full: boolean; onPick: () => void
 }) {
   const last = Object.values(latest).reduce<string>((m, l) => l.date > m ? l.date : m, '')
   return (
     <tr className="border-t border-rule">
-      <td className="px-3 py-1 border-r border-rule-2 overflow-hidden">
-        <button onClick={onName} className="block w-full text-left truncate hover:underline" title={`${s.english_name} · ${s.english_class} · ${lang === 'ko' ? '시도별 진전 보기' : 'open progress'}`}>
+      <td className="pl-2 pr-3 py-1 border-r border-rule-2 overflow-hidden">
+        <div className="flex items-center gap-2">
+        <PickBox on={picked} full={full} onToggle={onPick} lang={lang} />
+        <button onClick={onName} className="block min-w-0 flex-1 text-left truncate hover:underline" title={`${s.english_name} · ${s.english_class} · ${lang === 'ko' ? '시도별 진전 보기' : 'open progress'}`}>
           {showClass && <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />}
           <span className="text-ink">{getDisplayName(s)}</span><span className="text-ink-3 ml-1.5 text-[11px]">{s.korean_name}</span>
         </button>
+        </div>
       </td>
       {PHONICS_SKILLS.map((sk, i) => {
         const l = latest[sk.id]
@@ -343,7 +448,10 @@ function StudentRow({ s, latest, pos, basisWord, lang, showClass, onName, onCell
               <span className="truncate">{pos.through ? phonicsSkill(pos.through)?.short : (lang === 'ko' ? '아직 없음' : 'none yet')}</span>
               {pos.gaps.length > 0 && <AlertTriangle size={11} className="text-warn shrink-0" />}
             </span>
-            <span className="block text-[10px] text-ink-3 truncate">{lang === 'ko' ? `${pos.testedThrough}번까지 점검` : `tested to ${pos.testedThrough}`}{last ? ` · ${fmtShort(last, lang)}` : ''}</span>
+            <span className="flex items-center gap-1 text-[10px] text-ink-3">
+              <span className="truncate">{lang === 'ko' ? `${pos.testedThrough}번까지${flag ? '' : ' 점검'}` : `${flag ? 'to' : 'tested to'} ${pos.testedThrough}`}{last && !flag ? ` · ${fmtShort(last, lang)}` : ''}</span>
+              {flag && <span className="ml-auto shrink-0"><FlagChip f={flag} lang={lang} /></span>}
+            </span>
           </>
         )}
       </td>

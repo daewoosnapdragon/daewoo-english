@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { LatestBySkill } from '@/lib/phonics'
-import { masteryPosition, groupStats, checksSince, byPosition, median, meetsBasis } from '@/lib/phonicsCompare'
+import { masteryPosition, groupStats, checksSince, byPosition, median, meetsBasis, quartiles, levelingLanes, openCeiling, type MasteryPosition } from '@/lib/phonicsCompare'
 
 const sc = (skill: string, pct: number, automatic = false) => ({
   score: { skill, correct: pct / 5, errors: 20 - pct / 5, unread: 0, total: 20, pct, automatic },
@@ -103,5 +103,62 @@ describe('byPosition', () => {
       z: masteryPosition(latest(sc('blends', 100, true)), 'mastered'),
     }
     expect(byPosition(studs, pos).map(s => s.id)).toEqual(['z', 'y', 'x'])
+  })
+})
+
+describe('quartiles', () => {
+  it('uses the medians of each half', () => {
+    expect(quartiles([1, 2, 3, 4, 5, 6, 7])).toEqual({ q1: 2, q3: 6 })
+    expect(quartiles([1, 2, 3, 4])).toEqual({ q1: 1.5, q3: 3.5 })
+    expect(quartiles([5])).toEqual({ q1: 5, q3: 5 })
+    expect(quartiles([])).toBeNull()
+  })
+})
+
+describe('levelingLanes', () => {
+  // A position as masteryPosition would give it: `at` meets the bar, tested to `to`.
+  const P = (at: number, to = at + 1): MasteryPosition => ({ through: null, position: at, gaps: [], testedThrough: to, tested: to, unticked: 0 })
+  const pos: Record<string, MasteryPosition> = {
+    l1: P(3), l2: P(4), l3: P(12), l4: P(4, 4),
+    d1: P(8), d2: P(9), d3: P(10), d4: P(2), d5: P(2, 2),
+    s1: P(14), s2: P(15), s3: P(16),
+  }
+  const lanes = [
+    { englishClass: 'Lily', placed: true, studentIds: ['l1', 'l2', 'l3', 'l4'] },
+    { englishClass: 'Daisy', placed: true, studentIds: ['d1', 'd2', 'd3', 'd4', 'd5', 'dx'] },
+    { englishClass: 'Sunflower', placed: true, studentIds: ['s1', 's2', 's3'] },
+  ]
+  const { lanes: out, flags } = levelingLanes(lanes, pos)
+
+  it('gives each lane its median and middle range over tested students', () => {
+    expect(out[1]).toMatchObject({ tested: 5, median: 8, range: { q1: 2, q3: 9.5 } })
+  })
+
+  it('flags a student who reaches the next class up', () => {
+    expect(flags.l3).toEqual({ dir: 'up', likeClass: 'Daisy', likeMedian: 8, unsure: false })
+    expect(flags.l1).toBeUndefined()
+  })
+
+  it('flags a student at or under the class below, unsure when never tested past their position', () => {
+    expect(flags.d4).toEqual({ dir: 'down', likeClass: 'Lily', likeMedian: 4, unsure: false })
+    expect(flags.d5).toMatchObject({ dir: 'down', unsure: true })
+    expect(flags.dx).toBeUndefined()
+  })
+
+  it('does not flag against a neighbour that is not actually ahead', () => {
+    const swapped = levelingLanes([lanes[2], lanes[0]], pos)
+    expect(Object.keys(swapped.flags)).toEqual([])
+  })
+
+  it('leaves unplaced students out', () => {
+    const r = levelingLanes([{ englishClass: 'Unplaced', placed: false, studentIds: ['l3'] }, lanes[1]], pos)
+    expect(r.flags.l3).toBeUndefined()
+  })
+})
+
+describe('openCeiling', () => {
+  it('is true when the furthest sheet tested is the position', () => {
+    expect(openCeiling({ through: 'cvc', position: 1, gaps: [], testedThrough: 1, tested: 1, unticked: 0 })).toBe(true)
+    expect(openCeiling({ through: 'cvc', position: 1, gaps: [], testedThrough: 2, tested: 2, unticked: 0 })).toBe(false)
   })
 })

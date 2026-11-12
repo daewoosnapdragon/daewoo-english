@@ -118,3 +118,65 @@ export function byPosition<T extends { id: string; english_name: string }>(stude
     return tb - ta || (pb?.position || 0) - (pa?.position || 0) || (pb?.tested || 0) - (pa?.tested || 0) || a.english_name.localeCompare(b.english_name)
   })
 }
+
+// ─── Leveling: who reads like another class ──────────────────────
+// One lane per class in a grade, lowest class first. A student is flagged
+// when their position reaches the median of the next class up ("reads like
+// Sunflower"), or sits at or under the median of the next class down. Only
+// placed classes take part, and a neighbour counts only when it is actually
+// ahead (or behind): if classes are not in order on phonics, nobody is
+// flagged against the wrong one.
+
+export interface Quartiles { q1: number; q3: number }
+
+/** Tukey's hinges: the medians of the lower and upper halves. */
+export function quartiles(xs: number[]): Quartiles | null {
+  if (xs.length === 0) return null
+  const s = [...xs].sort((a, b) => a - b)
+  const half = Math.floor(s.length / 2)
+  const lo = s.length === 1 ? s : s.slice(0, half)
+  const hi = s.length === 1 ? s : s.slice(s.length % 2 ? half + 1 : half)
+  return { q1: median(lo)!, q3: median(hi)! }
+}
+
+/**
+ * Everything up to the furthest sheet tested meets the bar: the student was
+ * never tested past what they have, so their position is a floor and may
+ * be higher.
+ */
+export function openCeiling(p: MasteryPosition): boolean {
+  return p.tested > 0 && p.position === p.testedThrough
+}
+
+export interface LaneInput { englishClass: string; placed: boolean; studentIds: string[] }
+export interface Lane extends LaneInput { tested: number; median: number | null; range: Quartiles | null }
+export interface LevelFlag {
+  dir: 'up' | 'down'
+  likeClass: string
+  likeMedian: number
+  /** A down flag on a student with an open ceiling: they may simply not have been tested further. */
+  unsure: boolean
+}
+
+export function levelingLanes(inputs: LaneInput[], pos: Record<string, MasteryPosition>): { lanes: Lane[]; flags: Record<string, LevelFlag> } {
+  const lanes: Lane[] = inputs.map(l => {
+    const ps = l.studentIds.filter(id => pos[id]?.tested).map(id => pos[id].position)
+    return { ...l, tested: ps.length, median: median(ps), range: quartiles(ps) }
+  })
+  const flags: Record<string, LevelFlag> = {}
+  lanes.forEach((lane, i) => {
+    if (!lane.placed || lane.median == null) return
+    const up = lanes.slice(i + 1).find(l => l.placed && l.median != null)
+    const down = [...lanes.slice(0, i)].reverse().find(l => l.placed && l.median != null)
+    lane.studentIds.forEach(id => {
+      const p = pos[id]
+      if (!p?.tested) return
+      if (up && up.median! > lane.median! && p.position >= up.median!) {
+        flags[id] = { dir: 'up', likeClass: up.englishClass, likeMedian: up.median!, unsure: false }
+      } else if (down && down.median! < lane.median! && p.position <= down.median!) {
+        flags[id] = { dir: 'down', likeClass: down.englishClass, likeMedian: down.median!, unsure: openCeiling(p) }
+      }
+    })
+  })
+  return { lanes, flags }
+}
