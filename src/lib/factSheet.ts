@@ -31,7 +31,7 @@ export function letterChange(prev: number | null | undefined, cur: number | null
   return a === b ? a : `${a} → ${b}`
 }
 
-/** An area needs this many papers by the progress report before a change since it is shown. */
+/** An area needs this many assessments by the progress report before a change since it is shown. */
 export const MIDTERM_MIN_PAPERS = 2
 
 /**
@@ -240,7 +240,7 @@ export interface RubricPiece {
  * criterion with the level scored and the descriptor for that level
  * (levels[0] is level 1; level 0 has none). Rubric assessments keep
  * their criteria on the assessment and the scores in rubric_scores;
- * a rubric item inside a mixed paper keeps them in the question map and
+ * a rubric item inside a mixed assessment keeps them in the question map and
  * the response's levels. Both are read.
  */
 export function rubricPieces(assessments: NoticingAssessment[], grades: NoticingGrade[]): RubricPiece[] {
@@ -251,8 +251,8 @@ export function rubricPieces(assessments: NoticingAssessment[], grades: Noticing
     const a = byId.get(g.assessment_id)
     if (!a) continue
     // Criteria keys repeat across rubrics (a library rubric is a, b, c), so every
-    // rubric item on a paper is read against its own criteria and kept, which is
-    // how a writing task and a speaking task inside one answer-key paper both show.
+    // rubric item on an assessment is read against its own criteria and kept, which is
+    // how a writing task and a speaking task inside one answer-key assessment both show.
     const crits: Array<{ c: RubricCriterion; rubricName: string | null; score: number | null; itemKey: string }> = []
     const push = (c: RubricCriterion, rubricName: string | null, score: number | null, itemKey: string) => { crits.push({ c, rubricName, score, itemKey }) }
     const paperRubric = a.rubric?.criteria?.length ? a.rubric : (a.question_map || []).find(q => q.rubric?.criteria?.length)?.rubric

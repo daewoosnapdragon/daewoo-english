@@ -26,13 +26,18 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     path: '/reports', guide: 'reports',
   },
   {
+    id: 'class-na-by-document', date: '2026-11-16', title: 'Reports: N/A for a class is kept per document',
+    body: 'You can now mark an area N/A for the whole class on the progress report without it carrying to the report card, and the other way round: each document keeps its own chips on the class overview. Under the chips the app says which areas have no assessments yet and which are marked N/A but have assessments, and on the report card it lists the areas October had as N/A with one click to carry them over.',
+    path: '/reports', guide: 'reports',
+  },
+  {
     id: 'report-card-walkthrough', date: '2026-11-16', title: 'Guide: report cards, step by step, with pictures',
     body: 'You can now open Guide → Report cards, step by step: the whole job screen by screen, with a picture of each step, from opening Reports to Victoria’s approval, and the house rules where they apply. Dates and anything that changes each semester stay in that semester’s meeting notes. Print it from the Guide page if you want it on paper.',
     path: '/guide#report-cards', guide: 'reports',
   },
   {
     id: 'progress-snapshot', date: '2026-11-16', title: 'Reports: the progress report remembers what it printed',
-    body: 'Every time a progress report is printed, on its own or as a batch, the app keeps the grades it showed. The report card’s fact sheet then shows the change since the progress report as the real difference from what parents received, rather than a rebuild from the papers’ dates. The note under the letters says which it is.',
+    body: 'Every time a progress report is printed, on its own or as a batch, the app keeps the grades it showed. The report card’s fact sheet then shows the change since the progress report as the real difference from what parents received, rather than a rebuild from the assessments’ dates. The note under the letters says which it is.',
     path: '/reports', guide: 'reports',
   },
   {

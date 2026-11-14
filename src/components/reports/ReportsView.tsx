@@ -20,6 +20,7 @@ import { loadTeachers } from '@/lib/classTeacherData'
 import { commentChecks } from '@/lib/commentChecks'
 import { letterRows, assessmentsUpTo, midtermAsOf, MIDTERM_MIN_PAPERS, noticings as buildNoticings, nextWithoutComment, rubricPieces, type LetterRow, type RubricPiece } from '@/lib/factSheet'
 import { codesFromAssessments } from '@/lib/taughtSkills'
+import { loadClassNa, loadGradeClassNa, saveClassNa, carryOverCandidates, assessmentCounts } from '@/lib/classNa'
 import { snapshotRows, saveProgressSnapshot, loadProgressSnapshot, SNAPSHOT_DOMAINS, type SnapshotRow } from '@/lib/progressSnapshot'
 import { plainName } from '@/components/curriculum/standards-plain'
 import { WIDA_LEVELS } from '@/lib/wida'
@@ -473,7 +474,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
     // ─── STEP 1: For active semesters, calculate from assessments and sync to semester_grades ───
     // The whole class is synced, not just this student, so the class averages
-    // below reflect every paper that has been scored.
+    // below reflect every assessment that has been scored.
     await syncSemesterGrades({ semesterId, semesterType: semester.type, englishClass: selectedClass, grade: Number(student.grade), students })
 
     // ─── STEP 2: Read this student's grades from semester_grades ───
@@ -497,11 +498,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     // Class-level N/A settings — applied OR'd with student-level
     const sgClass = (myGrades || []).find((sg: any) => sg.english_class)?.english_class || selectedClass
     const sgGrade = (myGrades || []).find((sg: any) => sg.grade)?.grade || student.grade
-    const { data: classSettings } = await supabase.from('class_report_settings').select('domain, is_na')
-      .eq('semester_id', semesterId).eq('english_class', sgClass).eq('grade', sgGrade)
-    const domainClassNa: Record<string, boolean> = {}
-    DOMAINS.forEach(d => { domainClassNa[d] = false })
-    ;(classSettings || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) domainClassNa[r.domain] = !!r.is_na })
+    const domainClassNa = await loadClassNa(semesterId, sgClass, Number(sgGrade), 'report_card')
     const domainNa: Record<string, boolean> = {}
     DOMAINS.forEach(d => { domainNa[d] = domainStudentNa[d] || domainClassNa[d] })
 
@@ -618,11 +615,11 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       ? await supabase.from('grades').select('assessment_id, score, is_absent, is_exempt, domain_scores, rubric_scores, item_responses').eq('student_id', studentId).in('assessment_id', assessments.map((a: any) => a.id))
       : { data: [] as any[] }
     const itemGrades = myItemGrades || []
-    // The progress report's letters: the composite from the papers dated up to the midterm cutoff.
+    // The progress report's letters: the composite from the assessments dated up to the midterm cutoff.
     // The progress report printed the running composite as it stood when it was written, and
-    // nothing stored that. It is rebuilt here from the papers dated up to the later of the
+    // nothing stored that. It is rebuilt here from the assessments dated up to the later of the
     // midterm cutoff and the day the progress-report comment was last saved, and an area
-    // needs at least two papers by then before a change is shown, so one early quiz cannot
+    // needs at least two assessments by then before a change is shown, so one early quiz cannot
     // pose as the October grade.
     let midterm: Record<string, number | null> | null = null
     const progressSaved = (pastCommentsRes.data || []).find((c: any) => c.semester_id === semesterId && c.report_type === 'progress_report')?.updated_at || null
@@ -636,7 +633,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           const avg = items.length >= MIDTERM_MIN_PAPERS ? calcWeightedAvg(items, Number(sgGrade), null, sgClass, weightTable) : null
           midterm![dom] = avg == null ? null : Math.round(avg * 10) / 10
         })
-        // No area had enough papers: there is no column to show.
+        // No area had enough assessments: there is no column to show.
         if (DOMAINS.every(dom => midterm![dom] == null)) midterm = null
       }
     }
@@ -645,7 +642,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const dayOf = (iso: string | null) => iso ? `${Number(iso.split('-')[2])} ${monthOf(iso)}` : ''
     // What the progress report actually printed wins over the rebuild above.
     let midDate = midCutoff
-    let midNote: string | null = midterm ? `Since ${monthOf(midCutoff)} is rebuilt from papers dated up to ${dayOf(midCutoff)}; an area shows it only with ${MIDTERM_MIN_PAPERS} or more papers by then.` : null
+    let midNote: string | null = midterm ? `Since ${monthOf(midCutoff)} is rebuilt from assessments dated up to ${dayOf(midCutoff)}; an area shows it only with ${MIDTERM_MIN_PAPERS} or more assessments by then.` : null
     const snap = await loadProgressSnapshot(studentId, semesterId)
     if (snap && SNAPSHOT_DOMAINS.some(dom => snap.grades[dom] != null)) {
       midterm = {}
@@ -1470,7 +1467,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
 
         const [gradesRes, settingsRes, commentsRes, teachersRes] = await Promise.all([
           supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na').eq('semester_id', semesterId).in('student_id', gIds),
-          supabase.from('class_report_settings').select('english_class, domain, is_na').eq('semester_id', semesterId).eq('grade', grade),
+          loadGradeClassNa(semesterId, Number(grade), kind === 'report_card' ? 'report_card' : 'progress_report'),
           supabase.from('comments').select('student_id, text, is_skipped, hide_comparison').eq('semester_id', semesterId).eq('report_type', 'report_card').in('student_id', gIds),
           loadTeachers(),
         ])
@@ -1478,7 +1475,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
         const commentMap: Record<string, any> = {}
         ;(commentsRes.data || []).forEach((c: any) => { commentMap[c.student_id] = c })
         const classNa: Record<string, Record<string, boolean>> = {}
-        ;(settingsRes.data || []).forEach((r: any) => { if (!DOMAINS.includes(r.domain)) return; if (!classNa[r.english_class]) classNa[r.english_class] = {}; classNa[r.english_class][r.domain] = !!r.is_na })
+        ;(settingsRes || []).forEach((r: any) => { if (!DOMAINS.includes(r.domain)) return; if (!classNa[r.english_class]) classNa[r.english_class] = {}; classNa[r.english_class][r.domain] = !!r.is_na })
         const sGrades: Record<string, Record<string, number | null>> = {}
         const sNa: Record<string, Record<string, boolean>> = {}
         ;(gradesRes.data || []).forEach((sg: any) => {
@@ -1557,11 +1554,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
       const grade = students[0]?.grade
       const studentIds = students.map(s => s.id)
       await syncSemesterGrades({ semesterId, semesterType: allSemesters.find((s: any) => s.id === semesterId)?.type, englishClass: cls, grade: Number(grade), students })
-      const { data: classSettings } = await supabase.from('class_report_settings').select('domain, is_na')
-        .eq('semester_id', semesterId).eq('english_class', cls).eq('grade', grade)
-      const domainClassNa: Record<string, boolean> = {}
-      DOMAINS.forEach(dd => { domainClassNa[dd] = false })
-      ;(classSettings || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) domainClassNa[r.domain] = !!r.is_na })
+      const domainClassNa = await loadClassNa(semesterId, cls, Number(grade), kind === 'report_card' ? 'report_card' : 'progress_report')
 
       // Class averages: the report card's comparison band and the progress report's graph
       const classAverages: Record<string, number | null> = {}
@@ -1779,11 +1772,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     })
 
     // Class-level N/A settings — applied OR'd with student-level
-    const { data: classSettings } = await supabase.from('class_report_settings').select('domain, is_na')
-      .eq('semester_id', semesterId).eq('english_class', student.english_class).eq('grade', student.grade)
-    const domainClassNa: Record<string, boolean> = {}
-    DOMAINS.forEach(d => { domainClassNa[d] = false })
-    ;(classSettings || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) domainClassNa[r.domain] = !!r.is_na })
+    const domainClassNa = await loadClassNa(semesterId, student.english_class, Number(student.grade), 'progress_report')
 
     // Effective N/A (used for display + overall avg) is the OR of both
     const domainNa: Record<string, boolean> = {}
@@ -2801,8 +2790,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
         supabase.from('grades').select('*').in('student_id', studentIds),
         supabase.from('semester_grades').select('student_id, domain, final_grade, calculated_grade, is_na, behavior_grade')
           .eq('semester_id', semesterId).in('student_id', studentIds),
-        supabase.from('class_report_settings').select('domain, is_na')
-          .eq('semester_id', semesterId).eq('english_class', selectedClass).eq('grade', selectedGrade),
+        loadClassNa(semesterId, selectedClass, Number(selectedGrade), 'report_card'),
       ])
       const assessments = assessmentsRes.data || []
       const allGrades = allGradesRes.data || []
@@ -2810,7 +2798,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
       const semGrades = semGradesRes.data || []
       const classNa: Record<string, boolean> = {}
       DOMAINS.forEach((d) => { classNa[d] = false })
-      ;(classSettingsRes.data || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) classNa[r.domain] = !!r.is_na })
+      Object.assign(classNa, classSettingsRes)
 
       const results = students.map((s: any) => {
         const studentSG = semGrades.filter((sg: any) => sg.student_id === s.id)
@@ -2935,8 +2923,8 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
 
 // ─── Class Overview (shared by Progress Report + Report Card) ────────
 // Domain averages, completion stats, class-level N/A toggles, and a per-student
-// status table. The class N/A settings live in `class_report_settings`, which is
-// NOT scoped by report type — so toggling N/A here affects both report kinds.
+// status table. The class N/A flags live in `class_report_settings`, one set per
+// document (src/lib/classNa.ts), so the progress report and the report card differ.
 function ClassOverview({ students, semesterId, semester, selectedClass, selectedGrade, onSelectStudent, reportType = 'progress_report', allSemesters = [], isAdmin = false, canEdit = true }: {
   students: any[]; semesterId: string; semester: any;
   selectedClass: EnglishClass; selectedGrade: Grade;
@@ -2951,6 +2939,8 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
   const [studentRows, setStudentRows] = useState<Array<{ student: any; status: Record<string, 'graded' | 'na' | 'empty'>; isComplete: boolean; hasComment: boolean; commentSkipped: boolean }>>([])
   const [domainAvgs, setDomainAvgs] = useState<Record<string, number | null>>({})
   const [savingNa, setSavingNa] = useState<string | null>(null)
+  const [progressNa, setProgressNa] = useState<Record<string, boolean>>({})
+  const [assessCounts, setAssessCounts] = useState<Record<string, number>>({})
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -2963,12 +2953,14 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
     // nobody has to open each report one by one for a grade to appear.
     await syncSemesterGrades({ semesterId, semesterType: semester?.type, englishClass: selectedClass, grade: Number(selectedGrade), students })
 
-    // Class N/A settings
-    const { data: cls } = await supabase.from('class_report_settings').select('domain, is_na')
-      .eq('semester_id', semesterId).eq('english_class', selectedClass).eq('grade', selectedGrade)
-    const cna: Record<string, boolean> = {}
-    DOMAINS.forEach(d => { cna[d] = false })
-    ;(cls || []).forEach((r: any) => { if (DOMAINS.includes(r.domain)) cna[r.domain] = !!r.is_na })
+    // Class N/A flags for this document; for the report card also October's, to offer a carry-over,
+    // and this semester's assessment counts per area, so a chip can say why a letter is missing.
+    const [cna, otherNa, assessRes] = await Promise.all([
+      loadClassNa(semesterId, selectedClass, Number(selectedGrade), reportType),
+      reportType === 'report_card' ? loadClassNa(semesterId, selectedClass, Number(selectedGrade), 'progress_report') : Promise.resolve({} as Record<string, boolean>),
+      supabase.from('assessments').select('domain, mixed, domain_split').eq('semester_id', semesterId).eq('grade', selectedGrade).eq('english_class', selectedClass),
+    ])
+    setProgressNa(otherNa); setAssessCounts(assessmentCounts(assessRes.data || []))
 
     // Bulk load all student grades + comments for this class+semester
     const [allGradesRes, allComments] = await Promise.all([
@@ -3021,17 +3013,25 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
   const toggleClassNa = async (domain: string) => {
     setSavingNa(domain)
     const newVal = !classNa[domain]
-    const { error } = await supabase.from('class_report_settings').upsert({
-      semester_id: semesterId, english_class: selectedClass, grade: selectedGrade,
-      domain, is_na: newVal, updated_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
-    }, { onConflict: 'semester_id,english_class,grade,domain' })
+    const error = await saveClassNa(semesterId, selectedClass, Number(selectedGrade), reportType, domain, newVal, currentTeacher?.id || null)
     setSavingNa(null)
-    if (error) {
-      showToast(error.code === '42P01' ? 'class_report_settings table not set up yet. Run the SQL migration.' : `Error: ${error.message}`)
-      return
+    if (error) { showToast(error); return }
+    const docName = reportType === 'report_card' ? 'report card' : 'progress report'
+    showToast(newVal ? `${DOMAIN_SHORT[domain]} marked N/A on the ${docName}` : `${DOMAIN_SHORT[domain]} N/A removed from the ${docName}`)
+    logActivity('settings', `${docName} domain ${domain} ${newVal ? 'marked N/A' : 'N/A removed'} · ${selectedClass} · Grade ${selectedGrade}`)
+    load()
+  }
+  // October's N/A flags that the report card does not have yet, copied across in one click.
+  const carryOver = async () => {
+    const todo = carryOverCandidates(progressNa, classNa)
+    if (!todo.length) return
+    setSavingNa('carry')
+    for (const d of todo) {
+      const error = await saveClassNa(semesterId, selectedClass, Number(selectedGrade), 'report_card', d, true, currentTeacher?.id || null)
+      if (error) { showToast(error); break }
     }
-    showToast(newVal ? `${DOMAIN_SHORT[domain]} marked N/A for class` : `${DOMAIN_SHORT[domain]} N/A removed for class`)
-    logActivity('settings', `Report domain ${domain} ${newVal ? 'marked N/A' : 'N/A removed'} · ${selectedClass} · Grade ${selectedGrade}`)
+    setSavingNa(null)
+    logActivity('settings', `Report card N/A carried over from the progress report: ${todo.join(', ')} · ${selectedClass} · Grade ${selectedGrade}`)
     load()
   }
 
@@ -3067,8 +3067,8 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
 
       <div>
         <div className="flex items-baseline gap-3 mb-1">
-          <p className="eyebrow">Not assessed this term</p>
-          <p className="text-[11.5px] text-ink-3">Mark a domain N/A for the whole class; every report shows N/A for it. Shared between the progress report and the report card.{!canEdit ? ` Read-only: only ${selectedClass}'s teacher or an admin can change these.` : ''}</p>
+          <p className="eyebrow">Not assessed on the {reportType === 'report_card' ? 'report card' : 'progress report'}</p>
+          <p className="text-[11.5px] text-ink-3">Mark an area N/A for the whole class; every {reportType === 'report_card' ? 'report card' : 'progress report'} shows N/A for it. The progress report and the report card each have their own.{!canEdit ? ` Read-only: only ${selectedClass}'s teacher or an admin can change these.` : ''}</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {DOMAINS.map(dom => {
@@ -3082,6 +3082,21 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
             )
           })}
         </div>
+        {(() => {
+          const none = DOMAINS.filter(dom => (assessCounts[dom] ?? 0) === 0 && !classNa[dom])
+          const naWithWork = DOMAINS.filter(dom => classNa[dom] && (assessCounts[dom] ?? 0) > 0)
+          const carry = reportType === 'report_card' ? carryOverCandidates(progressNa, classNa) : []
+          if (!none.length && !naWithWork.length && !carry.length) return null
+          return (
+            <div className="mt-1.5 grid gap-0.5 text-[11.5px] text-ink-3">
+              {none.length > 0 && <p>No assessments yet this semester: {none.map(d => DOMAIN_SHORT[d]).join(', ')}.</p>}
+              {naWithWork.length > 0 && <p>N/A but assessed: {naWithWork.map(d => `${DOMAIN_SHORT[d]} (${assessCounts[d]})`).join(', ')}.</p>}
+              {carry.length > 0 && canEdit && (
+                <p>N/A on the progress report: {carry.map(d => DOMAIN_SHORT[d]).join(', ')}. <button onClick={carryOver} disabled={savingNa === 'carry'} className="underline underline-offset-2 text-accent hover:text-accent-hover disabled:opacity-60">Carry over to the report card</button></p>
+              )}
+            </div>
+          )
+        })()}
       </div>
 
       <div>
