@@ -7,7 +7,8 @@
 // (the last print is the one that went home). The fact sheet reads the
 // snapshot first and falls back to the rebuild only when there is none.
 
-import { supabase } from '@/lib/supabase'
+// The Supabase client is imported inside the two functions that need it, so the
+// pure functions above them can be tested without a database.
 
 export const SNAPSHOT_DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language'] as const
 
@@ -41,6 +42,7 @@ const missing = (e: any) => e?.code === '42P01' || /progress_report_snapshots/.t
 export async function saveProgressSnapshot(rows: SnapshotRow[]): Promise<void> {
   if (rows.length === 0) return
   try {
+    const { supabase } = await import('@/lib/supabase')
     const { error } = await supabase.from('progress_report_snapshots').upsert(rows, { onConflict: 'student_id,semester_id,domain' })
     if (error && !missing(error)) console.error('progress snapshot:', error.message)
     if (error && missing(error)) console.warn('progress snapshot: run supabase/migration-progress-snapshots.sql')
@@ -49,6 +51,7 @@ export async function saveProgressSnapshot(rows: SnapshotRow[]): Promise<void> {
 
 export async function loadProgressSnapshot(studentId: string, semesterId: string): Promise<Snapshot | null> {
   try {
+    const { supabase } = await import('@/lib/supabase')
     const { data, error } = await supabase.from('progress_report_snapshots').select('domain, grade, is_na, taken_at').eq('student_id', studentId).eq('semester_id', semesterId)
     if (error) return null
     return snapshotFromRows(data || [])
