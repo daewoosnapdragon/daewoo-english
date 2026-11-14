@@ -6,6 +6,10 @@ import { tierForScore, suggestBand, gradeBand, usageCounts, BANDS, type Band, ty
 import { loadPhraseBank, usablePhrases, AREA_LABEL, TIER_LABEL, type Phrase } from '@/lib/phraseBank'
 import { leastUsedFirst, areaOrder, tierForBehaviorGrade, assembleComment, homeSentence } from '@/lib/commentBuilder'
 import { wordCount, nextStepCount } from '@/lib/commentChecks'
+import { taughtSkills, togglePick, type TaughtSkills } from '@/lib/taughtSkills'
+import { loadTaughtSources, saveTaughtPicks, type TaughtSources } from '@/lib/taughtSkillsData'
+import { skillsOf, AREA_FAMILIES } from '@/lib/phraseSkills'
+import { SKILLS } from '@/components/curriculum/standards-plain'
 import { fillPhrase } from '@/lib/phrases'
 import { X } from 'lucide-react'
 
@@ -29,6 +33,10 @@ export interface CommentBuilderProps {
   doc: 'report_card' | 'progress_report'
   classComments: string[]
   existingText: string
+  /** The class and semester the comment belongs to, for what was taught and the teacher's ticks. */
+  classKey: { cls: string; grade: number; semester: { id: string; start_date?: string | null; end_date?: string | null } }
+  /** CCSS codes tagged on this class's assessments this semester. */
+  assessedCodes: string[]
   onInsert: (text: string, mode: 'replace' | 'append') => void
   onClose: () => void
 }
@@ -61,7 +69,7 @@ function Section({ title, aside, children }: { title: React.ReactNode; aside?: R
   )
 }
 
-export default function CommentBuilder({ student, scores, behaviorGrade, wida, doc, classComments, existingText, onInsert, onClose }: CommentBuilderProps) {
+export default function CommentBuilder({ student, scores, behaviorGrade, wida, doc, classComments, existingText, classKey, assessedCodes, onInsert, onClose }: CommentBuilderProps) {
   const [rows, setRows] = useState<Phrase[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -71,8 +79,27 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
   const [closer, setCloser] = useState<string | null>(null)
   const [bandPick, setBandPick] = useState<Band | null>(null)
   const [stepArea, setStepArea] = useState<string | null>(null)
+  // What this class has been taught: plans, statuses, assessment tags, the teacher's ticks.
+  const [sources, setSources] = useState<TaughtSources | null>(null)
+  const [picks, setPicks] = useState<{ add: string[]; remove: string[] }>({ add: [], remove: [] })
+  const [showAll, setShowAll] = useState<Record<string, boolean>>({})
 
   useEffect(() => { let on = true; loadPhraseBank().then(r => { if (!on) return; setRows(r.rows); setError(r.error); setLoading(false) }); return () => { on = false } }, [])
+  useEffect(() => { let on = true; loadTaughtSources(classKey.cls, classKey.grade, classKey.semester).then(s => { if (!on) return; setSources(s); setPicks(s.picks) }); return () => { on = false } }, [classKey.cls, classKey.grade, classKey.semester])
+  const taught: TaughtSkills = useMemo(() => taughtSkills({ planCodes: sources?.planCodes || [], assessedCodes, statusCodes: sources?.statusCodes || [], picks }), [sources, assessedCodes, picks])
+  const knowsAnything = taught.families.size > 0
+  const tickSkill = async (family: string) => {
+    const next = togglePick(picks, family, taught.families.has(family))
+    setPicks(next)
+    await saveTaughtPicks(classKey.cls, classKey.grade, classKey.semester.id, next)
+  }
+  /** Sentences for a skill the class has covered, or with no skill, come first; the rest fold away. */
+  const split = <T extends { id: string }>(list: T[], seedOf: (p: T) => string | null | undefined) => {
+    if (!knowsAnything) return { shown: list, folded: [] as T[] }
+    const shown: T[] = [], folded: T[] = []
+    for (const p of list) { const sk = skillsOf(seedOf(p)); (sk.length === 0 || sk.some(f => taught.families.has(f)) ? shown : folded).push(p) }
+    return { shown, folded }
+  }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -119,7 +146,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
         <div className="flex items-center justify-between gap-4 px-5 py-3 bg-white" style={{ borderBottom: `1px solid ${RULE}` }}>
           <div>
             <h2 className="m-0 font-display text-[20px] leading-tight">Build a comment for {student.name}</h2>
-            <p className="m-0 text-[11.5px]" style={{ color: MUTED }}>Tick what applies. The draft at the bottom is yours to edit in the box afterwards.{!student.pronoun && <span className="text-amber-800 font-semibold"> Pronoun not set yet, so sentences keep {'{his}'} until it is.</span>}</p>
+            <p className="m-0 text-[11.5px]" style={{ color: MUTED }}>Tick what applies. The draft at the bottom is yours to edit in the box afterwards.{sources && !knowsAnything && <span> Nothing is marked as taught for this class yet, so every sentence shows; tick skills under an area to narrow it.</span>}{!student.pronoun && <span className="text-amber-800 font-semibold"> Pronoun not set yet, so sentences keep {'{his}'} until it is.</span>}</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="w-9 h-9 grid place-items-center rounded hover:bg-[#f1f5f9]" style={{ color: '#475569' }}><X size={16} /></button>
         </div>
@@ -143,15 +170,37 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
 
             {order.map(a => {
               const tier = tierOf(a)
-              const list = sentences(a, tier)
-              const change = sentences(a, 'change over time')
+              const all = [...sentences(a, tier), ...sentences(a, 'change over time')]
+              const { shown, folded } = split(all, p => (p as any).seed_key)
+              const visible = showAll[a] ? all : shown
+              const families = AREA_FAMILIES[a] || []
+              const on = families.filter(f => taught.families.has(f))
+              const off = families.filter(f => !taught.families.has(f))
               return (
                 <Section key={a} title={<>{AREA_LABEL[a]}{scores[a] != null && <span className="font-display font-medium"> {percentToLetter(scores[a] as number)}</span>}{scores[a] == null && <span className="font-normal" style={{ color: MUTED }}> · not graded</span>}</>} aside={<TierButtons area={a} tier={tierOf(a)} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
-                  <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                    {list.map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
-                    {change.map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
-                    {list.length === 0 && change.length === 0 && <p className="m-0" style={{ color: MUTED }}>Nothing in the bank for this yet.</p>}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <span style={{ color: MUTED }}>Taught:</span>
+                    {on.map(f => (
+                      <button key={f} type="button" onClick={() => tickSkill(f)} title={`${f} · ${taught.source[f] === 'plans' ? 'from the lesson plans' : taught.source[f] === 'assessed' ? 'assessed this semester' : taught.source[f] === 'standards' ? 'from the Standards page' : 'you ticked it'} · click to untick`}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ink text-paper">{SKILLS[f]?.name || f}<span className="opacity-70">×</span></button>
+                    ))}
+                    {on.length === 0 && <span style={{ color: MUTED }}>nothing yet</span>}
+                    {off.length > 0 && (
+                      <select value="" onChange={e => { if (e.target.value) tickSkill(e.target.value) }} aria-label={`Add a taught skill for ${AREA_LABEL[a]}`} className="px-1.5 py-0.5 rounded-full border bg-white text-[11px]" style={{ borderColor: RULE, color: MUTED }}>
+                        <option value="">+ add a skill</option>
+                        {off.map(f => <option key={f} value={f}>{SKILLS[f]?.name || f}</option>)}
+                      </select>
+                    )}
                   </div>
+                  <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+                    {visible.map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
+                    {all.length === 0 && <p className="m-0" style={{ color: MUTED }}>Nothing in the bank for this yet.</p>}
+                  </div>
+                  {folded.length > 0 && (
+                    <button type="button" onClick={() => setShowAll(s => ({ ...s, [a]: !s[a] }))} className="self-start text-[11px] underline underline-offset-2" style={{ color: MUTED }}>
+                      {showAll[a] ? 'Hide the skills not taught yet' : `Show ${folded.length} more for skills not taught yet`}
+                    </button>
+                  )}
                 </Section>
               )
             })}

@@ -1,12 +1,14 @@
 // ─── The phrase bank, loaded once ────────────────────────────────
-// comment_phrases rows, shared by the Phrases drawer and the comment
-// builder. Loaded once per page and kept; the bank changes rarely.
+// comment_phrases rows, used by the comment builder. Loaded once per page
+// and kept; the bank changes rarely.
 
 import { supabase } from '@/lib/supabase'
 import type { Band, Tier } from '@/lib/phrases'
 
 export interface Phrase {
   id: string
+  /** Stable key from the seed; the skill tags in src/lib/phraseSkills.ts hang off it. Null for phrases added in the app. */
+  seed_key?: string | null
   kind: 'sentence' | 'opener' | 'closer' | 'ladder'
   area: string | null
   tier: Tier | null

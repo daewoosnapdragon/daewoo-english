@@ -19,6 +19,7 @@ import { resolveStudentTeacher } from '@/lib/classTeacher'
 import { loadTeachers } from '@/lib/classTeacherData'
 import { commentChecks } from '@/lib/commentChecks'
 import { letterRows, assessmentsUpTo, midtermAsOf, MIDTERM_MIN_PAPERS, noticings as buildNoticings, nextWithoutComment, rubricPieces, type LetterRow, type RubricPiece } from '@/lib/factSheet'
+import { codesFromAssessments } from '@/lib/taughtSkills'
 import { plainName } from '@/components/curriculum/standards-plain'
 import { WIDA_LEVELS } from '@/lib/wida'
 import FactSheet, { type FactSheetFacts, type FactSheetQuote } from '@/components/reports/FactSheet'
@@ -160,6 +161,8 @@ interface ReportData {
   noticings: string[]
   rubrics: RubricPiece[]
   quotes: FactSheetQuote[]
+  /** CCSS codes tagged on the class's assessments this semester, for the builder's taught-first ordering. */
+  assessedCodes: string[]
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
@@ -602,7 +605,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     // ─── STEP 6: Fact sheet. Everything here already exists somewhere in the app. ───
     const studentIds = students.map((x: any) => x.id)
     const [assessRes, pastCommentsRes, classCommentsRes, readingSemRes, widaRes, weightTable] = await Promise.all([
-      supabase.from('assessments').select('id, name, date, type, domain, max_score, mixed, domain_split, question_map, rubric').eq('semester_id', semesterId).eq('grade', sgGrade).eq('english_class', sgClass),
+      supabase.from('assessments').select('id, name, date, type, domain, max_score, mixed, domain_split, question_map, rubric, standards').eq('semester_id', semesterId).eq('grade', sgGrade).eq('english_class', sgClass),
       supabase.from('comments').select('text, is_skipped, report_type, semester_id, updated_at').eq('student_id', studentId),
       supabase.from('comments').select('student_id, text, is_skipped').eq('semester_id', semesterId).eq('report_type', 'report_card').in('student_id', studentIds),
       semester.start_date ? supabase.from('reading_assessments').select('date, cwpm, reading_level, passage_level, notes').eq('student_id', studentId).gte('date', semester.start_date).order('date', { ascending: true }) : Promise.resolve({ data: [] as any[] }),
@@ -654,6 +657,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       absences: attCounts.absent, tardies: attCounts.tardy, standardName: plainName,
     })
     const rubrics = rubricPieces(assessments, itemGrades)
+    const assessedCodes = codesFromAssessments(assessments)
     // Everything parents have already read about this student: this semester's progress report in
     // full, then every earlier comment newest first (report card before progress report within a semester).
     const semRank = new Map(sortedSems.map((x: any, i: number) => [x.id, i]))
@@ -695,7 +699,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       reviewerNoteByName,
       factRows, sinceMidLabel: midterm ? `Since ${monthOf(midCutoff)}` : null, sinceLastLabel: prevDomainGrades && prevSem ? `Since ${prevSem.name.split(' ')[0]}` : null,
       sinceMidNote: midterm ? `Since ${monthOf(midCutoff)} is rebuilt from papers dated up to ${Number(midCutoff!.split('-')[2])} ${monthOf(midCutoff)}; an area shows it only with ${MIDTERM_MIN_PAPERS} or more papers by then.` : null,
-      facts, noticings, rubrics, quotes,
+      facts, noticings, rubrics, quotes, assessedCodes,
     })
     setPronoun((student as any).pronoun || null)
     setGoesBy((student as any).goes_by || null)
@@ -1116,7 +1120,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 scores={Object.fromEntries(DOMAINS.map(dom => [dom, d.domainNa[dom] ? null : d.domainGrades[dom]]))}
                 behaviorGrade={d.behaviorGrade} wida={d.facts.wida?.level ?? null} doc="report_card"
                 classComments={Object.entries(classComments).filter(([id, c]) => id !== studentId && c.text).map(([, c]) => c.text)}
-                existingText={comment} onInsert={putDraft} onClose={() => setBuilderOpen(false)} />
+                existingText={comment} classKey={{ cls: d.semesterClass || s.english_class, grade: Number(d.semesterGrade || s.grade), semester }} assessedCodes={d.assessedCodes}
+                onInsert={putDraft} onClose={() => setBuilderOpen(false)} />
             )}
           </div>
         </div>
