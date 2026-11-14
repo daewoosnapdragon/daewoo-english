@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pointChange, letterChange, assessmentsUpTo, letterRows, noticings, nextWithoutComment, rubricPieces } from '@/lib/factSheet'
+import { pointChange, letterChange, assessmentsUpTo, midtermAsOf, letterRows, noticings, nextWithoutComment, rubricPieces } from '@/lib/factSheet'
 
 describe('changes', () => {
   it('formats point and letter changes', () => {
@@ -10,6 +10,12 @@ describe('changes', () => {
     expect(letterChange(88, 91)).toBe('B+ → A-')
     expect(letterChange(84, 85)).toBe('B')
     expect(letterChange(84, undefined)).toBeNull()
+  })
+  it('dates the progress report at the cutoff or the day its comment was saved, whichever is later', () => {
+    expect(midtermAsOf('2026-10-15', '2026-10-21T08:30:00+09:00')).toBe('2026-10-21')
+    expect(midtermAsOf('2026-10-15', '2026-10-02T08:30:00Z')).toBe('2026-10-15')
+    expect(midtermAsOf('2026-10-15', null)).toBe('2026-10-15')
+    expect(midtermAsOf(null, '2026-10-21')).toBeNull()
   })
   it('keeps only the assessments the progress report was built from', () => {
     const as = [{ id: 'a', date: '2026-09-20' }, { id: 'b', date: '2026-10-20' }, { id: 'c', date: null }]

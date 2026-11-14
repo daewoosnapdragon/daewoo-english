@@ -31,6 +31,20 @@ export function letterChange(prev: number | null | undefined, cur: number | null
   return a === b ? a : `${a} → ${b}`
 }
 
+/** An area needs this many papers by the progress report before a change since it is shown. */
+export const MIDTERM_MIN_PAPERS = 2
+
+/**
+ * The day the progress report's grades stood at: the later of the midterm
+ * cutoff and the day its comment was last saved (teachers write the comment
+ * from the grades on screen). Null when the semester has no cutoff.
+ */
+export function midtermAsOf(cutoff: string | null | undefined, progressCommentSavedAt: string | null | undefined): string | null {
+  if (!cutoff) return null
+  const saved = progressCommentSavedAt ? String(progressCommentSavedAt).slice(0, 10) : null
+  return saved && saved > cutoff ? saved : cutoff
+}
+
 /** Assessments dated on or before the cutoff: what the progress report was built from. */
 export function assessmentsUpTo<T extends { date?: string | null }>(assessments: T[], cutoff: string | null | undefined): T[] {
   if (!cutoff) return []

@@ -25,6 +25,8 @@ export interface FactSheetProps {
   sinceMidLabel: string | null
   /** Column heading for the change since the previous semester; omitted when there was none. */
   sinceLastLabel: string | null
+  /** How the since-progress-report column was worked out; shown under the table. */
+  sinceMidNote?: string | null
   facts: FactSheetFacts
   noticings: string[]
   /** Every rubric-scored piece this semester, newest first. */
@@ -80,7 +82,7 @@ function RubricRow({ p }: { p: RubricPiece }) {
   )
 }
 
-export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, facts, noticings, rubrics, quotes, className = '' }: FactSheetProps) {
+export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, sinceMidNote, facts, noticings, rubrics, quotes, className = '' }: FactSheetProps) {
   const reading = (r: FactSheetFacts['readingNow']) => r ? [r.level, r.cwpm != null ? `${Math.round(r.cwpm)} wpm` : null].filter(Boolean).join(' · ') : ''
   return (
     <aside aria-label="Fact sheet" className={`flex-[0_1_300px] min-w-[250px] flex flex-col gap-5 text-[12.5px] leading-snug ${className}`} style={{ color: INK }}>
@@ -109,6 +111,7 @@ export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, facts, 
             ))}
           </tbody>
         </table>
+        {sinceMidNote && <p className="m-0 text-[10.5px] leading-snug" style={{ color: MUTED }}>{sinceMidNote}</p>}
       </section>
 
       <section className="flex flex-col gap-1.5">

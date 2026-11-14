@@ -33,6 +33,34 @@ export interface CommentBuilderProps {
   onClose: () => void
 }
 
+// Defined outside the builder: a component created inside the render would be a
+// new type every render, so every tick would remount the whole screen and
+// throw the scroll position away.
+function Check({ k, text, count, checked, toggle }: { k: string; text: string; count?: number; checked: Record<string, boolean>; toggle: (k: string) => void }) {
+  return (
+    <label className="flex items-start gap-2 rounded-md border px-2.5 py-1.5 bg-white cursor-pointer" style={{ borderColor: checked[k] ? INK : RULE }}>
+      <input type="checkbox" checked={!!checked[k]} onChange={() => toggle(k)} className="mt-[3px]" />
+      <span className="flex-1 leading-[1.4]" style={{ color: INK }}>{text}</span>
+      {count != null && count > 0 && <span className="text-[10.5px] whitespace-nowrap pt-0.5" style={{ color: MUTED }}>used {count}×</span>}
+    </label>
+  )
+}
+function TierButtons({ area, tier, pick }: { area: string; tier: Tier; pick: (area: string, t: Tier) => void }) {
+  return (
+    <span className="inline-flex gap-1">
+      {TIERS.map(t => <button key={t} type="button" onClick={() => pick(area, t)} className={`px-1.5 py-0.5 rounded text-[10.5px] font-medium ${tier === t ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={tier === t ? undefined : { color: MUTED }}>{TIER_LABEL[t]}</button>)}
+    </span>
+  )
+}
+function Section({ title, aside, children }: { title: React.ReactNode; aside?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2">
+      <h3 className="m-0 flex items-baseline justify-between gap-3 flex-wrap text-[13px] font-semibold" style={{ color: INK }}><span>{title}</span>{aside}</h3>
+      {children}
+    </section>
+  )
+}
+
 export default function CommentBuilder({ student, scores, behaviorGrade, wida, doc, classComments, existingText, onInsert, onClose }: CommentBuilderProps) {
   const [rows, setRows] = useState<Phrase[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -84,25 +112,6 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
   const steps = nextStepCount(draft)
   const ticked = Object.values(checked).filter(Boolean).length
 
-  const Check = ({ k, text, count }: { k: string; text: string; count?: number }) => (
-    <label className="flex items-start gap-2 rounded-md border px-2.5 py-1.5 bg-white cursor-pointer" style={{ borderColor: checked[k] ? INK : RULE }}>
-      <input type="checkbox" checked={!!checked[k]} onChange={() => toggle(k)} className="mt-[3px]" />
-      <span className="flex-1 leading-[1.4]" style={{ color: INK }}>{text}</span>
-      {count != null && count > 0 && <span className="text-[10.5px] whitespace-nowrap pt-0.5" style={{ color: MUTED }}>used {count}×</span>}
-    </label>
-  )
-  const TierButtons = ({ area }: { area: string }) => (
-    <span className="inline-flex gap-1">
-      {TIERS.map(t => <button key={t} type="button" onClick={() => setTierPick(p => ({ ...p, [area]: t }))} className={`px-1.5 py-0.5 rounded text-[10.5px] font-medium ${tierOf(area) === t ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={tierOf(area) === t ? undefined : { color: MUTED }}>{TIER_LABEL[t]}</button>)}
-    </span>
-  )
-  const Section = ({ title, aside, children }: { title: React.ReactNode; aside?: React.ReactNode; children: React.ReactNode }) => (
-    <section className="flex flex-col gap-2">
-      <h3 className="m-0 flex items-baseline justify-between gap-3 flex-wrap text-[13px] font-semibold" style={{ color: INK }}><span>{title}</span>{aside}</h3>
-      {children}
-    </section>
-  )
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(27,24,18,0.45)' }} onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={`Build a comment for ${student.name}`} onClick={e => e.stopPropagation()}
@@ -137,17 +146,17 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
               const list = sentences(a, tier)
               const change = sentences(a, 'change over time')
               return (
-                <Section key={a} title={<>{AREA_LABEL[a]}{scores[a] != null && <span className="font-display font-medium"> {percentToLetter(scores[a] as number)}</span>}{scores[a] == null && <span className="font-normal" style={{ color: MUTED }}> · not graded</span>}</>} aside={<TierButtons area={a} />}>
+                <Section key={a} title={<>{AREA_LABEL[a]}{scores[a] != null && <span className="font-display font-medium"> {percentToLetter(scores[a] as number)}</span>}{scores[a] == null && <span className="font-normal" style={{ color: MUTED }}> · not graded</span>}</>} aside={<TierButtons area={a} tier={tierOf(a)} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
                   <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                    {list.map(p => <Check key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
-                    {change.map(p => <Check key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
+                    {list.map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
+                    {change.map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
                     {list.length === 0 && change.length === 0 && <p className="m-0" style={{ color: MUTED }}>Nothing in the bank for this yet.</p>}
                   </div>
                 </Section>
               )
             })}
 
-            <Section title={<>Behavior{behaviorGrade && <span className="font-display font-medium"> {behaviorGrade}</span>}</>} aside={<TierButtons area="behavior" />}>
+            <Section title={<>Behavior{behaviorGrade && <span className="font-display font-medium"> {behaviorGrade}</span>}</>} aside={<TierButtons area="behavior" tier={tierOf('behavior')} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
               {(() => {
                 const tier = tierOf('behavior')
                 const list = leastUsedFirst(usable.filter(p => p.kind === 'sentence' && p.area === 'behavior' && (p.tier === tier || p.tier === 'change over time')), counts)
@@ -158,7 +167,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                       <div key={cat}>
                         <div className="text-[10.5px] font-medium mb-1" style={{ color: MUTED }}>{cat}</div>
                         <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                          {list.filter(p => (p.category || 'Other') === cat).map(p => <Check key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
+                          {list.filter(p => (p.category || 'Other') === cat).map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
                         </div>
                       </div>
                     ))}
@@ -173,9 +182,9 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                 {ladder.map(p => (
                   <div key={p.id} className="flex flex-col gap-1.5 rounded-md border px-2.5 py-2 bg-white" style={{ borderColor: RULE }}>
                     <span className="text-[10.5px] font-semibold" style={{ color: MUTED }}>{p.rung}</span>
-                    <Check k={`${p.id}:c`} text={fill(p.text)} />
-                    {p.home1 && <Check k={`${p.id}:1`} text={fill(homeSentence(p.home1))} />}
-                    {p.home2 && <Check k={`${p.id}:2`} text={fill(homeSentence(p.home2))} />}
+                    <Check checked={checked} toggle={toggle} k={`${p.id}:c`} text={fill(p.text)} />
+                    {p.home1 && <Check checked={checked} toggle={toggle} k={`${p.id}:1`} text={fill(homeSentence(p.home1))} />}
+                    {p.home2 && <Check checked={checked} toggle={toggle} k={`${p.id}:2`} text={fill(homeSentence(p.home2))} />}
                   </div>
                 ))}
                 {ladder.length === 0 && <p className="m-0" style={{ color: MUTED }}>No rungs for this band yet.</p>}

@@ -18,7 +18,7 @@ import { loadAssessmentWeights } from '@/lib/assessmentWeights'
 import { resolveStudentTeacher } from '@/lib/classTeacher'
 import { loadTeachers } from '@/lib/classTeacherData'
 import { commentChecks } from '@/lib/commentChecks'
-import { letterRows, assessmentsUpTo, noticings as buildNoticings, nextWithoutComment, rubricPieces, type LetterRow, type RubricPiece } from '@/lib/factSheet'
+import { letterRows, assessmentsUpTo, midtermAsOf, MIDTERM_MIN_PAPERS, noticings as buildNoticings, nextWithoutComment, rubricPieces, type LetterRow, type RubricPiece } from '@/lib/factSheet'
 import { plainName } from '@/components/curriculum/standards-plain'
 import { WIDA_LEVELS } from '@/lib/wida'
 import FactSheet, { type FactSheetFacts, type FactSheetQuote } from '@/components/reports/FactSheet'
@@ -155,6 +155,7 @@ interface ReportData {
   factRows: LetterRow[]
   sinceMidLabel: string | null
   sinceLastLabel: string | null
+  sinceMidNote: string | null
   facts: FactSheetFacts
   noticings: string[]
   rubrics: RubricPiece[]
@@ -176,6 +177,8 @@ export default function ReportsView() {
   )
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [selectedSemesterId, setSelectedSemesterId] = useState<string | null>(null)
+  // A different grade or class is a different roster: the open student no longer belongs to it.
+  useEffect(() => { setSelectedStudentId(null) }, [selectedGrade, selectedClass])
 
   const isTeacher = currentTeacher?.role === 'teacher'
   const isAdmin = currentTeacher?.role === 'admin' || !!currentTeacher?.is_head_teacher
@@ -600,7 +603,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const studentIds = students.map((x: any) => x.id)
     const [assessRes, pastCommentsRes, classCommentsRes, readingSemRes, widaRes, weightTable] = await Promise.all([
       supabase.from('assessments').select('id, name, date, type, domain, max_score, mixed, domain_split, question_map, rubric').eq('semester_id', semesterId).eq('grade', sgGrade).eq('english_class', sgClass),
-      supabase.from('comments').select('text, is_skipped, report_type, semester_id').eq('student_id', studentId),
+      supabase.from('comments').select('text, is_skipped, report_type, semester_id, updated_at').eq('student_id', studentId),
       supabase.from('comments').select('student_id, text, is_skipped').eq('semester_id', semesterId).eq('report_type', 'report_card').in('student_id', studentIds),
       semester.start_date ? supabase.from('reading_assessments').select('date, cwpm, reading_level, passage_level, notes').eq('student_id', studentId).gte('date', semester.start_date).order('date', { ascending: true }) : Promise.resolve({ data: [] as any[] }),
       supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId),
@@ -612,15 +615,21 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       : { data: [] as any[] }
     const itemGrades = myItemGrades || []
     // The progress report's letters: the composite from the papers dated up to the midterm cutoff.
+    // The progress report printed the running composite as it stood when it was written, and
+    // nothing stored that. It is rebuilt here from the papers dated up to the later of the
+    // midterm cutoff and the day the progress-report comment was last saved, and an area
+    // needs at least two papers by then before a change is shown, so one early quiz cannot
+    // pose as the October grade.
     let midterm: Record<string, number | null> | null = null
-    const midCutoff = semester.midterm_cutoff_date || null
+    const progressSaved = (pastCommentsRes.data || []).find((c: any) => c.semester_id === semesterId && c.report_type === 'progress_report')?.updated_at || null
+    const midCutoff = midtermAsOf(semester.midterm_cutoff_date || null, progressSaved)
     if (midCutoff) {
       const upTo = assessmentsUpTo(assessments, midCutoff)
       if (upTo.length > 0) {
         midterm = {}
         DOMAINS.forEach(dom => {
           const items = itemsForDomain(dom, upTo, (a: any) => itemGrades.find((g: any) => g.assessment_id === a.id))
-          const avg = items.length ? calcWeightedAvg(items, Number(sgGrade), null, sgClass, weightTable) : null
+          const avg = items.length >= MIDTERM_MIN_PAPERS ? calcWeightedAvg(items, Number(sgGrade), null, sgClass, weightTable) : null
           midterm![dom] = avg == null ? null : Math.round(avg * 10) / 10
         })
       }
@@ -685,6 +694,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       reviewerNoteAck,
       reviewerNoteByName,
       factRows, sinceMidLabel: midterm ? `Since ${monthOf(midCutoff)}` : null, sinceLastLabel: prevDomainGrades && prevSem ? `Since ${prevSem.name.split(' ')[0]}` : null,
+      sinceMidNote: midterm ? `Since ${monthOf(midCutoff)} is rebuilt from papers dated up to ${Number(midCutoff!.split('-')[2])} ${monthOf(midCutoff)}; an area shows it only with ${MIDTERM_MIN_PAPERS} or more papers by then.` : null,
       facts, noticings, rubrics, quotes,
     })
     setPronoun((student as any).pronoun || null)
@@ -1022,7 +1032,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Fact sheet + comment (the editor; the fact sheet and controls are screen only) ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex flex-wrap items-start gap-x-10 gap-y-6">
-            <FactSheet className="print:hidden" rows={d.factRows} sinceMidLabel={d.sinceMidLabel} sinceLastLabel={d.sinceLastLabel} facts={d.facts} noticings={d.noticings} rubrics={d.rubrics} quotes={d.quotes} />
+            <FactSheet className="print:hidden" rows={d.factRows} sinceMidLabel={d.sinceMidLabel} sinceLastLabel={d.sinceLastLabel} sinceMidNote={d.sinceMidNote} facts={d.facts} noticings={d.noticings} rubrics={d.rubrics} quotes={d.quotes} />
             <div className="min-w-0 max-w-[760px]" style={{ flex: '999 1 480px' }}>
               <div className="flex items-start justify-between gap-4 mb-2.5 flex-wrap">
                 <div>
