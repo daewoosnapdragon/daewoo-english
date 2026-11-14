@@ -183,7 +183,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     watchOut: ['Targets are per class and grade; check you are on the right one before editing.', 'The sheets you ticked are remembered for the next student; glance at the chips before you start another child.'],
   },
   {
-    id: 'reports', title: 'Reports', updated: '2026-10-27',
+    id: 'reports', title: 'Reports', updated: '2026-11-16',
     purpose: 'Report cards and progress reports from the grades already entered, reviewed and approved before printing.',
     screen: [
       'Tabs: Report card, Progress report, Comments, Class summary, Review & approve, Print. The page opens on the document being written now: the progress report until three weeks after the midterm cutoff, the report card after that.',
@@ -192,11 +192,14 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'A progress report prints as a half page, two to an A4 sheet with a dashed line to cut along, whenever the comment fits in about five lines or there is none. A longer comment gets a full page of its own; nothing is shrunk to fit. The line above the preview says which size, and the class print says how many sheets and offers full pages for everyone.',
       '“Hide the class comparison for this student”, next to Skip comment on a progress report, drops the bars and class averages from that student’s table.',
       'A picker for the whole class or one student.',
-      'Each report shows the composite per domain, the letter, attendance, and the comment box.',
+      'On a report card, a fact sheet sits to the left of the comment box: each area’s letter with the change since the progress report and since last semester, attendance, reading level now and at the first check of the semester, WIDA level, how many behavior notes, then “What the app noticed” (the weakest and strongest areas, the last rubric piece criterion by criterion, the most-missed standard, the latest reading and behavior notes) and “What parents already read” (this semester’s progress-report comment and last semester’s report card comment). It is for your eyes; nothing on it is inserted or printed. Level-test placement is left off on purpose.',
+      'The comment saves itself a second after you stop typing (the line under the box says Saved and the time). There is no Save button. Skip comment saves at once.',
+      'Under the box, a grey line of hints: the word count against about 200, another student’s name in the text, a leftover he/she or blank, any mention of moving levels or comparing with the class, how much of the text also appears in one of your other comments, more than three things to work on, and the template phrases to avoid. Hints never block anything.',
+      'Next goes to the next student in the class without a comment and saves first. The header counts how many of the class are written and shows the comments-due date.',
       'Print: progress reports and report cards, each with who (the whole class, one student, or for admin the whole grade of report cards) and options: full pages for everyone, hide the class comparison on every report. Class and grade prints of report cards wait for the grade to be marked ready; one student prints any time.',
     ],
     tasks: [
-      { title: 'Write report cards', steps: ['Enter every grade first; the composite is computed, not typed.', 'Report card, pick a student, write the comment. The WIDA level and behavior notes are there to draw on.', 'Repeat. Class summary shows who is still missing a comment.', 'Admin reviews and approves under Review & approve, then prints.'] },
+      { title: 'Write report cards', steps: ['Enter every grade first; the composite is computed, not typed.', 'Report card, pick a student. Read the fact sheet, then write. The box saves itself; the grey line under it tells you the word count and anything to fix.', 'Press Next: it saves and opens the next student without a comment. The header counts how many are written.', 'Admin reviews and approves under Review & approve, then prints.'] },
     ],
     rules: ['The composite weights formative, summative, and performance task by the weights in Settings.', 'Only the class’s own teacher, or an admin, can edit its comments and grades.', 'A student has one comment per document: one for the progress report, one for the report card. Each comment box is labelled with its document.'],
     watchOut: ['Grades due on the dashboard is the report card cutoff. After it, entries still count but the review may already be under way.', 'A comment typed under Report card does not appear on the progress report, or the other way round. If the box says Report card comment mid-semester, use the link above it to go to the progress report.'],

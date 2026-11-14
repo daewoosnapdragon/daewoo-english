@@ -4,7 +4,7 @@ import { logActivity } from '@/lib/activity'
 import { itemsForDomain } from '@/lib/domainSplit'
 import { syncSemesterGrades } from '@/lib/semesterGrades'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
@@ -17,6 +17,11 @@ import { progressSizeFor, packSheets, sheetSummary, HALF_COMMENT_MAX, type Progr
 import { loadAssessmentWeights } from '@/lib/assessmentWeights'
 import { resolveStudentTeacher } from '@/lib/classTeacher'
 import { loadTeachers } from '@/lib/classTeacherData'
+import { commentChecks } from '@/lib/commentChecks'
+import { letterRows, assessmentsUpTo, noticings as buildNoticings, nextWithoutComment, type LetterRow } from '@/lib/factSheet'
+import { plainName } from '@/components/curriculum/standards-plain'
+import { WIDA_LEVELS } from '@/lib/wida'
+import FactSheet, { type FactSheetFacts, type FactSheetQuote } from '@/components/reports/FactSheet'
 import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
@@ -144,6 +149,14 @@ interface ReportData {
   reviewerNote: string | null
   reviewerNoteAck: boolean
   reviewerNoteByName: string | null
+  // Fact sheet beside the comment box (screen only)
+  factRows: LetterRow[]
+  sinceMidLabel: string | null
+  sinceLastLabel: string | null
+  facts: FactSheetFacts
+  noticings: string[]
+  progressQuote: FactSheetQuote | null
+  previousQuote: FactSheetQuote | null
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
@@ -254,7 +267,7 @@ export default function ReportsView() {
       </div>
       <div>
         {mode === 'individual' && !isOverview && selectedSemesterId && selectedSemester && (
-          <IndividualReport key={selectedStudentId} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={allSemesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} currentDoc={currentDoc} onGoToProgress={() => setMode('progress')} />
+          <IndividualReport key={selectedStudentId} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={allSemesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} currentDoc={currentDoc} onGoToProgress={() => setMode('progress')} onSelectStudent={(id: string) => setSelectedStudentId(id)} />
         )}
         {mode === 'individual' && isOverview && selectedSemesterId && selectedSemester && (
           <ClassOverview students={students} semesterId={selectedSemesterId} semester={selectedSemester}
@@ -395,10 +408,12 @@ function ComparisonBars({ domainGrades, domainNa, classAverages }: {
   )
 }
 
-function IndividualReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass, canEdit = true, currentDoc = 'report_card', onGoToProgress }: {
+function IndividualReport({ studentId, semesterId, semester, students, allSemesters, lang, selectedClass, canEdit = true, currentDoc = 'report_card', onGoToProgress, onSelectStudent }: {
   studentId: string; semesterId: string; semester: any; students: any[]; allSemesters: any[]; lang: LangKey; selectedClass: string; canEdit?: boolean
   /** Which document is being written now; when it is the progress report, the comment box says so. */
   currentDoc?: ReportDocument; onGoToProgress?: () => void
+  /** Moves the page to another student (the Next button). */
+  onSelectStudent?: (id: string) => void
 }) {
   const { showToast, currentTeacher } = useApp()
   const [data, setData] = useState<ReportData | null>(null)
@@ -406,9 +421,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [comment, setComment] = useState('')
   const [commentSkipped, setCommentSkipped] = useState(false)
   const [hideComparison, setHideComparison] = useState(false)
-  const [savingComment, setSavingComment] = useState(false)
   const [ackingNote, setAckingNote] = useState(false)
-  const [showRefPanel, setShowRefPanel] = useState(false)
+  // Autosave state and the class's other comments (for the written count, Next and the similarity check).
+  const [saveState, setSaveState] = useState<'saving' | 'saved' | 'unsaved' | 'error' | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [savedAt, setSavedAt] = useState<number | null>(null)
+  const [classComments, setClassComments] = useState<Record<string, { text: string; skipped: boolean }>>({})
   const [editingGrades, setEditingGrades] = useState(false)
   const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
   const [editNaValues, setEditNaValues] = useState<Record<string, boolean>>({})
@@ -562,6 +580,63 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     }
     const behaviorLogs = behaviorRes.data || []
 
+    // ─── STEP 6: Fact sheet. Everything here already exists somewhere in the app. ───
+    const studentIds = students.map((x: any) => x.id)
+    const [assessRes, progressRes, prevCommentRes, classCommentsRes, readingSemRes, widaRes, weightTable] = await Promise.all([
+      supabase.from('assessments').select('id, name, date, type, domain, max_score, mixed, domain_split, question_map').eq('semester_id', semesterId).eq('grade', sgGrade).eq('english_class', sgClass),
+      supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', 'progress_report').limit(1),
+      prevSem ? supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', prevSem.id).eq('report_type', 'report_card').limit(1) : Promise.resolve({ data: [] as any[] }),
+      supabase.from('comments').select('student_id, text, is_skipped').eq('semester_id', semesterId).eq('report_type', 'report_card').in('student_id', studentIds),
+      semester.start_date ? supabase.from('reading_assessments').select('date, cwpm, reading_level, passage_level, notes').eq('student_id', studentId).gte('date', semester.start_date).order('date', { ascending: true }) : Promise.resolve({ data: [] as any[] }),
+      supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId),
+      loadAssessmentWeights(),
+    ])
+    const assessments = assessRes.data || []
+    const { data: myItemGrades } = assessments.length
+      ? await supabase.from('grades').select('assessment_id, score, is_absent, is_exempt, domain_scores, rubric_scores, item_responses').eq('student_id', studentId).in('assessment_id', assessments.map((a: any) => a.id))
+      : { data: [] as any[] }
+    const itemGrades = myItemGrades || []
+    // The progress report's letters: the composite from the papers dated up to the midterm cutoff.
+    let midterm: Record<string, number | null> | null = null
+    const midCutoff = semester.midterm_cutoff_date || null
+    if (midCutoff) {
+      const upTo = assessmentsUpTo(assessments, midCutoff)
+      if (upTo.length > 0) {
+        midterm = {}
+        DOMAINS.forEach(dom => {
+          const items = itemsForDomain(dom, upTo, (a: any) => itemGrades.find((g: any) => g.assessment_id === a.id))
+          const avg = items.length ? calcWeightedAvg(items, Number(sgGrade), null, sgClass, weightTable) : null
+          midterm![dom] = avg == null ? null : Math.round(avg * 10) / 10
+        })
+      }
+    }
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const monthOf = (iso: string | null) => iso ? MONTHS[Number(iso.split('-')[1]) - 1] : ''
+    const factRows = letterRows(domainGrades, domainNa, midterm, prevDomainGrades)
+    const readingSem = readingSemRes.data || []
+    const rd = (r: any) => r ? { level: r.reading_level || r.passage_level || null, cwpm: r.cwpm ?? null, date: r.date || null } : null
+    const widaRows = widaRes.data || []
+    const widaAvg = widaRows.length ? Math.round(widaRows.reduce((a: number, r: any) => a + Number(r.wida_level || 0), 0) / widaRows.length) : null
+    const facts: FactSheetFacts = {
+      attendance: attRecords.length ? { absent: attCounts.absent, tardy: attCounts.tardy, total: attRecords.length } : null,
+      readingNow: rd(latestReading), readingThen: rd(readingSem[0]),
+      wida: widaAvg ? { level: widaAvg, name: WIDA_LEVELS.find((l: any) => l.level === widaAvg)?.name || '' } : null,
+      behaviorCount: behaviorLogs.filter((b: any) => !semester.start_date || (b.date || '') >= semester.start_date).length,
+    }
+    const noticings = buildNoticings({
+      cur: domainGrades, na: domainNa, midterm, prev: prevDomainGrades, assessments, grades: itemGrades,
+      readingNotes: readingSem.map((r: any) => ({ date: r.date, notes: r.notes })),
+      behaviorLogs: behaviorLogs.filter((b: any) => !semester.start_date || (b.date || '') >= semester.start_date),
+      absences: attCounts.absent, tardies: attCounts.tardy, standardName: plainName,
+    })
+    const progressRow: any = progressRes.data?.[0]
+    const prevRow: any = prevCommentRes.data?.[0]
+    const progressQuote: FactSheetQuote | null = progressRow?.text?.trim() && !progressRow.is_skipped ? { text: progressRow.text.trim(), label: `Progress report${midCutoff ? `, ${monthOf(midCutoff)} ${midCutoff.slice(0, 4)}` : ''}` } : null
+    const previousQuote: FactSheetQuote | null = prevRow?.text?.trim() && !prevRow.is_skipped ? { text: prevRow.text.trim(), label: `Report card, ${prevSem?.name || 'last semester'}` } : null
+    const cmap: Record<string, { text: string; skipped: boolean }> = {}
+    ;(classCommentsRes.data || []).forEach((c: any) => { cmap[c.student_id] = { text: (c.text || '').trim(), skipped: !!c.is_skipped } })
+    setClassComments(cmap)
+
     setData({
       student, domainGrades, domainNa, domainStudentNa, domainClassNa, overallGrade, overallLetter, classAverages,
       classOverall: null,
@@ -586,6 +661,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       reviewerNote,
       reviewerNoteAck,
       reviewerNoteByName,
+      factRows, sinceMidLabel: midterm ? `Since ${monthOf(midCutoff)}` : null, sinceLastLabel: prevDomainGrades && prevSem ? `Since ${prevSem.name.split(' ')[0]}` : null,
+      facts, noticings, progressQuote, previousQuote,
     })
     setComment(commentData?.text || '')
     setCommentSkipped(!!commentData?.is_skipped)
@@ -595,13 +672,50 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
   useEffect(() => { loadReport() }, [loadReport])
 
-  const saveComment = async () => {
-    setSavingComment(true)
-    await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, report_type: 'report_card', text: comment.trim(), is_skipped: commentSkipped, hide_comparison: hideComparison, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id,report_type' })
-    setSavingComment(false)
-    showToast(commentSkipped ? 'Comment skipped' : 'Comment saved')
-    logActivity('saved', `Report card comment · ${data?.student?.english_name || ''}`)
+  // ─── Autosave ──────────────────────────────────────────────────────
+  // The comment saves itself a second after typing stops, and at once when
+  // Skip is toggled, when Next is pressed, or when the editor closes. One
+  // activity line per sitting, not one per keystroke.
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingSave = useRef(false)
+  const latest = useRef({ comment: '', commentSkipped: false, hideComparison: false })
+  const loggedSave = useRef(false)
+  useEffect(() => { latest.current = { comment, commentSkipped, hideComparison } }, [comment, commentSkipped, hideComparison])
+  const studentName = data?.student?.english_name || ''
+  const persist = useCallback(async () => {
+    if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null }
+    if (!pendingSave.current) return
+    pendingSave.current = false
+    const v = latest.current
+    setSaveState('saving')
+    const { error } = await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, report_type: 'report_card', text: v.comment.trim(), is_skipped: v.commentSkipped, hide_comparison: v.hideComparison, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id,report_type' })
+    if (error) { pendingSave.current = true; setSaveState('error'); setSaveError(error.message); return }
+    setSaveState('saved'); setSavedAt(Date.now()); setSaveError(null)
+    setClassComments(prev => ({ ...prev, [studentId]: { text: v.comment.trim(), skipped: v.commentSkipped } }))
+    if (!loggedSave.current) { loggedSave.current = true; logActivity('saved', `Report card comment · ${studentName}`) }
+  }, [studentId, semesterId, currentTeacher, studentName])
+  const scheduleSave = (patch: Partial<typeof latest.current>, delay = 1000) => {
+    latest.current = { ...latest.current, ...patch }
+    pendingSave.current = true
+    setSaveState('unsaved')
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => { persist() }, delay)
   }
+  // Leaving the student flushes whatever is still pending.
+  useEffect(() => () => { if (pendingSave.current) persist() }, [persist])
+
+  // Who is still missing a comment, for the written count and the Next button.
+  const hasComment = (id: string) => { const c = classComments[id]; return !!(c && (c.text || c.skipped)) }
+  const writtenCount = students.filter((x: any) => hasComment(x.id)).length
+  const rosterIdx = students.findIndex((x: any) => x.id === studentId)
+  const nextUp = nextWithoutComment(students, studentId, hasComment) || (rosterIdx >= 0 && rosterIdx < students.length - 1 ? students[rosterIdx + 1] : null)
+  const goNext = async () => { await persist(); if (nextUp && onSelectStudent) onSelectStudent(nextUp.id) }
+
+  // The grey line under the box.
+  const hints = useMemo(() => data ? commentChecks({
+    text: commentSkipped ? '' : comment, studentName: data.student.english_name, rosterNames: students.map((x: any) => x.english_name),
+    otherComments: Object.entries(classComments).filter(([id, c]) => id !== studentId && c.text).map(([id, c]) => ({ text: c.text, label: students.find((x: any) => x.id === id)?.english_name || 'another student' })),
+  }) : [], [data, comment, commentSkipped, classComments, students, studentId])
 
   // Auto-saves immediately so the chart toggle persists without a comment save
   const toggleHideComparison = async () => {
@@ -654,6 +768,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               {reviewStatus.admin_approved ? <CheckCircle2 size={11} /> : <Circle size={11} />} {reviewStatus.admin_approved ? 'Admin approved' : 'Awaiting admin approval'}
             </span>
           )}
+          <span className="text-[11.5px] text-ink-3 tabular-nums">{writtenCount} of {students.length} written{semester?.comments_due_date ? ` · Comments due ${new Date(semester.comments_due_date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}</span>
         </div>
         <div className="flex items-center gap-2">
           {reviewStatus && !reviewStatus.admin_approved && (
@@ -854,20 +969,22 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           )}
         </div>
 
-        {/* ─── Teacher Comment (full width) ─── */}
+        {/* ─── Fact sheet + comment (the editor; the fact sheet and controls are screen only) ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
-          <div>
-              <div className="flex items-center justify-between mb-2.5">
+          <div className="flex flex-wrap items-start gap-x-10 gap-y-6">
+            <FactSheet className="print:hidden" rows={d.factRows} sinceMidLabel={d.sinceMidLabel} sinceLastLabel={d.sinceLastLabel} facts={d.facts} noticings={d.noticings} progress={d.progressQuote} previous={d.previousQuote} />
+            <div className="min-w-0 max-w-[760px]" style={{ flex: '999 1 480px' }}>
+              <div className="flex items-start justify-between gap-4 mb-2.5 flex-wrap">
                 <div>
-                  <div className="text-[9px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Report card comment</div>
+                  <label htmlFor="rc-comment" className="block text-[9px] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Report card comment</label>
                   <div className="text-[14px] font-bold text-[#1e293b] leading-tight mt-0.5">{d.teacherName} Teacher<span className="font-normal text-[#94a3b8] text-[11px]"> &middot; {d.semesterClass || s.english_class} Class</span></div>
                 </div>
-                {/* Student Reference — hidden on print */}
-                <button onClick={() => setShowRefPanel(!showRefPanel)}
-                  className={`print:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${showRefPanel ? 'bg-navy text-white border-navy' : 'bg-[#EDF1F8] text-[#475569] border-[#d1d5db] hover:bg-[#DFE4EB]'}`}>
-                  <BarChart3 size={14} />
-                  Reference
-                </button>
+                {canEdit && (
+                  <label className="print:hidden flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none mt-1">
+                    <input type="checkbox" checked={commentSkipped} onChange={(e: any) => { setCommentSkipped(e.target.checked); scheduleSave({ commentSkipped: e.target.checked }, 0) }} />
+                    Skip comment
+                  </label>
+                )}
               </div>
               {canEdit && currentDoc === 'progress_report' && (
                 <div className="print:hidden mb-2.5 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11.5px] text-amber-900">
@@ -890,140 +1007,37 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   </div>
                 </div>
               )}
-              <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={8}
+              <textarea id="rc-comment" value={comment} onChange={(e: any) => { setComment(e.target.value); scheduleSave({ comment: e.target.value }) }} rows={12}
                 disabled={commentSkipped || !canEdit}
-                placeholder={!canEdit ? "Read-only — only this class's teacher can edit the comment." : (commentSkipped ? 'Skipped — uncheck below to write a comment.' : "Write this student's report card comment…")}
-                className={`w-full px-4 py-3 border border-[#C8CED8] rounded-xl text-[15px] outline-none focus:border-navy resize-none leading-relaxed ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8]'}`} />
+                placeholder={!canEdit ? "Read-only — only this class's teacher can edit the comment." : (commentSkipped ? 'Skipped — untick above to write a comment.' : "Write this student's report card comment…")}
+                className={`w-full px-5 py-4 border border-[#C8CED8] rounded-xl text-[15px] outline-none focus:border-navy resize-y leading-[1.7] min-h-[300px] ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8] text-[#1e293b]'}`} />
+              {hints.length > 0 && (
+                <p className="print:hidden mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-[#64748b] tabular-nums">
+                  {hints.map((h, i) => <span key={i}>{h.text}</span>)}
+                </p>
+              )}
               {canEdit ? (
-                <>
-                  <div className="flex items-center justify-between mt-2">
-                    <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none">
-                      <input type="checkbox" checked={commentSkipped} onChange={(e: any) => setCommentSkipped(e.target.checked)} />
-                      Skip comment
-                    </label>
-                    <button onClick={saveComment} disabled={savingComment}
-                      className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-                      {savingComment ? 'Saving...' : 'Save Comment'}
+                <div className="print:hidden flex items-center justify-between gap-4 flex-wrap mt-3">
+                  <span className={`text-[11.5px] ${saveState === 'error' ? 'text-warn' : 'text-[#64748b]'}`}>
+                    {saveState === 'saving' ? 'Saving…'
+                      : saveState === 'unsaved' ? 'Typing…'
+                      : saveState === 'error' ? `Could not save${saveError ? `: ${saveError}` : ''}. Your text is still here; it will try again when you type.`
+                      : saveState === 'saved' && savedAt ? `Saved ${new Date(savedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+                      : commentSkipped ? 'No comment on the printed report.' : 'Saves on its own as you type.'}
+                  </span>
+                  {onSelectStudent && (
+                    <button onClick={goNext} disabled={!nextUp}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed">
+                      {nextUp ? `Next: ${nextUp.english_name}` : 'Last student'} {nextUp && <ChevronRight size={14} />}
                     </button>
-                  </div>
-                  {commentSkipped && <div className="text-[10px] text-[#94a3b8] italic mt-1.5">Hidden on the printed report.</div>}
-                </>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] italic mt-2"><Lock size={11} /> Viewing {selectedClass}&apos;s report card — leave feedback in Review &amp; Approve.</div>
               )}
             </div>
           </div>
-
-        {/* ─── Student Reference Panel (full width, screen only) ─── */}
-        {showRefPanel && (
-          <div className="print:hidden bg-white px-7 pb-5" style={{ borderBottom: '1px solid #C8CED8' }}>
-            <div className="bg-[#f8f9fb] border border-[#d1d5db] rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] font-bold text-[#475569]">Student Reference -- All Data at a Glance</p>
-                <button onClick={() => {
-                  const lines = [
-                    `${s.english_name} (${s.korean_name}) -- ${s.english_class} -- Grade ${s.grade}`,
-                    `Semester: ${d.semesterName}`,
-                    '',
-                    'DOMAIN GRADES:',
-                    ...DOMAINS.map(dom => `  ${DOMAIN_SHORT[dom]}: ${d.domainNa[dom] ? 'N/A' : (d.domainGrades[dom] != null ? `${d.domainGrades[dom]!.toFixed(1)}% (${getLetterGrade(d.domainGrades[dom]!)})` : 'No grade')}`),
-                    `  Overall: ${d.overallGrade != null ? `${d.overallGrade.toFixed(1)}% (${d.overallLetter})` : 'No grade'}`,
-                    '',
-                    'READING FLUENCY:',
-                    `  CWPM: ${d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : 'N/A'}`,
-                    `  Lexile: ${d.latestReading?.reading_level || d.latestReading?.passage_level || 'N/A'}`,
-                    `  Accuracy: ${d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : 'N/A'}`,
-                    `  NAEP Fluency: ${d.latestReading?.naep_fluency ? `Level ${d.latestReading.naep_fluency}` : 'N/A'}`,
-                    '',
-                    `ATTENDANCE: ${d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}% (${d.attCounts.present}P/${d.attCounts.absent}A/${d.attCounts.tardy}T)` : 'N/A'}`,
-                    `BEHAVIOR LOGS: ${d.behaviorCount} entries`,
-                    ...(d.scaffolds?.length ? ['', 'SCAFFOLDS:', ...d.scaffolds.map((sc: any) => `  [${sc.domain}] ${sc.scaffold_text}${sc.effectiveness ? ` (${sc.effectiveness})` : ''}`)] : []),
-                    ...(d.goals?.length ? ['', 'GOALS:', ...d.goals.map((g: any) => `  ${g.completed_at ? '[done]' : '[ ]'} [${g.goal_type}] ${g.goal_text}`)] : []),
-                  ]
-                  navigator.clipboard.writeText(lines.join('\n'))
-                  showToast('Copied to clipboard')
-                }} className="px-2.5 py-1 rounded-lg text-[10px] font-medium bg-white border border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]">
-                  Copy to Clipboard
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-2">Domain Grades</p>
-                  {DOMAINS.map(dom => {
-                    const isNa = !!d.domainNa[dom]
-                    const v = d.domainGrades[dom]
-                    return (
-                      <div key={dom} className="flex items-center justify-between py-0.5">
-                        <span className="text-[11px] text-[#64748b]">{DOMAIN_SHORT[dom]}</span>
-                        <span className="text-[11px] font-bold" style={{ color: isNa ? '#94a3b8' : (v != null ? letterColor(getLetterGrade(v)) : '#94a3b8') }}>
-                          {isNa ? 'N/A' : (v != null ? `${v.toFixed(1)}% (${getLetterGrade(v)})` : '--')}
-                        </span>
-                      </div>
-                    )
-                  })}
-                  <div className="border-t border-[#e2e8f0] mt-1 pt-1 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-navy">Overall</span>
-                    <span className="text-[11px] font-bold text-navy">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}% (${d.overallLetter})` : '--'}</span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                    <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Reading Fluency</p>
-                    <div className="flex gap-4">
-                      <div><p className="text-[9px] text-[#94a3b8]">CWPM</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : '--'}</p></div>
-                      <div><p className="text-[9px] text-[#94a3b8]">Lexile</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.reading_level || d.latestReading?.passage_level || '--'}</p></div>
-                      <div><p className="text-[9px] text-[#94a3b8]">Acc.</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '--'}</p></div>
-                      <div><p className="text-[9px] text-[#94a3b8]">NAEP</p><p className="text-[14px] font-bold text-navy">{d.latestReading?.naep_fluency ? `L${d.latestReading.naep_fluency}` : '--'}</p></div>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                    <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Attendance / Behavior</p>
-                    <div className="flex gap-4">
-                      <div><p className="text-[9px] text-[#94a3b8]">Attendance</p><p className="text-[12px] font-bold text-navy">{d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}%` : '--'}</p></div>
-                      <div><p className="text-[9px] text-[#94a3b8]">Behavior</p><p className="text-[14px] font-bold text-navy">{d.behaviorGrade || '--'}</p></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent behavior logs — visible while writing comments */}
-              <div className="mb-2"><BehaviorLogsPanel logs={d.behaviorLogs} /></div>
-
-              {/* Scaffolds */}
-              {d.scaffolds && d.scaffolds.length > 0 && (
-                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3 mb-2">
-                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Active Scaffolds ({d.scaffolds.length})</p>
-                  <div className="flex flex-wrap gap-1">
-                    {d.scaffolds.map((sc: any, i: number) => (
-                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-[10px] text-blue-800">
-                        <span className="font-bold uppercase text-[8px]">{sc.domain}</span> {sc.scaffold_text}
-                        {sc.effectiveness === 'working' && <span className="text-green-600">✓</span>}
-                        {sc.effectiveness === 'not_working' && <span className="text-red-600">✗</span>}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Goals */}
-              {d.goals && d.goals.length > 0 && (
-                <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                  <p className="text-[9px] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Student Goals ({d.goals.length})</p>
-                  <div className="space-y-0.5">
-                    {d.goals.map((g: any, i: number) => (
-                      <div key={i} className="flex items-center gap-1.5 text-[10px]">
-                        <span>{g.completed_at ? '[done]' : g.goal_type === 'stretch' ? '' : g.goal_type === 'behavioral' ? '' : ''}</span>
-                        <span className={g.completed_at ? 'line-through text-text-tertiary' : 'text-[#475569]'}>{g.goal_text}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* ─── Grading Scale + Footer ─── */}
         <div className="bg-white px-7 py-4">
