@@ -10,9 +10,10 @@
 // version they were made with and are scored on the words they marked, so
 // old checks do not move.
 
-export type PhonicsMark = 'correct' | 'error'
-/** The packet's rubric. Mastered is proficient and read automatically. */
-export type PhonicsBand = 'beginning' | 'developing' | 'proficient' | 'mastered'
+/** Correct, partly right (nearly there: one sound off, self-corrected late), or wrong. Partly counts half. */
+export type PhonicsMark = 'correct' | 'partial' | 'error'
+/** The rubric: Mastered 90%+, Developing 70–89%, Beginning under 70%. */
+export type PhonicsBand = 'beginning' | 'developing' | 'mastered'
 
 export interface PhonicsSkill {
   id: string
@@ -198,7 +199,6 @@ export const DECODING_OBSERVATIONS: DecodingObservation[] = [
 ]
 
 export const PATTERN_PREFIX = 'pattern:'
-export const AUTOMATIC_OBSERVATION = 'automatic'
 
 // ─── Instructions ────────────────────────────────────────────────
 // From the packet's directions, with the app's own marking rules. Shown
@@ -208,11 +208,11 @@ export const PHONICS_CHECK_NOTES: string[] = [
   'Decoding only. The student reads each word aloud, left to right; you never ask what it means. A word they have never heard of is still correct if they read it right.',
   'Use a check after teaching a phonics pattern to see whether the student has it, or to find where a new student’s decoding stands. Pick one sheet, several, or all twenty.',
   'The student reads from the printed sheet (or Word sheets prints one). Say: “Read these words for me. If you are not sure, sound it out.” Point to the first word and let them set the pace.',
-  'Correct: read accurately, including sounded out and then blended (/sh/ /i/ /p/, ship), and self-corrections. Error: read wrongly, skipped, or nothing after about three seconds. Do not model, teach or correct during the check; the same warm tone for every word.',
-  'On an error, tap the pencil on the tile and write what the student said. The packet asks for this: it is what makes error analysis possible later.',
-  'Under each sheet, tick how the student decoded (sounded out, onset and rime, read whole and automatic, guessing) and the patterns that gave trouble. Mastered on the heat map is a proficient score with “automatic” ticked, the packet’s “reached automaticity”.',
+  'Correct: read accurately, including sounded out and then blended (/sh/ /i/ /p/, ship), and self-corrections. Partly: nearly there, one sound off or right only after a long struggle; it counts as half a word. Error: read wrongly, skipped, or nothing after about three seconds. Do not model, teach or correct during the check; the same warm tone for every word.',
+  'On an error or a partly, tap the pencil on the tile and write what the student said. The packet asks for this: it is what makes error analysis possible later.',
+  'Under each sheet, tick how the student decoded (sounded out, onset and rime, read whole and automatic, guessing) and the patterns that gave trouble. These are notes for teaching; they do not change the score.',
   'Stop a sheet after five errors in a row. Leave the remaining words untouched: they are saved as not read, not as errors.',
-  'Accuracy is words correct over words on the sheet. Beginning, under 70%, needs intervention; Developing, 70–89%, needs guided practice; Proficient, 90% and up, practise for automaticity; Mastered has reached automaticity.',
+  'Accuracy is words correct over words on the sheet, a partly counting half. Beginning, under 70%, needs intervention; Developing, 70–89%, needs guided practice; Mastered, 90% and up, has the pattern.',
   'A phonics check is never graded. It sits on the student page and the leveling screens as information, so a reader who sounds fluent but has gaps in decoding is not missed.',
 ]
 
@@ -227,7 +227,7 @@ export interface PhonicsCheckRow {
   skills: string[]
   /** { skillId: { word: mark } }. A word with no entry was not read. */
   results: Record<string, Record<string, PhonicsMark>>
-  /** { skillId: { word: what the student said } } for errors. */
+  /** { skillId: { word: what the student said } } for errors and partlys. */
   heard: Record<string, Record<string, string>>
   /** { skillId: observation ids and pattern:<grapheme> entries }. */
   observations: Record<string, string[]>
@@ -240,14 +240,27 @@ export interface PhonicsCheckRow {
 export interface SkillScore {
   skill: string
   correct: number
+  /** Partly right: nearly there. Each counts half a correct word. */
+  partial: number
   errors: number
   /** Words on the sheet with no mark: the teacher stopped early. */
   unread: number
   total: number
-  /** correct / total, 0–100. */
+  /** (correct + partial / 2) / total, 0–100. */
   pct: number
-  /** The packet's "read most words whole; automatic" was ticked. */
-  automatic: boolean
+}
+
+/** 17, or 17½ with a partly in it. */
+export function halfText(correct: number, partial: number): string {
+  const whole = correct + Math.floor(partial / 2)
+  return partial % 2 ? `${whole}½` : `${whole}`
+}
+/** "17½/20": words right over words on the sheet. */
+export function scoreText(s: Pick<SkillScore, 'correct' | 'partial' | 'total'>): string {
+  return `${halfText(s.correct, s.partial)}/${s.total}`
+}
+export function accuracyPct(correct: number, partial: number, total: number): number {
+  return total ? Math.round(((correct + partial / 2) / total) * 100) : 0
 }
 
 /**
@@ -262,22 +275,21 @@ export function wordsScored(check: Pick<PhonicsCheckRow, 'results'>, skillId: st
 }
 
 /** The score for one sheet of one check, or null if that sheet was not part of the sitting. */
-export function scoreSkill(check: Pick<PhonicsCheckRow, 'skills' | 'results' | 'observations'>, skillId: string): SkillScore | null {
+export function scoreSkill(check: Pick<PhonicsCheckRow, 'skills' | 'results'>, skillId: string): SkillScore | null {
   if (!check.skills?.includes(skillId)) return null
   const words = wordsScored(check, skillId)
   const marks = check.results?.[skillId] || {}
-  let correct = 0, errors = 0
-  words.forEach(w => { if (marks[w] === 'correct') correct++; else if (marks[w] === 'error') errors++ })
+  let correct = 0, partial = 0, errors = 0
+  words.forEach(w => { if (marks[w] === 'correct') correct++; else if (marks[w] === 'partial') partial++; else if (marks[w] === 'error') errors++ })
   const total = words.length
   return {
-    skill: skillId, correct, errors, unread: total - correct - errors, total,
-    pct: total ? Math.round((correct / total) * 100) : 0,
-    automatic: (check.observations?.[skillId] || []).includes(AUTOMATIC_OBSERVATION),
+    skill: skillId, correct, partial, errors, unread: total - correct - partial - errors, total,
+    pct: accuracyPct(correct, partial, total),
   }
 }
 
 /** Every sheet of a check, in packet order. */
-export function scoreCheck(check: Pick<PhonicsCheckRow, 'skills' | 'results' | 'observations'>): SkillScore[] {
+export function scoreCheck(check: Pick<PhonicsCheckRow, 'skills' | 'results'>): SkillScore[] {
   return orderSkills(check.skills || []).map(id => scoreSkill(check, id)).filter((s): s is SkillScore => s != null)
 }
 
@@ -297,29 +309,29 @@ export function latestBySkill(checks: PhonicsCheckRow[]): LatestBySkill {
   return out
 }
 
-/** The packet's rubric from a score: 90%+ proficient (mastered when automatic), 70–89% developing, under 70% beginning. */
-export function phonicsBand(score: Pick<SkillScore, 'pct' | 'automatic'>): PhonicsBand {
-  if (score.pct >= 90) return score.automatic ? 'mastered' : 'proficient'
+/** The rubric from a score: 90%+ mastered, 70–89% developing, under 70% beginning. */
+export function phonicsBand(score: Pick<SkillScore, 'pct'>): PhonicsBand {
+  if (score.pct >= 90) return 'mastered'
   return score.pct >= 70 ? 'developing' : 'beginning'
 }
 
 export const PHONICS_BAND_LABELS: Record<PhonicsBand, { en: string; ko: string; means: string }> = {
-  beginning: { en: 'Beginning', ko: '시작 단계', means: 'Needs intervention' },
-  developing: { en: 'Developing', ko: '발달 중', means: 'Needs guided practice' },
-  proficient: { en: 'Proficient', ko: '숙달', means: 'Practice for automaticity' },
-  mastered: { en: 'Mastered', ko: '완성', means: 'Reached automaticity' },
+  beginning: { en: 'Beginning', ko: '시작 단계', means: 'Under 70%: needs intervention' },
+  developing: { en: 'Developing', ko: '발달 중', means: '70–89%: needs guided practice' },
+  mastered: { en: 'Mastered', ko: '완성', means: '90% or more: has the pattern' },
 }
 
-export function isSecure(band: PhonicsBand): boolean { return band === 'proficient' || band === 'mastered' }
+/** Mastered: the sheet is got. Kept as a name because "secure" reads better in the summaries. */
+export function isSecure(band: PhonicsBand): boolean { return band === 'mastered' }
 
 export interface StudentPhonicsSummary {
   tested: number
   secure: number
   developing: number
   beginning: number
-  /** The first sheet in packet order that is not yet proficient, among those tested. */
+  /** The first sheet in packet order that is not yet mastered, among those tested. */
   frontier: string | null
-  /** The highest sheet in packet order that is proficient or mastered. */
+  /** The highest sheet in packet order that is mastered. */
   highestSecure: string | null
   lastDate: string | null
 }
@@ -336,25 +348,29 @@ export function summarizeStudent(latest: LatestBySkill): StudentPhonicsSummary {
   return { tested: ids.length, secure, developing, beginning, frontier, highestSecure, lastDate }
 }
 
-/** "CVC 18/20 · Digraphs 14/20 · Silent e 9/20", in packet order. */
+/** "CVC 18/20 · Digraphs 14½/20 · Silent e 9/20", in packet order. */
 export function phonicsOneLiner(latest: LatestBySkill): string {
-  return orderSkills(Object.keys(latest)).map(id => `${phonicsSkill(id)?.short || id} ${latest[id].score.correct}/${latest[id].score.total}`).join(' · ')
+  return orderSkills(Object.keys(latest)).map(id => `${phonicsSkill(id)?.short || id} ${scoreText(latest[id].score)}`).join(' · ')
 }
 
-/** The sheets a teacher would recheck: tested and not yet proficient. */
+/** The sheets a teacher would recheck: tested and not yet mastered. */
 export function notYetSecure(latest: LatestBySkill): string[] {
   return orderSkills(Object.keys(latest)).filter(id => !isSecure(phonicsBand(latest[id].score)))
 }
 
 /**
- * Cycling a word tile: nothing → correct → error → nothing. Marks are kept
- * sparse, so the mark comes back as undefined when the tile is cleared.
+ * Cycling a word tile: nothing → correct → error → partial → nothing, so
+ * one tap is correct and two is an error, the two common cases. Marks are
+ * kept sparse, so the mark comes back as undefined when the tile is cleared.
  */
 export function nextMark(current: PhonicsMark | undefined): PhonicsMark | undefined {
-  return current === undefined ? 'correct' : current === 'correct' ? 'error' : undefined
+  return current === undefined ? 'correct' : current === 'correct' ? 'error' : current === 'error' ? 'partial' : undefined
 }
 
-/** The longest run of consecutive errors in sheet order: five means stop. */
+/** A word the student did not get right: an error or a partly. */
+export function isMiss(m: PhonicsMark | undefined): boolean { return m === 'error' || m === 'partial' }
+
+/** The longest run of consecutive errors in sheet order: five means stop. A partly breaks the run. */
 export function longestErrorRun(words: string[], marks: Record<string, PhonicsMark>): number {
   let run = 0, max = 0
   words.forEach(w => { if (marks[w] === 'error') { run++; max = Math.max(max, run) } else run = 0 })
@@ -395,8 +411,9 @@ export interface WordHistory {
 
 /**
  * How each word on a sheet went across the student's attempts at it, words
- * missed most often first and then in sheet order. Words never marked wrong
- * are left out: the point is to see what keeps tripping the student.
+ * missed most often first and then in sheet order. A partly counts as a
+ * miss. Words always read right are left out: the point is to see what
+ * keeps tripping the student.
  */
 export function wordHistory(checks: PhonicsCheckRow[], skillId: string): WordHistory[] {
   const attempts = sortChecksAsc(checks).filter(c => c.skills?.includes(skillId))
@@ -408,7 +425,7 @@ export function wordHistory(checks: PhonicsCheckRow[], skillId: string): WordHis
   return all
     .map((word, i) => {
       const marks = attempts.map(c => c.results?.[skillId]?.[word])
-      return { word, marks, misses: marks.filter(m => m === 'error').length, i }
+      return { word, marks, misses: marks.filter(isMiss).length, i }
     })
     .filter(h => h.misses > 0)
     .sort((a, b) => b.misses - a.misses || a.i - b.i)

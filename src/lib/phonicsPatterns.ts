@@ -13,10 +13,10 @@
 // after their position.
 
 import {
-  PHONICS_SKILL_IDS, PHONICS_GROUPS, PATTERN_PREFIX, phonicsSkill,
+  PHONICS_SKILL_IDS, PHONICS_GROUPS, PATTERN_PREFIX, phonicsSkill, isMiss,
   type LatestBySkill, type PhonicsCheckRow,
 } from '@/lib/phonics'
-import { masteryPosition, type MasteryBasis } from '@/lib/phonicsCompare'
+import { masteryPosition } from '@/lib/phonicsCompare'
 
 type Latest = Record<string, LatestBySkill>
 type Checks = Record<string, PhonicsCheckRow>
@@ -101,7 +101,7 @@ export function missedWords(studentIds: string[], latest: Latest, checks: Checks
       const k = `${sheet}|${word}`
       const e = by[k] ||= { sheet, word, missed: 0, read: 0, heard: [], studentIds: [], said: {} }
       e.read++
-      if (m === 'error') {
+      if (isMiss(m)) {
         e.missed++
         e.studentIds.push(sid)
         const said = c?.heard?.[sheet]?.[word]?.trim().toLowerCase()
@@ -127,8 +127,8 @@ export interface NextSheet {
   checked: boolean
 }
 
-export function nextToTeach(latest: LatestBySkill, basis: MasteryBasis): NextSheet {
-  const p = masteryPosition(latest, basis)
+export function nextToTeach(latest: LatestBySkill): NextSheet {
+  const p = masteryPosition(latest)
   if (!p.tested) return { sheet: null, reason: 'unchecked', checked: false }
   if (p.gaps.length) return { sheet: p.gaps[0], reason: 'gap', checked: true }
   if (p.position >= PHONICS_SKILL_IDS.length) return { sheet: null, reason: 'done', checked: true }
@@ -146,10 +146,10 @@ export interface TeachGroup {
 }
 
 /** Students gathered by the sheet (or family of sheets) to teach next, in packet order; done, then never checked, last. */
-export function teachingGroups(studentIds: string[], latest: Latest, basis: MasteryBasis, by: GroupBy): TeachGroup[] {
+export function teachingGroups(studentIds: string[], latest: Latest, by: GroupBy): TeachGroup[] {
   const groups: Record<string, TeachGroup> = {}
   studentIds.forEach(sid => {
-    const n = nextToTeach(latest[sid] || {}, basis)
+    const n = nextToTeach(latest[sid] || {})
     let key: string, sheets: string[]
     if (!n.sheet) { key = n.reason; sheets = [] }
     else if (by === 'sheet') { key = n.sheet; sheets = [n.sheet] }

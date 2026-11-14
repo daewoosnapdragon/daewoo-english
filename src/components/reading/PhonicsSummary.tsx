@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import type { Student } from '@/types'
-import { PHONICS_SKILLS, latestBySkill, phonicsBand, phonicsSkill, summarizeStudent, type LatestBySkill, type PhonicsCheckRow } from '@/lib/phonics'
+import { PHONICS_SKILLS, latestBySkill, phonicsBand, phonicsSkill, summarizeStudent, scoreText, type LatestBySkill, type PhonicsCheckRow } from '@/lib/phonics'
 import { loadStudentPhonicsChecks } from '@/lib/phonicsData'
 import { BAND_TONE, fmtLong } from '@/components/reading/phonicsTones'
 import StudentProgressGrid from '@/components/reading/PhonicsProgress'
@@ -54,8 +54,8 @@ export default function PhonicsSummary({ student, lang }: { student: Student; la
           <p className="text-[12.5px] text-ink-2 mt-1">
             {sum.frontier
               ? <>{lang === 'ko' ? '현재 과제: ' : 'Working on: '}<b className="text-ink">{phonicsSkill(sum.frontier)?.label}</b></>
-              : <span className="text-good">{lang === 'ko' ? '점검한 시트 모두 숙달' : 'Every checked sheet proficient'}</span>}
-            <span className="text-ink-3"> · {sum.secure} {lang === 'ko' ? '숙달' : 'proficient'} · {sum.developing} {lang === 'ko' ? '발달 중' : 'developing'} · {sum.beginning} {lang === 'ko' ? '시작 단계' : 'beginning'}{sum.lastDate ? ` · ${lang === 'ko' ? '최근' : 'last'} ${fmtLong(sum.lastDate, lang)}` : ''} · {checks.length} {lang === 'ko' ? '회' : checks.length === 1 ? 'check' : 'checks'}</span>
+              : <span className="text-good">{lang === 'ko' ? '점검한 시트 모두 완성' : 'Every checked sheet mastered'}</span>}
+            <span className="text-ink-3"> · {sum.secure} {lang === 'ko' ? '완성' : 'mastered'} · {sum.developing} {lang === 'ko' ? '발달 중' : 'developing'} · {sum.beginning} {lang === 'ko' ? '시작 단계' : 'beginning'}{sum.lastDate ? ` · ${lang === 'ko' ? '최근' : 'last'} ${fmtLong(sum.lastDate, lang)}` : ''} · {checks.length} {lang === 'ko' ? '회' : checks.length === 1 ? 'check' : 'checks'}</span>
           </p>
           <div className="flex flex-wrap gap-1 mt-2">
             {PHONICS_SKILLS.map(s => {
@@ -63,10 +63,10 @@ export default function PhonicsSummary({ student, lang }: { student: Student; la
               const b = l ? phonicsBand(l.score) : null
               return (
                 <button key={s.id} onClick={() => l && setOpen({ skill: s.id, checkId: l.checkId })} disabled={!l}
-                  title={`${s.label}${l ? ` · ${l.score.correct}/${l.score.total} · ${fmtLong(l.date, lang)}` : ` · ${lang === 'ko' ? '미점검' : 'not checked'}`}`}
+                  title={`${s.label}${l ? ` · ${scoreText(l.score)} · ${fmtLong(l.date, lang)}` : ` · ${lang === 'ko' ? '미점검' : 'not checked'}`}`}
                   className={`inline-flex flex-col items-center min-w-[58px] px-1.5 py-1 rounded-sm text-[10.5px] leading-tight ${b ? BAND_TONE[b] : 'bg-paper-2 text-ink-3/70'} disabled:cursor-default`}>
                   <span className="font-medium whitespace-nowrap">{s.short}</span>
-                  <span className="tabular-nums font-semibold">{l ? `${l.score.correct}/${l.score.total}` : '·'}</span>
+                  <span className="tabular-nums font-semibold">{l ? scoreText(l.score) : '·'}</span>
                 </button>
               )
             })}

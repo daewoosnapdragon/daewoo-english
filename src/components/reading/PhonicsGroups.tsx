@@ -6,7 +6,6 @@ import { getDisplayName } from '@/lib/utils'
 import { logActivity } from '@/lib/activity'
 import { ENGLISH_CLASS_ORDER } from '@/lib/rosterSort'
 import { PHONICS_GROUPS, PHONICS_SKILLS, phonicsSkill, type LatestBySkill, type PhonicsCheckRow } from '@/lib/phonics'
-import type { MasteryBasis } from '@/lib/phonicsCompare'
 import { nextToTeach, teachingGroups, troubleCounts, missedWords, splitPatternKey, type GroupBy, type TeachGroup } from '@/lib/phonicsPatterns'
 import { Printer } from 'lucide-react'
 
@@ -22,9 +21,9 @@ import { Printer } from 'lucide-react'
 const CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy', Sunflower: 'bg-level-sunflower', Marigold: 'bg-level-marigold', Snapdragon: 'bg-level-snapdragon' }
 const classRank = (c: string) => ENGLISH_CLASS_ORDER[c] || 99
 
-export default function PhonicsGroups({ students, latestByStudent, checksById, basis, lang, onOpenStudent }: {
+export default function PhonicsGroups({ students, latestByStudent, checksById, lang, onOpenStudent }: {
   students: Student[]; latestByStudent: Record<string, LatestBySkill>; checksById: Record<string, PhonicsCheckRow>
-  basis: MasteryBasis; lang: 'en' | 'ko'; onOpenStudent: (s: Student) => void
+  lang: 'en' | 'ko'; onOpenStudent: (s: Student) => void
 }) {
   const [by, setBy] = useState<GroupBy>('sheet')
   const classes = useMemo(() => Array.from(new Set(students.map(s => s.english_class))).sort((a, b) => classRank(a) - classRank(b)), [students])
@@ -37,9 +36,9 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, b
     const grades = Array.from(new Set(inScope.map(s => s.grade))).sort((a, b) => a - b)
     return grades.map(g => {
       const ids = inScope.filter(s => s.grade === g).sort((a, b) => classRank(a.english_class) - classRank(b.english_class) || a.english_name.localeCompare(b.english_name)).map(s => s.id)
-      return { grade: g, groups: teachingGroups(ids, latestByStudent, basis, by) }
+      return { grade: g, groups: teachingGroups(ids, latestByStudent, by) }
     })
-  }, [students, off, latestByStudent, basis, by])
+  }, [students, off, latestByStudent, by])
 
   const title = (g: TeachGroup) => {
     if (g.key === 'done') return lang === 'ko' ? '스무 시트 모두 완료' : 'All twenty sheets'
@@ -62,7 +61,7 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, b
     const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
     const body = byGrade.map(({ grade, groups }) => `<h1>Grade ${grade} · phonics groups</h1>` + groups.map(g => {
       const f = focus(g)
-      return `<section><h2>${esc(title(g))} <small>${g.studentIds.length}</small></h2><ol>${g.studentIds.map(id => { const s = studentById[id]; const n = nextToTeach(latestByStudent[id] || {}, basis); return `<li>${esc(s.english_name)} <span>${esc(s.korean_name)} · ${s.english_class}${by === 'family' && n.sheet ? ` · ${esc(phonicsSkill(n.sheet)?.short || '')}` : ''}${n.reason === 'gap' ? ' · hole below' : !n.checked && n.sheet ? ' · not checked on it' : ''}</span></li>` }).join('')}</ol>${f.patterns.length ? `<p><b>Trouble:</b> ${f.patterns.map(([p, n]) => `${esc(p)}${n > 1 ? ` ×${n}` : ''}`).join(', ')}</p>` : ''}${f.words.length ? `<p><b>Missed:</b> ${f.words.map(esc).join(', ')}</p>` : ''}</section>`
+      return `<section><h2>${esc(title(g))} <small>${g.studentIds.length}</small></h2><ol>${g.studentIds.map(id => { const s = studentById[id]; const n = nextToTeach(latestByStudent[id] || {}); return `<li>${esc(s.english_name)} <span>${esc(s.korean_name)} · ${s.english_class}${by === 'family' && n.sheet ? ` · ${esc(phonicsSkill(n.sheet)?.short || '')}` : ''}${n.reason === 'gap' ? ' · hole below' : !n.checked && n.sheet ? ' · not checked on it' : ''}</span></li>` }).join('')}</ol>${f.patterns.length ? `<p><b>Trouble:</b> ${f.patterns.map(([p, n]) => `${esc(p)}${n > 1 ? ` ×${n}` : ''}`).join(', ')}</p>` : ''}${f.words.length ? `<p><b>Missed:</b> ${f.words.map(esc).join(', ')}</p>` : ''}</section>`
     }).join('')).join('<div class="break"></div>')
     pw.document.write(`<html><head><title>Phonics groups</title><style>
       body{font-family:system-ui,sans-serif;color:#1b1812;margin:0;padding:24px;font-size:12px}
@@ -118,7 +117,7 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, b
                   <p className="text-[10.5px] text-ink-3 mb-2">{Object.entries(mix).sort((a, b) => classRank(a[0]) - classRank(b[0])).map(([c, n]) => `${c} ${n}`).join(' · ')}</p>
                   <div className="flex flex-wrap gap-1 mb-2">
                     {g.studentIds.map(id => {
-                      const s = studentById[id]; const n = nextToTeach(latestByStudent[id] || {}, basis)
+                      const s = studentById[id]; const n = nextToTeach(latestByStudent[id] || {})
                       const hole = n.reason === 'gap'; const unsure = !!n.sheet && !n.checked
                       return (
                         <button key={id} onClick={() => onOpenStudent(s)}

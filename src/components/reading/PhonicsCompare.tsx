@@ -8,12 +8,12 @@ import { exportToCSV } from '@/lib/export'
 import { ENGLISH_CLASS_ORDER } from '@/lib/rosterSort'
 import {
   PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_BAND_LABELS,
-  phonicsSkill, skillsInGroup, latestBySkill, phonicsBand,
+  phonicsSkill, skillsInGroup, latestBySkill, phonicsBand, scoreText,
   type PhonicsCheckRow, type LatestBySkill, type PhonicsBand,
 } from '@/lib/phonics'
 import {
   MIN_TESTED, EDGE_PCT, masteryPosition, groupStats, checksSince, byPosition, levelingLanes,
-  type MasteryBasis, type MasteryPosition, type GroupStats, type LevelFlag,
+  type MasteryPosition, type GroupStats, type LevelFlag,
 } from '@/lib/phonicsCompare'
 import { loadAllPhonicsChecks } from '@/lib/phonicsData'
 import { BAND_TONE, fmtShort } from '@/components/reading/phonicsTones'
@@ -48,10 +48,10 @@ type Sort = 'class' | 'position'
 type Tab = 'overview' | 'leveling' | 'patterns' | 'groups'
 
 const CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy', Sunflower: 'bg-level-sunflower', Marigold: 'bg-level-marigold', Snapdragon: 'bg-level-snapdragon' }
-const BANDS: PhonicsBand[] = ['mastered', 'proficient', 'developing', 'beginning']
+const BANDS: PhonicsBand[] = ['mastered', 'developing', 'beginning']
 const classRank = (c: string) => ENGLISH_CLASS_ORDER[c] || 99
 
-/** Tone for a class's share meeting the bar on a sheet. */
+/** Tone for a class's share mastered on a sheet. */
 function shareTone(pct: number | null, thin: boolean): string {
   if (pct == null) return 'bg-paper-2/60 text-ink-3/40'
   if (thin) return 'bg-paper-2 text-ink-3'
@@ -73,7 +73,6 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
   const { students, loading } = useStudents({ grade: scope === 'grade' ? (grade as any) : null })
   const [allChecks, setAllChecks] = useState<PhonicsCheckRow[]>([])
   const [loadingChecks, setLoadingChecks] = useState(true)
-  const [basis, setBasis] = useState<MasteryBasis>('mastered')
   const [sort, setSort] = useState<Sort>('class')
   const [tab, setTab] = useState<Tab>('overview')
   const [since, setSince] = useState('')
@@ -100,7 +99,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
     return by
   }, [checks])
   const latestByStudent = useMemo(() => Object.fromEntries(students.map(s => [s.id, latestBySkill(byStudent[s.id] || [])])) as Record<string, LatestBySkill>, [students, byStudent])
-  const posByStudent = useMemo(() => Object.fromEntries(students.map(s => [s.id, masteryPosition(latestByStudent[s.id] || {}, basis)])) as Record<string, MasteryPosition>, [students, latestByStudent, basis])
+  const posByStudent = useMemo(() => Object.fromEntries(students.map(s => [s.id, masteryPosition(latestByStudent[s.id] || {})])) as Record<string, MasteryPosition>, [students, latestByStudent])
 
   const grades = useMemo(() => Array.from(new Set(students.map(s => s.grade))).sort((a, b) => a - b), [students])
   const studentById = useMemo(() => Object.fromEntries(students.map(s => [s.id, s])) as Record<string, Student>, [students])
@@ -139,18 +138,18 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
     const rows: { key: string; label: string; grade: number; englishClass: string | null; stats: GroupStats; isGrade: boolean }[] = []
     grades.forEach(g => {
       const inGrade = students.filter(s => s.grade === g)
-      if (scope === 'all') rows.push({ key: `g${g}`, label: lang === 'ko' ? `${g}학년 전체` : `Grade ${g}, all classes`, grade: g, englishClass: null, stats: groupStats(inGrade.map(s => s.id), latestByStudent, basis), isGrade: true })
+      if (scope === 'all') rows.push({ key: `g${g}`, label: lang === 'ko' ? `${g}학년 전체` : `Grade ${g}, all classes`, grade: g, englishClass: null, stats: groupStats(inGrade.map(s => s.id), latestByStudent), isGrade: true })
       const classes = Array.from(new Set(inGrade.map(s => s.english_class))).sort((a, b) => classRank(a) - classRank(b))
       classes.forEach(c => {
         const ids = inGrade.filter(s => s.english_class === c).map(s => s.id)
-        rows.push({ key: `g${g}:${c}`, label: c, grade: g, englishClass: c, stats: groupStats(ids, latestByStudent, basis), isGrade: false })
+        rows.push({ key: `g${g}:${c}`, label: c, grade: g, englishClass: c, stats: groupStats(ids, latestByStudent), isGrade: false })
       })
     })
     if (scope === 'grade' && grades.length) {
-      rows.push({ key: 'grade', label: lang === 'ko' ? `${grade}학년 전체` : `Whole grade`, grade, englishClass: null, stats: groupStats(students.map(s => s.id), latestByStudent, basis), isGrade: true })
+      rows.push({ key: 'grade', label: lang === 'ko' ? `${grade}학년 전체` : `Whole grade`, grade, englishClass: null, stats: groupStats(students.map(s => s.id), latestByStudent), isGrade: true })
     }
     return rows
-  }, [grades, students, latestByStudent, basis, scope, grade, lang])
+  }, [grades, students, latestByStudent, scope, grade, lang])
 
   // Students: grouped by class, or ranked by position within each grade.
   const groups = useMemo<Group[]>(() => {
@@ -175,23 +174,22 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
   })
 
   const exportCsv = () => {
-    exportToCSV(`phonics-${scope === 'grade' ? `G${grade}-all-classes` : 'all-grades'}${basis === 'secure' ? '-proficient' : ''}`,
-      ['Grade', 'Class', 'Student', 'Korean name', ...PHONICS_SKILLS.map(s => s.short), basis === 'mastered' ? 'Mastered through' : 'Proficient+ through', 'Position (of 20)', 'Gaps below', 'Tested through (of 20)', 'Reads like', 'Next to teach', 'Last check'],
+    exportToCSV(`phonics-${scope === 'grade' ? `G${grade}-all-classes` : 'all-grades'}`,
+      ['Grade', 'Class', 'Student', 'Korean name', ...PHONICS_SKILLS.map(s => s.short), 'Mastered through', 'Position (of 20)', 'Gaps below', 'Tested through (of 20)', 'Reads like', 'Next to teach', 'Last check'],
       [...students].sort((a, b) => a.grade - b.grade || classRank(a.english_class) - classRank(b.english_class) || a.english_name.localeCompare(b.english_name)).map(s => {
         const latest = latestByStudent[s.id] || {}
         const p = posByStudent[s.id]
         const last = Object.values(latest).reduce<string>((m, l) => l.date > m ? l.date : m, '')
         return [s.grade, s.english_class, s.english_name, s.korean_name,
-          ...PHONICS_SKILL_IDS.map(id => latest[id] ? `${latest[id].score.correct}/${latest[id].score.total}` : ''),
+          ...PHONICS_SKILL_IDS.map(id => latest[id] ? scoreText(latest[id].score) : ''),
           p.through ? phonicsSkill(p.through)?.label || '' : '', p.tested ? p.position : '', p.gaps.map(g => phonicsSkill(g)?.short || g).join('; '), p.tested ? p.testedThrough : '',
           leveling.flags[s.id] ? `${leveling.flags[s.id].dir === 'up' ? 'above' : 'below'}: ${leveling.flags[s.id].likeClass}${leveling.flags[s.id].unsure ? ' (not tested further)' : ''}` : '',
-          (() => { const n = nextToTeach(latest, basis); return n.sheet ? `${phonicsSkill(n.sheet)?.label || ''}${n.reason === 'gap' ? ' (hole below position)' : !n.checked ? ' (not checked on it)' : ''}` : n.reason === 'done' ? 'all done' : '' })(),
+          (() => { const n = nextToTeach(latest); return n.sheet ? `${phonicsSkill(n.sheet)?.label || ''}${n.reason === 'gap' ? ' (hole below position)' : !n.checked ? ' (not checked on it)' : ''}` : n.reason === 'done' ? 'all done' : '' })(),
           last]
       }))
   }
 
   const seg = (on: boolean) => `px-3 h-8 rounded text-[12.5px] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
-  const basisWord = basis === 'mastered' ? (lang === 'ko' ? '완성' : 'mastered') : (lang === 'ko' ? '숙달 이상' : 'proficient+')
   const openStudent = open ? students.find(s => s.id === open.sid) : null
 
   if (loading || loadingChecks) return <div className="py-12 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
@@ -200,10 +198,6 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
   return (
     <div>
       <div className="flex items-center gap-3 flex-wrap mb-3">
-        <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface" title={lang === 'ko' ? '기준' : 'What counts as having a sheet'}>
-          <button onClick={() => setBasis('mastered')} className={seg(basis === 'mastered')}>{lang === 'ko' ? '완성' : 'Mastered'}</button>
-          <button onClick={() => setBasis('secure')} className={seg(basis === 'secure')}>{lang === 'ko' ? '숙달 이상' : 'Proficient+'}</button>
-        </div>
         {tab === 'overview' && <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface">
           <button onClick={() => setSort('class')} className={seg(sort === 'class')}>{lang === 'ko' ? '반별' : 'By class'}</button>
           <button onClick={() => setSort('position')} className={seg(sort === 'position')}>{lang === 'ko' ? '위치순' : 'By position'}</button>
@@ -216,9 +210,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         <button onClick={exportCsv} className="ml-auto inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink"><Download size={11} /> CSV</button>
       </div>
       <p className="text-[12px] text-ink-3 mb-5 max-w-[920px]">
-        {basis === 'mastered'
-          ? (lang === 'ko' ? '완성 = 90% 이상이고 “자동” 체크. 자동 체크가 없으면 90% 이상이어도 완성으로 세지 않습니다. 숙달 이상으로 바꾸면 체크 없이 비교합니다.' : 'Mastered = 90%+ with “automatic” ticked. A sheet at 90%+ without the tick does not count; switch to Proficient+ to compare without it.')
-          : (lang === 'ko' ? '숙달 이상 = 90% 이상, 자동 체크와 상관없이.' : 'Proficient+ = 90%+, automatic ticked or not.')}
+        {lang === 'ko' ? '완성 = 가장 최근 점검에서 90% 이상.' : 'Mastered = 90% or more on the latest check of that sheet.'}
         {' '}{lang === 'ko' ? `학생 ${MIN_TESTED}명 미만이 점검한 시트는 회색입니다.` : `Figures from fewer than ${MIN_TESTED} students tested are greyed: too few to compare on.`}
         {since && <> {lang === 'ko' ? `${since} 이후 점검만 셉니다.` : `Counting checks from ${fmtShort(since, lang)} on.`}</>}
       </p>
@@ -237,15 +229,15 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       </div>
 
       {tab === 'patterns' && <PhonicsPatterns columns={patternColumns} latestByStudent={latestByStudent} checksById={checksById} studentById={studentById} lang={lang} onOpenStudent={onOpenStudent} />}
-      {tab === 'groups' && <PhonicsGroups students={students} latestByStudent={latestByStudent} checksById={checksById} basis={basis} lang={lang} onOpenStudent={onOpenStudent} />}
+      {tab === 'groups' && <PhonicsGroups students={students} latestByStudent={latestByStudent} checksById={checksById} lang={lang} onOpenStudent={onOpenStudent} />}
 
       {tab === 'overview' && <>
 
       {/* ─── Classes compared ─── */}
       <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '반 비교' : 'Classes compared'}</h3>
       <p className="text-[11.5px] text-ink-3 mb-2">{lang === 'ko'
-        ? `각 칸은 그 시트를 점검한 학생 중 ${basisWord}인 비율. 테두리 칸은 그 반의 경계: ${EDGE_PCT}% 미만인 첫 시트입니다.`
-        : `Each cell: of the students checked on that sheet, the share ${basisWord}. The outlined cell is the class’s edge, the first sheet under ${EDGE_PCT}%.`}</p>
+        ? `각 칸: 그 시트를 점검한 학생 중 완성한 비율과, 점검한 학생 수. 테두리 칸은 그 반의 경계: ${EDGE_PCT}% 미만인 첫 시트입니다.`
+        : `Each cell: the share of the students checked on that sheet who have mastered it, and how many were checked. The outlined cell is the class’s edge, the first sheet under ${EDGE_PCT}%.`}</p>
       <div className="border border-rule-2 rounded-md overflow-x-auto mb-8">
         <table className="w-full min-w-[980px] table-fixed text-[12px] tabular-nums border-collapse">
           <colgroup>
@@ -271,9 +263,9 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                   const edge = r.stats.edge === sk.id
                   return (
                     <td key={sk.id} className={`p-[3px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
-                      <div title={`${r.label} · ${sk.label}: ${st.tested ? `${st.meeting} of ${st.tested} checked ${basisWord} (${st.pct}%)` : 'nobody checked'}${st.tested && st.tested < r.stats.students ? ` · ${r.stats.students - st.tested} not checked` : ''}${edge ? ' · the class’s edge' : ''}`}
-                        className={`w-full h-7 rounded-sm text-[10.5px] font-semibold flex flex-col items-center justify-center leading-none ${shareTone(st.pct, st.thin)} ${edge ? 'ring-2 ring-ink ring-inset' : ''}`}>
-                        {st.pct == null ? '·' : <>{st.pct}<span className="text-[8.5px] font-normal opacity-70 mt-px">n{st.tested}</span></>}
+                      <div title={`${r.label} · ${sk.label}: ${st.tested ? `${st.meeting} of the ${st.tested} checked have mastered it (${st.pct}%)` : 'nobody checked'}${st.tested && st.tested < r.stats.students ? ` · ${r.stats.students - st.tested} not checked` : ''}${st.thin && st.tested ? ' · too few to compare on' : ''}${edge ? ' · the class’s edge' : ''}`}
+                        className={`w-full h-8 rounded-sm font-semibold flex flex-col items-center justify-center leading-none ${shareTone(st.pct, st.thin)} ${edge ? 'ring-2 ring-ink ring-inset' : ''}`}>
+                        {st.pct == null ? <span className="text-[10.5px]">·</span> : <><span className="text-[11px]">{st.pct}%</span><span className="text-[8.5px] font-normal opacity-75 mt-[2px] whitespace-nowrap">{st.tested} {lang === 'ko' ? '명' : 'checked'}</span></>}
                       </div>
                     </td>
                   )
@@ -294,7 +286,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         : `A dot per checked student at their position (0–20). Shaded: the class’s middle half; bar: its median. Ringed green: at or past the median of the class above. Ringed red: at or under the median of the class below. Ringed amber: the same, but never tested past that point, so check further first.`}</p>
       {leveling.byGrade.map(g => (
         <PhonicsLevelingStrip key={g.grade} title={lang === 'ko' ? `${g.grade}학년` : `Grade ${g.grade}`} lanes={g.lanes} students={studentById} pos={posByStudent} flags={leveling.flags}
-          basisWord={basisWord} lang={lang} onOpenStudent={onOpenStudent} />
+          lang={lang} onOpenStudent={onOpenStudent} />
       ))}
       <div className="mt-4 mb-8">
         <p className="text-[12.5px] font-semibold text-ink mb-1.5">{lang === 'ko' ? '레벨링 후보' : 'Leveling candidates'} <span className="font-normal text-ink-3">· {candidates.length}</span></p>
@@ -337,8 +329,8 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         <div>
           <h3 className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '학생' : 'Students'}</h3>
           <p className="text-[11.5px] text-ink-3">{lang === 'ko'
-            ? `위치 = ${basisWord}인 가장 먼 시트 (20개 중). ⚠ = 그 아래에 90% 미만인 시트가 있음. 이름을 클릭하면 시도별 진전, 칸을 클릭하면 단어가 보입니다. 체크하면 최대 ${MAX_COMPARE}명까지 나란히 비교합니다.`
-            : `Position = the furthest sheet ${basisWord}, of 20. ⚠ = a sheet below it still under 90%. Click a name for progress, a cell for the words. Tick up to ${MAX_COMPARE} students to compare them side by side.`}</p>
+            ? `위치 = 완성한 가장 먼 시트 (20개 중). ⚠ = 그 아래에 90% 미만인 시트가 있음. 이름을 클릭하면 시도별 진전, 칸을 클릭하면 단어가 보입니다. 체크하면 최대 ${MAX_COMPARE}명까지 나란히 비교합니다.`
+            : `Position = the furthest sheet mastered, of 20. ⚠ = a sheet below it still under 90%. Click a name for progress, a cell for the words. Tick up to ${MAX_COMPARE} students to compare them side by side.`}</p>
         </div>
         <div className="flex items-center gap-3 text-[11.5px] text-ink-2 flex-wrap">
           {BANDS.map(b => <span key={b} className="inline-flex items-center gap-1.5"><span className={`w-3 h-3 rounded-sm ${BAND_TONE[b]} ${b !== 'mastered' ? 'border border-rule-2' : ''}`} />{PHONICS_BAND_LABELS[b][lang]}</span>)}
@@ -358,7 +350,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
             {groups.map(g => {
               const shut = isCollapsed(g.key)
               const tested = g.students.filter(s => posByStudent[s.id]?.tested).length
-              const med = groupStats(g.students.map(s => s.id), latestByStudent, basis).medianPosition
+              const med = groupStats(g.students.map(s => s.id), latestByStudent).medianPosition
               return (
                 <Fragment key={g.key}>
                   <tr className="bg-paper-2 border-t border-rule-2">
@@ -372,7 +364,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                     </td>
                   </tr>
                   {!shut && g.students.map(s => (
-                    <StudentRow key={s.id} s={s} latest={latestByStudent[s.id] || {}} pos={posByStudent[s.id]} flag={leveling.flags[s.id]} basisWord={basisWord} lang={lang}
+                    <StudentRow key={s.id} s={s} latest={latestByStudent[s.id] || {}} pos={posByStudent[s.id]} flag={leveling.flags[s.id]} lang={lang}
                       showClass={!g.englishClass} onName={() => onOpenStudent(s)} onCell={(skill) => setOpen({ sid: s.id, skill })}
                       picked={picked.includes(s.id)} full={picked.length >= MAX_COMPARE} onPick={() => togglePick(s.id)} />
                   ))}
@@ -406,7 +398,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
 
       {comparing && pickedStudents.length > 0 && (
         <PhonicsStudentCompare students={pickedStudents} latestByStudent={latestByStudent} checksById={checksById} pos={posByStudent} flags={leveling.flags}
-          basisWord={basisWord} lang={lang} onClose={() => setComparing(false)} onRemove={togglePick} onOpenStudent={(s) => { setComparing(false); onOpenStudent(s) }} />
+          lang={lang} onClose={() => setComparing(false)} onRemove={togglePick} onOpenStudent={(s) => { setComparing(false); onOpenStudent(s) }} />
       )}
 
       {open && openStudent && (
@@ -457,8 +449,8 @@ function PickBox({ on, full, onToggle, lang }: { on: boolean; full: boolean; onT
   )
 }
 
-function StudentRow({ s, latest, pos, flag, basisWord, lang, showClass, onName, onCell, picked, full, onPick }: {
-  s: Student; latest: LatestBySkill; pos: MasteryPosition; flag?: LevelFlag; basisWord: string; lang: Lang; showClass: boolean
+function StudentRow({ s, latest, pos, flag, lang, showClass, onName, onCell, picked, full, onPick }: {
+  s: Student; latest: LatestBySkill; pos: MasteryPosition; flag?: LevelFlag; lang: Lang; showClass: boolean
   onName: () => void; onCell: (skill: string) => void; picked: boolean; full: boolean; onPick: () => void
 }) {
   const last = Object.values(latest).reduce<string>((m, l) => l.date > m ? l.date : m, '')
@@ -479,7 +471,7 @@ function StudentRow({ s, latest, pos, flag, basisWord, lang, showClass, onName, 
         return (
           <td key={sk.id} className={`p-[3px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
             <button onClick={() => l && onCell(sk.id)} disabled={!l}
-              title={l ? `${sk.label}: ${l.score.correct}/${l.score.total} · ${PHONICS_BAND_LABELS[band!].en} · ${fmtShort(l.date, lang)}` : `${sk.label}: not checked`}
+              title={l ? `${sk.label}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[band!].en} · ${fmtShort(l.date, lang)}` : `${sk.label}: not checked`}
               className={`w-full h-6 rounded-sm text-[10.5px] font-semibold ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
               {l ? l.score.pct : '·'}
             </button>
@@ -489,7 +481,7 @@ function StudentRow({ s, latest, pos, flag, basisWord, lang, showClass, onName, 
       <td className="px-3 py-1 border-l border-rule-2 text-[11px] leading-tight overflow-hidden">
         {!pos.tested ? <span className="text-ink-3">{lang === 'ko' ? '미점검' : 'Not checked'}</span> : (
           <>
-            <span className="flex items-center gap-1 text-ink truncate" title={pos.through ? `${basisWord} through ${phonicsSkill(pos.through)?.label}${pos.gaps.length ? ` · under 90% below it: ${pos.gaps.map(g => phonicsSkill(g)?.label).join(', ')}` : ''}${pos.unticked ? ` · ${pos.unticked} sheet${pos.unticked === 1 ? '' : 's'} at 90%+ without “automatic” ticked` : ''}` : `Nothing ${basisWord} yet`}>
+            <span className="flex items-center gap-1 text-ink truncate" title={pos.through ? `Mastered through ${phonicsSkill(pos.through)?.label}${pos.gaps.length ? ` · under 90% below it: ${pos.gaps.map(g => phonicsSkill(g)?.label).join(', ')}` : ''}` : 'Nothing mastered yet'}>
               <span className="font-semibold">{pos.position}</span>
               <span className="truncate">{pos.through ? phonicsSkill(pos.through)?.short : (lang === 'ko' ? '아직 없음' : 'none yet')}</span>
               {pos.gaps.length > 0 && <AlertTriangle size={11} className="text-warn shrink-0" />}

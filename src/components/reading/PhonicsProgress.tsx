@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import type { Student } from '@/types'
 import {
   PHONICS_SKILLS, PHONICS_BAND_LABELS,
-  phonicsSkill, phonicsBand, scoreSkill, sortChecksAsc, attemptsBySkill, latestDelta, latestBySkill, summarizeStudent, orderSkills,
+  phonicsSkill, phonicsBand, scoreSkill, sortChecksAsc, attemptsBySkill, latestDelta, latestBySkill, summarizeStudent, orderSkills, scoreText,
   type PhonicsCheckRow,
 } from '@/lib/phonics'
 import { BAND_TONE, fmtShort } from '@/components/reading/phonicsTones'
@@ -73,7 +73,7 @@ export default function StudentProgressGrid({ student, checks, lang, onCell, com
                     return (
                       <td key={c.id} className={`p-[3px] ${i > 0 ? 'border-l border-rule' : ''}`}>
                         {s ? (
-                          <button onClick={() => onCell(id, c.id)} title={`${sk.label} · ${fmtShort(c.date, lang)}: ${s.correct}/${s.total} · ${PHONICS_BAND_LABELS[b!].en}${s.unread ? ` · ${s.unread} not read` : ''}`}
+                          <button onClick={() => onCell(id, c.id)} title={`${sk.label} · ${fmtShort(c.date, lang)}: ${scoreText(s)} · ${PHONICS_BAND_LABELS[b!].en}${s.unread ? ` · ${s.unread} not read` : ''}`}
                             className={`w-full ${cell} rounded-sm font-semibold ${BAND_TONE[b!]}`}>{s.pct}</button>
                         ) : <span className={`block w-full ${cell} rounded-sm bg-paper-2/40`} />}
                       </td>

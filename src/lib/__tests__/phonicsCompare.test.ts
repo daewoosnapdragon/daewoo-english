@@ -1,31 +1,22 @@
 import { describe, it, expect } from 'vitest'
 import type { LatestBySkill } from '@/lib/phonics'
-import { masteryPosition, groupStats, checksSince, byPosition, median, meetsBasis, quartiles, levelingLanes, openCeiling, type MasteryPosition } from '@/lib/phonicsCompare'
+import { masteryPosition, groupStats, checksSince, byPosition, median, quartiles, levelingLanes, openCeiling, type MasteryPosition } from '@/lib/phonicsCompare'
 
-const sc = (skill: string, pct: number, automatic = false) => ({
-  score: { skill, correct: pct / 5, errors: 20 - pct / 5, unread: 0, total: 20, pct, automatic },
+const sc = (skill: string, pct: number) => ({
+  score: { skill, correct: pct / 5, partial: 0, errors: 20 - pct / 5, unread: 0, total: 20, pct },
   date: '2026-11-01', checkId: 'c',
 })
 const latest = (...xs: ReturnType<typeof sc>[]): LatestBySkill => Object.fromEntries(xs.map(x => [x.score.skill, x]))
 
-describe('meetsBasis', () => {
-  it('mastered needs the band; secure takes proficient too', () => {
-    expect(meetsBasis('mastered', 'mastered')).toBe(true)
-    expect(meetsBasis('proficient', 'mastered')).toBe(false)
-    expect(meetsBasis('proficient', 'secure')).toBe(true)
-    expect(meetsBasis('developing', 'secure')).toBe(false)
-  })
-})
-
 describe('masteryPosition', () => {
   it('is zero for a student never checked', () => {
-    expect(masteryPosition({}, 'mastered')).toEqual({ through: null, position: 0, gaps: [], testedThrough: 0, tested: 0, unticked: 0 })
+    expect(masteryPosition({})).toEqual({ through: null, position: 0, gaps: [], testedThrough: 0, tested: 0 })
   })
 
   it('is the furthest mastered sheet in packet order, with earlier weak sheets as gaps', () => {
     // cvc (1) mastered, digraphs (2) developing, silent_e (7) mastered, vowel_teams (9) beginning
-    const l = latest(sc('cvc', 100, true), sc('digraphs', 75), sc('silent_e', 95, true), sc('vowel_teams', 40))
-    const p = masteryPosition(l, 'mastered')
+    const l = latest(sc('cvc', 100), sc('digraphs', 75), sc('silent_e', 95), sc('vowel_teams', 40))
+    const p = masteryPosition(l)
     expect(p.through).toBe('silent_e')
     expect(p.position).toBe(7)
     expect(p.gaps).toEqual(['digraphs'])
@@ -33,26 +24,20 @@ describe('masteryPosition', () => {
     expect(p.tested).toBe(4)
   })
 
-  it('counts 90%+ without the automatic tick, which mastered does not accept and secure does', () => {
-    const l = latest(sc('cvc', 100, true), sc('blends', 95))
-    expect(masteryPosition(l, 'mastered')).toMatchObject({ through: 'cvc', position: 1, unticked: 1 })
-    expect(masteryPosition(l, 'secure')).toMatchObject({ through: 'blends', position: 3, gaps: [] })
-  })
-
-  it('does not call an unticked 90%+ sheet below the position a gap', () => {
-    const l = latest(sc('cvc', 95), sc('blends', 100, true))
-    expect(masteryPosition(l, 'mastered')).toMatchObject({ through: 'blends', gaps: [] })
+  it('any sheet at 90% or more is mastered; 89 is a gap below the position', () => {
+    expect(masteryPosition(latest(sc('cvc', 90), sc('blends', 95)))).toMatchObject({ through: 'blends', position: 3, gaps: [] })
+    expect(masteryPosition(latest(sc('cvc', 89), sc('blends', 95)))).toMatchObject({ through: 'blends', position: 3, gaps: ['cvc'] })
   })
 })
 
 describe('groupStats', () => {
   const by: Record<string, LatestBySkill> = {
-    a: latest(sc('cvc', 100, true), sc('digraphs', 100, true)),
-    b: latest(sc('cvc', 95, true), sc('digraphs', 60)),
-    c: latest(sc('cvc', 80), sc('digraphs', 100, true)),
+    a: latest(sc('cvc', 100), sc('digraphs', 100)),
+    b: latest(sc('cvc', 95), sc('digraphs', 60)),
+    c: latest(sc('cvc', 80), sc('digraphs', 100)),
     d: {},
   }
-  const g = groupStats(['a', 'b', 'c', 'd'], by, 'mastered')
+  const g = groupStats(['a', 'b', 'c', 'd'], by)
 
   it('gives each sheet the share of tested students meeting the bar', () => {
     expect(g.bySheet.cvc).toEqual({ tested: 3, meeting: 2, pct: 67, thin: false })
@@ -68,13 +53,13 @@ describe('groupStats', () => {
 
   it('puts the edge at the first well-tested sheet under 70%', () => {
     expect(g.edge).toBe('cvc')
-    // Proficient+ without the tick: c reaches 90% on CVC, so CVC is got and digraphs (2 of 3) is next
-    const by2 = { ...by, c: latest(sc('cvc', 90), sc('digraphs', 100, true)) }
-    expect(groupStats(['a', 'b', 'c'], by2, 'secure').edge).toBe('digraphs')
+    // c reaches 90% on CVC, so CVC is got and digraphs (2 of 3) is next
+    const by2 = { ...by, c: latest(sc('cvc', 90), sc('digraphs', 100)) }
+    expect(groupStats(['a', 'b', 'c'], by2).edge).toBe('digraphs')
   })
 
   it('ignores thinly tested sheets for the edge', () => {
-    expect(groupStats(['b'], by, 'mastered').edge).toBeNull()
+    expect(groupStats(['b'], by).edge).toBeNull()
   })
 })
 
@@ -98,9 +83,9 @@ describe('byPosition', () => {
   it('sorts highest position first and untested last', () => {
     const studs = [{ id: 'x', english_name: 'X' }, { id: 'y', english_name: 'Y' }, { id: 'z', english_name: 'Z' }]
     const pos = {
-      x: masteryPosition({}, 'mastered'),
-      y: masteryPosition(latest(sc('cvc', 100, true)), 'mastered'),
-      z: masteryPosition(latest(sc('blends', 100, true)), 'mastered'),
+      x: masteryPosition({}),
+      y: masteryPosition(latest(sc('cvc', 100))),
+      z: masteryPosition(latest(sc('blends', 100))),
     }
     expect(byPosition(studs, pos).map(s => s.id)).toEqual(['z', 'y', 'x'])
   })
@@ -117,7 +102,7 @@ describe('quartiles', () => {
 
 describe('levelingLanes', () => {
   // A position as masteryPosition would give it: `at` meets the bar, tested to `to`.
-  const P = (at: number, to = at + 1): MasteryPosition => ({ through: null, position: at, gaps: [], testedThrough: to, tested: to, unticked: 0 })
+  const P = (at: number, to = at + 1): MasteryPosition => ({ through: null, position: at, gaps: [], testedThrough: to, tested: to })
   const pos: Record<string, MasteryPosition> = {
     l1: P(3), l2: P(4), l3: P(12), l4: P(4, 4),
     d1: P(8), d2: P(9), d3: P(10), d4: P(2), d5: P(2, 2),
@@ -158,7 +143,7 @@ describe('levelingLanes', () => {
 
 describe('openCeiling', () => {
   it('is true when the furthest sheet tested is the position', () => {
-    expect(openCeiling({ through: 'cvc', position: 1, gaps: [], testedThrough: 1, tested: 1, unticked: 0 })).toBe(true)
-    expect(openCeiling({ through: 'cvc', position: 1, gaps: [], testedThrough: 2, tested: 2, unticked: 0 })).toBe(false)
+    expect(openCeiling({ through: 'cvc', position: 1, gaps: [], testedThrough: 1, tested: 1 })).toBe(true)
+    expect(openCeiling({ through: 'cvc', position: 1, gaps: [], testedThrough: 2, tested: 2 })).toBe(false)
   })
 })

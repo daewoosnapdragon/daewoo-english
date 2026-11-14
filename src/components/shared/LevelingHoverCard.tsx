@@ -6,7 +6,7 @@ import { withoutAwayDays } from '@/lib/calendarDays'
 import { EnglishClass, ENGLISH_CLASSES } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
 import { WIDA_LEVELS } from '@/lib/wida'
-import { latestBySkill, orderSkills, phonicsBand, phonicsSkill, summarizeStudent, type LatestBySkill } from '@/lib/phonics'
+import { latestBySkill, orderSkills, phonicsBand, phonicsSkill, summarizeStudent, scoreText, type LatestBySkill } from '@/lib/phonics'
 import { loadStudentPhonicsChecks } from '@/lib/phonicsData'
 
 interface HoverData {
@@ -223,13 +223,13 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── Phonics (decoding) ───────────────────────── */}
               {Object.keys(data.phonics).length > 0 && (() => {
                 const sum = summarizeStudent(data.phonics)
-                const tone = (b: string) => b === 'mastered' ? 'bg-green-600 border-green-600 text-white' : b === 'proficient' ? 'bg-green-50 border-green-200 text-green-700' : b === 'developing' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-600'
+                const tone = (b: string) => b === 'mastered' ? 'bg-green-600 border-green-600 text-white' : b === 'developing' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-600'
                 return (
                   <div>
-                    <p className="text-[8px] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Phonics (decoding) · {sum.frontier ? `working on ${phonicsSkill(sum.frontier)?.label}` : 'every checked sheet proficient'}</p>
+                    <p className="text-[8px] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Phonics (decoding) · {sum.frontier ? `working on ${phonicsSkill(sum.frontier)?.label}` : 'every checked sheet mastered'}</p>
                     <div className="flex flex-wrap gap-1">
                       {orderSkills(Object.keys(data.phonics)).map(id => { const l = data.phonics[id]; return (
-                        <span key={id} className={`px-1.5 py-0.5 rounded border text-[9px] font-semibold tabular-nums ${tone(phonicsBand(l.score))}`} title={`${phonicsSkill(id)?.label} · ${l.date}`}>{phonicsSkill(id)?.short} {l.score.correct}/{l.score.total}</span>
+                        <span key={id} className={`px-1.5 py-0.5 rounded border text-[9px] font-semibold tabular-nums ${tone(phonicsBand(l.score))}`} title={`${phonicsSkill(id)?.label} · ${l.date}`}>{phonicsSkill(id)?.short} {scoreText(l.score)}</span>
                       ) })}
                     </div>
                   </div>

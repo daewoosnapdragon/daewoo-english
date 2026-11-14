@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_GROUPS, phonicsSkill, orderSkills,
   scoreSkill, scoreCheck, latestBySkill, phonicsBand, summarizeStudent, phonicsOneLiner, notYetSecure, nextMark, longestErrorRun,
-  attemptsBySkill, latestDelta, wordHistory,
+  attemptsBySkill, latestDelta, wordHistory, scoreText, halfText, isMiss,
   type PhonicsCheckRow, type PhonicsMark,
 } from '@/lib/phonics'
 
@@ -41,7 +41,7 @@ describe('the packet as data', () => {
 describe('scoring a check', () => {
   it('counts correct, error and unread words out of the sheet', () => {
     const c = check({ skills: ['cvc'], results: { cvc: { hat: 'correct', big: 'correct', hug: 'error', pet: 'correct' } } })
-    expect(scoreSkill(c, 'cvc')).toEqual({ skill: 'cvc', correct: 3, errors: 1, unread: 16, total: 20, pct: 15, automatic: false })
+    expect(scoreSkill(c, 'cvc')).toEqual({ skill: 'cvc', correct: 3, partial: 0, errors: 1, unread: 16, total: 20, pct: 15 })
   })
   it('returns null for a sheet that was not part of the sitting', () => {
     const c = check({ skills: ['cvc'], results: { digraphs: { shop: 'correct' } } })
@@ -54,9 +54,20 @@ describe('scoring a check', () => {
     const c = check({ skills: ['cvc'], results: { cvc: { ...firstN('cvc', 20), zog: 'error' } } })
     expect(scoreSkill(c, 'cvc')).toMatchObject({ correct: 20, errors: 1, total: 21, pct: 95 })
   })
-  it('carries the automatic tick from the observations', () => {
-    const c = check({ skills: ['cvc'], results: { cvc: firstN('cvc', 20) }, observations: { cvc: ['automatic', 'pattern:short a'] } })
-    expect(scoreSkill(c, 'cvc')!.automatic).toBe(true)
+  it('a partly counts half a word, in the score and in the text', () => {
+    const c = check({ skills: ['cvc'], results: { cvc: { hat: 'correct', big: 'partial', hug: 'error' } } })
+    const s = scoreSkill(c, 'cvc')!
+    expect(s).toMatchObject({ correct: 1, partial: 1, errors: 1, unread: 17, pct: 8 })
+    expect(scoreText(s)).toBe('1½/20')
+    expect(halfText(17, 2)).toBe('18')
+    expect(halfText(17, 3)).toBe('18½')
+    expect(isMiss('partial')).toBe(true)
+    expect(isMiss('correct')).toBe(false)
+  })
+  it('the observations never move the score', () => {
+    const plain = check({ skills: ['cvc'], results: { cvc: firstN('cvc', 18) } })
+    const ticked = check({ skills: ['cvc'], results: { cvc: firstN('cvc', 18) }, observations: { cvc: ['automatic', 'pattern:short a'] } })
+    expect(scoreSkill(ticked, 'cvc')).toEqual(scoreSkill(plain, 'cvc'))
   })
   it('scoreCheck follows packet order whatever order sheets were saved in', () => {
     const c = check({ skills: ['vowel_teams', 'cvc'] })
@@ -65,11 +76,11 @@ describe('scoring a check', () => {
 })
 
 describe('the packet rubric', () => {
-  it('bands: 18 of 20 is proficient, mastered when automatic; 14 developing; 13 beginning', () => {
-    expect(phonicsBand({ pct: 90, automatic: false })).toBe('proficient')
-    expect(phonicsBand({ pct: 90, automatic: true })).toBe('mastered')
-    expect(phonicsBand({ pct: 70, automatic: true })).toBe('developing')
-    expect(phonicsBand({ pct: 65, automatic: false })).toBe('beginning')
+  it('bands: 18 of 20 is mastered; 14 developing; 13 beginning', () => {
+    expect(phonicsBand({ pct: 90 })).toBe('mastered')
+    expect(phonicsBand({ pct: 89 })).toBe('developing')
+    expect(phonicsBand({ pct: 70 })).toBe('developing')
+    expect(phonicsBand({ pct: 65 })).toBe('beginning')
   })
 })
 
@@ -90,7 +101,6 @@ describe('latest result per sheet', () => {
     const c = check({
       skills: ['cvc', 'digraphs', 'silent_e', 'vowel_teams'],
       results: { cvc: firstN('cvc', 20), digraphs: firstN('digraphs', 14), silent_e: firstN('silent_e', 20), vowel_teams: firstN('vowel_teams', 4) },
-      observations: { cvc: ['automatic'] },
     })
     const latest = latestBySkill([c])
     expect(summarizeStudent(latest)).toEqual({ tested: 4, secure: 2, developing: 1, beginning: 1, frontier: 'digraphs', highestSecure: 'silent_e', lastDate: '2026-11-10' })
@@ -103,14 +113,16 @@ describe('latest result per sheet', () => {
 })
 
 describe('marking tiles', () => {
-  it('cycles nothing → correct → error → nothing', () => {
+  it('cycles nothing → correct → error → partial → nothing', () => {
     expect(nextMark(undefined)).toBe('correct')
     expect(nextMark('correct')).toBe('error')
-    expect(nextMark('error')).toBeUndefined()
+    expect(nextMark('error')).toBe('partial')
+    expect(nextMark('partial')).toBeUndefined()
   })
-  it('finds the longest run of errors in sheet order', () => {
+  it('finds the longest run of errors in sheet order; a partly breaks the run', () => {
     const words = ['a', 'b', 'c', 'd', 'e', 'f']
     expect(longestErrorRun(words, { a: 'error', b: 'error', c: 'correct', d: 'error', e: 'error', f: 'error' })).toBe(3)
+    expect(longestErrorRun(words, { a: 'error', b: 'error', c: 'partial', d: 'error', e: 'error', f: 'error' })).toBe(3)
     expect(longestErrorRun(words, { a: 'correct' })).toBe(0)
   })
 })
@@ -139,8 +151,13 @@ describe('attempts over time', () => {
     expect(h.find(x => x.word === 'zip')).toMatchObject({ misses: 2, marks: ['error', 'error', 'correct'] })
   })
   it('a word not read on one attempt shows as undefined, not an error', () => {
-    const partial = check({ id: 'p', date: '2026-12-01', skills: ['cvc'], results: { cvc: { hat: 'correct', big: 'error' } } })
-    const h = wordHistory([a, partial], 'cvc')
+    const short = check({ id: 'p', date: '2026-12-01', skills: ['cvc'], results: { cvc: { hat: 'correct', big: 'error' } } })
+    const h = wordHistory([a, short], 'cvc')
     expect(h.find(x => x.word === 'win')!.marks).toEqual(['error', undefined])
+  })
+  it('a partly counts as a miss in the word history', () => {
+    const d = check({ id: 'd', date: '2026-12-01', skills: ['cvc'], results: { cvc: { ...firstN('cvc', 20), hat: 'partial' } } })
+    const h = wordHistory([d], 'cvc')
+    expect(h).toEqual([{ word: 'hat', marks: ['partial'], misses: 1 }])
   })
 })

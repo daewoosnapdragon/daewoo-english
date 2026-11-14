@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { fetchAll } from '@/lib/fetchAll'
 import { logActivity } from '@/lib/activity'
-import { PHONICS_CONTENT_VERSION, type PhonicsCheckRow, type PhonicsMark } from '@/lib/phonics'
+import { PHONICS_CONTENT_VERSION, isMiss, type PhonicsCheckRow, type PhonicsMark } from '@/lib/phonics'
 
 // ─── Phonics checks: reads and writes ────────────────────────────
 // The table is supabase/migrations/20261110_phonics_checks.sql. Rows come
@@ -53,7 +53,7 @@ export async function savePhonicsCheck(input: PhonicsCheckInput, id?: string, st
   input.skills.forEach(s => {
     results[s] = input.results[s] || {}
     const h: Record<string, string> = {}
-    Object.entries(input.heard[s] || {}).forEach(([w, said]) => { if (results[s][w] === 'error' && said.trim()) h[w] = said.trim() })
+    Object.entries(input.heard[s] || {}).forEach(([w, said]) => { if (isMiss(results[s][w]) && said.trim()) h[w] = said.trim() })
     heard[s] = h
     observations[s] = input.observations[s] || []
   })

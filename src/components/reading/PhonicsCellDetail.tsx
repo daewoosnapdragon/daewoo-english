@@ -5,11 +5,13 @@ import type { Student } from '@/types'
 import { getDisplayName } from '@/lib/utils'
 import {
   PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
-  phonicsSkill, phonicsBand, scoreSkill, sortChecksAsc, wordHistory,
-  type PhonicsCheckRow,
+  phonicsSkill, phonicsBand, scoreSkill, sortChecksAsc, wordHistory, scoreText, isMiss,
+  type PhonicsCheckRow, type PhonicsMark,
 } from '@/lib/phonics'
-import { BAND_TONE, BAND_CHIP, fmtShort, fmtLong } from '@/components/reading/phonicsTones'
-import { Check, Pencil, X } from 'lucide-react'
+import { BAND_TONE, BAND_CHIP, MARK_TILE, MARK_SOFT, MARK_LABEL, fmtShort, fmtLong } from '@/components/reading/phonicsTones'
+import { Check, Minus, Pencil, X } from 'lucide-react'
+
+const markIcon = (m: PhonicsMark | undefined, size: number) => m === 'correct' ? <Check size={size} /> : m === 'partial' ? <Minus size={size} /> : m === 'error' ? <X size={size} /> : null
 
 // ─── One sheet, one student: every attempt ───────────────────────
 // Opened from a heat map cell or a progress grid cell. Shows the attempt
@@ -46,7 +48,7 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
             <h3 className="font-display text-[22px] leading-tight text-ink mt-1">{lang === 'ko' ? sk.label_ko : sk.label}</h3>
             <p className="text-[12.5px] text-ink-2 mt-1">
               <span className={`inline-block px-2 py-0.5 rounded-full text-[10.5px] font-semibold mr-2 ${BAND_TONE[band]}`} title={PHONICS_BAND_LABELS[band].means}>{PHONICS_BAND_LABELS[band][lang]}</span>
-              {score.correct} / {score.total} · {score.pct}% · {fmtLong(showing.date, lang)}{score.unread > 0 && <span className="text-ink-3"> · {score.unread} {lang === 'ko' ? '미읽음' : 'not read'}</span>}
+              {scoreText(score)} · {score.pct}%{score.partial > 0 && <span className="text-ink-3"> · {score.partial} {lang === 'ko' ? '부분 정답' : 'partly'}</span>} · {fmtLong(showing.date, lang)}{score.unread > 0 && <span className="text-ink-3"> · {score.unread} {lang === 'ko' ? '미읽음' : 'not read'}</span>}
             </p>
           </div>
           <button onClick={onClose} aria-label="Close" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={15} /></button>
@@ -57,7 +59,7 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
               <p className="eyebrow mb-1.5">{lang === 'ko' ? '시도' : 'Attempts'} · {history.length}</p>
               <div className="flex flex-wrap gap-1.5">
                 {history.map(c => { const s = scoreSkill(c, skill)!; const b = phonicsBand(s); return (
-                  <button key={c.id} onClick={() => setShowingId(c.id)} className={`px-2 py-1 rounded border text-[11.5px] tabular-nums ${c.id === showing.id ? 'ring-2 ring-ink/40' : ''} ${BAND_CHIP[b]}`}>{fmtShort(c.date, lang)} · {s.correct}/{s.total}</button>
+                  <button key={c.id} onClick={() => setShowingId(c.id)} className={`px-2 py-1 rounded border text-[11.5px] tabular-nums ${c.id === showing.id ? 'ring-2 ring-ink/40' : ''} ${BAND_CHIP[b]}`}>{fmtShort(c.date, lang)} · {scoreText(s)}</button>
                 ) })}
               </div>
             </div>
@@ -68,9 +70,9 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
               {[...sk.words, ...Object.keys(marks).filter(w => !sk.words.includes(w))].map(w => {
                 const m = marks[w]
                 return (
-                  <span key={w} className={`inline-flex flex-col items-center px-2.5 py-1 rounded border font-serif text-[15px] leading-tight ${m === 'correct' ? 'bg-good-soft border-good/30 text-good' : m === 'error' ? 'bg-bad-soft border-bad/30 text-bad' : 'bg-paper-2 border-rule text-ink-3'}`}>
-                    <span className="inline-flex items-center gap-1">{w}{m === 'correct' ? <Check size={11} /> : m === 'error' ? <X size={11} /> : null}</span>
-                    {m === 'error' && heard[w] && <span className="font-sans text-[10.5px] italic opacity-80">“{heard[w]}”</span>}
+                  <span key={w} title={m ? MARK_LABEL[m][lang] : undefined} className={`inline-flex flex-col items-center px-2.5 py-1 rounded border font-serif text-[15px] leading-tight ${m ? MARK_TILE[m] : 'bg-paper-2 border-rule text-ink-3'}`}>
+                    <span className="inline-flex items-center gap-1">{w}{markIcon(m, 11)}</span>
+                    {isMiss(m) && heard[w] && <span className="font-sans text-[10.5px] italic opacity-80">“{heard[w]}”</span>}
                   </span>
                 )
               })}
@@ -102,8 +104,8 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
                       <td className="pr-3 py-1 font-serif text-[14px] text-ink">{h.word}</td>
                       {h.marks.map((m, i) => (
                         <td key={i} className="px-1 py-1 text-center">
-                          <span className={`inline-flex items-center justify-center w-5 h-5 rounded-sm ${m === 'correct' ? 'bg-good-soft text-good' : m === 'error' ? 'bg-bad-soft text-bad' : 'bg-paper-2 text-ink-3/50'}`}>
-                            {m === 'correct' ? <Check size={11} /> : m === 'error' ? <X size={11} /> : '·'}
+                          <span title={m ? MARK_LABEL[m][lang] : undefined} className={`inline-flex items-center justify-center w-5 h-5 rounded-sm ${m ? MARK_SOFT[m] : 'bg-paper-2 text-ink-3/50'}`}>
+                            {markIcon(m, 11) || '·'}
                           </span>
                         </td>
                       ))}

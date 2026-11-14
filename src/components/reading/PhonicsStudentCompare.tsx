@@ -5,7 +5,7 @@ import type { Student } from '@/types'
 import { getDisplayName } from '@/lib/utils'
 import {
   PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
-  phonicsSkill, phonicsBand, type LatestBySkill, type PhonicsCheckRow,
+  phonicsSkill, phonicsBand, scoreText, type LatestBySkill, type PhonicsCheckRow,
 } from '@/lib/phonics'
 import type { LevelFlag, MasteryPosition } from '@/lib/phonicsCompare'
 import { BAND_TONE, fmtShort } from '@/components/reading/phonicsTones'
@@ -23,9 +23,9 @@ const CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camellia: 'bg
 
 export const MAX_COMPARE = 6
 
-export default function PhonicsStudentCompare({ students, latestByStudent, checksById, pos, flags, basisWord, lang, onClose, onRemove, onOpenStudent }: {
+export default function PhonicsStudentCompare({ students, latestByStudent, checksById, pos, flags, lang, onClose, onRemove, onOpenStudent }: {
   students: Student[]; latestByStudent: Record<string, LatestBySkill>; checksById: Record<string, PhonicsCheckRow>
-  pos: Record<string, MasteryPosition>; flags: Record<string, LevelFlag>; basisWord: string; lang: 'en' | 'ko'
+  pos: Record<string, MasteryPosition>; flags: Record<string, LevelFlag>; lang: 'en' | 'ko'
   onClose: () => void; onRemove: (id: string) => void; onOpenStudent: (s: Student) => void
 }) {
   const [allSheets, setAllSheets] = useState(false)
@@ -76,7 +76,7 @@ export default function PhonicsStudentCompare({ students, latestByStudent, check
                       </div>
                       <span className="flex items-center gap-1 text-[11px] text-ink-2 mt-1"><span className={`w-2 h-2 rounded-full ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{lang === 'ko' ? `${s.grade}학년` : `G${s.grade}`} · {s.english_class}</span>
                       {p?.tested ? (
-                        <span className="block text-[11px] text-ink mt-1" title={p.through ? `${basisWord} through ${phonicsSkill(p.through)?.label}` : ''}>
+                        <span className="block text-[11px] text-ink mt-1" title={p.through ? `Mastered through ${phonicsSkill(p.through)?.label}` : ''}>
                           <span className="font-semibold">{p.position}</span>/20 {p.through ? phonicsSkill(p.through)?.short : ''}
                           {p.gaps.length > 0 && <AlertTriangle size={10} className="inline text-warn ml-1" />}
                           <span className="text-ink-3"> · {lang === 'ko' ? `${p.testedThrough}번까지` : `to ${p.testedThrough}`}</span>
@@ -106,9 +106,9 @@ export default function PhonicsStudentCompare({ students, latestByStudent, check
                           return (
                             <td key={s.id} className="px-2 py-1 border-l border-rule">
                               <div className={`h-7 rounded-sm px-2 flex items-center justify-between gap-1 ${BAND_TONE[band]}`}
-                                title={`${sk.label}: ${l.score.correct}/${l.score.total} · ${PHONICS_BAND_LABELS[band].en} · ${fmtShort(l.date, lang)}${trouble.length ? `\nTrouble: ${trouble.join(', ')}` : ''}`}>
+                                title={`${sk.label}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[band].en} · ${fmtShort(l.date, lang)}${trouble.length ? `\nTrouble: ${trouble.join(', ')}` : ''}`}>
                                 <span className="font-semibold">{l.score.pct}%</span>
-                                <span className="text-[10px] opacity-75">{l.score.correct}/{l.score.total}</span>
+                                <span className="text-[10px] opacity-75">{scoreText(l.score)}</span>
                               </div>
                               {trouble.length > 0 && <span className="block text-[10px] text-ink-3 truncate mt-0.5" title={trouble.join(', ')}>{trouble.join(', ')}</span>}
                             </td>

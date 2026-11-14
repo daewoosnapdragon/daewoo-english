@@ -16,9 +16,9 @@ const CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camellia: 'bg
 const DOT = 11
 const x = (p: number) => `${(p / 20) * 100}%`
 
-export default function PhonicsLevelingStrip({ title, lanes, students, pos, flags, basisWord, lang, onOpenStudent }: {
+export default function PhonicsLevelingStrip({ title, lanes, students, pos, flags, lang, onOpenStudent }: {
   title: string; lanes: Lane[]; students: Record<string, Student>; pos: Record<string, MasteryPosition>; flags: Record<string, LevelFlag>
-  basisWord: string; lang: 'en' | 'ko'; onOpenStudent: (s: Student) => void
+  lang: 'en' | 'ko'; onOpenStudent: (s: Student) => void
 }) {
   return (
     <div className="border border-rule-2 rounded-md bg-surface px-3 pt-2 pb-1 mb-3">
@@ -50,7 +50,7 @@ export default function PhonicsLevelingStrip({ title, lanes, students, pos, flag
                 const ring = f ? (f.dir === 'up' ? 'ring-2 ring-good ring-offset-1 ring-offset-surface' : `ring-2 ${f.unsure ? 'ring-warn' : 'ring-bad'} ring-offset-1 ring-offset-surface`) : ''
                 return (
                   <button key={id} onClick={() => onOpenStudent(s)}
-                    title={`${s.english_name} · ${s.english_class}\n${ps.position} of 20 · ${ps.through ? `${basisWord} through ${phonicsSkill(ps.through)?.label}` : `nothing ${basisWord} yet`} · tested to ${ps.testedThrough}${f ? `\n${f.dir === 'up' ? '↑' : '↓'} reads like ${f.likeClass} (median ${f.likeMedian})${f.unsure ? ' · not tested past this point' : ''}` : ''}`}
+                    title={`${s.english_name} · ${s.english_class}\n${ps.position} of 20 · ${ps.through ? `mastered through ${phonicsSkill(ps.through)?.label}` : 'nothing mastered yet'} · tested to ${ps.testedThrough}${f ? `\n${f.dir === 'up' ? '↑' : '↓'} reads like ${f.likeClass} (median ${f.likeMedian})${f.unsure ? ' · not tested past this point' : ''}` : ''}`}
                     className={`absolute rounded-full ${CLASS_DOT[s.english_class] || 'bg-ink-3'} ${ring} hover:scale-125 transition-transform`}
                     style={{ width: DOT, height: DOT, left: x(Number(p)), marginLeft: -DOT / 2, bottom: 4 + k * (DOT + 2) }} aria-label={getDisplayName(s)} />
                 )
