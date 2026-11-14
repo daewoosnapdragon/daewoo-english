@@ -47,27 +47,45 @@ export interface BuilderSelection {
 export function homeSentence(text: string): string {
   const t = (text || '').trim()
   if (!t) return ''
-  const first = t[0]
-  const rest = t.slice(1)
-  // Keep a capital that starts a name or a placeholder.
-  const keep = /^[{A-Z]/.test(t) && !/^(Read|Write|Ask|Listen|Practise|Practice|Keep|Make|Say|Count|Finish|Join|Use|Rewrite|Record|Sort|Build|Find|Hunt|Spell|Clap|Label|Give|Review|Trace|Three|One|Each|When|After)\b/.test(t)
-  return `At home, ${keep ? first : first.toLowerCase()}${rest}`
+  // The first word loses its capital unless it is a placeholder, "I", or a proper noun.
+  const keep = /^[{]/.test(t) || /^(I|I'm|I'll|English|Korean)\b/.test(t)
+  return `At home, ${keep ? t[0] : t[0].toLowerCase()}${t.slice(1)}`
+}
+
+/**
+ * A paragraph of bank sentences each starts with the name. With a pronoun
+ * known, the second and third sentence-opening names become the pronoun
+ * ("{name}'s" → "{his}"), the fourth uses the name again, and so on, so a
+ * paragraph does not read "Sophia… Sophia… Sophia…". Placeholders only;
+ * fillPhrase does the words and the capitals.
+ */
+export function varyNames(paragraph: string, hasPronoun: boolean): string {
+  if (!hasPronoun) return paragraph
+  const parts = (paragraph || '').split(/(?<=[.!?])\s+/)
+  return parts.map((s, i) => {
+    if (i % 3 === 0) return s
+    if (/^\{name\}'s\b/.test(s)) return s.replace(/^\{name\}'s/, '{his}')
+    if (/^\{name\}(?=\s|$)/.test(s)) return s.replace(/^\{name\}/, '{he}')
+    return s
+  }).join(' ')
 }
 
 /** The draft, filled for the student, paragraphs separated by a blank line. */
 export function assembleComment(sel: BuilderSelection, student: { name: string; pronoun: Pronoun | null }): string {
   const fill = (s: string) => fillPhrase(s, student)
+  const hasPronoun = !!student.pronoun
+  const para = (raw: string[]) => fill(varyNames(raw.join(' '), hasPronoun))
   const paras: string[] = []
   const first: string[] = []
-  if (sel.opener) first.push(fill(sel.opener))
+  if (sel.opener) first.push(sel.opener)
   const [strongest, ...others] = sel.areas.filter(a => a.sentences.length > 0)
-  if (strongest) first.push(...strongest.sentences.map(fill))
-  if (first.length) paras.push(first.join(' '))
-  const middle = others.flatMap(a => a.sentences.map(fill))
-  if (middle.length) paras.push(middle.join(' '))
-  if (sel.behavior.length) paras.push(sel.behavior.map(fill).join(' '))
-  const steps = [...sel.nextSteps.map(fill), ...sel.home.map(h => fill(homeSentence(h)))]
-  if (steps.length) paras.push(steps.join(' '))
+  if (strongest) first.push(...strongest.sentences)
+  if (first.length) paras.push(para(first))
+  const middle = others.flatMap(a => a.sentences)
+  if (middle.length) paras.push(para(middle))
+  if (sel.behavior.length) paras.push(para(sel.behavior))
+  const steps = [...sel.nextSteps, ...sel.home.map(homeSentence)]
+  if (steps.length) paras.push(para(steps))
   if (sel.closer) paras.push(fill(sel.closer))
   return paras.join('\n\n')
 }

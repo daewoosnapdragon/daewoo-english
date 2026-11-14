@@ -1121,7 +1121,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 behaviorGrade={d.behaviorGrade} wida={d.facts.wida?.level ?? null} doc="report_card"
                 classComments={Object.entries(classComments).filter(([id, c]) => id !== studentId && c.text).map(([, c]) => c.text)}
                 existingText={comment} classKey={{ cls: d.semesterClass || s.english_class, grade: Number(d.semesterGrade || s.grade), semester }} assessedCodes={d.assessedCodes}
-                onInsert={putDraft} onClose={() => setBuilderOpen(false)} />
+                facts={{ cwpmNow: d.facts.readingNow?.cwpm ?? null, cwpmThen: d.facts.readingThen?.cwpm ?? null, levelNow: d.facts.readingNow?.level ?? null, levelThen: d.facts.readingThen?.level ?? null, absences: d.attCounts.absent, rubric: d.rubrics[0] ? Object.fromEntries(d.rubrics[0].criteria.filter(c => c.score != null).map(c => [c.label, c.score as number])) : null }}
+                onSetPronoun={savePronoun} onInsert={putDraft} onClose={() => setBuilderOpen(false)} />
             )}
           </div>
         </div>

@@ -11,6 +11,8 @@ import { loadTaughtSources, saveTaughtPicks, type TaughtSources } from '@/lib/ta
 import { skillsOf, AREA_FAMILIES } from '@/lib/phraseSkills'
 import { SKILLS } from '@/components/curriculum/standards-plain'
 import { readSpelling, saveSpelling, spell, type Spelling } from '@/lib/spelling'
+import { fillKnownBlanks, type KnownFacts } from '@/lib/phraseFacts'
+import { PRONOUNS } from '@/lib/phrases'
 import { fillPhrase } from '@/lib/phrases'
 import { X } from 'lucide-react'
 
@@ -40,6 +42,10 @@ export interface CommentBuilderProps {
   classKey: { cls: string; grade: number; semester: { id: string; start_date?: string | null; end_date?: string | null } }
   /** CCSS codes tagged on this class's assessments this semester. */
   assessedCodes: string[]
+  /** Numbers the fact sheet knows, so sentences with blanks for them arrive filled. */
+  facts: KnownFacts
+  /** Sets the student's pronoun from the builder's own buttons. */
+  onSetPronoun: (p: Pronoun) => void
   onInsert: (text: string, mode: 'replace' | 'append') => void
   onClose: () => void
 }
@@ -72,7 +78,7 @@ function Section({ title, aside, children }: { title: React.ReactNode; aside?: R
   )
 }
 
-export default function CommentBuilder({ student, scores, behaviorGrade, wida, doc, classComments, existingText, classKey, assessedCodes, onInsert, onClose }: CommentBuilderProps) {
+export default function CommentBuilder({ student, scores, behaviorGrade, wida, doc, classComments, existingText, classKey, assessedCodes, facts, onSetPronoun, onInsert, onClose }: CommentBuilderProps) {
   const [rows, setRows] = useState<Phrase[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -115,6 +121,8 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
   const usable = useMemo(() => usablePhrases(rows, doc, gradeBand(student.grade)), [rows, doc, student.grade])
   const counts = useMemo(() => usageCounts(usable.filter(p => p.kind !== 'ladder'), classComments), [usable, classComments])
   const fill = (t: string) => spell(fillPhrase(t, { name: student.name, pronoun: student.pronoun }), spelling)
+  /** A phrase's text with the blanks the app knows already filled. */
+  const textOf = (p: Phrase) => fillKnownBlanks(p.seed_key, p.text, facts)
   const byId = useMemo(() => new Map(usable.map(p => [p.id, p])), [usable])
 
   const order = areaOrder(scores, AREAS)
@@ -134,8 +142,8 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
 
   const selection = useMemo(() => ({
     opener: opener ? byId.get(opener)?.text || null : null,
-    areas: order.map(a => ({ area: a, sentences: usable.filter(p => p.kind === 'sentence' && p.area === a && checked[p.id]).map(p => p.text) })),
-    behavior: usable.filter(p => p.kind === 'sentence' && p.area === 'behavior' && checked[p.id]).map(p => p.text),
+    areas: order.map(a => ({ area: a, sentences: usable.filter(p => p.kind === 'sentence' && p.area === a && checked[p.id]).map(textOf) })),
+    behavior: usable.filter(p => p.kind === 'sentence' && p.area === 'behavior' && checked[p.id]).map(textOf),
     nextSteps: usable.filter(p => p.kind === 'ladder' && checked[`${p.id}:c`]).map(p => p.text),
     home: usable.flatMap(p => p.kind === 'ladder' ? [checked[`${p.id}:1`] && p.home1, checked[`${p.id}:2`] && p.home2].filter(Boolean) as string[] : []),
     closer: closer ? byId.get(closer)?.text || null : null,
@@ -152,9 +160,13 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
         <div className="flex items-center justify-between gap-4 px-5 py-3 bg-white" style={{ borderBottom: `1px solid ${RULE}` }}>
           <div>
             <h2 className="m-0 font-display text-[20px] leading-tight">Build a comment for {student.name}</h2>
-            <p className="m-0 text-[11.5px]" style={{ color: MUTED }}>Tick what applies. The draft at the bottom is yours to edit in the box afterwards.{sources && !knowsAnything && <span> Nothing is marked as taught for this class yet, so every sentence shows; tick skills under an area to narrow it.</span>}{!student.pronoun && <span className="text-amber-800 font-semibold"> Pronoun not set yet, so sentences keep {'{his}'} until it is.</span>}</p>
+            <p className="m-0 text-[11.5px]" style={{ color: MUTED }}>Tick what applies. The draft at the bottom is yours to edit in the box afterwards.{sources && !knowsAnything && <span> Nothing is marked as taught for this class yet, so every sentence shows; tick skills under an area to narrow it.</span>}{!student.pronoun && <span className="text-amber-800 font-semibold"> Pick a pronoun first, so the sentences fill in.</span>}</p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
+            <div className={`inline-flex items-center gap-1 text-[11px] ${student.pronoun ? '' : 'rounded-md px-1.5 py-0.5 bg-amber-50 border border-amber-200'}`} role="group" aria-label="Pronoun">
+              <span style={{ color: student.pronoun ? MUTED : '#92400e' }}>Pronoun</span>
+              {PRONOUNS.map(p => <button key={p} type="button" onClick={() => onSetPronoun(p)} aria-pressed={student.pronoun === p} className={`px-1.5 py-0.5 rounded ${student.pronoun === p ? 'bg-ink text-paper font-semibold' : 'hover:bg-[#f1f5f9]'}`} style={student.pronoun === p ? undefined : { color: MUTED }}>{p}</button>)}
+            </div>
             <div className="inline-flex items-center gap-1 text-[11px]" role="group" aria-label="Spelling">
               <span style={{ color: MUTED }}>Spelling</span>
               {(['us', 'uk'] as Spelling[]).map(s => <button key={s} type="button" onClick={() => pickSpelling(s)} aria-pressed={spelling === s} className={`px-1.5 py-0.5 rounded ${spelling === s ? 'bg-ink text-paper font-semibold' : 'hover:bg-[#f1f5f9]'}`} style={spelling === s ? undefined : { color: MUTED }}>{s === 'us' ? 'American' : 'British'}</button>)}
@@ -205,7 +217,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                     )}
                   </div>
                   <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                    {visible.map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
+                    {visible.map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(textOf(p))} count={counts[p.id]} />)}
                     {all.length === 0 && <p className="m-0" style={{ color: MUTED }}>Nothing in the bank for this yet.</p>}
                   </div>
                   {folded.length > 0 && (
@@ -228,7 +240,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                       <div key={cat}>
                         <div className="text-[10.5px] font-medium mb-1" style={{ color: MUTED }}>{cat}</div>
                         <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                          {list.filter(p => (p.category || 'Other') === cat).map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(p.text)} count={counts[p.id]} />)}
+                          {list.filter(p => (p.category || 'Other') === cat).map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(textOf(p))} count={counts[p.id]} />)}
                         </div>
                       </div>
                     ))}
