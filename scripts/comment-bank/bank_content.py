@@ -250,6 +250,13 @@ BEHAVIOR = [
     ("What happens next", "serious concern", "We are asking for your support at home: please talk with {name} about this before next semester starts."),
     ("What happens next", "serious concern", "We will be in touch during the break about how we can work on this together."),
     ("What happens next", "serious concern", "If this continues next semester, we will ask to meet with you."),
+    # Change for the worse: the serious tier's own change-over-time lines (the positive ones stay out of it).
+    ("Change over time", "serious concern", "{name}'s focus has slipped since the October progress report, and {his} work shows it."),
+    ("Change over time", "serious concern", "{name} needed few reminders in September and now needs them in most lessons."),
+    ("Change over time", "serious concern", "{name}'s homework came in every week until October and has stopped coming in since."),
+    ("Change over time", "serious concern", "{name} took part readily in September and now sits out of most speaking activities."),
+    ("Change over time", "serious concern", "{name}'s behavior toward classmates has got worse since the progress report, not better."),
+    ("Change over time", "serious concern", "The problems raised on the October progress report have not improved."),
 ]
 
 OPENERS = [

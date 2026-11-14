@@ -232,7 +232,8 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
             <Section title={<>Behavior{behaviorGrade && <span className="font-display font-medium"> {behaviorGrade}</span>}</>} aside={<TierButtons area="behavior" tiers={BEHAVIOR_TIERS} tier={tierOf('behavior')} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
               {(() => {
                 const tier = tierOf('behavior')
-                const list = leastUsedFirst(usable.filter(p => p.kind === 'sentence' && p.area === 'behavior' && (p.tier === tier || p.tier === 'change over time')), counts)
+                // The positive change-over-time lines belong to every tier but serious concern, which has its own.
+                const list = leastUsedFirst(usable.filter(p => p.kind === 'sentence' && p.area === 'behavior' && (p.tier === tier || (tier !== 'serious concern' && p.tier === 'change over time'))), counts)
                 const cats = Array.from(new Set(list.map(p => p.category || 'Other')))
                 return (
                   <div className="flex flex-col gap-2.5">
