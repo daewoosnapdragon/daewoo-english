@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { percentToLetter } from '@/lib/utils'
 import { fillPhrase, tierForScore, suggestBand, gradeBand, usageCounts, BANDS, type Band, type Pronoun, type Tier } from '@/lib/phrases'
+import { loadPhraseBank, usablePhrases, AREA_LABEL, TIER_LABEL, type Phrase } from '@/lib/phraseBank'
 import { ChevronDown, ChevronRight, X } from 'lucide-react'
 
 // ─── Phrases drawer ──────────────────────────────────────────────
@@ -16,26 +17,7 @@ import { ChevronDown, ChevronRight, X } from 'lucide-react'
 // The grey count beside a sentence is how many comments in this class
 // already contain it, so "not copied from another comment" is visible.
 
-export interface Phrase {
-  id: string; kind: 'sentence' | 'opener' | 'closer' | 'ladder'
-  area: string | null; tier: Tier | null; category: string | null; grades: '1-2' | '3-5' | 'all'; doc: 'both' | 'mid' | 'end'
-  audience: 'student' | 'parents' | null; band: Band | null; rung: string | null; text: string; home1: string | null; home2: string | null; sort_order: number
-}
-
-const AREA_LABEL: Record<string, string> = { reading: 'Reading', phonics: 'Phonics', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language', behavior: 'Behavior' }
-const TIER_LABEL: Record<Tier, string> = { strong: 'strong', 'on track': 'on track', 'needs support': 'working on it', 'change over time': 'change over time' }
 const INK = '#1e293b', MUTED = '#64748b', RULE = '#DFE4EB'
-
-let cache: Phrase[] | null = null
-let cacheError: string | null = null
-async function loadPhrases(): Promise<{ rows: Phrase[]; error: string | null }> {
-  if (cache) return { rows: cache, error: null }
-  if (cacheError) return { rows: [], error: cacheError }
-  const { data, error } = await supabase.from('comment_phrases').select('*').eq('is_active', true).order('sort_order', { ascending: true })
-  if (error) { cacheError = error.code === '42P01' || /comment_phrases/.test(error.message || '') ? 'The phrase bank is not set up yet: run supabase/migration-comment-phrases.sql, then seed-comment-phrases.sql.' : error.message; return { rows: [], error: cacheError } }
-  cache = (data || []) as Phrase[]
-  return { rows: cache, error: null }
-}
 
 export interface PhrasesDrawerProps {
   student: { id: string; name: string; pronoun: Pronoun | null; grade: number | null }
@@ -58,13 +40,11 @@ export default function PhrasesDrawer({ student, scores, wida, doc, classComment
   const [open, setOpen] = useState<Record<string, boolean>>({})
   const [bandPick, setBandPick] = useState<Band | null>(null)
 
-  useEffect(() => { let on = true; loadPhrases().then(r => { if (!on) return; setRows(r.rows); setError(r.error); setLoading(false) }); return () => { on = false } }, [])
+  useEffect(() => { let on = true; loadPhraseBank().then(r => { if (!on) return; setRows(r.rows); setError(r.error); setLoading(false) }); return () => { on = false } }, [])
 
   const fill = (t: string) => fillPhrase(t, { name: student.name, pronoun: student.pronoun })
   const gb = gradeBand(student.grade)
-  const docOk = (p: Phrase) => p.doc === 'both' || (doc === 'report_card' ? p.doc === 'end' : p.doc === 'mid')
-  const gradeOk = (p: Phrase) => p.grades === 'all' || p.grades === gb
-  const usable = useMemo(() => rows.filter(p => docOk(p) && gradeOk(p)), [rows, doc, gb]) // eslint-disable-line react-hooks/exhaustive-deps
+  const usable = useMemo(() => usablePhrases(rows, doc, gb), [rows, doc, gb])
   const counts = useMemo(() => usageCounts(usable.filter(p => p.kind !== 'ladder'), classComments), [usable, classComments])
 
   // The two areas to open on.

@@ -29,6 +29,22 @@ export function fillPhrase(text: string, student: { name: string; pronoun?: Pron
   return out
 }
 
+/**
+ * The name a student is called, from the roster's english_name: the English
+ * name in brackets when there is one ("Kim Bo Min (Sophia)" → Sophia), else
+ * the given name after the family name ("Kim Bo Min" → Bo Min, "Lee Jun" →
+ * Jun). A single word is returned as it is. A confirmed goes_by wins.
+ */
+export function goesByFrom(englishName: string | null | undefined, goesBy?: string | null): string {
+  if (goesBy && goesBy.trim()) return goesBy.trim()
+  const raw = (englishName || '').trim()
+  const m = /\(([^)]+)\)/.exec(raw)
+  if (m && m[1].trim()) return m[1].trim()
+  const words = raw.replace(/\s+/g, ' ').split(' ').filter(Boolean)
+  if (words.length <= 1) return raw
+  return words.slice(1).join(' ')
+}
+
 export type Tier = 'strong' | 'on track' | 'needs support' | 'change over time'
 
 /** Which tier a percentage points to: A range strong, B range on track, below that needs support. */

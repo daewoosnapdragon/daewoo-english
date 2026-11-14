@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'comment-builder', date: '2026-11-16', title: 'Reports: build a comment by ticking what applies',
+    body: 'You can now click Build a comment under the report card box and tick what applies on one screen: an opener, each area already on the tier the letter points to, behavior, next steps for the weakest area with the home activities, and a closer. The draft assembles at the bottom as you tick, in reading order, with the student’s name and pronouns filled in, and sentences are offered least-used-first in your class so comments do not come out alike. Put it in the box and edit it for your own voice; it is a first draft, not the comment. Called, next to Pronoun, is the name used in comments: the app suggests the English name in brackets or the given name after the family name, and you keep it or type another once.',
+    path: '/reports', guide: 'reports',
+  },
+  {
     id: 'phrases-drawer', date: '2026-11-16', title: 'Reports: the phrase bank beside the box, and a pronoun per student',
     body: 'You can now open Phrases under the report card comment box. It opens on the student’s weakest and strongest areas with sentences for the tier their letter points to, then a ladder of next steps for the weakest area, each rung a classroom line plus two things to do at home, on the band their grade and WIDA level suggest. Everything else sits collapsed below: openers, closers, every area, behavior by category. A click puts the sentence at your cursor with the name and pronouns filled in, and the grey count beside a sentence says how many comments in your class already use it. Set each student’s pronoun once, above the box or on the student page, and it is remembered. The report card no longer has Skip comment. The fact sheet now lists every rubric-scored piece this semester with each criterion’s level; tap one to read what the rubric says for the level the student got. What parents already read now shows this semester’s progress report in full and every earlier comment, newest first.',
     path: '/reports', guide: 'reports',

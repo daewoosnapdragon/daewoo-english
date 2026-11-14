@@ -23,7 +23,8 @@ import { plainName } from '@/components/curriculum/standards-plain'
 import { WIDA_LEVELS } from '@/lib/wida'
 import FactSheet, { type FactSheetFacts, type FactSheetQuote } from '@/components/reports/FactSheet'
 import PhrasesDrawer from '@/components/reports/PhrasesDrawer'
-import { insertAt, PRONOUNS, type Pronoun } from '@/lib/phrases'
+import CommentBuilder from '@/components/reports/CommentBuilder'
+import { insertAt, goesByFrom, PRONOUNS, type Pronoun } from '@/lib/phrases'
 import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
@@ -431,6 +432,10 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [classComments, setClassComments] = useState<Record<string, { text: string; skipped: boolean }>>({})
   // The pronoun the bank fills in (set once per student, remembered on the roster) and the Phrases drawer.
   const [pronoun, setPronoun] = useState<Pronoun | null>(null)
+  // The name used in comments: confirmed on the roster (goes_by) or suggested from english_name until then.
+  const [goesBy, setGoesBy] = useState<string | null>(null)
+  const [calledDraft, setCalledDraft] = useState('')
+  const [builderOpen, setBuilderOpen] = useState(false)
   const [phrasesOpen, setPhrasesOpen] = useState<boolean>(() => { try { return localStorage.getItem('daewoo_phrases_open') === '1' } catch { return false } })
   const boxRef = useRef<HTMLTextAreaElement>(null)
   const [editingGrades, setEditingGrades] = useState(false)
@@ -685,6 +690,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       facts, noticings, rubrics, quotes,
     })
     setPronoun((student as any).pronoun || null)
+    setGoesBy((student as any).goes_by || null)
+    setCalledDraft(goesByFrom(student.english_name, (student as any).goes_by))
     setComment(commentData?.text || '')
     // The report card has no Skip: every student gets a comment.
     setCommentSkipped(false)
@@ -734,9 +741,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
   // The grey line under the box.
   const hints = useMemo(() => data ? commentChecks({
-    text: commentSkipped ? '' : comment, studentName: data.student.english_name, rosterNames: students.map((x: any) => x.english_name),
+    text: commentSkipped ? '' : comment, studentName: goesByFrom(data.student.english_name, goesBy), rosterNames: students.map((x: any) => goesByFrom(x.english_name, x.goes_by)),
     otherComments: Object.entries(classComments).filter(([id, c]) => id !== studentId && c.text).map(([id, c]) => ({ text: c.text, label: students.find((x: any) => x.id === id)?.english_name || 'another student' })),
-  }) : [], [data, comment, commentSkipped, classComments, students, studentId])
+  }) : [], [data, comment, commentSkipped, classComments, students, studentId, goesBy])
 
   const savePronoun = async (p: Pronoun) => {
     const prev = pronoun
@@ -747,6 +754,22 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     logActivity('edited', `Pronoun set · ${studentName} · ${p}`)
   }
   const togglePhrases = () => { const next = !phrasesOpen; setPhrasesOpen(next); try { localStorage.setItem('daewoo_phrases_open', next ? '1' : '0') } catch {} }
+  const calledName = goesByFrom(data?.student?.english_name, goesBy)
+  const saveCalled = async () => {
+    const next = calledDraft.trim()
+    if (!next || next === calledName) { setCalledDraft(calledName); return }
+    const prev = goesBy
+    setGoesBy(next)
+    const { error } = await supabase.from('students').update({ goes_by: next, updated_at: new Date().toISOString() }).eq('id', studentId)
+    if (error) { setGoesBy(prev); setCalledDraft(goesByFrom(data?.student?.english_name, prev)); showToast(error.message?.includes('goes_by') ? 'Run supabase/migration-goes-by.sql first.' : `Error: ${error.message}`); return }
+    ;(students.find((x: any) => x.id === studentId) || {} as any).goes_by = next
+    logActivity('edited', `Called ${next} in comments · ${studentName}`)
+  }
+  const putDraft = (text: string, mode: 'replace' | 'append') => {
+    const next = mode === 'append' && comment.trim() ? `${comment.replace(/\s+$/, '')}\n\n${text}` : text
+    setComment(next); scheduleSave({ comment: next }); setBuilderOpen(false)
+    setTimeout(() => { boxRef.current?.focus() }, 0)
+  }
   // A phrase lands at the cursor, then the box gets focus back with the cursor after it.
   const insertPhrase = (sentence: string) => {
     const el = boxRef.current
@@ -1027,6 +1050,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                           className={`px-1.5 py-0.5 rounded text-[11px] ${pronoun === p ? 'bg-ink text-paper font-semibold' : 'text-[#64748b] hover:bg-[#f1f5f9]'}`}>{p}</button>
                       ))}
                     </div>
+                    <label className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+                      <span>Called</span>
+                      <input value={calledDraft} onChange={(e: any) => setCalledDraft(e.target.value)} onBlur={saveCalled} onKeyDown={(e: any) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                        aria-label="Name used in comments" className={`h-6 px-1.5 rounded border text-[11.5px] w-[120px] bg-white text-[#1e293b] outline-none focus:border-navy ${goesBy ? 'border-[#C8CED8]' : 'border-dashed border-[#94a3b8]'}`} />
+                      {!goesBy && <span className="text-[10px] text-[#94a3b8]">suggested, press Enter to keep</span>}
+                    </label>
                   </div>
                 )}
               </div>
@@ -1063,6 +1092,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               {canEdit ? (
                 <div className="print:hidden flex items-center justify-between gap-4 flex-wrap mt-3">
                   <div className="flex items-center gap-4 flex-wrap">
+                  <button type="button" onClick={() => setBuilderOpen(true)} className="text-[12px] font-semibold text-accent underline underline-offset-[3px] hover:text-accent-hover py-1">Build a comment</button>
                   <button type="button" onClick={togglePhrases} aria-expanded={phrasesOpen} className="text-[12px] text-accent underline underline-offset-[3px] hover:text-accent-hover py-1">{phrasesOpen ? 'Hide phrases' : 'Phrases'}</button>
                   <span className={`text-[11.5px] ${saveState === 'error' ? 'text-warn' : 'text-[#64748b]'}`}>
                     {saveState === 'saving' ? 'Saving…'
@@ -1085,11 +1115,19 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             </div>
             {canEdit && phrasesOpen && (
               <PhrasesDrawer className="print:hidden"
-                student={{ id: studentId, name: s.english_name, pronoun, grade: Number(d.semesterGrade || s.grade) || null }}
+                student={{ id: studentId, name: calledName, pronoun, grade: Number(d.semesterGrade || s.grade) || null }}
                 scores={Object.fromEntries(DOMAINS.map(dom => [dom, d.domainNa[dom] ? null : d.domainGrades[dom]]))}
                 wida={d.facts.wida?.level ?? null} doc="report_card"
                 classComments={Object.entries(classComments).filter(([id, c]) => id !== studentId && c.text).map(([, c]) => c.text)}
                 onInsert={insertPhrase} onClose={togglePhrases} />
+            )}
+            {canEdit && builderOpen && (
+              <CommentBuilder
+                student={{ id: studentId, name: calledName, pronoun, grade: Number(d.semesterGrade || s.grade) || null }}
+                scores={Object.fromEntries(DOMAINS.map(dom => [dom, d.domainNa[dom] ? null : d.domainGrades[dom]]))}
+                behaviorGrade={d.behaviorGrade} wida={d.facts.wida?.level ?? null} doc="report_card"
+                classComments={Object.entries(classComments).filter(([id, c]) => id !== studentId && c.text).map(([, c]) => c.text)}
+                existingText={comment} onInsert={putDraft} onClose={() => setBuilderOpen(false)} />
             )}
           </div>
         </div>

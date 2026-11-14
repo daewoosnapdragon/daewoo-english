@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fillPhrase, tierForScore, suggestBand, gradeBand, phrasePattern, usageCounts, insertAt } from '@/lib/phrases'
+import { fillPhrase, tierForScore, suggestBand, gradeBand, phrasePattern, usageCounts, insertAt, goesByFrom } from '@/lib/phrases'
 
 describe('filling a phrase', () => {
   it('fills the name and pronouns, capitalising at a sentence start', () => {
@@ -9,6 +9,21 @@ describe('filling a phrase', () => {
   })
   it('leaves pronoun holes when no pronoun is set, so the gap shows', () => {
     expect(fillPhrase('{name} reads {his} book.', { name: 'Minjun', pronoun: null })).toBe('Minjun reads {his} book.')
+  })
+})
+
+describe('the name a student goes by', () => {
+  it('takes the bracketed English name, else the given name after the family name', () => {
+    expect(goesByFrom('Kim Bo Min (Sophia)')).toBe('Sophia')
+    expect(goesByFrom('Kim Bo Min')).toBe('Bo Min')
+    expect(goesByFrom('Lee Jun')).toBe('Jun')
+    expect(goesByFrom('Park  Seo-yeon ( Ellie )')).toBe('Ellie')
+    expect(goesByFrom('Minjun')).toBe('Minjun')
+    expect(goesByFrom('')).toBe('')
+  })
+  it('lets a confirmed name win', () => {
+    expect(goesByFrom('Kim Bo Min (Sophia)', 'Bomin')).toBe('Bomin')
+    expect(goesByFrom('Kim Bo Min (Sophia)', '  ')).toBe('Sophia')
   })
 })
 

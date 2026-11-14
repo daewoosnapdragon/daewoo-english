@@ -57,6 +57,8 @@ export interface Student {
   google_drive_folder_url: string;
   /** he | she | they; set once and remembered. NULL until a teacher sets it. */
   pronoun?: 'he' | 'she' | 'they' | null;
+  /** The name used in comments, confirmed by a teacher; NULL until then (the app suggests one from english_name). */
+  goes_by?: string | null;
   needs_review: boolean;
   created_at: string;
   updated_at: string;
