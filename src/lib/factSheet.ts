@@ -144,14 +144,19 @@ function latestRubric(assessments: NoticingAssessment[], grades: NoticingGrade[]
   const top = candidates[0]
   if (!top) return null
   const a = top.a!, g = top.g
-  const labels = new Map<string, string>()
-  for (const c of a.rubric?.criteria || []) labels.set(c.key, c.label)
-  for (const q of a.question_map || []) for (const c of q.rubric?.criteria || []) labels.set(c.key, c.label)
+  // Criteria keys repeat across rubrics (a library rubric is a, b, c), so each
+  // rubric item is read against its own criteria, never a shared map.
   const parts: string[] = []
-  const seen = new Set<string>()
-  const add = (key: string, lv: number) => { if (seen.has(key)) return; seen.add(key); parts.push(`${labels.get(key) || key} ${lv}`) }
-  if (g.rubric_scores) for (const [k, v] of Object.entries(g.rubric_scores)) if (v != null) add(k, Number(v))
-  for (const r of g.item_responses || []) if (r.levels) for (const [k, v] of Object.entries(r.levels)) if (v != null) add(k, Number(v))
+  const paperCriteria = a.rubric?.criteria?.length ? a.rubric.criteria : (a.question_map || []).find(q => q.rubric?.criteria?.length)?.rubric?.criteria
+  if (paperCriteria?.length && g.rubric_scores) {
+    for (const c of paperCriteria) { const v = g.rubric_scores[c.key]; if (v != null) parts.push(`${c.label || c.key} ${Number(v)}`) }
+  }
+  for (const q of a.question_map || []) {
+    if (!q.rubric?.criteria?.length) continue
+    const r = (g.item_responses || []).find(x => x.q === q.num)
+    if (!r?.levels) continue
+    for (const c of q.rubric.criteria) { const v = r.levels[c.key]; if (v != null) parts.push(`${c.label || c.key} ${Number(v)}`) }
+  }
   if (parts.length === 0) return null
   return `${a.name}${a.date ? `, ${fmtDate(a.date)}` : ''}: ${parts.join(', ')} (out of 4).`
 }
@@ -245,23 +250,26 @@ export function rubricPieces(assessments: NoticingAssessment[], grades: Noticing
     if (g.is_absent || g.is_exempt) continue
     const a = byId.get(g.assessment_id)
     if (!a) continue
-    const crits: Array<{ c: RubricCriterion; rubricName: string | null; score: number | null }> = []
-    const seen = new Set<string>()
-    const push = (c: RubricCriterion, rubricName: string | null, score: number | null) => { if (seen.has(c.key)) return; seen.add(c.key); crits.push({ c, rubricName, score }) }
-    if (a.rubric?.criteria?.length && g.rubric_scores) {
-      for (const c of a.rubric.criteria) push(c, a.rubric.name || null, g.rubric_scores[c.key] == null ? null : Number(g.rubric_scores[c.key]))
+    // Criteria keys repeat across rubrics (a library rubric is a, b, c), so every
+    // rubric item on a paper is read against its own criteria and kept, which is
+    // how a writing task and a speaking task inside one answer-key paper both show.
+    const crits: Array<{ c: RubricCriterion; rubricName: string | null; score: number | null; itemKey: string }> = []
+    const push = (c: RubricCriterion, rubricName: string | null, score: number | null, itemKey: string) => { crits.push({ c, rubricName, score, itemKey }) }
+    const paperRubric = a.rubric?.criteria?.length ? a.rubric : (a.question_map || []).find(q => q.rubric?.criteria?.length)?.rubric
+    if (paperRubric?.criteria?.length && g.rubric_scores) {
+      for (const c of paperRubric.criteria) push(c, paperRubric.name || null, g.rubric_scores[c.key] == null ? null : Number(g.rubric_scores[c.key]), 'paper')
     }
     for (const q of a.question_map || []) {
       if (!q.rubric?.criteria?.length) continue
       const r = (g.item_responses || []).find(x => x.q === q.num)
-      for (const c of q.rubric.criteria) push(c, q.rubric.name || null, r?.levels?.[c.key] == null ? null : Number(r!.levels![c.key]))
+      for (const c of q.rubric.criteria) push(c, q.rubric.name || null, r?.levels?.[c.key] == null ? null : Number(r!.levels![c.key]), `q${q.num}`)
     }
     const scored = crits.filter(x => x.score != null)
     if (scored.length === 0) continue
     out.push({
       assessmentId: a.id, name: a.name, rubricName: crits.find(x => x.rubricName)?.rubricName || null, date: a.date || null,
-      criteria: crits.map(({ c, score }) => ({
-        key: c.key, label: c.label || c.key, standard: c.standard || null, score,
+      criteria: crits.map(({ c, score, itemKey }) => ({
+        key: `${itemKey}:${c.key}`, label: c.label || c.key, standard: c.standard || null, score,
         descriptor: score != null && score >= 1 && c.levels?.[score - 1] ? c.levels[score - 1] : null,
       })),
       earned: scored.reduce((s, x) => s + (x.score as number), 0), possible: scored.length * 4,

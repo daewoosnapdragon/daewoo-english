@@ -27,7 +27,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   },
   {
     id: 'report-card-walkthrough', date: '2026-11-16', title: 'Guide: report cards, step by step, with pictures',
-    body: 'You can now open Guide → Report cards, step by step: the whole December job screen by screen, with a picture of each step, from finishing the grades to printing, and Victoria’s rules where they apply instead of in a separate document. Print it from the Guide page if you want it on paper.',
+    body: 'You can now open Guide → Report cards, step by step: the whole job screen by screen, with a picture of each step, from opening Reports to Victoria’s approval, and the house rules where they apply. Dates and anything that changes each semester stay in that semester’s meeting notes. Print it from the Guide page if you want it on paper.',
     path: '/guide#report-cards', guide: 'reports',
   },
   {

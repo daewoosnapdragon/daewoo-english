@@ -156,7 +156,6 @@ export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, sinceMi
         </section>
       )}
 
-      <p className="m-0 text-[11px]" style={{ color: MUTED }}>Level-test placement is left off this sheet on purpose.</p>
     </aside>
   )
 }

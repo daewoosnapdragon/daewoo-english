@@ -103,6 +103,20 @@ describe('rubric pieces with descriptors', () => {
     expect(dd.earned).toBe(3); expect(dd.possible).toBe(8)
     expect(p[1].criteria.map(c => c.descriptor)).toEqual(['ideas 4', 'order 2'])
   })
+  it('keeps every rubric item on an answer-key paper even when their criteria share keys', () => {
+    const paper = [{ id: 'mix', name: 'Unit 5 paper', date: '2026-11-12', question_map: [
+      { num: 1, max_points: 1, standard: 'RL.4.1' },
+      { num: 2, type: 'rubric', max_points: 8, rubric: { name: 'Writing', criteria: [{ key: 'a', label: 'Ideas', levels: LV('ideas') }, { key: 'b', label: 'Organization', levels: LV('order') }] } },
+      { num: 3, type: 'rubric', max_points: 8, rubric: { name: 'Speaking', criteria: [{ key: 'a', label: 'Clarity', levels: LV('clear') }, { key: 'b', label: 'Volume', levels: LV('loud') }] } },
+    ] }]
+    const p = rubricPieces(paper, [{ assessment_id: 'mix', item_responses: [{ q: 1, points: 1, max: 1 }, { q: 2, points: 6, max: 8, levels: { a: 4, b: 2 } }, { q: 3, points: 7, max: 8, levels: { a: 3, b: 4 } }] }])
+    expect(p).toHaveLength(1)
+    expect(p[0].criteria.map(c => [c.label, c.score, c.descriptor])).toEqual([['Ideas', 4, 'ideas 4'], ['Organization', 2, 'order 2'], ['Clarity', 3, 'clear 3'], ['Volume', 4, 'loud 4']])
+    expect(new Set(p[0].criteria.map(c => c.key)).size).toBe(4)
+    expect(p[0].earned).toBe(13); expect(p[0].possible).toBe(16)
+    const n = noticings({ cur: {}, na: {}, midterm: null, prev: null, assessments: paper, grades: [{ assessment_id: 'mix', item_responses: [{ q: 2, points: 6, max: 8, levels: { a: 4, b: 2 } }, { q: 3, points: 7, max: 8, levels: { a: 3, b: 4 } }] }], readingNotes: [], behaviorLogs: [], absences: 0, tardies: 0 })
+    expect(n).toContain('Unit 5 paper, 12 Nov: Ideas 4, Organization 2, Clarity 3, Volume 4 (out of 4).')
+  })
   it('skips absent papers and pieces with nothing scored', () => {
     expect(rubricPieces(assessments, [{ assessment_id: 'dd', is_absent: true, rubric_scores: { listening: 3 } }, { assessment_id: 'dd', rubric_scores: {} }])).toEqual([])
   })
