@@ -23,6 +23,8 @@ import { X } from 'lucide-react'
 
 const AREAS = ['reading', 'phonics', 'writing', 'speaking', 'language']
 const TIERS: Tier[] = ['strong', 'on track', 'needs support']
+// Behavior has a fourth tier for behavior that is genuinely bad; the builder opens on it when the behavior grade is D or below.
+const BEHAVIOR_TIERS: Tier[] = ['strong', 'on track', 'needs support', 'serious concern']
 const INK = '#1e293b', MUTED = '#64748b', RULE = '#DFE4EB'
 
 export interface CommentBuilderProps {
@@ -53,10 +55,10 @@ function Check({ k, text, count, checked, toggle }: { k: string; text: string; c
     </label>
   )
 }
-function TierButtons({ area, tier, pick }: { area: string; tier: Tier; pick: (area: string, t: Tier) => void }) {
+function TierButtons({ area, tier, pick, tiers = TIERS }: { area: string; tier: Tier; pick: (area: string, t: Tier) => void; tiers?: Tier[] }) {
   return (
     <span className="inline-flex gap-1">
-      {TIERS.map(t => <button key={t} type="button" onClick={() => pick(area, t)} className={`px-1.5 py-0.5 rounded text-[10.5px] font-medium ${tier === t ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={tier === t ? undefined : { color: MUTED }}>{TIER_LABEL[t]}</button>)}
+      {tiers.map(t => <button key={t} type="button" onClick={() => pick(area, t)} className={`px-1.5 py-0.5 rounded text-[10.5px] font-medium ${tier === t ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={tier === t ? undefined : { color: MUTED }}>{TIER_LABEL[t]}</button>)}
     </span>
   )
 }
@@ -205,7 +207,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
               )
             })}
 
-            <Section title={<>Behavior{behaviorGrade && <span className="font-display font-medium"> {behaviorGrade}</span>}</>} aside={<TierButtons area="behavior" tier={tierOf('behavior')} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
+            <Section title={<>Behavior{behaviorGrade && <span className="font-display font-medium"> {behaviorGrade}</span>}</>} aside={<TierButtons area="behavior" tiers={BEHAVIOR_TIERS} tier={tierOf('behavior')} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
               {(() => {
                 const tier = tierOf('behavior')
                 const list = leastUsedFirst(usable.filter(p => p.kind === 'sentence' && p.area === 'behavior' && (p.tier === tier || p.tier === 'change over time')), counts)

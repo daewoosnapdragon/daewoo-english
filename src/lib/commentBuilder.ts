@@ -21,13 +21,14 @@ export function areaOrder(scores: Record<string, number | null>, areas: string[]
   return [...graded, ...rest]
 }
 
-/** A behavior letter maps to a tier like a percentage would. */
+/** A behavior letter maps to a tier: A strong, B on track, C working on it, D or E serious concern. */
 export function tierForBehaviorGrade(letter: string | null | undefined): Tier {
   if (!letter) return 'on track'
   const l = letter.trim().toUpperCase()
   if (l.startsWith('A')) return 'strong'
   if (l.startsWith('B')) return 'on track'
-  return 'needs support'
+  if (l.startsWith('C')) return 'needs support'
+  return 'serious concern'
 }
 
 export interface BuilderSelection {

@@ -45,7 +45,8 @@ export function goesByFrom(englishName: string | null | undefined, goesBy?: stri
   return words.slice(1).join(' ')
 }
 
-export type Tier = 'strong' | 'on track' | 'needs support' | 'change over time'
+/** 'serious concern' exists for behavior only: plain statements for behavior that is genuinely bad. */
+export type Tier = 'strong' | 'on track' | 'needs support' | 'change over time' | 'serious concern'
 
 /** Which tier a percentage points to: A range strong, B range on track, below that needs support. */
 export function tierForScore(score: number | null | undefined): Tier | null {

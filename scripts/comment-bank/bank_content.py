@@ -1,6 +1,6 @@
 # Draft comment bank, Fall 2026. Placeholders: {name} {he} {his} {him}. Blanks: ____
 # Each descriptive row: (area, tier, grades, when, sentence)
-#   tier: strong | on track | needs support | change over time
+#   tier: strong | on track | needs support | change over time | serious concern (behavior only)
 #   grades: 1-2 | 3-5 | all
 #   when: both | mid | end
 
@@ -222,6 +222,34 @@ BEHAVIOR = [
     ("Change over time", "change over time", "{name} has become much more confident speaking in class since September."),
     ("Change over time", "change over time", "{name} needed many reminders in September and now needs very few."),
     ("Change over time", "change over time", "{name}'s homework has come in every week since the progress report, which has helped {his} grades."),
+
+    # Serious concern: for behavior that is genuinely bad. Plain statements of what happens, its effect,
+    # and what must change. No labels, no comparisons with other students, no softening.
+    ("Focus", "serious concern", "{name} talks while the teacher is explaining, most lessons, and misses the instructions as a result."),
+    ("Focus", "serious concern", "{name} is off task for much of each lesson, and {his} work is often unfinished because of it."),
+    ("Focus", "serious concern", "{name} distracts the students near {him} most days. We have moved {his} seat more than once, and this needs to change next semester."),
+    ("Participation", "serious concern", "{name} refuses to take part in speaking activities and does not answer when called on. This is now affecting {his} speaking grade."),
+    ("Participation", "serious concern", "{name} calls out and interrupts in most lessons, even after several reminders in the same lesson."),
+    ("Participation", "serious concern", "{name} speaks Korean through most of English class, even after reminders, and {his} English is not improving as a result."),
+    ("Homework and materials", "serious concern", "Homework has not come in for ____ weeks. Each missing week lowers {his} grade, and it needs to be back on track from the first week of next semester."),
+    ("Homework and materials", "serious concern", "{name} arrives without {his} book or notebook most days and cannot do the work without borrowing."),
+    ("Homework and materials", "serious concern", "{name} has lost or damaged class materials several times this semester."),
+    ("Kindness and cooperation", "serious concern", "{name} has been unkind to classmates on several occasions this semester, and we have spoken with {him} each time."),
+    ("Kindness and cooperation", "serious concern", "{name} has hurt classmates' feelings more than once with what {he} says. This has to stop."),
+    ("Kindness and cooperation", "serious concern", "{name} refuses to work with partners {he} did not choose, and the group's work falls to the others."),
+    ("Kindness and cooperation", "serious concern", "{name} has had repeated conflicts with the same classmates this semester. We have talked each one through, and we are asking for your support at home."),
+    ("Following instructions", "serious concern", "{name} often ignores instructions from the teacher and does something else instead."),
+    ("Following instructions", "serious concern", "{name} argues with the teacher when corrected, in front of the class."),
+    ("Following instructions", "serious concern", "{name} leaves {his} seat, and sometimes the classroom, without permission."),
+    ("Independence", "serious concern", "{name} does not start work unless a teacher stands beside {him}, and finishes very little on {his} own."),
+    ("Effort", "serious concern", "{name} is handing in work far below what {he} can do, and {his} grades have dropped because of it."),
+    ("Effort", "serious concern", "{name} has given up on tasks in most lessons this month and says {he} cannot do them before trying."),
+    ("Effort", "serious concern", "{name} rushes every task to be finished first, and most of {his} work has to be redone."),
+    ("Routines", "serious concern", "{name} is often late back from breaks and misses the start of the lesson."),
+    ("Attendance", "serious concern", "{name} has missed ____ days this semester and is now behind in every area. Regular attendance is the first thing that needs to change."),
+    ("What happens next", "serious concern", "We are asking for your support at home: please talk with {name} about this before next semester starts."),
+    ("What happens next", "serious concern", "We will be in touch during the break about how we can work on this together."),
+    ("What happens next", "serious concern", "If this continues next semester, we will ask to meet with you."),
 ]
 
 OPENERS = [

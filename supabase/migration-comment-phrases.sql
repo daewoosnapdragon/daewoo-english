@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS comment_phrases (
   seed_key TEXT UNIQUE,
   kind TEXT NOT NULL CHECK (kind IN ('sentence', 'opener', 'closer', 'ladder')),
   area TEXT CHECK (area IN ('reading', 'phonics', 'writing', 'speaking', 'language', 'behavior')),
-  tier TEXT CHECK (tier IN ('strong', 'on track', 'needs support', 'change over time')),
+  tier TEXT CHECK (tier IN ('strong', 'on track', 'needs support', 'change over time', 'serious concern')),
   category TEXT,
   grades TEXT NOT NULL DEFAULT 'all' CHECK (grades IN ('1-2', '3-5', 'all')),
   doc TEXT NOT NULL DEFAULT 'both' CHECK (doc IN ('both', 'mid', 'end')),

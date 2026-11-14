@@ -11,7 +11,7 @@ describe('ordering', () => {
     expect(areaOrder({ reading: 86, phonics: null, writing: 74, speaking: 91, language: 85 }, ['reading', 'phonics', 'writing', 'speaking', 'language'])).toEqual(['speaking', 'reading', 'language', 'writing', 'phonics'])
   })
   it('maps a behavior letter to a tier', () => {
-    expect(tierForBehaviorGrade('A-')).toBe('strong'); expect(tierForBehaviorGrade('B+')).toBe('on track'); expect(tierForBehaviorGrade('C')).toBe('needs support'); expect(tierForBehaviorGrade(null)).toBe('on track')
+    expect(tierForBehaviorGrade('A-')).toBe('strong'); expect(tierForBehaviorGrade('B+')).toBe('on track'); expect(tierForBehaviorGrade('C')).toBe('needs support'); expect(tierForBehaviorGrade('D+')).toBe('serious concern'); expect(tierForBehaviorGrade('E')).toBe('serious concern'); expect(tierForBehaviorGrade(null)).toBe('on track')
   })
 })
 

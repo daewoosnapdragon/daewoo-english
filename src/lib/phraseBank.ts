@@ -25,7 +25,7 @@ export interface Phrase {
 }
 
 export const AREA_LABEL: Record<string, string> = { reading: 'Reading', phonics: 'Phonics', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language', behavior: 'Behavior' }
-export const TIER_LABEL: Record<Tier, string> = { strong: 'strong', 'on track': 'on track', 'needs support': 'working on it', 'change over time': 'change over time' }
+export const TIER_LABEL: Record<Tier, string> = { strong: 'strong', 'on track': 'on track', 'needs support': 'working on it', 'change over time': 'change over time', 'serious concern': 'serious concern' }
 
 let cache: Phrase[] | null = null
 let cacheError: string | null = null
