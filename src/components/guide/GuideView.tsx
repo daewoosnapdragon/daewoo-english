@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
-import { QUICK_START, GUIDE_SECTIONS, ADMIN_SECTIONS, WORKFLOWS, DEFINITIONS, type GuideSection } from '@/content/guide'
+import { QUICK_START, GUIDE_SECTIONS, ADMIN_SECTIONS, WORKFLOWS, WALKTHROUGHS, DEFINITIONS, type GuideSection } from '@/content/guide'
 import { startTour } from '@/lib/tour'
 import { Printer } from 'lucide-react'
 
@@ -71,6 +71,8 @@ export default function GuideView() {
           {rail('quick-start', 'Your first week')}
           <p className="eyebrow px-3 mt-4 mb-1">Pages</p>
           {GUIDE_SECTIONS.map(s => rail(s.id, s.title))}
+          <p className="eyebrow px-3 mt-4 mb-1">Step by step</p>
+          {WALKTHROUGHS.map(w => rail(w.id, w.title))}
           <p className="eyebrow px-3 mt-4 mb-1">Across pages</p>
           {rail('workflows', 'Workflows')}
           {rail('definitions', 'Definitions')}
@@ -83,6 +85,32 @@ export default function GuideView() {
             <ol className="grid gap-2 mt-4 max-w-[70ch]">{QUICK_START.steps.map((t, i) => <li key={i} className="grid grid-cols-[28px_minmax(0,1fr)] gap-2 text-[14px] text-ink leading-snug"><span className="font-display text-[18px] text-accent tabular-nums leading-none">{i + 1}</span><span>{t}</span></li>)}</ol>
           </section>
           {GUIDE_SECTIONS.map(s => <Section key={s.id} s={s} />)}
+          {WALKTHROUGHS.map(w => (
+            <section key={w.id} id={w.id} data-guide-section={w.id} className="scroll-mt-[120px] border-t border-rule-2 pt-6 pb-10">
+              <h2 className="font-display text-[28px] leading-none text-ink">{w.title}</h2>
+              <p className="text-[11.5px] text-ink-3 mt-1.5">{w.when} · updated {w.updated}</p>
+              <p className="text-[14.5px] text-ink-2 mt-3 max-w-[65ch]">{w.intro}</p>
+              <div className="mt-4 max-w-[70ch] border border-rule-2 rounded-md px-4 py-3">
+                <p className="eyebrow mb-1.5">The rules</p>
+                <ul className="grid gap-1.5">{w.rules.map((r, i) => <li key={i} className="grid grid-cols-[14px_minmax(0,1fr)] gap-2 text-[13px] text-ink leading-snug"><span className="text-ink-3">·</span><span>{r}</span></li>)}</ul>
+              </div>
+              <ol className="grid gap-8 mt-8">
+                {w.steps.map((st, i) => (
+                  <li key={i} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-6 items-start">
+                    <div className="min-w-0">
+                      <h3 className="text-[16px] font-semibold text-ink leading-snug"><span className="text-ink-3 tabular-nums mr-2">{i + 1}.</span>{st.title}</h3>
+                      <div className="grid gap-2 mt-2 max-w-[60ch]">{st.text.map((p, j) => <p key={j} className="text-[13.5px] text-ink-2 leading-relaxed">{p}</p>)}</div>
+                    </div>
+                    {st.image && (
+                      <a href={st.image} target="_blank" rel="noreferrer" className="block min-w-0 border border-rule-2 rounded-md overflow-hidden bg-surface" title="Open the picture full size">
+                        <img src={st.image} alt={st.alt || st.title} className="block w-full h-auto" loading="lazy" />
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ))}
           <section id="workflows" data-guide-section="workflows" className="scroll-mt-[120px] border-t border-rule-2 pt-6 pb-10">
             <h2 className="font-display text-[28px] leading-none text-ink">Workflows across pages</h2>
             <p className="text-[14.5px] text-ink-2 mt-2 max-w-[65ch]">The real jobs usually span several pages. Each is a checklist that links into the sections above.</p>

@@ -26,6 +26,11 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     path: '/reports', guide: 'reports',
   },
   {
+    id: 'report-card-walkthrough', date: '2026-11-16', title: 'Guide: report cards, step by step, with pictures',
+    body: 'You can now open Guide → Report cards, step by step: the whole December job screen by screen, with a picture of each step, from finishing the grades to printing, and Victoria’s rules where they apply instead of in a separate document. Print it from the Guide page if you want it on paper.',
+    path: '/guide#report-cards', guide: 'reports',
+  },
+  {
     id: 'progress-snapshot', date: '2026-11-16', title: 'Reports: the progress report remembers what it printed',
     body: 'Every time a progress report is printed, on its own or as a batch, the app keeps the grades it showed. The report card’s fact sheet then shows the change since the progress report as the real difference from what parents received, rather than a rebuild from the papers’ dates. The note under the letters says which it is.',
     path: '/reports', guide: 'reports',

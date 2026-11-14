@@ -636,6 +636,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           const avg = items.length >= MIDTERM_MIN_PAPERS ? calcWeightedAvg(items, Number(sgGrade), null, sgClass, weightTable) : null
           midterm![dom] = avg == null ? null : Math.round(avg * 10) / 10
         })
+        // No area had enough papers: there is no column to show.
+        if (DOMAINS.every(dom => midterm![dom] == null)) midterm = null
       }
     }
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -673,13 +675,19 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     // Everything parents have already read about this student: this semester's progress report in
     // full, then every earlier comment newest first (report card before progress report within a semester).
     const semRank = new Map(sortedSems.map((x: any, i: number) => [x.id, i]))
+    // Archived semesters are hidden from the pickers but their comments are still worth reading; fetch the names the list lacks.
+    const semNames = new Map<string, string>(allSemesters.map((x: any) => [x.id, x.name]))
+    const unknownSemIds = Array.from(new Set((pastCommentsRes.data || []).map((c: any) => c.semester_id).filter((id: string) => id && !semNames.has(id))))
+    if (unknownSemIds.length) {
+      const { data: extra } = await supabase.from('semesters').select('id, name').in('id', unknownSemIds)
+      ;(extra || []).forEach((x: any) => semNames.set(x.id, x.name))
+    }
     const quotes: FactSheetQuote[] = (pastCommentsRes.data || [])
       .filter((c: any) => c.text?.trim() && !c.is_skipped && !(c.semester_id === semesterId && c.report_type === 'report_card'))
       .sort((a: any, b: any) => ((semRank.get(b.semester_id) ?? -1) - (semRank.get(a.semester_id) ?? -1)) || ((a.report_type === 'report_card' ? 0 : 1) - (b.report_type === 'report_card' ? 0 : 1)))
       .map((c: any) => {
-        const sem = allSemesters.find((x: any) => x.id === c.semester_id)
         const isCurrentProgress = c.semester_id === semesterId && c.report_type === 'progress_report'
-        return { text: c.text.trim(), label: `${REPORT_DOCUMENT_LABEL[c.report_type as ReportDocument]?.en || c.report_type}, ${sem?.name || ''}`.trim(), full: isCurrentProgress }
+        return { text: c.text.trim(), label: `${REPORT_DOCUMENT_LABEL[c.report_type as ReportDocument]?.en || c.report_type}, ${semNames.get(c.semester_id) || 'earlier semester'}`, full: isCurrentProgress }
       })
     const cmap: Record<string, { text: string; skipped: boolean }> = {}
     ;(classCommentsRes.data || []).forEach((c: any) => { cmap[c.student_id] = { text: (c.text || '').trim(), skipped: !!c.is_skipped } })
