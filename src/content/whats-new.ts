@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'phrases-drawer', date: '2026-11-16', title: 'Reports: the phrase bank beside the box, and a pronoun per student',
+    body: 'You can now open Phrases under the report card comment box. It opens on the student’s weakest and strongest areas with sentences for the tier their letter points to, then a ladder of next steps for the weakest area, each rung a classroom line plus two things to do at home, on the band their grade and WIDA level suggest. Everything else sits collapsed below: openers, closers, every area, behavior by category. A click puts the sentence at your cursor with the name and pronouns filled in, and the grey count beside a sentence says how many comments in your class already use it. Set each student’s pronoun once, above the box or on the student page, and it is remembered. The report card no longer has Skip comment. What parents already read now shows this semester’s progress report in full and every earlier comment, newest first.',
+    path: '/reports', guide: 'reports',
+  },
+  {
     id: 'report-card-editor', date: '2026-11-16', title: 'Reports: a fact sheet beside the comment box, autosave and Next',
     body: 'You can now write a report card comment with the student’s facts beside the box: each area’s letter with the change since the progress report and since last semester, attendance, reading level now and at the first check of the semester, WIDA level, the number of behavior notes, what the app noticed (the weakest and strongest areas, the last rubric piece criterion by criterion, the most-missed standard, the latest reading and behavior notes) and what parents already read, your October progress-report comment and last semester’s report card comment, so nothing in the new comment is a surprise. The box saves itself a second after you stop typing; there is no Save button. Under the box a grey line gives the word count against about 200 and points out another student’s name, a leftover he/she, any mention of moving levels, a comment that shares many phrases with one of your others, or a long list of things to work on. Next saves and opens the next student without a comment, and the header counts how many of the class are written.',
     path: '/reports', guide: 'reports',

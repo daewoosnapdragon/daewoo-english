@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { LetterRow } from '@/lib/factSheet'
 
 // ─── Fact sheet ──────────────────────────────────────────────────
@@ -16,7 +17,7 @@ export interface FactSheetFacts {
   behaviorCount: number
 }
 
-export interface FactSheetQuote { text: string; label: string }
+export interface FactSheetQuote { text: string; label: string; /** Shown in full from the start (this semester's progress report). */ full?: boolean }
 
 export interface FactSheetProps {
   rows: LetterRow[]
@@ -26,8 +27,8 @@ export interface FactSheetProps {
   sinceLastLabel: string | null
   facts: FactSheetFacts
   noticings: string[]
-  progress: FactSheetQuote | null
-  previous: FactSheetQuote | null
+  /** Every comment parents have already read, newest first. */
+  quotes: FactSheetQuote[]
   className?: string
 }
 
@@ -41,7 +42,19 @@ function MonthDay({ iso }: { iso: string | null }) {
   return <>{d} {MONTHS[(m || 1) - 1]}</>
 }
 
-export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, facts, noticings, progress, previous, className = '' }: FactSheetProps) {
+function Quote({ q }: { q: FactSheetQuote }) {
+  const [open, setOpen] = useState(!!q.full)
+  const long = q.text.length > 220
+  return (
+    <figure className="m-0 pl-3 flex flex-col gap-1" style={{ borderLeft: '1px solid #C8CED8' }}>
+      <figcaption className="text-[10.5px]" style={{ color: MUTED }}>{q.label}</figcaption>
+      <blockquote className="m-0 font-display text-[13.5px] leading-[1.45] whitespace-pre-wrap" style={{ color: '#475569' }}>{open || !long ? q.text : `${q.text.slice(0, 220).trimEnd()}…`}</blockquote>
+      {long && <button type="button" onClick={() => setOpen(o => !o)} className="self-start text-[11px] underline underline-offset-2" style={{ color: MUTED }}>{open ? 'Show less' : 'Show all'}</button>}
+    </figure>
+  )
+}
+
+export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, facts, noticings, quotes, className = '' }: FactSheetProps) {
   const reading = (r: FactSheetFacts['readingNow']) => r ? [r.level, r.cwpm != null ? `${Math.round(r.cwpm)} wpm` : null].filter(Boolean).join(' · ') : ''
   return (
     <aside aria-label="Fact sheet" className={`flex-[0_1_300px] min-w-[250px] flex flex-col gap-5 text-[12.5px] leading-snug ${className}`} style={{ color: INK }}>
@@ -98,15 +111,10 @@ export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, facts, 
         </section>
       )}
 
-      {(progress || previous) && (
+      {quotes.length > 0 && (
         <section className="flex flex-col gap-2.5">
           <H>What parents already read</H>
-          {[progress, previous].map((q, i) => q && (
-            <figure key={i} className="m-0 pl-3 flex flex-col gap-1" style={{ borderLeft: `1px solid #C8CED8` }}>
-              <figcaption className="text-[10.5px]" style={{ color: MUTED }}>{q.label}</figcaption>
-              <blockquote className="m-0 font-display text-[13.5px] leading-[1.45] whitespace-pre-wrap" style={{ color: '#475569' }}>{q.text.length > 420 ? `${q.text.slice(0, 420).trimEnd()}…` : q.text}</blockquote>
-            </figure>
-          ))}
+          {quotes.map((q, i) => <Quote key={i} q={q} />)}
         </section>
       )}
 

@@ -453,7 +453,7 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
   const { addStudent } = useStudentActions()
   const [show, setShow] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ korean_name: '', english_name: '', grade: 2 as Grade, korean_class: '대' as KoreanClass, class_number: 1, english_class: 'Lily' as EnglishClass })
+  const [form, setForm] = useState({ korean_name: '', english_name: '', pronoun: '' as '' | 'he' | 'she' | 'they', grade: 2 as Grade, korean_class: '대' as KoreanClass, class_number: 1, english_class: 'Lily' as EnglishClass })
 
   const handleSave = async () => {
     if (!form.korean_name || !form.english_name) return
@@ -465,10 +465,10 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
       showToast(`A student already exists with ${form.korean_class} #${form.class_number} in Grade ${form.grade} (${existing[0].english_name}). Change the class number or edit the existing student.`)
       return
     }
-    const { error } = await addStudent({ ...form, teacher_id: (await loadClassTeacherMap())[form.english_class] || null, is_active: true, notes: '', photo_url: '', google_drive_folder_url: '' })
+    const { error } = await addStudent({ ...form, pronoun: form.pronoun || null, needs_review: false, teacher_id: (await loadClassTeacherMap())[form.english_class] || null, is_active: true, notes: '', photo_url: '', google_drive_folder_url: '' })
     setSaving(false)
     if (error) showToast(`Error: ${error.message}`)
-    else { showToast(`Added ${form.english_name}`); logActivity('created', `Student: ${form.english_name} (${form.korean_name}) · ${form.english_class} · Grade ${form.grade}`); setForm({ korean_name: '', english_name: '', grade: 2 as Grade, korean_class: '대' as KoreanClass, class_number: 1, english_class: 'Lily' as EnglishClass }); onComplete() }
+    else { showToast(`Added ${form.english_name}`); logActivity('created', `Student: ${form.english_name} (${form.korean_name}) · ${form.english_class} · Grade ${form.grade}`); setForm({ korean_name: '', english_name: '', pronoun: '', grade: 2 as Grade, korean_class: '대' as KoreanClass, class_number: 1, english_class: 'Lily' as EnglishClass }); onComplete() }
   }
 
   if (!show) {
@@ -488,6 +488,8 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
       <div className="grid grid-cols-2 gap-2">
         <input value={form.korean_name} onChange={e => setForm({ ...form, korean_name: e.target.value })} placeholder="Korean Name" className="px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
         <input value={form.english_name} onChange={e => setForm({ ...form, english_name: e.target.value })} placeholder="English Name" className="px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" />
+        <select value={form.pronoun} onChange={e => setForm({ ...form, pronoun: e.target.value as any })} className="px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none col-span-2" aria-label="Pronoun">
+          <option value="">Pronoun: not set (he / she / they)</option><option value="he">he / his</option><option value="she">she / her</option><option value="they">they / their</option></select>
       </div>
       <div className="grid grid-cols-4 gap-2">
         <select value={form.grade} onChange={e => setForm({ ...form, grade: Number(e.target.value) as Grade })} className="px-2 py-1.5 border border-border rounded-lg text-[11px] outline-none">

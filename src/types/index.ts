@@ -55,6 +55,8 @@ export interface Student {
   notes: string;
   photo_url: string;
   google_drive_folder_url: string;
+  /** he | she | they; set once and remembered. NULL until a teacher sets it. */
+  pronoun?: 'he' | 'she' | 'they' | null;
   needs_review: boolean;
   created_at: string;
   updated_at: string;

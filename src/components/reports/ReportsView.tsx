@@ -22,6 +22,8 @@ import { letterRows, assessmentsUpTo, noticings as buildNoticings, nextWithoutCo
 import { plainName } from '@/components/curriculum/standards-plain'
 import { WIDA_LEVELS } from '@/lib/wida'
 import FactSheet, { type FactSheetFacts, type FactSheetQuote } from '@/components/reports/FactSheet'
+import PhrasesDrawer from '@/components/reports/PhrasesDrawer'
+import { insertAt, PRONOUNS, type Pronoun } from '@/lib/phrases'
 import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
@@ -155,8 +157,7 @@ interface ReportData {
   sinceLastLabel: string | null
   facts: FactSheetFacts
   noticings: string[]
-  progressQuote: FactSheetQuote | null
-  previousQuote: FactSheetQuote | null
+  quotes: FactSheetQuote[]
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
@@ -427,6 +428,10 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [classComments, setClassComments] = useState<Record<string, { text: string; skipped: boolean }>>({})
+  // The pronoun the bank fills in (set once per student, remembered on the roster) and the Phrases drawer.
+  const [pronoun, setPronoun] = useState<Pronoun | null>(null)
+  const [phrasesOpen, setPhrasesOpen] = useState<boolean>(() => { try { return localStorage.getItem('daewoo_phrases_open') === '1' } catch { return false } })
+  const boxRef = useRef<HTMLTextAreaElement>(null)
   const [editingGrades, setEditingGrades] = useState(false)
   const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
   const [editNaValues, setEditNaValues] = useState<Record<string, boolean>>({})
@@ -556,7 +561,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const [readingRes, ltScoreRes, attRes, behaviorRes, scaffoldRes, goalsRes] = await Promise.all([
       supabase.from('reading_assessments').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(5),
       supabase.from('level_test_scores').select('level_test_id, raw_scores, calculated_metrics').eq('student_id', studentId),
-      supabase.from('attendance').select('status, date').eq('student_id', studentId),
+      // This semester only: the report card counts this semester's absences, and holidays and field trips are taken out below.
+      supabase.from('attendance').select('status, date').eq('student_id', studentId).gte('date', semester.start_date || '0000-01-01').lte('date', semester.end_date || '9999-12-31'),
       supabase.from('behavior_logs').select('id, date, type, note, behaviors, is_flagged').eq('student_id', studentId).order('date', { ascending: false }).limit(20),
       supabase.from('student_scaffolds').select('domain, scaffold_text, effectiveness').eq('student_id', studentId).eq('is_active', true),
       supabase.from('student_goals').select('goal_text, goal_type, completed_at').eq('student_id', studentId).eq('is_active', true),
@@ -582,10 +588,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
     // ─── STEP 6: Fact sheet. Everything here already exists somewhere in the app. ───
     const studentIds = students.map((x: any) => x.id)
-    const [assessRes, progressRes, prevCommentRes, classCommentsRes, readingSemRes, widaRes, weightTable] = await Promise.all([
-      supabase.from('assessments').select('id, name, date, type, domain, max_score, mixed, domain_split, question_map').eq('semester_id', semesterId).eq('grade', sgGrade).eq('english_class', sgClass),
-      supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', semesterId).eq('report_type', 'progress_report').limit(1),
-      prevSem ? supabase.from('comments').select('text, is_skipped').eq('student_id', studentId).eq('semester_id', prevSem.id).eq('report_type', 'report_card').limit(1) : Promise.resolve({ data: [] as any[] }),
+    const [assessRes, pastCommentsRes, classCommentsRes, readingSemRes, widaRes, weightTable] = await Promise.all([
+      supabase.from('assessments').select('id, name, date, type, domain, max_score, mixed, domain_split, question_map, rubric').eq('semester_id', semesterId).eq('grade', sgGrade).eq('english_class', sgClass),
+      supabase.from('comments').select('text, is_skipped, report_type, semester_id').eq('student_id', studentId),
       supabase.from('comments').select('student_id, text, is_skipped').eq('semester_id', semesterId).eq('report_type', 'report_card').in('student_id', studentIds),
       semester.start_date ? supabase.from('reading_assessments').select('date, cwpm, reading_level, passage_level, notes').eq('student_id', studentId).gte('date', semester.start_date).order('date', { ascending: true }) : Promise.resolve({ data: [] as any[] }),
       supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId),
@@ -629,10 +634,17 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       behaviorLogs: behaviorLogs.filter((b: any) => !semester.start_date || (b.date || '') >= semester.start_date),
       absences: attCounts.absent, tardies: attCounts.tardy, standardName: plainName,
     })
-    const progressRow: any = progressRes.data?.[0]
-    const prevRow: any = prevCommentRes.data?.[0]
-    const progressQuote: FactSheetQuote | null = progressRow?.text?.trim() && !progressRow.is_skipped ? { text: progressRow.text.trim(), label: `Progress report${midCutoff ? `, ${monthOf(midCutoff)} ${midCutoff.slice(0, 4)}` : ''}` } : null
-    const previousQuote: FactSheetQuote | null = prevRow?.text?.trim() && !prevRow.is_skipped ? { text: prevRow.text.trim(), label: `Report card, ${prevSem?.name || 'last semester'}` } : null
+    // Everything parents have already read about this student: this semester's progress report in
+    // full, then every earlier comment newest first (report card before progress report within a semester).
+    const semRank = new Map(sortedSems.map((x: any, i: number) => [x.id, i]))
+    const quotes: FactSheetQuote[] = (pastCommentsRes.data || [])
+      .filter((c: any) => c.text?.trim() && !c.is_skipped && !(c.semester_id === semesterId && c.report_type === 'report_card'))
+      .sort((a: any, b: any) => ((semRank.get(b.semester_id) ?? -1) - (semRank.get(a.semester_id) ?? -1)) || ((a.report_type === 'report_card' ? 0 : 1) - (b.report_type === 'report_card' ? 0 : 1)))
+      .map((c: any) => {
+        const sem = allSemesters.find((x: any) => x.id === c.semester_id)
+        const isCurrentProgress = c.semester_id === semesterId && c.report_type === 'progress_report'
+        return { text: c.text.trim(), label: `${REPORT_DOCUMENT_LABEL[c.report_type as ReportDocument]?.en || c.report_type}, ${sem?.name || ''}`.trim(), full: isCurrentProgress }
+      })
     const cmap: Record<string, { text: string; skipped: boolean }> = {}
     ;(classCommentsRes.data || []).forEach((c: any) => { cmap[c.student_id] = { text: (c.text || '').trim(), skipped: !!c.is_skipped } })
     setClassComments(cmap)
@@ -662,10 +674,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       reviewerNoteAck,
       reviewerNoteByName,
       factRows, sinceMidLabel: midterm ? `Since ${monthOf(midCutoff)}` : null, sinceLastLabel: prevDomainGrades && prevSem ? `Since ${prevSem.name.split(' ')[0]}` : null,
-      facts, noticings, progressQuote, previousQuote,
+      facts, noticings, quotes,
     })
+    setPronoun((student as any).pronoun || null)
     setComment(commentData?.text || '')
-    setCommentSkipped(!!commentData?.is_skipped)
+    // The report card has no Skip: every student gets a comment.
+    setCommentSkipped(false)
     setHideComparison(!!commentData?.hide_comparison)
     setLoading(false)
   }, [studentId, semesterId, students, allSemesters, selectedClass, currentTeacher])
@@ -716,6 +730,24 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     text: commentSkipped ? '' : comment, studentName: data.student.english_name, rosterNames: students.map((x: any) => x.english_name),
     otherComments: Object.entries(classComments).filter(([id, c]) => id !== studentId && c.text).map(([id, c]) => ({ text: c.text, label: students.find((x: any) => x.id === id)?.english_name || 'another student' })),
   }) : [], [data, comment, commentSkipped, classComments, students, studentId])
+
+  const savePronoun = async (p: Pronoun) => {
+    const prev = pronoun
+    setPronoun(p)
+    const { error } = await supabase.from('students').update({ pronoun: p, updated_at: new Date().toISOString() }).eq('id', studentId)
+    if (error) { setPronoun(prev); showToast(error.message?.includes('pronoun') ? 'Run supabase/migration-comment-phrases.sql first.' : `Error: ${error.message}`); return }
+    ;(students.find((x: any) => x.id === studentId) || {} as any).pronoun = p
+    logActivity('edited', `Pronoun set · ${studentName} · ${p}`)
+  }
+  const togglePhrases = () => { const next = !phrasesOpen; setPhrasesOpen(next); try { localStorage.setItem('daewoo_phrases_open', next ? '1' : '0') } catch {} }
+  // A phrase lands at the cursor, then the box gets focus back with the cursor after it.
+  const insertPhrase = (sentence: string) => {
+    const el = boxRef.current
+    const at = el && document.activeElement === el ? el.selectionEnd : (el?.selectionEnd ?? comment.length) || comment.length
+    const r = insertAt(comment, at, sentence)
+    setComment(r.text); scheduleSave({ comment: r.text })
+    setTimeout(() => { if (boxRef.current) { boxRef.current.focus(); boxRef.current.setSelectionRange(r.cursor, r.cursor) } }, 0)
+  }
 
   // Auto-saves immediately so the chart toggle persists without a comment save
   const toggleHideComparison = async () => {
@@ -972,7 +1004,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Fact sheet + comment (the editor; the fact sheet and controls are screen only) ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex flex-wrap items-start gap-x-10 gap-y-6">
-            <FactSheet className="print:hidden" rows={d.factRows} sinceMidLabel={d.sinceMidLabel} sinceLastLabel={d.sinceLastLabel} facts={d.facts} noticings={d.noticings} progress={d.progressQuote} previous={d.previousQuote} />
+            <FactSheet className="print:hidden" rows={d.factRows} sinceMidLabel={d.sinceMidLabel} sinceLastLabel={d.sinceLastLabel} facts={d.facts} noticings={d.noticings} quotes={d.quotes} />
             <div className="min-w-0 max-w-[760px]" style={{ flex: '999 1 480px' }}>
               <div className="flex items-start justify-between gap-4 mb-2.5 flex-wrap">
                 <div>
@@ -980,10 +1012,15 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   <div className="text-[14px] font-bold text-[#1e293b] leading-tight mt-0.5">{d.teacherName} Teacher<span className="font-normal text-[#94a3b8] text-[11px]"> &middot; {d.semesterClass || s.english_class} Class</span></div>
                 </div>
                 {canEdit && (
-                  <label className="print:hidden flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer select-none mt-1">
-                    <input type="checkbox" checked={commentSkipped} onChange={(e: any) => { setCommentSkipped(e.target.checked); scheduleSave({ commentSkipped: e.target.checked }, 0) }} />
-                    Skip comment
-                  </label>
+                  <div className="print:hidden flex items-center gap-4 flex-wrap mt-1">
+                    <div className="flex items-center gap-1 text-[11px] text-text-secondary" role="group" aria-label="Pronoun">
+                      <span className={pronoun ? '' : 'text-amber-700 font-semibold'}>{pronoun ? 'Pronoun' : 'Pronoun?'}</span>
+                      {PRONOUNS.map(p => (
+                        <button key={p} type="button" onClick={() => savePronoun(p)} aria-pressed={pronoun === p}
+                          className={`px-1.5 py-0.5 rounded text-[11px] ${pronoun === p ? 'bg-ink text-paper font-semibold' : 'text-[#64748b] hover:bg-[#f1f5f9]'}`}>{p}</button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
               {canEdit && currentDoc === 'progress_report' && (
@@ -1007,7 +1044,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   </div>
                 </div>
               )}
-              <textarea id="rc-comment" value={comment} onChange={(e: any) => { setComment(e.target.value); scheduleSave({ comment: e.target.value }) }} rows={12}
+              <textarea id="rc-comment" ref={boxRef} value={comment} onChange={(e: any) => { setComment(e.target.value); scheduleSave({ comment: e.target.value }) }} rows={12}
                 disabled={commentSkipped || !canEdit}
                 placeholder={!canEdit ? "Read-only — only this class's teacher can edit the comment." : (commentSkipped ? 'Skipped — untick above to write a comment.' : "Write this student's report card comment…")}
                 className={`w-full px-5 py-4 border border-[#C8CED8] rounded-xl text-[15px] outline-none focus:border-navy resize-y leading-[1.7] min-h-[300px] ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8] text-[#1e293b]'}`} />
@@ -1018,6 +1055,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               )}
               {canEdit ? (
                 <div className="print:hidden flex items-center justify-between gap-4 flex-wrap mt-3">
+                  <div className="flex items-center gap-4 flex-wrap">
+                  <button type="button" onClick={togglePhrases} aria-expanded={phrasesOpen} className="text-[12px] text-accent underline underline-offset-[3px] hover:text-accent-hover py-1">{phrasesOpen ? 'Hide phrases' : 'Phrases'}</button>
                   <span className={`text-[11.5px] ${saveState === 'error' ? 'text-warn' : 'text-[#64748b]'}`}>
                     {saveState === 'saving' ? 'Saving…'
                       : saveState === 'unsaved' ? 'Typing…'
@@ -1025,6 +1064,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                       : saveState === 'saved' && savedAt ? `Saved ${new Date(savedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
                       : commentSkipped ? 'No comment on the printed report.' : 'Saves on its own as you type.'}
                   </span>
+                  </div>
                   {onSelectStudent && (
                     <button onClick={goNext} disabled={!nextUp}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed">
@@ -1036,6 +1076,14 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] italic mt-2"><Lock size={11} /> Viewing {selectedClass}&apos;s report card — leave feedback in Review &amp; Approve.</div>
               )}
             </div>
+            {canEdit && phrasesOpen && (
+              <PhrasesDrawer className="print:hidden"
+                student={{ id: studentId, name: s.english_name, pronoun, grade: Number(d.semesterGrade || s.grade) || null }}
+                scores={Object.fromEntries(DOMAINS.map(dom => [dom, d.domainNa[dom] ? null : d.domainGrades[dom]]))}
+                wida={d.facts.wida?.level ?? null} doc="report_card"
+                classComments={Object.entries(classComments).filter(([id, c]) => id !== studentId && c.text).map(([, c]) => c.text)}
+                onInsert={insertPhrase} onClose={togglePhrases} />
+            )}
           </div>
         </div>
 

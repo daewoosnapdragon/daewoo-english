@@ -69,6 +69,8 @@ export interface NoticingAssessment {
   domain?: string | null
   max_score?: number | null
   question_map?: Array<{ num: number; max_points?: number; standard?: string; type?: string; rubric?: { criteria: Array<{ key: string; label: string; standard?: string }> } | null }> | null
+  /** A rubric assessment carries its criteria here; rubric_scores on the grade row are keyed by criterion key. */
+  rubric?: { criteria: Array<{ key: string; label: string; standard?: string }> } | null
 }
 export interface NoticingGrade {
   assessment_id: string
@@ -129,6 +131,7 @@ function latestRubric(assessments: NoticingAssessment[], grades: NoticingGrade[]
   if (!top) return null
   const a = top.a!, g = top.g
   const labels = new Map<string, string>()
+  for (const c of a.rubric?.criteria || []) labels.set(c.key, c.label)
   for (const q of a.question_map || []) for (const c of q.rubric?.criteria || []) labels.set(c.key, c.label)
   const parts: string[] = []
   const seen = new Set<string>()

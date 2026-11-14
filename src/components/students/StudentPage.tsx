@@ -115,13 +115,13 @@ export default function StudentPage({ studentId }: { studentId: string }) {
 
   const startEdit = () => {
     if (!student) return
-    setForm({ english_name: student.english_name, korean_name: student.korean_name, grade: student.grade, korean_class: student.korean_class, class_number: student.class_number, english_class: student.english_class, is_transfer: (student as any).is_transfer || false, transfer_date: (student as any).transfer_date || '' })
+    setForm({ english_name: student.english_name, korean_name: student.korean_name, grade: student.grade, korean_class: student.korean_class, class_number: student.class_number, english_class: student.english_class, is_transfer: (student as any).is_transfer || false, transfer_date: (student as any).transfer_date || '', pronoun: (student as any).pronoun || '' })
     setEditing(true)
   }
   const saveEdit = async () => {
     if (!student) return
     setSaving(true)
-    const updates: any = { ...form, teacher_id: (await loadClassTeacherMap())[form.english_class] || null, transfer_date: form.is_transfer ? (form.transfer_date || null) : null }
+    const updates: any = { ...form, teacher_id: (await loadClassTeacherMap())[form.english_class] || null, transfer_date: form.is_transfer ? (form.transfer_date || null) : null, pronoun: form.pronoun || null }
     const { error } = await updateStudent(student.id, updates)
     setSaving(false)
     if (error) { showToast(`Error: ${error.message}`); return }
@@ -219,9 +219,10 @@ export default function StudentPage({ studentId }: { studentId: string }) {
           {editing && (
             <section className="border border-rule-2 rounded-lg p-4 bg-paper-2 grid gap-3">
               <h2 className="font-display text-[20px] leading-none text-ink">{lang === 'ko' ? '학생 정보 수정' : 'Edit details'}</h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '영어 이름' : 'English name'}</span><input value={form.english_name} onChange={e => setForm({ ...form, english_name: e.target.value })} className={fieldCls} /></label>
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '한국어 이름' : 'Korean name'}</span><input value={form.korean_name} onChange={e => setForm({ ...form, korean_name: e.target.value })} className={fieldCls} /></label>
+                <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '대명사' : 'Pronoun'}</span><select value={form.pronoun || ''} onChange={e => setForm({ ...form, pronoun: e.target.value })} className={fieldCls}><option value="">{lang === 'ko' ? '미설정' : 'not set'}</option><option value="he">he / his</option><option value="she">she / her</option><option value="they">they / their</option></select></label>
               </div>
               <div className="grid grid-cols-4 gap-3">
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '학년' : 'Grade'}</span><select value={form.grade} onChange={e => setForm({ ...form, grade: Number(e.target.value) as Grade })} className={fieldCls}>{GRADES.map(g => <option key={g} value={g}>{g}</option>)}</select></label>

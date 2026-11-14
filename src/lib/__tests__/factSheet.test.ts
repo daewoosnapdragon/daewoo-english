@@ -54,6 +54,10 @@ describe('what the app noticed', () => {
     expect(n).toContain('Opinion paragraph, 4 Nov: Ideas 4, Organization 2, Conventions 3 (out of 4).')
     expect(n).toContain('Most-missed standard: RL.3.2, central message (25% of points).')
   })
+  it('reads criterion labels from an assessment-level rubric', () => {
+    const n = noticings({ ...base, assessments: [{ id: 'dd', name: 'Debate Discussion', date: '2026-11-06', rubric: { criteria: [{ key: 'listening', label: 'Listening' }, { key: 'on_topic_talk', label: 'On-topic talk' }] } }], grades: [{ assessment_id: 'dd', rubric_scores: { listening: 3, on_topic_talk: 2 } }] })
+    expect(n).toContain('Debate Discussion, 6 Nov: Listening 3, On-topic talk 2 (out of 4).')
+  })
   it('adds the latest reading and behavior notes and heavy absence', () => {
     const n = noticings({ ...base, readingNotes: [{ date: '2026-09-10', notes: 'word by word' }, { date: '2026-10-30', notes: 'self-corrects now' }],
       behaviorLogs: [{ date: '2026-10-22', note: 'helped two classmates' }, { date: '2026-09-01', note: '' }], absences: 4, tardies: 1 })
