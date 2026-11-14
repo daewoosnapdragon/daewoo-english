@@ -10,6 +10,7 @@ import { taughtSkills, togglePick, type TaughtSkills } from '@/lib/taughtSkills'
 import { loadTaughtSources, saveTaughtPicks, type TaughtSources } from '@/lib/taughtSkillsData'
 import { skillsOf, AREA_FAMILIES } from '@/lib/phraseSkills'
 import { SKILLS } from '@/components/curriculum/standards-plain'
+import { readSpelling, saveSpelling, spell, type Spelling } from '@/lib/spelling'
 import { fillPhrase } from '@/lib/phrases'
 import { X } from 'lucide-react'
 
@@ -85,6 +86,9 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
   const [sources, setSources] = useState<TaughtSources | null>(null)
   const [picks, setPicks] = useState<{ add: string[]; remove: string[] }>({ add: [], remove: [] })
   const [showAll, setShowAll] = useState<Record<string, boolean>>({})
+  // American by default (the bank is written that way); British converts each sentence as it fills.
+  const [spelling, setSpelling] = useState<Spelling>(() => readSpelling())
+  const pickSpelling = (s: Spelling) => { setSpelling(s); saveSpelling(s) }
 
   useEffect(() => { let on = true; loadPhraseBank().then(r => { if (!on) return; setRows(r.rows); setError(r.error); setLoading(false) }); return () => { on = false } }, [])
   useEffect(() => { let on = true; loadTaughtSources(classKey.cls, classKey.grade, classKey.semester).then(s => { if (!on) return; setSources(s); setPicks(s.picks) }); return () => { on = false } }, [classKey.cls, classKey.grade, classKey.semester])
@@ -110,7 +114,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
 
   const usable = useMemo(() => usablePhrases(rows, doc, gradeBand(student.grade)), [rows, doc, student.grade])
   const counts = useMemo(() => usageCounts(usable.filter(p => p.kind !== 'ladder'), classComments), [usable, classComments])
-  const fill = (t: string) => fillPhrase(t, { name: student.name, pronoun: student.pronoun })
+  const fill = (t: string) => spell(fillPhrase(t, { name: student.name, pronoun: student.pronoun }), spelling)
   const byId = useMemo(() => new Map(usable.map(p => [p.id, p])), [usable])
 
   const order = areaOrder(scores, AREAS)
@@ -136,7 +140,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
     home: usable.flatMap(p => p.kind === 'ladder' ? [checked[`${p.id}:1`] && p.home1, checked[`${p.id}:2`] && p.home2].filter(Boolean) as string[] : []),
     closer: closer ? byId.get(closer)?.text || null : null,
   }), [opener, closer, checked, usable, byId, order])
-  const draft = useMemo(() => assembleComment(selection, { name: student.name, pronoun: student.pronoun }), [selection, student.name, student.pronoun])
+  const draft = useMemo(() => spell(assembleComment(selection, { name: student.name, pronoun: student.pronoun }), spelling), [selection, student.name, student.pronoun, spelling])
   const words = wordCount(draft)
   const steps = nextStepCount(draft)
   const ticked = Object.values(checked).filter(Boolean).length
@@ -150,7 +154,13 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
             <h2 className="m-0 font-display text-[20px] leading-tight">Build a comment for {student.name}</h2>
             <p className="m-0 text-[11.5px]" style={{ color: MUTED }}>Tick what applies. The draft at the bottom is yours to edit in the box afterwards.{sources && !knowsAnything && <span> Nothing is marked as taught for this class yet, so every sentence shows; tick skills under an area to narrow it.</span>}{!student.pronoun && <span className="text-amber-800 font-semibold"> Pronoun not set yet, so sentences keep {'{his}'} until it is.</span>}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="w-9 h-9 grid place-items-center rounded hover:bg-[#f1f5f9]" style={{ color: '#475569' }}><X size={16} /></button>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="inline-flex items-center gap-1 text-[11px]" role="group" aria-label="Spelling">
+              <span style={{ color: MUTED }}>Spelling</span>
+              {(['us', 'uk'] as Spelling[]).map(s => <button key={s} type="button" onClick={() => pickSpelling(s)} aria-pressed={spelling === s} className={`px-1.5 py-0.5 rounded ${spelling === s ? 'bg-ink text-paper font-semibold' : 'hover:bg-[#f1f5f9]'}`} style={spelling === s ? undefined : { color: MUTED }}>{s === 'us' ? 'American' : 'British'}</button>)}
+            </div>
+            <button type="button" onClick={onClose} aria-label="Close" className="w-9 h-9 grid place-items-center rounded hover:bg-[#f1f5f9]" style={{ color: '#475569' }}><X size={16} /></button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5 text-[12.5px]">

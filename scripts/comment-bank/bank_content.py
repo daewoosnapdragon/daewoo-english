@@ -1,4 +1,4 @@
-# Draft comment bank, Fall 2026. Placeholders: {name} {he} {his} {him}. Blanks: ____
+# Draft comment bank, Fall 2026. American spelling (the builder can show British). Placeholders: {name} {he} {his} {him}. Blanks: ____
 # Each descriptive row: (area, tier, grades, when, sentence)
 #   tier: strong | on track | needs support | change over time | serious concern (behavior only)
 #   grades: 1-2 | 3-5 | all
@@ -28,7 +28,7 @@ READING = [
     # on track, 1-2
     ("on track", "1-2", "both", "{name} reads simple sentences on {his} own and uses the pictures to help with new words."),
     ("on track", "1-2", "both", "{name} answers questions about a story when {he} can look back at the pages."),
-    ("on track", "1-2", "both", "{name} is learning to retell a story in order rather than listing favourite parts."),
+    ("on track", "1-2", "both", "{name} is learning to retell a story in order rather than listing favorite parts."),
     # needs support, 3-5
     ("needs support", "3-5", "both", "{name} reads the words but often cannot say what the passage was about. Reading a short text twice and telling someone about it would help."),
     ("needs support", "3-5", "both", "{name} finds the central idea hard and tends to pick one small detail instead. Asking \"what is the whole text mostly about?\" after each page is the next step."),
@@ -45,7 +45,7 @@ READING = [
     ("change over time", "all", "both", "{name} now reads in phrases rather than word by word, which makes the story easier to follow."),
     ("change over time", "all", "both", "{name} reads accurately and corrects {his} own mistakes without being asked."),
     ("change over time", "all", "both", "{name} reads at about the same pace as in September. Ten minutes of reading aloud each evening would help {him} speed up."),
-    ("change over time", "all", "both", "{name} reads accurately but with little expression. Reading a favourite page as if telling the story would help."),
+    ("change over time", "all", "both", "{name} reads accurately but with little expression. Reading a favorite page as if telling the story would help."),
     ("change over time", "all", "end", "{name} has made more progress in reading since the October progress report than in any other area."),
 ]
 
@@ -69,7 +69,7 @@ PHONICS = [
     ("needs support", "all", "both", "{name} knows the sounds but finds blending them into a word hard. Building three-sound words with letter cards would help."),
     ("needs support", "all", "both", "{name} mixes up b and d when reading and writing. A small card with both letters and a picture would help."),
     ("needs support", "all", "both", "{name} reads short-vowel words but guesses at words with vowel teams. Reading the week's word list aloud each night would help."),
-    ("needs support", "all", "both", "{name} relies on words {he} has memorised and finds new words hard. The next step is to sound out every new word rather than guess."),
+    ("needs support", "all", "both", "{name} relies on words {he} has memorized and finds new words hard. The next step is to sound out every new word rather than guess."),
     ("needs support", "all", "both", "{name} finds two-syllable words hard and often reads only the first part. Clapping the parts of long words would help."),
     ("needs support", "all", "both", "{name} knows the week's words on Friday but forgets them by Monday. A quick review of old words at the weekend would help."),
     ("change over time", "all", "both", "{name} has learned ____ new sound patterns since September, including ____."),
@@ -108,8 +108,8 @@ WRITING = [
     ("needs support", "1-2", "both", "{name}'s letters are hard to read and the spaces between words are missing. Short daily practice on lined paper would help."),
     ("needs support", "1-2", "both", "{name} writes words as they sound, which is a good start, and is learning the common spelling patterns."),
     ("change over time", "all", "both", "{name}'s writing has grown from ____ sentences in September to a full paragraph."),
-    ("change over time", "all", "end", "{name}'s organisation has improved since the October progress report; {his} paragraphs now follow a clear order."),
-    ("change over time", "all", "both", "On {his} last piece {name} scored ____ out of 4 for ideas and ____ for organisation. The ideas are there, and order is the next step."),
+    ("change over time", "all", "end", "{name}'s organization has improved since the October progress report; {his} paragraphs now follow a clear order."),
+    ("change over time", "all", "both", "On {his} last piece {name} scored ____ out of 4 for ideas and ____ for organization. The ideas are there, and order is the next step."),
 ]
 
 SPEAKING = [
@@ -193,7 +193,7 @@ BEHAVIOR = [
     ("Kindness and cooperation", "on track", "{name} gets along well with classmates and is learning to solve small disagreements with words."),
     ("Kindness and cooperation", "on track", "{name} works well with friends and is learning to work just as well with any partner."),
     ("Kindness and cooperation", "needs support", "{name} finds it hard to share the work in a group and prefers to do it alone or to lead. Taking a different role each time is the next step."),
-    ("Kindness and cooperation", "needs support", "{name} sometimes speaks unkindly to classmates when frustrated. We are practising stopping and using a calm sentence, and the same at home would help."),
+    ("Kindness and cooperation", "needs support", "{name} sometimes speaks unkindly to classmates when frustrated. We are practicing stopping and using a calm sentence, and the same at home would help."),
     ("Kindness and cooperation", "needs support", "{name} has had some disagreements with classmates this semester. We talk through each one, and the next step is asking an adult before it grows."),
     # Asking for help
     ("Asking for help", "strong", "{name} asks a clear question as soon as {he} is unsure."),
@@ -294,7 +294,7 @@ LADDERS = [
     ("Reading", "Beginning", "First readers", "{name} is learning to read short, simple sentences alone.",
      "Read the week's story aloud twice, once with help and once alone.", "Point to three words {he} knows on each page."),
     ("Reading", "Intermediate", "Reading every day", "{name} is learning to read a short book alone and say what happened.",
-     "Read ten minutes each evening and tell someone one thing that happened.", "Reread a favourite book and read one page with expression."),
+     "Read ten minutes each evening and tell someone one thing that happened.", "Reread a favorite book and read one page with expression."),
     ("Reading", "Intermediate", "Retelling", "{name} is learning to retell a story with a beginning, middle and end.",
      "After reading, ask {him} to retell the story in three parts, in English or Korean.", "Ask one \"why\" question about a character after each book."),
     ("Reading", "Advanced", "Chapter books", "{name} is learning to read longer books and keep track of characters and events.",
@@ -303,7 +303,7 @@ LADDERS = [
      "Read a short article and write two sentences about what it was mostly about.", "Compare two books on the same topic and say one difference."),
     # Phonics
     ("Phonics", "Beginning", "Letter sounds", "{name} is learning the sound of each letter.",
-     "Practise five letter sounds a day with cards. Say the sound, not the name.", "Find things at home that start with the sound of the day."),
+     "Practice five letter sounds a day with cards. Say the sound, not the name.", "Find things at home that start with the sound of the day."),
     ("Phonics", "Beginning", "Blending", "{name} is learning to blend three sounds into a word.",
      "Build words such as cat, sun and pin with letter cards and read them.", "Say a word slowly in sounds and ask {him} to say it fast."),
     ("Phonics", "Intermediate", "Digraphs and blends", "{name} is learning sh, ch and th and blends such as st and fr.",
@@ -313,7 +313,7 @@ LADDERS = [
     ("Phonics", "Advanced", "Other vowel sounds", "{name} is learning r-controlled words and words such as out, boy and saw.",
      "Read the word list and write one sentence using two of the words.", "Spot the pattern words in {his} own reading."),
     ("Phonics", "Advanced", "Long words", "{name} is learning to split two-syllable words into parts.",
-     "Clap the parts of long words in a book and read each part.", "Spell the week's long words by writing each part in a different colour."),
+     "Clap the parts of long words in a book and read each part.", "Spell the week's long words by writing each part in a different color."),
     # Writing
     ("Writing", "Beginning", "Letters and sounds", "{name} is learning to form letters and match them to sounds.",
      "Trace and then copy the week's letters. Say the sound while writing it.", "Write {his} name and three family names each day."),
@@ -329,17 +329,17 @@ LADDERS = [
      "Write, then reread the next day and fix two things before showing anyone.", "Keep a weekly journal in English."),
     # Speaking and listening
     ("Speaking and listening", "Beginning", "One word", "{name} is learning to answer with one English word and follow one-step directions.",
-     "Ask simple questions with one-word answers: What colour? How many?", "Give one-step instructions in English at home: Open the door."),
+     "Ask simple questions with one-word answers: What color? How many?", "Give one-step instructions in English at home: Open the door."),
     ("Speaking and listening", "Beginning", "A full sentence", "{name} is learning to answer in a short full sentence.",
-     "When {he} answers with one word, ask {him} to say it again as a sentence.", "Practise \"I like ____\" and \"I have ____\" about things at home."),
+     "When {he} answers with one word, ask {him} to say it again as a sentence.", "Practice \"I like ____\" and \"I have ____\" about things at home."),
     ("Speaking and listening", "Intermediate", "Asking", "{name} is learning to ask for things and for help in English.",
-     "Ask {him} to ask for snacks or help in English, even with mistakes.", "Practise three questions: Can I have, Where is, What is."),
+     "Ask {him} to ask for snacks or help in English, even with mistakes.", "Practice three questions: Can I have, Where is, What is."),
     ("Speaking and listening", "Intermediate", "Talking for a minute", "{name} is learning to talk about a picture or {his} day for a minute.",
      "Ask {him} to describe a photo for one minute.", "Ask \"What did you do today?\" and listen for three sentences."),
     ("Speaking and listening", "Advanced", "Retelling and explaining", "{name} is learning to retell a story aloud and explain {his} thinking.",
      "Ask {him} to retell the week's story to you in English.", "Ask \"Why do you think so?\" after an opinion."),
     ("Speaking and listening", "Advanced", "Presenting", "{name} is learning to give a short talk with a beginning, middle and end.",
-     "Practise a one-minute talk about a hobby, then give it to the family.", "Record the talk on a phone and listen for one thing to improve."),
+     "Practice a one-minute talk about a hobby, then give it to the family.", "Record the talk on a phone and listen for one thing to improve."),
     # Language
     ("Language", "Beginning", "Words", "{name} is learning the unit's words with pictures.",
      "Review the week's words with picture cards.", "Label five things in a room with sticky notes."),
