@@ -447,7 +447,13 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     })()
   }, [studentId, semesterId])
 
+  // Autosave bookkeeping, declared before loadReport because a reload flushes a pending save first.
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingSave = useRef(false)
+  const persistRef = useRef<() => Promise<void>>(async () => {})
   const loadReport = useCallback(async () => {
+    // A reload must never throw away text typed since the last save.
+    if (pendingSave.current) await persistRef.current()
     setLoading(true)
     setEditingGrades(false)
     const student = students.find((s: any) => s.id === studentId)
@@ -692,8 +698,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   // The comment saves itself a second after typing stops, and at once when
   // Skip is toggled, when Next is pressed, or when the editor closes. One
   // activity line per sitting, not one per keystroke.
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pendingSave = useRef(false)
   const latest = useRef({ comment: '', commentSkipped: false, hideComparison: false })
   const loggedSave = useRef(false)
   useEffect(() => { latest.current = { comment, commentSkipped, hideComparison } }, [comment, commentSkipped, hideComparison])
@@ -710,6 +714,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     setClassComments(prev => ({ ...prev, [studentId]: { text: v.comment.trim(), skipped: v.commentSkipped } }))
     if (!loggedSave.current) { loggedSave.current = true; logActivity('saved', `Report card comment · ${studentName}`) }
   }, [studentId, semesterId, currentTeacher, studentName])
+  useEffect(() => { persistRef.current = persist }, [persist])
   const scheduleSave = (patch: Partial<typeof latest.current>, delay = 1000) => {
     latest.current = { ...latest.current, ...patch }
     pendingSave.current = true

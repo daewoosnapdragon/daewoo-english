@@ -113,7 +113,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('is_archived', false)
       .order('start_date', { ascending: false })
-    if (!error && data) setSemesters(data)
+    // Same rows as before means the same array: screens that rebuild when the
+    // semesters change (the report card editor among them) must not reload on
+    // every window focus.
+    if (!error && data) setSemesters(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data)
     setSemestersLoading(false)
   }, [])
 
