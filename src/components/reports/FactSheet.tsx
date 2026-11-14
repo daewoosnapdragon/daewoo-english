@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { LetterRow } from '@/lib/factSheet'
+import type { LetterRow, RubricPiece } from '@/lib/factSheet'
 
 // ─── Fact sheet ──────────────────────────────────────────────────
 // The narrow column beside the report card comment box: what the app
@@ -27,6 +27,8 @@ export interface FactSheetProps {
   sinceLastLabel: string | null
   facts: FactSheetFacts
   noticings: string[]
+  /** Every rubric-scored piece this semester, newest first. */
+  rubrics: RubricPiece[]
   /** Every comment parents have already read, newest first. */
   quotes: FactSheetQuote[]
   className?: string
@@ -54,7 +56,31 @@ function Quote({ q }: { q: FactSheetQuote }) {
   )
 }
 
-export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, facts, noticings, quotes, className = '' }: FactSheetProps) {
+function RubricRow({ p }: { p: RubricPiece }) {
+  const [open, setOpen] = useState(false)
+  const hasText = p.criteria.some(c => c.descriptor)
+  return (
+    <li className="flex flex-col gap-1">
+      <button type="button" onClick={() => hasText && setOpen(o => !o)} aria-expanded={open} className={`text-left ${hasText ? 'cursor-pointer' : 'cursor-default'}`} style={{ color: INK }}>
+        <span className="font-medium">{p.name}</span>{p.date && <span style={{ color: MUTED }}>, <MonthDay iso={p.date} /></span>}
+        <span style={{ color: MUTED }}> · {p.earned}/{p.possible}</span>
+        <span className="block" style={{ color: '#475569' }}>{p.criteria.filter(c => c.score != null).map(c => `${c.label} ${c.score}`).join(', ')}{hasText && <span className="underline underline-offset-2 ml-1.5 text-[11px]" style={{ color: MUTED }}>{open ? 'hide' : 'what the rubric says'}</span>}</span>
+      </button>
+      {open && (
+        <dl className="m-0 ml-2 pl-2.5 grid gap-y-1.5" style={{ borderLeft: '1px solid #C8CED8' }}>
+          {p.criteria.filter(c => c.score != null).map(c => (
+            <div key={c.key}>
+              <dt className="text-[11px] font-semibold" style={{ color: '#475569' }}>{c.label} · {c.score}{c.standard && <span className="font-normal" style={{ color: MUTED }}> · {c.standard}</span>}</dt>
+              <dd className="m-0 text-[12px] leading-[1.45]" style={{ color: INK }}>{c.descriptor || (c.score === 0 ? 'Level 0: not attempted.' : 'This rubric has no descriptor for this level.')}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </li>
+  )
+}
+
+export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, facts, noticings, rubrics, quotes, className = '' }: FactSheetProps) {
   const reading = (r: FactSheetFacts['readingNow']) => r ? [r.level, r.cwpm != null ? `${Math.round(r.cwpm)} wpm` : null].filter(Boolean).join(' · ') : ''
   return (
     <aside aria-label="Fact sheet" className={`flex-[0_1_300px] min-w-[250px] flex flex-col gap-5 text-[12.5px] leading-snug ${className}`} style={{ color: INK }}>
@@ -107,6 +133,15 @@ export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, facts, 
           <H>What the app noticed</H>
           <ul className="m-0 pl-3.5 flex flex-col gap-1.5">
             {noticings.map((n, i) => <li key={i}>{n}</li>)}
+          </ul>
+        </section>
+      )}
+
+      {rubrics.length > 0 && (
+        <section className="flex flex-col gap-1.5">
+          <H>Rubrics this semester</H>
+          <ul className="m-0 p-0 list-none flex flex-col gap-2">
+            {rubrics.map(p => <RubricRow key={p.assessmentId} p={p} />)}
           </ul>
         </section>
       )}

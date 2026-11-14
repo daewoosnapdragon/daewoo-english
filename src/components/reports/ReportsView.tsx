@@ -18,7 +18,7 @@ import { loadAssessmentWeights } from '@/lib/assessmentWeights'
 import { resolveStudentTeacher } from '@/lib/classTeacher'
 import { loadTeachers } from '@/lib/classTeacherData'
 import { commentChecks } from '@/lib/commentChecks'
-import { letterRows, assessmentsUpTo, noticings as buildNoticings, nextWithoutComment, type LetterRow } from '@/lib/factSheet'
+import { letterRows, assessmentsUpTo, noticings as buildNoticings, nextWithoutComment, rubricPieces, type LetterRow, type RubricPiece } from '@/lib/factSheet'
 import { plainName } from '@/components/curriculum/standards-plain'
 import { WIDA_LEVELS } from '@/lib/wida'
 import FactSheet, { type FactSheetFacts, type FactSheetQuote } from '@/components/reports/FactSheet'
@@ -157,6 +157,7 @@ interface ReportData {
   sinceLastLabel: string | null
   facts: FactSheetFacts
   noticings: string[]
+  rubrics: RubricPiece[]
   quotes: FactSheetQuote[]
 }
 
@@ -634,6 +635,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       behaviorLogs: behaviorLogs.filter((b: any) => !semester.start_date || (b.date || '') >= semester.start_date),
       absences: attCounts.absent, tardies: attCounts.tardy, standardName: plainName,
     })
+    const rubrics = rubricPieces(assessments, itemGrades)
     // Everything parents have already read about this student: this semester's progress report in
     // full, then every earlier comment newest first (report card before progress report within a semester).
     const semRank = new Map(sortedSems.map((x: any, i: number) => [x.id, i]))
@@ -674,7 +676,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       reviewerNoteAck,
       reviewerNoteByName,
       factRows, sinceMidLabel: midterm ? `Since ${monthOf(midCutoff)}` : null, sinceLastLabel: prevDomainGrades && prevSem ? `Since ${prevSem.name.split(' ')[0]}` : null,
-      facts, noticings, quotes,
+      facts, noticings, rubrics, quotes,
     })
     setPronoun((student as any).pronoun || null)
     setComment(commentData?.text || '')
@@ -1004,7 +1006,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Fact sheet + comment (the editor; the fact sheet and controls are screen only) ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex flex-wrap items-start gap-x-10 gap-y-6">
-            <FactSheet className="print:hidden" rows={d.factRows} sinceMidLabel={d.sinceMidLabel} sinceLastLabel={d.sinceLastLabel} facts={d.facts} noticings={d.noticings} quotes={d.quotes} />
+            <FactSheet className="print:hidden" rows={d.factRows} sinceMidLabel={d.sinceMidLabel} sinceLastLabel={d.sinceLastLabel} facts={d.facts} noticings={d.noticings} rubrics={d.rubrics} quotes={d.quotes} />
             <div className="min-w-0 max-w-[760px]" style={{ flex: '999 1 480px' }}>
               <div className="flex items-start justify-between gap-4 mb-2.5 flex-wrap">
                 <div>

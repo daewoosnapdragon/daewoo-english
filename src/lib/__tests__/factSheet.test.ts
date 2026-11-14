@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pointChange, letterChange, assessmentsUpTo, letterRows, noticings, nextWithoutComment } from '@/lib/factSheet'
+import { pointChange, letterChange, assessmentsUpTo, letterRows, noticings, nextWithoutComment, rubricPieces } from '@/lib/factSheet'
 
 describe('changes', () => {
   it('formats point and letter changes', () => {
@@ -72,6 +72,33 @@ describe('what the app noticed', () => {
     const n = noticings({ ...base, cur: { reading: 84, phonics: 86, writing: 83, speaking: 85, language: 85 }, midterm: null,
       grades: [{ assessment_id: 'u3', item_responses: [1, 2, 3, 4, 5, 6, 7, 8].map(q => ({ q, points: 1, max: 1 })) }] })
     expect(n).toEqual(['Writing is the weakest area.'])
+  })
+})
+
+describe('rubric pieces with descriptors', () => {
+  const LV = (s: string): [string, string, string, string] => [`${s} 1`, `${s} 2`, `${s} 3`, `${s} 4`]
+  const assessments = [
+    { id: 'dd', name: 'Debate Discussion', date: '2026-11-06', rubric: { name: 'Discussion', criteria: [{ key: 'listening', label: 'Listening', levels: LV('listens'), standard: 'SL.4.1' }, { key: 'talk', label: 'On-topic talk', levels: LV('talks') }, { key: 'extra', label: 'Unused' }] } },
+    { id: 'op', name: 'Opinion paragraph', date: '2026-11-04', question_map: [{ num: 3, type: 'rubric', max_points: 8, rubric: { name: 'Opinion', criteria: [{ key: 'ideas', label: 'Ideas', levels: LV('ideas') }, { key: 'org', label: 'Organization', levels: LV('order') }] } }] },
+    { id: 'mc', name: 'Unit test', date: '2026-11-10', question_map: [{ num: 1, max_points: 1, standard: 'RL.4.1' }] },
+  ]
+  const grades = [
+    { assessment_id: 'dd', rubric_scores: { listening: 3, talk: 0 } },
+    { assessment_id: 'op', item_responses: [{ q: 3, points: 6, max: 8, levels: { ideas: 4, org: 2 } }] },
+    { assessment_id: 'mc', item_responses: [{ q: 1, points: 1, max: 1 }] },
+  ]
+  it('lists each rubric piece newest first with the descriptor of the level scored', () => {
+    const p = rubricPieces(assessments, grades)
+    expect(p.map(x => x.name)).toEqual(['Debate Discussion', 'Opinion paragraph'])
+    const dd = p[0]
+    expect(dd.rubricName).toBe('Discussion')
+    expect(dd.criteria.map(c => [c.label, c.score, c.descriptor])).toEqual([['Listening', 3, 'listens 3'], ['On-topic talk', 0, null], ['Unused', null, null]])
+    expect(dd.criteria[0].standard).toBe('SL.4.1')
+    expect(dd.earned).toBe(3); expect(dd.possible).toBe(8)
+    expect(p[1].criteria.map(c => c.descriptor)).toEqual(['ideas 4', 'order 2'])
+  })
+  it('skips absent papers and pieces with nothing scored', () => {
+    expect(rubricPieces(assessments, [{ assessment_id: 'dd', is_absent: true, rubric_scores: { listening: 3 } }, { assessment_id: 'dd', rubric_scores: {} }])).toEqual([])
   })
 })
 

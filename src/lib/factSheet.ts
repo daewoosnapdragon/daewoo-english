@@ -60,7 +60,7 @@ export function letterRows(cur: Record<string, number | null>, na: Record<string
 
 // ─── What the app noticed ────────────────────────────────────────
 
-export interface RubricCriterion { key: string; label: string }
+export interface RubricCriterion { key: string; label: string; standard?: string; levels?: string[] }
 export interface NoticingAssessment {
   id: string
   name: string
@@ -68,9 +68,9 @@ export interface NoticingAssessment {
   type?: string | null
   domain?: string | null
   max_score?: number | null
-  question_map?: Array<{ num: number; max_points?: number; standard?: string; type?: string; rubric?: { criteria: Array<{ key: string; label: string; standard?: string }> } | null }> | null
+  question_map?: Array<{ num: number; max_points?: number; standard?: string; type?: string; rubric?: { name?: string; criteria: RubricCriterion[] } | null }> | null
   /** A rubric assessment carries its criteria here; rubric_scores on the grade row are keyed by criterion key. */
-  rubric?: { criteria: Array<{ key: string; label: string; standard?: string }> } | null
+  rubric?: { name?: string; criteria: RubricCriterion[] } | null
 }
 export interface NoticingGrade {
   assessment_id: string
@@ -192,6 +192,68 @@ export function noticings(input: NoticingInput): string[] {
   for (const b of beh) out.push(`Behavior, ${fmtDate(b.date)}: “${b.note!.trim()}”`)
   if (input.absences >= 3 || input.tardies >= 3) out.push(`Absent ${input.absences} ${input.absences === 1 ? 'day' : 'days'}, tardy ${input.tardies}.`)
   return out
+}
+
+// ─── Rubrics this semester ───────────────────────────────────────
+
+export interface RubricPieceCriterion {
+  key: string
+  label: string
+  standard: string | null
+  /** 0–4, null when this criterion was not scored. */
+  score: number | null
+  /** What the rubric says for the level scored; null at 0 or when the rubric has no descriptors. */
+  descriptor: string | null
+}
+export interface RubricPiece {
+  assessmentId: string
+  name: string
+  rubricName: string | null
+  date: string | null
+  criteria: RubricPieceCriterion[]
+  /** Points earned over possible, over the criteria scored. */
+  earned: number
+  possible: number
+}
+
+/**
+ * Every rubric-scored piece this student has, newest first, each
+ * criterion with the level scored and the descriptor for that level
+ * (levels[0] is level 1; level 0 has none). Rubric assessments keep
+ * their criteria on the assessment and the scores in rubric_scores;
+ * a rubric item inside a mixed paper keeps them in the question map and
+ * the response's levels. Both are read.
+ */
+export function rubricPieces(assessments: NoticingAssessment[], grades: NoticingGrade[]): RubricPiece[] {
+  const byId = new Map(assessments.map(a => [a.id, a]))
+  const out: RubricPiece[] = []
+  for (const g of grades) {
+    if (g.is_absent || g.is_exempt) continue
+    const a = byId.get(g.assessment_id)
+    if (!a) continue
+    const crits: Array<{ c: RubricCriterion; rubricName: string | null; score: number | null }> = []
+    const seen = new Set<string>()
+    const push = (c: RubricCriterion, rubricName: string | null, score: number | null) => { if (seen.has(c.key)) return; seen.add(c.key); crits.push({ c, rubricName, score }) }
+    if (a.rubric?.criteria?.length && g.rubric_scores) {
+      for (const c of a.rubric.criteria) push(c, a.rubric.name || null, g.rubric_scores[c.key] == null ? null : Number(g.rubric_scores[c.key]))
+    }
+    for (const q of a.question_map || []) {
+      if (!q.rubric?.criteria?.length) continue
+      const r = (g.item_responses || []).find(x => x.q === q.num)
+      for (const c of q.rubric.criteria) push(c, q.rubric.name || null, r?.levels?.[c.key] == null ? null : Number(r!.levels![c.key]))
+    }
+    const scored = crits.filter(x => x.score != null)
+    if (scored.length === 0) continue
+    out.push({
+      assessmentId: a.id, name: a.name, rubricName: crits.find(x => x.rubricName)?.rubricName || null, date: a.date || null,
+      criteria: crits.map(({ c, score }) => ({
+        key: c.key, label: c.label || c.key, standard: c.standard || null, score,
+        descriptor: score != null && score >= 1 && c.levels?.[score - 1] ? c.levels[score - 1] : null,
+      })),
+      earned: scored.reduce((s, x) => s + (x.score as number), 0), possible: scored.length * 4,
+    })
+  }
+  return out.sort((x, y) => String(y.date || '').localeCompare(String(x.date || '')))
 }
 
 /** The students without a comment yet, in roster order, starting after the current one. */
